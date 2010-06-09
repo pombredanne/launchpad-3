@@ -12,14 +12,12 @@ __all__ = [
 
 import os.path
 
-from bzrlib.branch import Branch
 from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transform import TransformPreview, ROOT_PARENT
 
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from lp.codehosting.vfs import make_branch_mirrorer
-
+from lp.codehosting.bzrutils import get_stacked_on_url
 
 class ConcurrentUpdateError(Exception):
     """Bailout exception for concurrent updates.
@@ -49,13 +47,13 @@ class DirectBranchCommit:
     is_locked = False
     commit_builder = None
 
-    def __init__(self, db_branch, committer=None, to_mirror=False):
+    def __init__(self, db_branch, committer=None, no_race_check=False):
         """Create context for direct commit to branch.
 
         Before constructing a `DirectBranchCommit`, set up a server that
-        allows write access to lp-hosted:/// URLs:
+        allows write access to lp-internal:/// URLs:
 
-        bzrserver = get_multi_server(write_hosted=True)
+        bzrserver = get_rw_server()
         bzrserver.start_server()
         try:
             branchcommit = DirectBranchCommit(branch)
@@ -68,11 +66,10 @@ class DirectBranchCommit:
 
         :param db_branch: a Launchpad `Branch` object.
         :param committer: the `Person` writing to the branch.
-        :param to_mirror: If True, write to the mirrored copy of the branch
-            instead of the hosted copy.  (Mainly useful for tests)
+        :param no_race_check: don't check for other commits before committing
+            our changes, for use in tests.
         """
         self.db_branch = db_branch
-        self.to_mirror = to_mirror
 
         self.last_scanned_id = self.db_branch.last_scanned_id
 
@@ -80,18 +77,12 @@ class DirectBranchCommit:
             committer = db_branch.owner
         self.committer = committer
 
+        self.no_race_check = no_race_check
+
         # Directories we create on the branch, and their ids.
         self.path_ids = {}
 
-        if to_mirror:
-            self.bzrbranch = Branch.open(self.db_branch.warehouse_url)
-        else:
-            # Have the opening done through a branch mirrorer.  It will
-            # pick the right policy.  In case we're writing to a hosted
-            # branch stacked on a mirrored branch, the mirrorer knows
-            # how to do the right thing.
-            mirrorer = make_branch_mirrorer(self.db_branch.branch_type)
-            self.bzrbranch = mirrorer.open(self.db_branch.getPullURL())
+        self.bzrbranch = self.db_branch.getBzrBranch()
 
         self.bzrbranch.lock_write()
         self.is_locked = True
@@ -167,12 +158,9 @@ class DirectBranchCommit:
 
         If it does, raise `ConcurrentUpdateError`.
         """
-        # A different last_scanned_id does not indicate a race for mirrored
-        # branches -- last_scanned_id is a proxy for the mirrored branch.
-        if self.to_mirror:
-            return
         assert self.is_locked, "Getting revision on un-locked branch."
-        last_revision = None
+        if self.no_race_check:
+            return
         last_revision = self.bzrbranch.last_revision()
         if last_revision != self.last_scanned_id:
             raise ConcurrentUpdateError(
@@ -189,7 +177,6 @@ class DirectBranchCommit:
         assert self.is_open, "Committing closed DirectBranchCommit."
         assert self.is_locked, "Not locked at commit time."
 
-        builder = None
         try:
             self._checkForRace()
 
@@ -202,7 +189,10 @@ class DirectBranchCommit:
                     return
             new_rev_id = self.transform_preview.commit(
                 self.bzrbranch, commit_message)
-            IMasterObject(self.db_branch).requestMirror()
+            IMasterObject(self.db_branch).branchChanged(
+                get_stacked_on_url(self.bzrbranch), new_rev_id,
+                self.db_branch.control_format, self.db_branch.branch_format,
+                self.db_branch.repository_format)
 
             if txn:
                 txn.commit()

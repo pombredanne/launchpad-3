@@ -2,16 +2,22 @@
 
 == Setup ==
 
-Set up build environment.
+Set up build environment.  Clear out the build queue.
 
     >>> import transaction
     >>> import logging
     >>> logger = logging.getLogger()
     >>> logger.setLevel(logging.CRITICAL)
 
-    >>> from lp.buildmaster.master import BuilddMaster
+    >>> from canonical.database.sqlbase import quote
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
+    >>> from lp.services.job.interfaces.job import JobStatus
+    >>> from lp.services.job.model.job import Job
+    >>> store = IMasterStore(Job)
+    >>> query = store.execute("UPDATE Job SET status = %s" % quote(
+    ...     JobStatus.FAILED))
+
     >>> from canonical.buildd.tests import BuilddSlaveTestSetup
-    >>> bm = BuilddMaster(logger, transaction)
     >>> BuilddSlaveTestSetup().setUp()
 
     >>> from canonical.librarian.interfaces import ILibrarianClient
@@ -35,13 +41,29 @@ release.
     >>> archdistroseries = ubuntu.currentseries.nominatedarchindep
     >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
     >>> pc = archdistroseries.addOrUpdateChroot(chroot=chroot)
-    >>> bm.addDistroArchSeries(archdistroseries)
-    >>> bm.setupBuilders(archdistroseries)
+
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
+    >>> getUtility(IBuilderSet).checkBuilders(logger, transaction)
+
     >>> processor = archdistroseries.processorfamily.processors[0]
 
 Make a builder to process our build request.
 
-    >>> builder = factory.makeBuilder(virtualized=False, processor=processor)
+    >>> builder = factory.makeBuilder(
+    ...     virtualized=True, processor=processor, vm_host='hostname')
+
+The builder doesn't talk to a real slave.  We don't have those in our
+test suite.  But we give it a fake one.
+
+    >>> from lp.testing.fakemethod import FakeMethod
+    >>> class FakeSlave:
+    ...     build = FakeMethod()
+    ...     cacheFile = FakeMethod()
+    ...     resume = FakeMethod(result=('Output here', 'Errors here', 0))
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> slave = FakeSlave()
+    >>> removeSecurityProxy(builder).slave = slave
 
 
 == Get a job! ==
@@ -49,9 +71,9 @@ Make a builder to process our build request.
 Use the ITranslationTemplatesBuildJobSource to create a
 TranslationTemplatesBuildJob.
 
+    >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
     >>> from lp.translations.interfaces.translationtemplatesbuildjob import (
     ...     ITranslationTemplatesBuildJobSource)
-    >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
     >>> branch = factory.makeBranch()
     >>> specific_job_source = getUtility(ITranslationTemplatesBuildJobSource)
     >>> specific_job = specific_job_source.create(branch)
@@ -62,19 +84,26 @@ The build has no start date yet.
     >>> print buildqueue.date_started
     None
 
-Dispatch the job to the build slave.  The proper method to call here
-would have been Builder.findAndStartJob, but it has not been generalised
-to handle new job types yet.
+Our job is now first in line to be executed.
 
-# XXX JeroenVermeulen bug=506617: call findAndStartJob instead.
+    >>> removeSecurityProxy(builder)._findBuildCandidate() == buildqueue
+    True
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(builder)._dispatchBuildCandidate(buildqueue)
+Dispatch the first job in line (ours!) to the build slave.
 
-The build is now marked as started.
+    >>> activated_job = builder.findAndStartJob()
+    >>> activated_job == buildqueue
+    True
+
+Our build is now marked as started.
 
     >>> buildqueue.date_started is None
     False
+
+The slave's build method has been called.
+
+    >>> slave.build.call_count
+    1
 
 
 == Teardown ==

@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh
 # Start up Soyuz for local testing on a dev machine.
 
 start_twistd() {

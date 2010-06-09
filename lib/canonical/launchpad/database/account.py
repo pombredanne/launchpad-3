@@ -49,8 +49,9 @@ class Account(SQLBase):
         dbName='openid_identifier', notNull=True, default=DEFAULT)
 
     def __repr__(self):
+        displayname = self.displayname.encode('ASCII', 'backslashreplace')
         return "<%s '%s' (%s)>" % (
-            self.__class__.__name__, self.displayname, self.status)
+            self.__class__.__name__, displayname, self.status)
 
     def _getEmails(self, status):
         """Get related `EmailAddress` objects with the given status."""
@@ -145,10 +146,6 @@ class Account(SQLBase):
 
     def reactivate(self, comment, password, preferred_email):
         """See `IAccountSpecialRestricted`."""
-        if password in (None, ''):
-            raise AssertionError(
-                "Account %s cannot be reactivated without a "
-                "password." % self.id)
         self.activate(comment, password, preferred_email)
 
     # The password is actually stored in a separate table for security

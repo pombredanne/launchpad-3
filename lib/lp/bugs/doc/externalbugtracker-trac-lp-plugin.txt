@@ -407,8 +407,11 @@ After fetchComments() is called the bug's 'comments' field will contain
 a dict in the form {<comment_id>: <comment_dict>}, which can then be
 parsed.
 
+    >>> remote_bug = bug_watch.remotebug
+    >>> transaction.commit()
+
     >>> test_transport.expireCookie(test_transport.auth_cookie)
-    >>> trac.fetchComments(bug_watch.remotebug, ['1-1'])
+    >>> trac.fetchComments(remote_bug, ['1-1'])
     Using XML-RPC to generate token.
     Successfully validated the token.
 
@@ -432,8 +435,11 @@ is supplied for the 'user' field by returning None as the user's
 displayname. When this is passed to IPersonSet.ensurePerson() a display
 name will be generated for the user from their email address.
 
-    >>> trac.fetchComments(bug_watch_two.remotebug, ['2-1', '2-2'])
-    >>> trac.getPosterForComment(bug_watch_two.remotebug, '2-1')
+    >>> remote_bug = bug_watch_two.remotebug
+    >>> transaction.commit()
+
+    >>> trac.fetchComments(remote_bug, ['2-1', '2-2'])
+    >>> trac.getPosterForComment(remote_bug, '2-1')
     (None, 'test@canonical.com')
 
 getPosterForComment() will also return displayname, email tuples in
@@ -506,8 +512,12 @@ instance. We'll expire our auth cookie to demonstrate this.
 
     >>> test_transport.expireCookie(test_transport.auth_cookie)
 
+    >>> message_text_contents = message.text_contents
+    >>> message_rfc822msgid = message.rfc822msgid
+    >>> transaction.commit()
+
     >>> remote_comment_id = trac.addRemoteComment(
-    ...     '3', message.text_contents, message.rfc822msgid)
+    ...     '3', message_text_contents, message_rfc822msgid)
     Using XML-RPC to generate token.
     Successfully validated the token.
 
@@ -557,7 +567,7 @@ We call setLaunchpadBugId() to set the Launchpad bug ID for a remote
 bug. setLaunchpadBugId() also requires authentication.
 
     >>> test_transport.expireCookie(test_transport.auth_cookie)
-    >>> trac.setLaunchpadBugId('3', 15)
+    >>> trac.setLaunchpadBugId('3', 15, 'http://bugs.launchpad.dev/bugs/xxx')
     Using XML-RPC to generate token.
     Successfully validated the token.
 
@@ -570,7 +580,7 @@ that's the Launchpad bug ID that we've just set.
 Passing a Launchpad bug ID of None to setLaunchpadBugId() will unset the
 Launchpad bug ID for the remote bug.
 
-    >>> trac.setLaunchpadBugId('3', None)
+    >>> trac.setLaunchpadBugId('3', None, None)
     >>> print trac.getLaunchpadBugId('3')
     None
 
@@ -582,7 +592,8 @@ remote bug that doesn't exist, a BugNotFound error will be raised.
       ...
     BugNotFound: 12345
 
-    >>> trac.setLaunchpadBugId('12345', 1)
+    >>> trac.setLaunchpadBugId(
+    ...     '12345', 1, 'http://bugs.launchpad.dev/bugs/xxx')
     Traceback (most recent call last):
       ...
     BugNotFound: 12345

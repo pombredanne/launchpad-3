@@ -282,7 +282,7 @@ The same is true for a sarge package.
     []
 
 
-== Project Search Page ==
+== ProjectGroup Search Page ==
 
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')

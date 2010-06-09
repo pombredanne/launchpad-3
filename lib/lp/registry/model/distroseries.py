@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = [
     'DistroSeries',
     'DistroSeriesSet',
-    'SeriesMixin',
     ]
 
 import logging
@@ -46,8 +45,9 @@ from lp.soyuz.model.binarypackagerelease import (
         BinaryPackageRelease)
 from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
-from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
@@ -87,22 +87,22 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
     ALLOW_RELEASE_BUILDS, ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet, ISeriesMixin)
+    IDistroSeries, IDistroSeriesSet)
+from lp.registry.model.series import SeriesMixin
+from lp.registry.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from lp.soyuz.interfaces.publishing import (
@@ -118,34 +118,19 @@ from lp.blueprints.interfaces.specification import (
 from canonical.launchpad.mail import signed_message_from_string
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
-    TranslationUnavailable)
+    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR)
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet)
-
-
-class SeriesMixin:
-    """See `ISeriesMixin`."""
-    implements(ISeriesMixin)
-
-    @property
-    def active(self):
-        return self.status in [
-            SeriesStatus.DEVELOPMENT,
-            SeriesStatus.FROZEN,
-            SeriesStatus.CURRENT,
-            SeriesStatus.SUPPORTED
-            ]
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                    HasMilestonesMixin, SeriesMixin,
-                   StructuralSubscriptionTargetMixin):
+                   StructuralSubscriptionTargetMixin, HasBugHeatMixin):
     """A particular series of a distribution."""
     implements(
-        ICanPublishPackages, IDistroSeries, IHasBuildRecords, IHasQueueItems,
-        IHasTranslationTemplates)
+        ICanPublishPackages, IDistroSeries, IHasBugHeat, IHasBuildRecords,
+        IHasQueueItems)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -155,14 +140,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     title = StringCol(notNull=True)
-    summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
     status = EnumCol(
         dbName='releasestatus', notNull=True, schema=SeriesStatus)
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
-    parent_series =  ForeignKey(
+    parent_series = ForeignKey(
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
@@ -173,7 +157,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(
-        dbName='nominatedarchindep',foreignKey='DistroArchSeries',
+        dbName='nominatedarchindep', foreignKey='DistroArchSeries',
         notNull=False, default=None)
     messagecount = IntCol(notNull=True, default=0)
     binarycount = IntCol(notNull=True, default=DEFAULT)
@@ -284,25 +268,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.distribution
 
     @property
-    def drivers(self):
-        """See `IDistroSeries`."""
-        drivers = set()
-        drivers.add(self.driver)
-        drivers = drivers.union(self.distribution.drivers)
-        drivers.discard(None)
-        return sorted(drivers, key=lambda driver: driver.displayname)
-
-    @property
-    def bug_supervisor(self):
-        """See `IDistroSeries`."""
-        return self.distribution.bug_supervisor
-
-    @property
-    def security_contact(self):
-        """See `IDistroSeries`."""
-        return self.distribution.security_contact
-
-    @property
     def sortkey(self):
         """A string to be used for sorting distro seriess.
 
@@ -366,7 +331,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         origin = SQL(joins)
         condition = SQL(conditions + "AND packaging.id IS NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
-        results = results.order_by('score DESC')
+        results = results.order_by('score DESC', SourcePackageName.name)
         return [{
                  'package': SourcePackage(
                     sourcepackagename=spn, distroseries=self),
@@ -405,7 +370,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """)
         condition = SQL(conditions + "AND packaging.id IS NOT NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
-        results = results.order_by('score DESC')
+        results = results.order_by('score DESC, SourcePackageName.name ASC')
         return [packaging
                 for (packaging, spn, series, product, score) in results]
 
@@ -467,6 +432,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 ON spr.id = spph.sourcepackagerelease
             JOIN archive
                 ON spph.archive = Archive.id
+            JOIN section
+                ON spph.section = section.id
             JOIN DistroSeries
                 ON spph.distroseries = DistroSeries.id
             LEFT JOIN Packaging
@@ -477,6 +444,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroSeries.id = %(distroseries)s
             AND spph.status IN %(active_status)s
             AND archive.purpose = %(primary)s
+            AND section.name != 'translations'
             """ % sqlvalues(
                 distroseries=self,
                 active_status=active_publishing_status,
@@ -535,6 +503,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def bug_reporting_guidelines(self):
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
+
+    @property
+    def bug_reported_acknowledgement(self):
+        """See `IBugTarget`."""
+        return self.distribution.bug_reported_acknowledgement
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
@@ -756,7 +729,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -890,29 +863,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             (self.getSourcePackage(release.sourcepackagename),
              DistroSeriesSourcePackageRelease(self, release))
             for release in releases)
-
-    def checkTranslationsViewable(self):
-        """See `IDistroSeries`."""
-        if not self.hide_all_translations:
-            # Yup, viewable.
-            return
-
-        future = [
-            SeriesStatus.EXPERIMENTAL,
-            SeriesStatus.DEVELOPMENT,
-            SeriesStatus.FUTURE,
-            ]
-        if self.status in future:
-            raise TranslationUnavailable(
-                "Translations for this release series are not available yet.")
-        elif self.status == SeriesStatus.OBSOLETE:
-            raise TranslationUnavailable(
-                "This release series is obsolete.  Its translations are no "
-                "longer available.")
-        else:
-            raise TranslationUnavailable(
-                "Translations for this release series are not currently "
-                "available.  Please come back soon.")
 
     def getTranslatableSourcePackages(self):
         """See `IDistroSeries`."""
@@ -1074,13 +1024,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status=%s AND
             SourcePackagePublishingHistory.pocket=%s
-            """ %  sqlvalues(self, archives, status, pocket)
+            """ % sqlvalues(self, archives, status, pocket)
 
         if component:
             clause += (
                 " AND SourcePackagePublishingHistory.component=%s"
-                % sqlvalues(component)
-                )
+                % sqlvalues(component))
 
         orderBy = ['SourcePackageName.name']
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
@@ -1102,8 +1051,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         BinaryPackageRelease.binarypackagename =
             BinaryPackageName.id AND
         BinaryPackageRelease.build =
-            Build.id AND
-        Build.sourcepackagerelease =
+            BinaryPackageBuild.id AND
+        BinaryPackageBuild.source_package_release =
             SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename =
             SourcePackageName.id AND
@@ -1140,8 +1089,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = " AND ".join(query)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
-                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
-                        'SourcePackageRelease', 'SourcePackageName' ]
+                        'BinaryPackageRelease', 'BinaryPackageName',
+                        'BinaryPackageBuild', 'SourcePackageRelease',
+                        'SourcePackageName']
 
         result = BinaryPackagePublishingHistory.select(
             query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
@@ -1168,14 +1118,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
             self.architectures, arch_tag)
 
-        # Use the facility provided by IBuildSet to retrieve the records.
-        return getUtility(IBuildSet).getBuildsByArchIds(
+        # Use the facility provided by IBinaryPackageBuildSet to
+        # retrieve the records.
+        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
 
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator,
-        urgency, changelog_entry, dsc, dscsigningkey, section,
+        urgency, changelog, changelog_entry, dsc, dscsigningkey, section,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=DEFAULT,
@@ -1186,9 +1137,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             version=version, maintainer=maintainer, dateuploaded=dateuploaded,
             builddepends=builddepends, builddependsindep=builddependsindep,
             architecturehintlist=architecturehintlist, component=component,
-            creator=creator, urgency=urgency, changelog_entry=changelog_entry,
-            dsc=dsc, dscsigningkey=dscsigningkey, section=section,
-            copyright=copyright, upload_archive=archive,
+            creator=creator, urgency=urgency, changelog=changelog,
+            changelog_entry=changelog_entry, dsc=dsc,
+            dscsigningkey=dscsigningkey, section=section, copyright=copyright,
+            upload_archive=archive,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format, dsc_binaries=dsc_binaries,
@@ -1280,7 +1232,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BinaryPackageRelease.id,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             BinaryPackagePublishingHistory.dateremoved == None).config(
-                distinct=True)
+                distinct=True).order_by(BinaryPackageName.name)
 
         number_of_updates = 0
         chunk_size = 0
@@ -1356,15 +1308,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         find_spec = (
             DistroSeriesPackageCache,
             BinaryPackageName,
-            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text))
-            )
+            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text)))
         origin = [
             DistroSeriesPackageCache,
             Join(
                 BinaryPackageName,
                 DistroSeriesPackageCache.binarypackagename ==
-                    BinaryPackageName.id
-                )
+                    BinaryPackageName.id),
             ]
 
         # Note: When attempting to convert the query below into straight
@@ -1378,7 +1328,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self),
                    quote(self.distribution.all_distro_archive_ids),
-                   quote(text), quote_like(text))
+                   quote(text), quote_like(text)),
             ).config(distinct=True)
 
         # Create a function that will decorate the results, converting
@@ -1447,16 +1397,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # at best, causing unpredictable corruption), and simply pass it
         # off to the librarian.
 
-        # The PGP signature is stripped from all changesfiles for PPAs
-        # to avoid replay attacks (see bug 159304).
-        if archive.is_ppa:
-            signed_message = signed_message_from_string(changesfilecontent)
-            if signed_message is not None:
-                # Overwrite `changesfilecontent` with the text stripped
-                # of the PGP signature.
-                new_content = signed_message.signedContent
-                if new_content is not None:
-                    changesfilecontent = signed_message.signedContent
+        # The PGP signature is stripped from all changesfiles
+        # to avoid replay attacks (see bugs 159304 and 451396).
+        signed_message = signed_message_from_string(changesfilecontent)
+        if signed_message is not None:
+            # Overwrite `changesfilecontent` with the text stripped
+            # of the PGP signature.
+            new_content = signed_message.signedContent
+            if new_content is not None:
+                changesfilecontent = signed_message.signedContent
 
         changes_file = getUtility(ILibraryFileAliasSet).create(
             changesfilename, len(changesfilecontent),
@@ -1620,6 +1569,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         custom_results = PackageUpload.select(
             custom_where_clause, clauseTables=custom_clauseTables,
             orderBy=custom_orderBy)
+
+        # XXX StuartBishop 2010-03-11 bug=537335
+        # This method is attempting to return ordered results but
+        # failing. It is also referencing non-existing documentation
+        # in the docstring - this method does not exist in the IDistroSeries
+        # interface.
 
         return source_results.union(build_results.union(custom_results))
 
@@ -1937,7 +1892,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasTranslationTemplates`."""
         result = POTemplate.selectBy(distroseries=self,
                                      orderBy=['-priority', 'name'])
-        return shortlist(result, 2000)
+        return result
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
@@ -1976,8 +1931,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return '%s%s' % (self.name, pocketsuffix[pocket])
 
     def isSourcePackageFormatPermitted(self, format):
-        return getUtility(ISourcePackageFormatSelectionSet
-            ).getBySeriesAndFormat(self, format) is not None
+        return getUtility(
+            ISourcePackageFormatSelectionSet).getBySeriesAndFormat(
+                self, format) is not None
 
 
 class DistroSeriesSet:
@@ -1995,8 +1951,8 @@ class DistroSeriesSet:
         result_set = store.using((DistroSeries, POTemplate)).find(
             DistroSeries,
             DistroSeries.hide_all_translations == False,
-            DistroSeries.id == POTemplate.distroseriesID
-            ).config(distinct=True)
+            DistroSeries.id == POTemplate.distroseriesID)
+        result_set = result_set.config(distinct=True)
         # XXX: henninge 2009-02-11 bug=217644: Convert to sequence right here
         # because ResultSet reports a wrong count() when using DISTINCT. Also
         # ResultSet does not implement __len__(), which would make it more

@@ -6,14 +6,9 @@
     >>> logger.setLevel(logging.DEBUG)
 
 The buildd dispatching basically consists of finding a available
-Buildd-slave in IDLE state, push required files to it, then request
-the it to start a build procedure.
-
-Those tasks are implemented by the BuilddMaster and BuilderGroup
-classes.
-
-    >>> from lp.buildmaster.master import BuilddMaster
-    >>> bm = BuilddMaster(logger, transaction)
+slave in IDLE state, pushing any required files to it, then requesting
+that it starts the build procedure. These tasks are implemented by the
+BuilderSet and Builder classes.
 
 Setup the test builder:
 
@@ -62,22 +57,21 @@ Set IBuilder.builderok of all present builders:
 
 Clean up previous BuildQueue results from sampledata:
 
-    >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
+    >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
     >>> lost_job = getUtility(IBuildQueueSet).get(1)
     >>> lost_job.builder.name
     u'bob'
     >>> lost_job.destroySelf()
 
-The BuilddMaster will be set up next. This involves checking the various
-builders and resetting the virtualized ones if needed. Please note that
-'frog' is a PPA builder and was reset due to a communication time-out.
+We'll next use BuilderSet to check the various builders and reset
+the virtualized ones if needed. Please note that 'frog' is a PPA
+builder and was reset due to a communication time-out.
 
-    >>> bm.addDistroArchSeries(hoary_i386)
-    >>> bm.setupBuilders(hoary_i386)
-    WARNING:root.builders.x86:Resetting builder: http://localhost:9221/ -- (111, 'Connection refused')
+    >>> builder_set.checkBuilders(logger, transaction)
+    WARNING:root:Resetting builder: http://localhost:9221/...Connection refused...
     Traceback (most recent call last):
     ...
-    error: (111, 'Connection refused')
+    error: ...Connection refused...
 
 The 'frog' builder was not marked as failed.
 
@@ -138,9 +132,10 @@ The single BuildQueue found is a non-virtual pending build:
 
     >>> job.id
     2
-    >>> from lp.soyuz.interfaces.build import IBuildSet
-    >>> build = getUtility(IBuildSet).getByQueueEntry(job)
-    >>> build.buildstate.name
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+    >>> build.status.name
     'NEEDSBUILD'
     >>> job.builder is None
     True
@@ -160,7 +155,7 @@ Update the SourcePackageReleaseFile corresponding to this job:
     >>> alias_id = librarian_client.addFile(
     ...    'foo.dsc', len(content), StringIO(content), 'application/dsc')
 
-    >>> sprf = build.sourcepackagerelease.files[0]
+    >>> sprf = build.source_package_release.files[0]
     >>> naked_sprf = removeSecurityProxy(sprf)
     >>> naked_sprf.libraryfile = getUtility(ILibraryFileAliasSet)[alias_id]
     >>> flush_database_updates()
@@ -179,8 +174,12 @@ Verify if the job (BuildQueue) was updated appropriately:
     >>> job.builder.id == bob_builder.id
     True
 
-    >>> build = getUtility(IBuildSet).getByQueueEntry(job)
-    >>> build.buildstate.name
+    >>> dispatched_build = getUtility(
+    ...     IBinaryPackageBuildSet).getByQueueEntry(job)
+    >>> dispatched_build == build
+    True
+
+    >>> build.status.name
     'BUILDING'
 
 Shutdown builder, mark the build record as failed and remove the
@@ -188,8 +187,8 @@ buildqueue record, so the build was eliminated:
 
     >>> BuilddSlaveTestSetup().tearDown()
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
-    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> build.status = BuildStatus.FAILEDTOBUILD
     >>> job.destroySelf()
     >>> flush_database_updates()
 
@@ -216,7 +215,7 @@ Create BuildQueue record and inspect some parameters:
 
 The build job's archive requires virtualized builds.
 
-    >>> build = getUtility(IBuildSet).getByQueueEntry(ppa_job)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(ppa_job)
     >>> build.archive.require_virtualized
     True
 
@@ -244,8 +243,8 @@ do this by copying the existing publication in Ubuntu.
     >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
     >>> [old_pub] = SourcePackagePublishingHistory.selectBy(
-    ...    distroseries=build.distroseries,
-    ...    sourcepackagerelease=build.sourcepackagerelease)
+    ...    distroseries=build.distro_series,
+    ...    sourcepackagerelease=build.source_package_release)
     >>> new_pub = old_pub.copyTo(
     ...     old_pub.distroseries, old_pub.pocket, build.archive)
 
@@ -291,7 +290,7 @@ PPA job is building.
     >>> ppa_job.builder.name
     u'bob'
 
-    >>> build.buildstate.name
+    >>> build.status.name
     'BUILDING'
 
 Shutdown builder slave, mark the ppa build record as failed, remove the
@@ -300,7 +299,7 @@ environment is back to the initial state.
 
     >>> BuilddSlaveTestSetup().tearDown()
 
-    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> build.status = BuildStatus.FAILEDTOBUILD
     >>> ppa_job.destroySelf()
     >>> bob_builder.virtualized = False
     >>> flush_database_updates()
@@ -369,7 +368,7 @@ New we can check that the next valid candidate is the just-added
 'pending_job', ensuring that it's published before doing so.
 
     >>> new_pub = old_pub.copyTo(
-    ...     pending_build.distroseries, old_pub.pocket, pending_build.archive)
+    ...     pending_build.distro_series, old_pub.pocket, pending_build.archive)
     >>> candidate = removeSecurityProxy(bob_builder)._findBuildCandidate()
     >>> flush_database_updates()
     >>> candidate.id == pending_job.id
@@ -380,7 +379,7 @@ corresponding BuildQueue record was removed.  This way the security
 builds, created due to missing binary uploads from DAK, will be
 appropriately recorded and ignored.
 
-    >>> print sec_build.buildstate.name
+    >>> print sec_build.status.name
     FAILEDTOBUILD
     >>> print sec_build.buildqueue_record
     None

@@ -3,7 +3,7 @@
 Old unattended Incomplete bugtasks clutter the search results of
 Launchpad Bugs making the bug staff's job difficult. A script is run
 daily to locate unattended Incomplete bugtasks that have not been
-updated in 2 months, and sets their status to Invalid. Only bugtasks
+updated in 2 months, and sets their status to Expired. Only bugtasks
 for projects that use Launchpad to track bugs and have
 enable_bug_expiration set to True will be expired; this rule does not
 apply to Bugs imported from upstream bug trackers. The preconditions
@@ -17,7 +17,7 @@ are:
 6. The bugtask is not assigned to anyone.
 7. The bugtask does not have a milestone.
 
-Bugtasks cannot transition to Invalid automatically unless they meet
+Bugtasks cannot transition to Expired automatically unless they meet
 all the rules stated above.
 
 
@@ -103,13 +103,13 @@ that no bug tasks can be expired.
     True
 
 A bugtask for a product with a bug watch. Note that this bugtask
-has otherwise the same parameters as jokosher_bugtask. The 
+has otherwise the same parameters as jokosher_bugtask. The
 bugwatch prevents expiration, hence this bugtask will not appear
 in the listings of expirable bugtasks below.
 
     >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
     >>> mozilla_bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
-    >>> jokosher_bugtask_watched = create_old_bug('jokosher watched', 
+    >>> jokosher_bugtask_watched = create_old_bug('jokosher watched',
     ...     61, jokosher, external_bugtracker=mozilla_bugtracker)
     >>> jokosher_bugtask_watched.bug.can_expire
     False
@@ -214,7 +214,7 @@ expired. The other bugs do not meet one of the preconditions.
 
     >>> bugtasks = [ubuntu_bugtask, hoary_bugtask, jokosher_bugtask,
     ...     jokosher_bugtask_watched, new_bugtask, assigned_bugtask,
-    ...     confirmed_bugtask, duplicate_bugtask, external_bugtask, 
+    ...     confirmed_bugtask, duplicate_bugtask, external_bugtask,
     ...     milestone_bugtask, recent_bugtask, no_expiration_bugtask]
 
     >>> from lp.bugs.tests.bug import summarize_bugtasks
@@ -419,11 +419,11 @@ days or more.
 
 == Running the script ==
 
-There is one Invalid Bugtasks in sampledata, from the tests above.
+There are no Expired Bugtasks in sampledata, from the tests above.
 
     >>> from canonical.launchpad.database import BugTask
-    >>> BugTask.selectBy(status=BugTaskStatus.INVALID).count()
-    1
+    >>> BugTask.selectBy(status=BugTaskStatus.EXPIRED).count()
+    0
 
     >>> # We want to check the hoary bugtask messages later.
     >>> starting_bug_messages_count = (hoary_bugtask.bug.messages.count())
@@ -447,7 +447,7 @@ config.malone.expiration_dbuser.
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-expire-bugtasks.lock
     INFO    Expiring unattended, INCOMPLETE bugtasks older than
             60 days for projects that use Launchpad Bugs.
     INFO    Found 3 bugtasks to expire.
@@ -464,16 +464,16 @@ config.malone.expiration_dbuser.
 
 == After the script has run ==
 
-There are three Invalid bugtasks. Jokosher, hoary and ubuntu were
+There are three Expired bugtasks. Jokosher, hoary and ubuntu were
 expired by the expiration process. Although ubuntu was never returned
 by findExpirableBugTasks(), it was expired because its master (hoary)
 was expired. The remaining bugtasks are unchanged.
 
     >>> summarize_bugtasks(bugtasks)
     ROLE             EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
-    ubuntu           False     0  Invalid     False     False  False  False
-    hoary            False     0  Invalid     False     False  False  False
-    jokosher         False     0  Invalid     False     False  False  False
+    ubuntu           False     0  Expired     False     False  False  False
+    hoary            False     0  Expired     False     False  False  False
+    jokosher         False     0  Expired     False     False  False  False
     jokosher watched False    61  Incomplete  False     False  False  False
     thunderbird      False     0  Won't Fix   False     False  False  False
     assigned         False    61  Incomplete  True      False  False  False
@@ -483,17 +483,6 @@ was expired. The remaining bugtasks are unchanged.
     milestone        False    61  Incomplete  False     False  True   False
     recent           True     31  Incomplete  False     False  False  False
     no_expire        False    61  Incomplete  False     False  False  False
-
-Only the three test bugtasks were expired in the entire database. The
-evolution task was already Invalid.
-
-    >>> invalid_bugtasks = BugTask.selectBy(status=BugTaskStatus.INVALID)
-    >>> summarize_bugtasks(invalid_bugtasks)
-    ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
-    ubuntu       False     0  Invalid     False     False  False  False
-    hoary        False     0  Invalid     False     False  False  False
-    jokosher     False     0  Invalid     False     False  False  False
-    evolution    False    61  Invalid     False     False  False  False
 
 The bugtasks statusexplanation was updated to explain the change in
 status.
@@ -524,7 +513,7 @@ The bug's activity log was updated too with the status change.
     >>> print "%s  %s  %s  %s" % (
     ...     activity.person.displayname, activity.whatchanged,
     ...     activity.oldvalue, activity.newvalue)
-    Launchpad Janitor  Ubuntu Hoary: status  Incomplete  Invalid
+    Launchpad Janitor  Ubuntu Hoary: status  Incomplete  Expired
 
 
 == enable_bug_expiration ==

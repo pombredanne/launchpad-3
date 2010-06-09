@@ -108,7 +108,7 @@ XXX cprov 20051209: need to build a broken upload to test it properly
   ...         print source.sourcepackagerelease.name
   ...     pub_records = item.realiseUpload(mock_logger)
   ed
-  DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary
+  DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary in the primary archive
   DEBUG: Publishing build to ubuntu/hoary/i386
   DEBUG: ... ed/0.2-20 (Arch Specific)
 
@@ -692,7 +692,12 @@ As mentioned above, values returned by 'getQueueItems' matching a given
 
 Sampledata contains only a i386 binary exactly matching 'pmount 0.1-1'.
 
+  >>> from operator import attrgetter
   >>> def print_queue_items(queue_items):
+  ...     # XXX StuartBishop 20100311 bug=537335
+  ...     # Sort items here as getQueueItems fails to do this.
+  ...     queue_items = sorted(list(queue_items),
+  ...         key=attrgetter('displayarchs', 'displayname', 'displayversion'))
   ...     for queue_item in queue_items:
   ...         print "%s  %s  %s" % (
   ...             queue_item.displayname, queue_item.displayversion,
@@ -751,6 +756,9 @@ It should allow the acceptance of 'pmount 0.1-1' source, even if there
 is a 'pmount 0.1-1' binary upload already accepted in its context.
 (see bug #280700 for more information about this policy decision)
 
+  >>> # XXX StuartBishop 20100311 bug=537335: Need to order results here.
+  >>> queue_items = sorted(list(queue_items),
+  ...     key=attrgetter('displayarchs'))
   >>> [binary_item, source_item] = queue_items
   >>> binary_item.setAccepted()
 
@@ -999,7 +1007,7 @@ build once it was accepted, using 'queue-tool' or via the Web UI.
   >>> print build.title
   i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
 
-  >>> print build.buildstate.name
+  >>> print build.status.name
   NEEDSBUILD
 
   >>> print build.buildqueue_record.lastscore

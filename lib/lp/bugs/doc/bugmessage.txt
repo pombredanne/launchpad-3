@@ -141,7 +141,7 @@ an external bug tracker.
 == Last message date ==
 
 For each bug, we cache the date of the last message linked to it using
-the sttribute `date_last_message` in order to optimize searches the need
+the attribute `date_last_message` in order to optimize searches the need
 to compare this value for every bug in a large set.
 
     >>> test_message = bug_one.newMessage(

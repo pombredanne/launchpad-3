@@ -36,18 +36,21 @@ package, and the number of open bugs in various states.
     ...     print_package_counts(package_count)
     open: 3
     open_critical: 0
+    open_high: 0
     open_inprogress: 0
     open_unassigned: 2
     package: mozilla-firefox (Debian)
     <BLANKLINE>
     open: 1
     open_critical: 0
+    open_high: 0
     open_inprogress: 0
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
     <BLANKLINE>
     open: 0
     open_critical: 0
+    open_high: 0
     open_inprogress: 0
     open_unassigned: 0
     package: pmount (Ubuntu)
@@ -71,6 +74,7 @@ open_unassigned count will increase by one.
     >>> print_package_counts(package_counts[1])
     open: 2
     open_critical: 0
+    open_high: 0
     open_inprogress: 0
     open_unassigned: 2
     package: mozilla-firefox (Ubuntu)
@@ -90,6 +94,7 @@ If we mark the bug as critical, the open_critical count will increase.
     >>> print_package_counts(package_counts[1])
     open: 2
     open_critical: 1
+    open_high: 0
     open_inprogress: 0
     open_unassigned: 2
     package: mozilla-firefox (Ubuntu)
@@ -105,6 +110,7 @@ decrease.
     >>> print_package_counts(package_counts[1])
     open: 2
     open_critical: 1
+    open_high: 0
     open_inprogress: 0
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
@@ -121,6 +127,7 @@ If we mark the bug as In Progress, the open_inprogress will increase.
     >>> print_package_counts(package_counts[1])
     open: 2
     open_critical: 1
+    open_high: 0
     open_inprogress: 1
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
@@ -141,6 +148,7 @@ open bug, even though there are two.
     >>> print_package_counts(package_counts[1])
     open: 1
     open_critical: 0
+    open_high: 0
     open_inprogress: 0
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
@@ -152,6 +160,7 @@ Foo Bar still can see all the bugs, though.
     >>> print_package_counts(package_counts[1])
     open: 2
     open_critical: 1
+    open_high: 0
     open_inprogress: 1
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
@@ -168,6 +177,7 @@ Duplicates bugs are omitted from the counts.
     >>> print_package_counts(package_counts[1])
     open: 1
     open_critical: 0
+    open_high: 0
     open_inprogress: 0
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)

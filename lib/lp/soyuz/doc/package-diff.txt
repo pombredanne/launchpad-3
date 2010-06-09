@@ -87,7 +87,7 @@ IPackageDiff offers a property that return the 'title' of the diff
 request.
 
     >>> print package_diff.title
-    0.1-1 to 0.1-2
+    diff from 0.1-1 to 0.1-2
 
 IPackageDiff has a property which indicates whether a diff content
 should be private or not. See section 'PackageDiff privacy' below.
@@ -102,8 +102,8 @@ error:
     ...     requester=cprov, to_sourcepackagerelease=pmount_to)
     Traceback (most recent call last):
     ...
-    PackageDiffAlreadyRequested: 0.1-1 to 0.1-2 was already requested
-    by Celso Providelo
+    PackageDiffAlreadyRequested: diff from 0.1-1 to 0.1-2 was already
+    requested by Celso Providelo
 
 
 == Diff request for source uploads ==
@@ -167,7 +167,7 @@ requests a diff, since there is a suitable ancestry.
 
     >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    1.0-1 to 1.0-8
+    diff from 1.0-1 to 1.0-8
 
 We will release ubuntu/hoary so we can upload to post-RELEASE pockets
 and ubuntu/breezy-autotest.
@@ -185,7 +185,7 @@ the last published version in the RELEASE pocket.
 
     >>> [diff] = biscuit_nine_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    1.0-8 to 1.0-9
+    diff from 1.0-8 to 1.0-9
 
 Now version 1.0-12 gets uploaded to the just opened distroseries. It
 gets diffed against the last version present in the RELEASE pocket of
@@ -199,7 +199,7 @@ present in ubuntu distribution, the hoary-updates one.
 
     >>> [diff] = biscuit_twelve_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    1.0-8 to 1.0-12
+    diff from 1.0-8 to 1.0-12
 
 The subsequent version uploaded to hoary-updates will get a diff
 against 1.0-9.
@@ -211,7 +211,7 @@ against 1.0-9.
 
     >>> [diff] = biscuit_ten_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    1.0-9 to 1.0-10
+    diff from 1.0-9 to 1.0-10
 
 An upload to other pocket, in this case hoary-proposed, will get a diff
 against the last version in the RELEASE pocket.
@@ -223,7 +223,7 @@ against the last version in the RELEASE pocket.
 
     >>> [diff] = biscuit_eleven_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    1.0-8 to 1.0-11
+    diff from 1.0-8 to 1.0-11
 
 For testing diffs in the PPA context we need to activate the PPA for
 Foo Bar.
@@ -245,7 +245,7 @@ version in the PRIMARY archive in the RELEASE pocket.
 
     >>> [diff] = biscuit_two_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    1.0-8 (in Ubuntu) to 1.0-2
+    diff from 1.0-8 (in Ubuntu) to 1.0-2
 
 A subsequent upload in the PPA context will get a diff against 1.0-2,
 the version found in its context.
@@ -257,7 +257,7 @@ the version found in its context.
 
     >>> [diff] = biscuit_three_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    1.0-2 to 1.0-3
+    diff from 1.0-2 to 1.0-3
 
 
 == Performing a Diff ==
@@ -422,25 +422,25 @@ stored.
     ...               diff.date_fulfilled is not None, id_diff
 
     >>> print_diffs(packagediff_set)
-    biscuit 1.0-2 to 1.0-3               False   0
-    biscuit 1.0-8 (in Ubuntu) to 1.0-2   False  -1
-    biscuit 1.0-8 to 1.0-11              False  -2
-    biscuit 1.0-9 to 1.0-10              False  -3
-    biscuit 1.0-8 to 1.0-12              False  -4
-    biscuit 1.0-8 to 1.0-9               False  -5
-    biscuit 1.0-1 to 1.0-8               True   -6
-    pmount 0.1-1 to 0.1-2                False  -7
+    biscuit diff from 1.0-2 to 1.0-3               False   0
+    biscuit diff from 1.0-8 (in Ubuntu) to 1.0-2   False  -1
+    biscuit diff from 1.0-8 to 1.0-11              False  -2
+    biscuit diff from 1.0-9 to 1.0-10              False  -3
+    biscuit diff from 1.0-8 to 1.0-12              False  -4
+    biscuit diff from 1.0-8 to 1.0-9               False  -5
+    biscuit diff from 1.0-1 to 1.0-8               True   -6
+    pmount diff from 0.1-1 to 0.1-2                False  -7
 
 Or only the PackageDiffs not yet fullfilled.
 
     >>> print_diffs(packagediff_set.getPendingDiffs())
-    pmount 0.1-1 to 0.1-2                False   0
-    biscuit 1.0-8 to 1.0-9               False   2
-    biscuit 1.0-8 to 1.0-12              False   3
-    biscuit 1.0-9 to 1.0-10              False   4
-    biscuit 1.0-8 to 1.0-11              False   5
-    biscuit 1.0-8 (in Ubuntu) to 1.0-2   False   6
-    biscuit 1.0-2 to 1.0-3               False   7
+    pmount diff from 0.1-1 to 0.1-2                False   0
+    biscuit diff from 1.0-8 to 1.0-9               False   2
+    biscuit diff from 1.0-8 to 1.0-12              False   3
+    biscuit diff from 1.0-9 to 1.0-10              False   4
+    biscuit diff from 1.0-8 to 1.0-11              False   5
+    biscuit diff from 1.0-8 (in Ubuntu) to 1.0-2   False   6
+    biscuit diff from 1.0-2 to 1.0-3               False   7
 
 Note that the iteration over all PackageDiffs is sorted by descending
 database ID, i.e. newest first, and getPendingDiffs() results are
@@ -466,8 +466,8 @@ ID:
     >>> sprs = [biscuit_eight_pub.sourcepackagerelease,
     ...         biscuit_nine_pub.sourcepackagerelease]
     >>> print_diffs(packagediff_set.getDiffsToReleases(sprs))
-    biscuit 1.0-1 to 1.0-8 True 0
-    biscuit 1.0-8 to 1.0-9 False 1
+    biscuit diff from 1.0-1 to 1.0-8 True 0
+    biscuit diff from 1.0-8 to 1.0-9 False 1
 
 The method will return an empty result if no source package releases
 are passed to it:
@@ -514,7 +514,7 @@ if it builds correctly.
     ...     '1.0-1', archive=foobar.archive)
     >>> [diff] = staging_ppa_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    1.0-1 (in Ubuntu) to 1.0-1
+    diff from 1.0-1 (in Ubuntu) to 1.0-1
 
 Commit the transaction for make the uploaded files available in
 librarian:
@@ -567,7 +567,7 @@ version before uploading it again to Foo Bar's PPA.
     ...     '1.0-1', archive=foobar.archive)
     >>> [diff] = collision_ppa_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    1.0-1 (in Ubuntu) to 1.0-1
+    diff from 1.0-1 (in Ubuntu) to 1.0-1
 
 Note that, despite of having the same name and version, the diff.gz
 and dsc files have different contents.
@@ -654,7 +654,7 @@ uploaded source.
 
     >>> [broken_diff] = pub.sourcepackagerelease.package_diffs
     >>> print broken_diff.title
-    1.0-1 (in Ubuntu) to 1.0-2
+    diff from 1.0-1 (in Ubuntu) to 1.0-2
 
 With a tainted DSC 'debdiff' cannot do much and fails, resulting in a
 FAILED request (empty 'diff_content' and 'date_fullfilled').
@@ -710,7 +710,7 @@ explain how this mechanism works.
 
     >>> [diff] = biscuit_two_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-     1.0-8 (in Ubuntu) to 1.0-2
+    diff from 1.0-8 (in Ubuntu) to 1.0-2
 
 The chosen diff is for a source uploaded to a public PPA.
 

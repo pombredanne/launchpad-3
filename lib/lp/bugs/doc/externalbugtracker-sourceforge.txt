@@ -160,10 +160,12 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
 Our SourceForge ExternalBugTracker can now process, and retrieve a
 remote status for, the bug watch that we have created.
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> transaction.commit()
+
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> sourceforge = TestSourceForge(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, example_bug_tracker.watches)
@@ -203,6 +205,8 @@ a time so as to avoid tripping SourceForge's rate limiting filters. So
 even if we pass it 10 bug watches to update only one will actually be
 updated. In this case it will be the first bug watch that hasn't yet
 been checked.
+
+    >>> transaction.commit()
 
     >>> sourceforge.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(

@@ -206,7 +206,7 @@ Product series gets the tags of the parent product.
     >>> firefox.getSeries('1.0').official_bug_tags
     [u'bar', u'foo']
 
-Project series gets the union of all the tags available for its products.
+Project group gets the union of all the tags available for its products.
 
     >>> login('test@canonical.com')
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet

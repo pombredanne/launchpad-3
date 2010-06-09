@@ -16,7 +16,6 @@ __all__ = [
     'AsyncVirtualTransport',
     'get_chrooted_transport',
     'get_readonly_transport',
-    '_MultiServer',
     'SynchronousAdapter',
     'TranslationError',
     ]
@@ -30,7 +29,8 @@ from bzrlib.transport import (
     unregister_transport)
 
 from twisted.internet import defer
-from canonical.twistedsupport import extract_result, gatherResults
+
+from lp.services.twistedsupport import extract_result, gatherResults
 
 
 class TranslationError(BzrError):
@@ -66,25 +66,6 @@ def get_readonly_transport(transport):
     if transport.base.startswith('readonly+'):
         return transport
     return get_transport('readonly+' + transport.base)
-
-
-class _MultiServer(Server):
-    """Server that wraps around multiple servers."""
-
-    def __init__(self, *servers):
-        self._servers = servers
-
-    def start_server(self):
-        for server in self._servers:
-            server.start_server()
-
-    def destroy(self):
-        for server in reversed(self._servers):
-            server.destroy()
-
-    def stop_server(self):
-        for server in reversed(self._servers):
-            server.stop_server()
 
 
 class AsyncVirtualTransport(Transport):

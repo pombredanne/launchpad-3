@@ -34,12 +34,12 @@ from lp.archiveuploader.utils import (
     re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
     re_extract_src_version, determine_source_file_type)
 from canonical.encoding import guess as guess_encoding
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import (
@@ -806,7 +806,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             build = sourcepackagerelease.getBuildByArch(
                 dar, self.policy.archive)
             if build is not None:
-                build.buildstate = BuildStatus.FULLYBUILT
+                build.status = BuildStatus.FULLYBUILT
                 self.logger.debug("Updating build for %s: %s" % (
                     dar.architecturetag, build.id))
             else:
@@ -817,12 +817,12 @@ class BaseBinaryUploadFile(PackageUploadFile):
                     status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
         else:
-            build = getUtility(IBuildSet).getByBuildID(build_id)
+            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
             self.logger.debug("Build %s found" % build.id)
             # Ensure gathered binary is related to a FULLYBUILT build
             # record. It will be check in slave-scanner procedure to
             # certify that the build was processed correctly.
-            build.buildstate = BuildStatus.FULLYBUILT
+            build.status = BuildStatus.FULLYBUILT
             # Also purge any previous failed upload_log stored, so its
             # content can be garbage-collected since it's not useful
             # anymore.
@@ -831,9 +831,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense (ie. is not for the right
         # source package).
-        if (build.sourcepackagerelease != sourcepackagerelease or
+        if (build.source_package_release != sourcepackagerelease or
             build.pocket != self.policy.pocket or
-            build.distroarchseries != dar or
+            build.distro_arch_series != dar or
             build.archive != self.policy.archive):
             raise UploadError(
                 "Attempt to upload binaries specifying "

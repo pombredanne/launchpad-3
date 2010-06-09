@@ -16,12 +16,16 @@ __all__ = []
 
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
+from lazr.restful.fields import Reference
 
 from canonical.launchpad.components.apihelpers import (
     patch_entry_return_type, patch_collection_property,
-    patch_collection_return_type, patch_plain_parameter_type,
-    patch_choice_parameter_type, patch_reference_property)
+    patch_collection_return_type, patch_list_parameter_type,
+    patch_plain_parameter_type, patch_choice_parameter_type,
+    patch_reference_property)
 
+from canonical.launchpad.interfaces.message import (
+    IIndexedMessage, IMessage, IUserToUserEmail)
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscription, IStructuralSubscriptionTarget)
 from lp.bugs.interfaces.bug import IBug, IFrontPageBugAddForm
@@ -31,33 +35,38 @@ from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuild)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
-from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
+from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.hasbranches import (
-    IHasBranches, IHasMergeProposals, IHasRequestedReviews)
+    IHasBranches, IHasCodeImports, IHasMergeProposals, IHasRequestedReviews)
+from lp.code.interfaces.sourcepackagerecipe import (
+    ISourcePackageRecipe)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild)
+from lp.hardwaredb.interfaces.hwdb import HWBus, IHWSubmission
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson, IPersonPublic
-from lp.hardwaredb.interfaces.hwdb import HWBus, IHWSubmission
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermission)
@@ -73,9 +82,9 @@ from lp.soyuz.interfaces.packageset import IPackageset
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-from canonical.launchpad.interfaces.message import (
-    IIndexedMessage, IMessage, IUserToUserEmail)
+from lp.translations.interfaces.pofile import IPOFile
+from lp.translations.interfaces.potemplate import (
+    IPOTemplate, IPOTemplateSharingSubset, IPOTemplateSubset)
 
 
 IBranch['bug_branches'].value_type.schema = IBugBranch
@@ -96,6 +105,7 @@ patch_plain_parameter_type(
 patch_plain_parameter_type(
     IBranch, 'setTarget', 'source_package', ISourcePackage)
 patch_reference_property(IBranch, 'sourcepackage', ISourcePackage)
+patch_reference_property(IBranch, 'code_import', ICodeImport)
 
 IBranch['spec_links'].value_type.schema = ISpecificationBranch
 IBranch['subscribe'].queryTaggedValue(
@@ -129,6 +139,10 @@ patch_collection_return_type(
     IHasMergeProposals, 'getMergeProposals', IBranchMergeProposal)
 patch_collection_return_type(
     IHasRequestedReviews, 'getRequestedReviews', IBranchMergeProposal)
+patch_entry_return_type(
+    IHasCodeImports, 'newCodeImport', ICodeImport)
+patch_plain_parameter_type(
+    IHasCodeImports, 'newCodeImport', 'owner', IPerson)
 
 # IBugTask
 
@@ -164,7 +178,7 @@ IHasBuildRecords['getBuildRecords'].queryTaggedValue(
         'params']['build_state'].vocabulary = BuildStatus
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
-        'return_type'].value_type.schema = IBuild
+        'return_type'].value_type.schema = IBinaryPackageBuild
 
 ISourcePackage['distroseries'].schema = IDistroSeries
 ISourcePackage['productseries'].schema = IProductSeries
@@ -180,11 +194,19 @@ ISourcePackage['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
 patch_reference_property(ISourcePackage, 'distribution', IDistribution)
 
+# IPerson
+patch_entry_return_type(IPerson, 'createRecipe', ISourcePackageRecipe)
+patch_list_parameter_type(IPerson, 'createRecipe', 'distroseries',
+                          Reference(schema=IDistroSeries))
+
+patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
+
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 
 # publishing.py
 ISourcePackagePublishingHistoryPublic['getBuilds'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBuild
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = (
+        IBinaryPackageBuild)
 ISourcePackagePublishingHistoryPublic[
     'getPublishedBinaries'].queryTaggedValue(
         LAZR_WEBSERVICE_EXPORTED)[
@@ -248,16 +270,27 @@ patch_choice_parameter_type(
 patch_plain_parameter_type(
     IArchive, 'isSourceUploadAllowed', 'distroseries', IDistroSeries)
 patch_plain_parameter_type(
+    IArchive, '_checkUpload', 'distroseries', IDistroSeries)
+patch_choice_parameter_type(
+    IArchive, '_checkUpload', 'pocket', PackagePublishingPocket)
+patch_plain_parameter_type(
     IArchive, 'newPackagesetUploader', 'packageset', IPackageset)
 patch_plain_parameter_type(
     IArchive, 'getUploadersForPackageset', 'packageset', IPackageset)
 patch_plain_parameter_type(
     IArchive, 'deletePackagesetUploader', 'packageset', IPackageset)
 
+
+# IBuildFarmJob
+IBuildFarmJob['status'].vocabulary = BuildStatus
+IBuildFarmJob['buildqueue_record'].schema = IBuildQueue
+
 # IDistribution
 IDistribution['series'].value_type.schema = IDistroSeries
 patch_reference_property(
     IDistribution, 'currentseries', IDistroSeries)
+patch_entry_return_type(
+    IDistribution, 'getArchive', IArchive)
 patch_entry_return_type(
     IDistribution, 'getSeries', IDistroSeries)
 patch_collection_return_type(
@@ -293,6 +326,7 @@ patch_plain_parameter_type(
     IDistroSeries, 'getPackageUploads', 'archive', IArchive)
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
+patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
@@ -322,10 +356,9 @@ patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
 
-IBuildBase['buildstate'].vocabulary = BuildStatus
-
 patch_reference_property(
-    ISourcePackageRelease, 'source_package_recipe_build', ISourcePackageRecipeBuild)
+    ISourcePackageRelease, 'source_package_recipe_build',
+    ISourcePackageRecipeBuild)
 
 # IHasBugs
 patch_plain_parameter_type(
@@ -342,6 +375,8 @@ patch_plain_parameter_type(
     IHasBugs, 'searchTasks', 'owner', IPerson)
 patch_plain_parameter_type(
     IHasBugs, 'searchTasks', 'affected_user', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'structural_subscriber', IPerson)
 
 # IBugTask
 patch_reference_property(IBugTask, 'owner', IPerson)
@@ -374,3 +409,17 @@ patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
 
 # IBugTracker
 patch_reference_property(IBugTracker, 'owner', IPerson)
+
+# IPOTemplate
+patch_collection_property(IPOTemplate, 'pofiles', IPOFile)
+patch_reference_property(IPOTemplate, 'product', IProduct)
+
+# IPOTemplateSubset
+patch_reference_property(IPOTemplateSubset, 'distroseries', IDistroSeries)
+patch_reference_property(IPOTemplateSubset, 'productseries', IProductSeries)
+
+# IPOTemplateSharingSubset
+patch_reference_property(IPOTemplateSharingSubset, 'product', IProduct)
+
+# IProductSeries
+patch_reference_property(IProductSeries, 'product', IProduct)

@@ -33,6 +33,8 @@ At the top level we provide a collection of bugs.
   heat: 0
   id: 11
   latest_patch_uploaded: None
+  linked_branches_collection_link: u'http://.../bugs/11/linked_branches'
+  message_count: 7
   messages_collection_link: u'http://.../bugs/11/messages'
   name: None
   number_of_duplicates: 0
@@ -269,7 +271,7 @@ We can add a new message to a bug by calling the newMessage method.
   ...     content='This is a new message added through the webservice API.')
   HTTP/1.1 201 Created...
   Content-Length: 0
-  Content-Type: text/plain
+  ...
   Location: http://api.launchpad.dev/beta/firefox/+bug/5/comments/1
   ...
 
@@ -288,7 +290,7 @@ We don't have to submit a subject when we add a new message.
   ...     content='This is a new message with no subject.')
   HTTP/1.1 201 Created...
   Content-Length: 0
-  Content-Type: text/plain
+  ...
   Location: http://api.launchpad.dev/beta/firefox/+bug/5/comments/2
   ...
 
@@ -338,14 +340,7 @@ data in a bug task is derived from the bug.
   self_link: u'http://api.../debian/+source/mozilla-firefox/+bug/1'
   status: u'Confirmed'
   target_link: u'http://api.../debian/+source/mozilla-firefox'
-  task_age: ...
   title: u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"'
-
-Because task age is a dynamic calculation between now and the date_created
-we will just verify that an integer is returned.
-
-  >>> print type(bug_one_bugtasks[0]['task_age'])
-  <type 'int'>
 
 The collection of bug tasks is not exposed as a resource:
 
@@ -363,7 +358,7 @@ It's possible to change the task's assignee.
   http://.../~cprov
 
 
-The task's importance can be modified directly...
+The task's importance can be modified directly.
 
   >>> body = webservice.get(bugtask_path).jsonBody()
   >>> body['importance']
@@ -377,20 +372,6 @@ The task's importance can be modified directly...
   >>> body['importance']
   u'High'
 
-...or through a named operation.
-
-  >>> print webservice.named_post(
-  ...     bugtask_path, 'transitionToImportance', importance='Low')
-  HTTP/1.1 200 Ok
-  ...
-  Content-Type: application/json
-  ...
-  <BLANKLINE>
-  null
-  >>> body = webservice.get(bugtask_path).jsonBody()
-  >>> body['importance']
-  u'Low'
-
 Only bug supervisors or people who can otherwise edit the bugtask's
 pillar are authorised to edit the importance.
 
@@ -400,10 +381,9 @@ pillar are authorised to edit the importance.
 
   >>> body = webservice.get(bugtask_path).jsonBody()
   >>> body['importance']
-  u'Low'
+  u'High'
 
-The task's status is another aspect of the task that can be modified
-either directly or through a named operation.
+The task's status can also be modified directly.
 
   >>> print webservice.get(bugtask_path).jsonBody()['status']
   Confirmed
@@ -415,21 +395,14 @@ either directly or through a named operation.
   >>> print webservice.get(bugtask_path).jsonBody()['status']
   Fix Committed
 
-  >>> print webservice.named_post(
-  ...     bugtask_path, 'transitionToStatus', status='New')
-  HTTP/1.1 200 Ok...
-
-  >>> print webservice.get(bugtask_path).jsonBody()['status']
-  New
-
 If an error occurs during a request that sets both 'status' and
 'importance', neither one will be set.
 
   >>> task = webservice.get(bugtask_path).jsonBody()
   >>> print task['status']
-  New
+  Fix Committed
   >>> print task['importance']
-  Low
+  High
 
   >>> patch = {u'importance': 'High', u'status': u'No Such Status'}
   >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
@@ -437,12 +410,11 @@ If an error occurs during a request that sets both 'status' and
 
   >>> task = webservice.get(bugtask_path).jsonBody()
   >>> print task['status']
-  New
+  Fix Committed
   >>> print task['importance']
-  Low
+  High
 
-Like the importance, the milestone can be set either directly or via a
-named operation, and only by appropriately privileged users.
+The milestone can only be set by appropriately privileged users.
 
   >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
   None
@@ -455,20 +427,12 @@ named operation, and only by appropriately privileged users.
   >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
   http://.../debian/+milestone/3.1
 
-  >>> print webservice.named_post(
-  ...     bugtask_path, 'transitionToMilestone',
-  ...     milestone=webservice.getAbsoluteUrl('/debian/+milestone/3.1-rc1'))
-  HTTP/1.1 200 Ok...
-
-  >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
-  http://.../debian/+milestone/3.1-rc1
-
   >>> print user_webservice.patch(
   ...     bugtask_path, 'application/json', dumps(patch))
   HTTP/1.1 401 Unauthorized...
 
   >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
-  http://.../debian/+milestone/3.1-rc1
+  http://.../debian/+milestone/3.1
 
 We can change the task's target. Here we change the task's target from
 the mozilla-firefox package to alsa-utils.
@@ -853,12 +817,14 @@ We can get the collection of subscriptions to a bug.
   ...     pprint_entry(entry)
   ...     print
   bug_link: u'http://.../bugs/1'
+  date_created: u'2006-10-16T18:31:43.156104+00:00'
   person_link: u'http://.../~name12'
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/name12'
   subscribed_by_link: u'http://.../~janitor'
 
   bug_link: u'http://.../bugs/1'
+  date_created: u'2006-10-16T18:31:43.154816+00:00'
   person_link: u'http://.../~stevea'
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/stevea'
@@ -870,6 +836,7 @@ Each subscription can be accessed individually.
   ...     subscription_entries[1]['self_link']).jsonBody()
   >>> pprint_entry(subscription)
   bug_link: u'http://.../bugs/1'
+  date_created: u'2006-10-16T18:31:43.154816+00:00'
   person_link: u'http://.../~stevea'
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/stevea'
@@ -885,6 +852,7 @@ We can also create new subscriptions.
 
     >>> new_subscription = webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
+    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~cprov')).jsonBody()
     >>> pprint_entry(new_subscription)
     bug_link: ...
@@ -937,6 +905,7 @@ this, the group must first be re-subscribed.
 
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
+    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
 
@@ -980,6 +949,7 @@ himself.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
+    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~salgado'))
     HTTP/1.1 200 Ok...
 
@@ -1010,6 +980,7 @@ To demonstrate, first subscribe Ubuntu Team to bug_six, the duplicate.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
+    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
     >>> bug_six_subscriptions = webservice.get(
@@ -1059,6 +1030,7 @@ report described by the bugwatch.
   date_created: u'2004-10-04T01:00:00+00:00'
   date_last_changed: u'2004-10-04T01:00:00+00:00'
   date_last_checked: u'2004-10-04T01:00:00+00:00'
+  date_next_checked: None
   last_error_type: None
   owner_link: u'http://.../~mark'
   remote_bug: u'2000'
@@ -1099,7 +1071,6 @@ But we can't change other things, like the URL.
   >>> print response
   HTTP/1.1 400 Bad Request...
   Content-Length: 47
-  Content-Type: text/plain
   ...
   <BLANKLINE>
   url: You tried to modify a read-only attribute.
@@ -1115,7 +1086,7 @@ associated with a bug.
   >>> print response
   HTTP/1.1 201 Created...
   Content-Length: 0
-  Content-Type: text/plain
+  ...
   Location: http://.../bugs/1/+watch/13
   ...
 
@@ -1130,6 +1101,7 @@ Following the redirect, we can see the new bug watch:
   date_created: u'...'
   date_last_changed: None
   date_last_checked: None
+  date_next_checked: None
   last_error_type: None
   owner_link: u'http://.../~salgado'
   remote_bug: u'9876'
@@ -1177,7 +1149,7 @@ We can change various aspects of bug trackers.
   >>> print response
   HTTP/1.1 301 Moved Permanently...
   Content-Length: 0
-  Content-Type: text/plain
+  ...
   Location: http://.../bugs/bugtrackers/bob
   ...
 
@@ -1187,7 +1159,7 @@ the bug tracker can be found has changed.
   >>> print webservice.get(bug_tracker['self_link'])
   HTTP/1.1 404 Not Found...
   Content-Length: ...
-  Content-Type: text/plain
+  ...
   X-Lazr-Oopsid: OOPS-...
   <BLANKLINE>
   Object: <...BugTrackerSet object at ...>, name: u'mozilla.org'
@@ -1260,7 +1232,7 @@ An attachment can be added to the bug:
   >>> print response
   HTTP/1.1 201 Created...
   Content-Length: 0
-  Content-Type: text/plain
+  ...
   Location: http://.../bugs/1/+attachment/1
   ...
 
@@ -1688,7 +1660,7 @@ bugs:
     owner_link: u'http://api.launchpad.dev/beta/~testuser1'
     ...
 
-`testuser2` is subscribed to `testbugs2`, so this bug is related to this
+`testuser2` is subscribed to `testbug2`, so this bug is related to this
 user:
 
     >>> related = webservice.named_get(
@@ -1710,17 +1682,44 @@ empty:
     total_size: 0
     ---
 
-You are not allowed to overwrite all user related parameter in the same
-query, because in this case this bug will no be related to the person
-anymore. In this case a `400 Bad Request`-Error will be returned
+You are not allowed to overwrite all user related parameters in the same
+query, because this bug will not be related to the person anymore. In this
+case a `400 Bad Request`-Error will be returned.
 
     >>> name12 = webservice.get("/~name12").jsonBody()
     >>> print webservice.named_get(
     ...     '/~name16', 'searchTasks', assignee=name12['self_link'],
     ...     owner=name12['self_link'], bug_subscriber=name12['self_link'],
-    ...     bug_commenter=name12['self_link']
+    ...     bug_commenter=name12['self_link'],
+    ...     structural_subscriber=name12['self_link']
     ...     )
     HTTP/1.1 400 Bad Request...
+
+
+Searching for bugs that are linked to branches
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We can search for bugs that are linked to branches...
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/firefox', 'searchTasks',
+    ...     linked_branches='Show only Bugs with linked Branches')
+    >>> for bugtask in bugtasks.jsonBody()['entries']:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/firefox/+bug/5
+    http://api.launchpad.dev/beta/firefox/+bug/4
+
+...and we can search for bugs that are not linked to branches.
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/firefox', 'searchTasks',
+    ...     linked_branches='Show only Bugs without linked Branches')
+    >>> for bugtask in bugtasks.jsonBody()['entries']:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/firefox/+bug/1
+    http://api.launchpad.dev/beta/firefox/+bug/16
+    http://api.launchpad.dev/beta/firefox/+bug/20
+    http://api.launchpad.dev/beta/firefox/+bug/22
 
 
 Affected users
@@ -1965,3 +1964,35 @@ bug.unlinkHWSubmission().
     >>> for submission in linked_submissions['entries']:
     ...     print submission['submission_key']
     private-submission
+
+Bug branches
+------------
+
+For every bug we can look at the branches linked to it.
+
+    >>> bug_four = webservice.get("/bugs/4").jsonBody()
+    >>> bug_four_branches_url = bug_four['linked_branches_collection_link']
+    >>> bug_four_branches = webservice.get(bug_four_branches_url).jsonBody()
+    >>> pprint_collection(bug_four_branches)
+    resource_type_link: u'http://.../#bug_branch-page-resource'
+    start: 0
+    total_size: 2
+    ---
+    branch_link: u'http://.../~mark/firefox/release-0.9.2'
+    bug_link: u'http://.../bugs/4'
+    resource_type_link: u'http://.../#bug_branch'
+    self_link: u'http://.../~mark/firefox/release-0.9.2/+bug/4'
+    ---
+    branch_link: u'http://.../~name12/firefox/main'
+    bug_link: u'http://.../bugs/4'
+    resource_type_link: u'http://.../beta/#bug_branch'
+    self_link: u'http://.../~name12/firefox/main/+bug/4'
+    ---
+
+For every branch we can also look at the bugs linked to it.
+
+    >>> branch_entry = bug_four_branches['entries'][0]
+    >>> bug_link = webservice.get(
+    ...     branch_entry['bug_link']).jsonBody()
+    >>> print bug_link['self_link']
+    http://.../bugs/4

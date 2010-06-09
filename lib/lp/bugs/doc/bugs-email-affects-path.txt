@@ -25,7 +25,7 @@ The same exception is raised also when the name contains slashes:
     BugTargetNotFound: There is no project named 'non-existant'
                        registered in Launchpad.
 
-Even though a Project is an IBugTarget, it's not possible to file bugs
+Even though a ProjectGroup is an IBugTarget, it's not possible to file bugs
 on it, so an exception with an appropriate error message is raised.
 
     >>> AffectsEmailCommand.getBugTarget('gnome')

@@ -23,8 +23,9 @@ from zope.component import getUtility
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
 from canonical.launchpad import scripts
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from canonical.launchpad.webapp.interaction import (
+    ANONYMOUS, setupInteractionByEmail)
 from canonical.lp import initZopeless
-from lp.testing import ANONYMOUS
 
 
 LOCK_PATH = "/var/lock/"
@@ -111,13 +112,18 @@ class LaunchpadScript:
 
         self.dbuser = dbuser
 
+        if self.description is None:
+            description = self.__doc__
+        else:
+            description = self.description
+
         # The construction of the option parser is a bit roundabout, but
         # at least it's isolated here. First we build the parser, then
         # we add options that our logger object uses, then call our
         # option-parsing hook, and finally pull out and store the
         # supplied options and args.
         self.parser = OptionParser(usage=self.usage,
-                                   description=self.description)
+                                   description=description)
         scripts.logger_options(self.parser, default=self.loglevel)
         self.parser.add_option(
             '--profile', dest='profile', metavar='FILE', help=(
@@ -159,18 +165,7 @@ class LaunchpadScript:
 
     def login(self, user):
         """Super-convenience method that avoids the import."""
-        # This import is actually quite expensive, and causes us to
-        # import circularly in pathological cases.
-        # XXX gary 20-Oct-2008 bug 285808
-        # The wisdom of using a test fixture for production should be
-        # reconsidered.
-        from canonical.launchpad.ftests import login
-        # The Participation is used to specify that we do not want a
-        # LaunchpadTestRequest, which ftests normally use.  shipit scripts,
-        # in particular, need to be careful, because of code in
-        # canonical_url.
-        from canonical.launchpad.webapp.interaction import Participation
-        login(user, Participation())
+        setupInteractionByEmail(user)
 
     #
     # Locking and running methods. Users only call these explicitly if

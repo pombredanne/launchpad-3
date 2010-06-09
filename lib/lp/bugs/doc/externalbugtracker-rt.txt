@@ -180,10 +180,12 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
 Our RequestTracker ExternalBugTracker can now process, and retrieve a
 remote status for, the bug watch that we have created.
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> transaction.commit()
+
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> rt = TestRequestTracker(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(rt, example_bug_tracker.watches)
     INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where

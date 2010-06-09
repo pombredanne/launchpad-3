@@ -89,7 +89,7 @@ has enough privileges for the script to run to completion.
     >>> process.returncode
     0
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-rosetta-poimport.lock
     INFO    Importing: Serbian (sr) translation of evolution-2.2 in Evolution trunk
     INFO    Import requests completed.
     <BLANKLINE>

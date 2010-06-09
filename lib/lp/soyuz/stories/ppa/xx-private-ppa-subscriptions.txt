@@ -70,21 +70,23 @@ with a message:
     ...     'no-subscribers'))
     No one has access to install software from this PPA.
 
-Create two new users that can be subscribed to archives:
+Create two new users that can be subscribed to archives, and a team:
 
     >>> login('foo.bar@canonical.com')
     >>> joesmith = factory.makePerson(name="joesmith", displayname="Joe Smith",
     ...     password="test", email="joe@example.com")
+    >>> teamjoe = factory.makeTeam(
+    ...     owner=joesmith, displayname="Team Joe", name='teamjoe')
     >>> bradsmith = factory.makePerson(name="bradsmith", displayname="Brad Smith",
     ...     password="test", email="brad@example.com")
     >>> logout()
 
-People can be subscribed by entering their details into the displayed
-form:
+People and teams can be subscribed by entering their details into the
+displayed form:
 
-    >>> cprov_browser.getControl(name='field.subscriber').value = 'joesmith'
+    >>> cprov_browser.getControl(name='field.subscriber').value = 'teamjoe'
     >>> cprov_browser.getControl(
-    ...     name='field.description').value = "Joe is my friend"
+    ...     name='field.description').value = "Joes friends are my friends"
     >>> cprov_browser.getControl(name="field.actions.add").click()
     >>> cprov_browser.getControl(name='field.subscriber').value = 'bradsmith'
     >>> cprov_browser.getControl(
@@ -100,7 +102,7 @@ Once the subscription has been added, it will display in the table:
     ...     print extract_text(row)
     Name                Expires     Comment
     Brad Smith          2200-08-01  Brad can access for a while.  Edit/Cancel
-    Joe Smith                       Joe is my friend              Edit/Cancel
+    Team Joe                        Joes friends are my friends   Edit/Cancel
 
 
 == Managing a persons' Archive subscriptions ==
@@ -120,8 +122,8 @@ explanation if they try to view their archive subscriptions:
     >>> print extract_text(explanation)
     You do not have any current subscriptions to private archives...
 
-First, create a subscription for Joe Smith to mark's archive also, so that
-Joe has multiple subscriptions:
+First, create a subscription for Joe Smith's team to mark's archive
+so that Joe has multiple subscriptions:
 
     >>> mark_browser = setupBrowser(
     ...     auth="Basic mark@example.com:test")
@@ -144,12 +146,24 @@ listed in the current subscriptions area:
     PPA named... (ppa:mark/p3a)      Mark Shuttleworth       View
     PPA named... (ppa:cprov/p3a)     Celso Providelo         View
 
+It is not possible to traverse to a team's archive subscriptions to
+create tokens.
+
+    >>> joe_browser.open(
+    ...     "http://launchpad.dev/~teamjoe/+archivesubscriptions")
+    Traceback (most recent call last):
+    ...
+    NotFound...
+
+
 == Confirming a subscription ==
 
 When a person clicks on the view button, the subscription is confirmed
 automatically (creating a token for the user) and they are taken to a page
 displaying their subscription.
 
+    >>> joe_browser.open(
+    ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> joe_browser.getControl(name="activate", index=0).click()
     >>> sources_list = find_tag_by_id(joe_browser.contents, 'sources_list')
     >>> print(extract_text(sources_list))
@@ -186,4 +200,24 @@ has a signing key:
         hoary main #Personal access of Joe Smith
         to PPA named p3a for Mark Shuttleworth
     This repository is signed ...
+
+Once a person has activated a subscription, being subscribed again via
+another team does not lead to duplicate entries on the person's
+subscriptions page.
+
+    >>> mark_browser.open("http://launchpad.dev/~mark/+archive/p3a")
+    >>> mark_browser.getLink("Manage access").click()
+    >>> mark_browser.getControl(name='field.subscriber').value = 'teamjoe'
+    >>> mark_browser.getControl(
+    ...     name='field.description').value = "Joe's friends are my friends."
+    >>> mark_browser.getControl(name="field.actions.add").click()
+    >>> joe_browser.open(
+    ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
+    >>> rows = find_tags_by_class(
+    ...     joe_browser.contents, 'archive-subscription-row')
+    >>> for row in rows:
+    ...     print extract_text(row)
+    Archive                                            Owner
+    PPA named p3a for Mark Shuttleworth (ppa:mark/p3a) Mark Shuttleworth View
+    PPA named p3a for Celso Providelo (ppa:cprov/p3a)  Celso Providelo   View
 

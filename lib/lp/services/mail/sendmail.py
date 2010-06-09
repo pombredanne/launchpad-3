@@ -15,7 +15,10 @@ messaging settings -- stub 2004-10-21
 """
 
 __all__ = [
+    'append_footer',
+    'do_paranoid_envelope_to_validation',
     'format_address',
+    'format_address_for_person',
     'get_msgid',
     'MailController',
     'sendmail',
@@ -43,10 +46,10 @@ from zope.sendmail.interfaces import IMailDelivery
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.config import config
-from canonical.lp import isZopeless
-from canonical.launchpad.helpers import is_ascii_only
-from lp.services.mail.stub import TestMailer
 from canonical.launchpad import versioninfo
+from canonical.launchpad.helpers import is_ascii_only
+from canonical.lp import isZopeless
+from lp.services.mail.stub import TestMailer
 
 # email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
@@ -91,6 +94,26 @@ def do_paranoid_envelope_to_validation(to_addrs):
             "Address contains carriage returns: %r" % (addr,))
 
 
+def append_footer(main, footer):
+    """Append a footer to an email, following signature conventions.
+
+    If there is no footer, do nothing.
+    If there is already a signature, append an additional footer.
+    If there is no existing signature, append '-- \n' and a footer.
+
+    :param main: The main content, which may have a signature.
+    :param footer: An additional footer to append.
+    :return: a new version of main that includes the footer.
+    """
+    if footer == '':
+        footer_separator = ''
+    elif '\n-- \n' in main:
+        footer_separator = '\n'
+    else:
+        footer_separator = '\n-- \n'
+    return ''.join((main, footer_separator, footer))
+
+
 def format_address(name, address):
     r"""Formats a name and address to be used as an email header.
 
@@ -124,6 +147,11 @@ def format_address(name, address):
     # names are folded, so let's unfold it again.
     name = ''.join(name.splitlines())
     return str(formataddr((name, address)))
+
+
+def format_address_for_person(person):
+    """Helper function to call format_address for a person."""
+    return format_address(person.displayname, person.preferredemail.email)
 
 
 def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,

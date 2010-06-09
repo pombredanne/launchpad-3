@@ -1,4 +1,4 @@
-#! /usr/bin/python2.5
+#! /usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -40,7 +40,7 @@ class TestCreateMergeProposals(TestCaseWithFactory):
             'cronscripts/create_merge_proposals.py', [])
         self.assertEqual(0, retcode)
         self.assertEqual(
-            'INFO    creating lockfile\n'
+            'INFO    Creating lockfile: /var/lock/launchpad-create_merge_proposals.lock\n'
             'INFO    Ran 1 CreateMergeProposalJobs.\n', stderr)
         self.assertEqual('', stdout)
         self.assertEqual(1, source.landing_targets.count())
@@ -67,25 +67,19 @@ class TestCreateMergeProposals(TestCaseWithFactory):
             'cronscripts/create_merge_proposals.py', [])
         self.assertEqual(0, retcode)
         self.assertEqual(
-            'INFO    creating lockfile\n'
+            'INFO    Creating lockfile: /var/lock/launchpad-create_merge_proposals.lock\n'
             'INFO    Ran 1 CreateMergeProposalJobs.\n', stderr)
         self.assertEqual('', stdout)
-        # The hosted location should be populated, not the mirror.
         bmp = branch.landing_candidates[0]
-        self.assertRaises(
-            bzr_errors.NotBranchError, Branch.open,
-            bmp.source_branch.warehouse_url)
-        local_source = Branch.open(bmp.source_branch.getPullURL())
-        # The hosted branch has the correct last revision.
+        local_source = bmp.source_branch.getBzrBranch()
+        # The branch has the correct last revision.
         self.assertEqual(
             source.branch.last_revision(), local_source.last_revision())
-        # A mirror should be scheduled.
-        self.assertIsNot(None, bmp.source_branch.next_mirror_time)
 
     def disabled_test_merge_directive_with_bundle(self):
         """Merge directives with bundles generate branches."""
         # XXX TimPenhey 2009-04-01 bug 352800
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         source = self.createJob(branch, tree)
         self.jobOutputCheck(branch, source)
@@ -93,7 +87,7 @@ class TestCreateMergeProposals(TestCaseWithFactory):
     def disabled_test_merge_directive_with_project(self):
         """Bundles are handled when the target branch has a project."""
         # XXX TimPenhey 2009-04-01 bug 352800
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         product = self.factory.makeProduct(project=self.factory.makeProject())
         branch, tree = self.create_branch_and_tree(product=product)
         source = self.createJob(branch, tree)
@@ -106,7 +100,7 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/create_merge_proposals.py', [])
-        self.assertIn('INFO    creating lockfile\n', stderr)
+        self.assertIn('INFO    Creating lockfile:', stderr)
         self.assertIn('INFO    Job resulted in OOPS:', stderr)
         self.assertIn('INFO    Ran 0 CreateMergeProposalJobs.\n', stderr)
         self.assertEqual('', stdout)

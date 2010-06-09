@@ -15,7 +15,7 @@ instance here:
     >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
 
     >>> from lp.bugs.tests.externalbugtracker import TestIssuezilla
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName('mozilla.org')
@@ -28,12 +28,14 @@ instance here:
     123543:
     42: FUBAR
     42: FUBAR
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> transaction.commit()
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> bug_watch_updater.updateBugWatches(
     ...     issuezilla, mozilla_bugzilla.watches)
     INFO:...:Updating 4 watches for 3 bugs on https://bugzilla.mozilla.org
     WARNING:...:Didn't find bug u'42' on https://bugzilla.mozilla.org
-    (local bugs: 1, 2).
+    (local bugs: 1, 2). (OOPS-...)
+
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     2000: RESOLVED FIXED

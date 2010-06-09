@@ -29,6 +29,7 @@ distribution series.
     ...     name='evolution').jsonBody()
 
     >>> pprint_entry(evolution)
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     displayname: u'evolution in Ubuntu Hoary'
     distribution_link: u'http://.../ubuntu'

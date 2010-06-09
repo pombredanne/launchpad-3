@@ -47,8 +47,7 @@ import rlcompleter
 from storm.locals import *
 from storm.expr import *
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, AUTH_STORE, MASTER_FLAVOR,
-        SLAVE_FLAVOR, DEFAULT_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR, DEFAULT_FLAVOR)
 
 
 def switch_db_user(dbuser, commit_first=True):
@@ -85,7 +84,7 @@ def _get_locals():
         p = Person.get(1)
         ds = DistroSeries.get(1)
         prod = Product.get(1)
-        proj = Project.get(1)
+        proj = ProjectGroup.get(1)
         b2 = Bug.get(2)
         b1 = Bug.get(1)
         s = Specification.get(1)

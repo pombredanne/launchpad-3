@@ -24,6 +24,7 @@ from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator)
+from lp.soyuz.interfaces.archive import ArchiveStatus
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus)
 from lp.testing import TestCaseWithFactory
@@ -201,7 +202,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         file.close()
 
         # Write the same contents in a temp file.
-        fd, temp_filename = tempfile.mkstemp()
+        fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
         file = os.fdopen(fd, "w")
         file.write(FILE_CONTENT)
         file.close()
@@ -473,6 +474,47 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.assertEqual(subs[0].status, ArchiveSubscriberStatus.EXPIRED)
 
         # But the htaccess is not touched.
+        self.assertFalse(os.path.isfile(htaccess))
+        self.assertFalse(os.path.isfile(htpasswd))
+
+    def testSkippingOfDisabledPPAs(self):
+        """Test that the htaccess for disabled PPAs are not touched."""
+        subs, tokens = self.setupDummyTokens()
+        htaccess, htpasswd = self.ensureNoFiles()
+
+        # Setup subscription so that htaccess/htpasswd is pending generation.
+        now = datetime.now(pytz.UTC)
+        subs[0].date_expires = now + timedelta(minutes=3)
+        self.assertEqual(subs[0].status, ArchiveSubscriberStatus.CURRENT)
+
+        # Set the PPA as disabled.
+        self.ppa.disable()
+        self.assertFalse(self.ppa.enabled)
+
+        script = self.getScript()
+        script.main()
+
+        # The htaccess and htpasswd files should not be generated.
+        self.assertFalse(os.path.isfile(htaccess))
+        self.assertFalse(os.path.isfile(htpasswd))
+
+    def testSkippingOfDeletedPPAs(self):
+        """Test that the htaccess for deleted PPAs are not touched."""
+        subs, tokens = self.setupDummyTokens()
+        htaccess, htpasswd = self.ensureNoFiles()
+
+        # Setup subscription so that htaccess/htpasswd is pending generation.
+        now = datetime.now(pytz.UTC)
+        subs[0].date_expires = now + timedelta(minutes=3)
+        self.assertEqual(subs[0].status, ArchiveSubscriberStatus.CURRENT)
+
+        # Set the PPA as deleted.
+        self.ppa.status = ArchiveStatus.DELETED
+
+        script = self.getScript()
+        script.main()
+
+        # The htaccess and htpasswd files should not be generated.
         self.assertFalse(os.path.isfile(htaccess))
         self.assertFalse(os.path.isfile(htpasswd))
 

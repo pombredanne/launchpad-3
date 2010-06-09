@@ -42,74 +42,11 @@ Ubuntu.
 
 And then we're redirected to the distribution page.
 
-  >>> colin_browser.url
-  'http://launchpad.dev/ubuntu'
+    >>> colin_browser.url
+    'http://launchpad.dev/ubuntu'
 
-  >>> for tag in find_tags_by_class(colin_browser.contents,
-  ...                               "informational message"):
-  ...     print tag
-  <div...Successfully changed the bug supervisor to ...Colin Watson...
-
-Now that the bug supervisor is set, there's a link to him on the
-distribution's bug page page.
-
-  >>> browser.open('http://bugs.launchpad.dev/ubuntu')
-  >>> browser.getLink(url='/~kamion').url
-  'http://launchpad.dev/~kamion'
-
-When the bug supervisor doesn't have an email address, the displayname is
-shown instead in the feedback message. Let's appoint the Ubuntu Team as
-the bug supervisor. Since Colin is an administrator of this team, he can
-do it.
-
-  >>> colin_browser.open("http://launchpad.dev/ubuntu/+bugsupervisor")
-  >>> colin_browser.getControl("Bug Supervisor").value = 'ubuntu-team'
-  >>> colin_browser.getControl("Change").click()
-
-  >>> print extract_text(colin_browser.contents)
-  Ubuntu Linux in Launchpad
-  ...
-  Successfully changed the bug supervisor to Ubuntu Team.
-  ...
-
-While anybody with edit permissions can set the bug supervisor, only
-certain persons can be successfully selected. All users can set
-themselves self and teams they administer as the bug supervisor, as
-shown above. But ordinary users cannot appoint other persons and teams
-they do not administer.
-
-    >>> colin_browser.open("http://launchpad.dev/ubuntu/+bugsupervisor")
-    >>> colin_browser.getControl("Bug Supervisor").value = 'admins'
-    >>> colin_browser.getControl("Change").click()
-    >>> print extract_text(colin_browser.contents)
-    Edit bug supervisor for Ubuntu : Ubuntu
-    ...
-    You cannot set Launchpad Administrators as the bug supervisor for
-    Ubuntu because you are not an administrator of that team.
-    If you believe that Launchpad Administrators should be the bug
-    supervisor for Ubuntu, please notify one of the Launchpad
-    Administrators administrators.
-    ...
-
-But members of the Launchpad administration team can appoint anybody
-as bug supervisors, teams...
-
-    >>> admin_browser.open("http://launchpad.dev/ubuntu/+bugsupervisor")
-    >>> admin_browser.getControl("Bug Supervisor").value = 'ubuntu-translators'
-    >>> admin_browser.getControl("Change").click()
-    >>> print extract_text(admin_browser.contents)
-    Ubuntu Linux in Launchpad
-    ...
-    Successfully changed the bug supervisor to Ubuntu Translators.
-    ...
-
-...as well as persons.
-
-    >>> admin_browser.open("http://launchpad.dev/ubuntu/+bugsupervisor")
-    >>> admin_browser.getControl("Bug Supervisor").value = 'carlos'
-    >>> admin_browser.getControl("Change").click()
-    >>> print extract_text(admin_browser.contents)
-    Ubuntu Linux in Launchpad
-    ...
-    Successfully changed the bug supervisor to Carlos Perelló Marín.
-    ...
+    >>> for message in get_feedback_messages(colin_browser.contents):
+    ...     print extract_text(message)
+    Successfully changed the bug supervisor to Colin Watson.
+    Colin Watson has also been subscribed to bug notifications for Ubuntu.
+    You can change the subscriptions for Ubuntu at any time.

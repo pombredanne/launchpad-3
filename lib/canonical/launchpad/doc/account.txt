@@ -197,32 +197,6 @@ database. Only an admin can change the status.
     >>> account.status = AccountStatus.ACTIVE
     >>> login('no-priv@canonical.com')
 
-The Account's displayname is synced to the Person's displayname if there
-is one. If the Person.displayname is changed, the Account.displayname is
-changed too.
-
-    >>> from lp.registry.interfaces.person import IPersonSet
-
-    >>> personset = getUtility(IPersonSet)
-    >>> person = personset.getByEmail('no-priv@canonical.com')
-    >>> person.displayname = 'Something New'
-    >>> print account.displayname
-    Something New
-
-However, the reverse is not true. If we change the Account.displayname,
-the linked Person.displayname (if there is one) is not updated
-immediately.  Instead, a cron job will sync this information later. This
-allows displayname changes to happen even when the Person table is
-unavailable.
-
-    >>> account.displayname = 'No Privileges Account'
-    >>> print person.displayname
-    Something New
-
-    >>> person.displayname = 'No Privileges Person'
-    >>> print account.displayname
-    No Privileges Person
-
 An Account has an OpenID identifier used to generate the OpenID identity
 URL.
 
@@ -243,6 +217,7 @@ rationale and displayname are required.
     >>> login('admin@canonical.com')
     >>> passwordless_account = account_set.new(
     ...     AccountCreationRationale.USER_CREATED, 'Passwordless')
+    >>> transaction.commit()
     >>> print passwordless_account.creation_rationale.name
     USER_CREATED
     >>> print passwordless_account.displayname

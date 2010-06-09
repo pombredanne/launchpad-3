@@ -38,7 +38,7 @@ To display the icon for a milestone, use image:icon:
     '<img ... src="/@@/milestone" />'
 
 The same image:icon, as well as a image:logo and a image:logo is also
-available for Person, Product, Project, Sprint and Distributions, since
+available for Person, Product, ProjectGroup, Sprint and Distributions, since
 they all implement IHasLogo, IHasMugshot and IHasIcon.
 
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -157,10 +157,10 @@ them.
 
     >>> login('admin@canonical.com')
     >>> private_ppa = factory.makeArchive(
-    ...     name='ppa', private=True, owner=owner)
+    ...     name='pppa', private=True, owner=owner)
 
     >>> print test_tales("ppa/fmt:link", ppa=private_ppa)
-    <a href="/~joe/+archive/ppa" class="sprite ppa-icon">PPA
+    <a href="/~joe/+archive/pppa" class="sprite ppa-icon">PPA named pppa
     for Joe Smith</a>
 
     >>> login(ANONYMOUS)
@@ -178,7 +178,7 @@ a subscription to the PPA.
     >>> ignore = private_ppa.newSubscription(ppa_user, owner)
     >>> login_person(ppa_user)
     >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
-    ppa:joe/ppa
+    ppa:joe/pppa
 
 We also have icons for builds which may have different dimensions.
 
@@ -197,14 +197,15 @@ The 'Needs building' build is 14x14:
 
 The 'building' build is 14x14:
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
-    >>> build.buildstate = BuildStatus.BUILDING
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(build).status = BuildStatus.BUILDING
     >>> print test_tales("build/image:icon", build=build)
     <img width="14" height="14"...src="/@@/processing" />
 
 But the 'failed to build' build is 16x14:
 
-    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> removeSecurityProxy(build).status = BuildStatus.FAILEDTOBUILD
     >>> print test_tales("build/image:icon", build=build)
     <img width="16" height="14"...src="/@@/build-failed" />
 

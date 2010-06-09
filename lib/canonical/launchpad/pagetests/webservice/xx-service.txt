@@ -209,3 +209,25 @@ virtual host:
     HTTP/1.1 401 Unauthorized
     ...
     Request is missing an OAuth consumer key.
+
+
+The 'Vary' Header
+=================
+
+Launchpad's web service sets the Vary header differently from other
+parts of Launchpad.
+
+    >>> browser.open("http://launchpad.dev/")
+    >>> print browser.headers['Vary']
+    Cookie, Authorization
+
+    >>> response = webservice.get(
+    ...     'http://bugs.launchpad.dev/api/devel/')
+    >>> print response.getheader('Vary')
+    Accept
+
+The web service's Vary header does not mention the 'Cookie' header,
+because the web service doesn't use cookies. It doesn't mention the
+'Authorization' header, because every web service request has a
+distinct 'Authorization' header. It does mention the 'Accept' header,
+because the web service does use content negotiation.

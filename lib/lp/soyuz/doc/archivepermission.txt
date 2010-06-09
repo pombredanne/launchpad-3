@@ -110,7 +110,7 @@ passing a type that it does not know about results in an AssertionError:
     ...     ubuntu)
     Traceback (most recent call last):
     ...
-    AssertionError: 'item' is not an IComponent, IPackageset or an
+    AssertionError: 'item' ... is not an IComponent, IPackageset or an
     ISourcePackageName
 
 IArchivePermissionSet also has some helpers to make it very easy to
@@ -238,7 +238,8 @@ queues in that component.
 
 componentsForQueueAdmin() returns the ArchivePermission records for all
 the components that the supplied user has permission to administer in
-the distroseries queue.
+the distroseries queue. It can be passed a single archive or an
+enumeration of archives.
 
     >>> name12 = getUtility(IPersonSet).getByName("name12")
     >>> permissions = permission_set.componentsForQueueAdmin(
@@ -252,7 +253,7 @@ the distroseries queue.
 
     >>> no_team = getUtility(IPersonSet).getByName("no-team-memberships")
     >>> permissions = permission_set.componentsForQueueAdmin(
-    ...     ubuntu.main_archive, no_team)
+    ...     ubuntu.all_distro_archives, no_team)
     >>> for permission in sorted(permissions, key=operator.attrgetter("id")):
     ...     print permission.component.name
     universe

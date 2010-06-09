@@ -76,6 +76,18 @@ Branch merge proposals can be created through the API.
     votes_collection_link:
         u'http://api.launchpad.dev/devel/~.../+merge/.../votes'
 
+If we try and create the merge proposal again, we should get a ValueError.
+
+    >>> print registrant_webservice.named_post(
+    ...     source_url, 'createMergeProposal', target_branch=target_url,
+    ...     prerequisite_branch=prerequisite_url,
+    ...     initial_comment='Merge\nit!', needs_review=True,
+    ...     commit_message='It was merged!\n', reviewers=[reviewer_url],
+    ...     review_types=['green'])
+    HTTP/1.1 400 Bad Request ...
+    BranchMergeProposalExists: There is already a branch merge proposal
+    registered for branch ... to land on ... that is still active.
+
 Our review request is listed in the votes collection.
 
     >>> votes = webservice.get(
@@ -113,6 +125,7 @@ Branch merge proposals can be fetched through the API.
     ...     subject='Not really', body='This is mediocre work.',
     ...     vote=CodeReviewVote.ABSTAIN, parent=comment,
     ...     merge_proposal=fixit_proposal)
+    >>> transaction.commit()
 
     >>> proposal_url = fix_url(canonical_url(
     ...     fixit_proposal, request=request, rootsite='api'))
@@ -167,7 +180,9 @@ The comments on a branch merge proposal are exposed through the API.
     2
     >>> pprint_entry(all_comments['entries'][0])
     as_quoted_email: u'> This is great work'
+    author_link: u'http://api.launchpad.dev/devel/~...'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    date_created: u'...'
     id: ...
     message_body: u'This is great work'
     resource_type_link: u'http://.../#code_review_comment'
@@ -180,7 +195,9 @@ The comments on a branch merge proposal are exposed through the API.
     ...     merge_proposal['self_link'], 'getComment', id=2).jsonBody()
     >>> pprint_entry(comment_2)
     as_quoted_email: u'> This is mediocre work.'
+    author_link: u'http://api.launchpad.dev/devel/~...'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    date_created: u'...'
     id: ...
     message_body: u'This is mediocre work.'
     resource_type_link: u'http://.../#code_review_comment'
@@ -251,7 +268,9 @@ Now the code review should be made.
     >>> comment = reviewer_webservice.get(comment_link).jsonBody()
     >>> pprint_entry(comment)
     as_quoted_email: u'> This is great work'
+    author_link: u'http://api.launchpad.dev/devel/~...'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    date_created: u'...'
     id: ...
     message_body: u'This is great work'
     resource_type_link: u'http://.../#code_review_comment'
@@ -471,12 +490,36 @@ review.
 
     >>> login('admin@canonical.com')
     >>> from lp.code.enums import BranchMergeProposalStatus
-    >>> fixit_proposal.requestReview()
+
+First we create a review owned by someone else and requested of 'target'
+which is the one we want the method to return.
+
+    >>> source_branch = factory.makeBranch(owner=branch_owner,
+    ...     product=blob, name="foo")
+    >>> target_branch = factory.makeBranch(owner=target_owner,
+    ...     product=blob, name="bar")
+    >>> proposal = factory.makeBranchMergeProposal(
+    ...     target_branch=target_branch,
+    ...     product=blob, set_state=BranchMergeProposalStatus.NEEDS_REVIEW,
+    ...     registrant=branch_owner, source_branch=source_branch)
+    >>> proposal.nominateReviewer(target_owner, branch_owner)
+    <CodeReviewVoteReference at ...>
+
+And then we propose a merge the other way, so that the owner is target,
+but they have not been asked to review, meaning that the method shouldn't
+return this review.
+
+    >>> proposal = factory.makeBranchMergeProposal(
+    ...     target_branch=source_branch,
+    ...     product=blob, set_state=BranchMergeProposalStatus.NEEDS_REVIEW,
+    ...     registrant=target_owner, source_branch=target_branch)
+    >>> proposal.nominateReviewer(branch_owner, target_owner)
+    <CodeReviewVoteReference at ...>
     >>> logout()
 
     >>> proposals = webservice.named_get('/~target', 'getRequestedReviews'
     ...     ).jsonBody()
     >>> for proposal in proposals['entries']:
     ...     print_proposal(proposal)
-    http://.../~source/fooix/fix-it/+merge/2 - Needs review
+    http://.../~source/blob/foo/+merge/4 - Needs review
 

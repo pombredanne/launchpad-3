@@ -1,7 +1,7 @@
 = Bug Reporting Guidelines =
 
 Guidelines can be set at the Distribution, DistributionSourcePackage,
-Project or Product level to help users file good bug reports, direct
+ProjectGroup or Product level to help users file good bug reports, direct
 them to FAQs, and so forth.
 
     >>> login('foo.bar@canonical.com')

@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'bugcomment_to_entry',
+    'bugtask_to_privacy',
     ]
 
 from zope.component import getMultiAdapter
@@ -20,3 +21,10 @@ def bugcomment_to_entry(comment, version):
     """
     return getMultiAdapter(
         (comment.bugtask.bug.messages[comment.index], version), IEntry)
+
+def bugtask_to_privacy(bugtask):
+    """Adapt the bugtask to the underlying bug (which implements IPrivacy).
+
+    Needed because IBugTask does not implement IPrivacy.
+    """
+    return bugtask.bug

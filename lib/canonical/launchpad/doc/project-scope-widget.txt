@@ -14,7 +14,7 @@ selected.
 
     >>> empty_request = LaunchpadTestRequest()
     >>> scope_field = Choice(
-    ...     __name__='scope', vocabulary='Project', required=False)
+    ...     __name__='scope', vocabulary='ProjectGroup', required=False)
     >>> scope_field = scope_field.bind(object())
     >>> widget = ProjectScopeWidget(
     ...     scope_field, scope_field.vocabulary, empty_request)

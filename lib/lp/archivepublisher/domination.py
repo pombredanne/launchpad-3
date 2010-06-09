@@ -203,13 +203,13 @@ class Dominator:
             return
 
         dominant_build = dominant.binarypackagerelease.build
-        distroarchseries = dominant_build.distroarchseries
+        distroarchseries = dominant_build.distro_arch_series
         self.debug(
             "The %s build of %s has been judged as superseded by the build "
             "of %s.  Arch-specific == %s" % (
             distroarchseries.architecturetag,
             dominated.binarypackagerelease.title,
-            dominant.binarypackagerelease.build.sourcepackagerelease.title,
+            dominant.binarypackagerelease.build.source_package_release.title,
             dominated.binarypackagerelease.architecturespecific))
         dominated.status = SUPERSEDED
         dominated.datesuperseded = UTC_NOW
@@ -362,15 +362,16 @@ class Dominator:
                 distroarchseries.id AND
             binarypackagepublishinghistory.scheduleddeletiondate IS NULL AND
             binarypackagepublishinghistory.archive = %s AND
-            build.sourcepackagerelease = %s AND
+            binarypackagebuild.source_package_release = %s AND
             distroarchseries.distroseries = %s AND
             binarypackagepublishinghistory.binarypackagerelease =
             binarypackagerelease.id AND
-            binarypackagerelease.build = build.id AND
+            binarypackagerelease.build = binarypackagebuild.id AND
             binarypackagepublishinghistory.pocket = %s
             """ % sqlvalues(self.archive, srcpkg_release,
                             pub_record.distroseries, pub_record.pocket),
-            clauseTables=['DistroArchSeries', 'BinaryPackageRelease','Build'])
+            clauseTables=['DistroArchSeries', 'BinaryPackageRelease',
+                          'BinaryPackageBuild'])
 
             # There is at least one non-removed binary to consider
             if considered_binaries.count() > 0:

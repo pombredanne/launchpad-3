@@ -553,10 +553,10 @@ is only run in one environment, so links to that site will be preserved.
 
     >>> page_match = PageMatch(
     ...     u'OpenID',
-    ...     'http://help.launchpad.net/OpenID',
+    ...     'https://help.launchpad.net/OpenID',
     ...     u'Launchpad uses OpenID.')
     >>> page_match.url
-    'http://help.launchpad.net/OpenID'
+    'https://help.launchpad.net/OpenID'
 
 
 === Graceful handling of timeouts ===

@@ -13,36 +13,43 @@ __all__ = [
     'ISourcePackageRecipeBuildJobSource',
     ]
 
-from lazr.restful.fields import Reference
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.declarations import export_as_webservice_entry
 
 from zope.interface import Interface
-from zope.schema import Int, Object
+from zope.schema import Bool, Datetime, Int, Object
 
 from canonical.launchpad import _
 
 from lp.buildmaster.interfaces.buildbase import IBuildBase
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
+from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 class ISourcePackageRecipeBuild(IBuildBase):
     """A build of a source package."""
+    export_as_webservice_entry()
 
     id = Int(title=_("Identifier for this build."))
+
+    binary_builds = CollectionField(
+        Reference(IBinaryPackageBuild),
+        title=_("The binary builds that resulted from this."), readonly=True)
+
+    datestarted = Datetime(title=u'The time the build started.')
 
     distroseries = Reference(
         IDistroSeries, title=_("The distroseries being built for"),
         readonly=True)
-
-    sourcepackagename = Reference(
-        ISourcePackageName,
-        title=_("The name of the source package being built"),
-        readonly=True)
+    # XXX michaeln 2010-05-18 bug=567922
+    # Temporarily alias distro_series until SPRecipeBuild is
+    # implementing IPackageBuild.
+    distro_series = distroseries
 
     requester = Object(
         schema=IPerson, required=False,
@@ -56,14 +63,19 @@ class ISourcePackageRecipeBuild(IBuildBase):
         ISourcePackageRelease, title=_("The produced source package release"),
         readonly=True)
 
+    is_virtualized = Bool(title=_('If True, this build is virtualized.'))
+
+    def getFileByName(filename):
+        """Return the file under +files with specified name."""
+
 
 class ISourcePackageRecipeBuildSource(Interface):
     """A utility of this interface be used to create source package builds."""
 
-    def new(sourcepackage, recipe, requester, date_created=None):
+    def new(distroseries, recipe, requester, archive, date_created=None):
         """Create an `ISourcePackageRecipeBuild`.
 
-        :param sourcepackage: The `ISourcePackage` that this is building.
+        :param distroseries: The `IDistroSeries` that this is building against.
         :param recipe: The `ISourcePackageRecipe` that this is building.
         :param requester: The `IPerson` who wants to build it.
         :param date_created: The date this build record was created. If not
@@ -79,17 +91,12 @@ class ISourcePackageRecipeBuildSource(Interface):
         """
 
 
-class ISourcePackageRecipeBuildJob(IBuildFarmJob):
+class ISourcePackageRecipeBuildJob(IBuildFarmBuildJob):
     """A read-only interface for recipe build jobs."""
 
     job = Reference(
         IJob, title=_("Job"), required=True, readonly=True,
         description=_("Data common to all job types."))
-
-    build = Reference(
-        ISourcePackageRecipeBuild, title=_("Build"),
-        required=True, readonly=True,
-        description=_("Build record associated with this job."))
 
 
 class ISourcePackageRecipeBuildJobSource(Interface):

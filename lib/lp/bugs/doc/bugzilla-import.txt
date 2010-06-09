@@ -169,7 +169,7 @@ function will be used:
   ...         print '    Subject:', message.subject
   ...         print '    %s' % message.text_contents
   ...         print
-  ...     if bug.attachments:
+  ...     if bug.attachments.any():
   ...         print 'Attachments:'
   ...     for attachment in bug.attachments:
   ...         print '    Title:', attachment.title

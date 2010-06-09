@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -129,7 +129,7 @@ class ZopeSpec:
             if author_headers:
                 author = author_headers[0].findNext().renderContents()
                 self.parseAuthorEmails(author)
-        
+
     @property
     def lpname(self):
         # add dashes before capitalised words
@@ -226,7 +226,7 @@ class ZopeSpec:
                 lpspec.declineBy(zope_dev)
         lpspec.delivery = self.lpdelivery
         lpspec.updateLifecycleStatus(zope_dev)
-            
+
         # set the assignee to the first author email with an LP account
         for author in sorted(self.authors):
             person = getUtility(IPersonSet).getByEmail(author)
@@ -257,7 +257,7 @@ def iter_spec_urls(url=specroot):
                                for tag in specanchor.nextSiblingGenerator()])
         yield ZopeSpec(href, title, summary.strip())
 
-        
+
 def main(argv):
     execute_zcml_for_scripts()
     ztm = initZopeless()

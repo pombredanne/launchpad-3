@@ -82,6 +82,15 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
+  <!-- NoReferrerError -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.NoReferrerError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-noreferrer.pt"
+      class="canonical.launchpad.webapp.error.NoReferrerErrorView"
+      />
+
   <!-- UnsafeFormGetSubmissionError -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.UnsafeFormGetSubmissionError"
@@ -271,15 +280,6 @@
       name="+access-token"
       class="canonical.launchpad.browser.OAuthAccessTokenView"
       permission="zope.Public" />
-
-  <!-- Declare robots.txt file for the root -->
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-      name="robots.txt"
-      template="../templates/robotstxt.pt"
-      permission="zope.Public"
-      />
-
   <!-- Common menus -->
   <browser:menus
       module="canonical.launchpad.browser.launchpad"
@@ -410,13 +410,6 @@ these URLs in Apache.
   attribute="__call__"
   />
 
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-  name="+dims"
-  permission="zope.Public"
-  class="canonical.launchpad.browser.BrowserWindowDimensions"
-  attribute="__call__"
-  />
 
 <class class="canonical.launchpad.webapp.publisher.RenamedView">
   <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher"

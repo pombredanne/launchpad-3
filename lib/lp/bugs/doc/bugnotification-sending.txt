@@ -780,57 +780,6 @@ top of the email:
     >>> for bug_notifications, messages in get_email_notifications(notifications):
     ...     for message in messages:
     ...         print_notification(message)
-    To: foo.bar@canonical.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 16] subject
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu) via Bug 1
-    <BLANKLINE>
-    *** This bug is a duplicate of bug 1 ***
-        http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/16
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu (via bug 1).
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: marilize@hbd.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 16] subject
-    X-Launchpad-Message-Rationale: Subscriber @shipit-admins via Bug 1
-    <BLANKLINE>
-    *** This bug is a duplicate of bug 1 ***
-        http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/16
-    You received this bug notification because you are a member of ShipIt
-    Administrators, which is a direct subscriber (via bug 1).
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: mark@example.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 16] subject
-    X-Launchpad-Message-Rationale: Assignee via Bug 1
-    <BLANKLINE>
-    *** This bug is a duplicate of bug 1 ***
-        http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/16
-    You received this bug notification because you are a bug assignee (via
-    bug 1).
-    <BLANKLINE>
-    ----------------------------------------------------------------------
     To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 16] subject
@@ -865,9 +814,6 @@ top of the email:
     of the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
-
-Also note that notification was sent to Mark as well, since he's a
-subscriber of bug one.
 
     >>> flush_notifications()
 
@@ -986,7 +932,7 @@ makes it write out the emails it sends.
     >>> process.returncode
     0
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-send-bug-notifications.lock
     INFO    Notifying mark@example.com about bug 2.
     ...
     INFO    Notifying support@ubuntu.com about bug 2.
@@ -1201,7 +1147,8 @@ security vulnerability. It can have the value "yes" or "no".
 The presence of the security flag on a bug is, surprise, denoted by a
 simple "yes":
 
-    >>> bug_three.security_related = True
+    >>> bug_three.setSecurityRelated(True)
+    True
     >>> bug_three.security_related
     True
 
@@ -1411,7 +1358,7 @@ Whereas Verbose Person does get the description and task status:
     desc
     <BLANKLINE>
     To unsubscribe from this bug, go to:
-    http://bugs.launchpad.dev/product-name4/+bug/.../+subscribe
+    http://bugs.launchpad.dev/.../+bug/.../+subscribe
     <BLANKLINE>
     ----------------------------------------------------------------------
 

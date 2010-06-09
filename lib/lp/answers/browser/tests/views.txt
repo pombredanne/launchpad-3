@@ -894,7 +894,7 @@ package is displayed if it exists.
     8 ...    2006-07-20  Sample Person  mozilla-firefox  &mdash;   Answered
     7 ...    2005-10-14  Foo Bar        &mdash;          &mdash;   Needs ...
 
-Projects display the "In" column to show the product name.
+ProjectGroups display the "In" column to show the product name.
 
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')

@@ -20,6 +20,7 @@ from StringIO import StringIO
 import tempfile
 
 from bzrlib.branch import Branch as BzrBranch
+from bzrlib.errors import NoSuchFile
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
@@ -50,14 +51,13 @@ from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.scanner.bzrsync import BzrSync
-from lp.codehosting.vfs import (branch_id_to_path, get_multi_server,
-    get_scanner_server)
+from lp.codehosting.vfs import (
+    branch_id_to_path, get_rw_server, get_ro_server)
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import BaseRunnableJob
-from lp.registry.model.productseries import ProductSeries
-from lp.translations.model.translationbranchapprover import (
-    TranslationBranchApprover)
+from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.translations.model.approver import TranslationBranchApprover
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel)
@@ -183,6 +183,14 @@ class BranchJobDerived(BaseRunnableJob):
     def __init__(self, branch_job):
         self.context = branch_job
 
+    def __repr__(self):
+        branch = self.branch
+        return '<%(job_type)s branch job (%(id)s) for %(branch)s>' % {
+            'job_type': self.context.job_type.name,
+            'id': self.context.id,
+            'branch': branch.unique_name,
+            }
+
     # XXX: henninge 2009-02-20 bug=331919: These two standard operators
     # should be implemented by delegates().
     def __eq__(self, other):
@@ -284,7 +292,7 @@ class BranchScanJob(BranchJobDerived):
     def contextManager(cls):
         """See `IBranchScanJobSource`."""
         errorlog.globalErrorUtility.configure('branchscanner')
-        cls.server = get_scanner_server()
+        cls.server = get_ro_server()
         cls.server.start_server()
         yield
         cls.server.stop_server()
@@ -313,7 +321,7 @@ class BranchUpgradeJob(BranchJobDerived):
     def contextManager():
         """See `IBranchUpgradeJobSource`."""
         errorlog.globalErrorUtility.configure('upgrade_branches')
-        server = get_multi_server(write_hosted=True)
+        server = get_rw_server()
         server.start_server()
         yield
         server.stop_server()
@@ -324,13 +332,12 @@ class BranchUpgradeJob(BranchJobDerived):
         upgrade_branch_path = tempfile.mkdtemp()
         try:
             upgrade_transport = get_transport(upgrade_branch_path)
-            source_branch_transport = get_transport(self.branch.getPullURL())
-            source_branch_transport.copy_tree_to_transport(upgrade_transport)
+            upgrade_transport.mkdir('.bzr')
+            source_branch_transport = get_transport(
+                self.branch.getInternalBzrUrl())
+            source_branch_transport.clone('.bzr').copy_tree_to_transport(
+                upgrade_transport.clone('.bzr'))
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
-
-            # If there's already a backup.bzr, delete it.
-            if upgrade_transport.has('backup.bzr'):
-                upgrade_transport.delete_tree('backup.bzr')
 
             # Perform the upgrade.
             upgrade(upgrade_branch.base)
@@ -347,9 +354,14 @@ class BranchUpgradeJob(BranchJobDerived):
             source_branch.unlock()
 
             # Move the branch in the old format to backup.bzr
-            upgrade_transport.delete_tree('backup.bzr')
+            try:
+                source_branch_transport.delete_tree('backup.bzr')
+            except NoSuchFile:
+                pass
             source_branch_transport.rename('.bzr', 'backup.bzr')
-            upgrade_transport.copy_tree_to_transport(source_branch_transport)
+            source_branch_transport.mkdir('.bzr')
+            upgrade_transport.clone('.bzr').copy_tree_to_transport(
+                source_branch_transport.clone('.bzr'))
 
             self.branch.requestMirror()
         finally:
@@ -720,20 +732,9 @@ class RosettaUploadJob(BranchJobDerived):
     @classmethod
     def providesTranslationFiles(cls, branch):
         """See `IRosettaUploadJobSource`."""
-        return not cls.findProductSeries(branch).is_empty()
-
-    @staticmethod
-    def findProductSeries(branch, force_translations_upload=False):
-        """See `IRosettaUploadJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-
-        conditions = [ProductSeries.branch == branch]
-        if not force_translations_upload:
-            import_mode = ProductSeries.translations_autoimport_mode
-            conditions.append(
-                import_mode != TranslationsBranchImportMode.NO_IMPORT)
-
-        return store.find(ProductSeries, And(*conditions))
+        productseries = getUtility(
+            IProductSeriesSet).findByTranslationsImportBranch(branch)
+        return not productseries.is_empty()
 
     @classmethod
     def create(cls, branch, from_revision_id,
@@ -881,7 +882,8 @@ class RosettaUploadJob(BranchJobDerived):
         self._init_translation_file_lists()
         # Get the product series that are connected to this branch and
         # that want to upload translations.
-        productseries = self.findProductSeries(
+        productseriesset = getUtility(IProductSeriesSet)
+        productseries = productseriesset.findByTranslationsImportBranch(
             self.branch, self.force_translations_upload)
         translation_import_queue = getUtility(ITranslationImportQueue)
         for series in productseries:
@@ -935,6 +937,12 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
 
     class_job_type = BranchJobType.RECLAIM_BRANCH_SPACE
 
+    def __repr__(self):
+        return '<RECLAIM_BRANCH_SPACE branch job (%(id)s) for %(branch)s>' % {
+            'id': self.context.id,
+            'branch': self.branch_id,
+            }
+
     @classmethod
     def create(cls, branch_id):
         """See `IBranchDiffJobSource`."""
@@ -951,13 +959,8 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
         return self.metadata['branch_id']
 
     def run(self):
-        mirrored_path = os.path.join(
+        branch_path = os.path.join(
             config.codehosting.mirrored_branches_root,
             branch_id_to_path(self.branch_id))
-        hosted_path = os.path.join(
-            config.codehosting.hosted_branches_root,
-            branch_id_to_path(self.branch_id))
-        if os.path.exists(mirrored_path):
-            shutil.rmtree(mirrored_path)
-        if os.path.exists(hosted_path):
-            shutil.rmtree(hosted_path)
+        if os.path.exists(branch_path):
+            shutil.rmtree(branch_path)

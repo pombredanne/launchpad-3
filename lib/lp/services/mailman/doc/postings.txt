@@ -846,13 +846,19 @@ moderator approval.
     >>> config.mailman.soft_max_size
     40000
 
-    >>> from email.MIMENonMultipart import MIMENonMultipart
-    >>> big_message = MIMENonMultipart('application', 'octet-stream')
-    >>> big_message.set_payload('\n'.join(['x' * 50] * 1000))
+    >>> from email.mime.multipart import MIMEMultipart
+    >>> from email.mime.application import MIMEApplication
+    >>> from email.mime.text import MIMEText
+
+    >>> big_message = MIMEMultipart()
     >>> big_message['From'] = 'anne.person@example.com'
     >>> big_message['To'] = 'itest-one@lists.launchpad.dev'
     >>> big_message['Subject'] = 'A huge message'
     >>> big_message['Message-ID'] = '<puma>'
+    >>> big_message.attach(
+    ...     MIMEText('look at this pdf.', 'plain'))
+    >>> big_message.attach(
+    ...     MIMEApplication('\n'.join(['x' * 50] * 1000), 'octet-stream'))
     >>> inject('itest-one', big_message.as_string())
 
     >>> vette_watcher.wait_for_hold('itest-one', 'puma')
@@ -889,12 +895,15 @@ discarded.
     >>> config.mailman.hard_max_size
     1000000
 
-    >>> huge_message = MIMENonMultipart('application', 'octet-stream')
-    >>> huge_message.set_payload('\n'.join(['x' * 50] * 20000))
+    >>> huge_message = MIMEMultipart()
     >>> huge_message['From'] = 'anne.person@example.com'
     >>> huge_message['To'] = 'itest-one@lists.launchpad.dev'
     >>> huge_message['Subject'] = 'A huge message'
     >>> huge_message['Message-ID'] = '<quahog>'
+    >>> huge_message.attach(
+    ...     MIMEText('look at this huge pdf.', 'plain'))
+    >>> huge_message.attach(
+    ...     MIMEApplication('\n'.join(['x' * 50] * 20000), 'octet-stream'))
     >>> inject('itest-one', huge_message.as_string())
 
     >>> vette_watcher.wait_for_discard('quahog')
@@ -921,7 +930,7 @@ the mailing list.
     ...
     ... Watch out for badgers! \xa9
     ... """)
-    
+
 However, because Cate is not a member of the mailing list, her message gets
 held for moderator approval.
 
@@ -932,3 +941,37 @@ held for moderator approval.
         ...
         Itest One <noreply@launchpad.net>
         New mailing list message requiring approval for Itest One
+
+
+Non-text messages
+=================
+
+List members can send non-text messages to agitate the other list members.
+
+    >>> html_message = MIMEText('<a><img /></a>.', 'html')
+    >>> html_message['From'] = 'anne.person@example.com'
+    >>> html_message['To'] = 'itest-one@lists.launchpad.dev'
+    >>> html_message['Subject'] = "It's full of stars"
+    >>> html_message['Message-ID'] = '<loggerhead>'
+    >>> inject('itest-one', html_message.as_string())
+
+    >>> smtpd_watcher.wait_for_mbox_delivery('loggerhead')
+    >>> messages = list(smtpd)
+    >>> for message in messages:
+    ...     print message['Subject']
+    [Itest-one] It's full of stars
+    [Itest-one] It's full of stars
+
+Messages without non-empty text/plain parts from non-list members are rejected
+because launchpad does not store non-text messages for moderation.
+
+    >>> spam_message = MIMEText('<a><img /></a>.', 'html')
+    >>> spam_message['From'] = 'itest-one@lists.launchpad.dev'
+    >>> spam_message['To'] = 'itest-one@lists.launchpad.dev'
+    >>> spam_message['Subject'] = 'get drugs'
+    >>> spam_message['Message-ID'] = '<ocelot>'
+    >>> inject('itest-one', spam_message.as_string())
+
+    >>> vette_watcher.wait_for_discard('ocelot')
+    >>> print_message_summaries()
+    Number of messages: 0

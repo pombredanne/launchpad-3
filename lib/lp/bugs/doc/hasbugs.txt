@@ -64,3 +64,29 @@ All bugtasks ever reported:
 
     >>> [bugtask.bug.id for bugtask in debian_firefox.all_bugtasks]
     [1, 2, 3, 8]
+
+IHasBugs.has_bugtasks is True if at least on bugtask exists.
+
+    >>> debian_firefox.has_bugtasks
+    True
+
+For a new product, has_bugtasks is False.
+
+    >>> product = factory.makeProduct()
+    >>> product.has_bugtasks
+    False
+
+When we add a bug, the property becomes True.
+
+    >>> bug = factory.makeBug(product=product)
+    >>> product.has_bugtasks
+    True
+
+Note that bugtasks having the status BugTaskStatus.UNKNOWN are not
+considered for has_bugtasks.
+
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> bug.default_bugtask.transitionToStatus(
+    ...     BugTaskStatus.UNKNOWN, user=bug.owner)
+    >>> product.has_bugtasks
+    False

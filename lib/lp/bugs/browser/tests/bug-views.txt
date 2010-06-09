@@ -265,6 +265,32 @@ and see how the returned link changes.
     http://.../bugs/2
     ...
 
+
+== Bug Attachments ==
+
+We show bug attachments in two lists: patches and non-patch attachments.
+Sequences of patch and non-patch attachments are provided by the
+properties `patches` and `regular_attachments` of the class BugView.
+
+    >>> from lp.bugs.browser.bug import BugView
+    >>> login('foo.bar@canonical.com')
+    >>> request = LaunchpadTestRequest()
+    >>> bug_seven = bugset.get(7)
+    >>> attachment_1 = factory.makeBugAttachment(
+    ...     bug=bug_seven, description='attachment 1', is_patch=False)
+    >>> attachment_2 = factory.makeBugAttachment(
+    ...     bug=bug_seven, description='attachment 2', is_patch=False)
+    >>> patch_1 = factory.makeBugAttachment(
+    ...     bug=bug_seven, description='patch 1', is_patch=True)
+    >>> patch_2 = factory.makeBugAttachment(
+    ...     bug=bug_seven, description='patch 2', is_patch=True)
+    >>> view = BugView(bug_seven, request)
+    >>> [attachment.title for attachment in view.regular_attachments]
+    [u'attachment 1', u'attachment 2']
+    >>> [patch.title for patch in view.patches]
+    [u'patch 1', u'patch 2']
+
+
 == Bug Navigation ==
 
 The +subscribe link has different text depending on if the user is

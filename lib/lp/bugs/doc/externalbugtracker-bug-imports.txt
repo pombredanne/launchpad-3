@@ -46,13 +46,14 @@ IBugTracker in Launchpad, and the bug target, in which the bug should be
 imported into, and the remote bug number. At the moment only
 distributions are supported as the bug target.
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> external_bugtracker._bugs['3'] =  {
     ...     'package': 'evolution',
     ...     'reporter': ("Joe Bloggs", "joe.bloggs@example.com")}
-    >>> bug_watch_updater = BugWatchUpdater(LaunchpadZopelessLayer.txn)
+    >>> transaction.commit()
+    >>> bug_watch_updater = CheckwatchesMaster(LaunchpadZopelessLayer.txn)
     >>> bug = bug_watch_updater.importBug(
     ...     external_bugtracker, bugtracker, debian, '3')
 
@@ -127,6 +128,7 @@ the script gets notified about it.
     >>> bug = bug_watch_updater.importBug(
     ...     external_bugtracker, bugtracker, debian, '5')
     WARNING:...:Unknown debian package (#5 at http://...): no-such-package
+    (OOPS-...)
 
     >>> [added_task] = bug.bugtasks
     >>> added_task.distribution.name

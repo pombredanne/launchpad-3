@@ -271,7 +271,6 @@ class ZopelessTransactionManager(object):
         # This is only used by scripts, so we must connect to the read-write
         # DB here -- that's why we use rw_main_master directly.
         main_connection_string = dbconfig.rw_main_master
-        auth_connection_string = dbconfig.auth_master
 
         # Override dbname and dbhost in the connection string if they
         # have been passed in.
@@ -290,7 +289,7 @@ class ZopelessTransactionManager(object):
             match = re.search(r'host=(\S*)', main_connection_string)
             if match is not None:
                 dbhost = match.group(1)
-        return main_connection_string, auth_connection_string, dbname, dbhost
+        return main_connection_string, dbname, dbhost
 
     @classmethod
     def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
@@ -298,7 +297,7 @@ class ZopelessTransactionManager(object):
         # Connect to the auth master store as well, as some scripts might need
         # to create EmailAddresses and Accounts.
 
-        main_connection_string, auth_connection_string, dbname, dbhost = (
+        main_connection_string, dbname, dbhost = (
             cls._get_zopeless_connection_config(dbname, dbhost))
 
         assert dbuser is not None, '''
@@ -315,7 +314,6 @@ class ZopelessTransactionManager(object):
         overlay = dedent("""\
             [database]
             rw_main_master: %(main_connection_string)s
-            auth_master: %(auth_connection_string)s
             isolation_level: %(isolation_level)s
             """ % vars())
 
@@ -426,6 +424,16 @@ class ZopelessTransactionManager(object):
     def abort():
         """Abort the current transaction."""
         transaction.abort()
+
+    @staticmethod
+    def registerSynch(synch):
+        """Register an ISynchronizer."""
+        transaction.manager.registerSynch(synch)
+
+    @staticmethod
+    def unregisterSynch(synch):
+        """Unregister an ISynchronizer."""
+        transaction.manager.unregisterSynch(synch)
 
 
 def clear_current_connection_cache():

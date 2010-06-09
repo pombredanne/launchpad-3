@@ -24,8 +24,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.launchpad import (
     IAuthServerApplication, IPrivateApplication, IPrivateMaloneApplication)
 from lp.registry.interfaces.mailinglist import IMailingListApplication
-from lp.code.interfaces.codehosting import (
-    IBranchFileSystemApplication, IBranchPullerApplication)
+from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
@@ -45,14 +44,9 @@ class PrivateApplication:
         return getUtility(IAuthServerApplication)
 
     @property
-    def branch_puller(self):
+    def codehosting(self):
         """See `IPrivateApplication`."""
-        return getUtility(IBranchPullerApplication)
-
-    @property
-    def branchfilesystem(self):
-        """See `IPrivateApplication`."""
-        return getUtility(IBranchFileSystemApplication)
+        return getUtility(ICodehostingApplication)
 
     @property
     def codeimportscheduler(self):

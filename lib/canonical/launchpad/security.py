@@ -1,5 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=F0401
 
 """Security policies for using content objects."""
 
@@ -7,10 +9,9 @@ __metaclass__ = type
 __all__ = ['AuthorizationBase']
 
 from zope.interface import implements, Interface
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
-from lp.archiveuploader.permission import can_upload_to_archive
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
@@ -23,16 +24,20 @@ from lp.code.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import (
-    IBranchSubscription)
+from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild)
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtracker import IBugTracker
-from lp.soyuz.interfaces.build import IBuild
 from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
+from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob, IBuildFarmJobOld)
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -49,8 +54,6 @@ from lp.registry.interfaces.distributionmirror import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguage)
 from lp.registry.interfaces.entitlement import IEntitlement
 from lp.hardwaredb.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
@@ -58,8 +61,7 @@ from lp.hardwaredb.interfaces.hwdb import (
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
-    IBazaarApplication, IHasBug, IHasDrivers, ILaunchpadCelebrities,
-    IPersonRoles)
+    IHasBug, IHasDrivers, ILaunchpadCelebrities, IPersonRoles)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
@@ -71,6 +73,10 @@ from canonical.launchpad.interfaces.oauth import (
 from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
+from lp.soyuz.interfaces.binarypackagerelease import (
+    IBinaryPackageReleaseDownloadCount)
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
+from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingEdit,
     ISourcePackagePublishingHistory)
@@ -88,6 +94,9 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import (
     IProjectGroup, IProjectGroupSet)
+from lp.registry.interfaces.gpg import IGPGKey
+from lp.registry.interfaces.irc import IIrcID
+from lp.registry.interfaces.wikiname import IWikiName
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -123,6 +132,7 @@ from lp.services.worlddata.interfaces.country import ICountry
 
 
 class AuthorizationBase:
+
     implements(IAuthorization)
     permission = None
     usedfor = None
@@ -167,6 +177,7 @@ class ViewByLoggedInUser(AuthorizationBase):
     By default, any logged-in user can see anything. More restrictive
     rulesets are defined in other IAuthorization implementations.
     """
+
     permission = 'launchpad.View'
     usedfor = Interface
 
@@ -177,6 +188,7 @@ class ViewByLoggedInUser(AuthorizationBase):
 
 class AnonymousAuthorization(AuthorizationBase):
     """Allow any authenticated and unauthenticated user access."""
+
     permission = 'launchpad.View'
 
     def checkUnauthenticated(self):
@@ -189,6 +201,7 @@ class AnonymousAuthorization(AuthorizationBase):
 
 
 class AdminByAdminsTeam(AuthorizationBase):
+
     permission = 'launchpad.Admin'
     usedfor = Interface
 
@@ -197,6 +210,7 @@ class AdminByAdminsTeam(AuthorizationBase):
 
 
 class AdminByCommercialTeamOrAdmins(AuthorizationBase):
+
     permission = 'launchpad.Commercial'
     usedfor = Interface
 
@@ -205,6 +219,7 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
 
 
 class EditByRegistryExpertsOrAdmins(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = ILaunchpadRoot
 
@@ -213,6 +228,7 @@ class EditByRegistryExpertsOrAdmins(AuthorizationBase):
 
 
 class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
+
     permission = 'launchpad.ProjectReview'
     usedfor = None
 
@@ -221,27 +237,33 @@ class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
 
 
 class ReviewProduct(ReviewByRegistryExpertsOrAdmins):
+
     usedfor = IProduct
 
 
 class ReviewProductSet(ReviewByRegistryExpertsOrAdmins):
+
     usedfor = IProductSet
 
 
 class ReviewProject(ReviewByRegistryExpertsOrAdmins):
+
     usedfor = IProjectGroup
 
 
-class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
+class ReviewProjectGroupSet(ReviewByRegistryExpertsOrAdmins):
+
     usedfor = IProjectGroupSet
 
 
 class ModeratePerson(ReviewByRegistryExpertsOrAdmins):
+
     permission = 'launchpad.Moderate'
     usedfor = IPerson
 
 
 class ViewPillar(AuthorizationBase):
+
     usedfor = IPillar
     permission = 'launchpad.View'
 
@@ -259,6 +281,7 @@ class ViewPillar(AuthorizationBase):
 
 
 class EditAccountBySelfOrAdmin(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IAccount
 
@@ -273,10 +296,12 @@ class EditAccountBySelfOrAdmin(AuthorizationBase):
 
 
 class ViewAccount(EditAccountBySelfOrAdmin):
+
     permission = 'launchpad.View'
 
 
 class SpecialAccount(EditAccountBySelfOrAdmin):
+
     permission = 'launchpad.Special'
 
     def checkAuthenticated(self, user):
@@ -285,14 +310,16 @@ class SpecialAccount(EditAccountBySelfOrAdmin):
 
 
 class ModerateAccountByRegistryExpert(AuthorizationBase):
-    usedfor = IAccount
+
     permission = 'launchpad.Moderate'
+    usedfor = IAccount
 
     def checkAuthenticated(self, user):
         return user.in_admin or user.in_registry_experts
 
 
 class EditOAuthAccessToken(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IOAuthAccessToken
 
@@ -301,11 +328,13 @@ class EditOAuthAccessToken(AuthorizationBase):
 
 
 class EditOAuthRequestToken(EditOAuthAccessToken):
+
     permission = 'launchpad.Edit'
     usedfor = IOAuthRequestToken
 
 
 class EditBugNominationStatus(AuthorizationBase):
+
     permission = 'launchpad.Driver'
     usedfor = IBugNomination
 
@@ -314,6 +343,7 @@ class EditBugNominationStatus(AuthorizationBase):
 
 
 class EditByOwnersOrAdmins(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IHasOwner
 
@@ -321,15 +351,28 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
-class EditProduct(EditByOwnersOrAdmins):
+class EditByOwnersRegistryExpertsOrAdmins(AuthorizationBase):
+
+    permission = 'launchpad.Edit'
+
+    def checkAuthenticated(self, user):
+        return (user.isOwner(self.obj) or
+                user.in_registry_experts or
+                user.in_admin)
+
+
+class EditProduct(EditByOwnersRegistryExpertsOrAdmins):
+
     usedfor = IProduct
 
 
 class EditPackaging(EditByOwnersOrAdmins):
+
     usedfor = IPackaging
 
 
 class EditProductReleaseFile(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IProductReleaseFile
 
@@ -340,6 +383,7 @@ class EditProductReleaseFile(AuthorizationBase):
 
 class AdminDistributionMirrorByDistroOwnerOrMirrorAdminsOrAdmins(
         AuthorizationBase):
+
     permission = 'launchpad.Admin'
     usedfor = IDistributionMirror
 
@@ -351,6 +395,7 @@ class AdminDistributionMirrorByDistroOwnerOrMirrorAdminsOrAdmins(
 
 class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
         AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IDistributionMirror
 
@@ -362,7 +407,14 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
 
 class ViewDistributionMirror(AnonymousAuthorization):
     """Anyone can view an IDistributionMirror."""
+
     usedfor = IDistributionMirror
+
+
+class ViewMilestone(AnonymousAuthorization):
+    """Anyone can view an IMilestone."""
+
+    usedfor = IMilestone
 
 
 class EditSpecificationBranch(AuthorizationBase):
@@ -412,6 +464,7 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
 
 
 class AdminSpecification(AuthorizationBase):
+
     permission = 'launchpad.Admin'
     usedfor = ISpecification
 
@@ -423,6 +476,7 @@ class AdminSpecification(AuthorizationBase):
 
 
 class DriverSpecification(AuthorizationBase):
+
     permission = 'launchpad.Driver'
     usedfor = ISpecification
 
@@ -441,6 +495,7 @@ class EditSprintSpecification(AuthorizationBase):
     """The sprint owner or driver can say what makes it onto the agenda for
     the sprint.
     """
+
     permission = 'launchpad.Driver'
     usedfor = ISprintSpecification
 
@@ -453,6 +508,7 @@ class DriveSprint(AuthorizationBase):
     """The sprint owner or driver can say what makes it onto the agenda for
     the sprint.
     """
+
     permission = 'launchpad.Driver'
     usedfor = ISprint
 
@@ -464,6 +520,7 @@ class DriveSprint(AuthorizationBase):
 
 class Sprint(AuthorizationBase):
     """An attendee, owner, or driver of a sprint."""
+
     permission = 'launchpad.View'
     usedfor = ISprint
 
@@ -478,6 +535,7 @@ class Sprint(AuthorizationBase):
 class EditSpecificationSubscription(AuthorizationBase):
     """The subscriber, and people related to the spec or the target of the
     spec can determine who is essential."""
+
     permission = 'launchpad.Edit'
     usedfor = ISpecificationSubscription
 
@@ -505,6 +563,7 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
 
 
 class AdminProjectTranslations(AuthorizationBase):
+
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IProjectGroup
 
@@ -520,6 +579,7 @@ class AdminProjectTranslations(AuthorizationBase):
 
 
 class AdminProductTranslations(AuthorizationBase):
+
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IProduct
 
@@ -534,15 +594,13 @@ class AdminProductTranslations(AuthorizationBase):
                 user.in_admin)
 
 
-class AdminSeriesByVCSImports(AuthorizationBase):
-    permission = 'launchpad.Admin'
-    usedfor = IProductSeries
+class EditProject(EditByOwnersRegistryExpertsOrAdmins):
 
-    def checkAuthenticated(self, user):
-        return user.in_vcs_imports
+    usedfor = IProjectGroup
 
 
 class EditProjectMilestoneNever(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IProjectGroupMilestone
 
@@ -552,6 +610,7 @@ class EditProjectMilestoneNever(AuthorizationBase):
 
 
 class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IMilestone
 
@@ -569,6 +628,7 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
 
 
 class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
+
     permission = 'launchpad.Admin'
     usedfor = IMilestone
 
@@ -580,11 +640,13 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
 
 
 class ModeratePersonSetByExpertsOrAdmins(ReviewByRegistryExpertsOrAdmins):
+
     permission = 'launchpad.Moderate'
     usedfor = IPersonSet
 
 
 class EditTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
+
     permission = 'launchpad.Owner'
     usedfor = ITeam
 
@@ -595,6 +657,7 @@ class EditTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
 
 
 class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = ITeam
 
@@ -607,6 +670,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 
 
 class ModerateTeam(ReviewByRegistryExpertsOrAdmins):
+
     permission = 'launchpad.Moderate'
     usedfor = ITeam
 
@@ -622,6 +686,7 @@ class ModerateTeam(ReviewByRegistryExpertsOrAdmins):
 
 
 class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = ITeamMembership
 
@@ -634,6 +699,7 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 # going to be used only on the webservice (which explicitly checks for
 # launchpad.View) so that we don't leak memberships of private teams.
 class ViewTeamMembership(AuthorizationBase):
+
     permission = 'launchpad.View'
     usedfor = ITeamMembership
 
@@ -654,19 +720,23 @@ class ViewTeamMembership(AuthorizationBase):
         return False
 
 
-class EditPersonBySelfOrAdmins(AuthorizationBase):
+class EditPersonBySelfRegistryExpertsOrAdmins(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IPerson
 
     def checkAuthenticated(self, user):
-        """A user can edit the Person who is herself.
+        """A user can edit his or her own object.
 
-        The admin team can also edit any Person.
+        The registry experts or admin teams can also edit any Person.
         """
-        return self.obj.id == user.person.id or user.in_admin
+        return (self.obj.id == user.person.id or
+                user.in_registry_experts or
+                user.in_admin)
 
 
 class EditTranslationsPersonByPerson(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = ITranslationsPerson
 
@@ -676,6 +746,7 @@ class EditTranslationsPersonByPerson(AuthorizationBase):
 
 
 class ViewPersonLocation(AuthorizationBase):
+
     permission = 'launchpad.View'
     usedfor = IPersonLocation
 
@@ -690,6 +761,7 @@ class ViewPersonLocation(AuthorizationBase):
 
 
 class EditPersonBySelf(AuthorizationBase):
+
     permission = 'launchpad.Special'
     usedfor = IPerson
 
@@ -704,6 +776,7 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
     Only members of a team with a private membership can view the
     membership list.
     """
+
     permission = 'launchpad.View'
     usedfor = IPerson
 
@@ -734,17 +807,20 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
 
 class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
         EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
+
     permission = 'launchpad.Edit'
     usedfor = IPoll
 
 
 class EditPollSubsetByTeamOwnerOrTeamAdminsOrAdmins(
         EditPollByTeamOwnerOrTeamAdminsOrAdmins):
+
     permission = 'launchpad.Edit'
     usedfor = IPollSubset
 
 
 class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IPollOption
 
@@ -756,20 +832,20 @@ class AdminDistribution(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions
     and distroseriess to the Launchpad admin team."""
+
     permission = 'launchpad.Admin'
     usedfor = IDistribution
 
 
-class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
+class EditDistributionByOwnersRegistryExpertsOrAdmins(
+    EditByOwnersRegistryExpertsOrAdmins):
     """The owner of a distribution should be able to edit its
     information; it is mainly administrative data, such as bug
     contacts. Note that creation of new distributions and distribution
     series is still protected with launchpad.Admin"""
+
     permission = 'launchpad.Edit'
     usedfor = IDistribution
-
-    def checkAuthenticated(self, user):
-        return user.isOwner(self.obj) or user.in_admin
 
 
 class AppendDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
@@ -778,6 +854,7 @@ class AppendDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
     Drivers of `IDerivativeDistribution`s can create series. Owners and
     admins can create series for all `IDistribution`s.
     """
+
     permission = 'launchpad.Append'
     usedfor = IDistribution
 
@@ -792,6 +869,7 @@ class AppendDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
 class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of a distribution should be able to edit its source
     package information"""
+
     permission = 'launchpad.Edit'
     usedfor = IDistributionSourcePackage
 
@@ -810,6 +888,7 @@ class AdminDistroSeries(AdminByAdminsTeam):
         files moved to the new namespace, and mirrors would get very very
         upset. Then James T would be on your case.
     """
+
     permission = 'launchpad.Admin'
     usedfor = IDistroSeries
 
@@ -822,6 +901,7 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
     please consult with Kiko and MDZ on the mailing list before modifying
     these permissions.
     """
+
     permission = 'launchpad.Edit'
     usedfor = IDistroSeries
 
@@ -838,11 +918,13 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
 
 class ViewDistroSeries(AnonymousAuthorization):
     """Anyone can view a DistroSeries."""
+
     usedfor = IDistroSeries
 
 
 class ViewCountry(AnonymousAuthorization):
     """Anyone can view a Country."""
+
     usedfor = ICountry
 
 
@@ -852,6 +934,7 @@ class SeriesDrivers(AuthorizationBase):
     Drivers exist for distribution and product series.  Distribution and
     product owners are implicitly drivers too.
     """
+
     permission = 'launchpad.Driver'
     usedfor = IHasDrivers
 
@@ -867,6 +950,7 @@ class ViewProductSeries(AnonymousAuthorization):
 
 
 class EditProductSeries(EditByOwnersOrAdmins):
+
     usedfor = IProductSeries
 
     def checkAuthenticated(self, user):
@@ -892,6 +976,7 @@ class EditBugTask(AuthorizationBase):
     bugs. Allow only explicit subscribers to edit objects linked to
     private bugs.
     """
+
     permission = 'launchpad.Edit'
     usedfor = IHasBug
 
@@ -917,6 +1002,7 @@ class EditBugTask(AuthorizationBase):
 
 
 class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
+
     permission = 'launchpad.View'
     usedfor = IHasBug
 
@@ -930,6 +1016,7 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
 
 class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(
     AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IBug
 
@@ -957,6 +1044,7 @@ class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(
 
 
 class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
+
     permission = 'launchpad.View'
     usedfor = IBug
 
@@ -972,6 +1060,7 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
 
 
 class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
+
     permission = 'launchpad.Edit'
     usedfor = IBugBranch
 
@@ -988,6 +1077,7 @@ class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
     If the user is authorized to view the bug, he's allowed to view the
     attachment.
     """
+
     permission = 'launchpad.View'
     usedfor = IBugAttachment
 
@@ -1003,6 +1093,7 @@ class EditBugAttachment(
     If the user is authorized to view the bug, he's allowed to edit the
     attachment.
     """
+
     permission = 'launchpad.Edit'
     usedfor = IBugAttachment
 
@@ -1022,6 +1113,7 @@ class ViewBugMessage(AnonymousAuthorization):
 
 
 class ViewAnnouncement(AuthorizationBase):
+
     permission = 'launchpad.View'
     usedfor = IAnnouncement
 
@@ -1048,6 +1140,7 @@ class ViewAnnouncement(AuthorizationBase):
 
 
 class EditAnnouncement(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IAnnouncement
 
@@ -1061,6 +1154,7 @@ class EditAnnouncement(AuthorizationBase):
 
 
 class UseApiDoc(AuthorizationBase):
+
     permission = 'zope.app.apidoc.UseAPIDoc'
     usedfor = Interface
 
@@ -1084,17 +1178,13 @@ class OnlyVcsImportsAndAdmins(AuthorizationBase):
         return user.in_admin or user.in_vcs_imports
 
 
-class AdminTheBazaar(OnlyVcsImportsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IBazaarApplication
-
-
 class EditCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can edit the object view of a CodeImport.
 
     Currently, we restrict the visibility of the new code import
     system to members of ~vcs-imports and Launchpad admins.
     """
+
     permission = 'launchpad.Edit'
     usedfor = ICodeImport
 
@@ -1105,6 +1195,7 @@ class SeeCodeImportJobSet(OnlyVcsImportsAndAdmins):
     Currently, we restrict the visibility of the new code import
     system to members of ~vcs-imports and Launchpad admins.
     """
+
     permission = 'launchpad.View'
     usedfor = ICodeImportJobSet
 
@@ -1115,15 +1206,17 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
     Currently, we restrict the visibility of the new code import
     system to members of ~vcs-imports and Launchpad admins.
     """
+
     permission = 'launchpad.Edit'
     usedfor = ICodeImportJobWorkflow
 
 
-class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
+class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     """Control who can edit the object view of a CodeImportMachine.
 
-    Access is restricted to members of ~vcs-imports and Launchpad admins.
+    Access is restricted to members of ~bazaar-experts and Launchpad admins.
     """
+
     permission = 'launchpad.Edit'
     usedfor = ICodeImportMachine
 
@@ -1136,6 +1229,7 @@ class AdminDistributionTranslations(AuthorizationBase):
     and limits access to Rosetta experts, Launchpad admins and distribution
     translation group owner.
     """
+
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistribution
 
@@ -1153,8 +1247,14 @@ class AdminDistributionTranslations(AuthorizationBase):
             return True
         else:
             return (user.in_rosetta_experts or
-                    EditDistributionByDistroOwnersOrAdmins(
+                    EditByOwnersOrAdmins(
                         self.obj).checkAuthenticated(user))
+
+
+class ViewPOTemplates(AnonymousAuthorization):
+    """Anyone can view an IPOTemplate."""
+
+    usedfor = IPOTemplate
 
 
 class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
@@ -1185,6 +1285,7 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
 
 
 class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
+
     permission = 'launchpad.Edit'
     usedfor = IPOTemplate
 
@@ -1205,11 +1306,19 @@ class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
 # XXX: Carlos Perello Marin 2005-05-24 bug=753:
 # This should be using SuperSpecialPermissions when implemented.
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
+
     permission = 'launchpad.Append'
     usedfor = IProductSeries
 
 
+class ViewPOFile(AnonymousAuthorization):
+    """Anyone can view an IPOFile."""
+
+    usedfor = IPOFile
+
+
 class EditPOFileDetails(EditByOwnersOrAdmins):
+
     usedfor = IPOFile
 
     def checkAuthenticated(self, user):
@@ -1222,6 +1331,7 @@ class EditPOFileDetails(EditByOwnersOrAdmins):
 
 
 class AdminTranslator(OnlyRosettaExpertsAndAdmins):
+
     permission = 'launchpad.Admin'
     usedfor = ITranslator
 
@@ -1233,6 +1343,7 @@ class AdminTranslator(OnlyRosettaExpertsAndAdmins):
 
 
 class EditTranslator(OnlyRosettaExpertsAndAdmins):
+
     permission = 'launchpad.Edit'
     usedfor = IEditTranslator
 
@@ -1245,6 +1356,7 @@ class EditTranslator(OnlyRosettaExpertsAndAdmins):
 
 
 class EditTranslationGroup(OnlyRosettaExpertsAndAdmins):
+
     permission = 'launchpad.Edit'
     usedfor = ITranslationGroup
 
@@ -1256,6 +1368,7 @@ class EditTranslationGroup(OnlyRosettaExpertsAndAdmins):
 
 
 class EditTranslationGroupSet(OnlyRosettaExpertsAndAdmins):
+
     permission = 'launchpad.Admin'
     usedfor = ITranslationGroupSet
 
@@ -1299,7 +1412,14 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
              user.inTeam(translation_group.owner)))
 
 
+class ViewBugTracker(AnonymousAuthorization):
+    """Anyone can view a bug tracker."""
+
+    usedfor = IBugTracker
+
+
 class EditBugTracker(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IBugTracker
 
@@ -1309,6 +1429,7 @@ class EditBugTracker(AuthorizationBase):
 
 
 class EditProductRelease(EditByOwnersOrAdmins):
+
     permission = 'launchpad.Edit'
     usedfor = IProductRelease
 
@@ -1328,6 +1449,7 @@ class ViewProductRelease(AnonymousAuthorization):
 
 
 class AdminTranslationImportQueueEntry(AuthorizationBase):
+
     permission = 'launchpad.Admin'
     usedfor = ITranslationImportQueueEntry
 
@@ -1336,6 +1458,7 @@ class AdminTranslationImportQueueEntry(AuthorizationBase):
 
 
 class EditTranslationImportQueueEntry(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = ITranslationImportQueueEntry
 
@@ -1347,11 +1470,13 @@ class EditTranslationImportQueueEntry(AuthorizationBase):
 
 
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
+
     permission = 'launchpad.Admin'
     usedfor = ITranslationImportQueue
 
 
 class EditPackageUploadQueue(AdminByAdminsTeam):
+
     permission = 'launchpad.Edit'
     usedfor = IPackageUploadQueue
 
@@ -1362,11 +1487,13 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
 
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
-            self.obj.distroseries.main_archive, user.person)
+            self.obj.distroseries.distribution.all_distro_archives,
+            user.person)
         return permissions.count() > 0
 
 
 class EditPackageUpload(AdminByAdminsTeam):
+
     permission = 'launchpad.Edit'
     usedfor = IPackageUpload
 
@@ -1399,6 +1526,7 @@ class EditPackageUpload(AdminByAdminsTeam):
 
 
 class AdminByBuilddAdmin(AuthorizationBase):
+
     permission = 'launchpad.Admin'
 
     def checkAuthenticated(self, user):
@@ -1407,10 +1535,12 @@ class AdminByBuilddAdmin(AuthorizationBase):
 
 
 class AdminBuilderSet(AdminByBuilddAdmin):
+
     usedfor = IBuilderSet
 
 
 class AdminBuilder(AdminByBuilddAdmin):
+
     usedfor = IBuilder
 
 
@@ -1418,17 +1548,41 @@ class AdminBuilder(AdminByBuilddAdmin):
 # in the original plan, we should grant some rights to the owners and
 # that's what Edit is for.
 class EditBuilder(AdminByBuilddAdmin):
+
     permission = 'launchpad.Edit'
     usedfor = IBuilder
 
 
 class AdminBuildRecord(AdminByBuilddAdmin):
-    usedfor = IBuild
+
+    usedfor = IBuildFarmJob
 
 
-class EditBuildRecord(AdminByBuilddAdmin):
+class EditBuildFarmJob(AdminByBuilddAdmin):
+
     permission = 'launchpad.Edit'
-    usedfor = IBuild
+    usedfor = IBuildFarmJob
+
+
+class EditPackageBuild(EditBuildFarmJob):
+
+    usedfor = IPackageBuild
+
+    def checkAuthenticated(self, user):
+        """Check if the user has access to edit the archive."""
+        if EditBuildFarmJob.checkAuthenticated(self, user):
+            return True
+
+        # If the user is in the owning team for the archive,
+        # then they have access to edit the builds.
+        # If it's a PPA or a copy archive only allow its owner.
+        return (self.obj.archive.owner and
+                user.inTeam(self.obj.archive.owner))
+
+class EditBinaryPackageBuild(EditPackageBuild):
+
+    permission = 'launchpad.Edit'
+    usedfor = IBinaryPackageBuild
 
     def checkAuthenticated(self, user):
         """Check write access for user and different kinds of archives.
@@ -1439,30 +1593,29 @@ class EditBuildRecord(AdminByBuilddAdmin):
             * users with upload permissions (for the respective distribution)
               otherwise.
         """
-        if AdminByBuilddAdmin.checkAuthenticated(self, user):
+        if EditPackageBuild.checkAuthenticated(self, user):
             return True
-
-        # If it's a PPA or a copy archive only allow its owner.
-        if self.obj.archive.is_ppa or self.obj.archive.is_copy:
-            return (self.obj.archive.owner and
-                    user.inTeam(self.obj.archive.owner))
 
         # Primary or partner section here: is the user in question allowed
-        # to upload to the respective component? Allow user to retry build
-        # if so.
-        archive = self.obj.archive
-        if archive.canUpload(user.person, self.obj.current_component):
-            return True
-        else:
-            return archive.canUpload(
-                user.person, self.obj.sourcepackagerelease.sourcepackagename)
+        # to upload to the respective component, packageset or package? Allow
+        # user to retry build if so.
+        # strict_component is True because the source package already exists,
+        # otherwise, how can they give it back?
+        check_perms = self.obj.archive.checkUpload(
+            user.person, self.obj.distro_series,
+            self.obj.source_package_release.sourcepackagename,
+            self.obj.current_component, self.obj.pocket,
+            strict_component=True)
+        return check_perms == None
 
 
-class ViewBuildRecord(EditBuildRecord):
+class ViewBinaryPackageBuild(EditBinaryPackageBuild):
+
     permission = 'launchpad.View'
 
-    # This code MUST match the logic in IBuildSet.getBuildsForBuilder()
-    # otherwise users are likely to get 403 errors, or worse.
+    # This code MUST match the logic in
+    # IBinaryPackageBuildSet.getBuildsForBuilder() otherwise users are
+    # likely to get 403 errors, or worse.
     def checkAuthenticated(self, user):
         """Private restricts to admins and archive members."""
         if not self.obj.archive.private:
@@ -1482,7 +1635,7 @@ class ViewBuildRecord(EditBuildRecord):
         # privacy since the source package is published publicly.
         # This happens when copy-package is used to re-publish a private
         # package in the primary archive.
-        auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
+        auth_spr = ViewSourcePackageRelease(self.obj.source_package_release)
         if auth_spr.checkAuthenticated(user):
             return True
 
@@ -1495,11 +1648,60 @@ class ViewBuildRecord(EditBuildRecord):
             return True
 
         # See comment above.
-        auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
+        auth_spr = ViewSourcePackageRelease(self.obj.source_package_release)
         return auth_spr.checkUnauthenticated()
 
 
+class ViewBuildFarmJobOld(AuthorizationBase):
+    """Permission to view an `IBuildFarmJobOld`.
+
+    This permission is based entirely on permission to view the
+    associated `IBinaryPackageBuild` and/or `IBranch`.
+    """
+
+    permission = 'launchpad.View'
+    usedfor = IBuildFarmJobOld
+
+    def _getBranch(self):
+        """Get `IBranch` associated with this job, if any."""
+        if IBuildFarmBranchJob.providedBy(self.obj):
+            return self.obj.branch
+        else:
+            return None
+
+    def _getBuild(self):
+        """Get `IBuildBase` associated with this job, if any."""
+        if IBuildFarmBuildJob.providedBy(self.obj):
+            return self.obj.build
+        else:
+            return None
+
+    def _checkBuildPermission(self, user=None):
+        """Check access to `IBuildBase` for this job."""
+        permission = ViewBinaryPackageBuild(self.obj.build)
+        if user is None:
+            return permission.checkUnauthenticated()
+        else:
+            return permission.checkAuthenticated(user)
+
+    def _checkAccess(self, user=None):
+        """Unified access check for anonymous and authenticated users."""
+        branch = self._getBranch()
+        if branch is not None and not branch.visibleByUser(user):
+            return False
+
+        build = self._getBuild()
+        if build is not None and not self._checkBuildPermission(user):
+            return False
+
+        return True
+
+    checkAuthenticated = _checkAccess
+    checkUnauthenticated = _checkAccess
+
+
 class AdminQuestion(AdminByAdminsTeam):
+
     permission = 'launchpad.Admin'
     usedfor = IQuestion
 
@@ -1511,6 +1713,7 @@ class AdminQuestion(AdminByAdminsTeam):
 
 
 class ModerateQuestion(AdminQuestion):
+
     permission = 'launchpad.Moderate'
     usedfor = IQuestion
 
@@ -1525,6 +1728,7 @@ class ModerateQuestion(AdminQuestion):
 
 
 class QuestionOwner(AuthorizationBase):
+
     permission = 'launchpad.Owner'
     usedfor = IQuestion
 
@@ -1534,6 +1738,7 @@ class QuestionOwner(AuthorizationBase):
 
 
 class ModerateFAQTarget(EditByOwnersOrAdmins):
+
     permission = 'launchpad.Moderate'
     usedfor = IFAQTarget
 
@@ -1549,6 +1754,7 @@ class ModerateFAQTarget(EditByOwnersOrAdmins):
 
 
 class EditFAQ(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IFAQ
 
@@ -1566,12 +1772,26 @@ def can_edit_team(team, user):
         return team in user.person.getAdministratedTeams()
 
 
+class ViewLanguageSet(AnonymousAuthorization):
+    """Anyone can view an ILangaugeSet."""
+
+    usedfor = ILanguageSet
+
+
 class AdminLanguageSet(OnlyRosettaExpertsAndAdmins):
+
     permission = 'launchpad.Admin'
     usedfor = ILanguageSet
 
 
+class ViewLanguage(AnonymousAuthorization):
+    """Anyone can view an ILangauge."""
+
+    usedfor = ILanguage
+
+
 class AdminLanguage(OnlyRosettaExpertsAndAdmins):
+
     permission = 'launchpad.Admin'
     usedfor = ILanguage
 
@@ -1583,6 +1803,7 @@ class AccessBranch(AuthorizationBase):
     of the branch, they are in the team that owns the branch, subscribed to
     the branch, or a launchpad administrator.
     """
+
     permission = 'launchpad.View'
     usedfor = IBranch
 
@@ -1595,6 +1816,7 @@ class AccessBranch(AuthorizationBase):
 
 class EditBranch(AuthorizationBase):
     """The owner, bazaar experts or admins can edit branches."""
+
     permission = 'launchpad.Edit'
     usedfor = IBranch
 
@@ -1635,13 +1857,15 @@ def can_upload_linked_package(person_role, branch):
     # one combination that allows us to upload the corresponding source
     # package.
     for ssp in ssp_list:
-        if can_upload_to_archive(person_role.person, ssp):
+        archive = ssp.sourcepackage.get_default_archive()
+        if archive.canUploadSuiteSourcePackage(person_role.person, ssp):
             return True
     return False
 
 
 class AdminBranch(AuthorizationBase):
     """The bazaar experts or admins can administer branches."""
+
     permission = 'launchpad.Admin'
     usedfor = IBranch
 
@@ -1651,6 +1875,7 @@ class AdminBranch(AuthorizationBase):
 
 
 class AdminDistroSeriesTranslations(AuthorizationBase):
+
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
 
@@ -1664,39 +1889,8 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
             self.obj.distribution).checkAuthenticated(user))
 
 
-class AdminDistroSeriesLanguage(AuthorizationBase):
-    permission = 'launchpad.TranslationsAdmin'
-    usedfor = IDistroSeriesLanguage
-
-    def checkAuthenticated(self, user):
-        """Is the user able to manage `IDistroSeriesLanguage` translations.
-
-        Distribution managers can also manage IDistroSeriesLanguage
-        """
-        return (AdminDistroSeriesTranslations(
-            self.obj.distroseries).checkAuthenticated(user))
-
-
-class BranchSubscriptionEdit(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IBranchSubscription
-
-    def checkAuthenticated(self, user):
-        """Is the user able to edit a branch subscription?
-
-        Any team member can edit a branch subscription for their team.
-        Launchpad Admins can also edit any branch subscription.
-        """
-        return (user.inTeam(self.obj.person) or
-                user.in_admin or
-                user.in_bazaar_experts)
-
-
-class BranchSubscriptionView(BranchSubscriptionEdit):
-    permission = 'launchpad.View'
-
-
 class BranchMergeProposalView(AuthorizationBase):
+
     permission = 'launchpad.View'
     usedfor = IBranchMergeProposal
 
@@ -1721,6 +1915,7 @@ class BranchMergeProposalView(AuthorizationBase):
 
 
 class PreviewDiffView(AuthorizationBase):
+
     permission = 'launchpad.View'
     usedfor = IPreviewDiff
 
@@ -1744,6 +1939,7 @@ class PreviewDiffView(AuthorizationBase):
 
 
 class CodeReviewVoteReferenceEdit(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = ICodeReviewVoteReference
 
@@ -1765,6 +1961,7 @@ class CodeReviewVoteReferenceEdit(AuthorizationBase):
 
 
 class CodeReviewCommentView(AuthorizationBase):
+
     permission = 'launchpad.View'
     usedfor = ICodeReviewComment
 
@@ -1788,6 +1985,7 @@ class CodeReviewCommentView(AuthorizationBase):
 
 
 class CodeReviewCommentDelete(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = ICodeReviewCommentDeletion
 
@@ -1811,6 +2009,7 @@ class CodeReviewCommentDelete(AuthorizationBase):
 
 
 class BranchMergeProposalEdit(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IBranchMergeProposal
 
@@ -1826,10 +2025,8 @@ class BranchMergeProposalEdit(AuthorizationBase):
         """
         return (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.source_branch.owner) or
-                user.inTeam(self.obj.target_branch.owner) or
-                user.inTeam(self.obj.target_branch.reviewer) or
-                user.in_admin or
-                user.in_bazaar_experts)
+                check_permission('launchpad.Edit', self.obj.target_branch) or
+                user.inTeam(self.obj.target_branch.reviewer))
 
 
 class ViewEntitlement(AuthorizationBase):
@@ -1838,6 +2035,7 @@ class ViewEntitlement(AuthorizationBase):
     Allow the owner of the entitlement, the entitlement registrant,
     or any member of the team or any admin to view the entitlement.
     """
+
     permission = 'launchpad.View'
     usedfor = IEntitlement
 
@@ -1855,6 +2053,7 @@ class ViewEntitlement(AuthorizationBase):
 class AdminDistroSeriesLanguagePacks(
     OnlyRosettaExpertsAndAdmins,
     EditDistroSeriesByOwnersOrDistroOwnersOrAdmins):
+
     permission = 'launchpad.LanguagePacksAdmin'
     usedfor = IDistroSeries
 
@@ -1873,11 +2072,13 @@ class AdminDistroSeriesLanguagePacks(
 
 
 class AdminLanguagePack(OnlyRosettaExpertsAndAdmins):
+
     permission = 'launchpad.LanguagePacksAdmin'
     usedfor = ILanguagePack
 
 
 class ViewHWSubmission(AuthorizationBase):
+
     permission = 'launchpad.View'
     usedfor = IHWSubmission
 
@@ -1898,6 +2099,7 @@ class ViewHWSubmission(AuthorizationBase):
 
 
 class EditHWSubmission(AdminByAdminsTeam):
+
     permission = 'launchpad.Edit'
     usedfor = IHWSubmission
 
@@ -1905,6 +2107,7 @@ class EditHWSubmission(AdminByAdminsTeam):
 class ViewHWDBBase(AuthorizationBase):
     """Base class to restrict access to HWDB data to members of the HWDB team.
     """
+
     permission = 'launchpad.View'
 
     def checkAuthenticated(self, user):
@@ -1917,34 +2120,42 @@ class ViewHWDBBase(AuthorizationBase):
 
 
 class ViewHWDriver(ViewHWDBBase):
+
     usedfor = IHWDriver
 
 
 class ViewHWDriverName(ViewHWDBBase):
+
     usedfor = IHWDriverName
 
 
 class ViewHWDriverPackageName(ViewHWDBBase):
+
     usedfor = IHWDriverPackageName
 
 
 class ViewHWVendorID(ViewHWDBBase):
+
     usedfor = IHWVendorID
 
 
 class ViewHWDevice(ViewHWDBBase):
+
     usedfor = IHWDevice
 
 
 class ViewHWSubmissionDevice(ViewHWDBBase):
+
     usedfor = IHWSubmissionDevice
 
 
 class ViewHWDBApplication(ViewHWDBBase):
+
     usedfor = IHWDBApplication
 
 
 class ViewHWDeviceClass(ViewHWDBBase):
+
     usedfor = IHWDeviceClass
 
 
@@ -1954,6 +2165,7 @@ class ViewArchive(AuthorizationBase):
     Only admins or members of a team with a private membership can
     view the archive.
     """
+
     permission = 'launchpad.View'
     usedfor = IArchive
 
@@ -1979,7 +2191,7 @@ class ViewArchive(AuthorizationBase):
             return True
 
         # Uploaders can view private PPAs.
-        if self.obj.is_ppa and self.obj.canUpload(user.person):
+        if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
 
         return False
@@ -1994,13 +2206,14 @@ class AppendArchive(AuthorizationBase):
 
     No one can upload to disabled archives.
 
-    PPA upload rights are managed via `IArchive.canUpload`;
+    PPA upload rights are managed via `IArchive.checkArchivePermission`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
 
     Appending to ubuntu main archives can also be done by the
     'ubuntu-security' celebrity.
     """
+
     permission = 'launchpad.Append'
     usedfor = IArchive
 
@@ -2011,7 +2224,7 @@ class AppendArchive(AuthorizationBase):
         if user.inTeam(self.obj.owner):
             return True
 
-        if self.obj.is_ppa and self.obj.canUpload(user.person):
+        if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
 
         celebrities = getUtility(ILaunchpadCelebrities)
@@ -2029,6 +2242,7 @@ class ViewArchiveAuthToken(AuthorizationBase):
     The user just needs to be mentioned in the token, have append privilege
     to the archive or be an admin.
     """
+
     permission = "launchpad.View"
     usedfor = IArchiveAuthToken
 
@@ -2045,6 +2259,7 @@ class EditArchiveAuthToken(AuthorizationBase):
     The user should have append privileges to the context archive, or be an
     admin.
     """
+
     permission = "launchpad.Edit"
     usedfor = IArchiveAuthToken
 
@@ -2061,6 +2276,7 @@ class ViewPersonalArchiveSubscription(AuthorizationBase):
     The user should be the subscriber, have append privilege to the archive
     or be an admin.
     """
+
     permission = "launchpad.View"
     usedfor = IPersonalArchiveSubscription
 
@@ -2081,6 +2297,7 @@ class ViewArchiveSubscriber(AuthorizationBase):
     The user should be the subscriber, have append privilege to the
     archive or be an admin.
     """
+
     permission = "launchpad.View"
     usedfor = IArchiveSubscriber
 
@@ -2096,6 +2313,7 @@ class EditArchiveSubscriber(AuthorizationBase):
 
     The user should have append privilege to the archive or be an admin.
     """
+
     permission = "launchpad.Edit"
     usedfor = IArchiveSubscriber
 
@@ -2106,23 +2324,65 @@ class EditArchiveSubscriber(AuthorizationBase):
         return user.in_admin
 
 
-class ViewSourcePackagePublishingHistory(AuthorizationBase):
+class DerivedAuthorization(AuthorizationBase):
+    """An Authorization that is based on permissions for other objects.
+
+    Implementations must define permission, usedfor and iter_objects.
+    iter_objects should iterate through the objects to check permission on.
+
+    Failure on the permission check for any object causes an overall failure.
+    """
+
+    def iter_adapters(self):
+        return (
+            getAdapter(obj, IAuthorization, self.permission)
+            for obj in self.iter_objects())
+
+    def checkAuthenticated(self, user):
+        for adapter in self.iter_adapters():
+            if not adapter.checkAuthenticated(user):
+                return False
+        return True
+
+    def checkUnauthenticated(self):
+        for adapter in self.iter_adapters():
+            if not adapter.checkUnauthenticated():
+                return False
+        return True
+
+
+class ViewSourcePackageRecipe(DerivedAuthorization):
+
+    permission = "launchpad.View"
+    usedfor = ISourcePackageRecipe
+
+    def iter_objects(self):
+        return self.obj.getReferencedBranches()
+
+
+class ViewSourcePackageRecipeBuild(DerivedAuthorization):
+
+    permission = "launchpad.View"
+    usedfor = ISourcePackageRecipeBuild
+
+    def iter_objects(self):
+        yield self.obj.recipe
+        yield self.obj.archive
+
+
+class ViewSourcePackagePublishingHistory(ViewArchive):
     """Restrict viewing of source publications."""
+
     permission = "launchpad.View"
     usedfor = ISourcePackagePublishingHistory
 
-    def checkAuthenticated(self, user):
-        view_archive = ViewArchive(self.obj.archive)
-        if view_archive.checkAuthenticated(user):
-            return True
-        return user.in_admin
-
-    def checkUnauthenticated(self):
-        return not self.obj.archive.private
+    def __init__(self, obj):
+        super(ViewSourcePackagePublishingHistory, self).__init__(obj.archive)
 
 
 class EditPublishing(AuthorizationBase):
     """Restrict editing of source and binary packages.."""
+
     permission = "launchpad.Edit"
     usedfor = IPublishingEdit
 
@@ -2132,7 +2392,15 @@ class EditPublishing(AuthorizationBase):
 
 class ViewBinaryPackagePublishingHistory(ViewSourcePackagePublishingHistory):
     """Restrict viewing of binary publications."""
+
     usedfor = IBinaryPackagePublishingHistory
+
+
+class ViewBinaryPackageReleaseDownloadCount(
+    ViewSourcePackagePublishingHistory):
+    """Restrict viewing of binary package download counts."""
+
+    usedfor = IBinaryPackageReleaseDownloadCount
 
 
 class ViewSourcePackageRelease(AuthorizationBase):
@@ -2145,6 +2413,7 @@ class ViewSourcePackageRelease(AuthorizationBase):
     automatically viewable even if the package is also published in
     a private archive.
     """
+
     permission = 'launchpad.View'
     usedfor = ISourcePackageRelease
 
@@ -2169,6 +2438,7 @@ class ViewSourcePackageRelease(AuthorizationBase):
 
 
 class MailingListApprovalByExperts(AuthorizationBase):
+
     permission = 'launchpad.Admin'
     usedfor = IMailingListSet
 
@@ -2177,6 +2447,7 @@ class MailingListApprovalByExperts(AuthorizationBase):
 
 
 class ConfigureTeamMailingList(AuthorizationBase):
+
     permission = 'launchpad.MailingListManager'
     usedfor = ITeam
 
@@ -2201,6 +2472,7 @@ class ConfigureTeamMailingList(AuthorizationBase):
 
 
 class ViewEmailAddress(AuthorizationBase):
+
     permission = 'launchpad.View'
     usedfor = IEmailAddress
 
@@ -2238,6 +2510,7 @@ class ViewEmailAddress(AuthorizationBase):
 
 
 class EditEmailAddress(EditByOwnersOrAdmins):
+
     permission = 'launchpad.Edit'
     usedfor = IEmailAddress
 
@@ -2249,7 +2522,23 @@ class EditEmailAddress(EditByOwnersOrAdmins):
             account)
 
 
+class ViewGPGKey(AnonymousAuthorization):
+
+    usedfor = IGPGKey
+
+
+class ViewIrcID(AnonymousAuthorization):
+
+    usedfor = IIrcID
+
+
+class ViewWikiName(AnonymousAuthorization):
+
+    usedfor = IWikiName
+
+
 class EditArchivePermissionSet(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IArchivePermissionSet
 
@@ -2291,6 +2580,7 @@ class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
 
 
 class EditPackageset(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IPackageset
 
@@ -2300,6 +2590,7 @@ class EditPackageset(AuthorizationBase):
 
 
 class EditPackagesetSet(AuthorizationBase):
+
     permission = 'launchpad.Edit'
     usedfor = IPackagesetSet
 

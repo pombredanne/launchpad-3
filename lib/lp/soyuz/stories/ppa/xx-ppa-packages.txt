@@ -23,7 +23,7 @@ a descriptive main heading.
     Hierarchy: Celso Providelo > PPA for Celso Providelo > Packages in...
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
-    * Branches - http://code.launchpad.dev/~cprov
+    * Code - http://code.launchpad.dev/~cprov
     * Bugs - http://bugs.launchpad.dev/~cprov
     * Blueprints - http://blueprints.launchpad.dev/~cprov
     * Translations - http://translations.launchpad.dev/~cprov
@@ -35,7 +35,7 @@ the 'View all builds' link.
 
     >>> anon_browser.getLink('View all builds').click()
     >>> print anon_browser.title
-    Builds for...
+    Builds : PPA for Celso Providelo : Celso Providelo
 
     >>> print anon_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+builds
@@ -192,7 +192,7 @@ the source into a public PPA to demonstrate this.
     ...     distribution=ubuntu)
     >>> joe = factory.makePerson(name="joe")
     >>> public_ppa = factory.makeArchive(
-    ...     owner=joe, distribution=ubuntu)
+    ...     owner=joe, distribution=ubuntu, name='ppa')
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
@@ -437,7 +437,7 @@ of downloading the buildlog).
     >>> anon_browser.getLink('i386').click()
 
     >>> print anon_browser.title
-    PPA for Celso Providelo : Celso Providelo
+    i386 build of cdrkit 1.0 : PPA for Celso Providelo : Celso Providelo
 
 This feature is also useful from the PPA owner perspective. When Celso
 sees that there was a failure while building 'cdrkit' on i386 he can
@@ -466,4 +466,4 @@ corresponding build page.
 
     >>> anon_browser.getLink('i386').click()
     >>> print anon_browser.title
-    PPA for Celso Providelo : Celso Providelo
+    i386 build of cdrkit 1.0 : PPA for Celso Providelo : Celso Providelo

@@ -64,7 +64,7 @@ Sample Person can also unsubscribe himself and the Landscape team.
         Landscape Developers
 
 
-== Additional options for distribuion drivers ==
+== Additional options for distribution drivers ==
 
 When editing the subscriptions for a package, a distribution driver
 can subscribe any Launchpad user.

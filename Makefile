@@ -1,8 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON_VERSION=2.5
-PYTHON=python${PYTHON_VERSION}
+PYTHON=python
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
@@ -30,7 +29,6 @@ BZR_VERSION_INFO = bzr-version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
 WADL_TEMPLATE = $(APIDOC_DIR).tmp/wadl-$(LPCONFIG)-%(version)s.xml
-DEVEL_WADL_FILE = $(APIDOC_DIR)/wadl-$(LPCONFIG)-devel.xml
 API_INDEX = $(APIDOC_DIR)/index.html
 
 # Do not add bin/buildout to this list.
@@ -60,18 +58,15 @@ newsampledata:
 hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
-$(DEVEL_WADL_FILE): $(BZR_VERSION_INFO)
-	mkdir $(APIDOC_DIR).tmp
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py "$(WADL_TEMPLATE)"
+$(API_INDEX): $(BZR_VERSION_INFO)
+	mkdir -p $(APIDOC_DIR).tmp
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp/* $(APIDOC_DIR)
 	rmdir $(APIDOC_DIR).tmp
 
-$(API_INDEX): $(DEVEL_WADL_FILE)
-	bin/apiindex $(DEVEL_WADL_FILE) > $@.tmp
-	mv $@.tmp $@
-
 apidoc: compile $(API_INDEX)
 
+# Run by PQM.
 check_merge: $(PY)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
@@ -83,12 +78,15 @@ check_db_merge: $(PY)
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
 
+check_schema: build
+	${PY} utilities/check-db-revision.py
+
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)
 check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	${PY} -t ./test_on_merge.py $(VERBOSITY)
+	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
 
 jscheck: build
 	# Run all JavaScript integration tests.  The test runner takes care of
@@ -96,7 +94,7 @@ jscheck: build
 	@echo
 	@echo "Running the JavaScript integration test suite"
 	@echo
-	bin/test $(VERBOSITY) --layer=WindmillLayer
+	bin/test $(VERBOSITY) $(TESTOPTS) --layer=WindmillLayer
 
 jscheck_functest: build
     # Run the old functest Windmill integration tests.  The test runner
@@ -109,7 +107,8 @@ jscheck_functest: build
 check_mailman: build
 	# Run all tests, including the Mailman integration
 	# tests. test_on_merge.py takes care of setting up the database.
-	${PY} -t ./test_on_merge.py $(VERBOSITY) --layer=MailmanLayer
+	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
+		--layer=MailmanLayer
 
 lint: ${PY}
 	@bash ./bin/lint.sh
@@ -154,6 +153,7 @@ jsbuild: jsbuild_lazr bin/jsbuild bin/jssize
 		-s lib/canonical/launchpad/javascript \
 		-b $(LP_BUILT_JS_ROOT) \
 		$(shell $(HERE)/utilities/yui-deps.py) \
+		$(shell $(HERE)/utilities/lp-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
 	${SHHH} bin/jssize
 
@@ -182,17 +182,27 @@ buildonce_eggs: $(PY)
 # is only there for deployment convenience.
 bin/buildout: download-cache eggs
 	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
-                --ez_setup-source=ez_setup.py \
+		--setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs
 
+# This target is used by LOSAs to prepare a build to be pushed out to
+# destination machines.  We only want eggs: they are the expensive bits,
+# and the other bits might run into problems like bug 575037.  This
+# target runs buildout, and then removes everything created except for
+# the eggs.
+build_eggs: $(BUILDOUT_BIN) clean_buildout
+
 # This builds bin/py and all the other bin files except bin/buildout.
+# Remove the target before calling buildout to ensure that buildout
+# updates the timestamp.
 $(BUILDOUT_BIN): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
+	$(RM) $@
 	$(SHHH) PYTHONPATH= ./bin/buildout \
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
 compile: $(PY) $(BZR_VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
-	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
+	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
 
 test_build: build
@@ -207,35 +217,35 @@ ftest_build: build
 ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
-mpcreationjobs:
-	# Handle merge proposal creations.
-	$(PY) cronscripts/mpcreationjobs.py
+merge-proposal-jobs:
+	# Handle merge proposal email jobs.
+	$(PY) cronscripts/merge-proposal-jobs.py -v
 
-run: inplace stop
+run: check_schema inplace stop
 	$(RM) thread*.request
 	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
-start-gdb: inplace stop support_files
+start-gdb: check_schema inplace stop support_files
 	$(RM) thread*.request
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: inplace stop hosted_branches
+run_all: check_schema inplace stop hosted_branches
 	$(RM) thread*.request
-	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice,memcached \
+	bin/run -r librarian,sftp,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
 
 run_codebrowse: build
-	BZR_PLUGIN_PATH=bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
+	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
 
 start_codebrowse: build
-	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py
+	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins $(PY) scripts/start-loggerhead.py
 
 stop_codebrowse:
-	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
+	$(PY) scripts/stop-loggerhead.py
 
-run_codehosting: inplace stop hosted_branches
+run_codehosting: check_schema inplace stop hosted_branches
 	$(RM) thread*.request
 	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
 
@@ -253,13 +263,12 @@ scan_branches:
 	# Scan branches from the filesystem into the database.
 	$(PY) cronscripts/scan_branches.py
 
-
-sync_branches: pull_branches scan_branches mpcreationjobs
+sync_branches: pull_branches scan_branches merge-proposal-jobs
 
 $(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh
 
-support_files: $(DEVEL_WADL_FILE) $(BZR_VERSION_INFO)
+support_files: $(API_INDEX) $(BZR_VERSION_INFO)
 
 # Intended for use on developer machines
 start: inplace stop support_files initscript-start
@@ -281,7 +290,7 @@ stop: build initscript-stop
 # servers, where we know we don't need the extra steps in a full
 # "make stop" because of how the code is deployed/built.
 initscript-stop:
-	bin/killservice librarian buildsequencer launchpad mailman
+	bin/killservice librarian launchpad mailman
 
 shutdown: scheduleoutage stop
 	$(RM) +maintenancetime.txt
@@ -306,7 +315,15 @@ clean_js:
 	$(RM) $(LP_BUILT_JS_ROOT)/launchpad.js
 	$(RM) -r $(LAZR_BUILT_JS_ROOT)
 
-clean: clean_js
+clean_buildout:
+	$(RM) -r bin
+	$(RM) -r parts
+	$(RM) -r develop-eggs
+	$(RM) .installed.cfg
+	$(RM) -r build
+	$(RM) _pythonpath.py
+
+clean: clean_js clean_buildout
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
@@ -319,29 +336,20 @@ clean: clean_js
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) -r bin
-	$(RM) -r parts
-	$(RM) -r develop-eggs
-	$(RM) .installed.cfg
-	$(RM) -r build
 	$(RM) thread*.request
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
-	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml \
-	    $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak
-	$(RM) $(APIDOC_DIR)/wadl*.xml $(API_INDEX)
-	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak \
-	    $(APIDOC_DIR)/wadl-testrunner-devel.xml
+	$(RM) $(APIDOC_DIR)/wadl*.xml $(APIDOC_DIR)/*.html
+	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
-	$(RM) _pythonpath.py
+	$(RM) +config-overrides.zcml
 	$(RM) -rf \
 			  /var/tmp/builddmaster \
 			  /var/tmp/bzrsync \
 			  /var/tmp/codehosting.test \
 			  /var/tmp/codeimport \
 			  /var/tmp/fatsam.appserver \
-			  /var/tmp/launchpad_mailqueue \
 			  /var/tmp/lperr \
 			  /var/tmp/lperr.test \
 			  /var/tmp/mailman \
@@ -349,6 +357,11 @@ clean: clean_js
 			  /var/tmp/ppa \
 			  /var/tmp/ppa.test \
 			  /var/tmp/zeca
+	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
+	# instances.
+	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
+	$(RM) -f lp.sfood lp-clustered.sfood lp-clustered.dot lp-clustered.svg
+
 
 realclean: clean
 	$(RM) TAGS tags
@@ -407,10 +420,45 @@ ID: compile
 	# idutils ID file
 	bin/tags -i
 
+lp.sfood:
+	# Generate import dependency graph
+	sfood -i -u -I lib/sqlobject -I lib/schoolbell -I lib/devscripts -I lib/contrib \
+	-I lib/canonical/not-used lib/canonical lib/lp 2>/dev/null | grep -v contrib/ \
+	| grep -v sqlobject | grep -v BeautifulSoup | grep -v psycopg \
+	| grep -v schoolbell > lp.sfood.tmp
+	mv lp.sfood.tmp lp.sfood
+
+
+lp-clustered.sfood: lp.sfood lp-sfood-packages
+	# Cluster the import dependency graph
+	sfood-cluster -f lp-sfood-packages < lp.sfood > lp-clustered.sfood.tmp
+	mv lp-clustered.sfood.tmp lp-clustered.sfood
+
+
+lp-clustered.dot: lp-clustered.sfood
+	# Build the visual graph
+	sfood-graph -p < lp-clustered.sfood > lp-clustered.dot.tmp
+	mv lp-clustered.dot.tmp lp-clustered.dot
+
+
+lp-clustered.svg: lp-clustered.dot
+	# Render to svg
+	dot -Tsvg < lp-clustered.dot > lp-clustered.svg.tmp
+	mv lp-clustered.svg.tmp lp-clustered.svg
+
+PYDOCTOR = pydoctor
+PYDOCTOR_OPTIONS =
+
+pydoctor:
+	$(PYDOCTOR) --make-html --html-output=apidocs --add-package=lib/lp \
+		--add-package=lib/canonical --project-name=Launchpad \
+		--docformat restructuredtext --verbose-about epytext-summary \
+		$(PYDOCTOR_OPTIONS)
+
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
-	check check_merge \
+	check check_merge ec2_check \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
-	jsbuild jsbuild_lazr clean_js buildonce_eggs \
-	sprite_css sprite_image css_combine compile
+	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs build_eggs\
+	sprite_css sprite_image css_combine compile check_schema pydoctor

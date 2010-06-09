@@ -518,6 +518,14 @@ The license_info_is_empty parameter only accepts True, False, or None.
     ...
     AssertionError...
 
+The full text search will not match strings with dots in their name
+but a clause is included to search specifically for the name.
+
+    >>> new_product = factory.makeProduct(name="abc.com")
+    >>> for product in product_set.forReview(search_text="abc.com"):
+    ...     print product.name
+    abc.com
+
 The use of 'forReview' is limited to users with launchpad.Commercial permission.
 
 Anonymous users cannot access 'forReview'.

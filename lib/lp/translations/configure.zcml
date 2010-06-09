@@ -209,7 +209,7 @@
     </securedutility>
 
     <!-- Breadcrumbs for DistroSeries, Distribution, ProductSeries, Product,
-         Project, TranslationsPerson -->
+         ProjectGroup, TranslationsPerson -->
     <adapter
         name="translations"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -578,7 +578,7 @@
         <allow
             interface="lp.code.interfaces.branchjob.IBranchJob"/>
         <allow
-            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobOld"/>
     </class>
     <securedutility
         component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
