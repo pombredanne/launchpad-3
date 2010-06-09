@@ -19,6 +19,7 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
@@ -157,6 +158,8 @@ class SourcePackageRecipe(Storm):
 
     def requestBuild(self, archive, requester, distroseries, pocket):
         """See `ISourcePackageRecipe`."""
+        if not config.build_from_branch.enabled:
+            raise ValueError('Source package recipe builds disabled.')
         if archive.purpose != ArchivePurpose.PPA:
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
