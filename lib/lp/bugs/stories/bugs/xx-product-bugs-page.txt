@@ -153,6 +153,11 @@ To demonstrate this, we create 10 bugs and adjust their heat values manually.
 For each bug we have the number, title, status, importance and the time
 since the last update.
 
+Note: since the hot bugs list is cached, we have to clear the cache first to
+get the results we expect.
+
+    >>> from canonical.testing.layers import MemcachedLayer
+    >>> MemcachedLayer.purge()
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'hot-bugs'))
@@ -186,14 +191,14 @@ immediately visible.
     >>> 'cache:private 10 minute' in anon_browser.contents
     True
     >>> anon_browser.reload()
-    >>> '#18 Summary for new bug 3' in anon_browser.contents
+    >>> 'Summary for new bug 3' in anon_browser.contents
     True
 
 Once the cache has cleared, which we do manually here in the test,
 the Fix Released bug, bug 18, is no longer shown.
 
-    >>> from canonical.testing.layers import MemcachedLayer
     >>> MemcachedLayer.purge()
+    >>> anon_browser.reload()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'hot-bugs'))
         Summary                   Status   Importance    Last changed
