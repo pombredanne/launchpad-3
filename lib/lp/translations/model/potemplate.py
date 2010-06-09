@@ -187,17 +187,13 @@ class POTemplate(SQLBase, RosettaStats):
 
     @cachedproperty
     def _sharing_ids(self):
-        """Return the IDs of all sharing templates including this one.
-
-        Handles caching, so that this list is only generated once during the
-        life time of this object.
-        """
+        """Return the IDs of all sharing templates including this one."""
         subset = getUtility(IPOTemplateSet).getSharingSubset(
             product=self.product,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
-        potemplates = subset.getSharingPOTemplates(self.name)
-        return [potemplate.id for potemplate in potemplates]
+        # Convert  to a list for caching.
+        return list(subset.getSharingPOTemplateIDs(self.name))
 
     def __storm_invalidated__(self):
         self.clearPOFileCache()

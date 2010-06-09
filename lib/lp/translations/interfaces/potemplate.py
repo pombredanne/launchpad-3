@@ -695,6 +695,18 @@ class IPOTemplateSharingSubset(Interface):
         :return: A list of all potemplates of the same name from all series.
         """
 
+    def getSharingPOTemplateIDs(potemplate_name):
+        """Find database ids of all sharing templates of the given name.
+
+        For distributions this method requires that sourcepackagename is set.
+        This avoids serialization of full POTemplate objects.
+
+        :param potemplate_name: The name of the template for which to find
+            sharing equivalents.
+        :return: A list of database ids of all potemplates of the same name
+            from all series.
+        """
+
     def groupEquivalentPOTemplates(name_pattern=None):
         """Within given IProduct or IDistribution, find equivalent templates.
 
