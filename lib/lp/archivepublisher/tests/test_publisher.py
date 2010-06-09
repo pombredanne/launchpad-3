@@ -1027,6 +1027,19 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue('Sources.gz\n' in stringified_contents)
         self.assertTrue('Sources\n' in stringified_contents)
 
+        # Partner archive architecture Release files 'Origin' contain
+        # a string
+        arch_release_file = os.path.join(
+            publisher._config.distsroot, 'breezy-autotest',
+            'partner/source/Release')
+        arch_release_contents = open(arch_release_file).read()
+        self.assertEqual(
+            self._getReleaseFileOrigin(arch_release_contents),
+            'Canonical')
+        
+        # The Label: field should be set to the archive displayname
+        self.assertEqual(release_contents[1], 'Label: Partner archive')
+
     def testWorldAndGroupReadablePackagesAndSources(self):
         """Test Packages.gz and Sources.gz files are world and group readable.
 
