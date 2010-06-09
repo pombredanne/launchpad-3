@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 
+from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from lp.services.mail.basemailer import BaseMailer, RecipientReason
 
@@ -21,19 +22,29 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
         recipients = {requester: RecipientReason.forBuildRequester(requester)}
         return cls(
             '%(status)s: %(recipe)s for %(distroseries)s',
-            'build-request.txt', recipients, 'from_address', build)
+            'build-request.txt', recipients,
+            config.canonical.noreply_from_address, build)
 
     def __init__(self, subject, body_template, recipients, from_address,
                  build):
         BaseMailer.__init__(
-            self, subject, body_template, recipients, from_address)
+            self, subject, body_template, recipients, from_address,
+            notification_type='recipe-build-status')
         self.build = build
+
+    def _getHeaders(self, email):
+        headers = super(
+            SourcePackageRecipeBuildMailer, self)._getHeaders(email)
+        headers.update({
+            'X-Launchpad-Build-State': self.build.status.name,
+            })
+        return headers
 
     def _getTemplateParams(self, email):
         params = super(
             SourcePackageRecipeBuildMailer, self)._getTemplateParams(email)
         params.update({
-            'status': str(self.build.buildstate),
+            'status': self.build.buildstate.title,
             'distroseries': self.build.distroseries.name,
             'recipe': self.build.recipe.name,
             'recipe_owner': self.build.recipe.owner.name,
