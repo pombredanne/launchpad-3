@@ -71,6 +71,8 @@ IGNORED_TABLES = set([
     # Database statistics
     'public.databasetablestats',
     'public.databasecpustats',
+    # Don't replicate OAuthNonce - too busy and no real gain.
+    'public.oauthnonce',
     # Ubuntu SSO database. These tables where created manually by ISD
     # and the Launchpad scripts should not mess with them. Eventually
     # these tables will be in a totally separate database.
