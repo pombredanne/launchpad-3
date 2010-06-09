@@ -21,7 +21,6 @@ from lp.soyuz.interfaces.archive import *
 from lp.soyuz.interfaces.archivedependency import *
 from lp.soyuz.interfaces.archivepermission import *
 from lp.soyuz.interfaces.archivesubscriber import *
-from lp.registry.interfaces.announcement import *
 from canonical.launchpad.interfaces.authserver import *
 from canonical.launchpad.interfaces.authtoken import *
 from lp.soyuz.interfaces.binarypackagerelease import *
@@ -44,7 +43,6 @@ from lp.bugs.interfaces.bugwatch import *
 from lp.soyuz.interfaces.binarypackagebuild import *
 from lp.buildmaster.interfaces.builder import *
 from lp.soyuz.interfaces.buildrecords import *
-from lp.registry.interfaces.codeofconduct import *
 from lp.registry.interfaces.commercialsubscription import *
 from lp.soyuz.interfaces.component import *
 from lp.services.worlddata.interfaces.country import *
