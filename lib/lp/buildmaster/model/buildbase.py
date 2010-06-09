@@ -3,9 +3,11 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from __future__ import with_statement
 
 """Common build base classes."""
+
+
+from __future__ import with_statement
 
 __metaclass__ = type
 

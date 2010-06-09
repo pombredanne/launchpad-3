@@ -21,8 +21,9 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_generateEmail(self):
-        chef = self.factory.makePerson(name='person')
-        cake = self.factory.makeSourcePackageRecipe(name=u'recipe', owner=chef)
+        person = self.factory.makePerson(name='person')
+        cake = self.factory.makeSourcePackageRecipe(
+            name=u'recipe', owner=person)
         pantry = self.factory.makeArchive(name='ppa')
         secret = self.factory.makeDistroSeries(name=u'distroseries')
         build = self.factory.makeSourcePackageRecipeBuild(

@@ -65,7 +65,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     def binary_builds(self):
         """See `ISourcePackageRecipeBuild`."""
         return Store.of(self).find(BinaryPackageBuild,
-            BinaryPackageBuild.source_package_release==SourcePackageRelease.id,
+            BinaryPackageBuild.source_package_release==
+            SourcePackageRelease.id,
             SourcePackageRelease.source_package_recipe_build==self.id)
 
     buildduration = TimeDelta(name='build_duration', default=None)
