@@ -32,7 +32,8 @@ cause this template to render differently.
 
 We also see some comments showing that we had a cache hit, and what the
 configuration was for it ("public").  These comments are only present
-when Launchpad is used with a developer or test configuration.
+when Launchpad's config is not configured as edge or production (``is_edge``
+or ``is_lpnet``, respectively).
 
 If we clear the cache, it will be rendered as expected.
 
@@ -176,7 +177,10 @@ We will disable the cache hit comments by claiming to be in production.
 
     >>> from canonical.config import config
     >>> original_instance_name = config.instance_name
-    >>> config._instance_name = 'production' # Lie.
+    >>> config.push('is_production', """
+    ...     [launchpad]
+    ...     is_lpnet: True
+    ... """)
     >>> template = TestPageTemplate(dedent("""\
     ...     <body tal:content="cache:private,25 seconds" tal:omit-tag="">
     ...         This bit is private to <span tal:replace="username" />
@@ -305,5 +309,5 @@ demonstrate that the cached values are being correctly used in the loop.
     Mutated comment
     </body>
 
-    >>> config._instance_name = original_instance_name # Clean up.
+    >>> ignore = config.pop('is_production')
 

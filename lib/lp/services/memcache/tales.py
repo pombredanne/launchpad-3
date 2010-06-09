@@ -249,8 +249,7 @@ class MemcacheMiss:
         self._memcache_expr = memcache_expr
 
     def __call__(self, value):
-        lpconfig = config.instance_name
-        if 'development' in lpconfig or 'test' in lpconfig:
+        if not config.launchpad.is_lpnet and not config.launchpad.is_edge:
             # For debugging and testing purposes, prepend a description of
             # the memcache expression used to the stored value.
             value = "<!-- Cache hit: %s -->%s<!-- End cache hit: %s -->" % (
