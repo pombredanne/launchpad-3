@@ -18,6 +18,10 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
 
     @classmethod
     def forStatus(cls, build):
+        """Create a mailer for notifying about build status.
+
+        :param build: The build to notify about the state of.
+        """
         requester = build.requester
         recipients = {requester: RecipientReason.forBuildRequester(requester)}
         return cls(
@@ -33,6 +37,7 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
         self.build = build
 
     def _getHeaders(self, email):
+        """See `BaseMailer`"""
         headers = super(
             SourcePackageRecipeBuildMailer, self)._getHeaders(email)
         headers.update({
@@ -41,6 +46,7 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
         return headers
 
     def _getTemplateParams(self, email):
+        """See `BaseMailer`"""
         params = super(
             SourcePackageRecipeBuildMailer, self)._getTemplateParams(email)
         params.update({
@@ -54,5 +60,6 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
         return params
 
     def _getFooter(self, params):
+        """See `BaseMailer`"""
         return ('%(build_url)s\n'
                 '%(reason)s\n' % params)

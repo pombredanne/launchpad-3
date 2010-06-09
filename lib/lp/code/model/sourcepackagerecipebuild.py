@@ -246,6 +246,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     @staticmethod
     def _handleStatus_OK(build, librarian, slave_status, logger):
+        """See `IBuildBase`."""
         BuildBase._handleStatus_OK(build, librarian, slave_status, logger)
         # base implementation doesn't notify on success.
         if build.status == BuildStatus.FULLYBUILT:

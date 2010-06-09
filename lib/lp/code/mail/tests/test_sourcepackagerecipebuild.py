@@ -21,6 +21,7 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_generateEmail(self):
+        """GenerateEmail produces the right headers and body."""
         person = self.factory.makePerson(name='person')
         cake = self.factory.makeSourcePackageRecipe(
             name=u'recipe', owner=person)

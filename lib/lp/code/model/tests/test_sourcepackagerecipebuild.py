@@ -206,6 +206,7 @@ class TestAsBuildmaster(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_notify(self):
+        """Notify sends email."""
         person = self.factory.makePerson(name='person')
         cake = self.factory.makeSourcePackageRecipe(
             name=u'recipe', owner=person)
@@ -229,11 +230,9 @@ class TestAsBuildmaster(TestCaseWithFactory):
             'Build person/recipe into ppa for distroseries: Successfully'
             ' built.\n', body
             )
-        self.assertEqual(
-            'http://code.launchpad.dev/~person/+recipe/recipe/+build/1\n'
-            'You are the requester of the build.\n', footer)
 
     def test_handleStatusNotifies(self):
+        """"handleStatus causes notification, even if OK."""
         def prepare_build():
             queue_record = self.factory.makeSourcePackageRecipeBuildJob()
             build = queue_record.specific_job.build
