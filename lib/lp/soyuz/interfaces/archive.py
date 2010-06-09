@@ -428,8 +428,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
     def findDepCandidateByName(distroarchseries, name):
         """Return the last published binarypackage by given name.
 
-        Return the PublishedPackage record by binarypackagename or None if
-        not found.
+        Return the `BinaryPackagePublishingHistory` record by distroarchseries
+        and name, or None if not found.
         """
 
     def removeArchiveDependency(dependency):

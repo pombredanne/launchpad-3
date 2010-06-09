@@ -3072,22 +3072,51 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    @property
-    def indirect_teams_via(self):
-        """Information about indirect membership.
+    def _asParticipation(self, membership, team_path=None):
+        """Return a dict of participation information for the membership."""
+        if team_path is None:
+            via = None
+        else:
+            via = COMMASPACE.join(team.displayname for team in team_path)
+        team = membership.team
+        if membership.person == team.teamowner:
+            role = 'Owner'
+        elif membership.status == TeamMembershipStatus.ADMIN:
+            role = 'Admin'
+        else:
+            role = 'Member'
+        if team.mailing_list is not None and team.mailing_list.is_usable:
+            subscription = team.mailing_list.getSubscription(self.context)
+            if subscription is None:
+                subscribed = 'Not subscribed'
+            else:
+                subscribed = 'Subscribed'
+        else:
+            subscribed = None
+        return dict(
+            displayname=team.displayname, team=team, membership=membership,
+            role=role, via=via, subscribed=subscribed)
 
-        :return: A list of dictionaries, where each dictionary has a team in
-          which the person is an indirect member, and a path to membership in
-          that team.
-        :rtype: a list of dictionaries
-        """
-        indirect_teams = []
+    @cachedproperty
+    def active_participations(self):
+        """Return the participation information for active memberships."""
+        participations = [self._asParticipation(membership)
+                for membership in self.context.myactivememberships
+                if check_permission('launchpad.View', membership)]
+        membership_set = getUtility(ITeamMembershipSet)
         for team in self.context.teams_indirectly_participated_in:
-            via = COMMASPACE.join(viateam.displayname
-                                  for viateam
-                                  in self.context.findPathToTeam(team)[:-1])
-            indirect_teams.append(dict(team=team, via=via))
-        return indirect_teams
+            # The key points of the path for presentation are:
+            # [-?] indirect memberships, [-2] direct membership, [-1] team.
+            team_path = self.context.findPathToTeam(team)
+            membership = membership_set.getByPersonAndTeam(
+                team_path[-2], team)
+            participations.append(
+                self._asParticipation(membership, team_path=team_path[:-1]))
+        return sorted(participations, key=itemgetter('displayname'))
+
+    @cachedproperty
+    def has_participations(self):
+        return len(self.active_participations) > 0
 
 
 class EmailAddressVisibleState:

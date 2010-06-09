@@ -9,7 +9,10 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-__all__ = ['BuildBase']
+__all__ = [
+    'handle_status_for_build',
+    'BuildBase',
+    ]
 
 import datetime
 import logging
@@ -35,6 +38,24 @@ from lp.registry.interfaces.pocket import pocketsuffix
 
 
 UPLOAD_LOG_FILENAME = 'uploader.log'
+
+
+def handle_status_for_build(build, status, librarian, slave_status):
+    """Find and call the correct method for handling the build status.
+
+    This is extracted from build base so that the implementation
+    can be shared by the newer IPackageBuild class.
+    """
+    logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
+
+    method = getattr(BuildBase, '_handleStatus_' + status, None)
+
+    if method is None:
+        logger.critical("Unknown BuildStatus '%s' for builder '%s'"
+                        % (status, build.buildqueue_record.builder.url))
+        return
+
+    method(build, librarian, slave_status, logger)
 
 
 class BuildBase:
@@ -127,19 +148,9 @@ class BuildBase:
             return None
         return self._getProxiedFileURL(self.upload_log)
 
-    @staticmethod
-    def handleStatus(build, status, librarian, slave_status):
+    def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
-        logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
-
-        method = getattr(build, '_handleStatus_' + status, None)
-
-        if method is None:
-            logger.critical("Unknown BuildStatus '%s' for builder '%s'"
-                            % (status, build.buildqueue_record.builder.url))
-            return
-
-        method(librarian, slave_status, logger)
+        return handle_status_for_build(self, status, librarian, slave_status)
 
     @staticmethod
     def _handleStatus_OK(build, librarian, slave_status, logger):
