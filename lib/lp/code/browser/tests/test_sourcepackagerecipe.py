@@ -118,6 +118,31 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
 
+    def test_create_recipe_forbidden_instructions(self):
+        # We don't allow the "run" instruction in our recipes.  Make sure this
+        # is communicated to the user properly.
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl(name='field.name').value = 'daily'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+
+        browser.getControl('Recipe text').value = (
+            browser.getControl('Recipe text').value + 'run cat /etc/passwd')
+
+        browser.getControl('Create Recipe').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'The bzr-builder instruction "run" is not permitted here.')
+
     def test_create_new_recipe_empty_name(self):
         # Leave off the name and make sure that the widgets validate before
         # the content validates.
