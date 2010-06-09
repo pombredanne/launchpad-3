@@ -118,7 +118,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
 
-    def test_create_recipe_forbidden_instructions(self):
+    def test_create_recipe_forbidden_instruction(self):
         # We don't allow the "run" instruction in our recipes.  Make sure this
         # is communicated to the user properly.
         product = self.factory.makeProduct(
@@ -260,6 +260,33 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
+
+    def test_edit_recipe_forbidden_instruction(self):
+        self.factory.makeDistroSeries(
+            displayname='Mumbly Midget', name='mumbly',
+            distribution=self.ppa.distribution)
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        veggie_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        meat_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='meat')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            name=u'things', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch])
+
+        meat_path = meat_branch.bzr_identity
+
+        browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
+        browser.getLink('Edit recipe').click()
+        browser.getControl('Recipe text').value = (
+            browser.getControl('Recipe text').value + 'run cat /etc/passwd')
+        browser.getControl('Update Recipe').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'The bzr-builder instruction "run" is not permitted here.')
 
     def test_edit_recipe_already_exists(self):
         self.factory.makeDistroSeries(
