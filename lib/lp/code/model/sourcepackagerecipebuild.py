@@ -265,6 +265,11 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         except KeyError:
             raise NotFoundError(filename)
 
+    @staticmethod
+    def _handleStatus_OK(build, librarian, slave_status, logger):
+        BuildBase._handleStatus_OK(build, librarian, slave_status, logger)
+        if build.status == BuildStatus.FULLYBUILT:
+            build.notify()
 
 class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)

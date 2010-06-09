@@ -17,7 +17,8 @@ from storm.locals import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp.authorization import check_permission
@@ -31,7 +32,9 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.services.mail.sendmail import format_address
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.testing import ANONYMOUS, login, person_logged_in, TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -197,6 +200,11 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         Store.of(binary).flush()
         self.assertEqual([binary], list(spb.binary_builds))
 
+
+class TestAsBuildmaster(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
     def test_notify(self):
         chef = self.factory.makePerson(name='person')
         cake = self.factory.makeSourcePackageRecipe(name=u'recipe', owner=chef)
@@ -218,6 +226,25 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             'Build person/recipe into ppa for distroseries: Successfully'
             ' built.\n',
             message.get_payload(decode=True))
+
+    def test_handleStatusNotifies(self):
+        def prepare_build():
+            queue_record = self.factory.makeSourcePackageRecipeBuildJob()
+            build = queue_record.specific_job.build
+            removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
+            queue_record.builder = self.factory.makeBuilder()
+            slave = WaitingSlave('BuildStatus.OK')
+            queue_record.builder.setSlaveForTesting(slave)
+            return build
+        def assertNotifyOnce(status, build):
+            build.handleStatus(status, None, {'filemap': {}})
+            self.assertEqual(1, len(pop_notifications()))
+        for status in ['PACKAGEFAIL', 'OK']:
+            assertNotifyOnce(status, prepare_build())
+        build = prepare_build()
+        removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
+        result=True)
+        assertNotifyOnce('OK', prepare_build())
 
 
 class MakeSPRecipeBuildMixin:
