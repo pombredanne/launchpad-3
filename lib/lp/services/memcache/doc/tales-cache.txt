@@ -26,10 +26,13 @@ is used. We prove this here by changing our parameters, which would
 cause this template to render differently.
 
     >>> print template(param='second')
-    <div>
+    <div><!-- Cache hit: memcache expression (public) -->
         <span>first</span>
-    </div>
+    <!-- End cache hit: memcache expression (public) --></div>
 
+We also see some comments showing that we had a cache hit, and what the
+configuration was for it ("public").  These comments are only present
+when Launchpad is used with a developer or test configuration.
 
 If we clear the cache, it will be rendered as expected.
 
@@ -141,7 +144,9 @@ uncached.
 
     >>> login('foo.bar@canonical.com')
     >>> print template(username='Foo Bar')
+    <!-- Cache hit: memcache expression (public) -->
     Public:        Anonymous
+    <!-- End cache hit: memcache expression (public) -->
     Private:       Foo Bar
     Anonymous:     Foo Bar
     Authenticated: Foo Bar
@@ -151,10 +156,14 @@ reuse the authenticated cache. The anonymous section is uncached.
 
     >>> login('test@canonical.com')
     >>> print template(username='Test')
+    <!-- Cache hit: memcache expression (public) -->
     Public:        Anonymous
+    <!-- End cache hit: memcache expression (public) -->
     Private:       Test
     Anonymous:     Test
+    <!-- Cache hit: memcache expression (authenticated) -->
     Authenticated: Foo Bar
+    <!-- End cache hit: memcache expression (authenticated) -->
 
 
 Nesting & Loops
@@ -163,6 +172,11 @@ Nesting & Loops
 Cached chunks can contain other cached chunks, useful for specifying
 different timeouts of different visibilities.
 
+We will disable the cache hit comments by claiming to be in production.
+
+    >>> from canonical.config import config
+    >>> original_instance_name = config.instance_name
+    >>> config._instance_name = 'production' # Lie.
     >>> template = TestPageTemplate(dedent("""\
     ...     <body tal:content="cache:private,25 seconds" tal:omit-tag="">
     ...         This bit is private to <span tal:replace="username" />
@@ -290,4 +304,6 @@ demonstrate that the cached values are being correctly used in the loop.
     Today's comment
     Mutated comment
     </body>
+
+    >>> config._instance_name = original_instance_name # Clean up.
 

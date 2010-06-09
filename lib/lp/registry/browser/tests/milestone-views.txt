@@ -307,13 +307,13 @@ Milestone caching
 Active milestones cache bugtasks for 10 minutes.
 
     >>> from canonical.testing.layers import MemcachedLayer
-    >>> MemcachedLayer.purge() # Make sure memcache is clean.
+    >>> MemcachedLayer.purge()
     >>> cached_milestone = factory.makeMilestone(
     ...     'cache-test', productseries=series)
     >>> cached_bugtask = factory.makeBugTask(target=cached_milestone.product)
     >>> cached_bugtask.milestone = cached_milestone
     >>> view = create_view(cached_milestone, '+index', principal=person)
-    >>> 'Cache hit' in view.render() # Prime cache.
+    >>> 'Cache hit' in view.render()
     False
     >>> print create_view(
     ...     cached_milestone, '+index', principal=person).render()
@@ -322,10 +322,10 @@ Active milestones cache bugtasks for 10 minutes.
 
 Inactive milestones cache bugtasks for 3 hours.
 
-    >>> MemcachedLayer.purge() # Make sure memcache is clean.
+    >>> MemcachedLayer.purge()
     >>> cached_milestone.active = False
     >>> view = create_view(cached_milestone, '+index', principal=person)
-    >>> 'Cache hit' in view.render() # Prime cache.
+    >>> 'Cache hit' in view.render()
     False
     >>> print create_view(
     ...     cached_milestone, '+index', principal=person).render()
