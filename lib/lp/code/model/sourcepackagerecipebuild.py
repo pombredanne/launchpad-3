@@ -17,6 +17,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.webapp import canonical_url
 
 from storm.locals import Int, Reference, Storm, TimeDelta, Unicode
 from storm.store import Store
@@ -62,8 +63,13 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
             'recipe': self.build.recipe.name,
             'recipe_owner': self.build.recipe.owner.name,
             'archive': self.build.archive.name,
+            'build_url': canonical_url(self.build),
         })
         return params
+
+    def _getFooter(self, params):
+        return ('%(build_url)s\n'
+                '%(reason)s\n' % params)
 
 
 class SourcePackageRecipeBuild(BuildBase, Storm):
@@ -268,6 +274,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     @staticmethod
     def _handleStatus_OK(build, librarian, slave_status, logger):
         BuildBase._handleStatus_OK(build, librarian, slave_status, logger)
+        # base implementation doesn't notify on success.
         if build.status == BuildStatus.FULLYBUILT:
             build.notify()
 

@@ -19,8 +19,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-
 from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
@@ -213,6 +213,7 @@ class TestAsBuildmaster(TestCaseWithFactory):
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
         removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
+        IStore(build).flush()
         build.notify()
         (message,) = pop_notifications()
         requester = build.requester
@@ -222,10 +223,14 @@ class TestAsBuildmaster(TestCaseWithFactory):
             requester_address, re.sub(r'\n\t+', ' ', message['To']))
         self.assertEqual('Successfully built: recipe for distroseries',
             message['Subject'])
+        body, footer = message.get_payload(decode=True).split('\n-- \n')
         self.assertEqual(
             'Build person/recipe into ppa for distroseries: Successfully'
-            ' built.\n',
-            message.get_payload(decode=True))
+            ' built.\n', body
+            )
+        self.assertEqual(
+            'http://code.launchpad.dev/~person/+recipe/recipe/+build/1\n'
+            'You are the requester of the build.\n', footer)
 
     def test_handleStatusNotifies(self):
         def prepare_build():

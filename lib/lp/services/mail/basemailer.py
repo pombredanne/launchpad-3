@@ -14,7 +14,9 @@ from canonical.launchpad.helpers import get_email_template
 
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
-from lp.services.mail.sendmail import format_address, MailController
+from lp.services.mail.sendmail import (
+    append_footer, format_address, MailController
+)
 from lp.services.utils import text_delta
 
 
@@ -130,7 +132,16 @@ class BaseMailer:
     def _getBody(self, email):
         """Return the complete body to use for this email."""
         template = get_email_template(self._template_name)
-        return template % self._getTemplateParams(email)
+        params = self._getTemplateParams(email)
+        body = template % params
+        footer = self._getFooter(params)
+        if footer is not None:
+            body = append_footer(body, footer)
+        return body
+
+    def _getFooter(self, params):
+        """Provide a footer to attach to the body, or None."""
+        return None
 
     def sendAll(self):
         """Send notifications to all recipients."""
