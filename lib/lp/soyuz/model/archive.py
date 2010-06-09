@@ -15,7 +15,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import Or, And, Select, Sum
+from storm.expr import Or, And, Select, Sum, In, Desc
 from storm.locals import Count, Join
 from storm.store import Store
 from storm.zope.interfaces import IResultSet
@@ -32,6 +32,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
@@ -42,6 +43,7 @@ from canonical.launchpad.components.tokens import (
 from lp.soyuz.model.archivedependency import ArchiveDependency
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
+from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount)
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -53,7 +55,6 @@ from lp.soyuz.model.files import (
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.publishedpackage import PublishedPackage
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
@@ -801,15 +802,20 @@ class Archive(SQLBase):
             IResultSet(self.dependencies).values(
             ArchiveDependency.dependencyID))
 
-        query = """
-            binarypackagename = %s AND
-            distroarchseries = %s AND
-            archive IN %s AND
-            packagepublishingstatus = %s
-        """ % sqlvalues(name, distroarchseries, archives,
-                        PackagePublishingStatus.PUBLISHED)
-
-        return PublishedPackage.selectFirst(query, orderBy=['-id'])
+        store = ISlaveStore(BinaryPackagePublishingHistory)
+        candidate = store.find(
+            BinaryPackagePublishingHistory,
+            BinaryPackageName.name == name,
+            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                distroarchseries,
+            In(BinaryPackagePublishingHistory.archiveID, archives),
+            BinaryPackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED
+            ).order_by(Desc(BinaryPackagePublishingHistory.id))
+        return candidate.first()
 
     def getArchiveDependency(self, dependency):
         """See `IArchive`."""
@@ -993,9 +999,10 @@ class Archive(SQLBase):
         distroseries = sourcepackage.distroseries
         sourcepackagename = sourcepackage.sourcepackagename
         component = sourcepackage.latest_published_component
-        # strict_component is True because the source package already exists
-        # (otherwise we couldn't have a suitesourcepackage object) and
-        # nascentupload passes True as a matter of policy when the package exists.
+        # strict_component is True because the source package already
+        # exists (otherwise we couldn't have a suitesourcepackage
+        # object) and nascentupload passes True as a matter of policy
+        # when the package exists.
         reason = self.checkUpload(
             person, distroseries, sourcepackagename, component, pocket,
             strict_component=True)
@@ -1018,6 +1025,20 @@ class Archive(SQLBase):
             # This is a greasy hack until bug #117557 is fixed.
             if not distroseries.canUploadToPocket(pocket):
                 return CannotUploadToPocket(distroseries, pocket)
+
+    def _checkUpload(self, person, distroseries, sourcepackagename, component,
+                    pocket, strict_component=True):
+        """See `IArchive`."""
+        if isinstance(component, basestring):
+            component = getUtility(IComponentSet)[component]
+        if isinstance(sourcepackagename, basestring):
+            sourcepackagename = getUtility(
+                ISourcePackageNameSet)[sourcepackagename]
+        reason = self.checkUpload(person, distroseries, sourcepackagename, 
+            component, pocket, strict_component)
+        if reason is not None:
+            raise reason
+        return True
 
     def checkUpload(self, person, distroseries, sourcepackagename, component,
                     pocket, strict_component=True):

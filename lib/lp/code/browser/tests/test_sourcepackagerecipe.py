@@ -119,6 +119,27 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
 
+    def test_create_new_recipe_empty_name(self):
+        # Leave off the name and make sure that the widgets validate before
+        # the content validates.
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        self.factory.makeSourcePackage()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create Recipe').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'Required input is missing.')
+
     def test_create_recipe_bad_text(self):
         # If a user tries to create source package recipe with bad text, they
         # should get an error.
@@ -181,7 +202,6 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             owner=self.chef, product=product, name='veggies')
         meat_branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='meat')
-        source_package = self.factory.makeSourcePackage()
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
             name=u'things', description=u'This is a recipe',
@@ -219,6 +239,89 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
+
+    def test_edit_recipe_already_exists(self):
+        self.factory.makeDistroSeries(
+            displayname='Mumbly Midget', name='mumbly',
+            distribution=self.ppa.distribution)
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        veggie_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        meat_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='meat')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            name=u'things', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch])
+        recipe_fings = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            name=u'fings', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch])
+
+        meat_path = meat_branch.bzr_identity
+
+        browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
+        browser.getLink('Edit recipe').click()
+        browser.getControl(name='field.name').value = 'fings'
+        browser.getControl('Description').value = 'This is stuff'
+        browser.getControl('Recipe text').value = (
+            MINIMAL_RECIPE_TEXT % meat_path)
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Mumbly Midget').click()
+        browser.getControl('Update Recipe').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'There is already a recipe owned by Master Chef with this name.')
+
+    def test_edit_recipe_but_not_name(self):
+        self.factory.makeDistroSeries(
+            displayname='Mumbly Midget', name='mumbly',
+            distribution=self.ppa.distribution)
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        veggie_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        meat_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='meat')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            name=u'things', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch])
+
+        meat_path = meat_branch.bzr_identity
+
+        browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
+        browser.getLink('Edit recipe').click()
+        browser.getControl('Description').value = 'This is stuff'
+        browser.getControl('Recipe text').value = (
+            MINIMAL_RECIPE_TEXT % meat_path)
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Mumbly Midget').click()
+        browser.getControl('Update Recipe').click()
+
+        pattern = """\
+            Master Chef's things recipe
+            .*
+
+            Description
+            This is stuff
+
+            Recipe information
+            Owner: Master Chef
+            Base branch: lp://dev/~chef/ratatouille/meat
+            Debian version: 1.0
+            Distribution series: Mumbly Midget
+            .*
+
+            Recipe contents
+            # bzr-builder format 0.2 deb-version 1.0
+            lp://dev/~chef/ratatouille/meat"""
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
+
 
 
 class TestSourcePackageRecipeView(TestCaseForRecipe):

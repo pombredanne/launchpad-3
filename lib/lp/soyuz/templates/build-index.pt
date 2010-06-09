@@ -79,7 +79,7 @@
           </dd>
       </dl>
       <dl
-          tal:define="spr context/sourcepackagerelease"
+          tal:define="spr context/source_package_release"
           tal:condition="spr/source_package_recipe_build">
         <dt>Source package recipe build:</dt>
         <dd tal:content="structure spr/source_package_recipe_build/fmt:link">
