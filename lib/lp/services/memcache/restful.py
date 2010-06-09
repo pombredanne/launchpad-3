@@ -6,10 +6,13 @@
 import storm
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+from zope.traversing.browser import absoluteURL
 
 from canonical.config import config
 from lp.services.memcache.interfaces import IMemcacheClient
 from lazr.restful.simple import BaseRepresentationCache
+from lazr.restful.utils import get_current_web_service_request
 
 __metaclass__ = type
 __all__ = [
@@ -26,11 +29,18 @@ class MemcachedStormRepresentationCache(BaseRepresentationCache):
 
     def key_for(self, obj, media_type, version):
         """See `BaseRepresentationCache`."""
-        storm_info = storm.info.get_obj_info(obj)
-        table_name = storm_info.cls_info.table
-        primary_key = tuple(var.get() for var in storm_info.primary_vars)
+        obj = removeSecurityProxy(obj)
+        try:
+            storm_info = storm.info.get_obj_info(obj)
+            table_name = storm_info.cls_info.table
+            primary_key = tuple(var.get() for var in storm_info.primary_vars)
+            identifier = table_name + repr(primary_key)
+        except Exception, e:
+            # This is more expensive, but it should always work.
+            request = get_current_web_service_request()
+            identifier = absoluteURL(obj, request).encode('utf-8')
 
-        key = (table_name + repr(primary_key)
+        key = (identifier
                + ',' + config._instance_name
                + ',' + media_type + ',' + str(version)).replace(' ', '.')
         return key
