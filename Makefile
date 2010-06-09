@@ -457,7 +457,7 @@ pydoctor:
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
-	check check_merge ec2_check \
+	check check_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
 	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs build_eggs\
