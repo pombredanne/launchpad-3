@@ -504,6 +504,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
 
+    @property
+    def bug_reported_acknowledgement(self):
+        """See `IBugTarget`."""
+        return self.distribution.bug_reported_acknowledgement
+
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
         return (Milestone.distroseries == self)
