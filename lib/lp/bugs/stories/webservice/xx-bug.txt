@@ -127,6 +127,7 @@ bugs.
     ...     print '%s, %s, %s' % (
     ...         activity.whatchanged, activity.message,
     ...         activity.person.name)
+    bug, added subscriber Guilherme Salgado, salgado
     bug, added bug, salgado
 
     >>> for notification in BugNotification.selectBy(bug=bug, orderBy='id'):
@@ -852,7 +853,6 @@ We can also create new subscriptions.
 
     >>> new_subscription = webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~cprov')).jsonBody()
     >>> pprint_entry(new_subscription)
     bug_link: ...
@@ -905,7 +905,6 @@ this, the group must first be re-subscribed.
 
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
 
@@ -949,7 +948,6 @@ himself.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~salgado'))
     HTTP/1.1 200 Ok...
 
@@ -980,7 +978,6 @@ To demonstrate, first subscribe Ubuntu Team to bug_six, the duplicate.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
     >>> bug_six_subscriptions = webservice.get(

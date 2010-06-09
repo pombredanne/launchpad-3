@@ -372,9 +372,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     @operation_parameters(
         person=Reference(IPerson, title=_('Person'), required=True))
-    @call_with(subscribed_by=REQUEST_USER)
+    @call_with(subscribed_by=REQUEST_USER, suppress_notify=False)
     @export_write_operation()
-    def subscribe(person, subscribed_by, suppress_notify=True):
+    def subscribe(person, subscribed_by, suppress_notify):
         """Subscribe `person` to the bug.
 
         :param person: the subscriber.

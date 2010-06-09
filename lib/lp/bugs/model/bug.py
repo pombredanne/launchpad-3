@@ -480,7 +480,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         return self.latest_patch_uploaded is not None
 
-    def subscribe(self, person, subscribed_by, suppress_notify=True):
+    def subscribe(self, person, subscribed_by, suppress_notify=False):
         """See `IBug`."""
         # first look for an existing subscription
         for sub in self.subscriptions:
