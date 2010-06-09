@@ -1396,15 +1396,6 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=expected_notification,
             bug=public_bug)
 
-        # Ensure that only the people subscribed to the bug that
-        # gets marked as a duplicate are notified.
-        master_notifications = BugNotification.selectBy(
-            bug=self.bug, orderBy='id')
-        new_notifications = [
-            notification for notification in master_notifications
-            if notification.id not in self.old_notification_ids]
-        self.assertEqual(len(list(new_notifications)), 0)
-
     def test_unmarked_as_duplicate_of_private_bug(self):
         # When a bug is unmarked as a duplicate of a private bug,
         # the private bug's summary isn't sent in the notification.
