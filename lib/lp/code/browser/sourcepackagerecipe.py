@@ -318,15 +318,6 @@ class RecipeTextValidatorMixin:
                 'recipe_text',
                 'The recipe text is not a valid bzr-builder recipe.')
 
-        name = data.get('name', None)
-        if name:
-            SourcePackageRecipeSource = getUtility(ISourcePackageRecipeSource)
-            if SourcePackageRecipeSource.exists(self.user, name):
-                self.setFieldError(
-                    'name',
-                    'There is already a recipe owned by %s with this name.' %
-                        self.user.displayname)
-
 
 class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     """View for creating Source Package Recipes."""
@@ -354,6 +345,18 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
             self.user, self.user, data['distros'],
             data['name'], recipe, data['description'])
         self.next_url = canonical_url(source_package_recipe)
+
+    def validate(self, data):
+        super(SourcePackageRecipeAddView, self).validate(data)
+        name = data.get('name', None)
+        owner = data.get('owner', None)
+        if name and owner:
+            SourcePackageRecipeSource = getUtility(ISourcePackageRecipeSource)
+            if SourcePackageRecipeSource.exists(owner, name):
+                self.setFieldError(
+                    'name',
+                    'There is already a recipe owned by %s with this name.' %
+                        owner.displayname)
 
 
 class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
@@ -416,6 +419,20 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
     def adapters(self):
         """See `LaunchpadEditFormView`"""
         return {ISourcePackageAddEditSchema: self.context}
+
+    def validate(self, data):
+        super(SourcePackageRecipeEditView, self).validate(data)
+        name = data.get('name', None)
+        owner = data.get('owner', None)
+        if name and owner:
+            SourcePackageRecipeSource = getUtility(ISourcePackageRecipeSource)
+            if SourcePackageRecipeSource.exists(owner, name):
+                recipe = owner.getRecipe(name)
+                if recipe != self.context:
+                    self.setFieldError(
+                        'name',
+                        'There is already a recipe owned by %s with this '
+                        'name.' % owner.displayname)
 
 
 class SourcePackageRecipeDeleteView(LaunchpadFormView):
