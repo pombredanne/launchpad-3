@@ -966,10 +966,8 @@ class POTMsgSet(SQLBase):
             current.is_current_ubuntu = False
             # Converge the current translation only if it is diverged and not
             # current upstream.
-            diverged_and_not_current_upstream = (
-               current.potemplate is not None and
-               not current.is_current_upstream)
-            if diverged_and_not_current_upstream:
+            is_diverged =  current.potemplate is not None
+            if is_diverged and not current.is_current_upstream:
                 current.potemplate = None
             pofile.date_changed = UTC_NOW
 
