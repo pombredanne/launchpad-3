@@ -112,6 +112,8 @@ from canonical.launchpad.interfaces.searchservice import *
 from lp.registry.interfaces.sourcepackage import *
 from lp.registry.interfaces.sourcepackagename import *
 from lp.soyuz.interfaces.sourcepackagerelease import *
+from lp.blueprints.interfaces.specification import *
+from lp.blueprints.interfaces.specificationbranch import *
 from lp.services.worlddata.interfaces.spokenin import *
 from lp.registry.interfaces.ssh import *
 from lp.registry.interfaces.structuralsubscription import *
