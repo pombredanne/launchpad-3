@@ -1296,12 +1296,12 @@ candidate by its name, via the `PublishedPackage` table:
 
     >>> candidate = ubuntu.main_archive.findDepCandidateByName(
     ...     warty_i386, "pmount")
-    >>> print candidate.binarypackagename
+    >>> print candidate.binarypackagerelease.binarypackagename.name
     pmount
 
     >>> candidate = cprov.archive.findDepCandidateByName(
     ...     warty_i386, "pmount")
-    >>> print candidate.binarypackagename
+    >>> print candidate.binarypackagerelease.binarypackagename.name
     pmount
 
 Since 'python2.4' isn't available in our sampledata (not even
