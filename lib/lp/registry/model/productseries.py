@@ -180,6 +180,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         return self.product.bug_reporting_guidelines
 
     @property
+    def bug_reported_acknowledgement(self):
+        """See `IBugTarget`."""
+        return self.product.bug_reported_acknowledgement
+
+    @property
     def sourcepackages(self):
         """See IProductSeries"""
         from lp.registry.model.sourcepackage import SourcePackage

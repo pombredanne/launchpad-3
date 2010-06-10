@@ -72,7 +72,6 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
         self.recipe_text = extra_args['recipe_text']
         self.suite = extra_args['suite']
         self.component = extra_args['ogrecomponent']
-        self.package_name = extra_args['package_name']
         self.author_name = extra_args['author_name']
         self.author_email = extra_args['author_email']
         self.archive_purpose = extra_args['archive_purpose']
@@ -86,20 +85,17 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
         currently_building = get_build_path(
             self._buildid, 'chroot-autobuild/CurrentlyBuilding')
         splat_file(currently_building,
-            'Package: %s\n'
             'Suite: %s\n'
             'Component: %s\n'
             'Purpose: %s\n'
             'Build-Debug-Symbols: no\n' %
-            (self.package_name, self.suite, self.component,
-             self.archive_purpose))
+            (self.suite, self.component, self.archive_purpose))
         os.makedirs(get_chroot_path(self._buildid, 'work'))
         recipe_path = get_chroot_path(self._buildid, 'work/recipe')
         splat_file(recipe_path, self.recipe_text)
         args = [
             "buildrecipe.py", self._buildid, self.author_name,
-            self.author_email, self.package_name, self.suite,
-            self.distroseries_name]
+            self.author_email, self.suite, self.distroseries_name]
         self.runSubProcess(self.build_recipe_path, args)
 
     def iterate_BUILD_RECIPE(self, retcode):
