@@ -13,8 +13,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.browser.person import PersonEditView, PersonView
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
