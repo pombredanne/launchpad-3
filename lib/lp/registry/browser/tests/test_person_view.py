@@ -370,8 +370,11 @@ class TestPersonRelatedSoftwareView(TestCaseWithFactory):
         build.archive = publisher.distroseries.main_archive
         login(ANONYMOUS)
 
-        # Now render the view to display the failed builds.
+        # Now render the view to display the failed i386 build.
         html = self.view()
+        self.assertTrue(
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                build.id) in html)
 
 
 def test_suite():
