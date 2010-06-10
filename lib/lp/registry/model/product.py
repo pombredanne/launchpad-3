@@ -288,6 +288,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         foreignKey="ProductSeries", dbName="development_focus", notNull=False,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
+    bug_reported_acknowledgement = StringCol(default=None)
     _cached_licenses = None
 
     def _validate_active(self, attr, value):

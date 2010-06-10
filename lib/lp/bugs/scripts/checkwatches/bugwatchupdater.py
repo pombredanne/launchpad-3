@@ -100,7 +100,7 @@ class BugWatchUpdater(WorkingBase):
                     error_status = BugWatchActivityStatus.BACKLINK_FAILED
                     self.linkLaunchpadBug()
             except Exception, ex:
-                error_message = ex.message
+                error_message = str(ex)
                 oops_id = self.error(
                     "Failure updating bug %r on %s (local bug: %s)." %
                         (self.remote_bug, self.external_bugtracker.baseurl,
