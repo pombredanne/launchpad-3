@@ -25,6 +25,7 @@ from lp.code.browser.sourcepackagerecipe import (
     SourcePackageRecipeBuildView
 )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import ANONYMOUS, BrowserTestCase, login, logout
 
@@ -475,6 +476,25 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.factory.makeSourcePackageRecipeBuild(recipe=recipe, archive=ppa2)
         self.assertEqual(ppa2, view.initial_values.get('archive'))
 
+    def test_request_build_rejects_over_quota(self):
+        """Over-quota build requests cause validation failures."""
+        woody = self.factory.makeDistroSeries(
+            name='woody', displayname='Woody',
+            distribution=self.ppa.distribution)
+        woody.nominatedarchindep = woody.newArch(
+            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
+            supports_virtualized=True)
+
+        recipe = self.makeRecipe()
+        [recipe.requestBuild(
+            self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
+            for x in range(5)]
+
+        browser = self.getViewBrowser(recipe, '+request-builds')
+        browser.getControl('Woody').click()
+        browser.getControl('Request builds').click()
+        self.assertIn("You have exceeded today's quota for ubuntu woody.",
+                extract_text(find_main_content(browser.contents)))
 
 
 class TestSourcePackageRecipeBuildView(BrowserTestCase):

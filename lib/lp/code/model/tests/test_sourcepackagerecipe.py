@@ -31,7 +31,7 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.sourcepackagerecipe import (
     ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
-    TooNewRecipeFormat, MINIMAL_RECIPE_TEXT)
+    TooManyBuilds, TooNewRecipeFormat, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
 from lp.code.model.sourcepackagerecipebuild import (
@@ -250,6 +250,22 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         (distroseries,) = list(recipe.distroseries)
         self.assertRaises(ArchiveDisabled, recipe.requestBuild, ppa,
                 ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
+
+    def test_requestBuildRejectsOverQuota(self):
+        """Build requests that exceed quota raise an exception."""
+        requester = self.factory.makePerson(name='requester')
+        recipe = self.factory.makeSourcePackageRecipe(
+            name=u'myrecipe', owner=requester)
+        series = list(recipe.distroseries)[0]
+        archive = self.factory.makeArchive(owner=requester)
+        def request_build():
+            recipe.requestBuild(archive, requester, series,
+                    PackagePublishingPocket.RELEASE)
+        [request_build() for num in range(5)]
+        e = self.assertRaises(TooManyBuilds, request_build)
+        self.assertIn(
+            'You have exceeded your quota for recipe requester/myrecipe',
+            str(e))
 
     def test_sourcepackagerecipe_description(self):
         """Ensure that the SourcePackageRecipe has a proper description."""
