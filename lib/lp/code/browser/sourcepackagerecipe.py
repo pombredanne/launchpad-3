@@ -218,6 +218,17 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
     cancel_url = next_url
 
+    def validate(self, data):
+        over_quota_distroseries = []
+        for distroseries in data['distros']:
+            if self.context.isOverQuota(self.user, distroseries):
+                over_quota_distroseries.append(str(distroseries))
+        if len(over_quota_distroseries) > 0:
+            self.setFieldError(
+                'distros',
+                "You have exceeded today's quota for %s." %
+                ', '.join(over_quota_distroseries))
+
     @action('Request builds', name='request')
     def request_action(self, action, data):
         """User action for requesting a number of builds."""
@@ -318,15 +329,6 @@ class RecipeTextValidatorMixin:
                 'recipe_text',
                 'The recipe text is not a valid bzr-builder recipe.')
 
-        name = data.get('name', None)
-        if name:
-            SourcePackageRecipeSource = getUtility(ISourcePackageRecipeSource)
-            if SourcePackageRecipeSource.exists(self.user, name):
-                self.setFieldError(
-                    'name',
-                    'There is already a recipe owned by %s with this name.' %
-                        self.user.displayname)
-
 
 class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     """View for creating Source Package Recipes."""
@@ -354,6 +356,18 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
             self.user, self.user, data['distros'],
             data['name'], recipe, data['description'])
         self.next_url = canonical_url(source_package_recipe)
+
+    def validate(self, data):
+        super(SourcePackageRecipeAddView, self).validate(data)
+        name = data.get('name', None)
+        owner = data.get('owner', None)
+        if name and owner:
+            SourcePackageRecipeSource = getUtility(ISourcePackageRecipeSource)
+            if SourcePackageRecipeSource.exists(owner, name):
+                self.setFieldError(
+                    'name',
+                    'There is already a recipe owned by %s with this name.' %
+                        owner.displayname)
 
 
 class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
@@ -416,6 +430,20 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
     def adapters(self):
         """See `LaunchpadEditFormView`"""
         return {ISourcePackageAddEditSchema: self.context}
+
+    def validate(self, data):
+        super(SourcePackageRecipeEditView, self).validate(data)
+        name = data.get('name', None)
+        owner = data.get('owner', None)
+        if name and owner:
+            SourcePackageRecipeSource = getUtility(ISourcePackageRecipeSource)
+            if SourcePackageRecipeSource.exists(owner, name):
+                recipe = owner.getRecipe(name)
+                if recipe != self.context:
+                    self.setFieldError(
+                        'name',
+                        'There is already a recipe owned by %s with this '
+                        'name.' % owner.displayname)
 
 
 class SourcePackageRecipeDeleteView(LaunchpadFormView):

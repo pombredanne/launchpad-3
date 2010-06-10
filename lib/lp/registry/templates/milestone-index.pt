@@ -268,13 +268,11 @@
         <tal:has_bugtasks condition="bugtasks">
           <tal:active content="cache:private, 10 minute"
             condition="view/milestone/active">
-            <!-- milestone_bugtasks cache:private 10 minute -->
             <tal:milestone-bugtasks
               metal:use-macro="context/@@+milestone-macros/milestone_bugtasks" />
           </tal:active>
           <tal:inactive content="cache:private, 3 hour"
             condition="not: view/milestone/active">
-            <!-- milestone_bugtasks cache:private 3 hour -->
             <tal:milestone-bugtasks
               metal:use-macro="context/@@+milestone-macros/milestone_bugtasks" />
           </tal:inactive>
