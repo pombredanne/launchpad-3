@@ -835,10 +835,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         mirrored.
         """
         new_data_pushed = (
-             self.branch_type in (BranchType.HOSTED, BranchType.IMPORTED)
+             self.branch_type == BranchType.IMPORTED
              and self.next_mirror_time is not None)
         # XXX 2010-04-22, MichaelHudson: This should really look for a branch
-        # scan job.
+        # scan job. Yes because if the scan job fails, the branch gets stuck
+        # in updating.
         pulled_but_not_scanned = self.last_mirrored_id != self.last_scanned_id
         pull_in_progress = (
             self.last_mirror_attempt is not None
@@ -883,7 +884,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def requestMirror(self):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
+        if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
             raise BranchTypeError(self.unique_name)
         from canonical.launchpad.interfaces import IStore
         IStore(self).find(
@@ -897,7 +898,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def startMirroring(self):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
+        if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
             raise BranchTypeError(self.unique_name)
         self.last_mirror_attempt = UTC_NOW
         self.next_mirror_time = None
@@ -936,7 +937,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
+        if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
             raise BranchTypeError(self.unique_name)
         self.mirror_failures += 1
         self.mirror_status_message = reason
