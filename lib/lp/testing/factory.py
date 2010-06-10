@@ -1789,7 +1789,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
                                      sourcename=None, distroseries=None,
-                                     pocket=None, date_created=None):
+                                     pocket=None, date_created=None,
                                      status=BuildStatus.NEEDSBUILD):
         """Make a new SourcePackageRecipeBuild."""
         if recipe is None:
