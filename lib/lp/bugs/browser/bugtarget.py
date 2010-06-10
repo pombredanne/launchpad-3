@@ -1164,11 +1164,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
-        bug_counts = sorted(self.context.getBugCounts(
-            self.user, bug_statuses_to_show).items())
-        self.bug_count_items = [
-            BugCountDataItem(status.title, count, self.status_color[status])
-            for status, count in bug_counts]
 
     @property
     def uses_launchpad_bugtracker(self):

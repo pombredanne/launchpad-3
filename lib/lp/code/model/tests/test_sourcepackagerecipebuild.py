@@ -20,12 +20,15 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp.authorization import check_permission
-from lp.buildmaster.interfaces.buildbase import IBuildBase
+from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.tests.test_buildbase import (
+    TestGetUploadMethodsMixin, TestHandleStatusMixin)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import ANONYMOUS, login, person_logged_in, TestCaseWithFactory
 
@@ -200,6 +203,64 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         build = SourcePackageRecipeBuild.makeDailyBuilds()[0]
         self.assertEqual(recipe, build.recipe)
         self.assertEqual(list(recipe.distroseries), [build.distroseries])
+
+    def test_getRecentBuilds(self):
+        """Recent builds match the same person, series and receipe.
+
+        Builds do not match if they are older than 24 hours, or have a
+        different requester, series or recipe.
+        """
+        requester = self.factory.makePerson()
+        recipe = self.factory.makeSourcePackageRecipe()
+        series = self.factory.makeDistroSeries()
+        now = self.factory.getUniqueDate()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe,
+            requester=requester)
+        self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=series)
+        self.factory.makeSourcePackageRecipeBuild(
+            requester=requester, distroseries=series)
+        def get_recent():
+            Store.of(build).flush()
+            return SourcePackageRecipeBuild.getRecentBuilds(
+                requester, recipe, series, _now=now)
+        self.assertContentEqual([], get_recent())
+        yesterday = now - datetime.timedelta(days=1)
+        recent_build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=series, requester=requester,
+            date_created=yesterday)
+        self.assertContentEqual([], get_recent())
+        a_second = datetime.timedelta(seconds=1)
+        removeSecurityProxy(recent_build).datecreated += a_second
+        self.assertContentEqual([recent_build], get_recent())
+
+
+class MakeSPRecipeBuildMixin:
+    """Provide the common makeBuild method returning a queued build."""
+
+    def makeBuild(self):
+        person = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        processor_fam = getUtility(IProcessorFamilySet).getByName('x86')
+        distroseries_i386 = distroseries.newArch(
+            'i386', processor_fam, False, person,
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+        build = self.factory.makeSourcePackageRecipeBuild(
+            distroseries=distroseries,
+            status=BuildStatus.FULLYBUILT)
+        build.queueBuild(build)
+        return build
+
+
+class TestGetUploadMethodsForSPRecipeBuild(
+    MakeSPRecipeBuildMixin, TestGetUploadMethodsMixin, TestCaseWithFactory):
+    """IBuildBase.getUpload-related methods work with SPRecipe builds."""
+
+
+class TestHandleStatusForSPRBuild(
+    MakeSPRecipeBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
+    """IBuildBase.handleStatus works with SPRecipe builds."""
 
 
 def test_suite():

@@ -1794,7 +1794,8 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
                                      sourcename=None, distroseries=None,
-                                     pocket=None):
+                                     pocket=None, date_created=None,
+                                     status=BuildStatus.NEEDSBUILD):
         """Make a new SourcePackageRecipeBuild."""
         if recipe is None:
             recipe = self.makeSourcePackageRecipe(name=sourcename)
@@ -1805,12 +1806,15 @@ class LaunchpadObjectFactory(ObjectFactory):
                 distribution=archive.distribution)
         if requester is None:
             requester = self.makePerson()
-        return getUtility(ISourcePackageRecipeBuildSource).new(
+        spr_build = getUtility(ISourcePackageRecipeBuildSource).new(
             distroseries=distroseries,
             recipe=recipe,
             archive=archive,
             requester=requester,
-            pocket=pocket)
+            pocket=pocket,
+            date_created=date_created)
+        removeSecurityProxy(spr_build).buildstate = status
+        return spr_build
 
     def makeSourcePackageRecipeBuildJob(
         self, score=9876, virtualized=True, estimated_duration=64,
