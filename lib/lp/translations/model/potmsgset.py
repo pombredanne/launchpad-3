@@ -1051,25 +1051,6 @@ class POTMsgSet(SQLBase):
             current.reviewer = reviewer
             current.date_reviewed = lock_timestamp
 
-    def resetCurrentTranslation(self, pofile, lock_timestamp):
-        """See `IPOTMsgSet`."""
-
-        assert(lock_timestamp is not None)
-
-        current = self.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language)
-
-        if (current is not None):
-            # Check for transltion conflicts and update the required
-            # attributes.
-            self._maybeRaiseTranslationConflict(current, lock_timestamp)
-            current.is_current = False
-            # Converge the current translation only if it is diverged and not
-            # imported.
-            if current.potemplate is not None and not current.is_imported:
-                current.potemplate = None
-            pofile.date_changed = UTC_NOW
-
     def _nameMessageStatus(self, message, translation_side_traits):
         """Figure out the decision-matrix status of a message.
 
@@ -1244,6 +1225,25 @@ class POTMsgSet(SQLBase):
         traits.setFlag(message, True)
 
         return message
+
+    def resetCurrentTranslation(self, pofile, lock_timestamp):
+        """See `IPOTMsgSet`."""
+
+        assert(lock_timestamp is not None)
+
+        current = self.getCurrentTranslationMessage(
+            pofile.potemplate, pofile.language)
+
+        if (current is not None):
+            # Check for transltion conflicts and update the required
+            # attributes.
+            self._maybeRaiseTranslationConflict(current, lock_timestamp)
+            current.is_current = False
+            # Converge the current translation only if it is diverged and not
+            # imported.
+            if current.potemplate is not None and not current.is_imported:
+                current.potemplate = None
+            pofile.date_changed = UTC_NOW
 
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""
