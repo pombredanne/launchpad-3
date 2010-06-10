@@ -476,7 +476,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             whiteboard=whiteboard)
 
     def createBug(self, bug_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See IBugTarget."""
         bug_params.setBugTarget(distribution=self)
         return BugSet().createBug(bug_params)
 
@@ -1608,7 +1608,7 @@ class DistributionSet:
         return distribution
 
     def get(self, distributionid):
-        """See canonical.launchpad.interfaces.IDistributionSet."""
+        """See IDistributionSet."""
         return Distribution.get(distributionid)
 
     def count(self):

@@ -34,12 +34,12 @@ class BugMessage(SQLBase):
 
 
 class BugMessageSet:
-    """See canonical.launchpad.interfaces.IBugMessageSet."""
+    """See IBugMessageSet."""
 
     implements(IBugMessageSet)
 
     def createMessage(self, subject, bug, owner, content=None):
-        """See canonical.launchpad.interfaces.IBugMessageSet."""
+        """See IBugMessageSet."""
         msg = Message(
             parent=bug.initial_message, owner=owner,
             rfc822msgid=make_msgid('malone'), subject=subject)
@@ -53,11 +53,11 @@ class BugMessageSet:
         return bugmsg
 
     def get(self, bugmessageid):
-        """See canonical.launchpad.interfaces.IBugMessageSet."""
+        """See IBugMessageSet."""
         return BugMessage.get(bugmessageid)
 
     def getByBugAndMessage(self, bug, message):
-        """See canonical.launchpad.interfaces.IBugMessageSet."""
+        """See IBugMessageSet."""
         return BugMessage.selectOneBy(bug=bug, message=message)
 
     def getImportedBugMessages(self, bug):

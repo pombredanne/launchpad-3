@@ -456,7 +456,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return self.distribution_sourcepackage.max_bug_heat
 
     def createBug(self, bug_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See IBugTarget."""
         # We don't currently support opening a new bug directly on an
         # ISourcePackage, because internally ISourcePackage bugs mean bugs
         # targeted to be fixed in a specific distroseries + sourcepackage.

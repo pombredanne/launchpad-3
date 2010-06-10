@@ -1579,7 +1579,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return source_results.union(build_results.union(custom_results))
 
     def createBug(self, bug_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See IBugTarget."""
         # We don't currently support opening a new bug on an IDistroSeries,
         # because internally bugs are reported against IDistroSeries only when
         # targeted to be fixed in that series, which is rarely the case for a

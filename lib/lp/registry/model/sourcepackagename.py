@@ -52,21 +52,21 @@ class SourcePackageNameSet:
     implements(ISourcePackageNameSet)
 
     def __getitem__(self, name):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        """See ISourcePackageNameSet."""
         try:
             return SourcePackageName.byName(name)
         except SQLObjectNotFound:
             raise NoSuchSourcePackageName(name)
 
     def get(self, sourcepackagenameid):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        """See ISourcePackageNameSet."""
         try:
             return SourcePackageName.get(sourcepackagenameid)
         except SQLObjectNotFound:
             raise NotFoundError(sourcepackagenameid)
 
     def getAll(self):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        """See ISourcePackageNameSet."""
         return SourcePackageName.select()
 
     def findByName(self, name):
@@ -75,7 +75,7 @@ class SourcePackageNameSet:
         return SourcePackageName.select(query)
 
     def queryByName(self, name):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        """See ISourcePackageNameSet."""
         return SourcePackageName.selectOneBy(name=name)
 
     def new(self, name):

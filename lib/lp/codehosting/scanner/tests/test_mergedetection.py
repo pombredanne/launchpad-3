@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.event import notify
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.codehosting.scanner import events

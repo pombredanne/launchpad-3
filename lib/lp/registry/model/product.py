@@ -579,7 +579,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def name_with_project(self):
-        """See lib.canonical.launchpad.interfaces.IProduct"""
+        """See IProduct"""
         if self.project and self.project.name != self.name:
             return self.project.name + ": " + self.name
         return self.name

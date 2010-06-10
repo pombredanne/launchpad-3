@@ -26,7 +26,7 @@ class AgingAdapter:
         self.context = context
 
     def currentApproximateAge(self):
-        """See canonical.launchpad.interfaces.ITimeDelta."""
+        """See ITimeDelta."""
         age = ""
         datecreated = self.context.datecreated
         right_now = datetime.now(pytz.timezone('UTC'))

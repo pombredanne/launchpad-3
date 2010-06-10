@@ -11,7 +11,7 @@ from lp.bugs.interfaces.bug import IBugDelta
 
 
 class BugDelta:
-    """See canonical.launchpad.interfaces.IBugDelta."""
+    """See IBugDelta."""
     implements(IBugDelta)
     def __init__(self, bug, bugurl, user,
                  title=None, description=None, name=None,

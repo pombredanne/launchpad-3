@@ -341,7 +341,7 @@ class DistroArchSeriesSet:
         return iter(DistroArchSeries.select())
 
     def get(self, dar_id):
-        """See `canonical.launchpad.interfaces.IDistributionSet`."""
+        """See `IDistributionSet`."""
         return DistroArchSeries.get(dar_id)
 
     def count(self):

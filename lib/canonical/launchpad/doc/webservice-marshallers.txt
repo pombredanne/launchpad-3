@@ -30,7 +30,7 @@ interpreted as URLs referencing objects on the web service. If the given
 string is a URL corresponding to a vocabulary item, the marshaller
 returns that item. Otherwise it raises a ValueError.
 
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.registry.interfaces.person import IPerson
     >>> from zope.component import getMultiAdapter
     >>> from zope.schema import Choice
     >>> from lazr.restful.fields import ReferenceChoice

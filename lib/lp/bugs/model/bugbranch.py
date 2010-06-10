@@ -27,7 +27,7 @@ from lp.registry.interfaces.person import validate_public_person
 
 
 class BugBranch(SQLBase):
-    """See canonical.launchpad.interfaces.IBugBranch."""
+    """See IBugBranch."""
     implements(IBugBranch, IHasBranchTarget)
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)

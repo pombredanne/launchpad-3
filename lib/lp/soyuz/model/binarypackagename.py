@@ -51,14 +51,14 @@ class BinaryPackageNameSet:
     implements(IBinaryPackageNameSet)
 
     def __getitem__(self, name):
-        """See canonical.launchpad.interfaces.IBinaryPackageNameSet."""
+        """See IBinaryPackageNameSet."""
         try:
             return BinaryPackageName.byName(name)
         except SQLObjectNotFound:
             raise NotFoundError(name)
 
     def getAll(self):
-        """See canonical.launchpad.interfaces.IBinaryPackageNameSet."""
+        """See IBinaryPackageNameSet."""
         return BinaryPackageName.select()
 
     def findByName(self, name):

@@ -17,7 +17,7 @@ from storm.store import Store
 
 from canonical.config import config
 
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 

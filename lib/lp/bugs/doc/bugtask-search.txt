@@ -1211,7 +1211,7 @@ structural subscriber for a product, a product series, a project, a milestone,
 a distribution, a distribution series and a distribution source package. No
 Privileges Person isn't a structural subscriber, so no bug tasks are found:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IProductSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> no_priv_struct_sub = BugTaskSearchParams(
     ...     user=None, structural_subscriber=no_priv)

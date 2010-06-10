@@ -191,7 +191,7 @@ Usually, one would register an adapter in ZCML from the content type to
 IHasBadges.  Here is the sample from the branch.zcml to illustrate.
 
   <adapter
-      for="canonical.launchpad.interfaces.IBranch"
+      for="lp.code.interfaces.branch.IBranch"
       provides="canonical.launchpad.webapp.badge.IHasBadges"
       factory="lp.code.browser.branchlisting.BranchBadges"
       />
