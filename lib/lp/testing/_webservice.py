@@ -19,8 +19,8 @@ from launchpadlib.launchpad import Launchpad
 
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import OAuthPermission
-from canonical.launchpad.interfaces import (
-    IOAuthConsumerSet, IPersonSet)
+from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+from lp.registry.interfaces.person import IPersonSet
 
 from lp.testing._login import login, logout
 
