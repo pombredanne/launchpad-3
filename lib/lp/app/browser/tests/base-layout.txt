@@ -62,10 +62,12 @@ Standard Javascript functions.
 
 Body preamble.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-      <body id="document"
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+
+    >>> body_tag = find_tag_by_id(html, 'document')
+    >>> body = str(body_tag)
+    >>> print body
+    <body id="document"
             class="tab-overview
           main_side
           public
@@ -80,8 +82,8 @@ Body preamble.
 
 Watermark and breadcrumbs.
 
-    >>> print html
-    <!DOCTYPE html ...
+    >>> print body
+    <body ...
     ...
           <div class="watermark-apps-portlet top-portlet">
             <img alt="" width="64" height="64" src="/@@/person-logo" />
@@ -102,9 +104,8 @@ Watermark and breadcrumbs.
 
 Top portlet.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
+    >>> print body
+    <body ...
           <div class="top-portlet">
             <p class="registered">
               Registered on 2005-09-16
@@ -118,25 +119,20 @@ Top portlet.
 
 Help pane.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-        <div id="help-pane" class="invisible">
+    >>> print str(find_tag_by_id(body_tag, 'help-pane'))
+    <div id="help-pane" class="invisible">
           <div id="help-body">
-    <BLANKLINE>
             <iframe id="help-pane-content" class="invisible" ...
             </div>
           <div id="help-footer">
             <span id="help-close"></span>
           </div>
         </div>
-    ...
 
 Footer.
 
     >>> print html
     <!DOCTYPE html ...
-    ...
       <!--
         Facet name: overview
         Page type: main_side
@@ -172,9 +168,10 @@ Heading.
 
 Watermark.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
+    >>> body_tag = find_tag_by_id(html, 'document')
+    >>> body = str(body_tag)
+    >>> print body
+    <body ...
           <div class="watermark-apps-portlet top-portlet">
             <img alt="" width="64" height="64" src="/@@/person-logo" />
             <h2>Waffles</h2>
@@ -182,10 +179,8 @@ Watermark.
 
 Main content.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-            <div id="maincontent" class="yui-main">
+    >>> print str(find_tag_by_id(body_tag, 'maincontent'))
+    <div id="maincontent" class="yui-main">
               <div class="yui-b" dir="ltr">
                 <div>
     <BLANKLINE>
@@ -208,17 +203,12 @@ Main content.
               Main content of the page.
             </p>
           </div>
-    <BLANKLINE>
-            </div><!-- yui-main -->
-    <BLANKLINE>
-            <!-- yui-b side -->
-          <!-- yui-t4 -->
-    ...
+    </div>
 
 Global search.
 
-    >>> print html
-    <!DOCTYPE html ...
+    >>> print body
+    <body ...
       <form id="globalsearch" method="get"
             accept-charset="UTF-8"
             action="http://launchpad.dev/+search">
@@ -267,10 +257,10 @@ Heading.
 
 Body class.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-      <body id="document"
+    >>> body_tag = find_tag_by_id(html, 'document')
+    >>> body = str(body_tag)
+    >>> print body
+    <body id="document"
             class="tab-overview
           searchless
           public
@@ -283,9 +273,8 @@ Body class.
 
 Watermarks.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
+    >>> print body
+    <body ...
           <div class="watermark-apps-portlet top-portlet">
             <img alt="" width="64" height="64" src="/@@/person-logo" />
             <h2>Waffles</h2>
@@ -302,10 +291,8 @@ Watermarks.
 
 Main content.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-            <div id="maincontent" class="yui-main">
+    >>> print str(find_tag_by_id(body_tag, 'maincontent'))
+    <div id="maincontent" class="yui-main">
               <div class="yui-b" dir="ltr">
                 <div>
     <BLANKLINE>
@@ -316,9 +303,8 @@ Main content.
 
 Top portlet.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
+    >>> print body
+    <body ...
           <div class="top-portlet">
             <h1>Heading</h1>
             <p class="registered">
@@ -377,10 +363,10 @@ Heading.
 
 Body.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-      <body id="document"
+    >>> body_tag = find_tag_by_id(html, 'document')
+    >>> body = str(body_tag)
+    >>> print body
+    <body id="document"
             class="tab-overview
           locationless
           public
@@ -393,16 +379,10 @@ Body.
 
 Main content.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-            <div id="maincontent" class="yui-main">
+    >>> print str(find_tag_by_id(body_tag, 'maincontent'))
+    <div id="maincontent" class="yui-main">
               <div class="yui-b" dir="ltr">
-    <BLANKLINE>
               </div><!-- yui-b -->
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
           <div class="top-portlet">
             <h1>Heading</h1>
             <p class="registered">
@@ -413,12 +393,7 @@ Main content.
               Main content of the page.
             </p>
           </div>
-    <BLANKLINE>
-            </div><!-- yui-main -->
-    <BLANKLINE>
-            <!-- yui-b side -->
-          <!-- yui-t4 -->
-    ...
+    </div>
 
 Footer.
 
