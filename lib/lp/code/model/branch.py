@@ -245,6 +245,21 @@ class Branch(SQLBase, BzrIdentityMixin):
         'Bug', joinColumn='branch', otherColumn='bug',
         intermediateTable='BugBranch', orderBy='id')
 
+    def getLinkedBugsAndTasks(self):
+        """Return a result set for the bugs with their tasks."""
+        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bugbranch import BugBranch
+        from lp.bugs.model.bugtask import BugTask
+        return Store.of(self).find(
+            (Bug, BugTask),
+            BugBranch.branch == self,
+            BugBranch.bug == Bug.id,
+            BugTask.bug == Bug.id)
+
+    linked_bugs_and_tasks = SQLRelatedJoin(
+        'Bug', joinColumn='branch', otherColumn='bug',
+        intermediateTable='BugBranch', orderBy='id')
+
     def linkBug(self, bug, registrant):
         """See `IBranch`."""
         return bug.linkBranch(self, registrant)
