@@ -14,9 +14,6 @@ import functools
 from zope.component import getUtility
 
 from canonical.config import config
-# XXX: wgrant 2010-03-16 bug=539496: Importing directly from
-# lp.registry.interfaces.person results in a circular import.
-from canonical.launchpad.interfaces import IPersonSet
 from lp.soyuz.interfaces.archive import NoSuchPPA
 from lp.soyuz.scripts.ppa_apache_log_parser import DBUSER, get_ppa_file_key
 from lp.services.apachelogparser.script import ParseApacheLogs
@@ -27,6 +24,8 @@ class ParsePPAApacheLogs(ParseApacheLogs):
 
     def setUpUtilities(self):
         """See `ParseApacheLogs`."""
+        # XXX: wgrant 2010-03-16 bug=539496: Avoid circular imports hell.
+        from lp.registry.interfaces.person import IPersonSet
         self.person_set = getUtility(IPersonSet)
 
     @property
