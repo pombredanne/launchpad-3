@@ -22,8 +22,11 @@ from email.message import Message as EmailMessage
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itertools import count
-from StringIO import StringIO
 import os.path
+from random import randint
+from StringIO import StringIO
+from threading import local
+import sys
 
 import pytz
 
@@ -213,14 +216,22 @@ class ObjectFactory:
 
     def __init__(self):
         # Initialise the unique identifier.
-        self._integer = count(1)
+        self._local = local()
 
     def getUniqueEmailAddress(self):
         return "%s@example.com" % self.getUniqueString('email')
 
     def getUniqueInteger(self):
-        """Return an integer unique to this factory instance."""
-        return self._integer.next()
+        """Return an integer unique to this factory instance.
+
+        For each thread, this will be a series of increasing numbers, but the
+        starting point will be unique per thread.
+        """
+        counter = getattr(self._local, 'integer', None)
+        if counter is None:
+            counter = count(randint(0, 1000000))
+            self._local.integer = counter
+        return counter.next()
 
     def getUniqueHexString(self, digits=None):
         """Return a unique hexadecimal string.
@@ -245,7 +256,7 @@ class ObjectFactory:
         """
         if prefix is None:
             prefix = "generic-string"
-        string = "%s%s" % (prefix, generate_uuid())
+        string = "%s%s" % (prefix, self.getUniqueInteger())
         return string.replace('_', '-').lower()
 
     def getUniqueUnicode(self):
