@@ -109,11 +109,11 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasQueueItems"/>
+            interface="lp.soyuz.interfaces.queue.IHasQueueItems"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
+            interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distroseries.IDistroSeriesEditRestricted"/>
@@ -165,7 +165,7 @@
             interface="lp.registry.interfaces.distroseries.IDistroSeriesSet"/>
     </securedutility>
     <adapter
-        provides="canonical.launchpad.interfaces.ILaunchpadUsage"
+        provides="canonical.launchpad.interfaces.launchpad.ILaunchpadUsage"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.adapters.distroseries_to_launchpadusage"
         permission="zope.Public"/>
@@ -707,7 +707,7 @@
         <!-- PollSubset -->
 
         <adapter
-            for="canonical.launchpad.interfaces.ITeam"
+            for="lp.registry.interfaces.person.ITeam"
             provides="lp.registry.interfaces.poll.IPollSubset"
             factory="lp.registry.adapters.PollSubset"
             permission="zope.Public"/>
@@ -963,7 +963,7 @@
             interface="lp.registry.interfaces.milestone.IProjectGroupMilestone"/>
     </class>
     <subscriber
-        for="canonical.launchpad.interfaces.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        for="lp.registry.interfaces.product.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler="lp.registry.subscribers.product_modified"/>
     <class
         class="lp.registry.model.mailinglist.MailingList">
@@ -1046,7 +1046,7 @@
     <class
         class="lp.registry.model.gpgkey.GPGKey">
         <allow
-            interface="canonical.launchpad.interfaces.IGPGKey"/>
+            interface="lp.registry.interfaces.gpg.IGPGKey"/>
         <require
             permission="launchpad.Edit"
             set_attributes="active can_encrypt"/>
@@ -1057,13 +1057,13 @@
     <class
         class="lp.registry.model.gpgkey.GPGKeySet">
         <allow
-            interface="canonical.launchpad.interfaces.IGPGKeySet"/>
+            interface="lp.registry.interfaces.gpg.IGPGKeySet"/>
     </class>
     <securedutility
         class="lp.registry.model.gpgkey.GPGKeySet"
-        provides="canonical.launchpad.interfaces.IGPGKeySet">
+        provides="lp.registry.interfaces.gpg.IGPGKeySet">
         <allow
-            interface="canonical.launchpad.interfaces.IGPGKeySet"/>
+            interface="lp.registry.interfaces.gpg.IGPGKeySet"/>
     </securedutility>
 
     <!-- Product -->
@@ -1288,7 +1288,7 @@
     <class
         class="lp.registry.model.person.SSHKey">
         <allow
-            interface="canonical.launchpad.interfaces.ISSHKey"/>
+            interface="lp.registry.interfaces.ssh.ISSHKey"/>
         <require
             permission="launchpad.Edit"
             set_attributes="keytext comment"/>
@@ -1299,13 +1299,13 @@
     <class
         class="lp.registry.model.person.SSHKeySet">
         <allow
-            interface="canonical.launchpad.interfaces.ISSHKeySet"/>
+            interface="lp.registry.interfaces.ssh.ISSHKeySet"/>
     </class>
     <securedutility
         class="lp.registry.model.person.SSHKeySet"
-        provides="canonical.launchpad.interfaces.ISSHKeySet">
+        provides="lp.registry.interfaces.ssh.ISSHKeySet">
         <allow
-            interface="canonical.launchpad.interfaces.ISSHKeySet"/>
+            interface="lp.registry.interfaces.ssh.ISSHKeySet"/>
     </securedutility>
     <subscriber
         for="canonical.launchpad.event.interfaces.IJoinTeamEvent"
@@ -1356,12 +1356,12 @@
                 removeBugSubscription"/>
     </class>
     <adapter
-        provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
+        provides="canonical.launchpad.interfaces.launchpad.IHasExternalBugTracker"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.interfaces.ILaunchpadUsage"
+        provides="canonical.launchpad.interfaces.launchpad.ILaunchpadUsage"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
@@ -1527,7 +1527,7 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+            interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
 

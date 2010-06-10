@@ -181,7 +181,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IKarmaCategory"
+        for="lp.registry.interfaces.karma.IKarmaCategory"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.KarmaCategoryImageDisplayAPI"
         name="image"
@@ -195,7 +195,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBugTask"
+        for="lp.bugs.interfaces.bugtask.IBugTask"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTaskImageDisplayAPI"
         name="image"
@@ -209,7 +209,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestone"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.MilestoneImageDisplayAPI"
         name="image"
@@ -251,7 +251,7 @@
          want it to apply to the page template's CONTEXTS dict.
       -->
     <adapter
-        for="canonical.launchpad.interfaces.IPPA"
+        for="lp.soyuz.interfaces.archive.IPPA"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PPAFormatterAPI"
         name="fmt"
@@ -328,28 +328,28 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.ITeam"
+        for="lp.registry.interfaces.person.ITeam"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.TeamFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IProduct"
+        for="lp.registry.interfaces.product.IProduct"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IProjectGroup"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IDistribution"
+        for="lp.registry.interfaces.distribution.IDistribution"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
         name="fmt"
@@ -363,7 +363,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBug"
+        for="lp.bugs.interfaces.bug.IBug"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugFormatterAPI"
         name="fmt"
@@ -377,14 +377,14 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBugBranch"
+        for="lp.bugs.interfaces.bugbranch.IBugBranch"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugBranchFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBugTask"
+        for="lp.bugs.interfaces.bugtask.IBugTask"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTaskFormatterAPI"
         name="fmt"
@@ -433,13 +433,13 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestone"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
         name="fmt"
         />
     <adapter
-        for="canonical.launchpad.interfaces.IProductRelease"
+        for="lp.registry.interfaces.productrelease.IProductRelease"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.ProductReleaseFormatterAPI"
         name="fmt"
@@ -505,13 +505,13 @@
         name="fmt"
         />
     <adapter
-        for="canonical.launchpad.interfaces.IBugTracker"
+        for="lp.bugs.interfaces.bugtracker.IBugTracker"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTrackerFormatterAPI"
         name="fmt"
         />
     <adapter
-        for="canonical.launchpad.interfaces.IBugWatch"
+        for="lp.bugs.interfaces.bugwatch.IBugWatch"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugWatchFormatterAPI"
         name="fmt"
@@ -587,7 +587,7 @@
 
     <utility
         factory="canonical.launchpad.webapp.authentication.SSHADigestEncryptor"
-        provides="canonical.launchpad.interfaces.IPasswordEncryptor"
+        provides="canonical.launchpad.interfaces.launchpad.IPasswordEncryptor"
         permission="zope.Public"
         />
 
@@ -617,32 +617,32 @@
          to the correct Store for that tables replication set.
       -->
     <adapter
-        provides="canonical.launchpad.interfaces.IStore"
+        provides="canonical.launchpad.interfaces.lpstorm.IStore"
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_store"
         />
     <adapter
-        provides="canonical.launchpad.interfaces.IMasterStore"
+        provides="canonical.launchpad.interfaces.lpstorm.IMasterStore"
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_master_store"
         />
     <adapter
-        provides="canonical.launchpad.interfaces.ISlaveStore"
+        provides="canonical.launchpad.interfaces.lpstorm.ISlaveStore"
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_slave_store"
         />
     <adapter
-        provides="canonical.launchpad.interfaces.IMasterObject"
-        for="canonical.launchpad.interfaces.IDBObject"
+        provides="canonical.launchpad.interfaces.lpstorm.IMasterObject"
+        for="canonical.launchpad.interfaces.lpstorm.IDBObject"
         trusted="yes"
         factory="canonical.launchpad.webapp.adapter.get_object_from_master_store"
         />
     <class class="storm.store.Store">
-        <implements interface="canonical.launchpad.interfaces.IStore" />
+        <implements interface="canonical.launchpad.interfaces.lpstorm.IStore" />
         <allow attributes="get" />
     </class>
     <class class="canonical.database.sqlbase.SQLBase">
-        <implements interface="canonical.launchpad.interfaces.IDBObject" />
+        <implements interface="canonical.launchpad.interfaces.lpstorm.IDBObject" />
     </class>
 
     <!-- Default favicon -->

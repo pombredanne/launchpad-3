@@ -46,31 +46,31 @@
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IDistributionSet"
+    for="lp.registry.interfaces.distribution.IDistributionSet"
     path_expression="string:distros"
     parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.ISourcePackageNameSet"
+    for="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet"
     path_expression="string:sourcepackagenames"
     parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IBinaryPackageNameSet"
+    for="lp.soyuz.interfaces.binarypackagename.IBinaryPackageNameSet"
     path_expression="string:binarypackagenames"
     parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IProjectGroupSet"
+    for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
     path_expression="string:projectgroups"
     parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.ILoginTokenSet"
+    for="canonical.launchpad.interfaces.logintoken.ILoginTokenSet"
     path_expression="string:token"
     parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />

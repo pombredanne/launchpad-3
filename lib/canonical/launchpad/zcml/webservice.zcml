@@ -47,7 +47,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBugComment
+        for="lp.bugs.interfaces.bugmessage.IBugComment
              lazr.restful.interfaces.IWebServiceClientRequest"
         provides="lazr.restful.interfaces.IEntry"
         factory="canonical.launchpad.rest.bugcomment_to_entry"

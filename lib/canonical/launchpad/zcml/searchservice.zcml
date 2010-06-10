@@ -7,17 +7,17 @@
 
   <class
     class="canonical.launchpad.utilities.PageMatch">
-    <allow interface="canonical.launchpad.interfaces.ISearchResult" />
+    <allow interface="canonical.launchpad.interfaces.searchservice.ISearchResult" />
   </class>
 
   <class
     class="canonical.launchpad.utilities.PageMatches">
-    <allow interface="canonical.launchpad.interfaces.ISearchResults" />
+    <allow interface="canonical.launchpad.interfaces.searchservice.ISearchResults" />
   </class>
 
   <securedutility
     class="canonical.launchpad.utilities.GoogleSearchService"
-    provides="canonical.launchpad.interfaces.ISearchService">
-    <allow interface="canonical.launchpad.interfaces.ISearchService" />
+    provides="canonical.launchpad.interfaces.searchservice.ISearchService">
+    <allow interface="canonical.launchpad.interfaces.searchservice.ISearchService" />
   </securedutility>
 </configure>

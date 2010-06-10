@@ -10,16 +10,16 @@
 
     <!-- PackageRelationship -->
     <class class="canonical.launchpad.browser.PackageRelationship">
-      <allow interface="canonical.launchpad.interfaces.IPackageRelationship"/>
+      <allow interface="canonical.launchpad.interfaces.packagerelationship.IPackageRelationship"/>
     </class>
 
     <!-- PackageRelationshipSet -->
     <class class="canonical.launchpad.browser.PackageRelationshipSet">
-      <allow interface="canonical.launchpad.interfaces.IPackageRelationshipSet"/>
+      <allow interface="canonical.launchpad.interfaces.packagerelationship.IPackageRelationshipSet"/>
     </class>
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IPackageRelationshipSet"
+        for="canonical.launchpad.interfaces.packagerelationship.IPackageRelationshipSet"
         permission="zope.Public">
         <browser:page
             name="+render-list"

@@ -11,7 +11,7 @@
   <!-- TemporaryBlobStorage -->
   <class class="canonical.launchpad.database.TemporaryBlobStorage">
     <allow
-      interface="canonical.launchpad.interfaces.ITemporaryBlobStorage" />
+      interface="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryBlobStorage" />
   </class>
 
   <browser:page
@@ -26,14 +26,14 @@
   <!-- TemporaryStorageManager -->
   <class class="canonical.launchpad.database.TemporaryStorageManager">
     <allow
-      interface="canonical.launchpad.interfaces.ITemporaryStorageManager" />
+      interface="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryStorageManager" />
   </class>
 
   <securedutility
       class="canonical.launchpad.database.TemporaryStorageManager"
-      provides="canonical.launchpad.interfaces.ITemporaryStorageManager">
+      provides="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryStorageManager">
       <allow
-        interface="canonical.launchpad.interfaces.ITemporaryStorageManager" />
+        interface="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryStorageManager" />
   </securedutility>
 
   <browser:navigation

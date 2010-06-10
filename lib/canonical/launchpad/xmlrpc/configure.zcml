@@ -22,7 +22,7 @@
 
   <xmlrpc:view
     for="canonical.launchpad.interfaces.launchpad.IAuthServerApplication"
-    interface="canonical.launchpad.interfaces.IAuthServer"
+    interface="canonical.launchpad.interfaces.authserver.IAuthServer"
     class="canonical.launchpad.xmlrpc.AuthServerAPIView"
     permission="zope.Public"
     />
@@ -61,7 +61,7 @@
 
   <xmlrpc:view
     for="canonical.launchpad.interfaces.launchpad.IPrivateMaloneApplication"
-    interface="canonical.launchpad.interfaces.IExternalBugTrackerTokenAPI"
+    interface="lp.bugs.interfaces.externalbugtracker.IExternalBugTrackerTokenAPI"
     class="canonical.launchpad.xmlrpc.ExternalBugTrackerTokenAPI"
     permission="zope.Public"
     />

@@ -164,7 +164,7 @@
 
   <utility
       factory="canonical.launchpad.utilities.LaunchpadCelebrities"
-      provides="canonical.launchpad.interfaces.ILaunchpadCelebrities">
+      provides="canonical.launchpad.interfaces.launchpad.ILaunchpadCelebrities">
   </utility>
 
   <browser:page
@@ -418,7 +418,7 @@ these URLs in Apache.
 </class>
 
 <class class="canonical.launchpad.mailnotification.NotificationRecipientSet">
-  <allow interface="canonical.launchpad.interfaces.INotificationRecipientSet" />
+  <allow interface="canonical.launchpad.interfaces.launchpad.INotificationRecipientSet" />
 </class>
 
 </configure>

@@ -10,33 +10,33 @@
     i18n_domain="launchpad">
 
     <class class="canonical.launchpad.utilities.geoip.GeoIP">
-        <allow interface="canonical.launchpad.interfaces.IGeoIP" />
+        <allow interface="canonical.launchpad.interfaces.geoip.IGeoIP" />
     </class>
 
     <securedutility
         class="canonical.launchpad.utilities.geoip.GeoIP"
-        provides="canonical.launchpad.interfaces.IGeoIP">
-        <allow interface="canonical.launchpad.interfaces.IGeoIP" />
+        provides="canonical.launchpad.interfaces.geoip.IGeoIP">
+        <allow interface="canonical.launchpad.interfaces.geoip.IGeoIP" />
     </securedutility>
 
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserRequest"
         factory="canonical.launchpad.utilities.geoip.RequestLocalLanguages"
-        provides="canonical.launchpad.interfaces.IRequestLocalLanguages" />
+        provides="canonical.launchpad.interfaces.geoip.IRequestLocalLanguages" />
 
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserRequest"
         factory="canonical.launchpad.utilities.geoip.RequestPreferredLanguages"
-        provides="canonical.launchpad.interfaces.IRequestPreferredLanguages" />
+        provides="canonical.launchpad.interfaces.geoip.IRequestPreferredLanguages" />
 
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserRequest"
         factory="canonical.launchpad.components.request_country.request_country"
-        provides="canonical.launchpad.interfaces.ICountry" />
+        provides="lp.services.worlddata.interfaces.country.ICountry" />
 
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserRequest"
         factory="canonical.launchpad.utilities.geoip.GeoIPRequest"
-        provides="canonical.launchpad.interfaces.IGeoIPRecord" />
+        provides="canonical.launchpad.interfaces.geoip.IGeoIPRecord" />
 
 </configure>

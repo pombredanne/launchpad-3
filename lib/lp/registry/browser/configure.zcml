@@ -262,7 +262,7 @@
                 </browser:addform>
     </facet>
     <browser:url
-        for="canonical.launchpad.interfaces.IIrcID"
+        for="lp.registry.interfaces.irc.IIrcID"
         path_expression="string:+ircnick/${id}"
         attribute_to_parent="person"
         rootsite="api"/>
@@ -475,7 +475,7 @@
         path_expression="string:+commercialsubscription/${id}"
         attribute_to_parent="product"/>
     <browser:url
-        for="canonical.launchpad.interfaces.IJabberID"
+        for="lp.registry.interfaces.jabber.IJabberID"
         path_expression="string:+jabberid/${jabberid}"
         attribute_to_parent="person"
         rootsite="api"/>
@@ -2080,7 +2080,7 @@
         module="lp.registry.browser.productrelease"/>
     <browser:page
         name="+driver"
-        for="canonical.launchpad.interfaces.IHasAppointedDriver"
+        for="canonical.launchpad.interfaces.launchpad.IHasAppointedDriver"
         class="lp.registry.browser.driver.AppointDriverView"
         facet="overview"
         permission="launchpad.Edit"

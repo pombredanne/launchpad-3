@@ -27,7 +27,7 @@
         <class
             class="canonical.launchpad.database.BinaryPackagePublishingHistory">
             <allow
-                interface="canonical.launchpad.interfaces.IArchiveSafePublisher"/>
+                interface="lp.soyuz.interfaces.publishing.IArchiveSafePublisher"/>
             <require
                 permission="launchpad.View"
                 interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistoryPublic"/>
@@ -36,7 +36,7 @@
                 interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
             <require
                 permission="launchpad.Admin"
-                set_schema="canonical.launchpad.interfaces.IBinaryPackagePublishingHistory"/>
+                set_schema="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistory"/>
         </class>
 
         <!-- BinaryPackageFilePublishing -->
@@ -44,7 +44,7 @@
         <class
             class="canonical.launchpad.database.BinaryPackageFilePublishing">
             <allow
-                interface="canonical.launchpad.interfaces.IBinaryPackageFilePublishing"/>
+                interface="lp.soyuz.interfaces.publishing.IBinaryPackageFilePublishing"/>
 
             <!-- XXX cprov 2006-06-14: missing security adapter -->
 
@@ -113,7 +113,7 @@
         <class
             class="canonical.launchpad.database.SourcePackagePublishingHistory">
             <allow
-                interface="canonical.launchpad.interfaces.IArchiveSafePublisher"/>
+                interface="lp.soyuz.interfaces.publishing.IArchiveSafePublisher"/>
             <require
                 permission="launchpad.View"
                 interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistoryPublic"/>
@@ -122,7 +122,7 @@
                 interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
             <require
                 permission="launchpad.Admin"
-                set_schema="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"/>
+                set_schema="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"/>
         </class>
 
         <!-- SourcePackageFilePublishing -->
@@ -130,7 +130,7 @@
         <class
             class="canonical.launchpad.database.SourcePackageFilePublishing">
             <allow
-                interface="canonical.launchpad.interfaces.ISourcePackageFilePublishing"/>
+                interface="lp.soyuz.interfaces.publishing.ISourcePackageFilePublishing"/>
 
             <!-- XXX cprov 2006-06-14: Missing security adapter. -->
 

@@ -10,42 +10,42 @@
     i18n_domain="launchpad">
 
   <class class="canonical.launchpad.database.OAuthConsumer">
-      <allow interface="canonical.launchpad.interfaces.IOAuthConsumer"/>
+      <allow interface="canonical.launchpad.interfaces.oauth.IOAuthConsumer"/>
   </class>
 
   <class class="canonical.launchpad.database.OAuthConsumerSet">
-      <allow interface="canonical.launchpad.interfaces.IOAuthConsumerSet"/>
+      <allow interface="canonical.launchpad.interfaces.oauth.IOAuthConsumerSet"/>
   </class>
 
   <securedutility
       class="canonical.launchpad.database.OAuthConsumerSet"
-      provides="canonical.launchpad.interfaces.IOAuthConsumerSet">
+      provides="canonical.launchpad.interfaces.oauth.IOAuthConsumerSet">
       <allow
-          interface="canonical.launchpad.interfaces.IOAuthConsumerSet"/>
+          interface="canonical.launchpad.interfaces.oauth.IOAuthConsumerSet"/>
   </securedutility>
 
   <class class="canonical.launchpad.database.OAuthRequestToken">
-      <allow interface="canonical.launchpad.interfaces.IOAuthRequestToken"/>
+      <allow interface="canonical.launchpad.interfaces.oauth.IOAuthRequestToken"/>
       <require
           permission="launchpad.Edit"
-          set_schema="canonical.launchpad.interfaces.IOAuthRequestToken"/>
+          set_schema="canonical.launchpad.interfaces.oauth.IOAuthRequestToken"/>
   </class>
 
   <securedutility
       class="canonical.launchpad.database.OAuthRequestTokenSet"
-      provides="canonical.launchpad.interfaces.IOAuthRequestTokenSet">
+      provides="canonical.launchpad.interfaces.oauth.IOAuthRequestTokenSet">
       <allow
-          interface="canonical.launchpad.interfaces.IOAuthRequestTokenSet"/>
+          interface="canonical.launchpad.interfaces.oauth.IOAuthRequestTokenSet"/>
   </securedutility>
 
   <class class="canonical.launchpad.database.OAuthAccessToken">
-      <allow interface="canonical.launchpad.interfaces.IOAuthAccessToken"/>
+      <allow interface="canonical.launchpad.interfaces.oauth.IOAuthAccessToken"/>
       <require
           permission="launchpad.Edit"
-          set_schema="canonical.launchpad.interfaces.IOAuthAccessToken"/>
+          set_schema="canonical.launchpad.interfaces.oauth.IOAuthAccessToken"/>
   </class>
 
   <class class="canonical.launchpad.database.OAuthNonce">
-      <allow interface="canonical.launchpad.interfaces.IOAuthNonce"/>
+      <allow interface="canonical.launchpad.interfaces.oauth.IOAuthNonce"/>
   </class>
 </configure>

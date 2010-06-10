@@ -36,80 +36,80 @@
         <class
             class="lp.bugs.browser.bugcomment.BugComment">
             <allow
-                interface="canonical.launchpad.interfaces.IBugComment"/>
+                interface="lp.bugs.interfaces.bugmessage.IBugComment"/>
         </class>
     </facet>
     <subscriber
-        for="canonical.launchpad.interfaces.ICve                 zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.cve.ICve                 zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.cve.cve_modified"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugcreation.at_least_one_task"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.mailnotification.notify_bug_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_created"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="canonical.launchpad.mailnotification.notify_bug_modified"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_modified"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugattachment.IBugAttachment                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.mailnotification.notify_bug_attachment_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectDeletedEvent"
+        for="lp.bugs.interfaces.bugattachment.IBugAttachment                 lazr.lifecycle.interfaces.IObjectDeletedEvent"
         handler="canonical.launchpad.mailnotification.notify_bug_attachment_removed"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugattachment.IBugAttachment                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugAttachment                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugattachment.IBugAttachment                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugBranch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugbranch.IBugBranch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugBranch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugbranch.IBugBranch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugcve.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugcve.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.cve_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.mailnotification.notify_bug_comment_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_comment_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugWatch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugwatch.IBugWatch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bugwatch_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugWatch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugwatch.IBugWatch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugWatch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugwatch.IBugWatch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bugactivity.notify_bug_watch_modified"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugWatch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugwatch.IBugWatch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugSubscription                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugsubscription.IBugSubscription                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.mailnotification.notify_bug_subscription_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bug.notify_bug_modified"/>
     <securedutility
         class="canonical.launchpad.systemhomes.MaloneApplication"
@@ -256,7 +256,7 @@
                     retractMentoring"/>
         </class>
         <adapter
-            provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+            provides="canonical.launchpad.interfaces.launchpad.IStructuralObjectPresentation"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskSOP"
             permission="zope.Public"/>
@@ -271,7 +271,7 @@
             factory="lp.bugs.adapters.bug.bugtask_to_privacy"/>
         <adapter
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            provides="canonical.launchpad.interfaces.IBug"
+            provides="lp.bugs.interfaces.bug.IBug"
             factory="lp.bugs.model.bugtask.BugTaskToBugAdapter"/>
         <adapter
             factory="lp.bugs.browser.bugtask.assignee_renderer"
@@ -820,10 +820,10 @@
         </securedutility>
     </facet>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                            zope.lifecycleevent.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug                            zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bug_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBug                            lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bug.IBug                            lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bug_edited"/>
     <subscriber
         for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectCreatedEvent"
@@ -832,10 +832,10 @@
         for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectDeletedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_cve_unlinked_from_bug"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugSubscription                     zope.lifecycleevent.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugsubscription.IBugSubscription                     zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bugsubscription_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugSubscription                     lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugsubscription.IBugSubscription                     lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bugsubscription_edited"/>
     <facet
         facet="bugs">
@@ -921,22 +921,22 @@
         </class>
     </facet>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.notify_bugtask_added"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugtask.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bugtask_created"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bugtask.IBugTask                 zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="canonical.launchpad.mailnotification.notify_bugtask_edited"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="canonical.launchpad.subscribers.karma.bugtask_modified"/>
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <class
         class="canonical.launchpad.database.BugNotification">
@@ -954,7 +954,7 @@
     <class
         class="canonical.launchpad.mailnotification.BugNotificationRecipients">
         <allow
-            interface="canonical.launchpad.interfaces.INotificationRecipientSet"/>
+            interface="canonical.launchpad.interfaces.launchpad.INotificationRecipientSet"/>
     </class>
     <securedutility
         provides="lp.bugs.interfaces.bugnotification.IBugNotificationSet"
