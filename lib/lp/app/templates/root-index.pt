@@ -93,7 +93,7 @@
                 <a tal:attributes="href apphomes/bugs">Bug tracking</a></li>
               <li><a tal:attributes="href apphomes/code"><img src="/@@/branch" alt="" /></a>
                 <a tal:attributes="href apphomes/code">Code hosting</a>
-                using <a href="http://bazaar-vcs.org/">Bazaar</a></li>
+                using <a href="http://bazaar.canonical.com/">Bazaar</a></li>
               <li><a href="https://help.launchpad.net/Code/Review"><img src="/@@/yes" alt="" /></a>
                 <a href="https://help.launchpad.net/Code/Review">Code reviews</a></li>
               <li><a tal:attributes="href apphomes/ubuntu"><img src="/@@/ubuntu-icon" alt="" /></a>
