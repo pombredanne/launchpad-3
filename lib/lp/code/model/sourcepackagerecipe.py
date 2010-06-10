@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
-    ISourcePackageRecipeData)
+    ISourcePackageRecipeData, TooManyBuilds)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
@@ -53,6 +53,9 @@ class SourcePackageRecipe(Storm):
     """See `ISourcePackageRecipe` and `ISourcePackageRecipeSource`."""
 
     __storm_table__ = 'SourcePackageRecipe'
+
+    def __str__(self):
+        return '%s/%s' % (self.owner.name, self.name)
 
     implements(ISourcePackageRecipe)
 
@@ -156,6 +159,11 @@ class SourcePackageRecipe(Storm):
         store.remove(self._recipe_data)
         store.remove(self)
 
+    def isOverQuota(self, requester, distroseries):
+        """See `ISourcePackageRecipe`."""
+        return SourcePackageRecipeBuild.getRecentBuilds(
+            requester, self, distroseries).count() >= 5
+
     def requestBuild(self, archive, requester, distroseries, pocket):
         """See `ISourcePackageRecipe`."""
         if not config.build_from_branch.enabled:
@@ -167,6 +175,8 @@ class SourcePackageRecipe(Storm):
             requester, self.distroseries, None, component, pocket)
         if reject_reason is not None:
             raise reject_reason
+        if self.isOverQuota(requester, distroseries):
+            raise TooManyBuilds(self, distroseries)
 
         build = getUtility(ISourcePackageRecipeBuildSource).new(distroseries,
             self, requester, archive)

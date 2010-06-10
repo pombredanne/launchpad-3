@@ -24,6 +24,8 @@ from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type, patch_choice_parameter_type,
     patch_reference_property)
 
+from canonical.launchpad.interfaces.message import (
+    IIndexedMessage, IMessage, IUserToUserEmail)
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscription, IStructuralSubscriptionTarget)
 from lp.bugs.interfaces.bug import IBug, IFrontPageBugAddForm
@@ -54,16 +56,17 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild)
+from lp.hardwaredb.interfaces.hwdb import HWBus, IHWSubmission
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson, IPersonPublic
-from lp.hardwaredb.interfaces.hwdb import HWBus, IHWSubmission
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermission)
@@ -79,9 +82,9 @@ from lp.soyuz.interfaces.packageset import IPackageset
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-from canonical.launchpad.interfaces.message import (
-    IIndexedMessage, IMessage, IUserToUserEmail)
+from lp.translations.interfaces.pofile import IPOFile
+from lp.translations.interfaces.potemplate import (
+    IPOTemplate, IPOTemplateSharingSubset, IPOTemplateSubset)
 
 
 IBranch['bug_branches'].value_type.schema = IBugBranch
@@ -267,6 +270,10 @@ patch_choice_parameter_type(
 patch_plain_parameter_type(
     IArchive, 'isSourceUploadAllowed', 'distroseries', IDistroSeries)
 patch_plain_parameter_type(
+    IArchive, '_checkUpload', 'distroseries', IDistroSeries)
+patch_choice_parameter_type(
+    IArchive, '_checkUpload', 'pocket', PackagePublishingPocket)
+patch_plain_parameter_type(
     IArchive, 'newPackagesetUploader', 'packageset', IPackageset)
 patch_plain_parameter_type(
     IArchive, 'getUploadersForPackageset', 'packageset', IPackageset)
@@ -368,6 +375,8 @@ patch_plain_parameter_type(
     IHasBugs, 'searchTasks', 'owner', IPerson)
 patch_plain_parameter_type(
     IHasBugs, 'searchTasks', 'affected_user', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'structural_subscriber', IPerson)
 
 # IBugTask
 patch_reference_property(IBugTask, 'owner', IPerson)
@@ -400,6 +409,17 @@ patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
 
 # IBugTracker
 patch_reference_property(IBugTracker, 'owner', IPerson)
+
+# IPOTemplate
+patch_collection_property(IPOTemplate, 'pofiles', IPOFile)
+patch_reference_property(IPOTemplate, 'product', IProduct)
+
+# IPOTemplateSubset
+patch_reference_property(IPOTemplateSubset, 'distroseries', IDistroSeries)
+patch_reference_property(IPOTemplateSubset, 'productseries', IProductSeries)
+
+# IPOTemplateSharingSubset
+patch_reference_property(IPOTemplateSharingSubset, 'product', IProduct)
 
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)

@@ -6,10 +6,12 @@ import gzip
 import os
 from StringIO import StringIO
 import tempfile
+import textwrap
 import unittest
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -215,11 +217,39 @@ class TestLogFileParsing(TestCase):
         self.assertEqual(self.logger.buffer.getvalue(), '')
 
         date = datetime(2008, 6, 13)
-        self.assertEqual(downloads, 
+        self.assertEqual(downloads,
             {'/15018215/ul_logo_64x64.png':
                 {datetime(2008, 6, 13): {'US': 1}}})
 
         self.assertEqual(parsed_bytes, fd.tell())
+
+    def test_max_parsed_lines(self):
+        # The max_parsed_lines config option limits the number of parsed
+        # lines.
+        config.push(
+            'log_parser config',
+            textwrap.dedent('''\
+                [launchpad]
+                logparser_max_parsed_lines: 2
+                '''))
+        fd = open(os.path.join(
+            here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
+        downloads, parsed_bytes = parse_file(
+            fd, start_position=0, logger=self.logger,
+            get_download_key=get_path_download_key)
+        config.pop("log_parser config")
+
+        self.assertEqual(self.logger.buffer.getvalue(), '')
+        date = datetime(2008, 6, 13)
+        self.assertContentEqual(
+            downloads.items(),
+            [('/12060796/me-tv-icon-64x64.png', {date: {'AU': 1}}),
+             ('/9096290/me-tv-icon-14x14.png', {date: {'AU': 1}})])
+
+        # We should have parsed only the first two lines of data.
+        fd.seek(0)
+        lines = fd.readlines()
+        self.assertEqual(parsed_bytes, len(lines[0]) + len(lines[1]))
 
 
 class TestParsedFilesDetection(TestCase):
@@ -263,7 +293,7 @@ class TestParsedFilesDetection(TestCase):
 
     def test_different_files_with_same_name(self):
         # Thanks to log rotation, two runs of our script may see files with
-        # the same name but completely different content.  If we see a file 
+        # the same name but completely different content.  If we see a file
         # with a name matching that of an already parsed file but with content
         # differing from the last file with that name parsed, we know we need
         # to parse the file from the start.
