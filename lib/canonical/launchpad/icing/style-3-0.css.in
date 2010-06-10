@@ -1785,6 +1785,10 @@ body.tab-bugs #portlet-subscribers .sprite {
      */
     padding:2px 0 0 18px;
     }
+.tour {
+    background-image: url(/@@/tour-icon); /* needs-ref: */
+    background-repeat: no-repeat;
+    }
 .add {
     background-image: url(/@@/add.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
