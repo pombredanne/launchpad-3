@@ -321,7 +321,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IPerson"
+        for="lp.registry.interfaces.person.IPerson"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PersonFormatterAPI"
         name="fmt"

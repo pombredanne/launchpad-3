@@ -302,7 +302,7 @@
             classes="
                 LanguageSetNavigation"/>
         <browser:defaultView
-            for="canonical.launchpad.interfaces.ILanguage"
+            for="lp.services.worlddata.interfaces.language.ILanguage"
             name="+index"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:menus
@@ -311,26 +311,26 @@
                 LanguageSetContextMenu
                 LanguageNavigationMenu"/>
         <browser:url
-            for="canonical.launchpad.interfaces.ILanguage"
+            for="lp.services.worlddata.interfaces.language.ILanguage"
             path_expression="code"
-            parent_utility="canonical.launchpad.interfaces.ILanguageSet"
+            parent_utility="lp.services.worlddata.interfaces.language.ILanguageSet"
             rootsite="translations"/>
         <browser:page
-            for="canonical.launchpad.interfaces.ILanguage"
+            for="lp.services.worlddata.interfaces.language.ILanguage"
             class="lp.translations.browser.language.LanguageView"
             permission="zope.Public"
             template="../templates/language-index.pt"
             name="+index"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
-            for="canonical.launchpad.interfaces.ILanguage"
+            for="lp.services.worlddata.interfaces.language.ILanguage"
             class="lp.translations.browser.language.LanguageAdminView"
             permission="launchpad.Admin"
             template="../../app/templates/generic-edit.pt"
             name="+admin"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:pages
-            for="canonical.launchpad.interfaces.ILanguage"
+            for="lp.services.worlddata.interfaces.language.ILanguage"
             class="lp.translations.browser.language.LanguageView"
             permission="zope.Public"
             layer="canonical.launchpad.layers.TranslationsLayer">
@@ -342,23 +342,23 @@
                 template="../templates/language-portlet-top-contributors.pt"/>
         </browser:pages>
         <browser:defaultView
-            for="canonical.launchpad.interfaces.ILanguageSet"
+            for="lp.services.worlddata.interfaces.language.ILanguageSet"
             name="+index"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:url
-            for="canonical.launchpad.interfaces.ILanguageSet"
+            for="lp.services.worlddata.interfaces.language.ILanguageSet"
             path_expression="string:+languages"
             parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
             rootsite="translations"/>
         <browser:page
-            for="canonical.launchpad.interfaces.ILanguageSet"
+            for="lp.services.worlddata.interfaces.language.ILanguageSet"
             class="lp.translations.browser.language.LanguageSetView"
             permission="zope.Public"
             template="../templates/languageset-index.pt"
             name="+index"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
-            for="canonical.launchpad.interfaces.ILanguageSet"
+            for="lp.services.worlddata.interfaces.language.ILanguageSet"
             class="lp.translations.browser.language.LanguageAddView"
             permission="launchpad.Admin"
             template="../../app/templates/generic-edit.pt"

@@ -350,13 +350,13 @@
     permission="zope.Public"/>
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.IPerson"
+    for="lp.registry.interfaces.person.IPerson"
     layer="canonical.launchpad.layers.AnswersLayer"
     name="+questions"
     />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IPerson"
+        for="lp.registry.interfaces.person.IPerson"
         name="+ask-a-question-button"
         template="../templates/null.pt"
         permission="zope.Public"

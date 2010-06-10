@@ -34,7 +34,7 @@
   <include package="lp.services.comments" />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IPersonSet"
+    for="lp.registry.interfaces.person.IPersonSet"
     path_expression="string:people"
     parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />

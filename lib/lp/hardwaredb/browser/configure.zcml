@@ -35,7 +35,7 @@
         permission="zope.Public"
         name="+text"/>
     <browser:page
-        for="canonical.launchpad.interfaces.IPerson"
+        for="lp.registry.interfaces.person.IPerson"
         permission="zope.Public"
         class="lp.hardwaredb.browser.hwdb.HWDBPersonSubmissionsView"
         template="../templates/person-hwdb-submissions.pt"

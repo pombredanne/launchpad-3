@@ -414,7 +414,7 @@
     </class>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
-        provides="canonical.launchpad.interfaces.IPerson"
+        provides="lp.registry.interfaces.person.IPerson"
         factory="lp.registry.browser.person.archive_to_person"/>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
@@ -646,9 +646,9 @@
             <allow
                 interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"/>
             <allow
-                interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+                interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
             <allow
-                interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
+                interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
             <require
                 permission="launchpad.Admin"
                 set_schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"/>

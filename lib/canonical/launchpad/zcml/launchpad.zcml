@@ -331,11 +331,11 @@
 <class
     class="canonical.launchpad.utilities.personroles.PersonRoles">
     <allow
-        interface="canonical.launchpad.interfaces.IPersonRoles"/>
+        interface="lp.registry.interfaces.person.IPersonRoles"/>
 </class>
 <adapter
     for="lp.registry.interfaces.person.IPerson"
-    provides="canonical.launchpad.interfaces.IPersonRoles"
+    provides="lp.registry.interfaces.person.IPersonRoles"
     factory="canonical.launchpad.utilities.personroles.PersonRoles" />
 
 
