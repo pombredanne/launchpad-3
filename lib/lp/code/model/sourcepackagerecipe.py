@@ -20,12 +20,13 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
-    ISourcePackageRecipeData)
+    ISourcePackageRecipeData, TooManyBuilds)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
 from lp.code.model.branch import Branch
@@ -57,6 +58,9 @@ class SourcePackageRecipe(Storm):
     """See `ISourcePackageRecipe` and `ISourcePackageRecipeSource`."""
 
     __storm_table__ = 'SourcePackageRecipe'
+
+    def __str__(self):
+        return '%s/%s' % (self.owner.name, self.name)
 
     implements(ISourcePackageRecipe)
 
@@ -182,9 +186,16 @@ class SourcePackageRecipe(Storm):
         store.remove(self._recipe_data)
         store.remove(self)
 
+    def isOverQuota(self, requester, distroseries):
+        """See `ISourcePackageRecipe`."""
+        return SourcePackageRecipeBuild.getRecentBuilds(
+            requester, self, distroseries).count() >= 5
+
     def requestBuild(self, archive, requester, distroseries, pocket,
                      manual=False):
         """See `ISourcePackageRecipe`."""
+        if not config.build_from_branch.enabled:
+            raise ValueError('Source package recipe builds disabled.')
         if archive.purpose != ArchivePurpose.PPA:
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
@@ -192,6 +203,8 @@ class SourcePackageRecipe(Storm):
             requester, self.distroseries, None, component, pocket)
         if reject_reason is not None:
             raise reject_reason
+        if self.isOverQuota(requester, distroseries):
+            raise TooManyBuilds(self, distroseries)
 
         build = getUtility(ISourcePackageRecipeBuildSource).new(distroseries,
             self, requester, archive)
