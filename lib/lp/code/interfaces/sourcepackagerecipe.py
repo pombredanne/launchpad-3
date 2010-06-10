@@ -43,7 +43,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
-    # bzr-builder format 0.2 deb-version 1.0
+    # bzr-builder format 0.2 deb-version 0+{revno}
     %s
     ''')
 
