@@ -1185,11 +1185,11 @@ class POTMsgSet(SQLBase):
             elif character == '5':
                 # If other is not active, fork a diverged message.
                 if traits.getFlag(twin):
+                    message = twin
+                else:
                     message = self._makeTranslationMessage(
                         pofile, submitter, translations, origin,
                         diverged=True)
-                else:
-                    message = twin
             elif character == '7':
                 # Converge & activate.
                 message = twin
