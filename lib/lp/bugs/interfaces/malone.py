@@ -69,7 +69,7 @@ class IMaloneApplication(ILaunchpadApplication):
           * the owner will be subscribed to the bug
 
           * distribution, product and package contacts (whichever ones are
-            applicable based on the bug report target) will bug subscribed to
+            applicable based on the bug report target) will be subscribed to
             all *public bugs only*
 
           * for public upstreams bugs where there is no upstream bug contact,

@@ -193,7 +193,9 @@
                     isSubscribed
                     getPackageComponent
                     userCanEditImportance
-                    userCanEditMilestone"/>
+                    userCanEditMilestone
+                    userCanSetAnyAssignee
+                    userCanUnassign"/>
             <require
                 permission="launchpad.View"
                 attributes="
