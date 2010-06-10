@@ -186,10 +186,6 @@ Main content.
     <!DOCTYPE html ...
     ...
             <div id="maincontent" class="yui-main">
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
               <div class="yui-b" dir="ltr">
                 <div>
     <BLANKLINE>
@@ -198,6 +194,9 @@ Main content.
     </ol>
     <BLANKLINE>
                 </div>
+              </div><!-- yui-b -->
+    <BLANKLINE>
+    <BLANKLINE>
     <BLANKLINE>
           <div class="top-portlet">
             <h1>Heading</h1>
@@ -210,7 +209,6 @@ Main content.
             </p>
           </div>
     <BLANKLINE>
-              </div><!-- yui-b -->
             </div><!-- yui-main -->
     <BLANKLINE>
             <!-- yui-b side -->
@@ -308,10 +306,6 @@ Main content.
     <!DOCTYPE html ...
     ...
             <div id="maincontent" class="yui-main">
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
               <div class="yui-b" dir="ltr">
                 <div>
     <BLANKLINE>
@@ -336,7 +330,6 @@ Top portlet.
             </p>
           </div>
     <BLANKLINE>
-              </div><!-- yui-b -->
             </div><!-- yui-main -->
     <BLANKLINE>
             <!-- yui-b side -->
@@ -404,11 +397,10 @@ Main content.
     <!DOCTYPE html ...
     ...
             <div id="maincontent" class="yui-main">
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
               <div class="yui-b" dir="ltr">
+    <BLANKLINE>
+              </div><!-- yui-b -->
+    <BLANKLINE>
     <BLANKLINE>
     <BLANKLINE>
           <div class="top-portlet">
@@ -422,7 +414,6 @@ Main content.
             </p>
           </div>
     <BLANKLINE>
-              </div><!-- yui-b -->
             </div><!-- yui-main -->
     <BLANKLINE>
             <!-- yui-b side -->
