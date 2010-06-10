@@ -432,8 +432,6 @@ Page Headings
 The example layouts all used the heading slot to define a heading for their
 test. The template controlled the heading.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
-
     >>> content = find_tag_by_id(view.render(), 'maincontent')
     >>> print content.h1
     <h1>Heading</h1>
@@ -523,3 +521,21 @@ When the context is public, the 'public' class is in the class attribute.
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
     tab-overview locationless public yui-skin-sam
+
+
+Notifications
+-------------
+
+Notifications are diplayed between the breadcrumbs and the page content.
+
+    >>> request.response.addInfoNotification('I cannot do that Dave.')
+    >>> view = MainOnlyView(user, request)
+    >>> body_tag = find_tag_by_id(view.render(), 'maincontent')
+    >>> print str(body_tag)
+    <div id="maincontent" ...
+      <ol class="breadcrumbs">
+      </ol>
+      ...
+      <div class="informational message">I cannot do that Dave.</div>
+      <div class="top-portlet">
+      ...
