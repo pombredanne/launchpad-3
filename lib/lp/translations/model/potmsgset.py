@@ -323,7 +323,7 @@ class POTMsgSet(SQLBase):
                                    current=True):
         """Get a translation message which is either used in
         Launchpad (current=True) or in an import (current=False).
-        
+
         Prefers a diverged message if present.
         """
         # Change 'is_current IS TRUE' and 'is_imported IS TRUE' conditions
@@ -331,9 +331,9 @@ class POTMsgSet(SQLBase):
         # or Postgres may not pick them up (in complicated queries,
         # Postgres query optimizer sometimes does text-matching of indexes).
         if current:
-            used_clause = 'is_current IS TRUE'
+            used_clause = 'is_current_ubuntu IS TRUE'
         else:
-            used_clause = 'is_imported IS TRUE'
+            used_clause = 'is_current_upstream IS TRUE'
         if potemplate is None:
             template_clause = 'TranslationMessage.potemplate IS NULL'
         else:
@@ -1119,6 +1119,7 @@ class POTMsgSet(SQLBase):
             translation_side, self, pofile.potemplate, pofile.language,
             variant=pofile.variant)
 
+        translations = self._findPOTranslations(translations)
         incumbent_message = traits.incumbent_message
         twin = self._findTranslationMessage(
             pofile, translations, prefer_shared=False)
