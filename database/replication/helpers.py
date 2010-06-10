@@ -44,7 +44,6 @@ LPMAIN_SEED = frozenset([
     ('public', 'nameblacklist'),
     ('public', 'openidconsumerassociation'),
     ('public', 'openidconsumernonce'),
-    ('public', 'oauthnonce'),
     ('public', 'codeimportmachine'),
     ('public', 'scriptactivity'),
     ('public', 'standardshipitrequest'),
