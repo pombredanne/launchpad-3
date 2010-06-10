@@ -42,41 +42,41 @@ fi
 cd /srv/launchpad.net/production/launchpad/cronscripts
 
 echo == Expiring memberships `date` ==
-python2.5 -S flag-expired-memberships.py -q
+python -S flag-expired-memberships.py -q
 
 echo == Allocating revision karma `date` ==
-python2.5 -S allocate-revision-karma.py -q
+python -S allocate-revision-karma.py -q
 
 echo == Recalculating karma `date` ==
-python2.5 -S foaf-update-karma-cache.py -q
+python -S foaf-update-karma-cache.py -q
 
 echo == Updating cached statistics `date` ==
-python2.5 -S update-stats.py -q
+python -S update-stats.py -q
 
 echo == Expiring questions `date` ==
-python2.5 -S expire-questions.py
+python -S expire-questions.py
 
 ### echo == Expiring bugs `date` ==
-### python2.5 -S expire-bugtasks.py
+### python -S expire-bugtasks.py
 
 # checkwatches.py is scheduled in the /code/pqm/launchpad_crontabs branch.
 ### echo == Updating bug watches `date` ==
-### python2.5 -S checkwatches.py
+### python -S checkwatches.py
 
 echo == Updating bugtask target name caches `date` ==
-python2.5 -S update-bugtask-targetnamecaches.py -q
+python -S update-bugtask-targetnamecaches.py -q
 
 echo == Updating personal standings `date` ==
-python2.5 -S update-standing.py -q
+python -S update-standing.py -q
 
 echo == Updating CVE database `date` ==
-python2.5 -S update-cve.py -q
+python -S update-cve.py -q
 
 echo == Updating package cache `date` ==
-python2.5 -S update-pkgcache.py -q
+python -S update-pkgcache.py -q
 
 echo == Product Release Finder `date` ==
-python2.5 -S product-release-finder.py -q
+python -S product-release-finder.py -q
 
 
 rm -f $LOCK

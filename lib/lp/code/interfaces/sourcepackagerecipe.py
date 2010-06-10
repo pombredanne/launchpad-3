@@ -15,6 +15,7 @@ __all__ = [
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
     'MINIMAL_RECIPE_TEXT',
+    'TooManyBuilds',
     'TooNewRecipeFormat',
     ]
 
@@ -26,7 +27,7 @@ from lazr.restful.declarations import (
     operation_parameters, REQUEST_USER)
 from lazr.restful.fields import CollectionField, Reference
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Datetime, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -52,6 +53,18 @@ class ForbiddenInstruction(Exception):
     def __init__(self, instruction_name):
         super(ForbiddenInstruction, self).__init__()
         self.instruction_name = instruction_name
+
+
+class TooManyBuilds(Exception):
+    """A build was requested that exceeded the quota."""
+
+    def __init__(self, recipe, distroseries):
+        self.recipe = recipe
+        self.distroseries = distroseries
+        msg = (
+            'You have exceeded your quota for recipe %s for distroseries %s'
+            % (self.recipe, distroseries))
+        Exception.__init__(self, msg)
 
 
 class TooNewRecipeFormat(Exception):
@@ -86,6 +99,8 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     debianized source tree.
     """
     export_as_webservice_entry()
+
+    id = Int()
 
     daily_build_archive = exported(Reference(
         IArchive, title=_("The archive to use for daily builds.")))
@@ -135,6 +150,13 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         """Set the text of the recipe."""
 
     recipe_text = exported(Text())
+
+    def isOverQuota(requester, distroseries):
+        """True if the recipe/requester/distroseries combo is >= quota.
+
+        :param requester: The Person requesting a build.
+        :param distroseries: The distroseries to build for.
+        """
 
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
