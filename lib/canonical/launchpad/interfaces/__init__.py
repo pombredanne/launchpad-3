@@ -5,16 +5,10 @@
 
 __metaclass__ = type
 
-# XXX sinzui 2010-06-09: shipit requires these glob imports.
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterObject, ISlaveStore, IStore)
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag, ILaunchpadRoot
-from lp.registry.interfaces.person import IPersonSet
-
 # XXX flacoste 2009/03/18 We should use specific imports instead of
 # importing from this module.
 
+from lp.soyuz.interfaces.archive import *
 from canonical.launchpad.interfaces.launchpad import *
 from lp.bugs.interfaces.malone import *
 from canonical.launchpad.interfaces.validation import *
@@ -24,7 +18,6 @@ from lp.registry.interfaces.person import *
 from lp.registry.interfaces.pillar import *
 
 from canonical.launchpad.interfaces.account import *
-from lp.soyuz.interfaces.archive import *
 from lp.soyuz.interfaces.archivedependency import *
 from lp.soyuz.interfaces.archivepermission import *
 from lp.soyuz.interfaces.archivesubscriber import *
@@ -125,3 +118,9 @@ from lp.soyuz.interfaces.packageset import *
 
 from canonical.launchpad.interfaces._schema_circular_imports import *
 
+# XXX sinzui 2010-06-09: shipit requires these glob imports.
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject, ISlaveStore, IStore)
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp.interfaces import ILaunchBag, ILaunchpadRoot
+from lp.registry.interfaces.person import IPersonSet
