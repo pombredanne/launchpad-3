@@ -501,8 +501,6 @@ Page Footers
       https://help.launchpad.net/Feedback
     System status
       http://identi.ca/launchpadstatus
-    Launchpad ...
-      https://help.launchpad.net/LaunchpadReleases
 
 
 Page registering

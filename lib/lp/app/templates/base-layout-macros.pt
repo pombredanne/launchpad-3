@@ -404,8 +404,6 @@
         >System status</a>
       <span id="lp-version" tal:condition="not:is_lpnet">
       &nbsp;&bull;&nbsp;
-        <a href="https://help.launchpad.net/LaunchpadReleases"
-          tal:content="version"/>
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
         <tal:edge condition="is_edge">beta site</tal:edge>
