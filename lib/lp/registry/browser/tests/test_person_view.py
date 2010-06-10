@@ -338,18 +338,14 @@ class TestPersonParticipationView(TestCaseWithFactory):
         self.assertEqual(True, self.view.has_participations)
 
 
-class TestPersonRelatedSoftwareView(TestCaseWithFactory):
+class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
+    """The related software views display links to failed builds."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestPersonRelatedSoftwareView, self).setUp()
+        super(TestPersonRelatedSoftwareFailedBuild, self).setUp()
         self.user = self.factory.makePerson()
-
-        self.view = create_view(self.user, name='+related-software')
-
-    def test_related_software_with_uploaded_ppa_pkgs(self):
-        # The number of failed builds is displayed.
 
         # First we need to publish some PPA packages with failed builds
         # for this person.
@@ -365,16 +361,26 @@ class TestPersonRelatedSoftwareView(TestCaseWithFactory):
             creator=self.user, maintainer=self.user, archive=ppa)
         binaries = publisher.getPubBinaries(
             pub_source=src_pub)
-        build = binaries[0].binarypackagerelease.build
-        build.status = BuildStatus.FAILEDTOBUILD
-        build.archive = publisher.distroseries.main_archive
+        self.build = binaries[0].binarypackagerelease.build
+        self.build.status = BuildStatus.FAILEDTOBUILD
+        self.build.archive = publisher.distroseries.main_archive
         login(ANONYMOUS)
 
-        # Now render the view to display the failed i386 build.
+    def test_related_software_with_failed_build(self):
+        # The link to the failed build is displayed.
+        self.view = create_view(self.user, name='+related-software')
         html = self.view()
         self.assertTrue(
             '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
-                build.id) in html)
+                self.build.id) in html)
+
+    def test_related_ppa_packages_with_failed_build(self):
+        # The link to the failed build is displayed.
+        self.view = create_view(self.user, name='+ppa-packages')
+        html = self.view()
+        self.assertTrue(
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
 
 
 def test_suite():
