@@ -5,6 +5,13 @@
 
 __metaclass__ = type
 
+# XXX sinzui 2010-06-09: shipit requires these glob imports.
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject, ISlaveStore, IStore)
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp.interfaces import ILaunchBag, ILaunchpadRoot
+from lp.registry.interfaces.person import IPersonSet
+
 # XXX flacoste 2009/03/18 We should use specific imports instead of
 # importing from this module.
 
