@@ -497,7 +497,7 @@ Page Footers
       http://canonical.com/
     Terms of use
       http://launchpad.dev/legal
-    Contact us
+    Contact Launchpad Support
       https://help.launchpad.net/Feedback
     System status
       http://identi.ca/launchpadstatus
