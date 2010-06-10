@@ -54,7 +54,6 @@ from lp.translations.model.translationimportqueue import (
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.packaging import PackagingType
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -170,8 +169,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     """
 
     implements(
-        ISourcePackage, IHasBugHeat, IHasBuildRecords,
-        IHasTranslationTemplates, IQuestionTarget)
+        ISourcePackage, IHasBugHeat, IHasBuildRecords, IQuestionTarget)
 
     classProvides(ISourcePackageFactory)
 
@@ -427,6 +425,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
 
+    @property
+    def bug_reported_acknowledgement(self):
+        """See `IBugTarget`."""
+        return self.distribution.bug_reported_acknowledgement
+
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this source package."""
         search_params.setSourcePackage(self)
@@ -607,7 +610,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         result = POTemplate.selectBy(
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
-        return shortlist(result.orderBy(['-priority', 'name']), 300)
+        return result.orderBy(['-priority', 'name'])
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""

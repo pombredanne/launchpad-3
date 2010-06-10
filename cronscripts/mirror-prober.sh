@@ -39,10 +39,10 @@ fi
 cd /srv/launchpad.net/production/launchpad/cronscripts
 
 echo '== Distribution mirror prober (archive)' `date` ==
-python2.5 -S distributionmirror-prober.py --content-type=archive --max-mirrors=20
+python -S distributionmirror-prober.py --content-type=archive --max-mirrors=20
 
 echo '== Distribution mirror prober (cdimage)' `date` ==
-python2.5 -S distributionmirror-prober.py --content-type=cdimage --max-mirrors=30
+python -S distributionmirror-prober.py --content-type=cdimage --max-mirrors=30
 
 rm -f $LOCK
 

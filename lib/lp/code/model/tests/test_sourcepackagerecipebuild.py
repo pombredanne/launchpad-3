@@ -20,11 +20,14 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp.authorization import check_permission
-from lp.buildmaster.interfaces.buildbase import IBuildBase
+from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.tests.test_buildbase import (
+    TestGetUploadMethodsMixin, TestHandleStatusMixin)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import ANONYMOUS, login, person_logged_in, TestCaseWithFactory
 
@@ -192,6 +195,33 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         Store.of(binary).flush()
         self.assertEqual([binary], list(spb.binary_builds))
 
+
+class MakeSPRecipeBuildMixin:
+    """Provide the common makeBuild method returning a queued build."""
+
+    def makeBuild(self):
+        person = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        processor_fam = getUtility(IProcessorFamilySet).getByName('x86')
+        distroseries_i386 = distroseries.newArch(
+            'i386', processor_fam, False, person,
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+        build = self.factory.makeSourcePackageRecipeBuild(
+            distroseries=distroseries,
+            status=BuildStatus.FULLYBUILT)
+        build.queueBuild(build)
+        return build
+
+
+class TestGetUploadMethodsForSPRecipeBuild(
+    MakeSPRecipeBuildMixin, TestGetUploadMethodsMixin, TestCaseWithFactory):
+    """IBuildBase.getUpload-related methods work with SPRecipe builds."""
+
+
+class TestHandleStatusForSPRBuild(
+    MakeSPRecipeBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
+    """IBuildBase.handleStatus works with SPRecipe builds."""
 
 
 def test_suite():
