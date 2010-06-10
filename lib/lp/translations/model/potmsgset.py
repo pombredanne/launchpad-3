@@ -1123,24 +1123,42 @@ class POTMsgSet(SQLBase):
         twin = self._findTranslationMessage(
             pofile, translations, prefer_shared=False)
 
+        # Summary of the matrix:
+        #  * If the incumbent message is diverged and we're setting a
+        #    translation that's already shared: converge.
+        #  * If the incumbent message is diverged and we're setting a
+        #    translation that's not already shared: maintain divergence.
+        #  * If the incumbent message is shared, replace it.
+        #  * If there is no twin, simply create a new message (shared or
+        #    diverged depending; see above).
+        #  * If there is a shared twin, activate it (but also diverge if
+        #    necessary; see above).
+        #  * If there is a diverged twin, activate it (and converge it
+        #    if appropriate; see above).
+        #  * If there is a twin that's shared on the other side,
+
+        # XXX: Steal flag if policy permits and either:
+        #  - there is no shared active message on the other side, or
+        #  - we're returning a shared message.
+
         decision_matrix = {
             'incumbent_none': {
-                'twin_none': 'Z1+',
-                'twin_shared': 'Z4+',
-                'twin_diverged': 'Z7+',
-                'twin_other_shared': 'Z4+',
+                'twin_none': 'Z1*',
+                'twin_shared': 'Z4*',
+                'twin_diverged': 'Z7*',
+                'twin_other_shared': 'Z4',
             },
             'incumbent_shared': {
-                'twin_none': 'B1',
-                'twin_shared': 'B4',
-                'twin_diverged': 'B7',
+                'twin_none': 'B1*',
+                'twin_shared': 'B4*',
+                'twin_diverged': 'B7*',
                 'twin_other_shared': 'B4',
             },
             'incumbent_diverged': {
                 'twin_none': 'A2',
                 'twin_shared': 'A5',
                 'twin_diverged': 'A4',
-                'twin_other_shared': 'A5',
+                'twin_other_shared': 'A6',
             },
             'incumbent_other_shared': {
                 'twin_none': 'B1+',
@@ -1155,7 +1173,8 @@ class POTMsgSet(SQLBase):
         twin_state = "twin_%s" % self._nameMessageStatus(twin, traits)
 
         decisions = decision_matrix[incumbent_state][twin_state]
-        assert re.match('[ABZ]?[12457]?\+?$', decisions), (
+        file('/tmp/matrix.log','a').write(decisions+'\n') # XXX: DEBUG CODE
+        assert re.match('[ABZ]?[124567]?[+*]?$', decisions), (
             "Bad decision string.")
 
         for character in decisions:
@@ -1183,10 +1202,23 @@ class POTMsgSet(SQLBase):
                 # Activate.
                 message = twin
             elif character == '5':
+                # If other is a suggestion, diverge and activate.
+                # (If not, it's already active and has been unmasked by
+                # our deactivating the incumbent).
+                message = twin
+                if not traits.getFlag(twin):
+                    assert not traits.other_side.getFlag(twin), (
+                        "Decision matrix says '5' for a message that's "
+                        "active on the other side.")
+                    message.potemplate = pofile.potemplate
+            elif character == '6':
                 # If other is not active, fork a diverged message.
                 if traits.getFlag(twin):
                     message = twin
                 else:
+                    # The twin is used on the other side, so we can't
+                    # just reuse it for our diverged message.  Create a
+                    # new one.
                     message = self._makeTranslationMessage(
                         pofile, submitter, translations, origin,
                         diverged=True)
@@ -1194,9 +1226,12 @@ class POTMsgSet(SQLBase):
                 # Converge & activate.
                 message = twin
                 message.shareIfPossible()
+            elif character == '*':
+                if share_with_other_side:
+                    if traits.other_side.incumbent_message is None:
+                        traits.other_side.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:
-                    # Steal flag if appropriate.
                     traits.other_side.setFlag(message, True)
             else:
                 raise AssertionError(
