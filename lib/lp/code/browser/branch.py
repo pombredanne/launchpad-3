@@ -31,7 +31,9 @@ __all__ = [
     ]
 
 import cgi
+from collections import defaultdict
 from datetime import datetime, timedelta
+from operator import attrgetter
 
 import pytz
 import simplejson
@@ -78,6 +80,7 @@ from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
@@ -90,7 +93,7 @@ from lp.code.errors import (
     CodeImportAlreadyRequested, CodeImportAlreadyRunning,
     CodeImportNotInReviewedState, InvalidBranchMergeProposal)
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch,
+    BranchCreationForbidden, BranchExists, BzrIdentityMixin, IBranch,
     user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -329,15 +332,96 @@ class DecoratedBug:
     """Provide some additional attributes to a normal bug."""
     delegates(IBug)
 
-    def __init__(self, context, branch):
+    def __init__(self, context, branch, tasks):
         self.context = context
         self.branch = branch
+        self.tasks = sorted(tasks, key=attrgetter('id'))
+
+    @property
+    def bugtasks(self):
+        return self.tasks
+
+    @property
+    def default_bugtask(self):
+        return self.tasks[0]
+
+    def getBugTask(self, target):
+        # Copied from Bug.getBugTarget to avoid importing.
+        for bugtask in self.bugtasks:
+            if bugtask.target == target:
+                return bugtask
+        return None
 
     @property
     def bugtask(self):
         """Return the bugtask for the branch project, or the default bugtask.
         """
-        return self.branch.target.getBugTask(self.context)
+        return self.branch.target.getBugTask(self)
+
+
+class DecoratedBranch(BzrIdentityMixin):
+    """Wrap a number of the branch accessors to cache results and avoid db queries."""
+    delegates(IBranch, 'branch')
+
+    def __init__(self, branch):
+        self.branch = branch
+
+    @cachedproperty
+    def linked_bugs(self):
+        bugs = defaultdict(list)
+        for bug, task in self.branch.getLinkedBugsAndTasks():
+            bugs[bug].append(task)
+        return [DecoratedBug(bug, self.branch, tasks)
+                for bug, tasks in bugs.iteritems()]
+
+    @property
+    def displayname(self):
+        return self.bzr_identity
+
+    @cachedproperty
+    def bzr_identity(self):
+        return super(DecoratedBranch, self).bzr_identity
+
+    @cachedproperty
+    def is_series_branch(self):
+        # True if linked to a product series or suite source package.
+        return (
+            len(self.associated_product_series) > 0 or
+            len(self.suite_source_packages) > 0)
+
+    def associatedProductSeries(self):
+        """Override the IBranch.associatedProductSeries."""
+        return self.associated_product_series
+
+    def associatedSuiteSourcePackages(self):
+        """Override the IBranch.associatedSuiteSourcePackages."""
+        return self.suite_source_packages
+
+    @cachedproperty
+    def associated_product_series(self):
+        return list(self.branch.associatedProductSeries())
+
+    @cachedproperty
+    def suite_source_packages(self):
+        return list(self.branch.associatedSuiteSourcePackages())
+
+    @cachedproperty
+    def upgrade_pending(self):
+        return self.branch.upgrade_pending
+
+    @cachedproperty
+    def subscriptions(self):
+        return list(self.branch.subscriptions)
+
+    def hasSubscription(self, user):
+        for sub in self.subscriptions:
+            if sub.person == user:
+                return True
+        return False
+
+    @cachedproperty
+    def latest_revisions(self):
+        return list(self.branch.latest_revisions())
 
 
 class BranchView(LaunchpadView, FeedsMixin):
@@ -356,6 +440,9 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     def initialize(self):
         self.notices = []
+        # Replace our context with a decorated branch, if it is not already decorated.
+        if self.context.__class__ != DecoratedBranch:
+            self.context = DecoratedBranch(self.context)
 
     def user_is_subscribed(self):
         """Is the current user subscribed to this branch?"""
@@ -420,13 +507,6 @@ class BranchView(LaunchpadView, FeedsMixin):
             return self.context.bzr_identity
         else:
             return None
-
-    def edit_link_url(self):
-        """Target URL of the Edit link used in the actions portlet."""
-        # XXX: DavidAllouche 2005-12-02 bug=5313:
-        # That should go away when bug #5313 is fixed.
-        linkdata = BranchContextMenu(self.context).edit()
-        return '%s/%s' % (canonical_url(self.context), linkdata.target)
 
     @property
     def user_can_upload(self):
@@ -517,8 +597,12 @@ class BranchView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def linked_bugs(self):
         """Return a list of DecoratedBugs linked to the branch."""
-        return [DecoratedBug(bug, self.context)
-            for bug in self.context.linked_bugs]
+        bugs = self.context.linked_bugs
+        if self.context.is_series_branch:
+            bugs = [
+                bug for bug in bugs
+                if bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES]
+        return bugs
 
     @cachedproperty
     def latest_code_import_results(self):
