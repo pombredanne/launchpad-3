@@ -27,6 +27,7 @@ from lp.buildmaster.tests.test_buildbase import (
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import ANONYMOUS, login, person_logged_in, TestCaseWithFactory
@@ -195,6 +196,35 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         Store.of(binary).flush()
         self.assertEqual([binary], list(spb.binary_builds))
 
+    def test_getRecentBuilds(self):
+        """Recent builds match the same person, series and receipe.
+
+        Builds do not match if they are older than 24 hours, or have a
+        different requester, series or recipe.
+        """
+        requester = self.factory.makePerson()
+        recipe = self.factory.makeSourcePackageRecipe()
+        series = self.factory.makeDistroSeries()
+        now = self.factory.getUniqueDate()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe,
+            requester=requester)
+        self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=series)
+        self.factory.makeSourcePackageRecipeBuild(
+            requester=requester, distroseries=series)
+        def get_recent():
+            Store.of(build).flush()
+            return SourcePackageRecipeBuild.getRecentBuilds(
+                requester, recipe, series, _now=now)
+        self.assertContentEqual([], get_recent())
+        yesterday = now - datetime.timedelta(days=1)
+        recent_build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=series, requester=requester,
+            date_created=yesterday)
+        self.assertContentEqual([], get_recent())
+        a_second = datetime.timedelta(seconds=1)
+        removeSecurityProxy(recent_build).datecreated += a_second
+        self.assertContentEqual([recent_build], get_recent())
 
 class MakeSPRecipeBuildMixin:
     """Provide the common makeBuild method returning a queued build."""
