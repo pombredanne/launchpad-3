@@ -52,8 +52,8 @@ class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):
         transaction.commit()
         self.assertEqual(len(stub.test_emails), 0)
 
-    def test_suppress_notify_default_does_notify(self):
-        """Test notifications are sent when suppress_notify is undefined."""
+    def test_suppress_notify_default_does_not_notify(self):
+        """Test notifications are not sent when suppress_notify is undefined."""
         bug = self.factory.makeBug()
         person_subscribing = self.factory.makePerson(
             name='foosuber', displayname='Foo Suber')
@@ -63,10 +63,7 @@ class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):
         bug_subscription = bug.subscribe(
             person_subscribed, person_subscribing)
         transaction.commit()
-        self.assertEqual(len(stub.test_emails), 1)
-        rationale = 'You have been subscribed to a public bug by Foo Suber'
-        msg = stub.test_emails[-1][2]
-        self.assertTrue(rationale in msg)
+        self.assertEqual(len(stub.test_emails), 0)
 
 
 def test_suite():
