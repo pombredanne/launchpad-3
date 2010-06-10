@@ -56,7 +56,7 @@ from canonical.launchpad.ftests._sqlobject import syncUpdate
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.uuid import generate_uuid
+from uuid import uuid1
 
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
@@ -245,7 +245,7 @@ class ObjectFactory:
         """
         if prefix is None:
             prefix = "generic-string"
-        string = "%s%s" % (prefix, generate_uuid())
+        string = "%s%s" % (prefix, uuid1())
         return string.replace('_', '-').lower()
 
     def getUniqueUnicode(self):
