@@ -299,6 +299,10 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             owner=self.chef, registrant=self.chef,
             name=u'things', description=u'This is a recipe',
             distroseries=self.squirrel, branches=[veggie_branch])
+        self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            name=u'fings', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch])
 
         meat_path = meat_branch.bzr_identity
 
