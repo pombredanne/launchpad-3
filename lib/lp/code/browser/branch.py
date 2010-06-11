@@ -25,6 +25,7 @@ __all__ = [
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
+    'DecoratedBranch',
     'DecoratedBug',
     'RegisterBranchMergeProposalView',
     'TryImportAgainView',
@@ -330,12 +331,14 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
 
 class DecoratedBug:
     """Provide some additional attributes to a normal bug."""
-    delegates(IBug)
+    delegates(IBug, 'bug')
 
-    def __init__(self, context, branch, tasks):
-        self.context = context
+    def __init__(self, bug, branch, tasks=None):
+        self.bug = bug
         self.branch = branch
-        self.tasks = sorted(tasks, key=attrgetter('id'))
+        self.tasks = tasks
+        if self.tasks is None:
+            self.tasks = self.bug.bugtasks
 
     @property
     def bugtasks(self):
@@ -360,7 +363,10 @@ class DecoratedBug:
 
 
 class DecoratedBranch(BzrIdentityMixin):
-    """Wrap a number of the branch accessors to cache results and avoid db queries."""
+    """Wrap a number of the branch accessors to cache results.
+
+    This avoids repeated db queries.
+    """
     delegates(IBranch, 'branch')
 
     def __init__(self, branch):
