@@ -10,10 +10,11 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.karma import IKarmaCacheManager
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.browser.person import PersonEditView, PersonView
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
@@ -335,6 +336,51 @@ class TestPersonParticipationView(TestCaseWithFactory):
         participations = self.view.active_participations
         self.assertEqual(1, len(participations))
         self.assertEqual(True, self.view.has_participations)
+
+
+class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
+    """The related software views display links to failed builds."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonRelatedSoftwareFailedBuild, self).setUp()
+        self.user = self.factory.makePerson()
+
+        # First we need to publish some PPA packages with failed builds
+        # for this person.
+        # XXX michaeln 2010-06-10 bug=592050.
+        # Strangely, the builds need to be built in the context of a
+        # main archive to reproduce bug 591010 for which this test was
+        # written to demonstrate.
+        login('foo.bar@canonical.com')
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        ppa = self.factory.makeArchive(owner=self.user)
+        src_pub = publisher.getPubSource(
+            creator=self.user, maintainer=self.user, archive=ppa)
+        binaries = publisher.getPubBinaries(
+            pub_source=src_pub)
+        self.build = binaries[0].binarypackagerelease.build
+        self.build.status = BuildStatus.FAILEDTOBUILD
+        self.build.archive = publisher.distroseries.main_archive
+        login(ANONYMOUS)
+
+    def test_related_software_with_failed_build(self):
+        # The link to the failed build is displayed.
+        self.view = create_view(self.user, name='+related-software')
+        html = self.view()
+        self.assertTrue(
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
+
+    def test_related_ppa_packages_with_failed_build(self):
+        # The link to the failed build is displayed.
+        self.view = create_view(self.user, name='+ppa-packages')
+        html = self.view()
+        self.assertTrue(
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
 
 
 def test_suite():
