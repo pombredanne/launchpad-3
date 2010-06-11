@@ -245,7 +245,7 @@ class ObjectFactory:
         """
         if prefix is None:
             prefix = "generic-string"
-        string = "%s%s" % (prefix, uuid1())
+        string = "%s%s" % (prefix, str(uuid1())[:27])
         return string.replace('_', '-').lower()
 
     def getUniqueUnicode(self):
