@@ -19,7 +19,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import THIRTY_DAYS_AGO, UTC_NOW
-from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
@@ -42,7 +41,6 @@ from lp.code.bzr import BranchFormat, RepositoryFormat
 from lp.code.model.branchjob import BranchJob, BranchUpgradeJob
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
-from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 
 
@@ -351,26 +349,6 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(sub3.owner, person3)
 
-    def test_MailingListSubscriptionPruner(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        team, mailing_list = self.factory.makeTeamAndMailingList(
-            'mlist-team', 'mlist-owner')
-        person = self.factory.makePerson(email='preferred@example.org')
-        email = self.factory.makeEmail('secondary@example.org', person)
-        transaction.commit()
-        mailing_list.subscribe(person, email)
-
-        # User remains subscribed if we run the garbage collector.
-        self.runDaily()
-        self.assertNotEqual(mailing_list.getSubscription(person), None)
-
-        # If we remove the email address that was subscribed, the
-        # garbage collector removes the subscription.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        Store.of(email).remove(email)
-        self.runDaily()
-        self.assertEqual(mailing_list.getSubscription(person), None)
-
     def test_PersonPruner(self):
         personset = getUtility(IPersonSet)
         # Switch the DB user because the garbo_daily user isn't allowed to
@@ -466,45 +444,8 @@ class TestGarbo(TestCaseWithFactory):
                 BugNotification.date_emailed < THIRTY_DAYS_AGO).count(),
             0)
 
-    def test_PersonEmailAddressLinkChecker(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-
-        # Make an EmailAddress record reference a non-existant Person.
-        emailaddress = IMasterStore(EmailAddress).get(EmailAddress, 16)
-        emailaddress.personID = -1
-
-        # Make a Person record reference a different Account to its
-        # EmailAddress records.
-        person = IMasterStore(Person).get(Person, 1)
-        person_email = Store.of(person).find(
-            EmailAddress, person=person).any()
-        person.accountID = -1
-
-        # Run the garbage collector. We should get two ERROR reports
-        # about the corrupt data.
-        collector = self.runDaily()
-
-        # The PersonEmailAddressLinkChecker is not intelligent enough
-        # to repair corruption. It is only there to alert us to the
-        # issue so data can be manually repaired and the cause
-        # tracked down and fixed.
-        self.assertEqual(emailaddress.personID, -1)
-        self.assertNotEqual(person.accountID, person_email.accountID)
-
-        # The corruption has been reported though as a ERROR messages.
-        log_output = collector.logger.output_file.getvalue()
-        error_message_1 = (
-            "ERROR Corruption - "
-            "'test@canonical.com' is linked to a non-existant Person.")
-        self.assertNotEqual(log_output.find(error_message_1), -1)
-        error_message_2 = (
-            "ERROR Corruption - "
-            "'mark@example.com' and 'mark' reference different Accounts")
-        self.assertNotEqual(log_output.find(error_message_2), -1)
-
     def test_BranchJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
-        self.useBzrBranches()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
 
@@ -534,7 +475,6 @@ class TestGarbo(TestCaseWithFactory):
     def test_BranchJobPruner_doesnt_prune_recent_jobs(self):
         # Check to make sure the garbo doesn't remove jobs that aren't more
         # than thirty days old.
-        self.useBzrBranches()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
 

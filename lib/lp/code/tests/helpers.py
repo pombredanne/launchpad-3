@@ -6,8 +6,9 @@
 __metaclass__ = type
 __all__ = [
     'add_revision_to_branch',
-    'make_linked_package_branch',
     'make_erics_fooix_project',
+    'make_linked_package_branch',
+    'make_official_package_branch',
     ]
 
 
@@ -19,11 +20,30 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.security.proxy import isinstance as zisinstance
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+
+from lp.code.interfaces.branchmergeproposal import (
+    IBranchMergeProposalJobSource)
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import time_counter
+from lp.testing import run_with_login, time_counter
+
+
+def mark_all_merge_proposal_jobs_done():
+    """Sometimes in tests we want to clear out all pending jobs.
+
+    This function iterates through all the pending jobs and marks the done.
+    """
+    while True:
+        jobs = list(getUtility(IBranchMergeProposalJobSource).iterReady())
+        if len(jobs) == 0:
+            break
+        for job in jobs:
+            job.start()
+            job.complete()
 
 
 def add_revision_to_branch(factory, branch, revision_date, date_created=None,
@@ -208,3 +228,25 @@ def make_mint_distro_with_branches(factory):
             make_package_branches(
                 factory, series, name, branch_count, official_count,
                 owner=mint_team, registrant=albert)
+
+
+def make_official_package_branch(factory, owner=None):
+    """Make a branch linked to the pocket of a source package."""
+    branch = factory.makePackageBranch(owner=owner)
+    # Make sure the (distroseries, pocket) combination used allows us to
+    # upload to it.
+    stable_states = (
+        SeriesStatus.SUPPORTED, SeriesStatus.CURRENT)
+    if branch.distroseries.status in stable_states:
+        pocket = PackagePublishingPocket.BACKPORTS
+    else:
+        pocket = PackagePublishingPocket.RELEASE
+    sourcepackage = branch.sourcepackage
+    suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
+    registrant = factory.makePerson()
+    ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+    run_with_login(
+        ubuntu_branches.teamowner,
+        ICanHasLinkedBranch(suite_sourcepackage).setBranch,
+        branch, registrant)
+    return branch

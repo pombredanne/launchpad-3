@@ -51,7 +51,7 @@ from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.languagepack import ILanguagePack
-
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 
 
 class DistroSeriesNameField(ContentNameField):
@@ -143,7 +143,7 @@ class IDistroSeriesEditRestricted(Interface):
 class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
-    IHasBuildRecords):
+    IHasBuildRecords, IHasTranslationTemplates):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
@@ -250,33 +250,33 @@ class IDistroSeriesPublic(
     language_pack_base = Choice(
         title=_('Language pack base'), required=False,
         description=_('''
-            Language pack export with the export of all translations available
-            for this `IDistroSeries` when it was generated. Next delta exports
-            will be generated based on this one.
+            Language pack with the export of all translations
+            available for this distribution series when it was generated. The
+            subsequent update exports will be generated based on this one.
             '''), vocabulary='FilteredFullLanguagePack')
 
     language_pack_delta = Choice(
-        title=_('Language pack delta'), required=False,
+        title=_('Language pack update'), required=False,
         description=_('''
-            Language pack export with the export of all translation updates
-            available for this `IDistroSeries` since language_pack_base was
-            generated.
+            Language pack with the export of all translation updates
+            available for this distribution series since the language pack
+            base was generated.
             '''), vocabulary='FilteredDeltaLanguagePack')
 
     language_pack_proposed = Choice(
         title=_('Proposed language pack update'), required=False,
         description=_('''
-            Base or delta language pack export that is being tested and
-            proposed to be used as the new language_pack_base or
-            language_pack_delta for this `IDistroSeries`.
+            Base or update language pack export that is being tested and
+            proposed to be used as the new language pack base or
+            language pack update for this distribution series.
             '''), vocabulary='FilteredLanguagePack')
 
     language_pack_full_export_requested = Bool(
         title=_('Request a full language pack export'), required=True,
         description=_('''
             Whether next language pack generation will be a full export. This
-            is useful when delta packages are too big and want to merge all
-            those changes in the base package.
+            information is useful when update packs are too big and want to
+            merge all those changes in the base pack.
             '''))
 
     last_full_language_pack_exported = Object(
@@ -360,6 +360,9 @@ class IDistroSeriesPublic(
         """Return the distroarchseries for this distroseries with the
         given architecturetag.
         """
+
+    def __str__():
+        """Return the name of the distroseries."""
 
     def getDistroArchSeriesByProcessor(processor):
         """Return the distroarchseries for this distroseries with the
@@ -594,7 +597,8 @@ class IDistroSeriesPublic(
          :param dsc: string, original content of the dsc file
          :param copyright: string, the original debian/copyright content
          :param changelog: LFA ID of the debian/changelog file in librarian
-         :param changelog_entry: string, changelog extracted from the changesfile
+         :param changelog_entry: string, changelog extracted from the
+                                 changesfile
          :param architecturehintlist: string, DSC architectures
          :param builddepends: string, DSC build dependencies
          :param builddependsindep: string, DSC architecture independent build

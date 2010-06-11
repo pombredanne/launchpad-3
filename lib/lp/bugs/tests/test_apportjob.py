@@ -273,7 +273,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(
-            'INFO    Ran 1 IProcessApportBlobJobSource jobs.\n', stderr)
+            'INFO    Ran 1 ProcessApportBlobJob jobs.\n', stderr)
 
     def test_getFileBugData(self):
         # The IProcessApportBlobJobSource.getFileBugData() method
@@ -337,6 +337,31 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
         # the extra_data_token attribute gets populated.
         view.publishTraverse(view.request, blob_uuid)
         return view
+
+    def test_blob_has_been_processed(self):
+        # Using the TemporaryBlobStorageAddView to upload a new BLOB
+        # will show blob as being processed
+        blob_uuid = self._create_blob_and_job_using_storeblob()
+        blob = getUtility(ITemporaryStorageManager).fetch(blob_uuid)
+
+        self.assertFalse(
+            blob.hasBeenProcessed(),
+            "BLOB should not be processed, but indicates it has.")
+
+    def test_blob_get_processed_data(self):
+        # Using the TemporaryBlobStorageAddView to upload a new BLOB
+        # should indicate there two attachments were processed.
+        blob_uuid = self._create_blob_and_job_using_storeblob()
+        blob = getUtility(ITemporaryStorageManager).fetch(blob_uuid)
+        job = getUtility(IProcessApportBlobJobSource).getByBlobUUID(blob_uuid)
+        job.job.start()
+        job.job.complete()
+        job.run()
+        blob_meta = blob.getProcessedData()
+
+        self.assertEqual(
+            len(blob_meta['attachments']), 2,
+            "BLOB metadata: %s" %(str(blob_meta)))
 
     def test_adding_blob_adds_job(self):
         # Using the TemporaryBlobStorageAddView to upload a new BLOB

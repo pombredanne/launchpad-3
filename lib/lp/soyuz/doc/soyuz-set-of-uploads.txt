@@ -628,7 +628,7 @@ Check there's a SourcePackageRelease with no build.
   >>> spn = SourcePackageName.selectOneBy(name="baz")
   >>> spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
   >>> spr_id = spr.id
-  >>> builds = BinaryPackageBuild.selectBy(sourcepackagereleaseID=spr_id)
+  >>> builds = BinaryPackageBuild.selectBy(source_package_release_id=spr_id)
   >>> len(list(builds))
   0
 
@@ -642,7 +642,7 @@ buildd-queuebuilder having run inbetween the source and binary uploads.
 
 Check build created
 
-  >>> len(list(BinaryPackageBuild.selectBy(sourcepackagereleaseID=spr_id)))
+  >>> len(list(BinaryPackageBuild.selectBy(source_package_release_id=spr_id)))
   1
 
 Upload the i386 binary:
@@ -657,10 +657,10 @@ Should still just have one build, and it should now be FULLYBUILT.
   >>> clear_current_connection_cache()
 
   >>> builds = list(BinaryPackageBuild.selectBy(
-  ...     sourcepackagereleaseID=spr_id))
+  ...     source_package_release_id=spr_id))
   >>> len(builds)
   1
-  >>> builds[0].buildstate == BuildStatus.FULLYBUILT
+  >>> builds[0].status == BuildStatus.FULLYBUILT
   True
 
 

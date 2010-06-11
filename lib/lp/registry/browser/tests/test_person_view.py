@@ -12,10 +12,16 @@ from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
-from lp.registry.browser.person import PersonView
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from lp.registry.browser.person import PersonEditView, PersonView
+from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.karma import KarmaCategory
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.soyuz.interfaces.archive import ArchiveStatus
 from lp.testing import TestCaseWithFactory, login_person
+from lp.testing.views import create_view
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -110,7 +116,7 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
 
     def test_viewing_self(self):
         # If the current user has edit access to the context person then
-        # the section should always display 
+        # the section should always display.
         login_person(self.owner)
         person_view = PersonView(self.owner, LaunchpadTestRequest())
         self.failUnless(person_view.should_show_ppa_section)
@@ -166,6 +172,169 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
         second_ppa = self.factory.makeArchive(owner=self.team)
         person_view = PersonView(self.team, LaunchpadTestRequest())
         self.failUnless(person_view.should_show_ppa_section)
+
+
+class TestPersonEditView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.person = self.factory.makePerson()
+        login_person(self.person)
+        self.ppa = self.factory.makeArchive(owner=self.person)
+        self.view = PersonEditView(
+            self.person, LaunchpadTestRequest())
+
+    def test_can_rename_with_empty_PPA(self):
+        # If a PPA exists but has no packages, we can rename the
+        # person.
+        self.view.initialize()
+        self.assertFalse(self.view.form_fields['name'].for_display)
+
+    def _publishPPAPackage(self):
+        stp = SoyuzTestPublisher()
+        stp.setUpDefaultDistroSeries()
+        stp.getPubSource(archive=self.ppa)
+
+    def test_cannot_rename_with_non_empty_PPA(self):
+        # Publish some packages in the PPA and test that we can't rename
+        # the person.
+        self._publishPPAPackage()
+        self.view.initialize()
+        self.assertTrue(self.view.form_fields['name'].for_display)
+        self.assertEqual(
+            self.view.widgets['name'].hint,
+            "This user has an active PPA with packages published and "
+            "may not be renamed.")
+
+    def test_cannot_rename_with_deleting_PPA(self):
+        # When a PPA is in the DELETING state we should not allow
+        # renaming just yet.
+        self._publishPPAPackage()
+        self.view.initialize()
+        self.ppa.delete(self.person)
+        self.assertEqual(self.ppa.status, ArchiveStatus.DELETING)
+        self.assertTrue(self.view.form_fields['name'].for_display)
+
+    def test_can_rename_with_deleted_PPA(self):
+        # Delete a PPA and test that the person can be renamed.
+        self._publishPPAPackage()
+        # Deleting the PPA will remove the publications, which is
+        # necessary for the renaming check.
+        self.ppa.delete(self.person)
+        # Simulate the external script running and finalising the
+        # DELETED status.
+        self.ppa.status = ArchiveStatus.DELETED
+        self.view.initialize()
+        self.assertFalse(self.view.form_fields['name'].for_display)
+
+
+class TestPersonParticipationView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonParticipationView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.view = create_view(self.user, name='+participation')
+
+    def test__asParticpation_owner(self):
+        # Team owners have the role of 'Owner'.
+        self.factory.makeTeam(owner=self.user)
+        [participation] = self.view.active_participations
+        self.assertEqual('Owner', participation['role'])
+
+    def test__asParticpation_admin(self):
+        # Team admins have the role of 'Admin'.
+        team = self.factory.makeTeam()
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        for membership in self.user.myactivememberships:
+            membership.setStatus(
+                TeamMembershipStatus.ADMIN, team.teamowner)
+        [participation] = self.view.active_participations
+        self.assertEqual('Admin', participation['role'])
+
+    def test__asParticpation_member(self):
+        # The default team role is 'Member'.
+        team = self.factory.makeTeam()
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        [participation] = self.view.active_participations
+        self.assertEqual('Member', participation['role'])
+
+    def test__asParticpation_without_mailing_list(self):
+        # The default team role is 'Member'.
+        team = self.factory.makeTeam()
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        [participation] = self.view.active_participations
+        self.assertEqual(None, participation['subscribed'])
+
+    def test__asParticpation_unsubscribed_to_mailing_list(self):
+        # The default team role is 'Member'.
+        team = self.factory.makeTeam()
+        self.factory.makeMailingList(team, team.teamowner)
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        [participation] = self.view.active_participations
+        self.assertEqual('Not subscribed', participation['subscribed'])
+
+    def test__asParticpation_subscribed_to_mailing_list(self):
+        # The default team role is 'Member'.
+        team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(team, team.teamowner)
+        mailing_list.subscribe(self.user)
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        [participation] = self.view.active_participations
+        self.assertEqual('Subscribed', participation['subscribed'])
+
+    def test_active_participations_with_private_team(self):
+        # Users cannot see private teams that they are not members of.
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        # The team is included in active_participations.
+        login_person(self.user)
+        view = create_view(
+            self.user, name='+participation', principal=self.user)
+        self.assertEqual(1, len(view.active_participations))
+        # The team is not included in active_participations.
+        observer = self.factory.makePerson()
+        login_person(observer)
+        view = create_view(
+            self.user, name='+participation', principal=observer)
+        self.assertEqual(0, len(view.active_participations))
+
+    def test_active_participations_indirect_membership(self):
+        # Verify the path of indirect membership.
+        a_team = self.factory.makeTeam(name='a')
+        b_team = self.factory.makeTeam(name='b', owner=a_team)
+        c_team = self.factory.makeTeam(name='c', owner=b_team)
+        login_person(a_team.teamowner)
+        a_team.addMember(self.user, a_team.teamowner)
+        transaction.commit()
+        participations = self.view.active_participations
+        self.assertEqual(3, len(participations))
+        display_names = [
+            participation['displayname'] for participation in participations]
+        self.assertEqual(['A', 'B', 'C'], display_names)
+        self.assertEqual(None, participations[0]['via'])
+        self.assertEqual('A', participations[1]['via'])
+        self.assertEqual('A, B', participations[2]['via'])
+
+    def test_has_participations_false(self):
+        participations = self.view.active_participations
+        self.assertEqual(0, len(participations))
+        self.assertEqual(False, self.view.has_participations)
+
+    def test_has_participations_true(self):
+        self.factory.makeTeam(owner=self.user)
+        participations = self.view.active_participations
+        self.assertEqual(1, len(participations))
+        self.assertEqual(True, self.view.has_participations)
 
 
 def test_suite():

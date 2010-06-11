@@ -36,7 +36,8 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
-from lp.bugs.interfaces.bugattachment import BugAttachmentType, IBugAttachmentSet
+from lp.bugs.interfaces.bugattachment import (
+    BugAttachmentType, IBugAttachmentSet)
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IBugTaskSet)
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -213,26 +214,30 @@ class Bug:
     @property
     def ccs(self):
         """Return the IDs of people CC'd to this bug"""
-        if self._ccs is not None: return self._ccs
+        if self._ccs is not None:
+            return self._ccs
         self._ccs = self.backend.getBugCcs(self.bug_id)
         return self._ccs
 
     @property
     def comments(self):
         """Return the comments attached to this bug"""
-        if self._comments is not None: return self._comments
+        if self._comments is not None:
+            return self._comments
         self._comments = self.backend.getBugComments(self.bug_id)
         return self._comments
 
     @property
     def attachments(self):
         """Return the attachments for this bug"""
-        if self._attachments is not None: return self._attachments
+        if self._attachments is not None:
+            return self._attachments
         self._attachments = self.backend.getBugAttachments(self.bug_id)
         return self._attachments
 
     def mapSeverity(self, bugtask):
-        """Set a Launchpad bug task's importance based on this bug's severity."""
+        """Set a Launchpad bug task's importance based on this bug's severity.
+        """
         bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
         importance_map = {
             'blocker': BugTaskImportance.CRITICAL,
@@ -289,8 +294,8 @@ class Bug:
         bugzilla_status += ', component=%s' % self.component
 
         if bugtask.statusexplanation:
-            bugtask.statusexplanation = '%s (%s)' % (bugtask.statusexplanation,
-                                                     bugzilla_status)
+            bugtask.statusexplanation = '%s (%s)' % (
+                bugtask.statusexplanation, bugzilla_status)
         else:
             bugtask.statusexplanation = bugzilla_status
 

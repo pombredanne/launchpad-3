@@ -254,6 +254,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
     max_bug_heat = Int()
+    date_next_suggest_packaging = UtcDateTimeCol(default=None)
 
     @property
     def official_codehosting(self):
@@ -287,6 +288,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         foreignKey="ProductSeries", dbName="development_focus", notNull=False,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
+    bug_reported_acknowledgement = StringCol(default=None)
     _cached_licenses = None
 
     def _validate_active(self, attr, value):

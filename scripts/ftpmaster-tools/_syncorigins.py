@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -12,7 +12,7 @@ origins = {
 "debian": {
     "name": "Debian",
     "url": "http://ftp.debian.org/debian/",
-    "default suite": "testing",
+    "default suite": "unstable",
     "default component": "main",
     "dsc": "must be signed and valid"
     },

@@ -27,7 +27,6 @@ from canonical.launchpad.database import MessageSet
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.mail.handlers import mail_handlers
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interaction import (
     get_current_principal, setupInteraction)
@@ -40,6 +39,7 @@ from lp.code.enums import (
 from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob, BranchMergeProposalJobType,
     CreateMergeProposalJob, MergeProposalCreatedJob)
 from lp.code.mail.codehandler import (
     AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
@@ -157,7 +157,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertTrue(self.code_handler.process(
             mail, email_addr, None), "Succeeded, but didn't return True")
         # if the message has not been created, this raises SQLObjectNotFound
-        message = MessageSet().get('<my-id>')
+        MessageSet().get('<my-id>')
 
     def test_process_packagebranch(self):
         """Processing an email related to a package branch works.."""
@@ -245,6 +245,35 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(
             mail['Reply-to'], self.code_handler._getReplyAddress(mail))
 
+    def test_process_for_imported_branch(self):
+        """Make sure that the database user is able refer to import branches.
+
+        Import branches have different permission checks than other branches.
+
+        Permission to mark a merge proposal as approved checks launchpad.Edit
+        of the target branch, or membership of the review team on the target
+        branch.  For import branches launchpad.Edit also checks the registrant
+        of the code import if there is one, and membership of vcs-imports.  So
+        if someone is attempting to review something on an import branch, but
+        they don't have launchpad.Edit but are a member of the review team,
+        then a check against the code import is done.
+        """
+        mail = self.factory.makeSignedMessage(body=' merge approved')
+        code_import = self.factory.makeCodeImport()
+        bmp = self.factory.makeBranchMergeProposal(
+            target_branch=code_import.branch)
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        pop_notifications()
+        self.code_handler.process(mail, email_addr, None)
+        notification = pop_notifications()[0]
+        # The returned message is a multipart message, the first part is
+        # the message, and the second is the original message.
+        message, original = notification.get_payload()
+        self.assertTrue(
+            "You are not a reviewer for the branch" in
+            message.get_payload(decode=True))
+
     def test_processVote(self):
         """Process respects the vote command."""
         mail = self.factory.makeSignedMessage(body=' vote Abstain EBAILIWICK')
@@ -307,8 +336,8 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(sender, vote.reviewer)
         self.assertEqual(comment, vote.comment)
 
-    def test_processSendsMail(self):
-        """Processing mail causes mail to be sent."""
+    def test_processmail_generates_job(self):
+        """Processing mail causes an email job to be created."""
         mail = self.factory.makeSignedMessage(
             body=' vote Abstain EBAILIWICK', subject='subject')
         bmp = self.factory.makeBranchMergeProposal()
@@ -317,21 +346,18 @@ class TestCodeHandler(TestCaseWithFactory):
         subscriber = self.factory.makePerson()
         bmp.source_branch.subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL, subscriber)
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)
-        notification = [
-            msg for msg in pop_notifications() if
-            msg['X-Launchpad-message-rationale'] == 'Owner'][0]
-        self.assertEqual('subject', notification['Subject'])
-        expected_body = ('Review: Abstain ebailiwick\n'
-                         ' vote Abstain EBAILIWICK\n'
-                         '-- \n'
-                         '%s\n'
-                         'You are the owner of %s.' %
-                         (canonical_url(bmp), bmp.source_branch.bzr_identity))
-        self.assertEqual(expected_body, notification.get_payload(decode=True))
+        job = Store.of(bmp).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.branch_merge_proposal == bmp,
+            BranchMergeProposalJob.job_type ==
+            BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL).one()
+        self.assertIsNot(None, job)
+        # Ensure the DB operations violate no constraints.
+        Store.of(bmp).flush()
 
     def test_getBranchMergeProposal(self):
         """The correct BranchMergeProposal is returned for the address."""
@@ -409,7 +435,7 @@ class TestCodeHandler(TestCaseWithFactory):
         md = self.factory.makeMergeDirective(
             source_branch_url=source_branch_url, target_branch=target_branch)
         submitter = self.factory.makePerson()
-        duplicate_branch = self.factory.makeProductBranch(
+        self.factory.makeProductBranch(
             product=target_branch.product, name='suffix', owner=submitter)
         self.switchDbUser(config.create_merge_proposals.dbuser)
         mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
@@ -490,7 +516,6 @@ class TestCodeHandler(TestCaseWithFactory):
 
         MissingMergeDirective is raised when no merge directive is present.
         """
-        md = self.factory.makeMergeDirective()
         message = self.factory.makeSignedMessage(body='Hi!\n')
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
@@ -685,10 +710,10 @@ class TestCodeHandler(TestCaseWithFactory):
             self.factory.makeMergeDirectiveEmail())
         self.switchDbUser(config.create_merge_proposals.dbuser)
         code_handler = CodeHandler()
-        bmp = code_handler.processMergeProposal(message)
-        _unused = pop_notifications()
+        code_handler.processMergeProposal(message)
+        pop_notifications()
         transaction.commit()
-        _unused = code_handler.processMergeProposal(message)
+        code_handler.processMergeProposal(message)
         [notification] = pop_notifications()
         self.assertEqual(
             notification['Subject'], 'Error Creating Merge Proposal')
@@ -759,8 +784,8 @@ class TestCodeHandler(TestCaseWithFactory):
         """If an LP URL is provided, we attempt to reproduce it exactly."""
         submitter = self.factory.makePerson(name='merge-submitter')
         target = self.makeTargetBranch()
-        url_product = self.factory.makeProduct('uproduct')
-        url_person = self.factory.makePerson(name='uuser')
+        self.factory.makeProduct('uproduct')
+        self.factory.makePerson(name='uuser')
         code_handler = CodeHandler()
         namespace, base = code_handler._getNewBranchInfo(
             config.codehosting.supermirror_root + '~uuser/uproduct/bar',
@@ -772,8 +797,8 @@ class TestCodeHandler(TestCaseWithFactory):
         """Trailing slashes are permitted in LP URLs."""
         submitter = self.factory.makePerson(name='merge-submitter')
         target = self.makeTargetBranch()
-        url_product = self.factory.makeProduct('uproduct')
-        url_person = self.factory.makePerson(name='uuser')
+        self.factory.makeProduct('uproduct')
+        self.factory.makePerson(name='uuser')
         code_handler = CodeHandler()
         namespace, base = code_handler._getNewBranchInfo(
             config.codehosting.supermirror_root + '~uuser/uproduct/bar/',
@@ -814,7 +839,7 @@ class TestCodeHandler(TestCaseWithFactory):
             body=' review abstain',
             subject='')
         bmp = self.factory.makeBranchMergeProposal()
-        _unused = pop_notifications()
+        pop_notifications()
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)
@@ -852,13 +877,6 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(user)
 
-    def _mirror(self, db_branch, bzr_branch):
-        # Ensure the directories containing the mirror branch exist.
-        transport = get_transport(db_branch.warehouse_url)
-        lp_mirror = BzrDir.create_branch_convenience(db_branch.warehouse_url)
-        self.addCleanup(transport.delete_tree, '.')
-        lp_mirror.pull(bzr_branch)
-
     def _createTargetSourceAndBundle(self, format=None):
         """Create a merge directive with a bundle and associated branches.
 
@@ -876,7 +894,8 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         target_tree.commit('rev1')
         # Make sure that the created branch has been mirrored.
         db_target_branch.startMirroring()
-        db_target_branch.mirrorComplete('rev1')
+        removeSecurityProxy(db_target_branch).branchChanged(
+            '', 'rev1', None, None, None)
         source_tree = target_tree.bzrdir.sprout('source').open_workingtree()
         source_tree.commit('rev2')
         message = self.factory.makeBundleMergeDirectiveEmail(
@@ -912,7 +931,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         # branch that is created is an empty hosted branch.  The new branch
         # will not have a mirror requested as there are no revisions, and
         # there is no branch created in the hosted area.
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, source, message = self._createTargetSourceAndBundle(
             format="pack-0.92")
         bmp = self._processMergeDirective(message)
@@ -924,7 +943,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         # mirrored, the source branch that is created is an empty hosted
         # branch.  The new branch will not have a mirror requested as there
         # are no revisions, and there is no branch created in the hosted area.
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, source, message = self._createTargetSourceAndBundle(
             format="1.9")
         # Mark the target branch as "unmirrored", at least as far as the db is
@@ -939,7 +958,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         # branch that is created is a hosted branch stacked on the target
         # branch. The source branch will have the revisions from the bundle,
         # and a mirror will have been triggered.
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, source, message = self._createTargetSourceAndBundle(
             format="1.9")
         bmp = self._processMergeDirective(message)
@@ -949,24 +968,10 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         self.assertEqual(
             source.last_revision(), source_bzr_branch.last_revision())
 
-    def test_correct_area(self):
-        # When a branch is created for a merge directive, it is created in the
-        # hosted area (getPullURL) not the mirrored area (warehouse_url).
-        self.useBzrBranches(real_server=True)
-        branch, source, message = self._createTargetSourceAndBundle(
-            format="1.9")
-        bmp = self._processMergeDirective(message)
-        # The hosted location should be populated (open succeeds).
-        source_bzr_branch = self._openBazaarBranchAsClient(bmp.source_branch)
-        # Not the mirror (open raises).
-        self.assertRaises(
-            bzr_errors.NotBranchError, Branch.open,
-            bmp.source_branch.warehouse_url)
-
     def test_branch_stacked(self):
         # When a branch is created for a merge directive, it is created
         # stacked on the target branch.
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, source, message = self._createTargetSourceAndBundle(
             format="1.9")
         bmp = self._processMergeDirective(message)
@@ -986,7 +991,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
     def test_source_not_newer(self):
         # The source branch is created correctly when the source is not newer
         # than the target, instead of raising DivergedBranches.
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, source, message = self._createTargetSourceAndBundle(
             format="1.9")
         target_tree = WorkingTree.open('.')
@@ -1001,19 +1006,16 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         db_target_branch, target_tree = self.create_branch_and_tree(
             'target', format=target_format)
         target_tree.branch.set_public_branch(db_target_branch.bzr_identity)
-        target_tree.commit('rev1')
-        # Make sure that the created branch has been mirrored.
-        db_target_branch.startMirroring()
-        db_target_branch.mirrorComplete('rev1')
+        revid = target_tree.commit('rev1')
+        removeSecurityProxy(db_target_branch).branchChanged(
+            '', revid, None, None, None)
 
         db_source_branch, source_tree = self.create_branch_and_tree(
-            'lpsource', db_target_branch.product, hosted=True,
-            format=source_format)
+            'lpsource', db_target_branch.product, format=source_format)
         # The branch is not scheduled to be mirrorred.
         self.assertIs(db_source_branch.next_mirror_time, None)
         source_tree.pull(target_tree.branch)
         source_tree.commit('rev2', rev_id='rev2')
-        self._mirror(db_source_branch, source_tree.branch)
         # bundle_tree is effectively behaving like a local copy of
         # db_source_branch, and is used to create the merge directive.
         bundle_tree = source_tree.bzrdir.sprout('source').open_workingtree()
@@ -1032,41 +1034,34 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
     def test_existing_stacked_branch(self):
         # A bundle can update an existing branch if they are both stackable,
         # and the source branch is stacked.
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         lp_source, message = self._createPreexistingSourceAndMessage(
             target_format="1.9", source_format="1.9", set_stacked=True)
         bmp = self._processMergeDirective(message)
         # The branch merge proposal should use the existing db branch.
         self.assertEqual(lp_source, bmp.source_branch)
-        # Now the branch is now scheduled to be mirrorred.
-        self.assertIsNot(None, lp_source.next_mirror_time)
-        mirror = removeSecurityProxy(bmp.source_branch).getBzrBranch()
-        # The mirrored copy of the branch has not been updated.
-        self.assertEqual('rev2', mirror.last_revision())
-        hosted = self._openBazaarBranchAsClient(bmp.source_branch)
-        # The hosted copy of the branch has been updated.
-        self.assertEqual('rev3', hosted.last_revision())
+        bzr_branch = self._openBazaarBranchAsClient(bmp.source_branch)
+        # The branch has been updated.
+        self.assertEqual('rev3', bzr_branch.last_revision())
 
     def test_existing_unstacked_branch(self):
         # Even if the source and target are stackable, if the source is not
         # stacked, we don't support stacking something that wasn't stacked
         # before (yet).
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         lp_source, message = self._createPreexistingSourceAndMessage(
             target_format="1.9", source_format="1.9")
         bmp = self._processMergeDirective(message)
         # The branch merge proposal should use the existing db branch.
         self.assertEqual(lp_source, bmp.source_branch)
-        # Now the branch is not scheduled to be mirrorred.
-        self.assertIs(None, lp_source.next_mirror_time)
-        hosted = self._openBazaarBranchAsClient(bmp.source_branch)
+        bzr_branch = self._openBazaarBranchAsClient(bmp.source_branch)
         # The hosted copy of the branch has not been updated.
-        self.assertEqual('rev2', hosted.last_revision())
+        self.assertEqual('rev2', bzr_branch.last_revision())
 
     def test_existing_branch_nonstackable_target(self):
         # If the target branch is not stackable, then we don't pull any
         # revisions.
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         lp_source, message = self._createPreexistingSourceAndMessage(
             target_format="pack-0.92", source_format="1.9")
         bmp = self._processMergeDirective(message)
@@ -1081,7 +1076,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
     def test_existing_branch_nonstackable_source(self):
         # If the source branch is not stackable, then we don't pull any
         # revisions.
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         lp_source, message = self._createPreexistingSourceAndMessage(
             target_format="1.9", source_format="pack-0.92")
         bmp = self._processMergeDirective(message)
@@ -1095,7 +1090,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
 
     def test_forbidden_target(self):
         """Specifying a branch in a forbidden target generates email."""
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, source, message = self._createTargetSourceAndBundle(
             format="pack-0.92")
         branch.product.setBranchVisibilityTeamPolicy(

@@ -133,6 +133,7 @@ from lp.soyuz.browser.archivesubscription import (
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
+from lp.soyuz.interfaces.archive import ArchiveStatus
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
@@ -222,13 +223,14 @@ from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import (
-    DateTimeFormatterAPI, FormattersAPI, PersonFormatterAPI)
+    DateTimeFormatterAPI, PersonFormatterAPI)
 from lazr.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
 
 from canonical.lazr.utils import smartquote
 
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 
@@ -728,7 +730,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def branches(self):
-        text = 'Branches'
+        text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.displayname)
         return Link('', text, summary)
@@ -1731,7 +1733,7 @@ class PersonSpecWorkloadView(LaunchpadView):
         assert self.context.isTeam, (
             "PersonSpecWorkloadView.members can only be called on a team.")
         members = self.context.allmembers
-        batch_nav = BatchNavigator(members, self.request)
+        batch_nav = BatchNavigator(members, self.request, size=20)
         return batch_nav
 
 
@@ -1940,7 +1942,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
             extra_params=critical_bugs_params)
 
     def getHighBugsURL(self, distributionsourcepackage):
-        """Return the URL for high importance bugs on distributionsourcepackage."""
+        """Return URL for high bugs on distributionsourcepackage."""
         high_bugs_params = {
             'field.status': [], 'field.importance': "High"}
 
@@ -2501,7 +2503,7 @@ class PersonKarmaView(LaunchpadView):
         if self.user == self.context:
             return 'Your Launchpad Karma'
         else:
-            return 'Launchpad Karma for %s' %  self.context.displayname
+            return 'Launchpad Karma for %s' % self.context.displayname
 
     @cachedproperty
     def has_karma(self):
@@ -3070,22 +3072,51 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    @property
-    def indirect_teams_via(self):
-        """Information about indirect membership.
+    def _asParticipation(self, membership, team_path=None):
+        """Return a dict of participation information for the membership."""
+        if team_path is None:
+            via = None
+        else:
+            via = COMMASPACE.join(team.displayname for team in team_path)
+        team = membership.team
+        if membership.person == team.teamowner:
+            role = 'Owner'
+        elif membership.status == TeamMembershipStatus.ADMIN:
+            role = 'Admin'
+        else:
+            role = 'Member'
+        if team.mailing_list is not None and team.mailing_list.is_usable:
+            subscription = team.mailing_list.getSubscription(self.context)
+            if subscription is None:
+                subscribed = 'Not subscribed'
+            else:
+                subscribed = 'Subscribed'
+        else:
+            subscribed = None
+        return dict(
+            displayname=team.displayname, team=team, membership=membership,
+            role=role, via=via, subscribed=subscribed)
 
-        :return: A list of dictionaries, where each dictionary has a team in
-          which the person is an indirect member, and a path to membership in
-          that team.
-        :rtype: a list of dictionaries
-        """
-        indirect_teams = []
+    @cachedproperty
+    def active_participations(self):
+        """Return the participation information for active memberships."""
+        participations = [self._asParticipation(membership)
+                for membership in self.context.myactivememberships
+                if check_permission('launchpad.View', membership)]
+        membership_set = getUtility(ITeamMembershipSet)
         for team in self.context.teams_indirectly_participated_in:
-            via = COMMASPACE.join(viateam.displayname
-                                  for viateam
-                                  in self.context.findPathToTeam(team)[:-1])
-            indirect_teams.append(dict(team=team, via=via))
-        return indirect_teams
+            # The key points of the path for presentation are:
+            # [-?] indirect memberships, [-2] direct membership, [-1] team.
+            team_path = self.context.findPathToTeam(team)
+            membership = membership_set.getByPersonAndTeam(
+                team_path[-2], team)
+            participations.append(
+                self._asParticipation(membership, team_path=team_path[:-1]))
+        return sorted(participations, key=itemgetter('displayname'))
+
+    @cachedproperty
+    def has_participations(self):
+        return len(self.active_participations) > 0
 
 
 class EmailAddressVisibleState:
@@ -3206,7 +3237,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             raise UnexpectedFormData(
-                _("This team does not have a mailing list."))
+                _("This team does not use Launchpad to host a mailing list."))
         if not self.user:
             raise Unauthorized(
                 _("You must be logged in to unsubscribe."))
@@ -3565,6 +3596,8 @@ class PersonEditSSHKeysView(LaunchpadView):
         return canonical_url(self.context, view_name="+edit")
 
     def add_ssh(self):
+        # XXX: JonathanLange 2010-05-13: This should hella not be in browser
+        # code. Move this to ISSHKeySet (bonus! tests become easier to write).
         sshkey = self.request.form.get('sshkey')
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
@@ -3657,13 +3690,17 @@ class PersonGPGView(LaunchpadView):
             IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     def form_action(self):
-        permitted_actions = ['claim_gpg', 'deactivate_gpg',
-                             'remove_gpgtoken', 'reactivate_gpg']
+        permitted_actions = [
+            'claim_gpg',
+            'deactivate_gpg',
+            'remove_gpgtoken',
+            'reactivate_gpg',
+            ]
         if self.request.method != "POST":
             return ''
         action = self.request.form.get('action')
-        if action and (action not in permitted_actions):
-            raise UnexpectedFormData("Action was not defined")
+        if action not in permitted_actions:
+            raise UnexpectedFormData("Action not permitted: %s" % action)
         getattr(self, action)()
 
     def claim_gpg(self):
@@ -3870,14 +3907,19 @@ class PersonEditView(BasePersonEditView):
 
         When a user has a PPA renames are prohibited.
         """
-        writable = self.context.archive is None
-        if not writable:
+        active_ppas = [
+            ppa for ppa in self.context.ppas
+            if ppa.status in (ArchiveStatus.ACTIVE, ArchiveStatus.DELETING)]
+        num_packages = sum(
+            ppa.getPublishedSources().count() for ppa in active_ppas)
+        if num_packages > 0:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
         super(PersonEditView, self).setUpWidgets()
-        if not writable:
+        if num_packages > 0:
             self.widgets['name'].hint = _(
-                'This user has a PPA and may not be renamed.')
+                'This user has an active PPA with packages published and '
+                'may not be renamed.')
 
     def validate(self, data):
         """If the name changed, warn the user about the implications."""
@@ -5179,14 +5221,14 @@ class PersonRelatedSoftwareView(LaunchpadView):
             builds_by_package[package] = []
             needs_build_by_package[package] = False
         for build in all_builds:
-            if build.buildstate == BuildStatus.FAILEDTOBUILD:
-                builds_by_package[build.sourcepackagerelease].append(build)
-            needs_build = build.buildstate in [
+            if build.status == BuildStatus.FAILEDTOBUILD:
+                builds_by_package[build.source_package_release].append(build)
+            needs_build = build.status in [
                 BuildStatus.NEEDSBUILD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.CHROOTWAIT,
                 ]
-            needs_build_by_package[build.sourcepackagerelease] = needs_build
+            needs_build_by_package[build.source_package_release] = needs_build
 
         return (builds_by_package, needs_build_by_package)
 

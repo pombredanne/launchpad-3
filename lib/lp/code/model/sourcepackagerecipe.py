@@ -10,6 +10,7 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
+from bzrlib.plugins.builder import RecipeParser
 from lazr.delegates import delegates
 
 from storm.locals import (
@@ -19,12 +20,11 @@ from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
-from lp.archiveuploader.permission import check_upload_to_archive
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
-    ISourcePackageRecipeData)
+    ISourcePackageRecipeData, TooManyBuilds)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
@@ -53,6 +53,9 @@ class SourcePackageRecipe(Storm):
 
     __storm_table__ = 'SourcePackageRecipe'
 
+    def __str__(self):
+        return '%s/%s' % (self.owner.name, self.name)
+
     implements(ISourcePackageRecipe)
 
     classProvides(ISourcePackageRecipeSource)
@@ -60,6 +63,9 @@ class SourcePackageRecipe(Storm):
     delegates(ISourcePackageRecipeData, context='_recipe_data')
 
     id = Int(primary=True)
+
+    daily_build_archive_id = Int(name='daily_build_archive', allow_none=True)
+    daily_build_archive = Reference(daily_build_archive_id, 'Archive.id')
 
     date_created = UtcDateTimeCol(notNull=True)
     date_last_modified = UtcDateTimeCol(notNull=True)
@@ -76,9 +82,9 @@ class SourcePackageRecipe(Storm):
 
     build_daily = Bool()
 
-    sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
-    sourcepackagename = Reference(
-        sourcepackagename_id, 'SourcePackageName.id')
+    @property
+    def _sourcepackagename_text(self):
+        return self.sourcepackagename.name
 
     name = Unicode(allow_none=True)
     description = Unicode(allow_none=False)
@@ -103,22 +109,41 @@ class SourcePackageRecipe(Storm):
     def base_branch(self):
         return self._recipe_data.base_branch
 
+    def setRecipeText(self, recipe_text):
+        self.builder_recipe = RecipeParser(recipe_text).parse()
+
+    @property
+    def recipe_text(self):
+        return str(self.builder_recipe)
+
     @staticmethod
-    def new(registrant, owner, distroseries, sourcepackagename, name,
-            builder_recipe, description):
+    def new(registrant, owner, distroseries, name, builder_recipe,
+            description):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
         SourcePackageRecipeData(builder_recipe, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
-        sprecipe.sourcepackagename = sourcepackagename
         sprecipe.name = name
         for distroseries_item in distroseries:
             sprecipe.distroseries.add(distroseries_item)
         sprecipe.description = description
         store.add(sprecipe)
         return sprecipe
+
+    @staticmethod
+    def exists(owner, name):
+        """See `ISourcePackageRecipeSource.new`."""
+        store = IMasterStore(SourcePackageRecipe)
+        recipe = store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.owner == owner,
+            SourcePackageRecipe.name == name).one()
+        if recipe:
+            return True
+        else:
+            return False
 
     def destroySelf(self):
         store = Store.of(self)
@@ -133,22 +158,26 @@ class SourcePackageRecipe(Storm):
         store.remove(self._recipe_data)
         store.remove(self)
 
+    def isOverQuota(self, requester, distroseries):
+        """See `ISourcePackageRecipe`."""
+        return SourcePackageRecipeBuild.getRecentBuilds(
+            requester, self, distroseries).count() >= 5
+
     def requestBuild(self, archive, requester, distroseries, pocket):
         """See `ISourcePackageRecipe`."""
         if archive.purpose != ArchivePurpose.PPA:
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
-        reject_reason = check_upload_to_archive(
-            requester, distroseries, self.sourcepackagename,
-            archive, component, pocket)
+        reject_reason = archive.checkUpload(
+            requester, self.distroseries, None, component, pocket)
         if reject_reason is not None:
             raise reject_reason
+        if self.isOverQuota(requester, distroseries):
+            raise TooManyBuilds(self, distroseries)
 
-        sourcepackage = distroseries.getSourcePackage(
-            self.sourcepackagename)
-        build = getUtility(ISourcePackageRecipeBuildSource).new(sourcepackage,
+        build = getUtility(ISourcePackageRecipeBuildSource).new(distroseries,
             self, requester, archive)
-        build.queueBuild()
+        build.queueBuild(build)
         return build
 
     def getBuilds(self, pending=False):
@@ -162,3 +191,24 @@ class SourcePackageRecipe(Storm):
             *clauses)
         result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
         return result
+
+    def getLastBuild(self):
+        """See `ISourcePackageRecipeBuild`."""
+        store = Store.of(self)
+        result = store.find(
+            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe == self)
+        result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
+        return result.first()
+
+    def getMedianBuildDuration(self):
+        """Return the median duration of builds of this recipe."""
+        store = IStore(self)
+        result = store.find(
+            SourcePackageRecipeBuild.buildduration,
+            SourcePackageRecipeBuild.recipe==self.id,
+            SourcePackageRecipeBuild.buildduration != None)
+        result.order_by(Desc(SourcePackageRecipeBuild.buildduration))
+        count = result.count()
+        if count == 0:
+            return None
+        return result[count/2]

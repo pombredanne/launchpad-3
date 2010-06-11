@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5 -S
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -266,11 +266,13 @@ def parse_control(control_filename):
         section = Control.Section.Find("Section")
         priority = Control.Section.Find("Priority")
         description = Control.Section.Find("Description")
-        if source:
-            source_section = section
-            source_priority = priority
+        if source is not None:
+            if section is not None:
+                source_section = section
+            if priority is not None:
+                source_priority = priority
             source_name = source
-        if package and package == source_name:
+        if package is not None and package == source_name:
             source_description = (
                 "%-10s - %-.65s" % (package, description.split("\n")[0]))
     control_filehandle.close()

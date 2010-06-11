@@ -164,6 +164,12 @@ p, li, dt, dd, blockquote, .narrow, .narrow-listing {
     /* Wrap the text before the eye gets lost. */
     max-width: 45em;
     }
+.wide * {
+    max-width: 60em;
+    }
+table.wide {
+    width: 60em;
+    }
 pre, code, samp, tt, .console {
     font-size: 116%;
     margin-bottom: 0.8em;
@@ -1656,7 +1662,9 @@ a.unofficial-tag {
 .distromirrorstatusONEHOURBEHIND,
 .distromirrorstatusTWOHOURSBEHIND,
 .distromirrorstatusFOURHOURSBEHIND,
-.distromirrorstatusSIXHOURSBEHIND,
+.distromirrorstatusSIXHOURSBEHIND {
+    color: green;
+    }
 .distromirrorstatusONEDAYBEHIND {
     color: #f60;
     }

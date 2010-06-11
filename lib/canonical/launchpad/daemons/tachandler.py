@@ -115,7 +115,7 @@ class TacTestSetup:
 
     You can override setUpRoot to set up a root directory for the daemon.
     """
-    def setUp(self, spew=False):
+    def setUp(self, spew=False, umask=None):
         # Before we run, we want to make sure that we have cleaned up any
         # previous runs. Although tearDown() should have been called already,
         # we can't guarantee it.
@@ -138,6 +138,8 @@ class TacTestSetup:
                 '--pidfile', self.pidfile, '--logfile', self.logfile]
         if spew:
             args.append('--spew')
+        if umask is not None:
+            args.extend(('--umask', umask))
 
         # Run twistd, and raise an error if the return value is non-zero or
         # stdout/stderr are written to.
@@ -170,8 +172,8 @@ class TacTestSetup:
     def _waitForDaemonStartup(self):
         """ Wait for the daemon to fully start.
 
-        Times out after 20 seconds.  If that happens, the log file will
-        not be cleaned up so the user can post-mortem it.
+        Times out after 20 seconds.  If that happens, the log file content
+        will be included in the exception message for debugging purpose.
 
         :raises TacException: Timeout.
         """
@@ -184,8 +186,8 @@ class TacTestSetup:
             now = time.time()
 
         if now >= deadline:
-            raise TacException('Unable to start %s. Check %s.' % (
-                self.tacfile, self.logfile))
+            raise TacException('Unable to start %s. Content of %s:\n%s' % (
+                self.tacfile, self.logfile, open(self.logfile).read()))
 
     def tearDown(self):
         self.killTac()

@@ -326,7 +326,7 @@ Check that we only created new Build entries for the new hoary releases:
 And have a look at our architecture-independent-source's build:
 
     >>> arch_indep_build = BinaryPackageBuild.selectOneBy(
-    ...     sourcepackagerelease=pub_all.sourcepackagerelease)
+    ...     source_package_release=pub_all.sourcepackagerelease)
 
     >>> print arch_indep_build.title
     i386 build of test-buildd 667 in ubuntu hoary RELEASE
@@ -360,7 +360,7 @@ i.e., the published component can be different than the original component.
 
     >>> print build.current_component.name
     main
-    >>> print build.sourcepackagerelease.component.name
+    >>> print build.source_package_release.component.name
     main
 
 Missing BuildQueue records, resulting from given-back builds, are
