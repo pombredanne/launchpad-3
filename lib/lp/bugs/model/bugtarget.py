@@ -235,15 +235,12 @@ class HasBugHeatMixin:
         else:
             raise NotImplementedError
 
-    def recalculateBugHeatCache(self):
-        """See `IHasBugHeat`.
-
-        DistributionSourcePackage overrides this method.
-        """
+    def recalculateMaxBugHeat(self):
+        """See `IHasBugHeat`."""
         if IProductSeries.providedBy(self):
-            return self.product.recalculateBugHeatCache()
+            return self.product.recalculateMaxBugHeat()
         if IDistroSeries.providedBy(self):
-            return self.distribution.recalculateBugHeatCache()
+            return self.distribution.recalculateMaxBugHeat()
         if ISourcePackage.providedBy(self):
             # Should only happen for nominations, so we can safely skip
             # recalculating max_heat.
@@ -279,6 +276,13 @@ class HasBugHeatMixin:
                       WHERE Bugtask.bug = Bug.id AND
                       Bugtask.product = Product.id AND
                       Product.project =  %s""" % sqlvalues(self)]
+        elif IDistributionSourcePackage.providedBy(self):
+            sql = ["""SELECT MAX(heat)
+                      FROM Bug, Bugtask
+                      WHERE Bugtask.bug = Bug.id AND
+                      Bugtask.distribution = %s AND
+                      Bugtask.sourcepackagename = %s""" % sqlvalues(
+                 self.distribution, self.sourcepackagename)]
         else:
             raise NotImplementedError
 
@@ -295,7 +299,7 @@ class HasBugHeatMixin:
         # If the product is part of a project group we calculate the maximum
         # heat for the project group too.
         if IProduct.providedBy(self) and self.project is not None:
-            self.project.recalculateBugHeatCache()
+            self.project.recalculateMaxBugHeat()
 
 
 

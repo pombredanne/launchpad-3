@@ -887,7 +887,7 @@ class Bug(SQLBase):
 
         # When a new task is added the bug's heat becomes relevant to the
         # target's max_bug_heat.
-        target.recalculateBugHeatCache()
+        target.recalculateMaxBugHeat()
 
         return new_task
 
@@ -1569,7 +1569,7 @@ class Bug(SQLBase):
         self.heat = heat
         self.heat_last_updated = timestamp
         for task in self.bugtasks:
-            task.target.recalculateBugHeatCache()
+            task.target.recalculateMaxBugHeat()
 
     def updateHeat(self):
         """See `IBug`."""
