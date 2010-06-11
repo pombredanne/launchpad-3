@@ -446,8 +446,9 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     def initialize(self):
         self.notices = []
-        # Replace our context with a decorated branch, if it is not already decorated.
-        if self.context.__class__ != DecoratedBranch:
+        # Replace our context with a decorated branch, if it is not already
+        # decorated.
+        if not isinstance(self.context, DecoratedBranch):
             self.context = DecoratedBranch(self.context)
 
     def user_is_subscribed(self):
