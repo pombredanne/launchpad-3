@@ -91,3 +91,23 @@ class CodeImportAlreadyRunning(Exception):
     """Raised when the user requests an import that is already running."""
 
     webservice_error(400)
+
+
+class ForbiddenInstruction(Exception):
+    """A forbidden instruction was found in the recipe."""
+
+    def __init__(self, instruction_name):
+        super(ForbiddenInstruction, self).__init__()
+        self.instruction_name = instruction_name
+
+
+class TooNewRecipeFormat(Exception):
+    """The format of the recipe supplied was too new."""
+
+    def __init__(self, supplied_format, newest_supported):
+        super(TooNewRecipeFormat, self).__init__()
+        self.supplied_format = supplied_format
+        self.newest_supported = newest_supported
+
+
+

@@ -39,9 +39,9 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.errors import ForbiddenInstruction
 from lp.code.interfaces.sourcepackagerecipe import (
-    ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
-    MINIMAL_RECIPE_TEXT)
+    ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 from lp.soyuz.browser.archive import make_archive_vocabulary
@@ -343,9 +343,10 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         parser = RecipeParser(data['recipe_text'])
         recipe = parser.parse()
         try:
-            source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-                self.user, self.user, data['distros'],
-                data['name'], recipe, data['description'])
+            source_package_recipe = getUtility(
+                ISourcePackageRecipeSource).new(
+                    self.user, self.user, data['distros'],
+                    data['name'], recipe, data['description'])
         except ForbiddenInstruction:
             self.setFieldError(
                 'recipe_text',
@@ -405,7 +406,8 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
             except ForbiddenInstruction:
                 self.setFieldError(
                     'recipe_text',
-                    'The bzr-builder instruction "run" is not permitted here.')
+                    'The bzr-builder instruction "run" is not permitted here.'
+                    )
                 return
 
 

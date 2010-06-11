@@ -269,14 +269,10 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             name='ratatouille', displayname='Ratatouille')
         veggie_branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
-        meat_branch = self.factory.makeBranch(
-            owner=self.chef, product=product, name='meat')
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
             name=u'things', description=u'This is a recipe',
             distroseries=self.squirrel, branches=[veggie_branch])
-
-        meat_path = meat_branch.bzr_identity
 
         browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
         browser.getLink('Edit recipe').click()
@@ -301,10 +297,6 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
             name=u'things', description=u'This is a recipe',
-            distroseries=self.squirrel, branches=[veggie_branch])
-        recipe_fings = self.factory.makeSourcePackageRecipe(
-            owner=self.chef, registrant=self.chef,
-            name=u'fings', description=u'This is a recipe',
             distroseries=self.squirrel, branches=[veggie_branch])
 
         meat_path = meat_branch.bzr_identity
