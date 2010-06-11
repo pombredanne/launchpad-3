@@ -876,6 +876,7 @@ virtual host.
     official_bug_tags: []
     owner_link: u'http://.../~babadoo-owner'
     project_link: u'http://.../babadoo'
+    release_file_glob: None
     releases_collection_link: u'http://.../babadoo/foobadoo/releases'
     resource_type_link: u'...'
     self_link: u'http://.../babadoo/foobadoo'
