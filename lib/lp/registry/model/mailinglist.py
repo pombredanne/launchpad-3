@@ -467,15 +467,13 @@ class MailingList(SQLBase):
         # are allowed to post to the mailing list.
         tables = (
             Person,
-            LeftJoin(Account, Account.id == Person.accountID),
-            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.personID == Person.id),
-            LeftJoin(MailingList,
-                     MailingList.teamID == TeamParticipation.teamID),
+            Join(Account, Account.id == Person.accountID),
+            Join(EmailAddress, EmailAddress.personID == Person.id),
+            Join(TeamParticipation, TeamParticipation.personID == Person.id),
+            Join(MailingList, MailingList.teamID == TeamParticipation.teamID),
             )
         team_members = store.using(*tables).find(
-            (EmailAddress, Person),
+            EmailAddress,
             And(TeamParticipation.team == self.team,
                 MailingList.status != MailingListStatus.INACTIVE,
                 Person.teamowner == None,
@@ -489,13 +487,12 @@ class MailingList(SQLBase):
         # global approvals.
         tables = (
             Person,
-            LeftJoin(Account, Account.id == Person.accountID),
-            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
-            LeftJoin(MessageApproval,
-                     MessageApproval.posted_byID == Person.id),
+            Join(Account, Account.id == Person.accountID),
+            Join(EmailAddress, EmailAddress.personID == Person.id),
+            Join(MessageApproval, MessageApproval.posted_byID == Person.id),
             )
         approved_posters = store.using(*tables).find(
-            (EmailAddress, Person),
+            EmailAddress,
             And(MessageApproval.mailing_list == self,
                 MessageApproval.status.is_in(MESSAGE_APPROVAL_STATUSES),
                 EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
@@ -509,8 +506,7 @@ class MailingList(SQLBase):
         # email_address.person.displayname, so the prejoin to Person is
         # critical to acceptable performance.  Indeed, without the prejoin, we
         # were getting tons of timeout OOPSes.  See bug 259440.
-        for email_address, person in team_members.union(approved_posters):
-            yield email_address
+        return team_members.union(approved_posters)
 
     def holdMessage(self, message):
         """See `IMailingList`."""
