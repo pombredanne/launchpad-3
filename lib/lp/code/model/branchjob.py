@@ -46,6 +46,7 @@ from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp import canonical_url, errorlog
+from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
@@ -363,7 +364,12 @@ class BranchUpgradeJob(BranchJobDerived):
             upgrade_transport.clone('.bzr').copy_tree_to_transport(
                 source_branch_transport.clone('.bzr'))
 
-            self.branch.requestMirror()
+            self.branch.branchChanged(
+                self.branch.stacked_on,
+                self.branch.last_scanned_id,
+                ControlFormat.BZR_METADIR_1,
+                BranchFormat.BZR_BRANCH_7,
+                RepositoryFormat.BZR_CHK_2A)
         finally:
             shutil.rmtree(upgrade_branch_path)
 
