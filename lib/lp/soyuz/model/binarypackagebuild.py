@@ -483,13 +483,14 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             clauseTables=['PackageBuild', 'BuildFarmJob', 'SourcePackageName',
                           'SourcePackageRelease'])
 
+        estimated_duration = None
         if completed_builds.count() > 0:
-            # Historic build data exists, use the most recent value.
+            # Historic build data exists, use the most recent value -
+            # assuming it has valid data.
             most_recent_build = completed_builds[0]
-            date_finished = most_recent_build.date_finished
-            date_started = most_recent_build.date_started
-            estimated_duration = date_finished - date_started
-        else:
+            estimated_duration = most_recent_build.duration
+
+        if estimated_duration is None:
             # Estimate the build duration based on package size if no
             # historic build data exists.
 

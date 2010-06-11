@@ -1789,7 +1789,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
                                      sourcename=None, distroseries=None,
-                                     pocket=None,
+                                     pocket=None, date_created=None,
                                      status=BuildStatus.NEEDSBUILD):
         """Make a new SourcePackageRecipeBuild."""
         if recipe is None:
@@ -1806,7 +1806,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             recipe=recipe,
             archive=archive,
             requester=requester,
-            pocket=pocket)
+            pocket=pocket,
+            date_created=date_created)
         removeSecurityProxy(spr_build).buildstate = status
         return spr_build
 
