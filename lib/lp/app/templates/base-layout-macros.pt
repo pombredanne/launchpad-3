@@ -227,6 +227,20 @@
             tal:attributes="src string:${lp_js}/translations/languages.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/bugs/filebug_dupefinder.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/bugs/official_bug_tags.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/bugs/subscriber.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
+    </script>
 
   </tal:devmode>
   <tal:production condition="not:devmode">
