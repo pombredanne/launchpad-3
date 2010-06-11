@@ -266,7 +266,6 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
 
         self.assertFalse(db_branch.needs_upgrading)
 
-
     def test_needs_no_upgrading(self):
         # Branch upgrade job creation should raise an AssertionError if the
         # branch does not need to be upgraded.
