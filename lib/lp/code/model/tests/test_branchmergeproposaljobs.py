@@ -123,7 +123,6 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
     def test_getOopsMailController(self):
         """The registrant is notified about merge proposal creation issues."""
         bmp = self.factory.makeBranchMergeProposal()
-        bmp.source_branch.requestMirror()
         job = MergeProposalCreatedJob.create(bmp)
         ctrl = job.getOopsMailController('1234')
         self.assertEqual([bmp.registrant.preferredemail.email], ctrl.to_addrs)
