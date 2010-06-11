@@ -108,6 +108,3 @@ class TooNewRecipeFormat(Exception):
         super(TooNewRecipeFormat, self).__init__()
         self.supplied_format = supplied_format
         self.newest_supported = newest_supported
-
-
-

@@ -347,7 +347,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
                 ISourcePackageRecipeSource).new(
                     self.user, self.user, data['distros'],
                     data['name'], recipe, data['description'])
-        except ForbiddenInstruction:
+        except ForbiddenInstruction, e:
+            # XXX: bug=592513 We shouldn't be hardcoding "run" here.
             self.setFieldError(
                 'recipe_text',
                 'The bzr-builder instruction "run" is not permitted here.')
@@ -404,6 +405,7 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
                 self.context.builder_recipe = recipe
                 changed = True
             except ForbiddenInstruction:
+                # XXX: bug=592513 We shouldn't be hardcoding "run" here.
                 self.setFieldError(
                     'recipe_text',
                     'The bzr-builder instruction "run" is not permitted here.'
