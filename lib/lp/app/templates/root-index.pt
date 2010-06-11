@@ -103,7 +103,7 @@
                   href="https://help.launchpad.net/Code/Review">Code reviews</a>
               </li>
               <li>
-                <a class="sprite ubuntu-logo" 
+                <a class="sprite ubuntu-logo"
                   tal:attributes="href apphomes/ubuntu">Ubuntu package building and hosting</a>
               </li>
               <li>
