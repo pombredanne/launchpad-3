@@ -77,7 +77,7 @@ The product index view shows the latest release for the project.
 
     >>> view = create_initialized_view(product, name='+index')
     >>> print view.latest_release_with_download_files.version
-    3.3
+    4.3
 
 Obsolete series are ignored.
 
@@ -87,4 +87,4 @@ Obsolete series are ignored.
     >>> obsolete_series.status = SeriesStatus.OBSOLETE
     >>> view = create_initialized_view(product, name='+index')
     >>> print view.latest_release_with_download_files.version
-    None
+    3.3
