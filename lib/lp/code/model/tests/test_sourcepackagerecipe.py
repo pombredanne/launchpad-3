@@ -29,10 +29,10 @@ from lp.soyuz.interfaces.archive import (
     InvalidPocketForPPA)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.code.errors import ForbiddenInstruction, TooNewRecipeFormat
+from lp.code.errors import (
+    ForbiddenInstruction, TooManyBuilds, TooNewRecipeFormat)
 from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT,
-    TooManyBuilds)
+    ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
 from lp.code.model.sourcepackagerecipebuild import (

@@ -15,6 +15,7 @@ __all__ = [
     'ForbiddenInstruction',
     'InvalidBranchMergeProposal',
     'ReviewNotPending',
+    'TooManyBuilds',
     'TooNewRecipeFormat',
     'UnknownBranchTypeError',
     'UserHasExistingReview',
@@ -110,3 +111,15 @@ class TooNewRecipeFormat(Exception):
         super(TooNewRecipeFormat, self).__init__()
         self.supplied_format = supplied_format
         self.newest_supported = newest_supported
+
+
+class TooManyBuilds(Exception):
+    """A build was requested that exceeded the quota."""
+
+    def __init__(self, recipe, distroseries):
+        self.recipe = recipe
+        self.distroseries = distroseries
+        msg = (
+            'You have exceeded your quota for recipe %s for distroseries %s'
+            % (self.recipe, distroseries))
+        Exception.__init__(self, msg)

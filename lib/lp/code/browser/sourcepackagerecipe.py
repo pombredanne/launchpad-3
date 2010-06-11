@@ -358,7 +358,7 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
                 ISourcePackageRecipeSource).new(
                     self.user, self.user, data['distros'],
                     data['name'], recipe, data['description'])
-        except ForbiddenInstruction, e:
+        except ForbiddenInstruction:
             # XXX: bug=592513 We shouldn't be hardcoding "run" here.
             self.setFieldError(
                 'recipe_text',
