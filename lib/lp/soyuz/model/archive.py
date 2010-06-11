@@ -15,7 +15,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import Or, And, Select, Sum
+from storm.expr import Or, And, Select, Sum, In, Desc
 from storm.locals import Count, Join
 from storm.store import Store
 from storm.zope.interfaces import IResultSet
@@ -32,7 +32,10 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
@@ -40,6 +43,7 @@ from canonical.launchpad.components.tokens import (
 from lp.soyuz.model.archivedependency import ArchiveDependency
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
+from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount)
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -51,7 +55,6 @@ from lp.soyuz.model.files import (
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.publishedpackage import PublishedPackage
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
@@ -459,13 +462,14 @@ class Archive(SQLBase):
         has_published_binaries_clause = """
             EXISTS (SELECT TRUE FROM
                 BinaryPackagePublishingHistory bpph,
-                BinaryPackageRelease bpr, Build
+                BinaryPackageRelease bpr, BinaryPackageBuild
             WHERE
                 bpph.archive = %s AND
                 bpph.status = %s AND
                 bpph.binarypackagerelease = bpr.id AND
-                bpr.build = Build.id AND
-                Build.sourcepackagerelease = SourcePackageRelease.id)
+                bpr.build = BinaryPackageBuild.id AND
+                BinaryPackageBuild.source_package_release =
+                    SourcePackageRelease.id)
         """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED)
 
         source_deletable_states = (
@@ -798,15 +802,20 @@ class Archive(SQLBase):
             IResultSet(self.dependencies).values(
             ArchiveDependency.dependencyID))
 
-        query = """
-            binarypackagename = %s AND
-            distroarchseries = %s AND
-            archive IN %s AND
-            packagepublishingstatus = %s
-        """ % sqlvalues(name, distroarchseries, archives,
-                        PackagePublishingStatus.PUBLISHED)
-
-        return PublishedPackage.selectFirst(query, orderBy=['-id'])
+        store = ISlaveStore(BinaryPackagePublishingHistory)
+        candidate = store.find(
+            BinaryPackagePublishingHistory,
+            BinaryPackageName.name == name,
+            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                distroarchseries,
+            In(BinaryPackagePublishingHistory.archiveID, archives),
+            BinaryPackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED
+            ).order_by(Desc(BinaryPackagePublishingHistory.id))
+        return candidate.first()
 
     def getArchiveDependency(self, dependency):
         """See `IArchive`."""
@@ -883,18 +892,21 @@ class Archive(SQLBase):
         extra_exprs = []
         if not include_needsbuild:
             extra_exprs.append(
-                BinaryPackageBuild.buildstate != BuildStatus.NEEDSBUILD)
+                BuildFarmJob.status != BuildStatus.NEEDSBUILD)
 
         find_spec = (
-            BinaryPackageBuild.buildstate,
+            BuildFarmJob.status,
             Count(BinaryPackageBuild.id)
             )
-        result = store.using(BinaryPackageBuild).find(
+        result = store.using(
+            BinaryPackageBuild, PackageBuild, BuildFarmJob).find(
             find_spec,
-            BinaryPackageBuild.archive == self,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.archive == self,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
             *extra_exprs
-            ).group_by(BinaryPackageBuild.buildstate).order_by(
-                BinaryPackageBuild.buildstate)
+            ).group_by(BuildFarmJob.status).order_by(
+                BuildFarmJob.status)
 
         # Create a map for each count summary to a number of buildstates:
         count_map = {
@@ -987,9 +999,10 @@ class Archive(SQLBase):
         distroseries = sourcepackage.distroseries
         sourcepackagename = sourcepackage.sourcepackagename
         component = sourcepackage.latest_published_component
-        # strict_component is True because the source package already exists
-        # (otherwise we couldn't have a suitesourcepackage object) and
-        # nascentupload passes True as a matter of policy when the package exists.
+        # strict_component is True because the source package already
+        # exists (otherwise we couldn't have a suitesourcepackage
+        # object) and nascentupload passes True as a matter of policy
+        # when the package exists.
         reason = self.checkUpload(
             person, distroseries, sourcepackagename, component, pocket,
             strict_component=True)
@@ -1013,7 +1026,21 @@ class Archive(SQLBase):
             if not distroseries.canUploadToPocket(pocket):
                 return CannotUploadToPocket(distroseries, pocket)
 
-    def checkUpload(self, person, distroseries, sourcepackagename, component, 
+    def _checkUpload(self, person, distroseries, sourcepackagename, component,
+                    pocket, strict_component=True):
+        """See `IArchive`."""
+        if isinstance(component, basestring):
+            component = getUtility(IComponentSet)[component]
+        if isinstance(sourcepackagename, basestring):
+            sourcepackagename = getUtility(
+                ISourcePackageNameSet)[sourcepackagename]
+        reason = self.checkUpload(person, distroseries, sourcepackagename, 
+            component, pocket, strict_component)
+        if reason is not None:
+            raise reason
+        return True
+
+    def checkUpload(self, person, distroseries, sourcepackagename, component,
                     pocket, strict_component=True):
         """See `IArchive`."""
         reason = self.checkUploadToPocket(distroseries, pocket)
@@ -1235,7 +1262,7 @@ class Archive(SQLBase):
             BinaryPackageRelease.binarypackagename == name,
             BinaryPackageRelease.version == version,
             BinaryPackageBuild.id == BinaryPackageRelease.buildID,
-            DistroArchSeries.id == BinaryPackageBuild.distroarchseriesID,
+            DistroArchSeries.id == BinaryPackageBuild.distro_arch_series_id,
             DistroArchSeries.architecturetag == archtag,
             BinaryPackagePublishingHistory.archive == self,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
@@ -1432,13 +1459,17 @@ class Archive(SQLBase):
 
         extra_exprs = []
         if build_status is not None:
-            extra_exprs.append(BinaryPackageBuild.buildstate == build_status)
+            extra_exprs = [
+                PackageBuild.build_farm_job == BuildFarmJob.id,
+                BuildFarmJob.status == build_status,
+                ]
 
         result_set = store.find(
             SourcePackageRelease,
-            (BinaryPackageBuild.sourcepackagereleaseID ==
+            (BinaryPackageBuild.source_package_release_id ==
                 SourcePackageRelease.id),
-            BinaryPackageBuild.archive == self,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.archive == self,
             *extra_exprs)
 
         result_set.config(distinct=True).order_by(SourcePackageRelease.id)
@@ -1478,15 +1509,18 @@ class Archive(SQLBase):
 
         query = """
             UPDATE Job SET status = %s
-            FROM Build, BuildPackageJob, BuildQueue
+            FROM BinaryPackageBuild, PackageBuild, BuildFarmJob,
+                 BuildPackageJob, BuildQueue
             WHERE
+                BinaryPackageBuild.package_build = PackageBuild.id
                 -- insert self.id here
-                Build.archive = %s
-                AND BuildPackageJob.build = Build.id
+                AND PackageBuild.archive = %s
+                AND BuildPackageJob.build = BinaryPackageBuild.id
                 AND BuildPackageJob.job = BuildQueue.job
                 AND Job.id = BuildQueue.job
                 -- Build is in state BuildStatus.NEEDSBUILD (0)
-                AND Build.buildstate = %s;
+                AND PackageBuild.build_farm_job = BuildFarmJob.id
+                AND BuildFarmJob.status = %s;
         """ % sqlvalues(status, self, BuildStatus.NEEDSBUILD)
 
         store = Store.of(self)
@@ -1824,9 +1858,14 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         cur = cursor()
         query = """
-            SELECT buildstate, count(id) FROM Build
-            WHERE archive = %s AND distroarchseries = %s
-            GROUP BY buildstate ORDER BY buildstate;
+            SELECT BuildFarmJob.status, count(BuildFarmJob.id) FROM
+            BinaryPackageBuild, PackageBuild, BuildFarmJob
+            WHERE
+                BinaryPackageBuild.package_build = PackageBuild.id AND
+                PackageBuild.build_farm_job = BuildFarmJob.id AND
+                PackageBuild.archive = %s AND
+                BinaryPackageBuild.distro_arch_series = %s
+            GROUP BY BuildFarmJob.status ORDER BY BuildFarmJob.status;
         """ % sqlvalues(archive, distroarchseries)
         cur.execute(query)
         result = cur.fetchall()

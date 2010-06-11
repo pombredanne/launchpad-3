@@ -33,7 +33,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
     def logStartBuild(self, logger):
         """See `IBuildFarmJobBehavior`."""
-        spr = self.build.sourcepackagerelease
+        spr = self.build.source_package_release
         logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
                     spr.name, spr.version, self.build.pocket.title)
 
@@ -42,7 +42,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
         # Start the binary package build on the slave builder. First
         # we send the chroot.
-        chroot = self.build.distroarchseries.getChroot()
+        chroot = self.build.distro_arch_series.getChroot()
         self._builder.slave.cacheFile(logger, chroot)
 
         # Build filemap structure with the files required in this build
@@ -54,7 +54,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         if private:
             self._cachePrivateSourceOnSlave(logger)
         filemap = {}
-        for source_file in self.build.sourcepackagerelease.files:
+        for source_file in self.build.source_package_release.files:
             lfa = source_file.libraryfile
             filemap[lfa.filename] = lfa.content.sha1
             if not private:
@@ -112,23 +112,24 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             "Soyuz is not yet capable of building SECURITY uploads.")
 
         # Ensure build has the needed chroot
-        chroot = build.distroarchseries.getChroot()
+        chroot = build.distro_arch_series.getChroot()
         if chroot is None:
             raise CannotBuild(
                 "Missing CHROOT for %s/%s/%s" % (
-                    build.distroseries.distribution.name,
-                    build.distroseries.name,
-                    build.distroarchseries.architecturetag))
+                    build.distro_series.distribution.name,
+                    build.distro_series.name,
+                    build.distro_arch_series.architecturetag))
 
-        # This should already have been checked earlier, but just check again 
+        # This should already have been checked earlier, but just check again
         # here in case of programmer errors.
-        reason = build.archive.checkUploadToPocket(build.distroseries,
+        reason = build.archive.checkUploadToPocket(
+            build.distro_series,
             build.pocket)
         assert reason is None, (
                 "%s (%s) can not be built for pocket %s: invalid pocket due "
                 "to the series status of %s." %
                     (build.title, build.id, build.pocket.name,
-                     build.distroseries.name))
+                     build.distro_series.name))
 
     def updateSlaveStatus(self, raw_slave_status, status):
         """Parse the binary build specific status info into the status dict.
@@ -162,10 +163,10 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         archive = self.build.archive
         archive_url = archive.archive_url
         component_name = self.build.current_component.name
-        for source_file in self.build.sourcepackagerelease.files:
+        for source_file in self.build.source_package_release.files:
             file_name = source_file.libraryfile.filename
             sha1 = source_file.libraryfile.content.sha1
-            spn = self.build.sourcepackagerelease.sourcepackagename
+            spn = self.build.source_package_release.sourcepackagename
             poolpath = makePoolPath(spn.name, component_name)
             url = urlappend(archive_url, poolpath)
             url = urlappend(url, file_name)
@@ -184,9 +185,9 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         # turn 'arch_indep' ON only if build is archindep or if
         # the specific architecture is the nominatedarchindep for
         # this distroseries (in case it requires any archindep source)
-        args['arch_indep'] = build.distroarchseries.isNominatedArchIndep
+        args['arch_indep'] = build.distro_arch_series.isNominatedArchIndep
 
-        suite = build.distroarchseries.distroseries.name
+        suite = build.distro_arch_series.distroseries.name
         if build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (build.pocket.name.lower())
         args['suite'] = suite
@@ -200,15 +201,15 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             # the built packages.
             args['archive_purpose'] = ArchivePurpose.PRIMARY.name
             args["ogrecomponent"] = (
-                get_primary_current_component(build.archive, 
-                    build.distroseries, build.sourcepackagerelease.name))
+                get_primary_current_component(build.archive,
+                    build.distro_series, build.source_package_release.name))
         else:
             args['archive_purpose'] = archive_purpose.name
             args["ogrecomponent"] = (
                 build.current_component.name)
 
-        args['archives'] = get_sources_list_for_building(build, 
-            build.distroarchseries, build.sourcepackagerelease.name)
+        args['archives'] = get_sources_list_for_building(build,
+            build.distro_arch_series, build.source_package_release.name)
 
         # Let the build slave know whether this is a build in a private
         # archive.

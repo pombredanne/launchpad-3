@@ -41,15 +41,19 @@
               >View subscribers</a>
     </div>
     <div tal:condition="not: view/archive_url">
-      This team does not have a mailing list.
+      This team does not use Launchpad to host a mailing list.
     </div>
-    <div tal:condition="context/menu:overview/configure_mailing_list/enabled">
-      <tal:configure_mailing_list
-        replace="structure context/menu:overview/configure_mailing_list/fmt:link-icon" />
-      &nbsp;
-      <tal:moderate_mailing_list
-        replace="structure context/menu:overview/moderate_mailing_list/fmt:link-icon" />
-    </div>
+    <ul class="horizontal"
+      tal:condition="context/menu:overview/configure_mailing_list/enabled">
+      <li>
+        <tal:configure_mailing_list
+          replace="structure context/menu:overview/configure_mailing_list/fmt:link-icon" />
+      </li>
+      <li>
+        <tal:moderate_mailing_list
+          replace="structure context/menu:overview/moderate_mailing_list/fmt:link-icon" />
+      </li>
+    </ul>
   </div>
 </div>
 </tal:root>

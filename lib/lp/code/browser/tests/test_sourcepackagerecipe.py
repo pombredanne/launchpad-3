@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from textwrap import dedent
 
 from pytz import utc
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
@@ -20,11 +21,13 @@ from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
-    SourcePackageRecipeView, SourcePackageRecipeBuildView
+    SourcePackageRecipeView, SourcePackageRecipeRequestBuildsView,
+    SourcePackageRecipeBuildView
 )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.testing import ANONYMOUS, BrowserTestCase, login
+from lp.testing import ANONYMOUS, BrowserTestCase, login, logout
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -65,20 +68,34 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     layer = DatabaseFunctionalLayer
 
+    def test_create_new_recipe_not_logged_in(self):
+        from canonical.launchpad.testing.pages import setupBrowser
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        branch_url = canonical_url(branch)
+        logout()
+
+        browser = setupBrowser()
+        browser.open(branch_url)
+
+        self.assertRaises(
+            Unauthorized, browser.getLink('Create packaging recipe').click)
+
     def test_create_new_recipe(self):
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
-        self.factory.makeSourcePackage(sourcepackagename='ratatouille')
+        self.factory.makeSourcePackage()
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
-        browser.getLink('Create source package recipe').click()
+        browser.getLink('Create packaging recipe').click()
 
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Source Package Name').value = 'ratatouille'
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Create Recipe').click()
 
@@ -103,9 +120,54 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
 
+    def test_create_new_recipe_empty_name(self):
+        # Leave off the name and make sure that the widgets validate before
+        # the content validates.
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        self.factory.makeSourcePackage()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create Recipe').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'Required input is missing.')
+
     def test_create_recipe_bad_text(self):
         # If a user tries to create source package recipe with bad text, they
         # should get an error.
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        self.factory.makeSourcePackage()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl(name='field.name').value = 'daily'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Recipe text').value = 'Foo bar baz'
+        browser.getControl('Create Recipe').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'The recipe text is not a valid bzr-builder recipe.')
+
+    def test_create_dupe_recipe(self):
+        # You shouldn't be able to create a duplicate recipe owned by the same
+        # person with the same name.
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
@@ -114,17 +176,16 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
-        browser.getLink('Create source package recipe').click()
+        browser.getLink('Create packaging recipe').click()
 
-        browser.getControl(name='field.name').value = 'daily'
+        browser.getControl(name='field.name').value = recipe.name
         browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Source Package Name').value = 'ratatouille'
-        browser.getControl('Recipe text').value = 'Foo bar baz'
+        browser.getControl('Secret Squirrel').click()
         browser.getControl('Create Recipe').click()
 
         self.assertEqual(
             extract_text(find_tags_by_class(browser.contents, 'message')[1]),
-            'The recipe text is not a valid bzr-builder recipe.')
+            'There is already a recipe owned by Master Chef with this name.')
 
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):
@@ -142,13 +203,8 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             owner=self.chef, product=product, name='veggies')
         meat_branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='meat')
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename='ratatouille')
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename='sloppyjoe')
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
-            sourcepackagename=source_package.sourcepackagename,
             name=u'things', description=u'This is a recipe',
             distroseries=self.squirrel, branches=[veggie_branch])
 
@@ -158,7 +214,6 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         browser.getLink('Edit recipe').click()
         browser.getControl(name='field.name').value = 'fings'
         browser.getControl('Description').value = 'This is stuff'
-        browser.getControl('Source Package Name').value = 'ratatouille'
         browser.getControl('Recipe text').value = (
             MINIMAL_RECIPE_TEXT % meat_path)
         browser.getControl('Secret Squirrel').click()
@@ -185,6 +240,89 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
+
+    def test_edit_recipe_already_exists(self):
+        self.factory.makeDistroSeries(
+            displayname='Mumbly Midget', name='mumbly',
+            distribution=self.ppa.distribution)
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        veggie_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        meat_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='meat')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            name=u'things', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch])
+        recipe_fings = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            name=u'fings', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch])
+
+        meat_path = meat_branch.bzr_identity
+
+        browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
+        browser.getLink('Edit recipe').click()
+        browser.getControl(name='field.name').value = 'fings'
+        browser.getControl('Description').value = 'This is stuff'
+        browser.getControl('Recipe text').value = (
+            MINIMAL_RECIPE_TEXT % meat_path)
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Mumbly Midget').click()
+        browser.getControl('Update Recipe').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'There is already a recipe owned by Master Chef with this name.')
+
+    def test_edit_recipe_but_not_name(self):
+        self.factory.makeDistroSeries(
+            displayname='Mumbly Midget', name='mumbly',
+            distribution=self.ppa.distribution)
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        veggie_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        meat_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='meat')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            name=u'things', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch])
+
+        meat_path = meat_branch.bzr_identity
+
+        browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
+        browser.getLink('Edit recipe').click()
+        browser.getControl('Description').value = 'This is stuff'
+        browser.getControl('Recipe text').value = (
+            MINIMAL_RECIPE_TEXT % meat_path)
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Mumbly Midget').click()
+        browser.getControl('Update Recipe').click()
+
+        pattern = """\
+            Master Chef's things recipe
+            .*
+
+            Description
+            This is stuff
+
+            Recipe information
+            Owner: Master Chef
+            Base branch: lp://dev/~chef/ratatouille/meat
+            Debian version: 1.0
+            Distribution series: Mumbly Midget
+            .*
+
+            Recipe contents
+            # bzr-builder format 0.2 deb-version 1.0
+            lp://dev/~chef/ratatouille/meat"""
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
+
 
 
 class TestSourcePackageRecipeView(TestCaseForRecipe):
@@ -329,6 +467,35 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
 
+    def test_request_builds_archive(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        ppa2 = self.factory.makeArchive(
+            displayname='Secret PPA', owner=self.chef, name='ppa2')
+        view = SourcePackageRecipeRequestBuildsView(recipe, None)
+        self.assertIs(None, view.initial_values.get('archive'))
+        self.factory.makeSourcePackageRecipeBuild(recipe=recipe, archive=ppa2)
+        self.assertEqual(ppa2, view.initial_values.get('archive'))
+
+    def test_request_build_rejects_over_quota(self):
+        """Over-quota build requests cause validation failures."""
+        woody = self.factory.makeDistroSeries(
+            name='woody', displayname='Woody',
+            distribution=self.ppa.distribution)
+        woody.nominatedarchindep = woody.newArch(
+            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
+            supports_virtualized=True)
+
+        recipe = self.makeRecipe()
+        [recipe.requestBuild(
+            self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
+            for x in range(5)]
+
+        browser = self.getViewBrowser(recipe, '+request-builds')
+        browser.getControl('Woody').click()
+        browser.getControl('Request builds').click()
+        self.assertIn("You have exceeded today's quota for ubuntu woody.",
+                extract_text(find_main_content(browser.contents)))
+
 
 class TestSourcePackageRecipeBuildView(BrowserTestCase):
     """Test behaviour of SourcePackageReciptBuildView."""
@@ -346,7 +513,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         archive = self.factory.makeArchive(name='build',
             owner=self.user)
         recipe = self.factory.makeSourcePackageRecipe(
-            owner=self.user, name=u'my-recipe', sourcepackagename='mypackage')
+            owner=self.user, name=u'my-recipe')
         distro_series = self.factory.makeDistroSeries(
             name='squirrel', distribution=archive.distribution)
         build = self.factory.makeSourcePackageRecipeBuild(
@@ -404,7 +571,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Test the basic index page."""
         main_text = self.getMainText(self.makeBuild(), '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Branches
+            Code
             my-recipe
             Build status
             Needs building
@@ -433,7 +600,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Branches
+            Code
             my-recipe
             Build status
             Successfully built
@@ -447,9 +614,9 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             Archive:       PPA named build for Owner
             Series:        Squirrel
             Pocket:        Release
-            Result:        mypackage in ubuntu 3.14
+            Result:        .* in ubuntu 3.14
             Binary builds:
-            itanic build of mypackage 3.14 in ubuntu squirrel RELEASE""",
+            itanic build of .* 3.14 in ubuntu squirrel RELEASE""",
             main_text)
 
     def makeBuildAndRelease(self):
@@ -464,7 +631,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Result: mypackage in ubuntu 3.14""", main_text)
+            Result: .* in ubuntu 3.14""", main_text)
 
     def makeBinaryBuild(self, release, architecturetag):
         """Make a binary build with specified release and architecturetag."""
@@ -484,8 +651,8 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Binary builds:
-            itanic build of mypackage 3.14 in ubuntu squirrel RELEASE
-            x87-64 build of mypackage 3.14 in ubuntu squirrel RELEASE$""",
+            itanic build of .* 3.14 in ubuntu squirrel RELEASE
+            x87-64 build of .* 3.14 in ubuntu squirrel RELEASE$""",
             main_text)
 
     def test_logtail(self):

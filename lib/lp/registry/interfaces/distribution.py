@@ -41,12 +41,13 @@ from lp.app.interfaces.headings import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasSecurityContact, ILaunchpadUsage)
+    IHasAppointedDriver, IHasDrivers, ILaunchpadUsage)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
@@ -294,6 +295,18 @@ class IDistributionPublic(
 
     def __iter__():
         """Iterate over the series for this distribution."""
+
+    @operation_parameters(
+        name=TextLine(title=_("Archive name"), required=True))
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    def getArchive(name):
+        """Return the distribution archive with the given name.
+
+        Only distribution archives are considered -- PPAs will not be found.
+
+        :param name: The name of the archive, e.g. 'partner'
+        """
 
     # Really IDistroSeries, see _schema_circular_imports.py.
     @operation_returns_collection_of(Interface)

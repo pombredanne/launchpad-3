@@ -2,7 +2,8 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   class="portlet" id="portlet-latest-questions"
   tal:define="questions view/getLatestQuestions"
-  tal:condition="questions">
+  tal:condition="questions"
+  tal:content="cache:public, 1 hour">
   <h2>
     <span class="see-all"><a
       tal:attributes="href context/fmt:url:answers">All questions</a></span>

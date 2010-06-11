@@ -56,6 +56,7 @@ from canonical.launchpad.ftests._sqlobject import syncUpdate
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.uuid import generate_uuid
 
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
@@ -126,13 +127,13 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.archive import (
     default_name_by_purpose, IArchiveSet, ArchivePurpose)
 from lp.soyuz.adapters.packagelocation import PackageLocation
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.processor import ProcessorFamily, ProcessorFamilySet
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 from lp.testing import run_with_login, time_counter, login, logout
@@ -244,7 +245,7 @@ class ObjectFactory:
         """
         if prefix is None:
             prefix = "generic-string"
-        string = "%s%s" % (prefix, self.getUniqueInteger())
+        string = "%s%s" % (prefix, generate_uuid())
         return string.replace('_', '-').lower()
 
     def getUniqueUnicode(self):
@@ -538,7 +539,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         team = getUtility(IPersonSet).newTeam(
             owner, name, displayname, subscriptionpolicy=subscription_policy)
         if visibility is not None:
-            team.visibility = visibility
+            # Visibility is normally restricted to launchpad.Commercial, so
+            # removing the security proxy as we don't care here.
+            removeSecurityProxy(team).visibility = visibility
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
@@ -985,7 +988,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return proposal
 
-    def makeBranchSubscription(self, branch=None, person=None):
+    def makeBranchSubscription(self, branch=None, person=None,
+                               subscribed_by=None):
         """Create a BranchSubscription.
 
         :param branch_title: The title to use for the created Branch
@@ -995,9 +999,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch = self.makeBranch()
         if person is None:
             person = self.makePerson()
+        if subscribed_by is None:
+            subscribed_by = person
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
     def makeDiff(self, diff_text=DIFF):
         return Diff.fromFile(StringIO(diff_text), len(diff_text))
@@ -1757,8 +1763,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return parser.parse()
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
-                                distroseries=None, sourcepackagename=None,
-                                name=None, description=None, branches=()):
+                                distroseries=None, name=None, description=None,
+                                branches=()):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -1770,44 +1776,40 @@ class LaunchpadObjectFactory(ObjectFactory):
                 'i386', ProcessorFamily.get(1), False, owner,
                 supports_virtualized=True)
 
-        # Make sure we have a real sourcepackagename object.
-        if (sourcepackagename is None or
-            isinstance(sourcepackagename, basestring)):
-            sourcepackagename = self.getOrMakeSourcePackageName(
-                sourcepackagename)
         if name is None:
             name = self.getUniqueString().decode('utf8')
         if description is None:
             description = self.getUniqueString().decode('utf8')
         recipe = self.makeRecipe(*branches)
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            registrant, owner, [distroseries], sourcepackagename, name,
-            recipe, description)
+            registrant, owner, [distroseries], name, recipe, description)
         IStore(source_package_recipe).flush()
         return source_package_recipe
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
-                                     sourcename=None, distroseries=None):
+                                     sourcename=None, distroseries=None,
+                                     pocket=None, date_created=None,
+                                     status=BuildStatus.NEEDSBUILD):
         """Make a new SourcePackageRecipeBuild."""
         if recipe is None:
-            recipe = self.makeSourcePackageRecipe(
-                sourcepackagename=self.makeSourcePackageName(sourcename))
+            recipe = self.makeSourcePackageRecipe(name=sourcename)
         if archive is None:
             archive = self.makeArchive()
         if distroseries is None:
             distroseries = self.makeDistroSeries(
                 distribution=archive.distribution)
-        if sourcepackage is None:
-            sourcepackage = distroseries.getSourcePackage(
-                recipe.sourcepackagename)
         if requester is None:
             requester = self.makePerson()
-        return getUtility(ISourcePackageRecipeBuildSource).new(
-            sourcepackage=sourcepackage,
+        spr_build = getUtility(ISourcePackageRecipeBuildSource).new(
+            distroseries=distroseries,
             recipe=recipe,
             archive=archive,
-            requester=requester)
+            requester=requester,
+            pocket=pocket,
+            date_created=date_created)
+        removeSecurityProxy(spr_build).buildstate = status
+        return spr_build
 
     def makeSourcePackageRecipeBuildJob(
         self, score=9876, virtualized=True, estimated_duration=64,
@@ -2113,11 +2115,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 purpose=ArchivePurpose.PRIMARY)
 
         if sourcepackagename is None:
-            if source_package_recipe_build is not None:
-                sourcepackagename = (
-                    source_package_recipe_build.sourcepackagename)
-            else:
-                sourcepackagename = self.makeSourcePackageName()
+            sourcepackagename = self.makeSourcePackageName()
 
         if component is None:
             component = self.makeComponent()
@@ -2188,13 +2186,14 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=source_package_release.upload_distroseries,
                 processorfamily=processor.family)
-        binary_package_build = BinaryPackageBuild(
-            sourcepackagerelease=source_package_release,
+        binary_package_build = getUtility(IBinaryPackageBuildSet).new(
+            source_package_release=source_package_release,
             processor=processor,
-            distroarchseries=distroarchseries,
-            buildstate=BuildStatus.NEEDSBUILD,
+            distro_arch_series=distroarchseries,
+            status=BuildStatus.NEEDSBUILD,
             archive=archive,
-            datecreated=self.getUniqueDate())
+            pocket=PackagePublishingPocket.RELEASE,
+            date_created=self.getUniqueDate())
         binary_package_build_job = binary_package_build.makeJob()
         BuildQueue(
             job=binary_package_build_job.job,

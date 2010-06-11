@@ -1258,6 +1258,11 @@
         path_expression="string:+milestone/${name}"
         rootsite="mainsite"
         attribute_to_parent="target"/>
+    <browser:page
+        for="*"
+        name="+milestone-macros"
+        permission="zope.Public"
+        template="../templates/milestone-macros.pt"/>
     <browser:pages
         for="lp.registry.interfaces.milestone.IMilestone"
         class="lp.registry.browser.milestone.MilestoneView"
@@ -1482,13 +1487,6 @@
         for="lp.registry.interfaces.product.IProduct"
         facet="overview"
         permission="launchpad.Edit"
-        name="+configure-bugtracker"
-        template="../../app/templates/generic-edit.pt"
-        class="lp.registry.browser.product.ProductConfigureBugTrackerView"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        facet="overview"
-        permission="launchpad.Edit"
         name="+configure-translations"
         template="../../app/templates/generic-edit.pt"
         class="lp.registry.browser.product.ProductConfigureTranslationsView"/>
@@ -1578,13 +1576,6 @@
             ProductSpecificationsMenu
             "
         module="lp.registry.browser.product"/>
-    <browser:page
-        name="+securitycontact"
-        for="canonical.launchpad.interfaces.IHasSecurityContact"
-        class="lp.registry.browser.securitycontact.SecurityContactEditView"
-        facet="bugs"
-        permission="launchpad.Edit"
-        template="../templates/securitycontact-edit.pt"/>
     <browser:navigation
         module="lp.registry.browser.productseries"
         classes="

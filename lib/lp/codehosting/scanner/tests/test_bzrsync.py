@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -85,7 +85,7 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         LaunchpadZopelessLayer.txn.begin()
         new_branch = self.factory.makeAnyBranch(*args, **kwargs)
         # Unsubscribe the implicit owner subscription.
-        new_branch.unsubscribe(new_branch.owner)
+        new_branch.unsubscribe(new_branch.owner, new_branch.owner)
         LaunchpadZopelessLayer.txn.commit()
         return new_branch
 

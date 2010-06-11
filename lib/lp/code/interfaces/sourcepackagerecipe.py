@@ -15,6 +15,7 @@ __all__ = [
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
     'MINIMAL_RECIPE_TEXT',
+    'TooManyBuilds',
     'TooNewRecipeFormat',
     ]
 
@@ -26,7 +27,7 @@ from lazr.restful.declarations import (
     operation_parameters, REQUEST_USER)
 from lazr.restful.fields import CollectionField, Reference
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Datetime, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -39,7 +40,6 @@ from lp.soyuz.interfaces.archive import IArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
@@ -53,6 +53,18 @@ class ForbiddenInstruction(Exception):
     def __init__(self, instruction_name):
         super(ForbiddenInstruction, self).__init__()
         self.instruction_name = instruction_name
+
+
+class TooManyBuilds(Exception):
+    """A build was requested that exceeded the quota."""
+
+    def __init__(self, recipe, distroseries):
+        self.recipe = recipe
+        self.distroseries = distroseries
+        msg = (
+            'You have exceeded your quota for recipe %s for distroseries %s'
+            % (self.recipe, distroseries))
+        Exception.__init__(self, msg)
 
 
 class TooNewRecipeFormat(Exception):
@@ -88,6 +100,8 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     """
     export_as_webservice_entry()
 
+    id = Int()
+
     daily_build_archive = Reference(
         IArchive, title=_("The archive to use for daily builds."))
 
@@ -113,13 +127,6 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         readonly=False)
     build_daily = Bool(
         title=_("If true, the recipe should be built daily."))
-    sourcepackagename = Reference(
-        ISourcePackageName, title=_("The name of the source package this "
-                                    "recipe will build a source package"),
-        readonly=True)
-
-    _sourcepackagename_text = exported(
-        TextLine(), exported_as='sourcepackagename')
 
     name = exported(TextLine(
             title=_("Name"), required=True,
@@ -143,6 +150,13 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         """Set the text of the recipe."""
 
     recipe_text = exported(Text())
+
+    def isOverQuota(requester, distroseries):
+        """True if the recipe/requester/distroseries combo is >= quota.
+
+        :param requester: The Person requesting a build.
+        :param distroseries: The distroseries to build for.
+        """
 
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
@@ -168,6 +182,9 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
             False, select all builds that are not pending.
         """
 
+    def getLastBuild(self):
+        """Return the the most recent build of this recipe."""
+
     def destroySelf():
         """Remove this SourcePackageRecipe from the database.
 
@@ -180,6 +197,9 @@ class ISourcePackageRecipeSource(Interface):
     """A utility of this interface can be used to create and access recipes.
     """
 
-    def new(registrant, owner, distroseries, sourcepackagename, name,
+    def new(registrant, owner, distroseries, name,
             builder_recipe, description):
         """Create an `ISourcePackageRecipe`."""
+
+    def exists(owner, name):
+        """Check to see if a recipe by the same name and owner exists."""

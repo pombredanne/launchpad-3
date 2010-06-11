@@ -20,6 +20,7 @@ from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
 
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -113,6 +114,29 @@ class BuildStatus(DBEnumeratedType):
 
 class IBuildBase(Interface):
     """Common interface shared by farm jobs that build a package."""
+    # XXX 2010-04-21 michael.nelson bug=567922. This interface
+    # can be removed once all *Build classes inherit from
+    # IBuildFarmJob/IPackageBuild. Until that time, to allow the shared
+    # implementation of handling build status, IBuildBase needs to
+    # provide aliases for buildstate, buildlog and datebuilt as follows:
+    # status => buildstate
+    # log => buildlog
+    # date_finished => datebuilt
+    status = Choice(
+            title=_('State'), required=True, vocabulary=BuildStatus,
+            description=_("The current build state."))
+    log = Object(
+        schema=ILibraryFileAlias, required=False,
+        title=_("The LibraryFileAlias containing the entire buildlog."))
+    date_finished = Datetime(
+            title=_('Date built'), required=False,
+            description=_("The time when the build result got collected."))
+
+
+    build_farm_job_type = Choice(
+        title=_("Job type"), required=True, readonly=True,
+        vocabulary=BuildFarmJobType,
+        description=_("The specific type of job."))
 
     # XXX: wgrant 2010-01-20 bug=507712: Most of these attribute names
     # are bad.
@@ -121,10 +145,7 @@ class IBuildBase(Interface):
             title=_('Date created'), required=True, readonly=True,
             description=_("The time when the build request was created.")))
 
-    buildstate = exported(
-        Choice(
-            title=_('State'), required=True, vocabulary=BuildStatus,
-            description=_("The current build state.")))
+    buildstate = exported(status)
 
     date_first_dispatched = exported(
         Datetime(
@@ -137,19 +158,14 @@ class IBuildBase(Interface):
         title=_("Builder"), schema=IBuilder, required=False,
         description=_("The Builder which address this build request."))
 
-    datebuilt = exported(
-        Datetime(
-            title=_('Date built'), required=False,
-            description=_("The time when the build result got collected.")))
+    datebuilt = exported(date_finished)
 
     buildduration = Timedelta(
         title=_("Build Duration"), required=False,
         description=_("Build duration interval, calculated when the "
                       "build result gets collected."))
 
-    buildlog = Object(
-        schema=ILibraryFileAlias, required=False,
-        title=_("The LibraryFileAlias containing the entire buildlog."))
+    buildlog = log
 
     build_log_url = exported(
         TextLine(
@@ -216,7 +232,15 @@ class IBuildBase(Interface):
             executable.
         """
 
-    def handleStatus(status, librarian, slave_status):
+    def getUploadLogContent(root, leaf):
+        """Retrieve the upload log contents.
+
+        :param root: Root directory for the uploads
+        :param leaf: Leaf for this particular upload
+        :return: Contents of log file or message saying no log file was found.
+        """
+
+    def handleStatus(build, status, librarian, slave_status):
         """Handle a finished build status from a slave.
 
         :param status: Slave build status string with 'BuildStatus.' stripped.
@@ -229,7 +253,7 @@ class IBuildBase(Interface):
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
 
-    def queueBuild(suspended=False):
+    def queueBuild(build, suspended=False):
         """Create a BuildQueue entry for this build.
 
         :param suspended: Whether the associated `Job` instance should be
@@ -239,7 +263,7 @@ class IBuildBase(Interface):
     def estimateDuration():
         """Estimate the build duration."""
 
-    def storeBuildInfo(librarian, slave_status):
+    def storeBuildInfo(build, librarian, slave_status):
         """Store available information for the build job.
 
         Subclasses can override this as needed, and call it from custom status

@@ -75,7 +75,7 @@ from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+    ArchivePurpose, ArchiveStatus, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -156,6 +156,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         notNull=False,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
+    bug_reported_acknowledgement = StringCol(default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
@@ -515,6 +516,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def __iter__(self):
         return iter(self.series)
+
+    def getArchive(self, name):
+        """See `IDistribution.`"""
+        return getUtility(
+            IArchiveSet).getByDistroAndName(self, name)
 
     def getSeries(self, name_or_version):
         """See `IDistribution`."""
@@ -952,10 +958,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             if spr.changelog_entry is not None:
                 sprchangelog.add(spr.changelog_entry)
             binpkgs = BinaryPackageRelease.select("""
-                BinaryPackageRelease.build = Build.id AND
-                Build.sourcepackagerelease = %s
+                BinaryPackageRelease.build = BinaryPackageBuild.id AND
+                BinaryPackageBuild.source_package_release = %s
                 """ % sqlvalues(spr.id),
-                clauseTables=['Build'])
+                clauseTables=['BinaryPackageBuild'])
             for binpkg in binpkgs:
                 log.debug("Considering binary '%s'" % binpkg.name)
                 binpkgnames.add(binpkg.name)
@@ -1066,9 +1072,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.status != SeriesStatus.OBSOLETE,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
-            BinaryPackageBuild.distroarchseries == DistroArchSeries.id,
+            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             BinaryPackageRelease.build == BinaryPackageBuild.id,
-            (BinaryPackageBuild.sourcepackagerelease ==
+            (BinaryPackageBuild.source_package_release ==
                 SourcePackageRelease.id),
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==
@@ -1345,7 +1351,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             bin_query, clauseTables=['BinaryPackagePublishingHistory'],
             orderBy=['archive.id'], distinct=True)
 
-        return src_archives.union(bin_archives)
+        deleting_archives = Archive.selectBy(
+            status=ArchiveStatus.DELETING).orderBy(['archive.id'])
+
+        return src_archives.union(bin_archives).union(deleting_archives)
 
     def getArchiveByComponent(self, component_name):
         """See `IDistribution`."""
