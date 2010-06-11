@@ -256,10 +256,6 @@ class Branch(SQLBase, BzrIdentityMixin):
             BugBranch.bug == Bug.id,
             BugTask.bug == Bug.id)
 
-    linked_bugs_and_tasks = SQLRelatedJoin(
-        'Bug', joinColumn='branch', otherColumn='bug',
-        intermediateTable='BugBranch', orderBy='id')
-
     def linkBug(self, bug, registrant):
         """See `IBranch`."""
         return bug.linkBranch(self, registrant)
