@@ -25,5 +25,7 @@ class IHasSecurityContact(Interface):
     security_contact = exported(PublicPersonChoice(
         title=_("Security Contact"),
         description=_(
-            "The person or team who handles security-related bug reports"),
+            "The Launchpad id of the person or team (preferred) who handles "
+            "security-related bug reports.  The security contact will be "
+            "subscribed to all bugs marked as a security vulnerability."),
         required=False, vocabulary='ValidPersonOrTeam'))
