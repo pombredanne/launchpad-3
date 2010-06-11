@@ -514,9 +514,8 @@ class BranchJobPruner(TunableLoop):
             BranchJob.job == Job.id,
             Job.date_finished < THIRTY_DAYS_AGO)[:chunk_size])
         if len(ids_to_remove) > 0:
-            IMasterStore(BranchJob).find(
-                BranchJob,
-                In(BranchJob.jobID, ids_to_remove)).remove()
+            # BranchJob is removed too, as the BranchJob.job foreign key
+            # constraint is ON DELETE CASCADE.
             IMasterStore(Job).find(
                 Job,
                 In(Job.id, ids_to_remove)).remove()
