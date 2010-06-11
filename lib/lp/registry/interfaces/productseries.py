@@ -267,7 +267,7 @@ class IProductSeriesPublic(
                       'of this series.  Launchpad automatically scans this '
                       'site to import new releases.  Example: '
                       'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz')),
-        exported_as='release_file_glob')
+        exported_as='release_finder_url_pattern')
 
     releaseverstyle = Attribute("The version numbering style for this "
         "series of releases.")
