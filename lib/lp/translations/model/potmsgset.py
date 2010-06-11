@@ -951,6 +951,10 @@ class POTMsgSet(SQLBase):
             current.reviewer = reviewer
             current.date_reviewed = lock_timestamp
 
+    def setCurrentTranslation(self, pofile, submitter, translations, origin,
+                              translation_side, share_with_other_side=False):
+        """See `IPOTMsgSet`."""
+
     def resetCurrentTranslation(self, pofile, lock_timestamp):
         """See `IPOTMsgSet`."""
 
