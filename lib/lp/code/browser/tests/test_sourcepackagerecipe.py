@@ -141,14 +141,12 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             extract_text(find_tags_by_class(browser.contents, 'message')[1]),
             'Required input is missing.')
 
-    def test_create_recipe_bad_text(self):
-        # If a user tries to create source package recipe with bad text, they
-        # should get an error.
-        product = self.factory.makeProduct(
-            name='ratatouille', displayname='Ratatouille')
-        branch = self.factory.makeBranch(
-            owner=self.chef, product=product, name='veggies')
-        self.factory.makeSourcePackage()
+    def createRecipe(self, recipe_text, branch=None):
+        if branch is None:
+            product = self.factory.makeProduct(
+                name='ratatouille', displayname='Ratatouille')
+            branch = self.factory.makeBranch(
+                owner=self.chef, product=product, name='veggies')
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
@@ -156,12 +154,39 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Recipe text').value = 'Foo bar baz'
+        browser.getControl('Recipe text').value = recipe_text
         browser.getControl('Create Recipe').click()
+        return browser
 
+    def test_create_recipe_bad_text(self):
+        # If a user tries to create source package recipe with bad text, they
+        # should get an error.
+        browser = self.createRecipe('Foo bar baz')
         self.assertEqual(
             extract_text(find_tags_by_class(browser.contents, 'message')[1]),
             'The recipe text is not a valid bzr-builder recipe.')
+
+    def test_create_recipe_bad_base_branch(self):
+        # If a user tries to create source package recipe with a bad base
+        # branch location, they should get an error.
+        browser = self.createRecipe(MINIMAL_RECIPE_TEXT % 'foo')
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'Unknown branch: foo.')
+
+    def test_create_recipe_bad_instruction_branch(self):
+        # If a user tries to create source package recipe with a bad
+        # instruction branch location, they should get an error.
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        recipe = MINIMAL_RECIPE_TEXT % branch.bzr_identity
+        recipe += 'nest packaging foo debian'
+        browser = self.createRecipe(recipe, branch)
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'Unknown branch: foo.')
 
     def test_create_dupe_recipe(self):
         # You shouldn't be able to create a duplicate recipe owned by the same

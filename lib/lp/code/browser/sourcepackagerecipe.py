@@ -39,6 +39,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -352,9 +353,13 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     def request_action(self, action, data):
         parser = RecipeParser(data['recipe_text'])
         recipe = parser.parse()
-        source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            self.user, self.user, data['distros'],
-            data['name'], recipe, data['description'])
+        try:
+            source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
+                self.user, self.user, data['distros'],
+                data['name'], recipe, data['description'])
+        except NoSuchBranch, e:
+            self.setFieldError('recipe_text', 'Unknown branch: %s.' % e.name)
+            return
         self.next_url = canonical_url(source_package_recipe)
 
     def validate(self, data):
