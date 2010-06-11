@@ -5,14 +5,27 @@
 # buildout.cfg (see the "initialization" key in the "[scripts]" section).
 
 import os
+import warnings
+
+from bzrlib.branch import Branch
 from lp.services.mime import customizeMimetypes
 from zope.security import checker
-from bzrlib.branch import Branch
+
 
 def dont_wrap_class_and_subclasses(cls):
     checker.BasicTypes.update({cls: checker.NoProxy})
     for subcls in cls.__subclasses__():
         dont_wrap_class_and_subclasses(subcls)
+
+def silence_warnings():
+    """Silence warnings across the entire Launchpad project."""
+    # pycrypto-2.0.1 on Python2.6:
+    #   DeprecationWarning: the sha module is deprecated; use the hashlib
+    #   module instead
+    warnings.filterwarnings(
+        "ignore",
+        category=DeprecationWarning,
+        module="Crypto")
 
 def main():
     # Note that we configure the LPCONFIG environmental variable in the
@@ -26,5 +39,6 @@ def main():
     os.environ['STORM_CEXTENSIONS'] = '1'
     customizeMimetypes()
     dont_wrap_class_and_subclasses(Branch)
+    silence_warnings()
 
 main()
