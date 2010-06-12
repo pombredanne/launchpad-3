@@ -29,7 +29,7 @@ Here we have some imports and utility fetch.
     ...     ILaunchpadCelebrities)
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.distroserues import IDistroSeries
+    >>> from lp.registry.interfaces.distroseries import IDistroSeries
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> from lp.translations.interfaces.translationimportqueue import (
