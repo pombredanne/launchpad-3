@@ -36,6 +36,8 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
+from lp.code.mail.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuildMailer)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
@@ -67,7 +69,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     def binary_builds(self):
         """See `ISourcePackageRecipeBuild`."""
         return Store.of(self).find(BinaryPackageBuild,
-            BinaryPackageBuild.source_package_release==SourcePackageRelease.id,
+            BinaryPackageBuild.source_package_release==
+            SourcePackageRelease.id,
             SourcePackageRelease.source_package_recipe_build==self.id)
 
     buildduration = TimeDelta(name='build_duration', default=None)
@@ -261,8 +264,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def notify(self, extra_info=None):
         """See `IBuildBase`."""
-        # XXX: wgrant 2010-01-20 bug=509893: Implement this.
-        return
+        mailer = SourcePackageRecipeBuildMailer.forStatus(self)
+        mailer.sendAll()
 
     def getFileByName(self, filename):
         """See `ISourcePackageRecipeBuild`."""
@@ -274,6 +277,13 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         except KeyError:
             raise NotFoundError(filename)
 
+    @staticmethod
+    def _handleStatus_OK(build, librarian, slave_status, logger):
+        """See `IBuildBase`."""
+        BuildBase._handleStatus_OK(build, librarian, slave_status, logger)
+        # base implementation doesn't notify on success.
+        if build.status == BuildStatus.FULLYBUILT:
+            build.notify()
 
 class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
