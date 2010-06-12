@@ -39,6 +39,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.errors import ForbiddenInstruction
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -362,9 +363,19 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     def request_action(self, action, data):
         parser = RecipeParser(data['recipe_text'])
         recipe = parser.parse()
-        source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            self.user, self.user, data['name'], recipe, data['description'],
-            data['distros'], data['daily_build_archive'], data['build_daily'])
+        try:
+            source_package_recipe = getUtility(
+                ISourcePackageRecipeSource).new(
+                    self.user, self.user, data['name'], recipe,
+                    data['description'], data['distros'],
+                    data['daily_build_archive'], data['build_daily'])
+        except ForbiddenInstruction:
+            # XXX: bug=592513 We shouldn't be hardcoding "run" here.
+            self.setFieldError(
+                'recipe_text',
+                'The bzr-builder instruction "run" is not permitted here.')
+            return
+
         self.next_url = canonical_url(source_package_recipe)
 
     def validate(self, data):
@@ -412,8 +423,17 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
         parser = RecipeParser(recipe_text)
         recipe = parser.parse()
         if self.context.builder_recipe != recipe:
-            self.context.builder_recipe = recipe
-            changed = True
+            try:
+                self.context.builder_recipe = recipe
+                changed = True
+            except ForbiddenInstruction:
+                # XXX: bug=592513 We shouldn't be hardcoding "run" here.
+                self.setFieldError(
+                    'recipe_text',
+                    'The bzr-builder instruction "run" is not permitted here.'
+                    )
+                return
+
 
         distros = data.pop('distros')
         if distros != self.context.distroseries:
