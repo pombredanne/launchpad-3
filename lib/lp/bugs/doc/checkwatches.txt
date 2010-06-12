@@ -110,7 +110,6 @@ First, we create some bug watches to test with:
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> from lp.bugs.scripts.checkwatches import (
     ...     CheckwatchesMaster)
 

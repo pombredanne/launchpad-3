@@ -15,7 +15,7 @@ from zope.component import getUtility
 
 from canonical.testing.layers import LaunchpadZopelessLayer
 
-from lp.bugs.externalbugtracker import isolation
+from lp.bugs.interfaces.externalbugtracker import isolation
 from lp.testing import TestCase
 
 

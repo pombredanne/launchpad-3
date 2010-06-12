@@ -390,7 +390,7 @@ comments from it. Bug watches will still be updated, but a warning is
 logged saying that comments won't be imported.
 
     >>> from zope.interface import implements
-    >>> from lp.bugs.externalbugtracker import ISupportsCommentImport
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
     >>> class CommentImportExternalBugTracker(TimeUnknownExternalBugTracker):
     ...     baseurl = 'http://whatever.com'
     ...     implements(ISupportsCommentImport)

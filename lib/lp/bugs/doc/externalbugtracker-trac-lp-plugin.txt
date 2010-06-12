@@ -311,7 +311,7 @@ TracLPPlugin implements the ISupportsCommentImport interface, providing
 three methods: getCommentIds(), getPosterForComment() and
 getMessageForComment().
 
-    >>> from lp.bugs.externalbugtracker import ISupportsCommentImport
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
     >>> ISupportsCommentImport.providedBy(trac)
     True
 
@@ -478,7 +478,7 @@ The TracLPPlugin ExternalBugTracker implements the
 ISupportsCommentPushing interface, which allows Launchpad to use it to
 push comments to the remote bug tracker.
 
-    >>> from lp.bugs.externalbugtracker import ISupportsCommentPushing
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentPushing
     >>> ISupportsCommentPushing.providedBy(trac)
     True
 

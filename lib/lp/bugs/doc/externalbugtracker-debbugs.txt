@@ -280,7 +280,7 @@ be raised.
 The Debbugs ExternalBugTracker can import a Debian bug into Launchpad.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.bugs.externalbugtracker import ISupportsBugImport
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsBugImport
     >>> verifyObject(ISupportsBugImport, external_debbugs)
     True
 
@@ -555,7 +555,7 @@ The DebBugs ExternalBugTracker implements the ISupportsCommentPushing
 interface, which allows checkwatches to use it to push Launchpad
 comments back to the remote DebBugs instance.
 
-    >>> from lp.bugs.externalbugtracker import ISupportsCommentPushing
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentPushing
     >>> ISupportsCommentPushing.providedBy(external_debbugs)
     True
 

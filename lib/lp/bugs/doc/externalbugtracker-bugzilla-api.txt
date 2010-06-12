@@ -360,7 +360,8 @@ BugzillaAPI implments the ISupportsCommentImport interface, which
 means that we can use it to import comments from the remote Bugzilla
 instance.
 
-    >>> from lp.bugs.interfaces.bugtracker import ISupportsCommentImport
+    >>> from lp.bugs.interfaces.externalbugtracker import (
+    ...     ISupportsCommentImport)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(ISupportsCommentImport, bugzilla)
     True
