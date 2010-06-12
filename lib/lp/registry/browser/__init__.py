@@ -209,7 +209,7 @@ class RegistryDeleteViewMixin:
         series.name = '%s-%s-%s' % (
             series.product.name, series.name, date_time)
         series.status = SeriesStatus.OBSOLETE
-        series.filereleaseglob = None
+        series.releasefileglob = None
         series.product = getUtility(ILaunchpadCelebrities).obsolete_junk
 
     def _deleteMilestone(self, milestone):
