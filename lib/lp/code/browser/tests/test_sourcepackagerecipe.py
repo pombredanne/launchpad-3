@@ -331,10 +331,12 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             owner=self.chef, product=product, name='veggies')
         meat_branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='meat')
+        ppa = self.factory.makeArchive(name='ppa')
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
             name=u'things', description=u'This is a recipe',
-            distroseries=self.squirrel, branches=[veggie_branch])
+            distroseries=self.squirrel, branches=[veggie_branch],
+            daily_build_archive=ppa)
 
         meat_path = meat_branch.bzr_identity
 
