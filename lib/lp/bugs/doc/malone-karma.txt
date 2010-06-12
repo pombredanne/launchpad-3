@@ -65,7 +65,7 @@ Add a CVE reference to a bug:
 
 Add watch for external bug to the bug:
 
-    >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> from canonical.launchpad.database import BugWatch
     >>> debbugs = getUtility(IBugTrackerSet)['debbugs']
     >>> bugwatch = BugWatch(

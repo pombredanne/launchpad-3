@@ -8,7 +8,7 @@ In order to prepare the tests below some initialization is required.
     >>> from lp.archiveuploader.nascentupload import NascentUpload
     >>> from lp.archiveuploader.tests import (
     ...     datadir, getPolicy, mock_logger_quiet)
-    >>> from lp.soyuz.interfaces.archive import (
+    >>> from lp.soyuz.interfaces.archivepermission import (
     ...     ArchivePermissionType, IArchivePermissionSet)
     >>> from lp.soyuz.interfaces.packageset import IPackagesetSet
 

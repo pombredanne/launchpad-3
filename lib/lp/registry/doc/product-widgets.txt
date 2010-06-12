@@ -61,7 +61,7 @@ Firefox has not yet selected a bug tracker.
 Firefox chooses to use the Gnome Bugzilla bug tracker, and the widget displays
 this bug tracker as selected.
 
-    >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> tracker_set = getUtility(IBugTrackerSet)
 
     >>> gnome_bugzilla = tracker_set.getByName('gnome-bugzilla')

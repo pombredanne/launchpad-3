@@ -57,7 +57,7 @@ Since we don't want to depend on a working network connection, we use a
 slightly modified implementation.
 
     >>> from lp.bugs.tests.externalbugtracker import TestBugzilla
-    >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
     >>> external_bugzilla = TestBugzilla(gnome_bugzilla.baseurl)
     >>> version = external_bugzilla._probe_version()

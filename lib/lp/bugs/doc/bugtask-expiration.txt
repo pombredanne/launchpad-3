@@ -107,7 +107,7 @@ has otherwise the same parameters as jokosher_bugtask. The
 bugwatch prevents expiration, hence this bugtask will not appear
 in the listings of expirable bugtasks below.
 
-    >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> mozilla_bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
     >>> jokosher_bugtask_watched = create_old_bug('jokosher watched',
     ...     61, jokosher, external_bugtracker=mozilla_bugtracker)

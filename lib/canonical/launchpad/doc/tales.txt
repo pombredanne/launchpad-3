@@ -726,7 +726,7 @@ The fmt: namespace for specially formatted object info
 Bug Trackers
 ............
 
-    >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> bugtracker = getUtility(IBugTrackerSet).getByName('email')
     >>> bugtracker.title = 'an@email.address bug tracker'
     >>> bugtracker.aliases = ['mailto:eatme@wundrlnd.com',

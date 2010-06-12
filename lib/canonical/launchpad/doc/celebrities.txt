@@ -92,7 +92,7 @@ The bug_watch_updater celebrity updates the bug watches.
 For all the products using SourceForge, we have a single registered
 tracker
 
-    >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> sf_tracker = getUtility(IBugTrackerSet).getByName('sf')
     >>> celebs.sourceforge_tracker == sf_tracker
     True
@@ -160,7 +160,7 @@ has the ability to de-activate projects.
 There is a 'Savannah Bug Tracker' bugtracker which represents the
 bug tracker for all registered Savannah projects.
 
-    >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> savannah_tracker = getUtility(IBugTrackerSet).getByName(
     ...     'savannah')
     >>> celebs.savannah_tracker == savannah_tracker

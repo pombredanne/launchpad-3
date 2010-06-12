@@ -12,7 +12,7 @@ modified (ancient) versions of Bugzilla; their XML elements have
 slightly different names. We pretend Mozilla's Bugzilla is an Issuezilla
 instance here:
 
-    >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 
     >>> from lp.bugs.tests.externalbugtracker import TestIssuezilla
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster

@@ -89,7 +89,7 @@ being correct.
 
 == Checking debbugs bug watches ==
 
-    >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
     >>> bug_watches = list(debbugs.watches_needing_update)
     >>> len(bug_watches)

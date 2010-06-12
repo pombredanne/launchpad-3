@@ -9,7 +9,7 @@ and an external bug, see bugwatch.txt.
     >>> import pytz
     >>> from datetime import datetime, timedelta
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> bugtracker_set = getUtility(IBugTrackerSet)
     >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
     >>> now = datetime.now(pytz.timezone('UTC'))
@@ -208,7 +208,7 @@ If no bug tracker can be found None is returned.
 
 A bug tracker can have a number of alias URLs associated with it.
 
-    >>> from lp.bugs.interfaces.bugtacker import IBugTrackerAliasSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerAliasSet
     >>> bugtrackeralias_set = getUtility(IBugTrackerAliasSet)
 
 The most natural way to work with aliases is via the aliases attribute

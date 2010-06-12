@@ -239,7 +239,7 @@ Note that we also cope correctly with the case in which a project's
 bugtracker is inherited from it's project group:
 
     >>> login('foo.bar@canonical.com')
-    >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> mozilla_org = getUtility(IBugTrackerSet).getByName("mozilla.org")
     >>> firefox.project.bugtracker = mozilla_org
     >>> flush_database_updates()

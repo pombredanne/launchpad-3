@@ -266,7 +266,7 @@ one.
 
 This is true even if its project has a bug tracker specified.
 
-    >>> from lp.bugs.interfaces.bugtacker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 
     >>> login_person(firefox.owner)
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
