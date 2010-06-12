@@ -42,7 +42,7 @@ class TestCaseForRecipe(BrowserTestCase):
         self.ppa = self.factory.makeArchive(
             displayname='Secret PPA', owner=self.chef, name='ppa')
         self.squirrel = self.factory.makeDistroSeries(
-            displayname='Secret Squirrel', name='secret',
+            displayname='Secret Squirrel', name='secret', version='100.04',
             distribution=self.ppa.distribution)
         self.squirrel.nominatedarchindep = self.squirrel.newArch(
             'i386', ProcessorFamily.get(1), False, self.chef,
@@ -484,8 +484,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Secret PPA (chef/ppa)
             Distribution series:
             Secret Squirrel
-            Warty
             Hoary
+            Warty
             or
             Cancel""")
         main_text = self.getMainText(recipe, '+request-builds')

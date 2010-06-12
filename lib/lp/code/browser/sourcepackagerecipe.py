@@ -37,6 +37,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, NavigationMenu, stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.errors import ForbiddenInstruction
@@ -170,9 +171,12 @@ def buildable_distroseries_vocabulary(context):
     ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
     supported_distros = [ppa.distribution for ppa in ppas]
     dsset = getUtility(IDistroSeriesSet).search()
-    terms = [SimpleTerm(distro, distro.id, distro.displayname)
-             for distro in dsset if (
-                 distro.active and distro.distribution in supported_distros)]
+    terms = sorted_dotted_numbers(
+        [SimpleTerm(distro, distro.id, distro.displayname)
+         for distro in dsset if (
+         distro.active and distro.distribution in supported_distros)],
+        key=lambda term: term.value.version)
+    terms.reverse()
     return SimpleVocabulary(terms)
 
 def target_ppas_vocabulary(context):
