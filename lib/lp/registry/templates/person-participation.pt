@@ -72,17 +72,19 @@
       </tbody>
     </table>
 
-    <ul id="participation-actions" class="horizontal"
-      tal:condition="context/required:launchpad.Edit">
-      <li>
-        <a class="sprite add" href="/people/+newteam">Register a team</a>
-      </li>
-      <li>
-        <a class="sprite edit"
-          tal:attributes="href context/menu:overview/editemailaddresses/fmt:url"
-          >Change mailing list subscriptions</a>
-      </li>
-    </ul>
+    <tal:user condition="not: context/teamowner">
+      <ul id="participation-actions" class="horizontal"
+        tal:condition="context/required:launchpad.Edit">
+        <li>
+          <a class="sprite add" href="/people/+newteam">Register a team</a>
+        </li>
+        <li>
+          <a class="sprite edit"
+            tal:attributes="href context/menu:overview/editemailaddresses/fmt:url"
+            >Change mailing list subscriptions</a>
+        </li>
+      </ul>
+    </tal:user>
   </div>
 </body>
 </html>
