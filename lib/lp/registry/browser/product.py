@@ -859,7 +859,7 @@ class ProductDownloadFileMixin:
     @cachedproperty
     def latest_release_with_download_files(self):
         """Return the latest release with download files."""
-        for series in self.sorted_series_list:
+        for series in self.sorted_active_series_list:
             for release in series.releases:
                 if len(list(release.files)) > 0:
                     return release
