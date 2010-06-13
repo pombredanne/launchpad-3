@@ -168,7 +168,7 @@ discarded.
     >>> admin_browser.getControl('Moderate').click()
 
     >>> login('foo.bar@canonical.com')
-    >>> from lp.registry.interfaces.mailinglist import IMessageSetApprovalSet
+    >>> from lp.registry.interfaces.mailinglist import IMessageApprovalSet
     >>> message_approval_set = getUtility(IMessageApprovalSet)
     >>> message_approval = message_approval_set.getMessageByMessageID(
     ...     '<aardvark>')
@@ -189,7 +189,6 @@ on-topic, so he decides to decline this message.
     >>> admin_browser.getControl('Moderate').click()
 
     >>> login('foo.bar@canonical.com')
-    >>> from lp.registry.interfaces.mailinglist import IMessageSetApprovalSet
     >>> message_approval_set = getUtility(IMessageApprovalSet)
     >>> message_approval = message_approval_set.getMessageByMessageID(
     ...     '<bobcat>')
@@ -210,7 +209,6 @@ accept the message.
     >>> admin_browser.getControl('Moderate').click()
 
     >>> login('foo.bar@canonical.com')
-    >>> from lp.registry.interfaces.mailinglist import IMessageSetApprovalSet
     >>> message_approval_set = getUtility(IMessageApprovalSet)
     >>> message_approval = message_approval_set.getMessageByMessageID(
     ...     '<caribou>')

@@ -282,7 +282,7 @@ that list too.
 
 Here are some helper functions.
 
-    >>> from lp.registry.interfaces.mailinglist import IMessageSetApprovalSet
+    >>> from lp.registry.interfaces.mailinglist import IMessageApprovalSet
     >>> hold_set = getUtility(IMessageApprovalSet)
     >>> from operator import attrgetter
     >>> def print_hold(message_hold):
