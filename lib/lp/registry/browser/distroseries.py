@@ -44,6 +44,7 @@ from lp.registry.browser.structuralsubscription import (
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
