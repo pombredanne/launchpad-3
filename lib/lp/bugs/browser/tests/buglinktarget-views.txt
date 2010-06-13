@@ -7,7 +7,7 @@ The +linkbug and +unlinkbug views operates on IBugLinkTarget.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.buglink import IBugLinkTarget
-    >>> from lp.bugs.interfaces.bug import ICveSet
+    >>> from lp.bugs.interfaces.cve import ICveSet
 
     >>> bugset = getUtility(IBugSet)
     >>> cve = getUtility(ICveSet)['2005-2730']

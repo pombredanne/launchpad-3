@@ -18,7 +18,7 @@ after publishing, and they can be deleted, permanently.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
-    >>> from lp.registry.interfaces.annoucement import IAnnouncementSet
+    >>> from lp.registry.interfaces.announcement import IAnnouncementSet
 
     >>> announcements = getUtility(IAnnouncementSet)
     >>> kubuntu = getUtility(IDistributionSet).getByName('kubuntu')

@@ -429,7 +429,7 @@ The processing of NEW-queue-entries checks the integrity of uploads
 candidates and promote them to ACCEPTED, the failures are kept
 as NEW
 
-    >>> from lp.registry.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.interfaces.queue import (
     ...     PackageUploadStatus, QueueInconsistentStateError)
 
