@@ -958,7 +958,7 @@ error message is sent telling you this.
 
 The 'cve' command associates a bug with a CVE reference.
 
-    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.bugs.interfaces.bug import CreateBugParams
 
     >>> def new_firefox_bug():
@@ -1210,6 +1210,7 @@ If Sample Person would be the Ubuntu driver, he'll be able to target
 bugs directly to series.
 
     >>> from canonical.config import config
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from canonical.testing import LaunchpadZopelessLayer
 

@@ -192,6 +192,7 @@ given upload into the published state, so here's a very simplistic publisher
     ...     BinaryPackagePublishingHistory as BPPH)
     >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingStatus as PPS)
+    >>> from canonical.database.constants import UTC_NOW
 
     >>> def simple_publish(distro):
     ...     srcs_to_publish = SPPH.select("""
