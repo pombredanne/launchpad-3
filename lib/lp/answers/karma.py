@@ -11,7 +11,7 @@ __all__ = [
 from canonical.database.sqlbase import block_implicit_flushes
 
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.answers.interfaces.questionenums import QuestionAction
 
