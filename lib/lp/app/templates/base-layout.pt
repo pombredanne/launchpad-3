@@ -118,16 +118,17 @@
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
             </div>
+
+            <tal:maintenance
+              replace="structure context/@@+maintenancemessage" />
+            <tal:notifications
+              define="notifications request/notifications"
+              condition="notifications">
+              <metal:notifications
+                use-macro="context/@@+base-layout-macros/notifications"/>
+            </tal:notifications>
+              <metal:main define-slot="main" />
           </div><!-- yui-b -->
-          <tal:maintenance
-            replace="structure context/@@+maintenancemessage" />
-          <tal:notifications
-            define="notifications request/notifications"
-            condition="notifications">
-            <metal:notifications
-              use-macro="context/@@+base-layout-macros/notifications"/>
-          </tal:notifications>
-            <metal:main define-slot="main" />
         </div><!-- yui-main -->
 
         <div class="yui-b side"
