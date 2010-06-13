@@ -68,8 +68,7 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import *
 from lp.registry.interfaces.series import *
 from lp.soyuz.interfaces.distroarchseries import *
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import *
-from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease\
-    import *
+from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import *
 from lp.registry.interfaces.distroseries import *
 from lp.soyuz.interfaces.distroseriesbinarypackage import *
 from lp.soyuz.interfaces.distroseriespackagecache import *
