@@ -378,6 +378,11 @@ def get_bugmail_from_address(person, bug):
             'Launchpad Bug Tracker',
             "%s@%s" % (bug.id, config.launchpad.bugs_domain))
 
+    if person.hide_email_addresses:
+        return format_address(
+            person.displayname,
+            "%s@%s" % (bug.id, config.launchpad.bugs_domain))
+
     if person.preferredemail is not None:
         return format_address(person.displayname, person.preferredemail.email)
 
