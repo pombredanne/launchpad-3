@@ -19,7 +19,8 @@ from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.utils import process_in_batches
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
