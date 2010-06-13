@@ -1122,9 +1122,9 @@ project groups and projects.
 
     >>> login(ANONYMOUS)
 
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.interfaces.projectgroup IProjectGroup
+    >>> from lp.registry.interfaces.distribution import IDistribution
+    >>> from lp.registry.interfaces.product import IProduct
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroup
 
     >>> def print_pillar(pillarname):
     ...     pillar = pillarname.pillar
