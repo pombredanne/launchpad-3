@@ -4,10 +4,9 @@ Distro Arch Series
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
     >>> from lp.soyuz.interfaces.section import ISectionSet
     >>> from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
-    ...    IDistroArchSeriesBinaryPackage,
+    ...    IDistroArchSeriesBinaryPackage)
     >>> from lp.soyuz.interfaces.publishing import (
     ...    IBinaryPackagePublishingHistory)
 

@@ -138,7 +138,7 @@ This test will fail if we add a new value to the PackagePublishingStatus
 enumeration but neglect to update BasePublishingRecordView.timestamp_map
 accordingly.
 
-    >>> from canonical.launchpad.interfaces.publishing import (
+    >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingStatus)
     >>> from lp.soyuz.browser.publishing import (
     ...     BasePublishingRecordView)
