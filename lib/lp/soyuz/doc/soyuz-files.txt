@@ -15,7 +15,7 @@ SourcePackageReleaseFile or BinaryPackageFile are available via the
 
     >>> from canonical.launchpad.interfaces.librarian import (
     ...    ILibraryFileAlias)
-    >>> from canonical.launchpad.interfaces.files import (
+    >>> from lp.soyuz.interfaces.files import (
     ...    ISourcePackageReleaseFile, IBinaryPackageFile)
     >>> from lp.registry.interfaces.distribution import IDistributionSet
 

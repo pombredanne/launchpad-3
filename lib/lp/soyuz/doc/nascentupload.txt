@@ -906,7 +906,8 @@ an ArchivePermission record to permit him to upload "bar" specifically.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from lp.soyuz.interfaces.archive import ArchivePermissionType
+    >>> from lp.soyuz.interfaces.archivepermission import (
+    ...     ArchivePermissionType)
     >>> from  lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> bar_name = getUtility(ISourcePackageNameSet).getOrCreateByName("bar")

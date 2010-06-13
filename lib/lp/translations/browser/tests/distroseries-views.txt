@@ -4,7 +4,7 @@ DistroSeries translations view classes
 Let's use ubuntu/hoary for these tests.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from lp.registry.interfaces.distroseries import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.series import SeriesStatus
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')

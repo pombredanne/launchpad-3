@@ -60,7 +60,7 @@ if the 'age' result looks sane:
 Mozilla-firefox 0.9 has got some builds. including a PPA build.  The 'builds'
 property only returns the non-PPA builds.
 
-   >>> from canonical.launchpad.interfaces.person import IPersonSet
+   >>> from lp.registry.launchpad.person import IPersonSet
    >>> from lp.buildmaster.model.packagebuild import PackageBuild
    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
    >>> from storm.store import Store
@@ -135,7 +135,7 @@ Check ISourcePackageRelease.override() behaviour:
    (u'main', u'editors')
 
    >>> from lp.soyuz.interfaces.component import IComponentSet
-   >>> from lp.soyuz.inderfaces.section import ISectionSet
+   >>> from lp.soyuz.interfaces.section import ISectionSet
    >>> new_comp = getUtility(IComponentSet)['universe']
    >>> new_sec = getUtility(ISectionSet)['mail']
 

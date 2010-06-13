@@ -611,7 +611,7 @@ Create a new package set.
 As it stands package sets will first be used for governing source package
 uploads i.e. in conjunction with `ArchivePermission` data.
 
-    >>> from lp.soyuz..interfaces.archive import (
+    >>> from lp.soyuz.interfaces.archive import (
     ...     ArchivePermissionType, IArchivePermissionSet)
     >>> ap_set = getUtility(IArchivePermissionSet)
 

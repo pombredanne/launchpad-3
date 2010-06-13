@@ -10,7 +10,7 @@ our Database Model for packages in a intuitive manner, they are:
     >>> from lp.registry.model.distribution import Distribution
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
 
-    >>> from lp.soyuz.interfaces.distroseriesourcepackagerelease import (
+    >>> from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     ...     IDistroSeriesSourcePackageRelease)
     >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     ...     IDistributionSourcePackageRelease)
