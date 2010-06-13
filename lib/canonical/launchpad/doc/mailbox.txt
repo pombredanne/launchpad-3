@@ -27,7 +27,7 @@ lib/canonical/launchpad/testing/mail.py.
 
 Let's look at the one we use in tests:
 
-    >>> from canonical.launchpad.interfaces.mail import IMailBox
+    >>> from canonical.launchpad.interfaces.mailbox import IMailBox
     >>> mailbox = getUtility(IMailBox)
 
 Now it's empty, so let's add some mails to it by using simple_sendmail:
@@ -80,7 +80,7 @@ Since we didn't delete the mail, it's still in there:
     >>> mailbox.open()
     >>> mails = list(mailbox.items())
     >>> len(mails)
-    2 
+    2
     >>> id, raw_mail = mails[0]
     >>> mail = email.message_from_string(raw_mail)
     >>> print mail['Message-ID']

@@ -21,7 +21,7 @@ so on.
 
 == Application homepages ==
 
-    >>> from canonical.launchpad.webapp.interfaces ILaunchpadRoot
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     IBazaarApplication)
     >>> from lp.bugs.interfaces.malone import IMaloneApplication
@@ -54,7 +54,7 @@ lib/lp/translations/doc/canonical_url_examples.txt.
 == Persons and Teams ==
 
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.registry.interfaces import (
+    >>> from lp.registry.interfaces.codeofconduct import (
     ...     ICodeOfConductSet, ISignedCodeOfConductSet)
 
 The IPersonSet.
