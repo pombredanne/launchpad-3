@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
     'build_yui_unittest_suite',
+    'BrowserTestCase',
     'capture_events',
     'FakeTime',
     'get_lsb_information',
@@ -38,7 +39,7 @@ __all__ = [
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
-    'ws_object'
+    'ws_object',
     'YUIUnitTestCase',
     'ZopeTestInSubProcess',
     ]
@@ -57,7 +58,6 @@ import tempfile
 import time
 import unittest
 
-from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.transport import get_transport
 
@@ -220,6 +220,17 @@ def run_with_storm_debug(function, *args, **kwargs):
 
 class TestCase(testtools.TestCase):
     """Provide Launchpad-specific test facilities."""
+    def becomeDbUser(self, dbuser):
+        """Commit, then log into the database as `dbuser`.
+        
+        For this to work, the test must run in a layer.
+        
+        Try to test every code path at least once under a realistic db
+        user, or you'll hit privilege violations later on.
+        """
+        assert self.layer, "becomeDbUser requires a layer."
+        transaction.commit()
+        self.layer.switchDbUser(dbuser)
 
     def installFixture(self, fixture):
         """Install 'fixture', an object that has a `setUp` and `tearDown`.
@@ -232,6 +243,15 @@ class TestCase(testtools.TestCase):
         """
         fixture.setUp()
         self.addCleanup(fixture.tearDown)
+
+    def __str__(self):
+        """The string representation of a test is its id.
+
+        The most descriptive way of writing down a test is to write down its
+        id. It is usually the fully-qualified Python name, which is pretty
+        handy.
+        """
+        return self.id()
 
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
@@ -414,6 +434,20 @@ class TestCase(testtools.TestCase):
         os.chdir(tempdir)
         self.addCleanup(os.chdir, cwd)
 
+    def _unfoldEmailHeader(self, header):
+        """Unfold a multiline e-mail header."""
+        header = ''.join(header.splitlines())
+        return header.replace('\t', ' ')
+
+    def assertEmailHeadersEqual(self, expected, observed):
+        """Assert that two e-mail headers are equal.
+
+        The headers are unfolded before being compared.
+        """
+        return self.assertEqual(
+            self._unfoldEmailHeader(expected),
+            self._unfoldEmailHeader(observed))
+
 
 class TestCaseWithFactory(TestCase):
 
@@ -512,6 +546,8 @@ class TestCaseWithFactory(TestCase):
         return os.path.join(base, branch_id_to_path(branch.id))
 
     def useTempBzrHome(self):
+        # XXX: Extract the temporary environment blatting into a generic
+        # helper function.
         self.useTempDir()
         # Avoid leaking local user configuration into tests.
         old_bzr_home = os.environ.get('BZR_HOME')
@@ -555,6 +591,10 @@ class BrowserTestCase(TestCaseWithFactory):
     This testcase provides an API similar to page tests, and can be used for
     cases when one wants a unit test and not a frakking pagetest.
     """
+    def setUp(self):
+        """Provide useful defaults."""
+        super(BrowserTestCase, self).setUp()
+        self.user = self.factory.makePerson(password='test')
 
     def assertTextMatchesExpressionIgnoreWhitespace(self,
                                                     regular_expression_txt,
@@ -565,6 +605,11 @@ class BrowserTestCase(TestCaseWithFactory):
             normalise_whitespace(regular_expression_txt), re.S)
         self.assertIsNot(
             None, pattern.search(normalise_whitespace(text)), text)
+
+    def getViewBrowser(self, context, view_name=None):
+        login(ANONYMOUS)
+        url = canonical_url(context, view_name=view_name)
+        return self.getUserBrowser(url, self.user)
 
 
 class WindmillTestCase(TestCaseWithFactory):

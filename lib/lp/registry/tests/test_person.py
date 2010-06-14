@@ -435,6 +435,21 @@ class TestPerson(TestCaseWithFactory):
                 hasattr(snap, name),
                 "%s should be omitted from the snapshot but is not." % name)
 
+    def test_person_repr_ansii(self):
+        # Verify that ANSI displayname is ascii safe.
+        person = self.factory.makePerson(
+            name="user", displayname=u'\xdc-tester')
+        ignore, name, displayname = repr(person).rsplit(' ', 2)
+        self.assertEqual('user', name)
+        self.assertEqual('(\\xdc-tester)>', displayname)
+
+    def test_person_repr_unicode(self):
+        # Verify that Unicode displayname is ascii safe.
+        person = self.factory.makePerson(
+            name="user", displayname=u'\u0170-tester')
+        ignore, displayname = repr(person).rsplit(' ', 1)
+        self.assertEqual('(\\u0170-tester)>', displayname)
+
 
 class TestPersonSet(unittest.TestCase):
     """Test `IPersonSet`."""
@@ -511,7 +526,8 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
 
     def checkUserFields(
         self, params, assignee=None, bug_subscriber=None,
-        owner=None, bug_commenter=None, bug_reporter=None):
+        owner=None, bug_commenter=None, bug_reporter=None,
+        structural_subscriber=None):
         self.failUnlessEqual(assignee, params.assignee)
         # fromSearchForm() takes a bug_subscriber parameter, but saves
         # it as subscriber on the parameter object.
@@ -519,14 +535,15 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         self.failUnlessEqual(owner, params.owner)
         self.failUnlessEqual(bug_commenter, params.bug_commenter)
         self.failUnlessEqual(bug_reporter, params.bug_reporter)
+        self.failUnlessEqual(structural_subscriber, params.structural_subscriber)
 
     def test_get_related_bugtasks_search_params(self):
         # With no specified options, get_related_bugtasks_search_params()
-        # returns 4 BugTaskSearchParams objects, each with a different
+        # returns 5 BugTaskSearchParams objects, each with a different
         # user field set.
         search_params = get_related_bugtasks_search_params(
             self.user, self.context)
-        self.assertEqual(len(search_params), 4)
+        self.assertEqual(len(search_params), 5)
         self.checkUserFields(
             search_params[0], assignee=self.context)
         self.checkUserFields(
@@ -535,13 +552,15 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
             search_params[2], owner=self.context, bug_reporter=self.context)
         self.checkUserFields(
             search_params[3], bug_commenter=self.context)
+        self.checkUserFields(
+            search_params[4], structural_subscriber=self.context)
 
     def test_get_related_bugtasks_search_params_with_assignee(self):
         # With assignee specified, get_related_bugtasks_search_params()
-        # returns 3 BugTaskSearchParams objects.
+        # returns 4 BugTaskSearchParams objects.
         search_params = get_related_bugtasks_search_params(
             self.user, self.context, assignee=self.user)
-        self.assertEqual(len(search_params), 3)
+        self.assertEqual(len(search_params), 4)
         self.checkUserFields(
             search_params[0], assignee=self.user, bug_subscriber=self.context)
         self.checkUserFields(
@@ -549,19 +568,23 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
             bug_reporter=self.context)
         self.checkUserFields(
             search_params[2], assignee=self.user, bug_commenter=self.context)
+        self.checkUserFields(
+            search_params[3], assignee=self.user, structural_subscriber=self.context)
 
     def test_get_related_bugtasks_search_params_with_owner(self):
         # With owner specified, get_related_bugtasks_search_params() returns
-        # 3 BugTaskSearchParams objects.
+        # 4 BugTaskSearchParams objects.
         search_params = get_related_bugtasks_search_params(
             self.user, self.context, owner=self.user)
-        self.assertEqual(len(search_params), 3)
+        self.assertEqual(len(search_params), 4)
         self.checkUserFields(
             search_params[0], owner=self.user, assignee=self.context)
         self.checkUserFields(
             search_params[1], owner=self.user, bug_subscriber=self.context)
         self.checkUserFields(
             search_params[2], owner=self.user, bug_commenter=self.context)
+        self.checkUserFields(
+            search_params[3], owner=self.user, structural_subscriber=self.context)
 
     def test_get_related_bugtasks_search_params_with_bug_reporter(self):
         # With bug reporter specified, get_related_bugtasks_search_params()
@@ -569,7 +592,7 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         # is overwritten in one instance.
         search_params = get_related_bugtasks_search_params(
             self.user, self.context, bug_reporter=self.user)
-        self.assertEqual(len(search_params), 4)
+        self.assertEqual(len(search_params), 5)
         self.checkUserFields(
             search_params[0], bug_reporter=self.user,
             assignee=self.context)
@@ -584,13 +607,16 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         self.checkUserFields(
             search_params[3], bug_reporter=self.user,
             bug_commenter=self.context)
+        self.checkUserFields(
+            search_params[4], bug_reporter=self.user,
+            structural_subscriber=self.context)
 
     def test_get_related_bugtasks_search_params_illegal(self):
         self.assertRaises(
             IllegalRelatedBugTasksParams,
             get_related_bugtasks_search_params, self.user, self.context,
             assignee=self.user, owner=self.user, bug_commenter=self.user,
-            bug_subscriber=self.user)
+            bug_subscriber=self.user, structural_subscriber=self.user)
 
     def test_get_related_bugtasks_search_params_illegal_context(self):
         # in case the `context` argument is not  of type IPerson an

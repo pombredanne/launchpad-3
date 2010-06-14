@@ -105,10 +105,10 @@
           tal:condition="link/enabled">
         <script type="text/javascript"
                 tal:content="string:
-          YUI().use('registry.team', function(Y) {
+          YUI().use('lp.registry.team', function(Y) {
               Y.on('load',
                   function(e) {
-                      Y.registry.team.setup_add_member_handler();
+                      Y.lp.registry.team.setup_add_member_handler();
                   },
                   window);
           });

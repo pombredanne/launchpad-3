@@ -80,7 +80,7 @@ update the milestones and releases table.
     >>> script = find_tag_by_id(view.render(), 'milestone-script')
     >>> print script
     <script id="milestone-script" type="text/javascript">
-        YUI().use(... 'registry.milestoneoverlay', 'registry.milestonetable'...
+        YUI().use(... 'lp.registry.milestoneoverlay', 'lp.registry.milestonetable'...
             var series_uri = '/app/simple';
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
             var milestone_row_uri =
@@ -90,8 +90,8 @@ update the milestones and releases table.
                 var create_milestone_link = Y.get(
                     '.menu-link-create_milestone');
                 create_milestone_link.addClass('js-action');...
-                Y.registry.milestoneoverlay.attach_widget(config);...
-                Y.registry.milestonetable.setup(table_config);...
+                Y.lp.registry.milestoneoverlay.attach_widget(config);...
+                Y.lp.registry.milestonetable.setup(table_config);...
 
 If the Create milestone link is not enabled, the script is not present.
 
@@ -259,6 +259,7 @@ mistake.
     >>> product = factory.makeProduct(name="field", displayname='Field')
     >>> productseries = factory.makeProductSeries(
     ...     product=product, name='rabbit')
+    >>> productseries.releasefileglob = 'http://eg.dom/rabbit/*'
 
     # Hack the creation date for testing purposes.
     >>> test_date = datetime(2009, 05, 01, 19, 34, 24, tzinfo=UTC)
@@ -466,6 +467,13 @@ avoid conflicts. The linked branch is removed.
     True
     >>> print productseries.name
     field-rabbit-20090501-193424
+
+The series status is set to obsolete and the releasefileglob was set to None.
+
+    >>> print productseries.status
+    Obsolete
+    >>> print productseries.releasefileglob
+    None
 
 A series cannot be deleted if it is has translation templates.
 

@@ -1451,7 +1451,7 @@ class NoPolicies(BranchVisibilityPolicyTestCase):
 
 
 class PolicySimple(BranchVisibilityPolicyTestCase):
-    """Test the visiblity policy where the base visibility rule is PUBLIC with
+    """Test the visibility policy where the base visibility rule is PUBLIC with
     one team specified to have PRIVATE branches.
     """
 
@@ -1496,7 +1496,7 @@ class PolicySimple(BranchVisibilityPolicyTestCase):
 
 
 class PolicyPrivateOnly(BranchVisibilityPolicyTestCase):
-    """Test the visiblity policy where the base visibility rule is PUBLIC with
+    """Test the visibility policy where the base visibility rule is PUBLIC with
     one team specified to have the PRIVATE_ONLY rule.
 
     PRIVATE_ONLY only stops the user from changing the branch from private to
@@ -1545,7 +1545,7 @@ class PolicyPrivateOnly(BranchVisibilityPolicyTestCase):
 
 
 class PolicyForbidden(BranchVisibilityPolicyTestCase):
-    """Test the visiblity policy where the base visibility rule is FORBIDDEN
+    """Test the visibility policy where the base visibility rule is FORBIDDEN
     with one team specified to have the PRIVATE branches and another team
     specified to have PUBLIC branches.
     """

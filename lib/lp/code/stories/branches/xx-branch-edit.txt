@@ -212,7 +212,7 @@ by any user.
     >>> from lp.code.enums import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     ...     CodeReviewNotificationLevel)
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> foogoo = factory.makeProduct(
     ...     name='foogoo', owner=sample_person)
@@ -223,7 +223,7 @@ by any user.
     >>> _unused = foogoo_svn.subscribe(sample_person,
     ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
     ...     BranchSubscriptionDiffSize.NODIFF,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
+    ...     CodeReviewNotificationLevel.NOEMAIL, sample_person)
     >>> logout()
 
     >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
@@ -303,3 +303,49 @@ to any valid person or team.
     >>> admin_browser.getControl('Change Branch').click()
     >>> print admin_browser.url
     http://code.launchpad.dev/~mark/firefox/main
+
+
+== Package branch editing by Uploaders ==
+
+Official branches for distro series source packages are editable by valid
+package uploaders.  The normal branch owner vocabulary is the editor and the
+teams that they are a member of.  Official branches may well have an owner
+that is different to the editor, or be a celebrity that the editor is not a
+member of, like ubuntu-branches.
+
+    >>> # Create an official branch owned by ~ubuntu-branches, and an editor
+    >>> # who has nothing to do with ~ubuntu-branches but is still allowed
+    >>> # to edit the branch.
+    >>> login('admin@canonical.com')
+    >>> from lp.code.tests.helpers import make_official_package_branch
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> owner = getUtility(ILaunchpadCelebrities).ubuntu_branches
+    >>> branch = make_official_package_branch(factory, owner=owner)
+    >>> editor = factory.makePerson(
+    ...     name='editor', email='editor@example.com', password='test')
+    >>> # Give editor upload rights.
+    >>> archive = branch.distroseries.distribution.main_archive
+    >>> spn = branch.sourcepackage.sourcepackagename
+    >>> from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+    >>> permission_set = getUtility(IArchivePermissionSet)
+    >>> ignored = permission_set.newPackageUploader(archive, editor, spn)
+    >>> branch_url = canonical_url(branch)
+    >>> logout()
+
+Even though the branch owner, Ubuntu branches in this example, is not related
+to the editor, they stay as the default owner for this branch.
+
+    >>> browser = setupBrowser(auth='Basic editor@example.com:test')
+    >>> browser.open(branch_url)
+    >>> browser.getLink('Change branch details').click()
+
+The owner is still ubuntu-branches.
+
+    >>> browser.getControl('Owner').displayValue
+    ['Ubuntu branches (ubuntu-branches)']
+
+But the editor has the option to change the owner to themselves.
+
+    >>> browser.getControl('Owner').displayOptions
+    ['Ubuntu branches (ubuntu-branches)', 'Editor (editor)']

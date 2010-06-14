@@ -263,8 +263,8 @@ class Person(
                      storm_validator=_validate_name)
 
     def __repr__(self):
-        return '<Person at 0x%x %s (%s)>' % (
-            id(self), self.name, self.displayname)
+        displayname = self.displayname.encode('ASCII', 'backslashreplace')
+        return '<Person at 0x%x %s (%s)>' % (id(self), self.name, displayname)
 
     displayname = StringCol(dbName='displayname', notNull=True)
 
@@ -277,12 +277,6 @@ class Person(
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
 
-    # XXX StuartBishop 2008-05-13 bug=237280: The password,
-    # account_status and account_status_comment properties should go. Note
-    # that they override the current strict controls on Account, allowing
-    # access via Person to use the less strict controls on that interface.
-    # Part of the process of removing these methods from Person will be
-    # loosening the permissions on Account or fixing the callsites.
     def _get_password(self):
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
@@ -2269,15 +2263,13 @@ class Person(
         return rset
 
     def createRecipe(self, name, description, recipe_text, distroseries,
-                     sourcepackagename, registrant):
+                     registrant):
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         builder_recipe = RecipeParser(recipe_text).parse()
         spnset = getUtility(ISourcePackageNameSet)
-        sourcepackagename = spnset.getOrCreateByName(sourcepackagename)
         return SourcePackageRecipe.new(
-            registrant, self, distroseries, sourcepackagename, name,
-            builder_recipe, description)
+            registrant, self, name, builder_recipe, description, distroseries)
 
     def getRecipe(self, name):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
@@ -3354,7 +3346,7 @@ class PersonSet:
             # from being merged.
             ('mailinglist', 'team'),
             # I don't think we need to worry about the votecast and vote
-            # tables, because a real human should never have two accounts
+            # tables, because a real human should never have two profiles
             # in Launchpad that are active members of a given team and voted
             # in a given poll. -- GuilhermeSalgado 2005-07-07
             # We also can't afford to change poll results after they are
@@ -3507,7 +3499,7 @@ class PersonSet:
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
 
-        # Append a -merged suffix to the account's name.
+        # Append a -merged suffix to the person's name.
         name = base = "%s-merged" % from_person.name.encode('ascii')
         cur.execute("SELECT id FROM Person WHERE name = %s" % sqlvalues(name))
         i = 1
@@ -3522,6 +3514,16 @@ class PersonSet:
         # Since we've updated the database behind Storm's back,
         # flush its caches.
         store.invalidate()
+
+        # Change the merged Account's OpenID identifier so that it cannot be
+        # used to lookup the merged Person; Launchpad will instead select the
+        # remaining Person based on the email address.
+        if from_person.account is not None:
+            account = IMasterObject(from_person.account)
+            # This works because dashes do not occur in SSO identifiers.
+            merge_identifier = 'merged-%s' % removeSecurityProxy(
+                account).openid_identifier
+            removeSecurityProxy(account).openid_identifier = merge_identifier
 
         # Inform the user of the merge changes.
         if not to_person.isTeam():

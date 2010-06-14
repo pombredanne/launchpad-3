@@ -25,13 +25,16 @@ __all__ = [
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
+    'DecoratedBranch',
     'DecoratedBug',
     'RegisterBranchMergeProposalView',
     'TryImportAgainView',
     ]
 
 import cgi
+from collections import defaultdict
 from datetime import datetime, timedelta
+from operator import attrgetter
 
 import pytz
 import simplejson
@@ -44,6 +47,7 @@ from zope.formlib import form
 from zope.interface import Interface, implements, providedBy
 from zope.publisher.interfaces import NotFound
 from zope.schema import Bool, Choice, Text
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -77,6 +81,7 @@ from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
@@ -89,7 +94,7 @@ from lp.code.errors import (
     CodeImportAlreadyRequested, CodeImportAlreadyRunning,
     CodeImportNotInReviewedState, InvalidBranchMergeProposal)
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch,
+    BranchCreationForbidden, BranchExists, BzrIdentityMixin, IBranch,
     user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -97,6 +102,7 @@ from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 
 
 def quote(text):
@@ -197,7 +203,7 @@ class BranchEditMenu(NavigationMenu):
     facet = 'branches'
     title = 'Edit branch'
     links = (
-        'edit', 'reviewer', 'edit_whiteboard', 'delete', 'create_recipe')
+        'edit', 'reviewer', 'edit_whiteboard', 'delete')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED
@@ -224,11 +230,6 @@ class BranchEditMenu(NavigationMenu):
         text = 'Set branch reviewer'
         return Link('+reviewer', text, icon='edit')
 
-    def create_recipe(self):
-        enabled = config.build_from_branch.enabled
-        text = 'Create source package recipe'
-        return Link('+new-recipe', text, enabled=enabled, icon='add')
-
 
 class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
     """Context menu for branches."""
@@ -236,7 +237,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
     usedfor = IBranch
     facet = 'branches'
     links = [
-        'add_subscriber', 'browse_revisions', 'link_bug',
+        'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
         'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes']
 
@@ -322,20 +323,111 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         return Link(
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
+    def create_recipe(self):
+        enabled = config.build_from_branch.enabled
+        text = 'Create packaging recipe'
+        return Link('+new-recipe', text, enabled=enabled, icon='add')
+
 
 class DecoratedBug:
     """Provide some additional attributes to a normal bug."""
-    delegates(IBug)
+    delegates(IBug, 'bug')
 
-    def __init__(self, context, branch):
-        self.context = context
+    def __init__(self, bug, branch, tasks=None):
+        self.bug = bug
         self.branch = branch
+        self.tasks = tasks
+        if self.tasks is None:
+            self.tasks = self.bug.bugtasks
+
+    @property
+    def bugtasks(self):
+        return self.tasks
+
+    @property
+    def default_bugtask(self):
+        return self.tasks[0]
+
+    def getBugTask(self, target):
+        # Copied from Bug.getBugTarget to avoid importing.
+        for bugtask in self.bugtasks:
+            if bugtask.target == target:
+                return bugtask
+        return None
 
     @property
     def bugtask(self):
         """Return the bugtask for the branch project, or the default bugtask.
         """
-        return self.branch.target.getBugTask(self.context)
+        return self.branch.target.getBugTask(self)
+
+
+class DecoratedBranch(BzrIdentityMixin):
+    """Wrap a number of the branch accessors to cache results.
+
+    This avoids repeated db queries.
+    """
+    delegates(IBranch, 'branch')
+
+    def __init__(self, branch):
+        self.branch = branch
+
+    @cachedproperty
+    def linked_bugs(self):
+        bugs = defaultdict(list)
+        for bug, task in self.branch.getLinkedBugsAndTasks():
+            bugs[bug].append(task)
+        return [DecoratedBug(bug, self.branch, tasks)
+                for bug, tasks in bugs.iteritems()]
+
+    @property
+    def displayname(self):
+        return self.bzr_identity
+
+    @cachedproperty
+    def bzr_identity(self):
+        return super(DecoratedBranch, self).bzr_identity
+
+    @cachedproperty
+    def is_series_branch(self):
+        # True if linked to a product series or suite source package.
+        return (
+            len(self.associated_product_series) > 0 or
+            len(self.suite_source_packages) > 0)
+
+    def associatedProductSeries(self):
+        """Override the IBranch.associatedProductSeries."""
+        return self.associated_product_series
+
+    def associatedSuiteSourcePackages(self):
+        """Override the IBranch.associatedSuiteSourcePackages."""
+        return self.suite_source_packages
+
+    @cachedproperty
+    def associated_product_series(self):
+        return list(self.branch.associatedProductSeries())
+
+    @cachedproperty
+    def suite_source_packages(self):
+        return list(self.branch.associatedSuiteSourcePackages())
+
+    @cachedproperty
+    def upgrade_pending(self):
+        return self.branch.upgrade_pending
+
+    @cachedproperty
+    def subscriptions(self):
+        return list(self.branch.subscriptions)
+
+    def hasSubscription(self, user):
+        for sub in self.subscriptions:
+            if sub.person == user:
+                return True
+        return False
+
+    @cachedproperty
+    def latest_revisions(self):
+        return list(self.branch.latest_revisions())
 
 
 class BranchView(LaunchpadView, FeedsMixin):
@@ -354,18 +446,10 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     def initialize(self):
         self.notices = []
-        self._add_subscription_notice()
-
-    def _add_subscription_notice(self):
-        """Add the appropriate notice after posting the subscription form."""
-        if self.user and self.request.method == 'POST':
-            newsub = self.request.form.get('subscribe', None)
-            if newsub == 'Subscribe':
-                self.context.subscribe(self.user)
-                self.notices.append("You have subscribed to this branch.")
-            elif newsub == 'Unsubscribe':
-                self.context.unsubscribe(self.user)
-                self.notices.append("You have unsubscribed from this branch.")
+        # Replace our context with a decorated branch, if it is not already
+        # decorated.
+        if not isinstance(self.context, DecoratedBranch):
+            self.context = DecoratedBranch(self.context)
 
     def user_is_subscribed(self):
         """Is the current user subscribed to this branch?"""
@@ -431,13 +515,6 @@ class BranchView(LaunchpadView, FeedsMixin):
         else:
             return None
 
-    def edit_link_url(self):
-        """Target URL of the Edit link used in the actions portlet."""
-        # XXX: DavidAllouche 2005-12-02 bug=5313:
-        # That should go away when bug #5313 is fixed.
-        linkdata = BranchContextMenu(self.context).edit()
-        return '%s/%s' % (canonical_url(self.context), linkdata.target)
-
     @property
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
@@ -468,6 +545,16 @@ class BranchView(LaunchpadView, FeedsMixin):
         candidates = self.context.landing_candidates
         return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
+
+    @property
+    def recipe_count_text(self):
+        count = self.context.getRecipes().count()
+        if count == 0:
+            return 'No recipes'
+        elif count == 1:
+            return '1 recipe'
+        else:
+            return '%s recipes' % count
 
     @property
     def is_import_branch_with_no_landing_candidates(self):
@@ -517,8 +604,12 @@ class BranchView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def linked_bugs(self):
         """Return a list of DecoratedBugs linked to the branch."""
-        return [DecoratedBug(bug, self.context)
-            for bug in self.context.linked_bugs]
+        bugs = self.context.linked_bugs
+        if self.context.is_series_branch:
+            bugs = [
+                bug for bug in bugs
+                if bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES]
+        return bugs
 
     @cachedproperty
     def latest_code_import_results(self):
@@ -978,6 +1069,27 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # Replace the normal owner field with a more permissive vocab.
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
+        else:
+            # For normal users, there is an edge case with package branches
+            # where the editor may not be in the team of the branch owner.  In
+            # these cases we need to extend the vocabulary connected to the
+            # owner field.
+            if not self.user.inTeam(self.context.owner):
+                vocab = UserTeamsParticipationPlusSelfVocabulary()
+                owner = self.context.owner
+                terms = [SimpleTerm(
+                    owner, owner.name, owner.unique_displayname)]
+                terms.extend([term for term in vocab])
+                owner_field = self.schema['owner']
+                owner_choice = Choice(
+                    __name__='owner', title=owner_field.title,
+                    description = owner_field.description,
+                    required=True, vocabulary=SimpleVocabulary(terms))
+                new_owner_field = form.Fields(
+                    owner_choice, render_context=self.render_context)
+                # Replace the normal owner field with a more permissive vocab.
+                self.form_fields = self.form_fields.omit('owner')
+                self.form_fields = new_owner_field + self.form_fields
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk

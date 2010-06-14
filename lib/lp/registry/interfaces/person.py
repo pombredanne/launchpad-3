@@ -611,11 +611,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             title=_("List of valid OpenPGP keys ordered by ID"),
             readonly=False, required=False,
             value_type=Reference(schema=IGPGKey)))
-    pending_gpg_keys = exported(
-        CollectionField(
-            title=_("Set of fingerprints pending confirmation"),
-            readonly=False, required=False,
-            value_type=Reference(schema=IGPGKey)))
+    pending_gpg_keys = CollectionField(
+        title=_("Set of fingerprints pending confirmation"),
+        readonly=False, required=False,
+        value_type=Reference(schema=IGPGKey))
     inactive_gpg_keys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
     wiki_names = exported(
@@ -851,18 +850,15 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         distroseries=List(value_type=Reference(schema=Interface)),
         name=TextLine(),
         recipe_text=Text(),
-        sourcepackagename=TextLine(),
         )
     @export_factory_operation(Interface, [])
-    def createRecipe(name, description, recipe_text, distroseries,
-                     sourcepackagename, registrant):
+    def createRecipe(name, description, recipe_text, distroseries, registrant):
         """Create a SourcePackageRecipe owned by this person.
 
         :param name: the name to use for referring to the recipe.
         :param description: A description of the recipe.
         :param recipe_text: The text of the recipe.
         :param distroseries: The distroseries to use.
-        :param sourcepackagename: The name of the sourcepackage for the recipe.
         :return: a SourcePackageRecipe.
         """
 

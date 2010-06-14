@@ -344,6 +344,9 @@ def _send_bug_details_to_new_bug_subscribers(
 def update_security_contact_subscriptions(modified_bugtask, event):
     """Subscribe the new security contact when a bugtask's product changes.
 
+    Only subscribes the new security contact if the bug was marked a
+    security issue originally.
+
     No change is made for private bugs.
     """
     if event.object.bug.private:
@@ -358,7 +361,7 @@ def update_security_contact_subscriptions(modified_bugtask, event):
     if (bugtask_before_modification.product !=
         bugtask_after_modification.product):
         new_product = bugtask_after_modification.product
-        if new_product.security_contact:
+        if bugtask_before_modification.bug.security_related and new_product.security_contact:
             bugtask_after_modification.bug.subscribe(
                 new_product.security_contact, IPerson(event.user))
 
@@ -368,6 +371,11 @@ def get_bugmail_from_address(person, bug):
     if person == getUtility(ILaunchpadCelebrities).janitor:
         return format_address(
             'Launchpad Bug Tracker',
+            "%s@%s" % (bug.id, config.launchpad.bugs_domain))
+
+    if person.hide_email_addresses:
+        return format_address(
+            person.displayname,
             "%s@%s" % (bug.id, config.launchpad.bugs_domain))
 
     if person.preferredemail is not None:
