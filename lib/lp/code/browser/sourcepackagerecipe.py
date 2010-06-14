@@ -354,7 +354,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         parser = RecipeParser(data['recipe_text'])
         recipe = parser.parse()
         try:
-            source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
+            source = getUtility(ISourcePackageRecipeSource)
+            source_package_recipe = source.new(
                 self.user, self.user, data['distros'],
                 data['name'], recipe, data['description'])
         except NoSuchBranch, e:
