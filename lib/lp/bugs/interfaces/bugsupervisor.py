@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import ParticipatingPersonChoice
 
 from zope.interface import Interface
 
@@ -24,7 +24,7 @@ from lazr.restful.interface import copy_field
 
 class IHasBugSupervisor(Interface):
 
-    bug_supervisor = exported(PublicPersonChoice(
+    bug_supervisor = exported(ParticipatingPersonChoice(
         title=_("Bug Supervisor"),
         description=_(
             "The Launchpad id of the person or team (preferred) responsible "

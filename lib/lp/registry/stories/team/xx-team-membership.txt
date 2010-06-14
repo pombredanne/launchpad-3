@@ -249,3 +249,11 @@ subscriptions on their own participation page.
     >>> user_browser.getLink('Change mailing list subscriptions')
     <Link ... url='http://.../~no-priv/+editemails'>
 
+Teams also have a participation page, but it does not include a mailing
+list column.
+
+    >>> admin_browser.open('http://launchpad.dev/~admins/+participation')
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'participation'))
+    Team                  Joined      Role    Via
+    Mailing List Experts  2007-10-04  Owner   &mdash;
