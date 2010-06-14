@@ -312,6 +312,12 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     @property
     def specific_job(self):
         """See `IBuild`"""
+        # XXX - update to use ISpecificBuildFarmJob so adaption is done
+        # automatically
+        if self.job_type == BuildFarmJobType.PACKAGEBUILD:
+            from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
+            return IBinaryPackageBuild(self)
+
         return None
 
 

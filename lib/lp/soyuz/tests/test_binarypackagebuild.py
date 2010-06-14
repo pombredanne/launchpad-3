@@ -160,6 +160,13 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
             getattr, package_build, 'build_farm_job')
         self.failUnlessEqual(0, len(statements))
 
+    def test_specific_job_for_binary_package_build(self):
+        # The specific job attribute of the underlying build farm job
+        # returns the binary package build.
+        build_farm_job = self.build.build_farm_job
+        Store.of(build_farm_job).flush()
+        self.assertEqual(self.build, build_farm_job.specific_job)
+
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):
 
