@@ -19,11 +19,16 @@ import time
 
 import numpy
 import simplejson as json
-from zc.zservertracelog.tracereport import Request
+import zc.zservertracelog.tracereport
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import log
 from lp.scripts.helpers import LPOptionParser
+
+
+class Request(zc.zservertracelog.tracereport.Request):
+    url = None
+    pageid = None
 
 
 class Category:
@@ -113,6 +118,14 @@ def main():
         "--until", dest="until_ts", type="datetime",
         default=None, metavar="TIMESTAMP",
         help="Ignore log entries after TIMESTAMP")
+    parser.add_option(
+        "--no-categories", dest="categories",
+        action="store_false", default=True,
+        help="Do not produce categories report")
+    parser.add_option(
+        "--no-pageids", dest="pageids",
+        action="store_false", default=True,
+        help="Do not produce pageids report")
     options, args = parser.parse_args()
     if len(args) == 0:
         parser.error("At least one zserver tracelog file must be provided")
@@ -148,9 +161,11 @@ def main():
     if len(categories) == 0:
         parser.error("No data in [categories] section of configuration.")
 
-    parse(args, categories, options)
+    pageid_times = {}
 
-    print_html_report(categories)
+    parse(args, categories, pageid_times, options)
+
+    print_html_report(options, categories, pageid_times)
 
     return 0
 
@@ -185,7 +200,7 @@ def parse_timestamp(ts_string):
         *(int(elem) for elem in match.groups() if elem is not None))
 
 
-def parse(tracefiles, categories, options):
+def parse(tracefiles, categories, pageid_times, options):
     requests = {}
     total_requests = 0
     for tracefile in tracefiles:
@@ -234,7 +249,8 @@ def parse(tracefiles, categories, options):
 
                 # Old stype extension record from Launchpad. Just
                 # contains the URL.
-                if record_type == '-' and len(args) == 1:
+                if (record_type == '-' and len(args) == 1
+                    and args[0].startswith('http')):
                     request.url = args[0]
 
                 # New style extension record with a prefix.
@@ -242,7 +258,7 @@ def parse(tracefiles, categories, options):
                     # Launchpad outputs several things as tracelog
                     # extension records. We include a prefix to tell
                     # them apart.
-                    require_args(2)
+                    require_args(1)
 
                     parse_extension_record(request, args)
 
@@ -263,8 +279,21 @@ def parse(tracefiles, categories, options):
                     total_requests += 1
                     if total_requests % 10000 == 0:
                         log.debug("Parsed %d requests", total_requests)
-                    for category in categories:
-                        category.add(request)
+
+                    # Add the request to any matching categories.
+                    if categories is not None:
+                        for category in categories:
+                            category.add(request)
+
+                    # Add the request to the times for that pageid.
+                    if pageid_times is not None and request.pageid is not None:
+                        pageid = request.pageid
+                        try:
+                            times = pageid_times[pageid]
+                        except KeyError:
+                            times = Times(options.timeout)
+                            pageid_times[pageid] = times
+                        times.add(request)
 
                 else:
                     raise MalformedLine('Unknown record type %s', record_type)
@@ -273,19 +302,25 @@ def parse(tracefiles, categories, options):
                     "Malformed line %s %s (%s)" % (repr(line), repr(args), x))
 
 
-def parse_extension_record(self, request, args):
+def parse_extension_record(request, args):
     """Decode a ZServer extension records and annotate request."""
     prefix = args[0]
+
+    if len(args) > 1:
+        args = ' '.join(args[1:])
+    else:
+        args = None
+
     if prefix == 'u':
-        request.url = args[1]
+        request.url = args
     elif prefix == 'p':
-        request.pageid = args[1]
+        request.pageid = args
     else:
         raise MalformedLine(
             "Unknown extension prefix %s" % prefix)
 
 
-def print_html_report(categories):
+def print_html_report(options, categories, pageid_times):
 
     print dedent('''\
         <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
@@ -316,7 +351,9 @@ def print_html_report(categories):
         <body>
         <h1>Launchpad Page Performance Report</h1>
         <h2>%(date)s</h2>
+        ''' % {'date': time.ctime()})
 
+    table_header = dedent('''\
         <table class="launchpad-performance-report">
         <thead>
             <tr>
@@ -328,16 +365,29 @@ def print_html_report(categories):
             </tr>
         </thead>
         <tbody>
-        ''' % {'date': time.ctime()})
+        ''')
+    table_footer = "</tbody></table>"
 
+    # Generator to produce class names for odd or even rows.
+    def _row_class():
+        _row_toggle = 0
+        while True:
+            _row_toggle = (_row_toggle + 1) % 2
+            if _row_toggle == 1:
+                yield "even-row"
+            else:
+                yield "odd-row"
+    row_class = _row_class()
+
+    # Store our generated histograms to output Javascript later.
     histograms = []
-    for i, category in enumerate(categories):
-        row_class = "even-row" if i % 2 else "odd-row"
-        mean, median, standard_deviation, histogram = category.times.stats()
+
+    def handle_times(html_title, times):
+        mean, median, standard_deviation, histogram = times.stats()
         histograms.append(histogram)
         print dedent("""\
             <tr class="%s">
-            <th class="category-title">%s <span class="regexp">%s</span></th>
+            <th class="category-title">%s</th>
             <td class="mean">%.2f s</td>
             <td class="median">%.2f s</td>
             <td class="standard-deviation">%.2f s</td>
@@ -346,13 +396,25 @@ def print_html_report(categories):
             </td>
             </tr>
             """ % (
-                row_class,
-                html_quote(category.title), html_quote(category.regexp),
-                mean, median, standard_deviation, i))
+                row_class.next(), html_title,
+                mean, median, standard_deviation, len(histograms)-1))
 
-    print "</tbody></table>"
+    if options.categories:
+        print table_header
+        for category in categories:
+            html_title = '%s <span class="regexp">%s</span>' % (
+                html_quote(category.title), html_quote(category.regexp))
+            handle_times(html_title, category.times)
+        print table_footer
 
+    if options.pageids:
+        print table_header
+        for pageid, times in sorted(pageid_times.items()):
+            handle_times(html_quote(pageid), times)
+        print table_footer
 
+    # Ourput the javascript to render our histograms nicely, replacing
+    # the placeholder <div> tags output earlier.
     print dedent("""\
         <script language="javascript" type="text/javascript">
         $(function () {
