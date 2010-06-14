@@ -43,6 +43,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
     """Widget for selecting a product bug tracker."""
 
     _joinButtonToMessageTemplate = u'%s&nbsp;%s'
+    template = ViewPageTemplateFile('templates/product-bug-tracker.pt')
 
     def __init__(self, field, vocabulary, request):
         # pylint: disable-msg=W0233
@@ -198,10 +199,12 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             value="external-email", name=self.name, cssClass=self.cssClass)
 
         # All the choices arguments in order.
-        all_arguments = [malone_item_arguments,
-                         external_bugtracker_arguments,
-                         external_bugtracker_email_arguments,
-                         project_bugtracker_arguments]
+        all_arguments = {
+            'launchpad': malone_item_arguments,
+            'external_bugtracker': external_bugtracker_arguments,
+            'external_email': external_bugtracker_email_arguments,
+            'unknown': project_bugtracker_arguments,
+            }
 
         # Figure out the selected choice.
         if value == field.malone_marker:
@@ -219,12 +222,17 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             selected = project_bugtracker_arguments
 
         # Render.
-        for arguments in all_arguments:
+        for name, arguments in all_arguments.items():
             if arguments is selected:
                 render = self.renderSelectedItem
             else:
                 render = self.renderItem
-            yield render(**arguments)
+            yield (name, render(**arguments))
+
+    def renderValue(self, value):
+        # Render the items with subordinate fields and support markup.
+        self.bug_trackers = dict(self.renderItems(value))
+        return self.template()
 
 
 class LicenseWidget(CheckBoxMatrixWidget):
