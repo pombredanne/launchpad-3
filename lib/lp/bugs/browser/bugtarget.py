@@ -120,6 +120,8 @@ class IProductBugConfiguration(Interface):
     remote_product = copy_field(IProduct['remote_product'])
     bug_reporting_guidelines = copy_field(
         IBugTarget['bug_reporting_guidelines'])
+    bug_reported_acknowledgement = copy_field(
+        IBugTarget['bug_reported_acknowledgement'])
 
 
 def product_to_productbugconfiguration(product):
@@ -141,6 +143,7 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
         "enable_bug_expiration",
         "remote_product",
         "bug_reporting_guidelines",
+        "bug_reported_acknowledgement",
         ]
     custom_widget('bugtracker', ProductBugTrackerWidget)
 
