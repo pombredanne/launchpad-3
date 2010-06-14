@@ -7,7 +7,19 @@ cache. The full cache functionality is tested in lazr.restful and in
 lib/lp/services/memcache/doc/restful-cache.txt. This is just a simple
 integration test.
 
-First we need to get a reference to the cache object, so we can look
+By default, the cache is disabled, even in the testrunner
+environment. (This will change once we improve the Launchpad cache's
+cache invalidation.) Let's enable the cache just for this test.
+
+    >>> from canonical.config import config
+    >>> config.vhost.api.enable_server_side_representation_cache
+    False
+    >>> config.push('enable cache', """\
+    ... [vhost.api]
+    ... enable_server_side_representation_cache: True
+    ... """)
+
+Now we need to get a reference to the cache object, so we can look
 inside.
 
     >>> from zope.component import getUtility
@@ -50,24 +62,16 @@ corresponding object.
 If there's a problem with the cache or the invalidation code, we can
 disable the cache by setting a configuration variable.
 
-    >>> from canonical.config import config
-    >>> config.push('disable cache', """\
-    ... [vhost.api]
-    ... enable_server_side_representation_cache: False
-    ... """)
+Cleanup: re-disable the cache.
 
-Documents are never served from a disabled cache.
+    >>> ignore = config.pop('enable cache')
+
+Note that ocuments are never served from a disabled cache, even if the
+cache is populated.
 
     >>> print webservice.get("/~salgado", api_version="devel").jsonBody()
     {...}
 
-    >>> ignore = config.pop('disable cache')
-
-    >>> print webservice.get("/~salgado", api_version="devel").jsonBody()
-    Fake representation
-
-Cleanup.
+Cleanup: clear the cache.
 
     >>> cache.delete(person)
-    >>> print webservice.get("/~salgado", api_version="devel").jsonBody()
-    {...}

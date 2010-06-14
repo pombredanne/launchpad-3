@@ -36,9 +36,9 @@ class MemcachedStormRepresentationCache(BaseRepresentationCache):
             primary_key = tuple(var.get() for var in storm_info.primary_vars)
             identifier = table_name + repr(primary_key)
         except Exception, e:
-            # This is more expensive, but it should always work.
-            request = get_current_web_service_request()
-            identifier = absoluteURL(obj, request).encode('utf-8')
+            # There's no Storm data for this object. Don't cache it,
+            # since we don't know how to invalidate the cache.
+            return self.DO_NOT_CACHE
 
         key = (identifier
                + ',' + config._instance_name

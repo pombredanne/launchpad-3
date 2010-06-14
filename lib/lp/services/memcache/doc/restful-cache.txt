@@ -49,6 +49,14 @@ Add a representation to the cache, and you can retrieve it later.
     >>> print cache.get(person, json_type, "beta")
     This is a representation for version beta.
 
+If an object has no Storm metadata, it is currently not cached at all.
+
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
+    >>> hwdb_app = getUtility(IHWDBApplication)
+    >>> cache.set(hwdb_app, 'media/type', 'web-service-version', 'data')
+    >>> print cache.get(hwdb_app, 'media/type', 'web-service-version')
+    None
+
 A single object can cache different representations for different
 web service versions.
 
