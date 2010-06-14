@@ -27,6 +27,9 @@ JS_DIRSET = [
 ICING_ROOT = os.path.join(TOP, 'lib', 'canonical', 'launchpad', 'icing')
 ICING_BUILD = os.path.join(ICING_ROOT, 'build')
 
+# Builder has lots of logging, which might not
+# play well with printing filenames.  Monkey patch
+# to disable it.
 def log_none(msg):
     return
 
