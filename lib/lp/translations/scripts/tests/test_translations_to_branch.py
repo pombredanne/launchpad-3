@@ -201,6 +201,9 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
         self.becomeDbUser('translationstobranch')
 
+        # XXX JeroenVermeulen 2010-06-14 bug=593522: This is needed
+        # because the staging codehosting server's email isn't being
+        # captured like it should.
         self.pushConfig('rosetta', notify_unpushed_branches=True)
         exporter._exportToBranches([productseries])
 
@@ -222,6 +225,9 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # The default configuration suppresses notification emails, so
         # we don't accidentally send out emails from staging
         # codehosting.
+        # XXX JeroenVermeulen 2010-06-14 bug=593522: This is needed
+        # because the staging codehosting server's email isn't being
+        # captured like it should.
         exporter = ExportTranslationsToBranch(test_args=[])
         exporter.logger = QuietFakeLogger()
         productseries = self.factory.makeProductSeries()

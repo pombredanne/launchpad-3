@@ -278,6 +278,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
             # matter; outgoing email there is walled off.  But this
             # script runs on the codehosting server.  The staging
             # codehosting server sends out real email.
+            # XXX JeroenVermeulen 2010-06-14 bug=593522: This is needed
+            # because the staging codehosting server's email isn't being
+            # captured like it should.
             return
 
         branch = productseries.translations_branch
