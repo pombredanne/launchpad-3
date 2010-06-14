@@ -2269,7 +2269,7 @@ class Person(
         builder_recipe = RecipeParser(recipe_text).parse()
         spnset = getUtility(ISourcePackageNameSet)
         return SourcePackageRecipe.new(
-            registrant, self, distroseries, name, builder_recipe, description)
+            registrant, self, name, builder_recipe, description, distroseries)
 
     def getRecipe(self, name):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
