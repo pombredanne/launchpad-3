@@ -320,8 +320,11 @@ def setupCompleteBuilds(batch):
     if not builds:
         return []
 
+    # This pre-population of queue entries is only implemented for
+    # IBinaryPackageBuilds.
     prefetched_data = dict()
-    build_ids = [build.id for build in builds]
+    build_ids = [
+        build.id for build in builds if IBinaryPackageBuild.providedBy(build)]
     results = getUtility(IBinaryPackageBuildSet).getQueueEntriesForBuildIDs(
         build_ids)
     for (buildqueue, _builder, build_job) in results:
