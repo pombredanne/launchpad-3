@@ -349,6 +349,10 @@ class BuildRecordsView(LaunchpadView):
 
     page_title = 'Builds'
 
+    # Currenly most build records views are interested in binaries
+    # only, but subclasses can set this if desired.
+    binary_only = True
+
     @property
     def label(self):
         return 'Builds for %s' % self.context.displayname
@@ -372,7 +376,7 @@ class BuildRecordsView(LaunchpadView):
         # request context build records according the selected state
         builds = self.context.getBuildRecords(
             build_state=self.state, name=self.text, arch_tag=self.arch_tag,
-            user=self.user)
+            user=self.user, binary_only=self.binary_only)
         self.batchnav = BatchNavigator(builds, self.request)
         # We perform this extra step because we don't what to issue one
         # extra query to retrieve the BuildQueue for each Build (batch item)

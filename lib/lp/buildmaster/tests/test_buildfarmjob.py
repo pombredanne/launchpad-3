@@ -150,6 +150,11 @@ class TestBuildFarmJob(TestBuildFarmJobBase):
             date_created=ten_years_ago)
         self.failUnlessEqual(ten_years_ago, build_farm_job.date_created)
 
+    def test_specific_job(self):
+        # The specific_job attribute will be None if there is no
+        # corresponding specific_job.
+        self.assertEqual(None, self.build_farm_job.specific_job)
+
 
 class TestBuildFarmJobSecurity(TestBuildFarmJobBase):
 

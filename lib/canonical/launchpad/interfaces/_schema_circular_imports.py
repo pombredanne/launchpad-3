@@ -284,6 +284,7 @@ patch_plain_parameter_type(
 # IBuildFarmJob
 IBuildFarmJob['status'].vocabulary = BuildStatus
 IBuildFarmJob['buildqueue_record'].schema = IBuildQueue
+IBuildFarmJob['specific_job'].schema = IBuildFarmJob
 
 # IDistribution
 IDistribution['series'].value_type.schema = IDistroSeries

@@ -246,7 +246,15 @@ class IBuildFarmJob(IBuildFarmJobOld):
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
 
+    specific_job = Reference(
+        # Really IBuildFarmJob, set in _schema_circular_imports to
+        # enable the reference to its own interface.
+        schema=Interface, title=_("Specific job"),
+        description=_("The specific job related to this build farm job."))
+
     title = exported(TextLine(title=_("Title"), required=False))
+
+    was_built = Attribute("Whether or not modified by the builddfarm.")
 
 
 class IBuildFarmJobSource(Interface):

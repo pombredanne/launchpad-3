@@ -302,6 +302,18 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """
         pass
 
+    @property
+    def was_built(self):
+        """See `IBuild`"""
+        return self.status not in [BuildStatus.NEEDSBUILD,
+                                   BuildStatus.BUILDING,
+                                   BuildStatus.SUPERSEDED]
+
+    @property
+    def specific_job(self):
+        """See `IBuild`"""
+        return None
+
 
 class BuildFarmJobDerived:
     implements(IBuildFarmJob)
