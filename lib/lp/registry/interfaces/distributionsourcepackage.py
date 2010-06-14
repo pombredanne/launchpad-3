@@ -21,7 +21,7 @@ from lazr.restful.declarations import (
     rename_parameters_as)
 
 from canonical.launchpad import _
-from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.distribution import IDistribution
@@ -31,7 +31,8 @@ from lp.registry.interfaces.structuralsubscription import (
 
 
 class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
-                                 IStructuralSubscriptionTarget):
+                                 IStructuralSubscriptionTarget,
+                                 IHasOfficialBugTags):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking
@@ -101,7 +102,7 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         """
 
     def get_distroseries_packages(active_only=True):
-        """Return a list of DistroSeriesSourcePackage objects, each 
+        """Return a list of DistroSeriesSourcePackage objects, each
         representing this same source package in the series of this
         distribution.
 

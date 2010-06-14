@@ -4,99 +4,73 @@
 __metaclass__ = type
 
 import os
-import pwd
 
-from canonical.buildd.slave import BuildManager
+from canonical.buildd.debian import DebianBuildManager, DebianBuildState
 
-
-class TranslationTemplatesBuildState(object):
-    "States this kind of build goes through."""
-    INIT = "INIT"
-    UNPACK = "UNPACK"
-    MOUNT = "MOUNT"
-    UPDATE = "UPDATE"
+class TranslationTemplatesBuildState(DebianBuildState):
     INSTALL = "INSTALL"
     GENERATE = "GENERATE"
-    CLEANUP = "CLEANUP"
 
 
-class TranslationTemplatesBuildManager(BuildManager):
+class TranslationTemplatesBuildManager(DebianBuildManager):
     """Generate translation templates from branch.
 
     This is the implementation of `TranslationTemplatesBuildJob`.  The
     latter runs on the master server; TranslationTemplatesBuildManager
     runs on the build slave.
     """
-    def __init__(self, *args, **kwargs):
-        super(TranslationTemplatesBuildManager, self).__init__(
-            *args, **kwargs)
-        self._state = TranslationTemplatesBuildState.INIT
-        self.alreadyfailed = False
+
+    initial_build_state = TranslationTemplatesBuildState.INSTALL
+
+    def __init__(self, slave, buildid):
+        super(TranslationTemplatesBuildManager, self).__init__(slave, buildid)
+        self._generatepath = slave._config.get(
+            "translationtemplatesmanager", "generatepath")
+        self._resultname = slave._config.get(
+            "translationtemplatesmanager", "resultarchive")
 
     def initiate(self, files, chroot, extra_args):
         """See `BuildManager`."""
-        self.branch_url = extra_args['branch_url']
-        self.username = pwd.getpwuid(os.getuid())[0]
+        self._branch_url = extra_args['branch_url']
+        self._chroot_path = os.path.join(
+            self.home, 'build-' + self._buildid, 'chroot-autobuild')
 
         super(TranslationTemplatesBuildManager, self).initiate(
             files, chroot, extra_args)
 
-        self.chroot_path = os.path.join(
-            self.home, 'build-' + self._buildid, 'chroot-autobuild')
+    def doInstall(self):
+        """Install packages required."""
+        required_packages = [
+            'bzr',
+            'intltool',
+            ]
+        command = ['apt-get', 'install', '-y'] + required_packages
+        chroot = ['sudo', 'chroot', self._chroot_path]
+        self.runSubProcess('/usr/bin/sudo', chroot + command)
 
-    def iterate(self, success):
-        func = getattr(self, 'iterate_' + self._state, None)
-        if func is None:
-            raise ValueError("Unknown %s state: %s" % (
-                self.__class__.__name__, self._state))
-        func(success)
+    # To satisfy DebianPackageManagers needs without having a misleading
+    # method name here.
+    doRunBuild = doInstall
 
-    def iterate_INIT(self, success):
-        """Next step after initialization."""
-        if success == 0:
-            self._state = TranslationTemplatesBuildState.UNPACK
-            self.doUnpack()
-        else:
-            if not self.alreadyfailed:
-                self._slave.builderFail()
-                self.alreadyfailed = True
-            self._state = TranslationTemplatesBuildState.CLEANUP
-            self.build_implementation.doCleanup()
+    def doGenerate(self):
+        """Generate templates."""
+        command = [
+            self._generatepath,
+            self._buildid, self._branch_url, self._resultname]
+        self.runSubProcess(self._generatepath, command)
 
-    def iterate_UNPACK(self, success):
-        if success == 0:
-            self._state = TranslationTemplatesBuildState.MOUNT
-            self.doMounting()
-        else:
-            if not self.alreadyfailed:
-                self._slave.chrootFail()
-                self.alreadyfailed = True
-            self._state = TranslationTemplatesBuildState.CLEANUP
-            self.doCleanup()
+    def gatherResults(self):
+        """Gather the results of the build and add them to the file cache."""
+        # The file is inside the chroot, in the home directory of the buildd
+        # user. Should be safe to assume the home dirs are named identically.
+        assert self.home.startswith('/'), "home directory must be absolute."
 
-    def iterate_MOUNT(self, success):
-        if success == 0:
-            self._state = TranslationTemplatesBuildState.UPDATE
-            self.doUpdate()
-        else:
-            if not self.alreadyfailed:
-                self._slave.chrootFail()
-                self.alreadyfailed = True
-            self._state = TranslationTemplatesBuildState.CLEANUP
-            self.doCleanup()
-
-    def iterate_UPDATE(self, success):
-        if success == 0:
-            self._state = TranslationTemplatesBuildState.INSTALL
-            self.doInstall()
-        else:
-            if not self.alreadyfailed:
-                self._slave.chrootFail()
-                self.alreadyfailed = True
-            self._state = TranslationTemplatesBuildState.CLEANUP
-            self.doCleanup()
+        path = os.path.join(self._chroot_path, self.home[1:], self._resultname)
+        if os.access(path, os.F_OK):
+            self._slave.addWaitingFile(path)
 
     def iterate_INSTALL(self, success):
+        """Installation was done."""
         if success == 0:
             self._state = TranslationTemplatesBuildState.GENERATE
             self.doGenerate()
@@ -104,56 +78,20 @@ class TranslationTemplatesBuildManager(BuildManager):
             if not self.alreadyfailed:
                 self._slave.chrootFail()
                 self.alreadyfailed = True
-            self._state = TranslationTemplatesBuildState.CLEANUP
-            self.doCleanup()
+            self._state = TranslationTemplatesBuildState.UMOUNT
+            self.doUnmounting()
 
     def iterate_GENERATE(self, success):
+        """Template generation finished."""
         if success == 0:
-            self._state = TranslationTemplatesBuildState.CLEANUP
-            self.doCleanup()
+            # It worked! Now let's bring in the harvest.
+            self.gatherResults()
+            self._state = TranslationTemplatesBuildState.REAP
+            self.doReapProcesses()
         else:
             if not self.alreadyfailed:
                 self._slave.buildFail()
                 self.alreadyfailed = True
-            self._state = TranslationTemplatesBuildState.CLEANUP
-            self.doCleanup()
+            self._state = TranslationTemplatesBuildState.REAP
+            self.doReapProcesses()
 
-    def iterate_CLEANUP(self, success):
-        if success == 0:
-            if not self.alreadyfailed:
-                self._slave.buildOK()
-        else:
-            if not self.alreadyfailed:
-                self._slave.builderFail()
-                self.alreadyfailed = True
-        self._slave.buildComplete()
-
-    def doInstall(self):
-        """Install packages required."""
-        required_packages = [
-            'bzr',
-            'intltool-debian',
-            ]
-        command = ['apt-get', 'install', '-y'] + required_packages
-        self.runInChroot(self.home, command, as_root=True)
-
-    def doUpdate(self):
-        """Update chroot."""
-        command = ['update-debian-chroot', self._buildid]
-        self.runInChroot(self.home, command, as_root=True)
-
-    def doGenerate(self):
-        """Generate templates."""
-        command = ['generate-translation-templates.py', self.branch_url]
-        self.runInChroot(self.home, command)
-
-    def runInChroot(self, path, command, as_root=False):
-        """Run command in chroot."""
-        chroot = ['/usr/bin/sudo', '/usr/sbin/chroot', self.chroot_path]
-        if as_root:
-            sudo = []
-        else:
-            # We have to sudo to chroot, so if the command should _not_
-            # be run as root, we then need to sudo back to who we were.
-            sudo = ['/usr/bin/sudo', '-u', self.username]
-        return self.runSubProcess(path, chroot + sudo + command)

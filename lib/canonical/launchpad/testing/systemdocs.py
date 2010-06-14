@@ -3,6 +3,8 @@
 
 """Infrastructure for setting up doctests."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 __all__ = [
     'default_optionflags',
@@ -10,12 +12,14 @@ __all__ = [
     'SpecialOutputChecker',
     'setUp',
     'setGlobs',
+    'stop',
     'strip_prefix',
     'tearDown',
     ]
 
 import logging
 import os
+import pdb
 import pprint
 import sys
 
@@ -30,7 +34,9 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import reset_logging
-from lp.testing import ANONYMOUS, login, login_person, logout
+from lp.testing import (
+    ANONYMOUS, launchpadlib_credentials_for, launchpadlib_for, login,
+    login_person, logout, oauth_access_token_for)
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.views import create_view, create_initialized_view
 
@@ -170,6 +176,16 @@ def ordered_dict_as_string(dict):
         "%r: %r" % (key, value) for key, value in sorted(dict.items()))
 
 
+def stop():
+    # Temporarily restore the real stdout.
+    old_stdout = sys.stdout
+    sys.stdout = sys.__stdout__
+    try:
+        pdb.set_trace()
+    finally:
+        sys.stdout = old_stdout
+
+
 def setGlobs(test):
     """Add the common globals for testing system documentation."""
     test.globs['ANONYMOUS'] = ANONYMOUS
@@ -186,6 +202,11 @@ def setGlobs(test):
     test.globs['ordered_dict_as_string'] = ordered_dict_as_string
     test.globs['verifyObject'] = verifyObject
     test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
+    test.globs['stop'] = stop
+    test.globs['with_statement'] = with_statement
+    test.globs['launchpadlib_for'] = launchpadlib_for
+    test.globs['launchpadlib_credentials_for'] = launchpadlib_credentials_for
+    test.globs['oauth_access_token_for'] = oauth_access_token_for
 
 
 def setUp(test):

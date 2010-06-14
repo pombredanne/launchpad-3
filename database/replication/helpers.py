@@ -28,22 +28,18 @@ CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 
 # Replication set id constants. Don't change these without DBA help.
 LPMAIN_SET_ID = 1
-AUTHDB_SET_ID = 2
 HOLDING_SET_ID = 666
-
-# Seed tables for the authdb replication set to be passed to
-# calculate_replication_set().
-AUTHDB_SEED = frozenset([
-    ('public', 'account'),
-    ('public', 'openidassociation'),
-    ('public', 'openidnonce'),
-    ])
+LPMIRROR_SET_ID = 4
 
 # Seed tables for the lpmain replication set to be passed to
 # calculate_replication_set().
 LPMAIN_SEED = frozenset([
+    ('public', 'account'),
+    ('public', 'openidnonce'),
+    ('public', 'openidassociation'),
     ('public', 'person'),
     ('public', 'launchpaddatabaserevision'),
+    ('public', 'databasereplicationlag'),
     ('public', 'fticache'),
     ('public', 'nameblacklist'),
     ('public', 'openidconsumerassociation'),
@@ -56,7 +52,7 @@ LPMAIN_SEED = frozenset([
     ('public', 'launchpadstatistic'),
     ('public', 'parsedapachelog'),
     ('public', 'shipitsurvey'),
-    ('public', 'openidassociations'), # Remove this in April 2009 or later.
+    ('public', 'databasereplicationlag'),
     ])
 
 # Explicitly list tables that should not be replicated. This includes the
@@ -68,9 +64,13 @@ IGNORED_TABLES = set([
     'public.secret', 'public.sessiondata', 'public.sessionpkgdata',
     # Mirror tables, per Bug #489078. These tables have their own private
     # replication set that is setup manually.
+    'public.lp_account',
     'public.lp_person',
     'public.lp_personlocation',
     'public.lp_teamparticipation',
+    # Database statistics
+    'public.databasetablestats',
+    'public.databasecpustats',
     # Ubuntu SSO database. These tables where created manually by ISD
     # and the Launchpad scripts should not mess with them. Eventually
     # these tables will be in a totally separate database.
@@ -87,6 +87,13 @@ IGNORED_TABLES = set([
     'public.auth_group_permissions',
     'public.auth_user_groups',
     'public.auth_user_user_permissions',
+    'public.oauth_nonce',
+    'public.oauth_consumer',
+    'public.oauth_token',
+    'public.api_user',
+    'public.oauth_consumer_id_seq',
+    'public.api_user_id_seq',
+    'public.oauth_nonce_id_seq',
     ])
 
 # Calculate IGNORED_SEQUENCES
@@ -167,12 +174,13 @@ def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
         script = preamble() + script
 
     if sync is not None:
-        script = script + dedent("""\
+        sync_script = dedent("""\
             sync (id = @master_node);
             wait for event (
-                origin = ALL, confirmed = ALL,
+                origin = @master_node, confirmed = ALL,
                 wait on = @master_node, timeout = %d);
             """ % sync)
+        script = script + sync_script
 
     # Copy the script to a NamedTemporaryFile rather than just pumping it
     # to slonik via stdin. This way it can be examined if slonik appears
@@ -183,7 +191,7 @@ def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
 
     # Run slonik
     log.debug("Executing slonik script %s" % script_on_disk.name)
-    log.log(DEBUG2, script)
+    log.log(DEBUG2, 'Running script:\n%s' % script)
     returncode = subprocess.call(['slonik', script_on_disk.name])
 
     if returncode != 0:
@@ -314,10 +322,10 @@ def preamble(con=None):
         cluster name = sl;
 
         # Symbolic ids for replication sets.
-        define lpmain_set  %d;
-        define authdb_set  %d;
-        define holding_set %d;
-        """ % (LPMAIN_SET_ID, AUTHDB_SET_ID, HOLDING_SET_ID))]
+        define lpmain_set   %d;
+        define holding_set  %d;
+        define lpmirror_set %d;
+        """ % (LPMAIN_SET_ID, HOLDING_SET_ID, LPMIRROR_SET_ID))]
 
     if master_node is not None:
         preamble.append(dedent("""\
@@ -494,19 +502,6 @@ def validate_replication(cur):
         raise ReplicationConfigError(
             "Unreplicated sequences: %s" % repr(unrepl_sequences))
 
-    authdb_tables, authdb_sequences = calculate_replication_set(
-        cur, AUTHDB_SEED)
     lpmain_tables, lpmain_sequences = calculate_replication_set(
         cur, LPMAIN_SEED)
-
-    confused_tables = authdb_tables.intersection(lpmain_tables)
-    if confused_tables:
-        raise ReplicationConfigError(
-            "Tables exist in multiple replication sets: %s"
-            % repr(confused_tables))
-    confused_sequences = authdb_sequences.intersection(lpmain_sequences)
-    if confused_sequences:
-        raise ReplicationConfigError(
-            "Sequences exist in multiple replication sets: %s"
-            % repr(confused_sequences))
 

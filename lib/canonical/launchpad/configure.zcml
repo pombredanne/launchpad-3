@@ -22,6 +22,7 @@
 
   <include package="lp.app" />
   <include package="lp.bugs" />
+  <include package="lp.buildmaster" />
   <include package="lp.registry" />
   <include package="lp.answers" />
   <include package="lp.coop.answersbugs" />
@@ -94,8 +95,8 @@
       classes="LaunchpadRootNavigation"
       />
 
-  <browser:resourceDirectory
-      name="PlotKit"
-      directory="../../contrib/PlotKit"
-      />
+  <!-- Register a handler to fix things up just before the application
+       starts (and after zcml has been processed). -->
+  <subscriber handler=".webapp.initialization.handle_process_start" />
+
 </configure>

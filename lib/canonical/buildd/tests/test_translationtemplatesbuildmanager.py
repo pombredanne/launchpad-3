@@ -8,6 +8,7 @@ import os
 from unittest import TestLoader
 
 from lp.testing import TestCase
+from lp.testing.fakemethod import FakeMethod
 
 from canonical.buildd.translationtemplates import (
     TranslationTemplatesBuildManager, TranslationTemplatesBuildState)
@@ -22,9 +23,27 @@ class FakeSlave:
     def __init__(self, tempdir):
         self._cachepath = tempdir
         self._config = FakeConfig()
+        self._was_called = set()
 
     def cachePath(self, file):
         return os.path.join(self._cachepath, file)
+
+    def anyMethod(self, *args, **kwargs):
+        pass
+
+    fake_methods = ['emptyLog', 'chrootFail', 'buildFail', 'builderFail',]
+    def __getattr__(self, name):
+        """Remember which fake methods were called."""
+        if name not in self.fake_methods:
+            raise AttributeError(
+                "'%s' object has no attribute '%s'" % (self.__class__, name))
+        self._was_called.add(name)
+        return self.anyMethod
+
+    def wasCalled(self, name):
+        return name in self._was_called
+
+    addWaitingFile = FakeMethod()
 
 
 class MockBuildManager(TranslationTemplatesBuildManager):
@@ -33,7 +52,7 @@ class MockBuildManager(TranslationTemplatesBuildManager):
         self.commands = []
 
     def runSubProcess(self, path, command):
-        self.commands.append(command)
+        self.commands.append([path]+command)
         return 0
 
 
@@ -46,55 +65,27 @@ class TestTranslationTemplatesBuildManagerIteration(TestCase):
         home_dir = os.path.join(self.working_dir, 'home')
         for dir in (slave_dir, home_dir):
             os.mkdir(dir)
-        slave = FakeSlave(slave_dir)
-        buildid = '123'
-        self.buildmanager = MockBuildManager(slave, buildid)
+        self.slave = FakeSlave(slave_dir)
+        self.buildid = '123'
+        self.buildmanager = MockBuildManager(self.slave, self.buildid)
         self.buildmanager.home = home_dir
         self.chrootdir = os.path.join(
-            home_dir, 'build-%s' % buildid, 'chroot-autobuild')
+            home_dir, 'build-%s' % self.buildid, 'chroot-autobuild')
 
     def getState(self):
         """Retrieve build manager's state."""
         return self.buildmanager._state
 
-    def test_initiate(self):
-        # Creating a BuildManager spawns no child processes.
-        self.assertEqual([], self.buildmanager.commands)
-
-        # Initiating the build executes the first command.  It leaves
-        # the build manager in the INIT state.
-        self.buildmanager.initiate({}, 'chroot.tar.gz', {'branch_url': 'foo'})
-        self.assertEqual(1, len(self.buildmanager.commands))
-        self.assertEqual(TranslationTemplatesBuildState.INIT, self.getState())
-
     def test_iterate(self):
+        # Two iteration steps are specific to this build manager.
         url = 'lp:~my/branch'
         # The build manager's iterate() kicks off the consecutive states
         # after INIT.
         self.buildmanager.initiate({}, 'chroot.tar.gz', {'branch_url': url})
 
-        # UNPACK: execute unpack-chroot.
-        self.buildmanager.iterate(0)
-        self.assertEqual(
-            TranslationTemplatesBuildState.UNPACK, self.getState())
-        self.assertEqual('unpack-chroot', self.buildmanager.commands[-1][0])
-
-        # MOUNT: Set up realistic chroot environment.
-        self.buildmanager.iterate(0)
-        self.assertEqual(
-            TranslationTemplatesBuildState.MOUNT, self.getState())
-        self.assertEqual('mount-chroot', self.buildmanager.commands[-1][0])
-
-        # UPDATE: Get the latest versions of installed packages.
-        self.buildmanager.iterate(0)
-        self.assertEqual(
-            TranslationTemplatesBuildState.UPDATE, self.getState())
-        expected_command = [
-            '/usr/bin/sudo',
-            '/usr/sbin/chroot', self.chrootdir,
-            'update-debian-chroot',
-            ]
-        self.assertEqual(expected_command, self.buildmanager.commands[-1][:4])
+        # Skip states that are done in DebianBuldManager to the state
+        # directly before INSTALL.
+        self.buildmanager._state = TranslationTemplatesBuildState.UPDATE
 
         # INSTALL: Install additional packages needed for this job into
         # the chroot.
@@ -103,10 +94,10 @@ class TestTranslationTemplatesBuildManagerIteration(TestCase):
             TranslationTemplatesBuildState.INSTALL, self.getState())
         expected_command = [
             '/usr/bin/sudo',
-            '/usr/sbin/chroot', self.chrootdir,
+            'sudo', 'chroot', self.chrootdir,
             'apt-get',
             ]
-        self.assertEqual(expected_command, self.buildmanager.commands[-1][:4])
+        self.assertEqual(expected_command, self.buildmanager.commands[-1][:5])
 
         # GENERATE: Run the slave's payload, the script that generates
         # templates.
@@ -114,19 +105,71 @@ class TestTranslationTemplatesBuildManagerIteration(TestCase):
         self.assertEqual(
             TranslationTemplatesBuildState.GENERATE, self.getState())
         expected_command = [
-            '/usr/bin/sudo',
-            '/usr/sbin/chroot', self.chrootdir,
-            '/usr/bin/sudo', '-u', self.buildmanager.username,
-            'generate-translation-templates.py',
-            url,
+            'generatepath', 'generatepath', self.buildid, url, 'resultarchive'
             ]
         self.assertEqual(expected_command, self.buildmanager.commands[-1])
+        self.assertFalse(self.slave.wasCalled('chrootFail'))
 
-        # CLEANUP.
+        outfile_path = os.path.join(
+            self.chrootdir, self.buildmanager.home[1:],
+            self.buildmanager._resultname)
+        os.makedirs(os.path.dirname(outfile_path))
+
+        outfile = open(outfile_path, 'w')
+        outfile.write("I am a template tarball. Seriously.")
+        outfile.close()
+
+        # The control returns to the DebianBuildManager in the REAP state.
         self.buildmanager.iterate(0)
+        expected_command = [
+            'processscanpath', 'processscanpath', self.buildid
+            ]
         self.assertEqual(
-            TranslationTemplatesBuildState.CLEANUP, self.getState())
-        self.assertEqual('remove-build', self.buildmanager.commands[-1][0])
+            TranslationTemplatesBuildState.REAP, self.getState())
+        self.assertEqual(expected_command, self.buildmanager.commands[-1])
+        self.assertFalse(self.slave.wasCalled('buildFail'))
+        self.assertEqual(
+            [((outfile_path,), {})], self.slave.addWaitingFile.calls)
+
+    def test_iterate_fail_INSTALL(self):
+        # See that a failing INSTALL is handled properly.
+        url = 'lp:~my/branch'
+        # The build manager's iterate() kicks off the consecutive states
+        # after INIT.
+        self.buildmanager.initiate({}, 'chroot.tar.gz', {'branch_url': url})
+
+        # Skip states to the INSTALL state.
+        self.buildmanager._state = TranslationTemplatesBuildState.INSTALL
+
+        # The buildmanager fails and iterates to the UMOUNT state.
+        self.buildmanager.iterate(-1)
+        self.assertEqual(
+            TranslationTemplatesBuildState.UMOUNT, self.getState())
+        expected_command = [
+            'umountpath', 'umount-chroot', self.buildid
+            ]
+        self.assertEqual(expected_command, self.buildmanager.commands[-1])
+        self.assertTrue(self.slave.wasCalled('chrootFail'))
+
+    def test_iterate_fail_GENERATE(self):
+        # See that a failing GENERATE is handled properly.
+        url = 'lp:~my/branch'
+        # The build manager's iterate() kicks off the consecutive states
+        # after INIT.
+        self.buildmanager.initiate({}, 'chroot.tar.gz', {'branch_url': url})
+
+        # Skip states to the INSTALL state.
+        self.buildmanager._state = TranslationTemplatesBuildState.GENERATE
+
+        # The buildmanager fails and iterates to the REAP state.
+        self.buildmanager.iterate(-1)
+        expected_command = [
+            'processscanpath', 'processscanpath', self.buildid
+            ]
+        self.assertEqual(
+            TranslationTemplatesBuildState.REAP, self.getState())
+        self.assertEqual(expected_command, self.buildmanager.commands[-1])
+        self.assertTrue(self.slave.wasCalled('buildFail'))
 
 
 def test_suite():

@@ -373,32 +373,18 @@ def process_request(person, objects, format, logger):
 
 
 def process_queue(transaction_manager, logger):
-    """Process each request in the translation export queue.
+    """Process all requests in the translation export queue.
 
-    Each item is removed from the queue as it is processed, we only handle
-    one request with each function call.
+    Each item is removed from the queue as it is processed.
     """
     request_set = getUtility(IPOExportRequestSet)
+    no_request = (None, None, None, None)
 
-    request = request_set.popRequest()
-
-    if None in request:
-        # Any value is None and we must have all values as not None to have
-        # something to process...
-        return
-
-    person, objects, format = request
-
-    try:
+    request = request_set.getRequest()
+    while request != no_request:
+        person, objects, format, request_ids = request
         process_request(person, objects, format, logger)
-    except psycopg2.Error:
-        # We had a DB error, we don't try to recover it here, just exit
-        # from the script and next run will retry the export.
-        logger.error(
-            "A DB exception was raised when exporting files for %s" % (
-                person.displayname),
-            exc_info=True)
-        transaction_manager.abort()
-    else:
-        # Apply all changes.
+        request_set.removeRequest(request_ids)
         transaction_manager.commit()
+
+        request = request_set.getRequest()

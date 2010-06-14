@@ -53,9 +53,13 @@ Our user requests the Catalan and Czech translations of a template.
 
 Now we request that the queue be processed.
 
-    >>> from lp.testing.faketransaction import FakeTransaction
+(Commits are needed to make the test requests seep through to the slave
+database).
+
+    >>> import transaction
     >>> from lp.translations.scripts.po_export_queue import process_queue
-    >>> process_queue(FakeTransaction(), MockLogger())
+    >>> transaction.commit()
+    >>> process_queue(transaction, MockLogger())
     log> Exporting objects for Happy Downloader, related to template pmount
     in Ubuntu Hoary package "pmount"
     log> Stored file at http://.../launchpad-export.tar.gz
@@ -104,8 +108,10 @@ Let's download it and make sure the contents look ok.
     >>> from canonical.launchpad.helpers import string_to_tarfile
     >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
     >>> for name in sorted(tarball.getnames()):
-    ...   print name
-    pmount/
+    ...     # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to
+    ...     # make this pass on python2.5 and 2.6.
+    ...     print name.rstrip('/')
+    pmount
     pmount/pmount-ca.po
     pmount/pmount-cs.po
 
@@ -185,7 +191,8 @@ Let's try requesting an export in MO format:
     >>> from lp.translations.interfaces.translationfileformat import (
     ...     TranslationFileFormat)
     >>> request_set.addRequest(person, None, [cs], TranslationFileFormat.MO)
-    >>> process_queue(FakeTransaction(), MockLogger())
+    >>> transaction.commit()
+    >>> process_queue(transaction, MockLogger())
     log> Exporting objects for Happy Downloader, related to template pmount
     in Ubuntu Hoary package "pmount"
     log> Stored file at http://.../cs_LC_MESSAGES_pmount.mo
@@ -261,7 +268,7 @@ The script is run.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-rosetta-export-queue.lock
     DEBUG   Exporting objects for Happy Downloader, related to template
     evolution-2.2 in Evolution trunk
     DEBUG   Exporting objects for Happy Downloader, related to template

@@ -145,6 +145,7 @@ but there is no notification message that the upstream link was updated.
     >>> print view.request.response.notifications
     []
 
+
 Upstream associations portlet
 -----------------------------
 
@@ -163,12 +164,18 @@ bonkers project, the portlet will display that information.
 
     >>> from canonical.launchpad.testing.pages import (
     ...     extract_text, find_tag_by_id)
-    >>> content = extract_text(find_tag_by_id(view.render(), 'upstreams'))
-    >>> print content
-    Bonkers project
+    >>> content = find_tag_by_id(view.render(), 'upstreams')
+    >>> for link in content.findAll('a'):
+    ...     print link['href']
+    /bonkers
+    /bonkers/crazy
+    .../+source/bonkers/+edit-packaging
+    .../+source/bonkers/+remove-packaging
+
+    >>> print extract_text(content)
+    Bonkers...crazy...
     Bug supervisor: no
     Bug tracker: no
-    Bonkers crazy series
     Branch: no
 
 A new source project that is not linked to an upstream will result in
@@ -190,16 +197,28 @@ the portlet showing the suggested project.
     package belongs to. ...
     Is the following project the upstream for this source package?
     Registered upstream project:
-    Lernid...
+    Lernid
+    Choose another upstream project
 
-If there are multiple potential matches they are all shown.
+The form does not steal focus because it is not the primary purpose of the
+page.
 
-    >>> product = factory.makeProduct(name='lernid-dev', displayname='Lernid Dev')
+    >>> print view.initial_focus_widget
+    None
+
+If there are multiple potential matches, the first 9 are shown. The 10th
+item is reserved for the "Choose another upstream project" option.
+
+    >>> product = factory.makeProduct(
+    ...     name='lernid-dev', displayname='Lernid Dev')
     >>> view = create_initialized_view(package, name='+portlet-associations')
     >>> for product in view.product_suggestions:
     ...     print product.name
     lernid
     lernid-dev
+
+    >>> view.max_suggestions
+    9
 
     >>> content = extract_text(find_tag_by_id(view.render(), 'no-upstreams'))
     >>> print content
@@ -209,7 +228,25 @@ If there are multiple potential matches they are all shown.
     Registered upstream project:
     Lernid...
     Lernid Dev...
+    Choose another upstream project
 
+Choosing the "Choose another upstream project" option redirects the user
+to the +edit-packaging page where the user can search for a project.
+
+    >>> form = {
+    ...     'field.upstream': 'OTHER_UPSTREAM',
+    ...     'field.actions.link': 'Link to Upstream Project',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     package, name='+portlet-associations', form=form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/youbuntu/busy/+source/lernid/+edit-packaging
+
+
+Upstream connections view
+-------------------------
 
 The view includes a property for determining if the project has a bug
 tracker, though the rules are somewhat complicated.
@@ -226,7 +263,8 @@ If the view's package has no productseries set then has_bugtracker is False.
     >>> package = factory.makeSourcePackage(
     ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
 
-    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> view = create_initialized_view(
+    ...     package, name='+upstream-connections')
 
     >>> print package.productseries
     None
@@ -242,7 +280,8 @@ So let's set the product series so we can do more interesting testing.
 If a product is not part of a project group and its bug tracker is not
 set then the view property is false.
 
-    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> view = create_initialized_view(
+    ...     package, name='+upstream-connections')
 
     >>> print product.official_malone
     False
@@ -285,3 +324,39 @@ inherits it.
     >>> project.bugtracker = bugtracker
     >>> print view.has_bugtracker
     True
+
+
+Remove packaging view
+---------------------
+
+This view allows removal of the packaging link from the sourcepackage
+to the project series.
+
+    >>> view = create_initialized_view(package, name='+remove-packaging')
+    >>> print view.label
+    Unlink an upstream project
+
+    >>> print view.page_title
+    Unlink an upstream project
+
+    >>> print view.cancel_url
+    http://launchpad.dev/youbuntu/wonky/+source/stinkypackage
+
+    >>> form = {'field.actions.unlink': 'Unlink'}
+    >>> view = create_initialized_view(
+    ...     package, name='+remove-packaging', form=form,
+    ...     principal=product.owner)
+    >>> view.errors
+    []
+
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Removed upstream association between Stinky stinkyseries series and Wonky.
+
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> print extract_text(find_tag_by_id(view.render(), 'no-upstreams'))
+    Launchpad doesn&#8217;t know which project ...
+    There are no projects registered in Launchpad that are a potential
+    match for this source package. Can you help us find one?
+    Registered upstream project:
+    Choose another upstream project

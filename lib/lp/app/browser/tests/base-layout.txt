@@ -62,14 +62,19 @@ Standard Javascript functions.
 
 Body preamble.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-      <body id="document"
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+
+    >>> body_tag = find_tag_by_id(html, 'document')
+    >>> body = str(body_tag)
+    >>> print body
+    <body id="document"
             class="tab-overview
           main_side
           public
           yui-skin-sam">
+             <script type="text/javascript">
+             ...google-analytics.com...
+             </script>
         <div class="yui-d0">
     <BLANKLINE>
           <div id="locationbar">
@@ -77,8 +82,8 @@ Body preamble.
 
 Watermark and breadcrumbs.
 
-    >>> print html
-    <!DOCTYPE html ...
+    >>> print body
+    <body ...
     ...
           <div class="watermark-apps-portlet top-portlet">
             <img alt="" width="64" height="64" src="/@@/person-logo" />
@@ -99,9 +104,8 @@ Watermark and breadcrumbs.
 
 Top portlet.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
+    >>> print body
+    <body ...
           <div class="top-portlet">
             <p class="registered">
               Registered on 2005-09-16
@@ -115,25 +119,20 @@ Top portlet.
 
 Help pane.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-        <div id="help-pane" class="invisible">
+    >>> print str(find_tag_by_id(body_tag, 'help-pane'))
+    <div id="help-pane" class="invisible">
           <div id="help-body">
-    <BLANKLINE>
             <iframe id="help-pane-content" class="invisible" ...
             </div>
           <div id="help-footer">
             <span id="help-close"></span>
           </div>
         </div>
-    ...
 
 Footer.
 
     >>> print html
     <!DOCTYPE html ...
-    ...
       <!--
         Facet name: overview
         Page type: main_side
@@ -169,9 +168,10 @@ Heading.
 
 Watermark.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
+    >>> body_tag = find_tag_by_id(html, 'document')
+    >>> body = str(body_tag)
+    >>> print body
+    <body ...
           <div class="watermark-apps-portlet top-portlet">
             <img alt="" width="64" height="64" src="/@@/person-logo" />
             <h2>Waffles</h2>
@@ -179,14 +179,8 @@ Watermark.
 
 Main content.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-            <div id="maincontent" class="yui-main">
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
+    >>> print str(find_tag_by_id(body_tag, 'maincontent'))
+    <div id="maincontent" class="yui-main">
               <div class="yui-b" dir="ltr">
                 <div>
     <BLANKLINE>
@@ -195,6 +189,8 @@ Main content.
     </ol>
     <BLANKLINE>
                 </div>
+    <BLANKLINE>
+    <BLANKLINE>
     <BLANKLINE>
           <div class="top-portlet">
             <h1>Heading</h1>
@@ -206,18 +202,13 @@ Main content.
               Main content of the page.
             </p>
           </div>
-    <BLANKLINE>
-              </div><!-- yui-b -->
-            </div><!-- yui-main -->
-    <BLANKLINE>
-            <!-- yui-b side -->
-          <!-- yui-t4 -->
-    ...
+        </div><!-- yui-b -->
+    </div>
 
 Global search.
 
-    >>> print html
-    <!DOCTYPE html ...
+    >>> print body
+    <body ...
       <form id="globalsearch" method="get"
             accept-charset="UTF-8"
             action="http://launchpad.dev/+search">
@@ -266,22 +257,24 @@ Heading.
 
 Body class.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-      <body id="document"
+    >>> body_tag = find_tag_by_id(html, 'document')
+    >>> body = str(body_tag)
+    >>> print body
+    <body id="document"
             class="tab-overview
           searchless
           public
           yui-skin-sam">
+             <script type="text/javascript">
+             ...google-analytics.com...
+             </script>
         <div class="yui-d0">
     ...
 
 Watermarks.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
+    >>> print body
+    <body ...
           <div class="watermark-apps-portlet top-portlet">
             <img alt="" width="64" height="64" src="/@@/person-logo" />
             <h2>Waffles</h2>
@@ -298,14 +291,8 @@ Watermarks.
 
 Main content.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-            <div id="maincontent" class="yui-main">
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
+    >>> print str(find_tag_by_id(body_tag, 'maincontent'))
+    <div id="maincontent" class="yui-main">
               <div class="yui-b" dir="ltr">
                 <div>
     <BLANKLINE>
@@ -316,9 +303,8 @@ Main content.
 
 Top portlet.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
+    >>> print body
+    <body ...
           <div class="top-portlet">
             <h1>Heading</h1>
             <p class="registered">
@@ -329,11 +315,9 @@ Top portlet.
               Main content of the page.
             </p>
           </div>
-    <BLANKLINE>
-              </div><!-- yui-b -->
-            </div><!-- yui-main -->
-    <BLANKLINE>
-            <!-- yui-b side -->
+          </div><!-- yui-b -->
+          </div><!-- yui-main -->
+          <!-- yui-b side -->
           <!-- yui-t4 -->
     ...
 
@@ -378,30 +362,25 @@ Heading.
 
 Body.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-      <body id="document"
+    >>> body_tag = find_tag_by_id(html, 'document')
+    >>> body = str(body_tag)
+    >>> print body
+    <body id="document"
             class="tab-overview
           locationless
           public
           yui-skin-sam">
+             <script type="text/javascript">
+             ...google-analytics.com...
+             </script>
         <div class="yui-d0">
     ...
 
 Main content.
 
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-            <div id="maincontent" class="yui-main">
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-              <div class="yui-b" dir="ltr">
-    <BLANKLINE>
-    <BLANKLINE>
+    >>> print str(find_tag_by_id(body_tag, 'maincontent'))
+    <div id="maincontent" class="yui-main">
+        <div class="yui-b" dir="ltr">
           <div class="top-portlet">
             <h1>Heading</h1>
             <p class="registered">
@@ -412,13 +391,8 @@ Main content.
               Main content of the page.
             </p>
           </div>
-    <BLANKLINE>
-              </div><!-- yui-b -->
-            </div><!-- yui-main -->
-    <BLANKLINE>
-            <!-- yui-b side -->
-          <!-- yui-t4 -->
-    ...
+        </div><!-- yui-b -->
+    </div>
 
 Footer.
 
@@ -457,11 +431,39 @@ Page Headings
 The example layouts all used the heading slot to define a heading for their
 test. The template controlled the heading.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
-
     >>> content = find_tag_by_id(view.render(), 'maincontent')
     >>> print content.h1
     <h1>Heading</h1>
+
+
+Page Footers
+------------
+
+    >>> class BugsMainSideView(MainSideView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'bugs'
+    >>> bugs_request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://bugs.launchpad.dev',
+    ...     PATH_INFO='/~waffles/+layout')
+    >>> bugs_request.setPrincipal(user)
+    >>> view = BugsMainSideView(user, bugs_request)
+    >>> footer = find_tag_by_id(html, 'footer')
+    >>> for tag in footer.findAll('a'):
+    ...     print tag.string, tag['href']
+    None
+      http://launchpad.dev/
+    Take the tour
+      http://launchpad.dev/+tour
+    Read the guide
+      https://help.launchpad.net/
+    Canonical&nbsp;Ltd.
+      http://canonical.com/
+    Terms of use
+      http://launchpad.dev/legal
+    Contact Launchpad Support
+      https://help.launchpad.net/Feedback
+    System status
+      http://identi.ca/launchpadstatus
 
 
 Page registering
@@ -518,3 +520,21 @@ When the context is public, the 'public' class is in the class attribute.
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
     tab-overview locationless public yui-skin-sam
+
+
+Notifications
+-------------
+
+Notifications are diplayed between the breadcrumbs and the page content.
+
+    >>> request.response.addInfoNotification('I cannot do that Dave.')
+    >>> view = MainOnlyView(user, request)
+    >>> body_tag = find_tag_by_id(view.render(), 'maincontent')
+    >>> print str(body_tag)
+    <div id="maincontent" ...
+      <ol class="breadcrumbs">
+      </ol>
+      ...
+      <div class="informational message">I cannot do that Dave.</div>
+      <div class="top-portlet">
+      ...

@@ -14,12 +14,13 @@ from canonical.launchpad.scripts import BufferLogger
 from canonical.testing import LaunchpadZopelessLayer
 from email import message_from_string
 from lp.archiveuploader.tests import datadir
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail import stub
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet, PackageUploadCustomFormat, PackageUploadStatus)
@@ -107,7 +108,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
             self.test_publisher.ubuntutest.main_archive,
             self.test_publisher.breezy_autotest,
             PackagePublishingPocket.SECURITY,
-            self.test_publisher.person.gpgkeys[0])
+            self.test_publisher.person.gpg_keys[0])
 
         delayed_copy.addSource(source.sourcepackagerelease)
 
@@ -273,6 +274,10 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.assertEquals(
             ['20060302.0120', 'current'], sorted(os.listdir(custom_path)))
 
+        # The custom files were also copied to the public librarian
+        for customfile in delayed_copy.customfiles:
+            self.assertFalse(customfile.libraryfilealias.restricted)
+
     def test_realiseUpload_for_source_only_delayed_copies(self):
         # Source-only delayed-copies results in the source published
         # in the destination archive and its corresponding build
@@ -295,7 +300,39 @@ class PackageUploadTestCase(TestCaseWithFactory):
         [pub_record] = pub_records
         [build] = pub_record.getBuilds()
         self.assertEquals(
-            BuildStatus.NEEDSBUILD, build.buildstate)
+            BuildStatus.NEEDSBUILD, build.status)
+
+    def test_realiseUpload_for_overridden_component_archive(self):
+        # If the component of an upload is overridden to 'Partner' for
+        # example, then the new publishing record should be for the
+        # partner archive.
+        self.test_publisher.prepareBreezyAutotest()
+
+        # Get some sample changes file content for the new upload.
+        changes_file = open(
+            datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'))
+        changes_file_content = changes_file.read()
+        changes_file.close()
+
+        main_upload_release = self.test_publisher.getPubSource(
+            sourcename='main-upload', spr_only=True,
+            component='main', changes_file_content=changes_file_content)
+        package_upload = main_upload_release.package_upload
+
+        self.assertEqual("primary", main_upload_release.upload_archive.name)
+
+        # Override the upload to partner and verify the change.
+        partner_component = getUtility(IComponentSet)['partner']
+        main_component = getUtility(IComponentSet)['main']
+        package_upload.overrideSource(
+            partner_component, None, [partner_component, main_component])
+        self.assertEqual(
+            "partner", main_upload_release.upload_archive.name)
+
+        # Now realise the upload and verify that the publishing is for
+        # the partner archive.
+        pub = package_upload.realiseUpload()[0]
+        self.assertEqual("partner", pub.archive.name)
 
 
 def test_suite():

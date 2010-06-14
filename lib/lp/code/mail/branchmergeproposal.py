@@ -3,63 +3,15 @@
 
 """Email notifications related to branch merge proposals."""
 
-
 __metaclass__ = type
 
-from zope.app.security.principalregistry import UnauthenticatedPrincipal
-from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.mail import get_msgid
 from canonical.launchpad.webapp import canonical_url
-from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import CodeReviewNotificationLevel
-from lp.code.interfaces.branchmergeproposal import (
-    IMergeProposalCreatedJobSource)
-from lp.code.mail.branch import BranchMailer, RecipientReason
-from lp.registry.interfaces.person import IPerson
+from lp.code.mail.branch import BranchMailer
 from lp.services.mail.basemailer import BaseMailer
-
-
-def send_merge_proposal_created_notifications(merge_proposal, event):
-    """Notify branch subscribers when merge proposals are created.
-
-    This action is deferred to MergeProposalCreatedJob, so that a diff can be
-    generated first.
-    """
-    getUtility(IMergeProposalCreatedJobSource).create(merge_proposal)
-
-
-def send_merge_proposal_modified_notifications(merge_proposal, event):
-    """Notify branch subscribers when merge proposals are updated."""
-    if event.user is None:
-        return
-    if isinstance(event.user, UnauthenticatedPrincipal):
-        from_person = None
-    else:
-        from_person = IPerson(event.user)
-    mailer = BMPMailer.forModification(
-        event.object_before_modification, merge_proposal, from_person)
-    if mailer is not None:
-        mailer.sendAll()
-
-
-def send_review_requested_notifications(vote_reference, event):
-    """Notify the reviewer that they have been requested to review."""
-    # XXX: rockstar - 9 Oct 2008 - If the reviewer is a team, don't send
-    # email.  This is to stop the abuse of a user spamming all members of
-    # a team by requesting them to review a (possibly unrelated) branch.
-    # Ideally we'd come up with a better solution, but I can't think of
-    # one yet.  In all other places we are emailing subscribers directly
-    # rather than people that haven't subscribed.
-    # See bug #281056. (affects IBranchMergeProposal)
-    if not vote_reference.reviewer.is_team:
-        reason = RecipientReason.forReviewer(
-            vote_reference, vote_reference.reviewer)
-        mailer = BMPMailer.forReviewRequest(
-            reason, vote_reference.branch_merge_proposal,
-            vote_reference.registrant)
-        mailer.sendAll()
 
 
 class BMPMailer(BranchMailer):
@@ -67,17 +19,17 @@ class BMPMailer(BranchMailer):
 
     def __init__(self, subject, template_name, recipients, merge_proposal,
                  from_address, delta=None, message_id=None,
-                 requested_reviews=None, comment=None, preview_diff=None,
+                 requested_reviews=None, preview_diff=None,
                  direct_email=False):
         BranchMailer.__init__(
-            self, subject, template_name, recipients, from_address, delta,
+            self, subject, template_name, recipients, from_address,
             message_id=message_id, notification_type='code-review')
         self.merge_proposal = merge_proposal
         if requested_reviews is None:
             requested_reviews = []
         self.requested_reviews = requested_reviews
-        self.comment = comment
         self.preview_diff = preview_diff
+        self.delta_text = delta
         self.template_params = self._generateTemplateParams()
         self.direct_email = direct_email
 
@@ -106,12 +58,10 @@ class BMPMailer(BranchMailer):
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
             from_address, message_id=get_msgid(),
             requested_reviews=merge_proposal.votes,
-            comment=merge_proposal.root_comment,
             preview_diff=merge_proposal.preview_diff)
 
     @classmethod
-    def forModification(cls, old_merge_proposal, merge_proposal,
-                        from_user=None):
+    def forModification(cls, merge_proposal, delta_text, from_user):
         """Return a mailer for BranchMergeProposal creation.
 
         :param merge_proposal: The BranchMergeProposal that was created.
@@ -126,31 +76,22 @@ class BMPMailer(BranchMailer):
             from_address = cls._format_user_address(from_user)
         else:
             from_address = config.canonical.noreply_from_address
-        delta = BranchMergeProposalDelta.construct(
-                old_merge_proposal, merge_proposal)
-        if delta is None:
-            return None
         return cls(
-            '%(proposal_title)s updated',
+            '%(proposal_title)s',
             'branch-merge-proposal-updated.txt', recipients,
-            merge_proposal, from_address, delta, get_msgid())
+            merge_proposal, from_address, delta=delta_text,
+            message_id=get_msgid())
 
     @classmethod
     def forReviewRequest(cls, reason, merge_proposal, from_user):
         """Return a mailer for a request to review a BranchMergeProposal."""
         from_address = cls._format_user_address(from_user)
         recipients = {reason.subscriber: reason}
-        comment = None
-        if (merge_proposal.root_comment is not None and
-            (merge_proposal.root_comment.message.owner ==
-             merge_proposal.registrant)):
-            comment = merge_proposal.root_comment
         return cls(
-            'Request to review proposed merge of %(source_branch)s into '
-            '%(target_branch)s', 'review-requested.txt', recipients,
+            '%(proposal_title)s',
+            'review-requested.txt', recipients,
             merge_proposal, from_address, message_id=get_msgid(),
-            comment=comment, preview_diff=merge_proposal.preview_diff,
-            direct_email=True)
+            preview_diff=merge_proposal.preview_diff, direct_email=True)
 
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""
@@ -195,13 +136,14 @@ class BMPMailer(BranchMailer):
 
     def _generateTemplateParams(self):
         """For template params that don't change, calcualte just once."""
+        proposal = self.merge_proposal
         params = {
-            'proposal_registrant': self.merge_proposal.registrant.displayname,
-            'source_branch': self.merge_proposal.source_branch.bzr_identity,
-            'target_branch': self.merge_proposal.target_branch.bzr_identity,
+            'proposal_registrant': proposal.registrant.displayname,
+            'source_branch': proposal.source_branch.bzr_identity,
+            'target_branch': proposal.target_branch.bzr_identity,
             'prerequisite': '',
-            'proposal_title': self.merge_proposal.title,
-            'proposal_url': canonical_url(self.merge_proposal),
+            'proposal_title': proposal.title,
+            'proposal_url': canonical_url(proposal),
             'edit_subscription': '',
             'comment': '',
             'gap': '',
@@ -209,9 +151,11 @@ class BMPMailer(BranchMailer):
             'whiteboard': '', # No more whiteboard.
             'diff_cutoff_warning': '',
             }
+        if self.delta_text is not None:
+            params['delta'] = self.delta_text
 
-        if self.merge_proposal.prerequisite_branch is not None:
-            prereq_url = self.merge_proposal.prerequisite_branch.bzr_identity
+        if proposal.prerequisite_branch is not None:
+            prereq_url = proposal.prerequisite_branch.bzr_identity
             params['prerequisite'] = ' with %s as a prerequisite' % prereq_url
 
         requested_reviews = []
@@ -228,8 +172,8 @@ class BMPMailer(BranchMailer):
             params['reviews'] = (''.join('    %s\n' % review
                                  for review in requested_reviews))
 
-        if self.comment is not None:
-            params['comment'] = (self.comment.message.text_contents)
+        if proposal.description is not None:
+            params['comment'] = (proposal.description)
             if len(requested_reviews) > 0:
                 params['gap'] = '\n\n'
 

@@ -11,11 +11,19 @@ __all__ = [
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalJob',
+    'IBranchMergeProposalJobSource',
     'IBranchMergeProposalListingBatchNavigator',
+    'ICodeReviewCommentEmailJob',
+    'ICodeReviewCommentEmailJobSource',
     'ICreateMergeProposalJob',
     'ICreateMergeProposalJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',
+    'IMergeProposalUpdatedEmailJob',
+    'IMergeProposalUpdatedEmailJobSource',
+    'IReviewRequestedEmailJob',
+    'IReviewRequestedEmailJobSource',
+    'IUpdatePreviewDiffJob',
     'IUpdatePreviewDiffJobSource',
     'notify_modified',
     ]
@@ -29,12 +37,13 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
-from canonical.launchpad.interfaces import IBug, IPrivacy
+from canonical.launchpad.interfaces.launchpad import IPrivacy
+from lp.bugs.interfaces.bug import IBug
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.code.interfaces.diff import IPreviewDiff, IStaticDiff
-from lp.services.job.interfaces.job import IJob, IRunnableJob
+from lp.services.job.interfaces.job import IJob, IJobSource, IRunnableJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
@@ -96,6 +105,13 @@ class IBranchMergeProposal(IPrivacy):
             description=_(
                 "If True, this proposal is visible only to subscribers.")))
 
+    description = exported(
+        Text(title=_('Description'), required=False,
+             description=_(
+                "A detailed description of the changes that are being "
+                "addressed by the branch being proposed to be merged."),
+             max_length=50000))
+
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
         description=_('Notes about the merge.'))
@@ -133,7 +149,7 @@ class IBranchMergeProposal(IPrivacy):
         Text(
             title=_(
                 "The revision id that has been approved by the reviewer.")),
-        exported_as='reviewed_revno')
+        exported_as='reviewed_revid')
 
     commit_message = exported(
         Summary(
@@ -159,7 +175,7 @@ class IBranchMergeProposal(IPrivacy):
             required=False,
             description=_("The revision id that has been queued for "
                           "landing.")),
-        exported_as='queued_revno')
+        exported_as='queued_revid')
 
     merged_revno = exported(
         Int(
@@ -211,9 +227,6 @@ class IBranchMergeProposal(IPrivacy):
     date_queued = exported(
         Datetime(
             title=_('Date Queued'), required=False, readonly=True))
-    # Cannote use Object as this would cause circular dependencies.
-    root_comment = Attribute(
-        _("The first message in discussion of this merge proposal"))
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)
@@ -269,7 +282,7 @@ class IBranchMergeProposal(IPrivacy):
         """True if it is valid for user update the proposal to next_state."""
 
     @call_with(user=REQUEST_USER)
-    @rename_parameters_as(revision_id='revno')
+    @rename_parameters_as(revision_id='revid')
     @operation_parameters(
         status=Choice(
             title=_("The new status of the merge proposal."),
@@ -284,8 +297,8 @@ class IBranchMergeProposal(IPrivacy):
 
         :param status: The new status of the merge proposal.
         :param user: The user making the change.
-        :param revision_id: The revno to provide to the underlying status
-            change method.
+        :param revision_id: The revision id to provide to the underlying
+            status change method.
         """
 
     def setAsWorkInProgress():
@@ -334,6 +347,9 @@ class IBranchMergeProposal(IPrivacy):
         If the proposal is not in the Approved state before this method
         is called, approveBranch is called with the reviewer and revision_id
         specified.
+
+        If None is supplied as the revision_id, the proposals
+        reviewed_revision_id is used.
         """
 
     def dequeue():
@@ -345,9 +361,6 @@ class IBranchMergeProposal(IPrivacy):
 
     def moveToFrontOfQueue():
         """Move the queue proposal to the front of the queue."""
-
-    def mergeFailed(merger):
-        """Mark the proposal as 'Code failed to merge'."""
 
     def markAsMerged(merged_revno=None, date_merged=None,
                      merge_reporter=None):
@@ -496,6 +509,10 @@ class IBranchMergeProposalJob(Interface):
         """Destroy this object."""
 
 
+class IBranchMergeProposalJobSource(IJobSource):
+    """A job source that will get all supported merge proposal jobs."""
+
+
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate listings."""
 
@@ -566,14 +583,11 @@ class ICreateMergeProposalJob(IRunnableJob):
     """
 
 
-class ICreateMergeProposalJobSource(Interface):
+class ICreateMergeProposalJobSource(IJobSource):
     """Acquire MergeProposalJobs."""
 
     def create(message_bytes):
         """Return a CreateMergeProposalJob for this message."""
-
-    def iterReady():
-        """Iterate through jobs that are ready to run."""
 
 
 class IMergeProposalCreatedJob(IRunnableJob):
@@ -586,8 +600,12 @@ class IMergeProposalCreatedJobSource(Interface):
     def create(bmp):
         """Create a MergeProposalCreatedJob for the specified Job."""
 
-    def iterReady():
-        """Iterate through all ready MergeProposalCreatedJobs."""
+
+class IUpdatePreviewDiffJob(IRunnableJob):
+    """Interface for the job to update the diff for a merge proposal."""
+
+    def checkReady():
+        """Check to see if this job is ready to run."""
 
 
 class IUpdatePreviewDiffJobSource(Interface):
@@ -599,11 +617,55 @@ class IUpdatePreviewDiffJobSource(Interface):
     def get(id):
         """Return the UpdatePreviewDiffJob with this id."""
 
-    def iterReady():
-        """Iterate through jobs ready to update preview diffs."""
 
-    def contextManager():
-        """Get a context for running this kind of job in."""
+class ICodeReviewCommentEmailJob(IRunnableJob):
+    """Interface for the job to send code review comment email."""
+
+    code_review_comment = Attribute('The code review comment.')
+
+
+class ICodeReviewCommentEmailJobSource(Interface):
+    """Create or retrieve jobs that update preview diffs."""
+
+    def create(code_review_comment):
+        """Create a job to email subscribers about the comment."""
+
+
+class IReviewRequestedEmailJob(IRunnableJob):
+    """Interface for the job to sends review request emails."""
+
+    reviewer = Attribute('The person or team asked to do the review.')
+    requester = Attribute('The person who has asked for the review.')
+
+
+class IReviewRequestedEmailJobSource(Interface):
+    """Create or retrieve jobs that email review requests."""
+
+    def create(review_request):
+        """Create a job to email a review request.
+
+        :param review_request: A vote reference for the requested review.
+        """
+
+
+class IMergeProposalUpdatedEmailJob(IRunnableJob):
+    """Interface for the job to sends email about merge proposal updates."""
+
+    editor = Attribute('The person that did the editing.')
+    delta_text = Attribute(
+        'The textual representation of the changed fields.')
+
+
+class IMergeProposalUpdatedEmailJobSource(Interface):
+    """Create or retrieve jobs that email about merge proposal updates."""
+
+    def create(merge_proposal, delta_text, editor):
+        """Create a job to email merge proposal updates to subscribers.
+
+        :param merge_proposal: The merge proposal that has been edited.
+        :param delta_text: The text representation of the changed fields.
+        :param editor: The person who did the editing.
+        """
 
 
 # XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it

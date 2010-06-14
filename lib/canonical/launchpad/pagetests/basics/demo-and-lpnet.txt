@@ -51,7 +51,7 @@ For a 3-0 page:
     <style...url(/@@/demo)...</style>
     ...
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
-    &bull;...Launchpad...) devmode demo site
+    &bull;  devmode demo site
 
     >>> print extract_text(find_tags_by_class(
     ...     browser.contents, 'sitemessage')[0])
@@ -70,7 +70,7 @@ First for a 3-0 page:
 
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
-    &bull;...Launchpad...) devmode
+    &bull; devmode
     >>> len(find_tags_by_class(browser.contents, 'sitemessage'))
     0
 
@@ -103,16 +103,18 @@ the redirects.
     ...     'a', onclick="setBetaRedirect(false)"))
     Disable edge redirect.
 
-The disable-redirect link will not appear in the site_message when
-browsed by non-beta users.
+The disable-redirect link will also appear in the site_message when browsed by
+non-beta/anonymous users. This is to reduce the annoyance when users are
+logged into launchpad.net but haven't noticed yet that they need to log into
+edge as well (https://launchpad.net/bugs/160191).
 
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(find_tags_by_class(
     ...     browser.contents, 'sitemessage')[0])
-    This is a beta site.
+    This is a beta site. Disable edge redirect.
 
-Similarly, once the redirection has been inhibited, the link changes to
-enable redirects..
+Once the redirection has been inhibited, the link changes to enable
+redirects.
 
     # Workaround bug in mechanize where you cannot use the Cookie
     # header with the CookieJar
@@ -135,24 +137,14 @@ enable redirects..
     ...     'a', onclick="setBetaRedirect(true)"))
     Enable edge redirect.
 
-
     # Remove the specific site-message config data before continuing.
     >>> dummy = config.pop('edge_config_data')
 
 
 == Launchpad.net ==
 
-On every instance except launchpad.net, Launchpad's version and
-revision numbers are displayed in the page footer.
-
-    >>> print config.launchpad.is_lpnet
-    False
-    >>> browser.open('http://launchpad.dev/ubuntu')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
-    &bull;...Launchpad ... (r...)...
-
-On launchpad.net, however, the version and revision numbers are
-presented only in an HTML comment.
+On launchpad.net, the version and revision numbers are presented only in an
+HTML comment.
 
     >>> # Pretend that we're on launchpad.net:
     >>> test_data = dedent("""

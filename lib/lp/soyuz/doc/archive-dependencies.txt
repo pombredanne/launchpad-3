@@ -107,8 +107,8 @@ A proper name for this "model" would be 'cross-component-dependency'.
     ...     print "-----------+---------------"
     ...     for component in ubuntu_components:
     ...         component = getUtility(IComponentSet)[component]
-    ...         ogre_pub.secure_record.component = component
-    ...         syncUpdate(ogre_pub.secure_record)
+    ...         ogre_pub.component = component
+    ...         syncUpdate(ogre_pub)
     ...         flush_database_caches()
     ...         components_term = " ".join(
     ...             get_components_for_building(ogre_build))
@@ -205,8 +205,9 @@ expected content for building the just-created source.
     ...     get_sources_list_for_building)
 
     >>> def print_building_sources_list(candidate):
-    ...     sources_list = get_sources_list_for_building(candidate,
-    ...         candidate.distroarchseries, candidate.sourcepackagerelease.name)
+    ...     sources_list = get_sources_list_for_building(
+    ...     candidate, candidate.distro_arch_series,
+    ...     candidate.source_package_release.name)
     ...     for line in sources_list:
     ...         print line
 
@@ -219,17 +220,17 @@ no need to request the builder to load its archive indexes.
     ...     PackagePublishingStatus)
 
     >>> cprov.archive.getAllPublishedBinaries(
-    ...      distroarchseries=a_build.distroarchseries,
+    ...      distroarchseries=a_build.distro_arch_series,
     ...      status=PackagePublishingStatus.PUBLISHED).count()
     0
 
     >>> print_building_sources_list(a_build)
     deb http://ftpmaster.internal/ubuntu hoary
-    	main restricted universe multiverse
+        main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-security
-    	main restricted universe multiverse
+        main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
-    	main restricted universe multiverse
+        main restricted universe multiverse
 
 Once we publish a test binary in Celso's PPA hoary/i386,
 this archive becomes relevant for building, and thus listed in the
@@ -242,11 +243,11 @@ returned 'sources_list' content.
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb http://ftpmaster.internal/ubuntu hoary
-    	main restricted universe multiverse
+        main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-security
-    	main restricted universe multiverse
+        main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
-    	main restricted universe multiverse
+        main restricted universe multiverse
 
 Similarly, populated PPA dependencies are listed in the building
 'sources_list'.
@@ -264,32 +265,121 @@ Similarly, populated PPA dependencies are listed in the building
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb http://ppa.launchpad.dev/mark/ppa/ubuntu hoary main
     deb http://ftpmaster.internal/ubuntu hoary
-    	main restricted universe multiverse
+        main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-security
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
-    	main restricted universe multiverse
+        main restricted universe multiverse
 
 The authentication information gets added for private PPA
-dependencies.
+dependencies. We'll create a private PPA and then update cprov's PPA,
+removing the dependency on Mark's public PPA and adding one for the
+new private PPA.
 
-    >>> mark.archive.buildd_secret = "not-so-secret"
-    >>> mark.archive.private = True
+    >>> private_ppa = factory.makeArchive(
+    ...     owner=mark, name='p3a', private=True, distribution=ubuntu)
+    >>> pub_binaries = test_publisher.getPubBinaries(
+    ...     binaryname='dep-bin', archive=private_ppa,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> cprov.archive.removeArchiveDependency(mark.archive)
+    >>> archive_dependency = cprov.archive.addArchiveDependency(
+    ...     private_ppa, PackagePublishingPocket.RELEASE,
+    ...     getUtility(IComponentSet)['main'])
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://buildd:not-so-secret@private-ppa.launchpad.dev/mark/ppa/ubuntu
-    	hoary main
+    deb http://buildd:sekrit@private-ppa.launchpad.dev/mark/p3a/ubuntu
+        hoary main
     deb http://ftpmaster.internal/ubuntu hoary
-    	main restricted universe multiverse
+        main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-security
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
-    	main restricted universe multiverse
+        main restricted universe multiverse
 
-Good enough, let's delete the archive dependency on Mark's PPA.
+Remove the private PPA dependency before continuing.
 
-    >>> cprov.archive.removeArchiveDependency(mark.archive)
+    >>> cprov.archive.removeArchiveDependency(private_ppa)
+
+    >>> cprov.archive.external_dependencies is None
+    True
+    >>> cprov.archive.enabled
+    True
+
+What happens when we fake external dependencies?
+
+    >>> cprov.archive.external_dependencies = (
+    ...     "Malformed format string here --> %(series)")
+
+The error caused by the malformed format string is caught and the other
+dependencies are returned as normal.
+
+    >>> print_building_sources_list(a_build)
+    ERROR:root:Exception during external dependency processing:
+    Traceback (most recent call last):
+      File ... in get_sources_list_for_building
+        {'series': distroarchseries.distroseries.name})
+    ValueError: incomplete format
+    <BLANKLINE>
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://ftpmaster.internal/ubuntu hoary
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-updates
+        main restricted universe multiverse
+
+However, in order to avoid the problem going forward (and to allow the PPA
+owner to correct the external dependencies) the PPA will be disabled.
+
+    >>> cprov.archive.enabled
+    False
+
+Restore the 'external_dependencies' property to its original state and
+re-enable the PPA.
+
+    >>> cprov.archive.external_dependencies = None
+    >>> cprov.archive.enable()
+
+    >>> cprov.archive.external_dependencies is None
+    True
+    >>> cprov.archive.enabled
+    True
+
+What happens when we fake external dependencies?
+
+    >>> cprov.archive.external_dependencies = (
+    ...     "Malformed format string here --> %(series)")
+
+The error caused by the malformed format string is caught and the other
+dependencies are returned as normal.
+
+    >>> print_building_sources_list(a_build)
+    ERROR:root:Exception during external dependency processing:
+    Traceback (most recent call last):
+      File ... in get_sources_list_for_building
+        {'series': distroarchseries.distroseries.name})
+    ValueError: incomplete format
+    <BLANKLINE>
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://ftpmaster.internal/ubuntu hoary
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-updates
+        main restricted universe multiverse
+
+However, in order to avoid the problem going forward (and to allow the PPA
+owner to correct the external dependencies) the PPA will be disabled.
+
+    >>> cprov.archive.enabled
+    False
+
+Restore the 'external_dependencies' property to its original state and
+re-enable the PPA.
+
+    >>> cprov.archive.external_dependencies = None
+    >>> cprov.archive.enable()
 
 
 == Overriding default primary archive dependencies ==
@@ -345,7 +435,7 @@ the primary archive.
     ...     get_primary_current_component)
 
     >>> print get_primary_current_component(a_build.archive,
-    ...     a_build.distroseries, a_build.sourcepackagerelease.name)
+    ...     a_build.distro_series, a_build.source_package_release.name)
     universe
 
     >>> print_building_sources_list(a_build)

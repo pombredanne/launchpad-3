@@ -28,7 +28,6 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
-from lp.archiveuploader.permission import check_upload_to_archive
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
@@ -489,8 +488,8 @@ class NascentUpload:
         source_name = getUtility(
             ISourcePackageNameSet).queryByName(self.changes.dsc.package)
 
-        rejection_reason = check_upload_to_archive(
-            uploader, self.policy.distroseries, source_name, archive,
+        rejection_reason = archive.checkUpload(
+            uploader, self.policy.distroseries, source_name, 
             self.changes.dsc.component, self.policy.pocket, not self.is_new)
 
         if rejection_reason is not None:
@@ -582,7 +581,10 @@ class NascentUpload:
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
-        if self.policy.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
+        # If the archive is a main archive or a copy archive, we want to
+        # look up the ancestry in all the main archives.
+        if (self.policy.archive.purpose not in MAIN_ARCHIVE_PURPOSES and
+            not self.policy.archive.is_copy):
             archive = self.policy.archive
         else:
             archive = None
@@ -699,8 +701,11 @@ class NascentUpload:
 
         All files are also marked as new unless it's a PPA file, which are
         never considered new as they are auto-accepted.
+
+        COPY archive build uploads are also auto-accepted, otherwise they
+        would sit in the NEW queue since it's likely there's no ancestry.
         """
-        if self.is_ppa:
+        if self.is_ppa or self.policy.archive.is_copy:
             return
 
         # All newly-uploaded, non-PPA files must be marked as new so that
@@ -774,7 +779,11 @@ class NascentUpload:
                     # fine.
                     ancestry = self.getBinaryAncestry(
                         uploaded_file, try_other_archs=False)
-                    if ancestry is not None:
+                    if (ancestry is not None and
+                        not self.policy.archive.is_copy):
+                        # Ignore version checks for copy archives
+                        # because the ancestry comes from the primary
+                        # which may have changed since the copy.
                         self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
                     self.logger.debug(
@@ -801,10 +810,6 @@ class NascentUpload:
             self.do_reject(notify)
             return False
         try:
-            maintainerfrom = None
-            if self.changes.signer:
-                maintainerfrom = self.changes.changed_by['rfc2047']
-
             self.storeObjectsInDatabase()
 
             # Send the email.
@@ -905,7 +910,8 @@ class NascentUpload:
         sourcepackagerelease = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            sourcepackagerelease = self.changes.dsc.storeInDatabase()
+            build = self.changes.dsc.findBuild()
+            sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
             package_upload_source = self.queue_root.addSource(
                 sourcepackagerelease)
             ancestry = package_upload_source.getSourceAncestry()
@@ -914,7 +920,7 @@ class NascentUpload:
                 diff = to_sourcepackagerelease.requestDiffTo(
                     sourcepackagerelease.creator, sourcepackagerelease)
                 self.logger.debug(
-                    'Package diff for %s from %s requested' % (
+                    '%s %s requested' % (
                         diff.from_source.name, diff.title))
 
         if self.binaryful:
@@ -955,7 +961,7 @@ class NascentUpload:
                                    for build in self.queue_root.builds]
                 if considered_build.id in attached_builds:
                     continue
-                assert (considered_build.sourcepackagerelease.id ==
+                assert (considered_build.source_package_release.id ==
                         sourcepackagerelease.id), (
                     "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)

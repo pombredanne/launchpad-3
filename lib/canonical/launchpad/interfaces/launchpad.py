@@ -16,7 +16,6 @@ from persistent import IPersistent
 
 from lazr.restful.interfaces import IServiceRootResource
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 # XXX kiko 2007-02-08:
@@ -34,7 +33,6 @@ __all__ = [
     'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
-    'ICrowd',
     'IFeedsApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
@@ -47,7 +45,6 @@ __all__ = [
     'IHasMugshot',
     'IHasProduct',
     'IHasProductAndAssignee',
-    'IHasSecurityContact',
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
@@ -244,25 +241,6 @@ class IPersonRoles(Interface):
         """
 
 
-class ICrowd(Interface):
-
-    def __contains__(person_or_team_or_anything):
-        """Return True if person_or_team_or_anything is in the crowd.
-
-        Note that a particular crowd can choose to answer 'True' to this
-        question, if that is what it is supposed to do.  So, crowds that
-        contain other crowds will want to allow the other crowds the
-        opportunity to answer __contains__ before that crowd does.
-        """
-
-    def __add__(crowd):
-        """Return a new ICrowd that is this crowd added to the given crowd.
-
-        The returned crowd contains the person or teams in
-        both this crowd and the given crowd.
-        """
-
-
 class IPrivateMaloneApplication(ILaunchpadApplication):
     """Private application root for malone."""
 
@@ -312,9 +290,7 @@ class IPrivateApplication(ILaunchpadApplication):
 
     codeimportscheduler = Attribute("""Code import scheduler end point.""")
 
-    branch_puller = Attribute("""Branch puller end point.""")
-
-    branchfilesystem = Attribute("""The branch filesystem end point.""")
+    codehosting = Attribute("""Codehosting end point.""")
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
@@ -456,16 +432,6 @@ class IHasProductAndAssignee(IHasProduct, IHasAssignee):
     See IHasProduct and IHasAssignee."""
 
 
-class IHasSecurityContact(Interface):
-    """An object that has a security contact."""
-
-    security_contact = PublicPersonChoice(
-        title=_("Security Contact"),
-        description=_(
-            "The person or team who handles security-related bug reports"),
-        required=False, vocabulary='ValidPersonOrTeam')
-
-
 class IHasIcon(Interface):
     """An object that can have a custom icon."""
 
@@ -554,7 +520,7 @@ class IAppFrontPageSearchForm(Interface):
     search_text = TextLine(title=_('Search text'), required=False)
 
     scope = Choice(title=_('Search scope'), required=False,
-                   vocabulary='DistributionOrProductOrProject')
+                   vocabulary='DistributionOrProductOrProjectGroup')
 
 
 class ILaunchpadSearch(Interface):

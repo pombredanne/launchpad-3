@@ -8,23 +8,22 @@ __metaclass__ = type
 import email
 import unittest
 
-# This non-standard import is necessary to hook up the event system.
-import zope.component.event
+from zope.event import notify
 from zope.component import getUtility
 
+from canonical.testing import LaunchpadZopelessLayer
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
-from lp.codehosting.scanner.email import (
-    send_removed_revision_emails, queue_tip_changed_email_jobs)
-from lp.codehosting.scanner.fixture import make_zope_event_fixture
-from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.code.interfaces.branchjob import (
     IRevisionMailJobSource, IRevisionsAddedJobSource)
+from lp.code.model.branchjob import (RevisionMailJob)
+from lp.codehosting.scanner import events
+from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
-from canonical.testing import LaunchpadZopelessLayer
+from lp.testing import TestCaseWithFactory
 
 
 class TestBzrSyncEmail(BzrSyncTestCase):
@@ -32,10 +31,6 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        fixture = make_zope_event_fixture(
-            queue_tip_changed_email_jobs, send_removed_revision_emails)
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
         stub.test_emails = []
 
     def makeDatabaseBranch(self):
@@ -46,7 +41,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             test_user,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.FIVEKLINES,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            test_user)
         LaunchpadZopelessLayer.txn.commit()
         return branch
 
@@ -66,7 +62,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         message = email.message_from_string(initial_email[2])
         email_body = message.get_payload()
         self.assertTextIn(expected, email_body)
-        self.assertEqual(
+        self.assertEmailHeadersEqual(
             '[Branch %s] 0 revisions' % self.db_branch.unique_name,
             message['Subject'])
 
@@ -81,7 +77,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         message = email.message_from_string(initial_email[2])
         email_body = message.get_payload()
         self.assertTextIn(expected, email_body)
-        self.assertEqual(
+        self.assertEmailHeadersEqual(
             '[Branch %s] 1 revision' % self.db_branch.unique_name,
             message['Subject'])
 
@@ -99,7 +95,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         message = email.message_from_string(uncommit_email[2])
         email_body = message.get_payload()
         self.assertTextIn(expected, email_body)
-        self.assertEqual(
+        self.assertEmailHeadersEqual(
             '[Branch %s] 1 revision removed' % self.db_branch.unique_name,
             message['Subject'])
 
@@ -127,10 +123,13 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         subject = (
             'Subject: [Branch %s] Test branch' % self.db_branch.unique_name)
         self.assertTextIn(expected, uncommit_email_body)
-        recommit_email_body = recommit_email[2]
+
+        recommit_email_msg = email.message_from_string(recommit_email[2])
+        recommit_email_body = recommit_email_msg.get_payload()[0].get_payload(
+            decode=True)
+        subject =  '[Branch %s] Rev 1: second' % self.db_branch.unique_name
+        self.assertEmailHeadersEqual(subject, recommit_email_msg['Subject'])
         body_bits = [
-            'Subject: [Branch %s] Rev 1: second'
-            % self.db_branch.unique_name,
             'revno: 1',
             'committer: %s' % author,
             'branch nick: %s'  % self.bzr_branch.nick,
@@ -141,6 +140,39 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             self.assertTextIn(bit, recommit_email_body)
 
 
+class TestScanBranches(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_queue_tip_changed_email_jobs_subscribed(self):
+        """A queue_tip_changed_email_jobs is run when TipChanged emitted."""
+        self.useBzrBranches(direct_database=True)
+        db_branch, tree = self.create_branch_and_tree()
+        db_branch.subscribe(
+            db_branch.registrant,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.WHOLEDIFF,
+            CodeReviewNotificationLevel.FULL,
+            db_branch.registrant)
+        self.assertEqual(0, len(list(RevisionMailJob.iterReady())))
+        notify(events.TipChanged(db_branch, tree.branch, True))
+        self.assertEqual(1, len(list(RevisionMailJob.iterReady())))
+
+    def test_send_removed_revision_emails_subscribed(self):
+        """send_removed_revision_emails run when RevisionsRemoved emitted."""
+        self.useBzrBranches(direct_database=True)
+        db_branch, tree = self.create_branch_and_tree()
+        db_branch.subscribe(
+            db_branch.registrant,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.WHOLEDIFF,
+            CodeReviewNotificationLevel.FULL,
+            db_branch.registrant)
+        self.assertEqual(0, len(list(RevisionMailJob.iterReady())))
+        notify(events.RevisionsRemoved(db_branch, tree.branch, ['x']))
+        self.assertEqual(1, len(list(RevisionMailJob.iterReady())))
+
+
 class TestBzrSyncNoEmail(BzrSyncTestCase):
     """Tests BzrSync support for not generating branch email notifications
     when no one is interested.
@@ -148,10 +180,6 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        fixture = make_zope_event_fixture(
-            queue_tip_changed_email_jobs, send_removed_revision_emails)
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
         stub.test_emails = []
 
     def assertNoPendingEmails(self):

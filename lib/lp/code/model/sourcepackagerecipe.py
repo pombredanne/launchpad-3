@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401,W1001
+
 """Implementation of the `SourcePackageRecipe` content type."""
 
 __metaclass__ = type
@@ -8,20 +10,30 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
-from storm.locals import Int, Reference, Store, Storm, Unicode
+from bzrlib.plugins.builder import RecipeParser
+from lazr.delegates import delegates
+
+from storm.locals import (
+    And, Bool, Desc, Int, Not, Reference, ReferenceSet, Select, Store, Storm,
+    Unicode)
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
-from lp.archiveuploader.permission import check_upload_to_archive
+from lp.code.errors import TooManyBuilds
 from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeSource)
+    ISourcePackageRecipe, ISourcePackageRecipeSource,
+    ISourcePackageRecipeData)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
-from lp.code.model.sourcepackagerecipedata import _SourcePackageRecipeData
+from lp.code.model.branch import Branch
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
+from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 
@@ -31,15 +43,36 @@ class NonPPABuildRequest(Exception):
     unsupported."""
 
 
+class _SourcePackageRecipeDistroSeries(Storm):
+    """Link table for many-to-many relationship."""
+
+    __storm_table__ = "SourcePackageRecipeDistroSeries"
+    id = Int(primary=True)
+    sourcepackagerecipe_id = Int(name='sourcepackagerecipe', allow_none=False)
+    sourcepackage_recipe = Reference(
+        sourcepackagerecipe_id, 'SourcePackageRecipe.id')
+    distroseries_id = Int(name='distroseries', allow_none=False)
+    distroseries = Reference(distroseries_id, 'DistroSeries.id')
+
+
 class SourcePackageRecipe(Storm):
     """See `ISourcePackageRecipe` and `ISourcePackageRecipeSource`."""
 
     __storm_table__ = 'SourcePackageRecipe'
 
+    def __str__(self):
+        return '%s/%s' % (self.owner.name, self.name)
+
     implements(ISourcePackageRecipe)
+
     classProvides(ISourcePackageRecipeSource)
 
+    delegates(ISourcePackageRecipeData, context='_recipe_data')
+
     id = Int(primary=True)
+
+    daily_build_archive_id = Int(name='daily_build_archive', allow_none=True)
+    daily_build_archive = Reference(daily_build_archive_id, 'Archive.id')
 
     date_created = UtcDateTimeCol(notNull=True)
     date_last_modified = UtcDateTimeCol(notNull=True)
@@ -50,64 +83,166 @@ class SourcePackageRecipe(Storm):
     registrant_id = Int(name='registrant', allow_none=True)
     registrant = Reference(registrant_id, 'Person.id')
 
-    distroseries_id = Int(name='distroseries', allow_none=True)
-    distroseries = Reference(distroseries_id, 'DistroSeries.id')
+    distroseries = ReferenceSet(
+        id, _SourcePackageRecipeDistroSeries.sourcepackagerecipe_id,
+        _SourcePackageRecipeDistroSeries.distroseries_id, DistroSeries.id)
 
-    sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
-    sourcepackagename = Reference(
-        sourcepackagename_id, 'SourcePackageName.id')
+    build_daily = Bool()
+
+    @property
+    def _sourcepackagename_text(self):
+        return self.sourcepackagename.name
 
     name = Unicode(allow_none=True)
+    description = Unicode(allow_none=False)
 
     @property
     def _recipe_data(self):
         return Store.of(self).find(
-            _SourcePackageRecipeData,
-            _SourcePackageRecipeData.sourcepackage_recipe == self).one()
+            SourcePackageRecipeData,
+            SourcePackageRecipeData.sourcepackage_recipe == self).one()
 
     def _get_builder_recipe(self):
-        """Accesses of the recipe go to the _SourcePackageRecipeData."""
+        """Accesses of the recipe go to the SourcePackageRecipeData."""
         return self._recipe_data.getRecipe()
 
     def _set_builder_recipe(self, value):
-        """Setting of the recipe goes to the _SourcePackageRecipeData."""
+        """Setting of the recipe goes to the SourcePackageRecipeData."""
         self._recipe_data.setRecipe(value)
 
     builder_recipe = property(_get_builder_recipe, _set_builder_recipe)
 
-    def getReferencedBranches(self):
-        """See `ISourcePackageRecipe.getReferencedBranches`."""
-        return self._recipe_data.getReferencedBranches()
+    @property
+    def base_branch(self):
+        return self._recipe_data.base_branch
+
+    def setRecipeText(self, recipe_text):
+        self.builder_recipe = RecipeParser(recipe_text).parse()
+
+    @property
+    def recipe_text(self):
+        return str(self.builder_recipe)
 
     @staticmethod
-    def new(registrant, owner, distroseries, sourcepackagename, name,
-            builder_recipe):
+    def new(registrant, owner, name, builder_recipe, description,
+            distroseries=None, daily_build_archive=None, build_daily=False):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
-        _SourcePackageRecipeData(builder_recipe, sprecipe)
+        SourcePackageRecipeData(builder_recipe, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
-        sprecipe.distroseries = distroseries
-        sprecipe.sourcepackagename = sourcepackagename
         sprecipe.name = name
+        if distroseries is not None:
+            for distroseries_item in distroseries:
+                sprecipe.distroseries.add(distroseries_item)
+        sprecipe.description = description
+        sprecipe.daily_build_archive = daily_build_archive
+        sprecipe.build_daily = build_daily
         store.add(sprecipe)
         return sprecipe
 
-    def requestBuild(self, archive, requester, pocket):
+    @classmethod
+    def findStaleDailyBuilds(cls):
+        store = IStore(cls)
+        # Distroseries which have been built since the base branch was
+        # modified.
+        up_to_date_distroseries = Select(
+            SourcePackageRecipeBuild.distroseries_id,
+            And(
+                SourcePackageRecipeData.sourcepackage_recipe_id ==
+                SourcePackageRecipeBuild.recipe_id,
+                SourcePackageRecipeData.base_branch_id == Branch.id,
+                Branch.date_last_modified <
+                SourcePackageRecipeBuild.datebuilt))
+        return store.find(
+            _SourcePackageRecipeDistroSeries, cls.build_daily == True,
+            _SourcePackageRecipeDistroSeries.sourcepackagerecipe_id == cls.id,
+            Not(_SourcePackageRecipeDistroSeries.distroseries_id.is_in(
+                up_to_date_distroseries)))
+
+    @staticmethod
+    def exists(owner, name):
+        """See `ISourcePackageRecipeSource.new`."""
+        store = IMasterStore(SourcePackageRecipe)
+        recipe = store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.owner == owner,
+            SourcePackageRecipe.name == name).one()
+        if recipe:
+            return True
+        else:
+            return False
+
+    def destroySelf(self):
+        store = Store.of(self)
+        self.distroseries.clear()
+        self._recipe_data.instructions.find().remove()
+        def destroyBuilds(pending):
+            builds = self.getBuilds(pending=pending)
+            for build in builds:
+                build.destroySelf()
+        destroyBuilds(pending=True)
+        destroyBuilds(pending=False)
+        store.remove(self._recipe_data)
+        store.remove(self)
+
+    def isOverQuota(self, requester, distroseries):
         """See `ISourcePackageRecipe`."""
+        return SourcePackageRecipeBuild.getRecentBuilds(
+            requester, self, distroseries).count() >= 5
+
+    def requestBuild(self, archive, requester, distroseries, pocket,
+                     manual=False):
+        """See `ISourcePackageRecipe`."""
+        if not config.build_from_branch.enabled:
+            raise ValueError('Source package recipe builds disabled.')
         if archive.purpose != ArchivePurpose.PPA:
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
-        reject_reason = check_upload_to_archive(
-            requester, self.distroseries, self.sourcepackagename,
-            archive, component, pocket)
+        reject_reason = archive.checkUpload(
+            requester, self.distroseries, None, component, pocket)
         if reject_reason is not None:
             raise reject_reason
+        if self.isOverQuota(requester, distroseries):
+            raise TooManyBuilds(self, distroseries)
 
-        sourcepackage = self.distroseries.getSourcePackage(
-            self.sourcepackagename)
-        build = getUtility(ISourcePackageRecipeBuildSource).new(sourcepackage,
+        build = getUtility(ISourcePackageRecipeBuildSource).new(distroseries,
             self, requester, archive)
-        build.queueBuild()
+        build.queueBuild(build)
+        if manual:
+            build.buildqueue_record.manualScore(1000)
         return build
+
+    def getBuilds(self, pending=False):
+        """See `ISourcePackageRecipe`."""
+        if pending:
+            clauses = [SourcePackageRecipeBuild.datebuilt == None]
+        else:
+            clauses = [SourcePackageRecipeBuild.datebuilt != None]
+        result = Store.of(self).find(
+            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe==self,
+            *clauses)
+        result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
+        return result
+
+    def getLastBuild(self):
+        """See `ISourcePackageRecipeBuild`."""
+        store = Store.of(self)
+        result = store.find(
+            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe == self)
+        result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
+        return result.first()
+
+    def getMedianBuildDuration(self):
+        """Return the median duration of builds of this recipe."""
+        store = IStore(self)
+        result = store.find(
+            SourcePackageRecipeBuild.buildduration,
+            SourcePackageRecipeBuild.recipe==self.id,
+            SourcePackageRecipeBuild.buildduration != None)
+        result.order_by(Desc(SourcePackageRecipeBuild.buildduration))
+        count = result.count()
+        if count == 0:
+            return None
+        return result[count/2]

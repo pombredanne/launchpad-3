@@ -42,6 +42,12 @@ ISourcePackageNameSet.queryByName:
     >>> print firefox.name
     mozilla-firefox
 
+Source packages have useful string representations containing their name in
+quotes.
+
+    >>> firefox
+    <SourcePackageName 'mozilla-firefox'>
+
 If the package doesn't exist, queryByName returns None:
 
     >>> biscoito = sourcepackagenameset.queryByName("biscoito")
@@ -83,14 +89,10 @@ upload, even though it gets changed in the publishing record.
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> from canonical.launchpad.database import Component
     >>> from canonical.launchpad.database import (
-    ...     SecureSourcePackagePublishingHistory)
+    ...     SourcePackagePublishingHistory)
     >>> from canonical.launchpad.ftests import syncUpdate
 
-    # SourcePackagePublishingHistory is just a view on
-    # SecureSourcePackagePublishingHistory with some rows removed, so need
-    # to update the SecureSourcePackagePublishingHistory table.
-
-    >>> latest_publishing = SecureSourcePackagePublishingHistory.get(
+    >>> latest_publishing = SourcePackagePublishingHistory.get(
     ...     publishing_history[-1].id)
     >>> universe = Component.byName('universe')
     >>> latest_publishing.component = universe
@@ -136,20 +138,19 @@ SourcePackage context will be reachable.
 
 'pmount_0.1-1' in hoary is SUPERSEDED but not yet 'removed from disk'.
 
-    >>> secure_pub =  SecureSourcePackagePublishingHistory.get(
+    >>> pub = SourcePackagePublishingHistory.get(
     ...     pmount_hoary['0.1-1'].publishing_history[0].id)
-    >>> secure_pub.datesuperseded is not None
+    >>> pub.datesuperseded is not None
     True
-
-    >>> secure_pub.dateremoved is None
+    >>> pub.dateremoved is None
     True
 
 We will emulate disk-removal to ensure it will continue to be reachable.
 See bug #179028 for further information.
 
     >>> from datetime import timedelta
-    >>> secure_pub.dateremoved = secure_pub.datesuperseded + timedelta(days=1)
-    >>> syncUpdate(secure_pub)
+    >>> pub.dateremoved = pub.datesuperseded + timedelta(days=1)
+    >>> syncUpdate(pub)
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name
@@ -350,32 +351,10 @@ Zero or more spaces may appear between the ":" and the "#".
     >>> from lp.soyuz.browser.sourcepackagerelease import (
     ...     linkify_bug_numbers)
     >>> linkify_bug_numbers("LP: #10")
-    u'LP: <a href="/bugs/10" title="another test bug">#10</a>'
+    'LP: <a href="/bugs/10">#10</a>'
 
-    >>> linkify_bug_numbers("LP:         #10")
-    u'LP:         <a href="/bugs/10" title="another test bug">#10</a>'
-
-    >>> linkify_bug_numbers("LP:#10")
-    u'LP:<a href="/bugs/10" title="another test bug">#10</a>'
-
-    >>> linkify_bug_numbers("LP: #999")
-    'LP: <a href="/bugs/999" title="No such bug">#999</a>'
-
-    >>> linkify_bug_numbers("garbage")
-    'garbage'
-
-    >>> linkify_bug_numbers("LP: #10, #7")
-    u'LP: <a href="/bugs/10" title="another test bug">#10</a>,
-    <a href="/bugs/7" title="A test bug">#7</a>'
-
-    >>> linkify_bug_numbers("LP: #10 LP: #10")
-    u'LP: <a href="/bugs/10" title="another test bug">#10</a>
-      LP: <a href="/bugs/10" title="another test bug">#10</a>'
-
-The regex is case-insensitive, so "lp: #nnn" also works.
-
-    >>> linkify_bug_numbers("lp: #10")
-    u'lp: <a href="/bugs/10" title="another test bug">#10</a>'
+More complete examples of the bug linkification can be found in the doctest
+displaying-paragraphs-of-text.
 
 
 Comparing Sourcepackages

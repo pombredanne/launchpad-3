@@ -42,8 +42,7 @@ from lp.hardwaredb.interfaces.hwdb import (
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugSet, InvalidBugTargetType)
-from lp.code.interfaces.codehosting import (
-    IBranchFileSystemApplication, IBranchPullerApplication)
+from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication)
 from lp.registry.interfaces.product import IProduct
@@ -61,18 +60,11 @@ class AuthServerApplication:
     title = "Auth Server"
 
 
-class BranchFileSystemApplication:
-    """BranchFileSystem End-Point."""
-    implements(IBranchFileSystemApplication)
+class CodehostingApplication:
+    """Codehosting End-Point."""
+    implements(ICodehostingApplication)
 
-    title = "Branch File System"
-
-
-class BranchPullerApplication:
-    """BranchPuller End-Point."""
-    implements(IBranchPullerApplication)
-
-    title = "Puller API"
+    title = "Codehosting API"
 
 
 class CodeImportSchedulerApplication:
@@ -143,7 +135,7 @@ class MaloneApplication:
 
     @property
     def bugtracker_count(self):
-        return getUtility(IBugTrackerSet).search().count()
+        return getUtility(IBugTrackerSet).count
 
     @property
     def projects_with_bugs_count(self):
@@ -343,15 +335,8 @@ class HWDBApplication:
 class WebServiceApplication(ServiceRootResource):
     """See `IWebServiceApplication`.
 
-    This implementation adds a 'cached_wadl' attribute.  If set, it will be
-    served by `toWADL` rather than calculating the toWADL result.
-
-    On import, the class tries to load a file to populate this attribute.  By
-    doing it on import, this makes it easy to clear, as is needed by
-    utilities/create-lp-wadl.py.
-
-    If the attribute is not set, toWADL will set the attribute on the class
-    once it is calculated.
+    This implementation adds a 'cached_wadl' attribute, which starts
+    out as an empty dict and is populated as needed.
     """
     implements(IWebServiceApplication, ICanonicalUrlData)
 
@@ -359,31 +344,46 @@ class WebServiceApplication(ServiceRootResource):
     path = ''
     rootsite = None
 
-    _wadl_filename = os.path.join(
-        os.path.dirname(os.path.normpath(__file__)),
-        'apidoc', 'wadl-%s.xml' % config.instance_name)
+    cached_wadl = {}
 
-    cached_wadl = None
-
-    # Attempt to load the WADL.
-    _wadl_fd = None
-    try:
-        _wadl_fd = codecs.open(_wadl_filename, encoding='UTF-8')
-        try:
-            cached_wadl = _wadl_fd.read()
-        finally:
-            _wadl_fd.close()
-    except IOError:
-        pass
-    del _wadl_fd
+    @classmethod
+    def cachedWADLPath(cls, instance_name, version):
+        """Helper method to calculate the path to a cached WADL file."""
+        return os.path.join(
+            os.path.dirname(os.path.normpath(__file__)),
+            'apidoc', 'wadl-%s-%s.xml' % (instance_name, version))
 
     def toWADL(self):
-        """See `IWebServiceApplication`."""
-        if self.cached_wadl is not None:
-            return self.cached_wadl
-        wadl = super(WebServiceApplication, self).toWADL()
-        self.__class__.cached_wadl = wadl
-        return wadl
+        """See `IWebServiceApplication`.
+
+        Look for a cached WADL file for the request version at the
+        location used by the script
+        utilities/create-launchpad-wadl.py. If the file is present,
+        load the file and cache its contents rather than generating
+        new WADL. Otherwise, generate new WADL and cache it.
+        """
+        version = self.request.version
+        if self.__class__.cached_wadl is None:
+            # The cache has been disabled for testing
+            # purposes. Generate the WADL.
+            return super(WebServiceApplication, self).toWADL()
+        if  version not in self.__class__.cached_wadl:
+            # It's not cached. Look for it on disk.
+            _wadl_filename = self.cachedWADLPath(
+                config.instance_name, version)
+            _wadl_fd = None
+            try:
+                _wadl_fd = codecs.open(_wadl_filename, encoding='UTF-8')
+                try:
+                    wadl = _wadl_fd.read()
+                finally:
+                    _wadl_fd.close()
+            except IOError:
+                # It's not on disk; generate it.
+                wadl = super(WebServiceApplication, self).toWADL()
+            del _wadl_fd
+            self.__class__.cached_wadl[version] = wadl
+        return self.__class__.cached_wadl[version]
 
 
 class TestOpenIDApplication:

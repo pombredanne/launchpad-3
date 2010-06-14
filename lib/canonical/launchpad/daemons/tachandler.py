@@ -7,11 +7,16 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-__all__ = ['TacTestSetup', 'ReadyService', 'TacException']
+__all__ = [
+    'TacTestSetup',
+    'ReadyService',
+    'TacException',
+    'kill_by_pidfile',
+    'remove_if_exists',
+    'two_stage_kill',
+    ]
 
 
-# This file is used by launchpad-buildd, so it cannot import any
-# Launchpad code!
 import errno
 import sys
 import os
@@ -21,6 +26,78 @@ import subprocess
 
 from twisted.application import service
 from twisted.python import log
+
+# This file is used by launchpad-buildd, so it cannot import any
+# Launchpad code!
+
+
+def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
+    """Kill process 'pid' with SIGTERM. If it doesn't die, SIGKILL it.
+
+    :param pid: The pid of the process to kill.
+    :param poll_interval: The polling interval used to check if the
+        process is still around.
+    :param num_polls: The number of polls to do before doing a SIGKILL.
+    """
+    # Kill the process.
+    try:
+        os.kill(pid, SIGTERM)
+    except OSError, e:
+        if e.errno in (errno.ESRCH, errno.ECHILD):
+            # Process has already been killed.
+            return
+
+    # Poll until the process has ended.
+    for i in range(num_polls):
+        try:
+            # Reap the child process and get its return value. If it's not
+            # gone yet, continue.
+            new_pid, result = os.waitpid(pid, os.WNOHANG)
+            if new_pid:
+                return result
+            time.sleep(poll_interval)
+        except OSError, e:
+            if e.errno in (errno.ESRCH, errno.ECHILD):
+                # Raised if the process is gone by the time we try to get the
+                # return value.
+                return
+
+    # The process is still around, so terminate it violently.
+    try:
+        os.kill(pid, SIGKILL)
+    except OSError:
+        # Already terminated
+        pass
+
+
+def kill_by_pidfile(pidfile_path, poll_interval=0.1, num_polls=50):
+    """Kill a process identified by the pid stored in a file.
+
+    The pid file is removed from disk.
+    """
+    if not os.path.exists(pidfile_path):
+        return
+    try:
+        # Get the pid.
+        pid = open(pidfile_path, 'r').read().split()[0]
+        try:
+            pid = int(pid)
+        except ValueError:
+            # pidfile contains rubbish
+            return
+
+        two_stage_kill(pid)
+    finally:
+        remove_if_exists(pidfile_path)
+
+
+def remove_if_exists(path):
+    """Remove the given file if it exists."""
+    try:
+        os.remove(path)
+    except OSError, e:
+        if e.errno != errno.ENOENT:
+            raise
 
 
 twistd_script = os.path.abspath(os.path.join(
@@ -38,7 +115,7 @@ class TacTestSetup:
 
     You can override setUpRoot to set up a root directory for the daemon.
     """
-    def setUp(self, spew=False):
+    def setUp(self, spew=False, umask=None):
         # Before we run, we want to make sure that we have cleaned up any
         # previous runs. Although tearDown() should have been called already,
         # we can't guarantee it.
@@ -48,13 +125,21 @@ class TacTestSetup:
         # started. If it sees an old logfile, then it will find the LOG_MAGIC
         # string and return immediately, provoking hard-to-diagnose race
         # conditions. Delete the logfile to make sure this does not happen.
-        self._removeFile(self.logfile)
+        remove_if_exists(self.logfile)
 
         self.setUpRoot()
-        args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
+        args = [sys.executable,
+                # XXX: 2010-04-26, Salgado, bug=570246: Deprecation warnings
+                # in Twisted are not our problem.  They also aren't easy to
+                # suppress, and cause test failures due to spurious stderr
+                # output.  Just shut the whole bloody mess up.
+                '-Wignore::DeprecationWarning',
+                twistd_script, '-o', '-y', self.tacfile,
                 '--pidfile', self.pidfile, '--logfile', self.logfile]
         if spew:
             args.append('--spew')
+        if umask is not None:
+            args.extend(('--umask', umask))
 
         # Run twistd, and raise an error if the return value is non-zero or
         # stdout/stderr are written to.
@@ -87,8 +172,8 @@ class TacTestSetup:
     def _waitForDaemonStartup(self):
         """ Wait for the daemon to fully start.
 
-        Times out after 20 seconds.  If that happens, the log file will
-        not be cleaned up so the user can post-mortem it.
+        Times out after 20 seconds.  If that happens, the log file content
+        will be included in the exception message for debugging purpose.
 
         :raises TacException: Timeout.
         """
@@ -101,56 +186,16 @@ class TacTestSetup:
             now = time.time()
 
         if now >= deadline:
-            raise TacException('Unable to start %s. Check %s.' % (
-                self.tacfile, self.logfile))
+            raise TacException('Unable to start %s. Content of %s:\n%s' % (
+                self.tacfile, self.logfile, open(self.logfile).read()))
 
     def tearDown(self):
         self.killTac()
 
-    def _removeFile(self, filename):
-        """Remove the given file if it exists."""
-        try:
-            os.remove(filename)
-        except OSError, e:
-            if e.errno != errno.ENOENT:
-                raise
-
     def killTac(self):
         """Kill the TAC file if it is running."""
         pidfile = self.pidfile
-        if not os.path.exists(pidfile):
-            return
-
-        # Get the pid.
-        pid = open(pidfile, 'r').read().strip()
-        try:
-            pid = int(pid)
-        except ValueError:
-            # pidfile contains rubbish
-            return
-
-        # Kill the process.
-        try:
-            os.kill(pid, SIGTERM)
-        except OSError, e:
-            if e.errno in (errno.ESRCH, errno.ECHILD):
-                # Process has already been killed.
-                return
-
-        # Poll until the process has ended.
-        for i in range(50):
-            try:
-                os.kill(pid, 0)
-                time.sleep(0.1)
-            except OSError, e:
-                break
-        else:
-            # The process is still around, so terminate it violently.
-            try:
-                os.kill(pid, SIGKILL)
-            except OSError:
-                # Already terminated
-                pass
+        kill_by_pidfile(pidfile)
 
     def setUpRoot(self):
         """Override this.

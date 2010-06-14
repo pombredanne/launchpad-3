@@ -43,6 +43,7 @@ setup(
         'lazr.uri',
         'lazr-js',
         'mechanize',
+        'meliae',
         'mercurial',
         'mocker',
         'oauth',
@@ -53,12 +54,13 @@ setup(
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:
         'RestrictedPython',
+        'setproctitle',
         'setuptools',
         'sourcecodegen',
         'storm',
         'testtools',
         'transaction',
-        'Twisted', 
+        'Twisted',
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',
@@ -135,6 +137,7 @@ setup(
             'twistd = twisted.scripts.twistd:run',
             'start_librarian '
                 '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
+            'ec2 = devscripts.ec2test.entrypoint:main',
         ]
     ),
 )

@@ -47,7 +47,7 @@ The page contains a few interesting details about team membership.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    10 active members, 1 invited members, 2 proposed members...
+    10 active members, 1 invited member, 2 proposed members...
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'contact-email'))
@@ -173,7 +173,6 @@ will even show the path from the user to the team.
     >>> sample_browser.open('http://launchpad.dev/~name18')
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'your-involvement'))
-    Join...
     You are an indirect member of this team:
     Sample Person &rarr; Warty Security Team &rarr; Ubuntu Gnome Team...
 

@@ -1,4 +1,5 @@
-= DistroSeries =
+DistroSeries
+============
 
 From the DerivationOverview spec
 <https://launchpad.canonical.com/DerivationOverview>:
@@ -200,7 +201,8 @@ the upload will have to wait for manual approval anyway:
    True
 
 
-== Package searching ==
+Package searching
+-----------------
 
 You can search through binary packages publishing in a distribution
 release by using the searchPackages method, which uses magical fti:
@@ -223,7 +225,8 @@ through fti, and even for substrings:
     DistroSeriesBinaryPackage: at
 
 
-== DistroSeriess have components and sections ==
+DistroSeriess have components and sections
+------------------------------------------
 
 A distroseries has some number of components and/or sections which
 are valid for that distroseries. These selections are used by (among
@@ -286,7 +289,8 @@ components since partner is allowed for upload:
     partner
 
 
-== DistroSeries can be initialised from their parents ==
+DistroSeries can be initialised from their parents
+--------------------------------------------------
 
 When a distroseries is derived from another distroseries (be it a
 derivative distribution, or simply the next release in a sequence from
@@ -361,7 +365,7 @@ Check the content IDRSPR binaries & builds attributes:
    2
 
    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
-   ...     print bin.id, bin.title, bin.build.distroarchseries.title
+   ...     print bin.id, bin.title, bin.build.distro_arch_series.title
    27 mozilla-firefox-data-0.9 The Warty Warthog Release for i386 (x86)
    12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
 
@@ -396,74 +400,8 @@ The new series also has the same packaging links as its parent series.
     netapplet
 
 
-Hiding translations
--------------------
-
-The hide_all_translations flag, if set, hides a distroseries'
-translations in the user interface.  The check for visibility happens in
-checkTranslationsViewable.
-
-    >>> untranslatable_series = factory.makeDistroRelease()
-    >>> untranslatable_series.hide_all_translations = False
-
-When translations are visible, checkTranslationsViewable() completes
-normally.
-
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     TranslationUnavailable)
-    >>> def get_visibility_notice(series):
-    ...     """Print the notice about series' translations being hidden."""
-    ...     try:
-    ...         series.checkTranslationsViewable()
-    ...     except TranslationUnavailable, e:
-    ...         return str(e)
-    ...     return None
-
-    >>> print get_visibility_notice(untranslatable_series)
-    None
-
-But when translations are hidden, it raises TranslationUnavailable.
-
-    >>> untranslatable_series.hide_all_translations = True
-    >>> print get_visibility_notice(untranslatable_series)
-    Translations for this release series...
-
-Exactly what message is displayed depends on the series' status.
-
-    >>> untranslatable_series.status = SeriesStatus.EXPERIMENTAL
-    >>> print get_visibility_notice(untranslatable_series)
-    Translations for this release series are not available yet.
-
-    >>> untranslatable_series.status = SeriesStatus.DEVELOPMENT
-    >>> print get_visibility_notice(untranslatable_series)
-    Translations for this release series are not available yet.
-
-    >>> untranslatable_series.status = SeriesStatus.FROZEN
-    >>> print get_visibility_notice(untranslatable_series)
-    Translations for this release series are not currently available.
-    Please come back soon.
-
-    >>> untranslatable_series.status = SeriesStatus.CURRENT
-    >>> print get_visibility_notice(untranslatable_series)
-    Translations for this release series are not currently available.
-    Please come back soon.
-
-    >>> untranslatable_series.status = SeriesStatus.SUPPORTED
-    >>> print get_visibility_notice(untranslatable_series)
-    Translations for this release series are not currently available.
-    Please come back soon.
-
-    >>> untranslatable_series.status = SeriesStatus.OBSOLETE
-    >>> print get_visibility_notice(untranslatable_series)
-    This release series is obsolete.  Its translations are no longer
-    available.
-
-    >>> untranslatable_series.status = SeriesStatus.FUTURE
-    >>> print get_visibility_notice(untranslatable_series)
-    Translations for this release series are not available yet.
-
-
-== Translatable Packages and Packaging ==
+Translatable Packages and Packaging
+-----------------------------------
 
 You can easily find out what packages are translatable in a
 distribution release:
@@ -516,7 +454,7 @@ total_bugs, and total_messages (translatable messages).
     alsa-utils  0  0
     cnews  0  0
     libstdc++  0  0
-    linux-source-2.6.15  1  0
+    linux-source-2.6.15  0  0
 
 
 The distroseries getPrioritizedlPackagings() method that returns a prioritized
@@ -549,6 +487,7 @@ upstream.
     ...     package = factory.makeSourcePackage(sourcepackagename=spn,
     ...                                         distroseries=distroseries)
     ...     package.setPackaging(productseries, product.owner)
+    ...     transaction.commit()
 
 
     >>> pkgs = distroseries.getMostRecentlyLinkedPackagings()
@@ -668,7 +607,8 @@ Supersede previous netapplet publication:
    True
 
 
-== SourcePackagePublishingHistory ==
+SourcePackagePublishingHistory
+------------------------------
 
 IDistroSeries.getSourcePackagePublishing returns all the ISPPH
 records for a given status in a given pocket. It makes easy to
@@ -1042,7 +982,8 @@ We can filter for specifications that contain specific text:
     thinclient-local-devices
 
 
-= Drivers =
+Drivers
+=======
 
 Distributions have drivers, who are people that have permission to approve
 bugs and features for specific releases. The rules are that:
@@ -1124,7 +1065,8 @@ driver. Here, we expect the driver to be the owner of the distribution
     mark
 
 
-== Lastest Uploads ==
+Lastest Uploads
+---------------
 
 IDistroSeries provides the 'getLatestUpload' method which returns a
 list of the last 5 (five) IDistroSeriesSourcePackageRelease (IDRSPR)
@@ -1150,7 +1092,8 @@ earlier development state of a distroseries) are possible:
     0
 
 
-== Getting build records for a distro series ==
+Getting build records for a distro series
+-----------------------------------------
 
 IDistroSeries inherits the IHasBuildRecords interfaces and therefore provides
 a getBuildRecords() method.

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Export translation snapshots to bzr branches where requested."""
@@ -14,10 +14,15 @@ import pytz
 
 from zope.component import getUtility
 
+from bzrlib.errors import NotBranchError
+
 from storm.expr import Join, SQL
 
-from canonical.launchpad.helpers import shortlist
-from lp.codehosting.vfs import get_multi_server
+from canonical.config import config
+from canonical.launchpad.helpers import (
+    get_contact_email_addresses, get_email_template, shortlist)
+from lp.services.mail.sendmail import format_address, simple_sendmail
+from lp.codehosting.vfs import get_rw_server
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -225,6 +230,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         """Loop over `productseries_iter` and export their translations."""
         items_done = 0
         items_failed = 0
+        unpushed_branches = 0
 
         productseries = shortlist(productseries_iter, longest_expected=2000)
 
@@ -236,19 +242,49 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     self.txn.commit()
             except (KeyboardInterrupt, SystemExit):
                 raise
+            except NotBranchError:
+                unpushed_branches += 1
+                if self.txn:
+                    self.txn.abort()
+                self._handleUnpushedBranch(source)
+                if self.txn:
+                    self.txn.commit()
             except Exception, e:
                 items_failed += 1
-                message = unicode(e)
-                if message == u'':
-                    message = e.__class__.__name__
-                self.logger.error("Failure: %s" % message)
+                self.logger.error("Failure: %s" % repr(e))
                 if self.txn:
                     self.txn.abort()
 
             items_done += 1
 
-        self.logger.info("Processed %d item(s); %d failure(s)." % (
-            items_done, items_failed))
+        self.logger.info(
+            "Processed %d item(s); %d failure(s), %d unpushed branch(es)." % (
+                items_done, items_failed, unpushed_branches))
+
+    def _sendMail(self, sender, recipients, subject, text):
+        """Wrapper for `simple_sendmail`.  Fakeable for easy testing."""
+        simple_sendmail(sender, recipients, subject, text)
+
+    def _handleUnpushedBranch(self, productseries):
+        """Branch has never been scanned.  Notify owner.
+
+        This means that as far as the Launchpad database knows, there is
+        no actual bzr branch behind this `IBranch` yet.
+        """
+        branch = productseries.translations_branch
+        self.logger.info("Notifying %s of unpushed branch %s." % (
+            branch.owner.name, branch.bzr_identity))
+
+        template = get_email_template('unpushed-branch.txt', 'translations')
+        text = template % {
+            'productseries': productseries.title,
+            'branch_url': branch.bzr_identity,
+        }
+        recipients = get_contact_email_addresses(branch.owner)
+        sender = format_address(
+            "Launchpad Translations", config.canonical.noreply_from_address)
+        subject = "Launchpad: translations branch has not been set up."
+        self._sendMail(sender, recipients, subject, text)
 
     def main(self):
         """See `LaunchpadScript`."""
@@ -273,7 +309,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         # testing.
         productseries = productseries.order_by(ProductSeries.id)
 
-        bzrserver = get_multi_server(write_hosted=True)
+        bzrserver = get_rw_server()
         bzrserver.start_server()
         try:
             self._exportToBranches(productseries)

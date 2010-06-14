@@ -2,7 +2,8 @@
 
     >>> from zope.component import getMultiAdapter, getUtility
     >>> from lp.buildmaster.interfaces.builder import IBuilderSet
-    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> builder = getUtility(IBuilderSet).get(1)
@@ -32,7 +33,7 @@ Let's instantiate a view for +history:
 
     >>> builder_view = getMultiAdapter((builder, request), name="+history")
     >>> print builder_view.page_title
-    Build history for ...Bob The Builder...
+    Build history
 
     setupBuildList, build a batched list of build records and store it
     in view.batch, also store the batch navigator in view.batchnav. it
@@ -129,29 +130,29 @@ to the user who is trying to access a given content.
 Before checking if it works as expected we will setup an environment
 where builder 'Frog' is building a job from Celso's private PPA.
 
-    >>> from lp.soyuz.model.buildqueue import BuildQueue
+    >>> from lp.buildmaster.model.buildqueue import BuildQueue
     >>> from canonical.launchpad.interfaces import (
     ...    IBuilderSet, IPersonSet)
 
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
-    >>> cprov.archive.buildd_secret = "secret"
-    >>> cprov.archive.private = True
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, private=True)
 
 SoyuzTestPublisher is used to make a new publication only in Celso's
-PPA.
+private PPA.
 
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
     >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingStatus)
-    >>> from lp.soyuz.interfaces.build import BuildStatus
 
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
     >>> private_source_pub = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='privacy-test',
-    ...     archive=cprov.archive)
+    ...     archive=cprov_private_ppa)
     >>> [private_build] = private_source_pub.createMissingBuilds()
 
 Assign the build to the 'frog' builder:
@@ -176,7 +177,7 @@ is widely available:
     >>> print frog.builderok
     True
 
-    >>> build_set = getUtility(IBuildSet)
+    >>> build_set = getUtility(IBinaryPackageBuildSet)
     >>> build = build_set.getByQueueEntry(frog.currentjob)
     >>> print build.title
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
@@ -389,10 +390,13 @@ processor queue in the PPA category.
     >>> any_failed_build.retry()
     >>> removeSecurityProxy(
     ...     any_failed_build.buildqueue_record).estimated_duration = one_minute
+    >>> transaction.commit()
     >>> login(ANONYMOUS)
 
 Now the pending build is included in the right category and group.
 
+    >>> builderset_view = getMultiAdapter(
+    ...     (builderset, empty_request), name="+index")
     >>> builder_category = builderset_view.ppa_builders
     >>> print_category(builder_category)
     386    2  2  0:01:00

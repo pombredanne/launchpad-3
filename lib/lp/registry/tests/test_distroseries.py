@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for Distribution."""
+"""Tests for distroseries."""
 
 __metaclass__ = type
 
@@ -12,7 +12,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.registry.interfaces.distroseries import (
@@ -210,9 +209,9 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.main_component = component_set['main']
         self.universe_component = component_set['universe']
         self.makeSeriesPackage('normal')
-        self.makeSeriesPackage('translatable', messages=120)
-        self.makeSeriesPackage('hot', hotness=100)
-        self.makeSeriesPackage('hot-translatable', hotness=80, messages=60)
+        self.makeSeriesPackage('translatable', messages=800)
+        self.makeSeriesPackage('hot', heat=500)
+        self.makeSeriesPackage('hot-translatable', heat=250, messages=1000)
         self.makeSeriesPackage('main', is_main=True)
         self.makeSeriesPackage('linked')
         self.linkPackage('linked')
@@ -220,26 +219,27 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         login(ANONYMOUS)
 
     def makeSeriesPackage(self, name,
-                          is_main=False, hotness=None, messages=None):
+                          is_main=False, heat=None, messages=None,
+                          is_translations=False):
         # Make a published source package.
         if is_main:
             component = self.main_component
         else:
             component = self.universe_component
+        if is_translations:
+            section = 'translations'
+        else:
+            section = 'web'
         sourcepackagename = self.factory.makeSourcePackageName(name)
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=sourcepackagename, distroseries=self.series,
-            component=component)
+            component=component, section=section)
         source_package = self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=self.series)
-        if hotness is not None:
+        if heat is not None:
             bugtask = self.factory.makeBugTask(
                 target=source_package, owner=self.user)
-            # hotness is not exposed in the model yet.
-            # bugtask.bug.hotness = hotness
-            cur = cursor()
-            cur.execute("UPDATE Bug SET heat = %d WHERE id = %d" % (
-                (hotness, bugtask.bug.id)))
+            bugtask.bug.setHeat(heat)
         if messages is not None:
             template = self.factory.makePOTemplate(
                 distroseries=self.series, sourcepackagename=sourcepackagename,
@@ -255,6 +255,15 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
 
     def test_getPrioritizedUnlinkedSourcePackages(self):
         # Verify the ordering of source packages that need linking.
+        package_summaries = self.series.getPrioritizedUnlinkedSourcePackages()
+        names = [summary['package'].name for summary in package_summaries]
+        expected = [
+            u'main', u'hot-translatable', u'hot', u'translatable', u'normal']
+        self.assertEqual(expected, names)
+
+    def test_getPrioritizedUnlinkedSourcePackages_no_language_packs(self):
+        # Verify that translations packages are not listed.
+        self.makeSeriesPackage('language-pack-vi', is_translations=True)
         package_summaries = self.series.getPrioritizedUnlinkedSourcePackages()
         names = [summary['package'].name for summary in package_summaries]
         expected = [
@@ -279,7 +288,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         product_series.product.bugtraker = self.factory.makeBugTracker()
         packagings = self.series.getPrioritizedlPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
-        expected = [u'hot', u'linked', u'cold']
+        expected = [u'hot', u'cold', u'linked']
         self.assertEqual(expected, names)
 
     def test_getPrioritizedlPackagings_branch(self):
@@ -344,7 +353,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
                 translatables, self._ref_translatables()))
 
         new_sourcepackagename = self.factory.makeSourcePackageName()
-        new_potemplate = self.factory.makePOTemplate(
+        self.factory.makePOTemplate(
             distroseries=new_distroseries,
             sourcepackagename=new_sourcepackagename)
         transaction.commit()
@@ -373,7 +382,6 @@ class TestDistroSeriesSet(TestCaseWithFactory):
 
     def test_fromSuite_non_release_pocket(self):
         series = self.factory.makeDistroRelease()
-        pocket = PackagePublishingPocket.BACKPORTS
         suite = '%s-backports' % series.name
         result = getUtility(IDistroSeriesSet).fromSuite(
             series.distribution, suite)

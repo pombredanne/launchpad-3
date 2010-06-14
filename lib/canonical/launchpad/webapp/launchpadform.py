@@ -7,10 +7,11 @@
 __metaclass__ = type
 
 __all__ = [
-    'LaunchpadFormView',
-    'LaunchpadEditFormView',
     'action',
     'custom_widget',
+    'LaunchpadEditFormView',
+    'LaunchpadFormView',
+    'ReturnToReferrerMixin',
     'safe_action',
     ]
 
@@ -32,7 +33,7 @@ from canonical.launchpad.webapp.interfaces import (
     IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
     IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
 from canonical.launchpad.webapp.menu import escape
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.publisher import canonical_url, LaunchpadView
 
 
 classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
@@ -434,3 +435,59 @@ def safe_action(action):
     """
     action.is_safe = True
     return action
+
+
+class ReturnToReferrerMixin:
+    """Return to the previous page after submitting the form.
+
+    The _return_url is stored in a hidden field in the launchpad-form.pt
+    between the request to view the form and submitting the form.
+
+    _return_attribute_name and _return_attribute_values are also stored
+    as hidden fields and they are use to check the validity of _return_url.
+
+    If _return_url depends on _return_attribute_name, the result of a form
+    submission can invalidate it.
+    If this is the case, _return_attribute_name should be overwritten to
+    return the attribute name to which _return_url depends.
+    """
+
+    @property
+    def _return_attribute_name(self):
+        return None
+
+    @property
+    def _return_attribute_value(self):
+        if self._return_attribute_name is not None:
+            return getattr(self.context, self._return_attribute_name)
+        else:
+            return None
+
+    @property
+    def _return_url(self):
+        """See `LaunchpadFormView`."""
+        # The referer header we want is only available before the view's
+        # form submits to itself. This field is a hidden input in the form.
+        referrer = self.request.form.get('_return_url')
+        returnNotChanged = True
+        if referrer is None:
+            # "referer" is misspelled in the HTTP specification.
+            referrer = self.request.getHeader('referer')
+        else:
+            attribute_name = self.request.form.get('_return_attribute_name')
+            attribute_value = self.request.form.get('_return_attribute_value')
+            if (attribute_name is not None
+                and attribute_value is not None
+                and getattr(self.context, attribute_name) != attribute_value):
+                returnNotChanged = False
+
+        if (referrer is not None
+            and returnNotChanged
+            and referrer.startswith(self.request.getApplicationURL())
+            and referrer != self.request.getHeader('location')):
+            return referrer
+        else:
+            return canonical_url(self.context)
+
+    next_url = _return_url
+    cancel_url = _return_url

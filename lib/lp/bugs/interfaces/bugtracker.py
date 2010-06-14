@@ -27,13 +27,15 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, StrippedTextLine, URIField)
-from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    call_with, collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, export_factory_operation,
+    export_read_operation, exported, operation_parameters,
+    operation_returns_entry, rename_parameters_as, REQUEST_USER)
 from lazr.restful.fields import CollectionField, Reference
 
 
@@ -216,7 +218,7 @@ class IBugTracker(Interface):
             required=False),
         exported_as='base_url_aliases')
     owner = exported(
-        Reference(title=_('Owner'), schema=IPerson),
+        Reference(title=_('Owner'), schema=Interface),
         exported_as='registrant')
     contactdetails = exported(
         Text(
@@ -248,6 +250,13 @@ class IBugTracker(Interface):
             title=_('Updates for this bug tracker are enabled'),
             required=True, default=True))
 
+    watches_ready_to_check = Attribute(
+        "The set of bug watches that are scheduled to be checked.")
+    watches_with_unpushed_comments = Attribute(
+        "The set of bug watches that have unpushed comments.")
+    watches_needing_update = Attribute(
+        "The set of bug watches that need updating.")
+
     def getBugFilingAndSearchLinks(remote_product, summary=None,
                                    description=None):
         """Return the bug filing and search links for the tracker.
@@ -270,14 +279,6 @@ class IBugTracker(Interface):
 
     def getBugsWatching(remotebug):
         """Get the bugs watching the given remote bug in this bug tracker."""
-
-    def getBugWatchesNeedingUpdate(hours_since_last_check):
-        """Get the bug watches needing to be updated.
-
-        All bug watches not being updated for the last
-        :hours_since_last_check: hours are considered needing to be
-        updated.
-        """
 
     def getLinkedPersonByName(name):
         """Return the `IBugTrackerPerson` for a given name on a bugtracker.
@@ -316,8 +317,13 @@ class IBugTracker(Interface):
     def destroySelf():
         """Delete this bug tracker."""
 
-    def resetWatches():
-        """Reset the lastchecked times of this BugTracker's `BugWatch`es."""
+    def resetWatches(now=None):
+        """Reset the next_check times of this BugTracker's `BugWatch`es.
+
+        :param now: If specified, contains the datetime to which to set
+                    the BugWatches' next_check times. Defaults to
+                    datetime.now().
+        """
 
 
 class IBugTrackerSet(Interface):
@@ -326,10 +332,13 @@ class IBugTrackerSet(Interface):
     Each BugTracker is a distinct instance of a bug tracking tool. For
     example, bugzilla.mozilla.org is distinct from bugzilla.gnome.org.
     """
+    export_as_webservice_collection(IBugTracker)
 
     title = Attribute('Title')
 
-    bugtracker_count = Attribute("The number of registered bug trackers.")
+    count = Attribute("The number of registered bug trackers.")
+
+    names = Attribute("The names of all registered bug trackers.")
 
     def get(bugtracker_id, default=None):
         """Get a BugTracker by its id.
@@ -337,6 +346,10 @@ class IBugTrackerSet(Interface):
         If no tracker with the given id exists, return default.
         """
 
+    @operation_parameters(
+        name=TextLine(title=u"The bug tracker name", required=True))
+    @operation_returns_entry(IBugTracker)
+    @export_read_operation()
     def getByName(name, default=None):
         """Get a BugTracker by its name.
 
@@ -353,9 +366,23 @@ class IBugTrackerSet(Interface):
     def __iter__():
         """Iterate through BugTrackers."""
 
+    @rename_parameters_as(baseurl='base_url')
+    @operation_parameters(
+        baseurl=TextLine(
+            title=u"The base URL of the bug tracker", required=True))
+    @operation_returns_entry(IBugTracker)
+    @export_read_operation()
     def queryByBaseURL(baseurl):
         """Return one or None BugTracker's by baseurl"""
 
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(
+        baseurl='base_url', bugtrackertype='bug_tracker_type',
+        contactdetails='contact_details')
+    @export_factory_operation(
+        IBugTracker,
+        ['baseurl', 'bugtrackertype', 'title', 'summary',
+         'contactdetails', 'name'])
     def ensureBugTracker(baseurl, owner, bugtrackertype,
         title=None, summary=None, contactdetails=None, name=None):
         """Make sure that there is a bugtracker for the given base url.
@@ -363,6 +390,7 @@ class IBugTrackerSet(Interface):
         If not, create one using the given attributes.
         """
 
+    @collection_default_content()
     def search():
         """Search all the IBugTrackers in the system."""
 

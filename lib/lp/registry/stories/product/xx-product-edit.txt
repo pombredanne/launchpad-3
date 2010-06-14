@@ -48,7 +48,7 @@ The Firefox product's trunk series is set as the development focus:
     >>> print browser.contents
     <!...
     ...
-    ...trunk...focus of development...
+    ...trunk...Focus of Development...
     ...
     ...1.0...
     ...
@@ -66,7 +66,7 @@ We can change this to the 1.0 series through the edit form:
     >>> print browser.contents
     <!...
     ...
-    ...1.0...focus of development...
+    ...1.0...Focus of Development...
     ...
     ...trunk...
     ...
@@ -235,20 +235,17 @@ Regular Joes can't edit any old project:
     ...
     Unauthorized:...
 
-Even if we add them to the Registry Experts team:
+If we add them to the Registry Experts team:
 
     >>> admin_browser.open("http://launchpad.dev/~registry/+addmember")
     >>> admin_browser.getControl('New member').value = 'no-priv'
     >>> admin_browser.getControl('Add Member').click()
 
-They still cannot edit projects.
+They now can edit projects.
 
     >>> browser.open('http://launchpad.dev/firefox/+edit')
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
 
-And they still can't access +admin.
+But they still can't access +admin.
 
     >>> browser.open('http://launchpad.dev/firefox/+admin')
     Traceback (most recent call last):
@@ -332,27 +329,27 @@ Deactivate a product
 
 The Admins and Registry Experts can deactivate a project.
 
-    >>> registry_browser.open('http://launchpad.dev/firefox/+review-license')
+    >>> registry_browser.open('http://launchpad.dev/bzr/+review-license')
     >>> registry_browser.getControl(name='field.active').value = False
     >>> registry_browser.getControl(name='field.actions.change').click()
     >>> print registry_browser.url
-    http://launchpad.dev/firefox
+    http://launchpad.dev/bzr
 
 The product overview page should show a notice that a product is
 inactive with a link to a form to re-activate it. Admins and Commercial
 Admins can still see the product, but regular users can't.
 
-    >>> registry_browser.open('http://launchpad.dev/firefox')
+    >>> registry_browser.open('http://launchpad.dev/bzr')
     >>> contents = find_main_content(registry_browser.contents)
     >>> print extract_text(contents.find(id='project-inactive'))
     This project is currently inactive ...
 
-    >>> admin_browser.open('http://launchpad.dev/firefox')
+    >>> admin_browser.open('http://launchpad.dev/bzr')
     >>> contents = find_main_content(admin_browser.contents)
     >>> print extract_text(contents.find(id='project-inactive'))
     This project is currently inactive ...
 
-    >>> user_browser.open('http://launchpad.dev/firefox')
+    >>> user_browser.open('http://launchpad.dev/bzr')
     Traceback (most recent call last):
     ...
     NotFound...
@@ -361,12 +358,12 @@ The product can then be reactivated.
 
     >>> registry_browser.getLink('Review project').click()
     >>> print registry_browser.url
-    http://launchpad.dev/firefox/+review-license
+    http://launchpad.dev/bzr/+review-license
 
     >>> registry_browser.getControl(name='field.active').value = True
     >>> registry_browser.getControl(name='field.actions.change').click()
     >>> print registry_browser.url
-    http://launchpad.dev/firefox
+    http://launchpad.dev/bzr
 
     >>> contents = find_main_content(registry_browser.contents)
     >>> print contents.find(id='project-inactive')
@@ -379,18 +376,3 @@ Revert team memberships.
     >>> nopriv.leave(celebs.registry_experts)
     >>> registry_member.leave(celebs.registry_experts)
     >>> logout()
-
-
-Setting the remote project
-==========================
-
-The remote_product field - which stores a Product's ID on the remote bug
-tracker - can be set from the +edit page, too.
-
-    >>> user_browser.open('http://launchpad.dev/thunderbird/+edit')
-    >>> user_browser.getControl('Remote project').value = 'Thunderbird'
-    >>> user_browser.getControl('Change').click()
-
-    >>> user_browser.open('http://launchpad.dev/thunderbird/+edit')
-    >>> print user_browser.getControl('Remote project').value
-    Thunderbird

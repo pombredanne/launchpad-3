@@ -73,6 +73,7 @@ import psycopg2
 from storm.zope.interfaces import IZStorm
 import transaction
 import wsgi_intercept
+from wsgi_intercept import httplib2_intercept
 
 from lazr.restful.utils import safe_hasattr
 
@@ -97,7 +98,7 @@ from canonical.database.revision import (
     confirm_dbrevision, confirm_dbrevision_on_startup)
 from canonical.database.sqlbase import cursor, ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
-from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
+from lp.testing import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
 from lp.services.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -255,9 +256,10 @@ class BaseLayer:
             os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None)
         # Kill any Memcached or Librarian left running from a previous
         # test run, or from the parent test process if the current
-        # layer is being run in a subprocess.
+        # layer is being run in a subprocess. No need to be polite
+        # about killing memcached - just do it quickly.
         if not BaseLayer.persist_test_services:
-            kill_by_pidfile(MemcachedLayer.getPidFile())
+            kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
             LibrarianTestSetup().tearDown()
         # Kill any database left lying around from a previous test run.
         try:
@@ -536,6 +538,11 @@ class MemcachedLayer(BaseLayer):
     @classmethod
     def getPidFile(cls):
         return os.path.join(config.root, '.memcache.pid')
+
+    @classmethod
+    def purge(cls):
+        "Purge everything from our memcached."
+        MemcachedLayer.client.flush_all() # Only do this in tests!
 
 
 class LibrarianLayer(BaseLayer):
@@ -885,6 +892,11 @@ def wsgi_application(environ, start_response):
     if environ.pop('HTTP_X_ZOPE_HANDLE_ERRORS', 'True') == 'False':
         environ['wsgi.handleErrors'] = False
     handle_errors = environ.get('wsgi.handleErrors', True)
+
+    # Make sure the request method is something Launchpad will
+    # recognize. httplib2 usually takes care of this, but we've
+    # bypassed that code in our test environment.
+    environ['REQUEST_METHOD'] = environ['REQUEST_METHOD'].upper()
     # Now we do the proper dance to get the desired request.  This is an
     # almalgam of code from zope.app.testing.functional.HTTPCaller and
     # zope.publisher.paste.Application.
@@ -933,12 +945,18 @@ class FunctionalLayer(BaseLayer):
         register_launchpad_request_publication_factories()
         wsgi_intercept.add_wsgi_intercept(
             'localhost', 80, lambda: wsgi_application)
+        wsgi_intercept.add_wsgi_intercept(
+            'api.launchpad.dev', 80, lambda: wsgi_application)
+        httplib2_intercept.install()
+
 
     @classmethod
     @profiled
     def tearDown(cls):
         FunctionalLayer.isSetUp = False
         wsgi_intercept.remove_wsgi_intercept('localhost', 80)
+        wsgi_intercept.remove_wsgi_intercept('api.launchpad.dev', 80)
+        httplib2_intercept.uninstall()
         # Signal Layer cannot be torn down fully
         raise NotImplementedError
 
@@ -1484,6 +1502,7 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
     @classmethod
     @profiled
     def startStory(cls):
+        MemcachedLayer.testSetUp()
         DatabaseLayer.testSetUp()
         LibrarianLayer.testSetUp()
         LaunchpadLayer.resetSessionDb()
@@ -1495,6 +1514,7 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
         PageTestLayer.resetBetweenTests(True)
         LibrarianLayer.testTearDown()
         DatabaseLayer.testTearDown()
+        MemcachedLayer.testTearDown()
 
     @classmethod
     @profiled
@@ -1850,26 +1870,13 @@ class BaseWindmillLayer(AppServerLayer):
             # base_url. With no base_url, we can't create the config
             # file windmill needs.
             return
-        # If we're running in a bin/test sub-process, sys.stdin is
-        # replaced by FakeInputContinueGenerator, which doesn't have a
-        # fileno method. When Windmill starts Firefox,
-        # sys.stdin.fileno() is called, so we add such a method here, to
-        # prevent it from breaking. By returning None, we should ensure
-        # that it doesn't try to use the return value for anything.
-        if not safe_hasattr(sys.stdin, 'fileno'):
-            assert isinstance(sys.stdin, FakeInputContinueGenerator), (
-                "sys.stdin (%r) doesn't have a fileno method." % sys.stdin)
-            sys.stdin.fileno = lambda: None
-        # Windmill needs a config file on disk.
-        config_text = dedent("""\
-            START_FIREFOX = True
-            TEST_URL = '%s'
-            """ % cls.base_url)
-        cls.config_file = tempfile.NamedTemporaryFile(suffix='.py')
-        cls.config_file.write(config_text)
-        # Flush the file so that windmill can read it.
-        cls.config_file.flush()
-        os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
+
+        cls._fixStandardInputFileno()
+        cls._configureWindmillLogging()
+        cls._configureWindmillStartup()
+
+        # Tell windmill to start its browser and server.  Our testrunner will
+        # keep going, passing commands to the server for execution.
         cls.shell_objects = start_windmill()
 
         # Patch the config to provide the port number and not use https.
@@ -1896,6 +1903,7 @@ class BaseWindmillLayer(AppServerLayer):
             # Close the file so that it gets deleted.
             cls.config_file.close()
         config.reloadConfig()
+        reset_logging()
 
     @classmethod
     @profiled
@@ -1904,3 +1912,59 @@ class BaseWindmillLayer(AppServerLayer):
         # belong to Windmill, which will be cleaned up on layer
         # tear down.
         BaseLayer.disable_thread_check = True
+
+    @classmethod
+    def _fixStandardInputFileno(cls):
+        """Patch the STDIN fileno so Windmill doesn't break."""
+        # If we're running in a bin/test sub-process, sys.stdin is
+        # replaced by FakeInputContinueGenerator, which doesn't have a
+        # fileno method. When Windmill starts Firefox,
+        # sys.stdin.fileno() is called, so we add such a method here, to
+        # prevent it from breaking. By returning None, we should ensure
+        # that it doesn't try to use the return value for anything.
+        if not safe_hasattr(sys.stdin, 'fileno'):
+            assert isinstance(sys.stdin, FakeInputContinueGenerator), (
+                "sys.stdin (%r) doesn't have a fileno method." % sys.stdin)
+            sys.stdin.fileno = lambda: None
+
+    @classmethod
+    def _configureWindmillLogging(cls):
+        """Override the default windmill log handling."""
+        if not config.windmill.debug_log:
+            return
+
+        # Add a new log handler to capture all of the windmill testrunner
+        # output. This overrides windmill's own log handling, which we do not
+        # have direct access to.
+        # We'll overwrite the previous log contents to keep the disk usage
+        # low, and because the contents are only meant as an in-situ debugging
+        # aid.
+        filehandler = logging.FileHandler(config.windmill.debug_log, mode='w')
+        filehandler.setLevel(logging.NOTSET)
+        filehandler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        logging.getLogger('windmill').addHandler(filehandler)
+
+        # Make sure that everything sent to the windmill logger is captured.
+        # This works because windmill configures the root logger for its
+        # purposes, and we are pre-empting that by inserting a new logger one
+        # level higher in the logger chain.
+        logging.getLogger('windmill').setLevel(logging.NOTSET)
+
+    @classmethod
+    def _configureWindmillStartup(cls):
+        """Pass our startup parameters to the windmill server."""
+        # Windmill needs a config file on disk to load its settings from.
+        # There is no way to directly pass settings to the windmill test
+        # driver from out here.
+        config_text = dedent("""\
+            START_FIREFOX = True
+            TEST_URL = '%s'
+            CONSOLE_LOG_LEVEL = %d
+            """ % (cls.base_url, logging.NOTSET))
+        cls.config_file = tempfile.NamedTemporaryFile(suffix='.py')
+        cls.config_file.write(config_text)
+        # Flush the file so that windmill can read it.
+        cls.config_file.flush()
+        os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name

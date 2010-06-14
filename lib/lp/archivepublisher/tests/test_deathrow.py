@@ -20,7 +20,6 @@ from lp.archivepublisher.deathrow import DeathRow
 from lp.archivepublisher.diskpool import DiskPool
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase
 
@@ -102,10 +101,8 @@ class TestDeathRow(TestCase):
         # Create a source publication with a since file (DSC) in
         # 'universe' and promote it to 'main'.
         source_universe = stp.getPubSource(component='universe')
-        secure_record = source_universe.changeOverride(
+        source_main = source_universe.changeOverride(
             new_component=getUtility(IComponentSet)['main'])
-        source_main = SourcePackagePublishingHistory.get(
-            secure_record.id)
         test_publications = (source_universe, source_main)
 
         # Commit for exposing the just-created librarian files.

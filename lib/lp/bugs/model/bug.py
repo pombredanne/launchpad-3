@@ -13,6 +13,7 @@ __all__ = [
     'BugBecameQuestionEvent',
     'BugSet',
     'BugTag',
+    'FileBugData',
     'get_bug_tags',
     'get_bug_tags_open_count',
     ]
@@ -21,7 +22,9 @@ __all__ = [
 import operator
 import re
 from cStringIO import StringIO
+from datetime import datetime, timedelta
 from email.Utils import make_msgid
+from pytz import timezone
 
 from zope.contenttype import guess_content_type
 from zope.component import getUtility
@@ -32,7 +35,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
-    And, Count, Func, In, LeftJoin, Not, Select, SQLRaw, Union)
+    And, Count, Func, In, LeftJoin, Max, Not, Or, Select, SQL, SQLRaw, Union)
 from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
@@ -42,6 +45,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageSet)
 from canonical.launchpad.fields import DuplicateBug
@@ -60,12 +64,13 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.errors import UserCannotUnsubscribePerson
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
     BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)
 from lp.bugs.interfaces.bug import (
-    IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue,
-    UserCannotUnsubscribePerson)
+    IBug, IBugBecameQuestionEvent, IBugSet, IFileBugData,
+    InvalidDuplicateValue)
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -78,6 +83,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.scripts.bugheat import BugHeatConstants
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
@@ -241,8 +247,6 @@ class Bug(SQLBase):
             prejoins=["person"])
     duplicates = SQLMultipleJoin(
         'Bug', joinColumn='duplicateof', orderBy='id')
-    attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug',
-        orderBy='id', prejoins=['libraryfile'])
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
@@ -257,6 +261,33 @@ class Bug(SQLBase):
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
     heat = IntCol(notNull=True, default=0)
+    heat_last_updated = UtcDateTimeCol(default=None)
+    latest_patch_uploaded = UtcDateTimeCol(default=None)
+
+    @property
+    def latest_patch(self):
+        """See `IBug`."""
+        # We want to retrieve the most recently added bug attachment
+        # that is of type BugAttachmentType.PATCH. In order to find
+        # this attachment, we should in theory sort by
+        # BugAttachment.message.datecreated. Since we don't have
+        # an index for Message.datecreated, such a query would be
+        # quite slow. We search instead for the BugAttachment with
+        # the largest ID for a given bug. This is "nearly" equivalent
+        # to searching the record with the maximum value of
+        # message.datecreated: The only exception is the rare case when
+        # two BugAttachment records are simultaneuosly added to the same
+        # bug, where bug_attachment_1.id < bug_attachment_2.id, while
+        # the Message record for bug_attachment_2 is created before
+        # the Message record for bug_attachment_1. The difference of
+        # the datecreated values of the Message records is in this case
+        # probably smaller than one second and the selection of the
+        # "most recent" patch anyway somewhat arbitrary.
+        return Store.of(self).find(
+            BugAttachment, BugAttachment.id == Select(
+                Max(BugAttachment.id),
+                And(BugAttachment.bug == self.id,
+                    BugAttachment.type == BugAttachmentType.PATCH))).one()
 
     @property
     def comment_count(self):
@@ -447,15 +478,9 @@ class Bug(SQLBase):
     @property
     def has_patches(self):
         """See `IBug`."""
-        store = IStore(BugAttachment)
-        results = store.find(
-            BugAttachment,
-            BugAttachment.bug == self,
-            BugAttachment.type == BugAttachmentType.PATCH)
+        return self.latest_patch_uploaded is not None
 
-        return not results.is_empty()
-
-    def subscribe(self, person, subscribed_by):
+    def subscribe(self, person, subscribed_by, suppress_notify=True):
         """See `IBug`."""
         # first look for an existing subscription
         for sub in self.subscriptions:
@@ -464,8 +489,17 @@ class Bug(SQLBase):
 
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
+
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
+
+        # In some cases, a subscription should be created without
+        # email notifications.  suppress_notify determines if
+        # notifications are sent.
+        if suppress_notify is False:
+            notify(ObjectCreatedEvent(sub, user=subscribed_by))
+
+        self.updateHeat()
         return sub
 
     def unsubscribe(self, person, unsubscribed_by):
@@ -490,6 +524,7 @@ class Bug(SQLBase):
                 # flushed so that code running with implicit flushes
                 # disabled see the change.
                 store.flush()
+                self.updateHeat()
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -692,7 +727,7 @@ class Bug(SQLBase):
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
-                                     include_master_dupe_subscribers=True):
+                                     include_master_dupe_subscribers=False):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
         self.getDirectSubscribers(recipients)
@@ -752,7 +787,7 @@ class Bug(SQLBase):
         # data.
         activity_data = change.getBugActivity()
         if activity_data is not None:
-            bug_activity = getUtility(IBugActivitySet).new(
+            getUtility(IBugActivitySet).new(
                 self, when, change.person,
                 activity_data['whatchanged'],
                 activity_data.get('oldvalue'),
@@ -767,6 +802,8 @@ class Bug(SQLBase):
             self.addChangeNotification(
                 notification_data['text'], change.person, recipients,
                 when)
+
+        self.updateHeat()
 
     def expireNotifications(self):
         """See `IBug`."""
@@ -849,6 +886,10 @@ class Bug(SQLBase):
             distroseries=distro_series,
             sourcepackagename=source_package_name)
 
+        # When a new task is added the bug's heat becomes relevant to the
+        # target's max_bug_heat.
+        target.recalculateMaxBugHeat()
+
         return new_task
 
     def addWatch(self, bugtracker, remotebug, owner):
@@ -878,10 +919,8 @@ class Bug(SQLBase):
             filecontent = data.read()
 
         if is_patch:
-            attach_type = BugAttachmentType.PATCH
             content_type = 'text/plain'
         else:
-            attach_type = BugAttachmentType.UNSPECIFIED
             if content_type is None:
                 content_type, encoding = guess_content_type(
                     name=filename, body=filecontent)
@@ -890,10 +929,20 @@ class Bug(SQLBase):
             name=filename, size=len(filecontent),
             file=StringIO(filecontent), contentType=content_type)
 
+        return self.linkAttachment(
+            owner, filealias, comment, is_patch, description)
+
+    def linkAttachment(self, owner, file_alias, comment, is_patch=False,
+                       description=None):
+        if is_patch:
+            attach_type = BugAttachmentType.PATCH
+        else:
+            attach_type = BugAttachmentType.UNSPECIFIED
+
         if description:
             title = description
         else:
-            title = filename
+            title = file_alias.filename
 
         if IMessage.providedBy(comment):
             message = comment
@@ -902,7 +951,7 @@ class Bug(SQLBase):
                 owner=owner, subject=description, content=comment)
 
         return getUtility(IBugAttachmentSet).create(
-            bug=self, filealias=filealias, attach_type=attach_type,
+            bug=self, filealias=file_alias, attach_type=attach_type,
             title=title, message=message, send_notifications=True)
 
     def hasBranch(self, branch):
@@ -1307,9 +1356,25 @@ class Bug(SQLBase):
                 self.who_made_private = None
                 self.date_made_private = None
 
+            # Correct the heat for the bug immediately, so that we don't have
+            # to wait for the next calculation job for the adjusted heat.
+            self.updateHeat()
             return True # Changed.
         else:
             return False # Not changed.
+
+    def setSecurityRelated(self, security_related):
+        """Setter for the `security_related` property."""
+        if self.security_related != security_related:
+            self.security_related = security_related
+
+            # Correct the heat for the bug immediately, so that we don't have
+            # to wait for the next calculation job for the adjusted heat.
+            self.updateHeat()
+
+            return True # Changed
+        else:
+            return False # Unchanged
 
     def getBugTask(self, target):
         """See `IBug`."""
@@ -1388,10 +1453,13 @@ class Bug(SQLBase):
             if bap.affected != affected:
                 bap.affected = affected
                 self._flushAndInvalidate()
+
         # Loop over dupes.
         for dupe in self.duplicates:
             if dupe._getAffectedUser(user) is not None:
                 dupe.markUserAffected(user, affected)
+
+        self.updateHeat()
 
     @property
     def readonly_duplicateof(self):
@@ -1402,12 +1470,26 @@ class Bug(SQLBase):
         """See `IBug`."""
         field = DuplicateBug()
         field.context = self
+        current_duplicateof = self.duplicateof
         try:
             if duplicate_of is not None:
                 field._validate(duplicate_of)
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
+
+        if duplicate_of is not None:
+            # Update the heat of the master bug and set this bug's heat
+            # to 0 (since it's a duplicate, it shouldn't have any heat
+            # at all).
+            self.setHeat(0)
+            duplicate_of.updateHeat()
+        else:
+            # Otherwise, recalculate this bug's heat, since it will be 0
+            # from having been a duplicate. We also update the bug that
+            # was previously duplicated.
+            self.updateHeat()
+            current_duplicateof.updateHeat()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
@@ -1477,9 +1559,46 @@ class Bug(SQLBase):
 
         return not subscriptions_from_dupes.is_empty()
 
-    def setHeat(self, heat):
+    def setHeat(self, heat, timestamp=None):
         """See `IBug`."""
+        if timestamp is None:
+            timestamp = UTC_NOW
+
+        if heat < 0:
+            heat = 0
+
         self.heat = heat
+        self.heat_last_updated = timestamp
+        for task in self.bugtasks:
+            task.target.recalculateMaxBugHeat()
+
+    def updateHeat(self):
+        """See `IBug`."""
+        if self.duplicateof is not None:
+            # If this bug is a duplicate we don't try to calculate its
+            # heat.
+            return
+
+        # We need to flush the store first to ensure that changes are
+        # reflected in the new bug heat total.
+        store = Store.of(self)
+        store.flush()
+
+        self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
+        self.heat_last_updated = UTC_NOW
+
+    @property
+    def attachments(self):
+        """See `IBug`."""
+        # We omit those bug attachments that do not have a
+        # LibraryFileContent record in order to avoid OOPSes as
+        # mentioned in bug 542274. These bug attachments will be
+        # deleted anyway during the next garbo_daily run.
+        store = Store.of(self)
+        return store.find(
+            BugAttachment, BugAttachment.bug == self,
+            BugAttachment.libraryfile == LibraryFileAlias.id,
+            LibraryFileAlias.content != None).order_by(BugAttachment.id)
 
 
 class BugSet:
@@ -1614,6 +1733,9 @@ class BugSet:
         # Tell everyone.
         notify(event)
 
+        # Calculate the bug's initial heat.
+        bug.updateHeat()
+
         return bug
 
     def createBugWithoutTarget(self, bug_params):
@@ -1734,6 +1856,19 @@ class BugSet:
         result_set = store.find(Bug)
         return result_set.order_by('id')
 
+    def getBugsWithOutdatedHeat(self, max_heat_age):
+        """See `IBugSet`."""
+        store = IStore(Bug)
+        last_updated_cutoff = (
+            datetime.now(timezone('UTC')) -
+            timedelta(days=max_heat_age))
+        last_updated_clause = Or(
+            Bug.heat_last_updated < last_updated_cutoff,
+            Bug.heat_last_updated == None)
+
+        return store.find(
+            Bug, Bug.duplicateof==None, last_updated_clause).order_by('id')
+
 
 class BugAffectsPerson(SQLBase):
     """A bug is marked as affecting a user."""
@@ -1741,3 +1876,37 @@ class BugAffectsPerson(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     affected = BoolCol(notNull=True, default=True)
     __storm_primary__ = "bugID", "personID"
+
+
+class FileBugData:
+    """Extra data to be added to the bug."""
+    implements(IFileBugData)
+
+    def __init__(self, initial_summary=None, initial_tags=None,
+                 private=None, subscribers=None, extra_description=None,
+                 comments=None, attachments=None,
+                 hwdb_submission_keys=None):
+        if initial_tags is None:
+            initial_tags = []
+        if subscribers is None:
+            subscribers = []
+        if comments is None:
+            comments = []
+        if attachments is None:
+            attachments = []
+        if hwdb_submission_keys is None:
+            hwdb_submission_keys = []
+
+        self.initial_summary = initial_summary
+        self.private = private
+        self.extra_description = extra_description
+        self.initial_tags = initial_tags
+        self.subscribers = subscribers
+        self.comments = comments
+        self.attachments = attachments
+        self.hwdb_submission_keys = hwdb_submission_keys
+
+    def asDict(self):
+        """Return the FileBugData instance as a dict."""
+        return self.__dict__.copy()
+

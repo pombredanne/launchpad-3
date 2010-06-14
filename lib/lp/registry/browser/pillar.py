@@ -6,16 +6,16 @@
 __metaclass__ = type
 
 __all__ = [
+    'InvolvedMenu',
     'PillarView',
     ]
 
 
 from operator import attrgetter
 
-from zope.component.globalregistry import provideAdapter
 from zope.interface import implements, Interface
 
-from canonical.launchpad.webapp.interfaces import INavigationMenu
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp.menu import Link, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView, nearest
 from canonical.launchpad.webapp.tales import MenuAPI
@@ -24,7 +24,6 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
@@ -39,35 +38,42 @@ class InvolvedMenu(NavigationMenu):
         'report_bug', 'ask_question', 'help_translate', 'submit_code',
         'register_blueprint']
 
+    @property
+    def pillar(self):
+        return self.context
+
     def report_bug(self):
         return Link(
             '+filebug', 'Report a bug', site='bugs', icon='bugs',
-            enabled=self.context.official_malone)
+            enabled=self.pillar.official_malone)
 
     def ask_question(self):
         return Link(
             '+addquestion', 'Ask a question', site='answers', icon='answers',
-            enabled=self.context.official_answers)
+            enabled=self.pillar.official_answers)
 
     def help_translate(self):
         return Link(
             '', 'Help translate', site='translations', icon='translations',
-            enabled=self.context.official_rosetta)
+            enabled=self.pillar.official_rosetta)
 
     def submit_code(self):
         return Link(
             '+addbranch', 'Submit code', site='code', icon='code',
-            enabled=self.context.official_codehosting)
+            enabled=self.pillar.official_codehosting)
 
     def register_blueprint(self):
         return Link(
             '+addspec', 'Register a blueprint', site='blueprints',
-            icon='blueprints', enabled=self.context.official_blueprints)
+            icon='blueprints', enabled=self.pillar.official_blueprints)
 
 
 class PillarView(LaunchpadView):
     """A view for any `IPillar`."""
     implements(IInvolved)
+
+    configuration_links = []
+    visible_disabled_link_names = []
 
     def __init__(self, context, request):
         super(PillarView, self).__init__(context, request)
@@ -80,14 +86,12 @@ class PillarView(LaunchpadView):
         if IProjectGroup.providedBy(pillar):
             for product in pillar.products:
                 self._set_official_launchpad(product)
-            # Projectgroups do not support submit code, override the
+            # Project groups do not support submit code, override the
             # default.
             self.official_codehosting = False
         else:
             self._set_official_launchpad(pillar)
-            if IProductSeries.providedBy(self.context):
-                self.official_answers = False
-            elif IDistroSeries.providedBy(self.context):
+            if IDistroSeries.providedBy(self.context):
                 self.official_answers = False
                 self.official_codehosting = False
             elif IDistributionSourcePackage.providedBy(self.context):
@@ -128,6 +132,20 @@ class PillarView(LaunchpadView):
             link for link in menuapi.navigation.values() if link.enabled],
             key=attrgetter('sort_key'))
 
+    @cachedproperty
+    def visible_disabled_links(self):
+        """Important disabled links.
 
-provideAdapter(
-    InvolvedMenu, [IInvolved], INavigationMenu, name="overview")
+        These are displayed to notify the user to provide configuration
+        info to enable the links.
+
+        Override the visible_disabled_link_names attribute to change
+        the results.
+        """
+        involved_menu = MenuAPI(self).navigation
+        important_links = [
+            involved_menu[name]
+            for name in self.visible_disabled_link_names]
+        return sorted([
+            link for link in important_links if not link.enabled],
+            key=attrgetter('sort_key'))

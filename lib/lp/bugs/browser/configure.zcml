@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -108,6 +108,20 @@
             facet="bugs"
             permission="launchpad.Edit"
             template="../templates/official-bug-target-manage-tags.pt"/>
+        <browser:page
+            name="+patches"
+            for="lp.bugs.interfaces.bugtarget.IHasBugs"
+            class="lp.bugs.browser.bugtarget.BugsPatchesView"
+            facet="bugs"
+            permission="zope.Public"
+            template="../templates/bugtarget-patches.pt"/>
+        <browser:page
+            name="+patches"
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.bugs.browser.bugtarget.BugsPatchesView"
+            facet="bugs"
+            permission="zope.Public"
+            template="../templates/bugtarget-patches.pt"/>
     </facet>
     <browser:page
         name="+bugtarget-macros-search"
@@ -149,7 +163,8 @@
         <browser:url
             for="canonical.launchpad.interfaces.IBugComment"
             path_expression="string:comments/${index}"
-            attribute_to_parent="bugtask"/>
+            attribute_to_parent="bugtask"
+            rootsite="bugs"/>
         <browser:page
             for="canonical.launchpad.interfaces.IBugComment"
             name="+index"
@@ -362,6 +377,24 @@
         permission="zope.Public"
         facet="bugs"
         template="../templates/bugtarget-bugs.pt"/>
+    <browser:page
+        name="+securitycontact"
+        for="lp.bugs.interfaces.securitycontact.IHasSecurityContact"
+        class="lp.bugs.browser.securitycontact.SecurityContactEditView"
+        facet="bugs"
+        permission="launchpad.Edit"
+        template="../templates/securitycontact-edit.pt"/>
+    <adapter
+        for="lp.registry.interfaces.product.IProduct"
+        provides=".bugtarget.IProductBugConfiguration"
+        factory=".bugtarget.product_to_productbugconfiguration" />
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        facet="bugs"
+        permission="launchpad.Edit"
+        name="+configure-bugtracker"
+        template="../../app/templates/generic-edit.pt"
+        class="lp.bugs.browser.bugtarget.ProductConfigureBugTrackerView"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+bugs-index"
@@ -1030,11 +1063,6 @@
             name="+bug-portlet-subscribers-ids"
             class="lp.bugs.browser.bugsubscription.BugPortletSubcribersIds"
             permission="zope.Public"/>
-        <browser:page
-            for="lp.bugs.interfaces.bug.IBug"
-            class="lp.bugs.browser.bug.BugHeatView"
-            permission="zope.Public"
-            name="+bug-heat"/>
         <browser:navigation
             module="lp.bugs.browser.bug"
             classes="
@@ -1094,6 +1122,12 @@
             class="lp.bugs.browser.bugwatch.BugWatchEditView"
             permission="launchpad.AnyPerson"
             template="../templates/bugwatch-editform.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugwatch.IBugWatch"
+            name="+portlet-activity"
+            class="lp.bugs.browser.bugwatch.BugWatchActivityPortletView"
+            permission="launchpad.AnyPerson"
+            template="../templates/bugwatch-portlet-activity.pt"/>
         <browser:pages
             for="lp.bugs.interfaces.bugwatch.IBugWatch"
             permission="launchpad.AnyPerson">
@@ -1103,6 +1137,9 @@
             <browser:page
                 name="+portlet-details"
                 template="../templates/bugwatch-portlet-details.pt"/>
+            <browser:page
+                name="+error-help"
+                template="../templates/bugwatch-error-help.pt"/>
         </browser:pages>
         <browser:url
             for="lp.bugs.interfaces.bugwatch.IBugWatchSet"

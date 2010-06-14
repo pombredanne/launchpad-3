@@ -23,7 +23,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import sqlvalues, SQLBase
 
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.archive import ComponentNotFound
+from lp.soyuz.interfaces.archive import ComponentNotFound, IArchive
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
     IArchiveUploader, IArchiveQueueAdmin)
@@ -92,7 +92,7 @@ class ArchivePermission(SQLBase):
     def component_name(self):
         """See `IArchivePermission`"""
         if self.component:
-            return self.component.name 
+            return self.component.name
         else:
             return None
 
@@ -151,8 +151,8 @@ class ArchivePermissionSet:
             prejoins.append("packageset")
         else:
             raise AssertionError(
-                "'item' is not an IComponent, IPackageset or an "
-                "ISourcePackageName")
+                "'item' %r is not an IComponent, IPackageset or an "
+                "ISourcePackageName" % item)
 
         query = " AND ".join(clauses)
         auth = ArchivePermission.select(
@@ -189,17 +189,22 @@ class ArchivePermissionSet:
                           TeamParticipation.team = ArchivePermission.person)
             """ % sqlvalues(archive, person))
 
-    def _componentsFor(self, archive, person, permission_type):
+    def _componentsFor(self, archives, person, permission_type):
         """Helper function to get ArchivePermission objects."""
+        if IArchive.providedBy(archives):
+            archive_ids = [archives.id]
+        else:
+            archive_ids = [archive.id for archive in archives]
+
         return ArchivePermission.select("""
-            ArchivePermission.archive = %s AND
+            ArchivePermission.archive IN %s AND
             ArchivePermission.permission = %s AND
             ArchivePermission.component IS NOT NULL AND
             EXISTS (SELECT TeamParticipation.person
                     FROM TeamParticipation
                     WHERE TeamParticipation.person = %s AND
                           TeamParticipation.team = ArchivePermission.person)
-            """ % sqlvalues(archive, permission_type, person),
+            """ % sqlvalues(archive_ids, permission_type, person),
             prejoins=["component"])
 
     def componentsForUploader(self, archive, person):
@@ -504,7 +509,7 @@ class ArchivePermissionSet:
             # Query parameters for the first WHERE clause.
             (archive.id, distroseries.id, sourcepackagename.id) +
             # Query parameters for the second WHERE clause.
-            permission_params + archive_params + 
+            permission_params + archive_params +
             # Query parameters for the third WHERE clause.
             permission_params + archive_params)
 
@@ -521,7 +526,7 @@ class ArchivePermissionSet:
           THEN (
             SELECT COUNT(ap.id)
             FROM
-              packagesetsources pss, archivepermission ap, packageset ps, 
+              packagesetsources pss, archivepermission ap, packageset ps,
               teamparticipation tp
             WHERE
               pss.sourcepackagename = %s

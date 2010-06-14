@@ -19,19 +19,23 @@ __all__ = [
 from zope.interface import Attribute, Interface
 from zope.schema import Choice, Object, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
-
-from canonical.launchpad import _
-from lp.bugs.interfaces.bugtarget import IBugTarget
-from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
-from lp.soyuz.interfaces.component import IComponent
 from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_read_operation,
     export_write_operation, exported, operation_parameters,
     operation_returns_entry, REQUEST_USER)
 
+from canonical.launchpad import _
+from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
+from lp.code.interfaces.hasbranches import (
+    IHasBranches, IHasCodeImports, IHasMergeProposals)
+from lp.soyuz.interfaces.component import IComponent
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 
-class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
+
+class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
+                     IHasOfficialBugTags, IHasCodeImports,
+                     IHasTranslationTemplates):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less
@@ -223,6 +227,11 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
     latest_published_component = Object(
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
+
+    latest_published_component_name = exported(TextLine(
+        title=u'The name of the component in which the package'
+               ' was last published.',
+        readonly=True, required=False))
 
     def get_default_archive(component=None):
         """Get the default archive of this package.

@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'ApplicationButtons',
-    'BrowserWindowDimensions',
     'DoesNotExistView',
     'Hierarchy',
     'IcingContribFolder',
@@ -53,26 +52,7 @@ from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.layers import WebServiceLayer
-
-from lp.app.interfaces.headings import IMajorHeadingView
-from lp.registry.interfaces.announcement import IAnnouncementSet
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageNameSet)
-from lp.code.interfaces.branch import IBranchSet
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchnamespace import InvalidNamespace
-from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, NoLinkedBranch)
-from lp.bugs.interfaces.bug import IBugSet
-from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.code.interfaces.codeimport import ICodeImportSet
-from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.karma import IKarmaActionSet
 from canonical.launchpad.interfaces.account import AccountStatus
-from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
     IRosettaApplication, IStructuralHeaderPresentation,
@@ -80,11 +60,47 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.interfaces.temporaryblobstorage import (
+    ITemporaryStorageManager)
+from canonical.launchpad.webapp import (
+    LaunchpadFormView, LaunchpadView, Link, Navigation,
+    StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
+    stepto)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import (
+    GoneError, IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
+    NotFoundError, POSTToNonCanonicalURL)
+from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.tales import PageTemplateContextsAPI
+from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.widgets.project import ProjectScopeWidget
+
+from lazr.uri import URI
+
+from lp.app.interfaces.headings import IMajorHeadingView
+from lp.registry.interfaces.announcement import IAnnouncementSet
+from lp.soyuz.interfaces.binarypackagename import (
+    IBinaryPackageNameSet)
+from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.code.interfaces.branch import IBranchSet
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchnamespace import InvalidNamespace
+from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.linkedbranch import (
+    CannotHaveLinkedBranch, NoLinkedBranch)
+from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
+from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.karma import IKarmaActionSet
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
-from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.product import (
     InvalidProductName, IProductSet)
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
@@ -98,22 +114,6 @@ from lp.translations.interfaces.translationgroup import (
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
-
-from canonical.launchpad.webapp import (
-    LaunchpadFormView, LaunchpadView, Link, Navigation,
-    StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
-    stepto)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    GoneError, IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
-    NotFoundError, POSTToNonCanonicalURL)
-from canonical.launchpad.webapp.publisher import RedirectionView
-from canonical.launchpad.webapp.authorization import check_permission
-from lazr.uri import URI
-from canonical.launchpad.webapp.tales import PageTemplateContextsAPI
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.widgets.project import ProjectScopeWidget
 
 
 # XXX SteveAlexander 2005-09-22: this is imported here because there is no
@@ -225,6 +225,8 @@ class LinkView(LaunchpadView):
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
+    vhost_breadcrumb = True
+
     @property
     def objects(self):
         """The objects for which we want breadcrumbs."""
@@ -238,13 +240,15 @@ class Hierarchy(LaunchpadView):
         """
         breadcrumbs = []
         for obj in self.objects:
-            breadcrumb = queryAdapter(obj, IBreadcrumb)
+            breadcrumb = IBreadcrumb(obj, None)
             if breadcrumb is not None:
                 breadcrumbs.append(breadcrumb)
 
         host = URI(self.request.getURL()).host
         mainhost = allvhosts.configs['mainsite'].hostname
-        if len(breadcrumbs) != 0 and host != mainhost:
+        if (len(breadcrumbs) != 0 and
+            host != mainhost and
+            self.vhost_breadcrumb):
             # We have breadcrumbs and we're not on the mainsite, so we'll
             # sneak an extra breadcrumb for the vhost we're on.
             vhost = host.split('.')[0]
@@ -401,7 +405,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = ''
-        text = 'Branches'
+        text = 'Code'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
@@ -474,8 +478,14 @@ class LoginStatus:
         if full_url.endswith('/'):
             full_url = full_url[:-1]
         logout_url_end = '/+logout'
+        openid_callback_url_end = '/+openid-callback'
         if full_url.endswith(logout_url_end):
             full_url = full_url[:-len(logout_url_end)]
+        elif full_url.endswith(openid_callback_url_end):
+            full_url = full_url[:-len(openid_callback_url_end)]
+        else:
+            # No need to remove anything from full_url.
+            pass
         return '%s/+login%s' % (full_url, query_string)
 
 
@@ -570,7 +580,7 @@ class LaunchpadRootNavigation(Navigation):
         'translations': IRosettaApplication,
         'testopenid': ITestOpenIDApplication,
         'questions': IQuestionSet,
-        '+rpconfig': IOpenIDRPConfigSet,
+        'temporary-blobs': ITemporaryStorageManager,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,
@@ -987,13 +997,6 @@ class AppFrontPageSearchView(LaunchpadFormView):
     def scope_error(self):
         """The error message for the scope widget."""
         return self.getFieldError('scope')
-
-
-class BrowserWindowDimensions(LaunchpadView):
-    """Allow capture of browser window dimensions."""
-
-    def render(self):
-        return u'Thanks.'
 
 
 class LaunchpadGraphics(LaunchpadView):

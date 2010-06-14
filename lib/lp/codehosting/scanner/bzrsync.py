@@ -18,21 +18,11 @@ import logging
 import pytz
 import transaction
 
-from zope.component import adapter, getUtility
+from zope.component import getUtility
 from zope.event import notify
 
-from bzrlib.branch import BzrBranchFormat4
-from bzrlib.repofmt.weaverepo import (
-    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
-from bzrlib import urlutils
-
-from lazr.uri import URI
-
 from lp.codehosting import iter_list_chunks
-from lp.codehosting.puller.worker import BranchMirrorer
 from lp.codehosting.scanner import events
-from lp.codehosting.vfs.branchfs import BranchPolicy
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchrevision import IBranchRevisionSet
 from lp.code.interfaces.revision import IRevisionSet
@@ -40,33 +30,6 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
 
 UTC = pytz.timezone('UTC')
-
-
-class InvalidStackedBranchURL(Exception):
-    """Raised when we try to scan a branch stacked on an invalid URL."""
-
-
-class WarehouseBranchPolicy(BranchPolicy):
-
-    def checkOneURL(self, url):
-        """See `BranchOpener.checkOneURL`.
-
-        If the URLs we are mirroring from are anything but a
-        lp-mirrored:///~user/project/branch URLs, we don't want to scan them.
-        Opening branches on remote systems takes too long, and we want all of
-        our local access to be channelled through this transport.
-        """
-        uri = URI(url)
-        if uri.scheme != 'lp-mirrored':
-            raise InvalidStackedBranchURL(url)
-
-    def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
-
-        We're happy to open stacked branches in the usual manner, but want to
-        go on checking the URLs of any branches we then open.
-        """
-        return urlutils.join(branch.base, url), True
 
 
 class BzrSync:
@@ -83,8 +46,7 @@ class BzrSync:
         """Synchronize the database with a Bazaar branch, handling locking.
         """
         if bzr_branch is None:
-            bzr_branch = BranchMirrorer(WarehouseBranchPolicy()).open(
-                self.db_branch.warehouse_url)
+            bzr_branch = self.db_branch.getBzrBranch()
         bzr_branch.lock_read()
         try:
             self.syncBranch(bzr_branch)
@@ -118,7 +80,6 @@ class BzrSync:
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
-        self.setFormats(bzr_branch)
         db_ancestry, db_history, db_branch_revision_map = (
             self.retrieveDatabaseAncestry())
 
@@ -182,46 +143,6 @@ class BzrSync:
         bzr_ancestry = set(bzr_ancestry_ordered)
         bzr_history = bzr_branch.revision_history()
         return bzr_ancestry, bzr_history
-
-    def setFormats(self, bzr_branch):
-        """Record the stored formats in the database object.
-
-        The previous value is unconditionally overwritten.
-
-        Note that the strings associated with the formats themselves are used,
-        not the strings on disk.
-        """
-        def match_title(enum, title, default):
-            for value in enum.items:
-                if value.title == title:
-                    return value
-            else:
-                return default
-
-        # XXX: Aaron Bentley 2008-06-13
-        # Bazaar does not provide a public API for learning about format
-        # markers.  Fix this in Bazaar, then here.
-        control_string = bzr_branch.bzrdir._format.get_format_string()
-        if bzr_branch._format.__class__ is BzrBranchFormat4:
-            branch_string = BranchFormat.BZR_BRANCH_4.title
-        else:
-            branch_string = bzr_branch._format.get_format_string()
-        repository_format = bzr_branch.repository._format
-        if repository_format.__class__ is RepositoryFormat6:
-            repository_string = RepositoryFormat.BZR_REPOSITORY_6.title
-        elif repository_format.__class__ is RepositoryFormat5:
-            repository_string = RepositoryFormat.BZR_REPOSITORY_5.title
-        elif repository_format.__class__ is RepositoryFormat4:
-            repository_string = RepositoryFormat.BZR_REPOSITORY_4.title
-        else:
-            repository_string = repository_format.get_format_string()
-        self.db_branch.control_format = match_title(
-            ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
-        self.db_branch.branch_format = match_title(
-            BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
-        self.db_branch.repository_format = match_title(
-            RepositoryFormat, repository_string,
-            RepositoryFormat.UNRECOGNIZED)
 
     def planDatabaseChanges(self, bzr_branch, bzr_ancestry, bzr_history,
                             db_ancestry, db_history, db_branch_revision_map):
@@ -333,7 +254,6 @@ class BzrSync:
         """Insert a batch of BranchRevision rows."""
         self.logger.info("Inserting %d branchrevision records.",
             len(revids_to_insert))
-        revision_set = getUtility(IRevisionSet)
         revid_seq_pairs = revids_to_insert.items()
         for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 1000):
             self.db_branch.createBranchRevisionFromIDs(revid_seq_pair_chunk)
@@ -352,18 +272,15 @@ class BzrSync:
         self.db_branch.updateScannedDetails(revision, revision_count)
 
 
-@adapter(events.TipChanged)
 def schedule_translation_upload(tip_changed):
     getUtility(IRosettaUploadJobSource).create(
         tip_changed.db_branch, tip_changed.old_tip_revision_id)
 
 
-@adapter(events.TipChanged)
 def schedule_translation_templates_build(tip_changed):
     utility = getUtility(ITranslationTemplatesBuildJobSource)
     utility.scheduleTranslationTemplatesBuild(tip_changed.db_branch)
 
 
-@adapter(events.TipChanged)
 def schedule_diff_updates(tip_changed):
     tip_changed.db_branch.scheduleDiffUpdates()

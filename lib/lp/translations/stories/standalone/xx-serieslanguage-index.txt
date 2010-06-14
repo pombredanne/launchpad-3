@@ -124,7 +124,7 @@ suggestions.
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'translation-access-level'))
     Since there is nobody to manage translation ...
-    your cannot add new suggestions. If you are interested in making
+    you cannot add new suggestions. If you are interested in making
     translations, please contact Ubuntu Translation Coordinators...
 
     >>> print user_browser.getLink(
@@ -176,7 +176,7 @@ translations, and will see a link to the license page.
     ...     'Translations licensing').url
     http://translations.launchpad.dev/~dude/+licensing
 
-For project with no translation group, translators see a note stating
+For projects with no translation group, translators see a note stating
 this fact. No access level information is displayed.
 
     >>> login('foo.bar@canonical.com')

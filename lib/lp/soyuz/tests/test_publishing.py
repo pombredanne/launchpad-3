@@ -13,35 +13,36 @@ import unittest
 
 import pytz
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from lp.archivepublisher.config import Config
-from lp.archivepublisher.diskpool import DiskPool
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory, SecureSourcePackagePublishingHistory,
-    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
-from lp.soyuz.model.processor import ProcessorFamily
-from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.testing import LaunchpadZopelessLayer
+from lp.archivepublisher.config import Config
+from lp.archivepublisher.diskpool import DiskPool
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.model.publishing import (
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority, PackagePublishingStatus)
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.scripts import FakeLogger
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class SoyuzTestPublisher:
@@ -133,7 +134,7 @@ class SoyuzTestPublisher:
                          changes_file_name="foo_666_source.changes",
                          changes_file_content="fake changes file content",
                          upload_status=PackageUploadStatus.DONE):
-        signing_key =  self.person.gpgkeys[0]
+        signing_key =  self.person.gpg_keys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, changes_file_name, changes_file_content, archive,
             signing_key)
@@ -197,10 +198,11 @@ class SoyuzTestPublisher:
             build_conflicts=build_conflicts,
             build_conflicts_indep=build_conflicts_indep,
             architecturehintlist=architecturehintlist,
+            changelog=None,
             changelog_entry=None,
             dsc=None,
             copyright='placeholder ...',
-            dscsigningkey=self.person.gpgkeys[0],
+            dscsigningkey=self.person.gpg_keys[0],
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
@@ -219,21 +221,21 @@ class SoyuzTestPublisher:
             upload_status=upload_status)
         package_upload.addSource(spr)
 
-        if spr_only:
-            return spr
-
         if filename is None:
             filename = "%s_%s.dsc" % (sourcename, version)
         alias = self.addMockFile(
             filename, filecontent, restricted=archive.private)
         spr.addFile(alias)
 
+        if spr_only:
+            return spr
+
         if status == PackagePublishingStatus.PUBLISHED:
             datepublished = UTC_NOW
         else:
             datepublished = None
 
-        sspph = SecureSourcePackagePublishingHistory(
+        spph = SourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
             component=spr.component,
@@ -244,13 +246,9 @@ class SoyuzTestPublisher:
             datepublished=datepublished,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            embargo=False,
             archive=archive)
 
-
-        # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
-        # of SSPPH and other useful attributes.
-        return SourcePackagePublishingHistory.get(sspph.id)
+        return spph
 
     def getPubBinaries(self, binaryname='foo-bin', summary='Foo app is great',
                        description='Well ...\nit does nothing, though',
@@ -265,7 +263,10 @@ class SoyuzTestPublisher:
                        scheduleddeletiondate=None, dateremoved=None,
                        distroseries=None,
                        archive=None,
-                       pub_source=None):
+                       pub_source=None,
+                       version='666',
+                       architecturespecific=False,
+                       builder=None):
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.distroseries
@@ -275,15 +276,22 @@ class SoyuzTestPublisher:
 
         if pub_source is None:
             sourcename = "%s" % binaryname.split('-')[0]
+            if architecturespecific:
+                architecturehintlist = 'any'
+            else:
+                architecturehintlist = 'all'
+
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket,
-                archive=archive, distroseries=distroseries)
+                archive=archive, distroseries=distroseries,
+                version=version, architecturehintlist=architecturehintlist)
         else:
             archive = pub_source.archive
 
         builds = pub_source.createMissingBuilds()
         published_binaries = []
         for build in builds:
+            build.builder = builder
             binarypackagerelease = self.uploadBinaryForBuild(
                 build, binaryname, filecontent, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
@@ -310,8 +318,8 @@ class SoyuzTestPublisher:
         replaces=None, provides=None, pre_depends=None, enhances=None,
         breaks=None, format=BinaryPackageFormat.DEB):
         """Return the corresponding `BinaryPackageRelease`."""
-        sourcepackagerelease = build.sourcepackagerelease
-        distroarchseries = build.distroarchseries
+        sourcepackagerelease = build.source_package_release
+        distroarchseries = build.distro_arch_series
         architecturespecific = (
             not sourcepackagerelease.architecturehintlist == 'all')
 
@@ -354,18 +362,20 @@ class SoyuzTestPublisher:
         binarypackagerelease.addFile(alias)
 
         # Adjust the build record in way it looks complete.
-        build.buildstate = BuildStatus.FULLYBUILT
-        build.datebuilt = datetime.datetime(
-            2008, 1, 1, 0, 5, 0, tzinfo=pytz.timezone("UTC"))
-        build.buildduration = datetime.timedelta(minutes=5)
+        naked_build = removeSecurityProxy(build)
+        naked_build.status = BuildStatus.FULLYBUILT
+        naked_build.date_finished = datetime.datetime(
+            2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC)
+        naked_build.date_started = (
+            build.date_finished - datetime.timedelta(minutes=5))
         buildlog_filename = 'buildlog_%s-%s-%s.%s_%s_%s.txt.gz' % (
             build.distribution.name,
-            build.distroseries.name,
-            build.distroarchseries.architecturetag,
-            build.sourcepackagerelease.name,
-            build.sourcepackagerelease.version,
-            build.buildstate.name)
-        build.buildlog = self.addMockFile(
+            build.distro_series.name,
+            build.distro_arch_series.architecturetag,
+            build.source_package_release.name,
+            build.source_package_release.version,
+            build.status.name)
+        naked_build.log = self.addMockFile(
             buildlog_filename, filecontent='Built!',
             restricted=build.archive.private)
 
@@ -377,7 +387,7 @@ class SoyuzTestPublisher:
         pocket=PackagePublishingPocket.RELEASE,
         scheduleddeletiondate=None, dateremoved=None):
         """Return the corresponding BinaryPackagePublishingHistory."""
-        distroarchseries = binarypackagerelease.build.distroarchseries
+        distroarchseries = binarypackagerelease.build.distro_arch_series
 
         # Publish the binary.
         if binarypackagerelease.architecturespecific:
@@ -385,9 +395,9 @@ class SoyuzTestPublisher:
         else:
             archs = distroarchseries.distroseries.architectures
 
-        secure_pub_binaries = []
+        pub_binaries = []
         for arch in archs:
-            pub = SecureBinaryPackagePublishingHistory(
+            pub = BinaryPackagePublishingHistory(
                 distroarchseries=arch,
                 binarypackagerelease=binarypackagerelease,
                 component=binarypackagerelease.component,
@@ -398,20 +408,18 @@ class SoyuzTestPublisher:
                 dateremoved=dateremoved,
                 datecreated=UTC_NOW,
                 pocket=pocket,
-                embargo=False,
                 archive=archive)
             if status == PackagePublishingStatus.PUBLISHED:
                 pub.datepublished = UTC_NOW
-            secure_pub_binaries.append(pub)
+            pub_binaries.append(pub)
 
-        return [BinaryPackagePublishingHistory.get(pub.id)
-                for pub in secure_pub_binaries]
+        return pub_binaries
 
     def _findChangesFile(self, top, name_fragment):
         """File with given name fragment in directory tree starting at top."""
         for root, dirs, files in os.walk(top, topdown=False):
             for name in files:
-                if (name.endswith('.changes') and 
+                if (name.endswith('.changes') and
                     name.find(name_fragment) > -1):
                     return os.path.join(root, name)
         return None
@@ -533,14 +541,6 @@ class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
         self.checkSourcePublication(source, status)
         self.checkBinaryPublications(binaries, status)
 
-    def getSecureSource(self, source):
-        """Return the corresponding SecureSourcePackagePublishingHistory."""
-        return SecureSourcePackagePublishingHistory.get(source.id)
-
-    def getSecureBinary(self, binary):
-        """Return the corresponding SecureBinaryPackagePublishingHistory."""
-        return SecureBinaryPackagePublishingHistory.get(binary.id)
-
     def checkPastDate(self, date, lag=None):
         """Assert given date is older than 'now'.
 
@@ -563,7 +563,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(self.disk_pool, self.logger)
         self.assertEqual(
             PackagePublishingStatus.PUBLISHED,
-            pub_source.secure_record.status)
+            pub_source.status)
         pool_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         self.assertEqual(open(pool_path).read().strip(), 'Hello world')
 
@@ -574,7 +574,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_binary.publish(self.disk_pool, self.logger)
         self.assertEqual(
             PackagePublishingStatus.PUBLISHED,
-            pub_binary.secure_record.status)
+            pub_binary.status)
         pool_path = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
         self.assertEqual(open(pool_path).read().strip(), 'Hello world')
 
@@ -590,7 +590,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_binary.publish(self.disk_pool, self.logger)
         self.assertEqual(
             PackagePublishingStatus.PUBLISHED,
-            pub_binary.secure_record.status)
+            pub_binary.status)
 
         # But the DDEB isn't dumped to the repository pool/.
         pool_path = "%s/main/f/foo/foo-bin_666_all.ddeb" % self.pool_dir
@@ -760,7 +760,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
             if item is not PackagePublishingStatus.PENDING]
 
         for status in forbidden_status:
-            source.secure_record.status = status
+            source.status = status
             self.layer.commit()
             self.assertRaisesWithContent(
                 AssertionError,
@@ -875,6 +875,104 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         self.copyAndCheck(
             binary, binary.distroarchseries.distroseries, 'universe')
 
+
+class BuildRecordCreationTests(TestNativePublishingBase):
+    """Test the creation of build records."""
+
+    def setUp(self):
+        super(BuildRecordCreationTests, self).setUp()
+        self.distro = self.factory.makeDistribution()
+        self.distroseries = self.factory.makeDistroSeries(
+            distribution=self.distro, name="crazy")
+        self.archive = self.factory.makeArchive()
+        self.avr_family = self.factory.makeProcessorFamily(
+            name="avr", restricted=True)
+        self.factory.makeProcessor(self.avr_family, "avr2001")
+        self.avr_distroarch = self.factory.makeDistroArchSeries(
+            architecturetag='avr', processorfamily=self.avr_family,
+            distroseries=self.distroseries, supports_virtualized=True)
+        self.sparc_family = self.factory.makeProcessorFamily(name="sparc",
+            restricted=False)
+        self.factory.makeProcessor(self.sparc_family, "sparc64")
+        self.sparc_distroarch = self.factory.makeDistroArchSeries(
+            architecturetag='sparc', processorfamily=self.sparc_family,
+            distroseries=self.distroseries, supports_virtualized=True)
+        self.distroseries.nominatedarchindep = self.sparc_distroarch
+        self.addFakeChroots(self.distroseries)
+
+    def getPubSource(self, architecturehintlist):
+        """Return a mock source package publishing record for the archive
+        and architecture used in this testcase.
+
+        :param architecturehintlist: Architecture hint list (e.g. "i386 amd64")
+        """
+        return super(BuildRecordCreationTests, self).getPubSource(
+            archive=self.archive, distroseries=self.distroseries,
+            architecturehintlist=architecturehintlist)
+
+    def test__getAllowedArchitectures_restricted(self):
+        """Test _getAllowedArchitectures doesn't return unrestricted
+        archs.
+
+        For a normal archive, only unrestricted architectures should
+        be used.
+        """
+        available_archs = [self.sparc_distroarch, self.avr_distroarch]
+        pubrec = self.getPubSource(architecturehintlist='any')
+        self.assertEquals([self.sparc_distroarch],
+            pubrec._getAllowedArchitectures(available_archs))
+
+    def test__getAllowedArchitectures_restricted_override(self):
+        """Test _getAllowedArchitectures honors overrides of restricted archs.
+
+        Restricted architectures should only be allowed if there is
+        an explicit ArchiveArch association with the archive.
+        """
+        available_archs = [self.sparc_distroarch, self.avr_distroarch]
+        getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
+        pubrec = self.getPubSource(architecturehintlist='any')
+        self.assertEquals([self.sparc_distroarch, self.avr_distroarch],
+            pubrec._getAllowedArchitectures(available_archs))
+
+    def test_createMissingBuilds_restricts_any(self):
+        """createMissingBuilds() should limit builds targeted at 'any'
+        architecture to those allowed for the archive.
+        """
+        pubrec = self.getPubSource(architecturehintlist='any')
+        builds = pubrec.createMissingBuilds()
+        self.assertEquals(1, len(builds))
+        self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
+
+    def test_createMissingBuilds_restricts_explicitlist(self):
+        """createMissingBuilds() should limit builds targeted at a
+        variety of architectures architecture to those allowed for the archive.
+        """
+        pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
+        builds = pubrec.createMissingBuilds()
+        self.assertEquals(1, len(builds))
+        self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
+
+    def test_createMissingBuilds_restricts_all(self):
+        """createMissingBuilds() should limit builds targeted at 'all'
+        architectures to the nominated independent architecture,
+        if that is allowed for the archive.
+        """
+        pubrec = self.getPubSource(architecturehintlist='all')
+        builds = pubrec.createMissingBuilds()
+        self.assertEquals(1, len(builds))
+        self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
+
+    def test_createMissingBuilds_restrict_override(self):
+        """createMissingBuilds() should limit builds targeted at 'any'
+        architecture to architectures that are unrestricted or
+        explicitly associated with the archive.
+        """
+        getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
+        pubrec = self.getPubSource(architecturehintlist='any')
+        builds = pubrec.createMissingBuilds()
+        self.assertEquals(2, len(builds))
+        self.assertEquals(self.avr_distroarch, builds[0].distro_arch_series)
+        self.assertEquals(self.sparc_distroarch, builds[1].distro_arch_series)
 
 
 def test_suite():

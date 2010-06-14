@@ -1,13 +1,1 @@
-#!/usr/bin/python2.5
-
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
-
-"""Executable for the ec2 scripts."""
-
-import _pythonpath
-
-__metaclass__ = type
-
-from devscripts.ec2test.entrypoint import main
-main()
+../bin/ec2

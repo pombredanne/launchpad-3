@@ -1,5 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=F0401,E1002
 
 """Implementation of the recipe storage.
 
@@ -9,24 +11,26 @@ interfaces.
 """
 
 __metaclass__ = type
-__all__ = ['_SourcePackageRecipeData']
+__all__ = ['SourcePackageRecipeData']
 
 from bzrlib.plugins.builder.recipe import (
     BaseRecipeBranch, MergeInstruction, NestInstruction, RecipeBranch)
 
 from lazr.enum import DBEnumeratedType, DBItem
 
-from storm.locals import Int, Reference, ReferenceSet, Store, Storm, Unicode
+from storm.expr import Union
+from storm.locals import (
+    And, Int, Reference, ReferenceSet, Select, Store, Storm, Unicode)
 
 from zope.component import getUtility
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
 
+from lp.code.errors import ForbiddenInstruction, TooNewRecipeFormat
 from lp.code.model.branch import Branch
+from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.sourcepackagerecipe import (
-    ForbiddenInstruction, TooNewRecipeFormat)
 
 
 class InstructionType(DBEnumeratedType):
@@ -50,6 +54,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
 
     def __init__(self, name, type, comment, line_number, branch, revspec,
                  directory, recipe_data, parent_instruction):
+        super(_SourcePackageRecipeDataInstruction, self).__init__()
         self.name = unicode(name)
         self.type = type
         self.comment = comment
@@ -78,7 +83,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
     directory = Unicode(allow_none=True)
 
     recipe_data_id = Int(name='recipe_data', allow_none=False)
-    recipe_data = Reference(recipe_data_id, '_SourcePackageRecipeData.id')
+    recipe_data = Reference(recipe_data_id, 'SourcePackageRecipeData.id')
 
     parent_instruction_id = Int(name='parent_instruction', allow_none=True)
     parent_instruction = Reference(
@@ -97,7 +102,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
         return branch
 
 
-class _SourcePackageRecipeData(Storm):
+class SourcePackageRecipeData(Storm):
     """The database representation of a BaseRecipeBranch from bzr-builder.
 
     This is referenced from the SourcePackageRecipe table as the 'recipe_data'
@@ -129,6 +134,27 @@ class _SourcePackageRecipeData(Storm):
         name='sourcepackage_recipe_build', allow_none=True)
     sourcepackage_recipe_build = Reference(
         sourcepackage_recipe_build_id, 'SourcePackageRecipeBuild.id')
+
+    @staticmethod
+    def findRecipes(branch):
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        store = Store.of(branch)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.id.is_in(Union(
+                Select(
+                    SourcePackageRecipeData.sourcepackage_recipe_id,
+                    SourcePackageRecipeData.base_branch == branch),
+                Select(
+                    SourcePackageRecipeData.sourcepackage_recipe_id,
+                    And (
+                        _SourcePackageRecipeDataInstruction.recipe_data_id ==
+                        SourcePackageRecipeData.id,
+                        _SourcePackageRecipeDataInstruction.branch == branch)
+                    )
+            ))
+        )
+
 
     def getRecipe(self):
         """The BaseRecipeBranch version of the recipe."""
@@ -204,6 +230,8 @@ class _SourcePackageRecipeData(Storm):
             self.instructions.find().remove()
         branch_lookup = getUtility(IBranchLookup)
         base_branch = branch_lookup.getByUrl(builder_recipe.url)
+        if base_branch is None:
+            raise NoSuchBranch(builder_recipe.url)
         if builder_recipe.revspec is not None:
             self.revspec = unicode(builder_recipe.revspec)
         self._recordInstructions(
@@ -215,6 +243,7 @@ class _SourcePackageRecipeData(Storm):
     def __init__(self, recipe, sourcepackage_recipe):
         """Initialize from the bzr-builder recipe and link it to a db recipe.
         """
+        super(SourcePackageRecipeData, self).__init__()
         self.setRecipe(recipe)
         self.sourcepackage_recipe = sourcepackage_recipe
 

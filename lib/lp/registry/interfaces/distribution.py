@@ -24,13 +24,13 @@ from zope.schema import Bool, Choice, Datetime, List, Object, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from lazr.restful.fields import CollectionField, Reference
-from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
    collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_operation_as,
    export_read_operation, exported, operation_parameters,
    operation_returns_collection_of, operation_returns_entry,
    rename_parameters_as)
+from lazr.restful.interface import copy_field
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -40,12 +40,14 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.app.interfaces.headings import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasSecurityContact, ILaunchpadUsage)
+    IHasAppointedDriver, IHasDrivers, ILaunchpadUsage)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
@@ -62,13 +64,13 @@ from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
 
-
 class IDistributionMirrorMenuMarker(Interface):
     """Marker interface for Mirror navigation."""
 
 
 class DistributionNameField(PillarNameField):
     """The pillar for a distribution."""
+
     @property
     def _content_iface(self):
         """Return the interface of this pillar object."""
@@ -115,8 +117,8 @@ class IDistributionPublic(
         Summary(
             title=_("Summary"),
             description=_(
-                "The distribution summary. A short paragraph "
-                "describing the goals and highlights of the distro."),
+                "A short paragraph to introduce the the goals and highlights "
+                "of the distribution."),
             required=True))
     homepage_content = exported(
         Text(
@@ -153,7 +155,11 @@ class IDistributionPublic(
     description = exported(
         Description(
             title=_("Description"),
-            description=_("The distro's description."),
+            description=_(
+                "Details about the distributions's work, highlights, goals, "
+                "and how to contribute. Use plain text, paragraphs are "
+                "preserved and URLs are linked in pages. Don't repeat the "
+                "Summary."),
             required=True))
     domainname = exported(
         TextLine(
@@ -213,7 +219,6 @@ class IDistributionPublic(
             value_type=Reference(schema=Interface)))
     architectures = List(
         title=_("DistroArchSeries inside this Distribution"))
-    bugCounter = Attribute("The distro bug counter")
     uploaders = Attribute(_(
         "ArchivePermission records for uploaders with rights to upload to "
         "this distribution."))
@@ -221,7 +226,8 @@ class IDistributionPublic(
     # properties
     currentseries = exported(
         Reference(
-            Interface, # Really IDistroSeries, see _schema_circular_imports.py.
+            # Really IDistroSeries, see _schema_circular_imports.py.
+            Interface,
             title=_("Current series"),
             description=_(
                 "The current development series of this distribution. "
@@ -290,6 +296,18 @@ class IDistributionPublic(
     def __iter__():
         """Iterate over the series for this distribution."""
 
+    @operation_parameters(
+        name=TextLine(title=_("Archive name"), required=True))
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    def getArchive(name):
+        """Return the distribution archive with the given name.
+
+        Only distribution archives are considered -- PPAs will not be found.
+
+        :param name: The name of the archive, e.g. 'partner'
+        """
+
     # Really IDistroSeries, see _schema_circular_imports.py.
     @operation_returns_collection_of(Interface)
     @export_operation_as(name="getDevelopmentSeries")
@@ -317,6 +335,14 @@ class IDistributionPublic(
         """Return the mirror with the given name for this distribution or None
         if it's not found.
         """
+
+    @operation_parameters(
+        country=copy_field(IDistributionMirror['country'], required=True),
+        mirror_type=copy_field(IDistributionMirror['content'], required=True))
+    @operation_returns_entry(IDistributionMirror)
+    @export_read_operation()
+    def getCountryMirror(country, mirror_type):
+        """Return the country DNS mirror for a country and content type."""
 
     def newMirror(owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None,
@@ -407,17 +433,26 @@ class IDistributionPublic(
     # _schema_circular_imports.py.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
-    def searchSourcePackages(text):
+    def searchSourcePackages(
+        text, has_packaging=None, publishing_distroseries=None):
         """Search for source packages that correspond to the given text.
 
         This method just decorates the result of searchSourcePackageCaches()
         to return DistributionSourcePackages.
         """
 
-    def searchSourcePackageCaches(text):
+    def searchSourcePackageCaches(
+        text, has_packaging=None, publishing_distroseries=None):
         """Search for source packages that correspond to the given text.
 
         :param text: The text that will be matched.
+        :param has_packaging: If True, it will filter out
+            packages with no packaging (i.e. no link to the upstream
+            project). False will do the reverse filtering, and None
+            will do no filtering on this field.
+        :param publishing_distroseries: If it is not None, then
+            it will filter out source packages that do not have a
+            publishing history for the given distroseries.
         :return: A result set containing
             (DistributionSourcePackageCache, SourcePackageName, rank) tuples
             ordered by rank.
@@ -527,17 +562,11 @@ class IDistributionPublic(
         """Can the user edit this distribution?"""
 
 
-class IDistribution(IDistributionEditRestricted, IDistributionPublic,
-                    IRootContext, IStructuralSubscriptionTarget):
+class IDistribution(
+    IDistributionEditRestricted, IDistributionPublic, IHasBugSupervisor,
+    IRootContext, IStructuralSubscriptionTarget):
     """An operating system distribution."""
     export_as_webservice_entry()
-
-# Patch the official_bug_tags field to make sure that it's
-# writable from the API, and not readonly like its definition
-# in IHasBugs.
-writable_obt_field = copy_field(IDistribution['official_bug_tags'])
-writable_obt_field.readonly = False
-IDistribution._v_attrs['official_bug_tags'] = writable_obt_field
 
 
 class IBaseDistribution(IDistribution):
@@ -598,4 +627,4 @@ class NoPartnerArchive(Exception):
     def __init__(self, distribution):
         Exception.__init__(
             self, "Partner archive for distro '%s' not found"
-            % (distribution.name,))
+            % (distribution.name, ))

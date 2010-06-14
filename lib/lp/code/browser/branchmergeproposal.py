@@ -15,6 +15,7 @@ __all__ = [
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
     'BranchMergeProposalDequeueView',
+    'BranchMergeProposalDescriptionEditView',
     'BranchMergeProposalEditMenu',
     'BranchMergeProposalEditView',
     'BranchMergeProposalEnqueueView',
@@ -62,11 +63,11 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.tales import (
-    DateTimeFormatterAPI, FormattersAPI)
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.widgets.lazrjs import (
     TextAreaEditorWidget, vocabulary_to_choice_edit_items)
 
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
@@ -197,6 +198,11 @@ class BranchMergeProposalMenuMixin:
         return Link('+edit', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
+    def set_description(self):
+        text = 'Set description'
+        return Link('+edit-description', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
     def set_commit_message(self):
         text = 'Set commit message'
         enabled = self.context.isMergable()
@@ -295,6 +301,7 @@ class BranchMergeProposalContextMenu(ContextMenu,
         'add_comment',
         'dequeue',
         'set_commit_message',
+        'set_description',
         'edit_status',
         'enqueue',
         'merge',
@@ -662,6 +669,24 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 for bug in self.context.related_bugs]
 
     @property
+    def description_html(self):
+        """The description as widget HTML."""
+        description = self.context.description
+        if description is None:
+            description = ''
+        formatter = FormattersAPI
+        hide_email = formatter(description).obfuscate_email()
+        description = formatter(hide_email).text_to_html()
+        return TextAreaEditorWidget(
+            self.context,
+            'description',
+            canonical_url(self.context, view_name='+edit-description'),
+            id="edit-description",
+            title="Description of the Change",
+            value=description,
+            accept_empty=True)
+
+    @property
     def commit_message_html(self):
         """The commit message as widget HTML."""
         commit_message = self.context.commit_message
@@ -674,7 +699,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             self.context,
             'commit_message',
             canonical_url(self.context, view_name='+edit-commit-message'),
-            id="edit-commit-message",
+            id="edit-commit_message",
             title="Commit Message",
             value=commit_message,
             accept_empty=True)
@@ -687,6 +712,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 self._createStatusVocabulary(),
                 css_class_prefix='mergestatus'),
             'status_value': self.context.queue_status.title,
+            'source_revid': self.context.source_branch.last_scanned_id,
             'user_can_edit_status': check_permission(
                 'launchpad.Edit', self.context),
             })
@@ -970,6 +996,20 @@ class BranchMergeProposalCommitMessageEditView(MergeProposalEditView):
     label = "Edit merge proposal commit message"
     page_title = label
     field_names = ['commit_message']
+
+    @action('Update', name='update')
+    def update_action(self, action, data):
+        """Update the commit message."""
+        self.updateContextFromData(data)
+
+
+class BranchMergeProposalDescriptionEditView(MergeProposalEditView):
+    """The view to edit the description of merge proposals."""
+
+    schema = IBranchMergeProposal
+    label = "Edit merge proposal description"
+    page_title = label
+    field_names = ['description']
 
     @action('Update', name='update')
     def update_action(self, action, data):

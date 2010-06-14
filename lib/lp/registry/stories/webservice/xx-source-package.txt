@@ -1,4 +1,9 @@
-= Prelude =
+Source Package API
+==================
+
+
+Prelude
+-------
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import (
@@ -11,7 +16,9 @@
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from lazr.restful.testing.webservice import pprint_entry
 
-= Source Packages =
+
+Getting source packages
+-----------------------
 
 We can get source packages that are bound to a distribution series from the
 distribution series.
@@ -22,10 +29,12 @@ distribution series.
     ...     name='evolution').jsonBody()
 
     >>> pprint_entry(evolution)
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     displayname: u'evolution in Ubuntu Hoary'
     distribution_link: u'http://.../ubuntu'
     distroseries_link: u'http://.../ubuntu/hoary'
+    latest_published_component_name: u'main'
     name: u'evolution'
     official_bug_tags: []
     productseries_link: u'http://.../evolution/trunk'
@@ -33,7 +42,8 @@ distribution series.
     self_link: u'http://.../ubuntu/hoary/+source/evolution'
 
 
-== Getting official branches ==
+Getting official branches
+-------------------------
 
 Then we can get the branches that are bound to various pockets of this
 distribution series. By default, there are none bound to evolution.
@@ -44,7 +54,8 @@ distribution series. By default, there are none bound to evolution.
     None
 
 
-== Setting official branches ==
+Setting official branches
+-------------------------
 
 We can even set a branch for the series. First we need to *make* a branch
 though.

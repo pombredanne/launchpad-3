@@ -118,8 +118,6 @@ archive_admin = ContextDisplayName('Administer %s')
 
 archive_activate = 'Activate Personal Package Archive'
 
-archive_builds = ContextDisplayName('Builds for %s')
-
 archive_copy_packages = ContextDisplayName('Copy packages from %s')
 
 archive_delete_packages = ContextDisplayName('Delete packages from %s')
@@ -330,8 +328,6 @@ distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 
 distribution_index = ContextTitle('%s in Launchpad')
 
-distribution_builds = ContextTitle('%s builds')
-
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
@@ -340,8 +336,6 @@ distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
 distroarchseries_index = ContextTitle('%s in Launchpad')
-
-distroarchseries_builds = ContextTitle('%s builds')
 
 distroarchseries_search = ContextTitle(
     smartquote("Search %s's binary packages"))
@@ -679,15 +673,15 @@ shipit_login = 'ShipIt'
 
 shipit_login_error = 'ShipIt - Unsuccessful login'
 
-shipit_myrequest = "Your ShipIt order"
+shipit_myrequest = "Your Ubuntu CD order"
 
 shipit_oops = 'Error: Oops'
 
 shipit_reports = 'ShipIt reports'
 
-shipit_requestcds = 'Your ShipIt Request'
+shipit_requestcds = 'Your Ubuntu CD Request'
 
-shipit_survey = 'ShipIt Survey'
+shipit_survey = 'Ubuntu Server Edition survey'
 
 shipitrequests_index = 'ShipIt requests'
 
@@ -708,8 +702,6 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
-
-sourcepackage_builds = ContextTitle('Builds for %s')
 
 sourcepackage_changelog = 'Source package changelog'
 
