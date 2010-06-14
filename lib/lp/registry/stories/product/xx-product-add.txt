@@ -5,7 +5,7 @@ Sample Person decides to register her new project, which she can do either
 from the Launchpad home page or the projects home page.
 
     >>> user_browser.open('http://launchpad.dev')
-    >>> user_browser.getLink('Create a new project').click()
+    >>> user_browser.getLink('Register a project').click()
     >>> print user_browser.title
     Register a project in Launchpad...
 
@@ -144,7 +144,7 @@ Sample Person has another project she wants to register.  It is similar to
 Firefox.
 
     >>> user_browser.open('http://launchpad.dev')
-    >>> user_browser.getLink('Create a new project').click()
+    >>> user_browser.getLink('Register a project').click()
     >>> print user_browser.title
     Register a project in Launchpad...
 

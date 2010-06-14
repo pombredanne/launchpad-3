@@ -1,0 +1,1 @@
+Build %(recipe_owner)s/%(recipe)s into %(archive)s for %(distroseries)s: %(status)s.
