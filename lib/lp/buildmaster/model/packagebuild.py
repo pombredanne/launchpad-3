@@ -11,6 +11,7 @@ __all__ = [
 from lazr.delegates import delegates
 
 from storm.locals import Int, Reference, Storm, Unicode
+from storm.expr import Desc
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
@@ -19,13 +20,16 @@ from canonical.database.enumcol import DBEnum
 from canonical.launchpad.browser.librarian import (
     ProxiedLibraryFileAlias)
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild, IPackageBuildSource)
+    IPackageBuild, IPackageBuildSet, IPackageBuildSource)
 from lp.buildmaster.model.buildbase import handle_status_for_build, BuildBase
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.buildmaster.model.buildfarmjob import (
+    BuildFarmJob, BuildFarmJobDerived)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name)
@@ -214,3 +218,40 @@ class PackageBuildDerived:
     def _handleStatus_GIVENBACK(self, librarian, slave_status, logger):
         return BuildBase._handleStatus_GIVENBACK(
             self, librarian, slave_status, logger)
+
+
+class PackageBuildSet:
+    implements(IPackageBuildSet)
+
+    def getBuildsForArchive(self, archive, status=None, pocket=None):
+        """See `IPackageBuildSet`."""
+
+        extra_exprs = []
+
+        # Add query clause that filters on build status if the latter is
+        # provided.
+        if status is not None:
+            extra_exprs.append(BuildFarmJob.status == status)
+
+        # Add query clause that filters on pocket if the latter is provided.
+        if pocket:
+            extra_exprs.append(PackageBuild.pocket == pocket)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(PackageBuild,
+            PackageBuild.archive == archive,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            *extra_exprs)
+
+        # Ordering according status
+        # * SUPERSEDED & All by -datecreated
+        # * FULLYBUILT & FAILURES by -datebuilt
+        # It should present the builds in a more natural order.
+        if status == BuildStatus.SUPERSEDED or status is None:
+            result_set.order_by(
+                Desc(BuildFarmJob.date_created), BuildFarmJob.id)
+        else:
+            result_set.order_by(
+                Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
+
+        return result_set

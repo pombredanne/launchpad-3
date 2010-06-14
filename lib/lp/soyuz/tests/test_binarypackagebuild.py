@@ -15,6 +15,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
 from lp.services.job.model.job import Job
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
@@ -31,7 +32,7 @@ from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import record_statements, TestCaseWithFactory
 
 
 class TestBinaryPackageBuild(TestCaseWithFactory):
@@ -119,6 +120,45 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
             '+archive/myppa/+build/%d/+files/mybuildlog.txt' % (
                 self.build.build_farm_job.id),
             self.build.log_url)
+
+    def test_adapt_from_build_farm_job(self):
+        # An `IBuildFarmJob` can be adapted to an IBinaryPackageBuild
+        # if it has the correct job type.
+        build_farm_job = self.build.build_farm_job
+        store = Store.of(build_farm_job)
+        store.flush()
+
+        binary_package_build = IBinaryPackageBuild(build_farm_job)
+        self.failUnlessEqual(self.build, binary_package_build)
+
+    def test_adapt_from_build_farm_job_wrong_type(self):
+        # An `IBuildFarmJob` of the wrong type results is None.
+        build_farm_job = self.build.build_farm_job
+        removeSecurityProxy(build_farm_job).job_type = (
+            BuildFarmJobType.RECIPEBRANCHBUILD)
+
+        binary_package_build = IBinaryPackageBuild(build_farm_job)
+        self.failUnlessEqual(None, binary_package_build)
+
+    def test_adapt_from_build_farm_job_prefetching(self):
+        # The package_build is prefetched for efficiency.
+        build_farm_job = self.build.build_farm_job
+
+        # We clear the cache to avoid getting cached objects where
+        # they would normally be queries.
+        store = Store.of(build_farm_job)
+        store.flush()
+        store.reset()
+
+        binary_package_build = IBinaryPackageBuild(build_farm_job)
+
+        package_build, statements = record_statements(
+            getattr, binary_package_build, 'package_build')
+        self.failUnlessEqual(0, len(statements))
+
+        build_farm_job, statements = record_statements(
+            getattr, package_build, 'build_farm_job')
+        self.failUnlessEqual(0, len(statements))
 
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):

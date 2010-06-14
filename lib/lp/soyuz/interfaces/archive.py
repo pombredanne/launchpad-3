@@ -29,6 +29,7 @@ __all__ = [
     'IArchivePublic',
     'IArchiveSet',
     'IDistributionArchive',
+    'IncompatibleArguments',
     'InsufficientUploadRights',
     'InvalidComponent',
     'InvalidPocketForPartnerArchive',
@@ -87,6 +88,11 @@ class ArchiveDependencyError(Exception):
 class CannotCopy(Exception):
     """Exception raised when a copy cannot be performed."""
     webservice_error(400) #Bad request.
+
+
+class IncompatibleArguments(Exception):
+    """Raised when incompatible arguments are passed to a method."""
+    webservice_error(400) # Bad request.
 
 
 class CannotSwitchPrivacy(Exception):

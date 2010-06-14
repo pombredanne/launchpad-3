@@ -34,6 +34,7 @@ from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.services.job.interfaces.job import JobStatus
@@ -65,7 +66,7 @@ from lp.soyuz.interfaces.archive import (
     ArchiveNotPrivate, ArchivePurpose, ArchiveStatus, CannotCopy,
     CannotSwitchPrivacy, CannotUploadToPPA, CannotUploadToPocket,
     DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
-    InsufficientUploadRights, InvalidPocketForPPA,
+    IncompatibleArguments, InsufficientUploadRights, InvalidPocketForPPA,
     InvalidPocketForPartnerArchive, InvalidComponent, IPPA,
     MAIN_ARCHIVE_PURPOSES, NoRightsForArchive, NoRightsForComponent,
     NoSuchPPA, NoTokensForTeams, PocketNotFound, VersionRequiresName,
@@ -366,12 +367,21 @@ class Archive(SQLBase):
         return None
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
         """See IHasBuildRecords"""
         # Ignore "user", since anyone already accessing this archive
         # will implicitly have permission to see it.
-        return getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
-            self, build_state, name, pocket, arch_tag)
+
+        if binary_only:
+            return getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
+                self, build_state, name, pocket, arch_tag)
+        else:
+            if arch_tag is not None or name is not None:
+                raise IncompatibleArguments(
+                    "The 'arch_tag' and 'name' parameters can be used only "
+                    "with binary_only=True.")
+            return getUtility(IPackageBuildSet).getBuildsForArchive(
+                self, status=build_state, pocket=pocket)
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
