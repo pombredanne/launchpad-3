@@ -189,7 +189,6 @@ Main content.
     </ol>
     <BLANKLINE>
                 </div>
-              </div><!-- yui-b -->
     <BLANKLINE>
     <BLANKLINE>
     <BLANKLINE>
@@ -203,6 +202,7 @@ Main content.
               Main content of the page.
             </p>
           </div>
+        </div><!-- yui-b -->
     </div>
 
 Global search.
@@ -315,10 +315,9 @@ Top portlet.
               Main content of the page.
             </p>
           </div>
-    <BLANKLINE>
-            </div><!-- yui-main -->
-    <BLANKLINE>
-            <!-- yui-b side -->
+          </div><!-- yui-b -->
+          </div><!-- yui-main -->
+          <!-- yui-b side -->
           <!-- yui-t4 -->
     ...
 
@@ -381,8 +380,7 @@ Main content.
 
     >>> print str(find_tag_by_id(body_tag, 'maincontent'))
     <div id="maincontent" class="yui-main">
-              <div class="yui-b" dir="ltr">
-              </div><!-- yui-b -->
+        <div class="yui-b" dir="ltr">
           <div class="top-portlet">
             <h1>Heading</h1>
             <p class="registered">
@@ -393,6 +391,7 @@ Main content.
               Main content of the page.
             </p>
           </div>
+        </div><!-- yui-b -->
     </div>
 
 Footer.

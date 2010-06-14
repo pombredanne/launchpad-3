@@ -236,7 +236,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         for distroseries in data['distros']:
             self.context.requestBuild(
                 data['archive'], self.user, distroseries,
-                PackagePublishingPocket.RELEASE)
+                PackagePublishingPocket.RELEASE, manual=True)
 
 
 class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
@@ -356,8 +356,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         try:
             source_package_recipe = getUtility(
                 ISourcePackageRecipeSource).new(
-                    self.user, self.user, data['distros'],
-                    data['name'], recipe, data['description'])
+                    self.user, self.user, data['name'], recipe,
+                    data['description'], data['distros'])
         except ForbiddenInstruction:
             # XXX: bug=592513 We shouldn't be hardcoding "run" here.
             self.setFieldError(

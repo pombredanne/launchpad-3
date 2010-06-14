@@ -56,7 +56,8 @@ class TestCaseForRecipe(BrowserTestCase):
         return self.factory.makeSourcePackageRecipe(
             owner=self.chef, distroseries=self.squirrel, name=u'cake_recipe',
             description=u'This recipe builds a foo for disto bar, with my'
-            ' Secret Squirrel changes.', branches=[cake_branch])
+            ' Secret Squirrel changes.', branches=[cake_branch],
+            daily_build_archive=self.ppa)
 
     def getMainText(self, recipe, view_name=None):
         """Return the main text of a recipe page, as seen by Chef."""
@@ -330,10 +331,12 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             owner=self.chef, product=product, name='veggies')
         meat_branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='meat')
+        ppa = self.factory.makeArchive(name='ppa')
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
             name=u'things', description=u'This is a recipe',
-            distroseries=self.squirrel, branches=[veggie_branch])
+            distroseries=self.squirrel, branches=[veggie_branch],
+            daily_build_archive=ppa)
 
         meat_path = meat_branch.bzr_identity
 
@@ -504,12 +507,15 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
         browser.getControl('Request builds').click()
+        builds = recipe.getBuilds(True)
         build_distros = [
-            build.distroseries.displayname for build in
-            recipe.getBuilds(True)]
+            build.distroseries.displayname for build in builds]
         build_distros.sort()
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
+        self.assertEqual(
+            set([1000]),
+            set(build.buildqueue_record.lastscore for build in builds))
 
     def test_request_builds_archive(self):
         recipe = self.factory.makeSourcePackageRecipe()
@@ -666,8 +672,10 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
     def makeBuildAndRelease(self):
         """Make a build and release suitable for testing."""
         build = self.makeBuild()
+        multiverse = self.factory.makeComponent(name='multiverse')
         return self.factory.makeSourcePackageRelease(
-            source_package_recipe_build=build, version='3.14')
+            source_package_recipe_build=build, version='3.14',
+            component=multiverse)
 
     def test_render_sourcepackage_release(self):
         """SourcePackageReleases are shown if set."""

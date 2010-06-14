@@ -193,13 +193,22 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
     def test_binary_builds(self):
         """The binary_builds property should be populated automatically."""
         spb = self.factory.makeSourcePackageRecipeBuild()
+        multiverse = self.factory.makeComponent(name='multiverse')
         spr = self.factory.makeSourcePackageRelease(
-            source_package_recipe_build=spb)
+            source_package_recipe_build=spb, component=multiverse)
         self.assertEqual([], list(spb.binary_builds))
         binary = self.factory.makeBinaryPackageBuild(spr)
         self.factory.makeBinaryPackageBuild()
         Store.of(binary).flush()
         self.assertEqual([binary], list(spb.binary_builds))
+
+    def test_makeDailyBuilds(self):
+        self.assertEqual([],
+            SourcePackageRecipeBuild.makeDailyBuilds())
+        recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
+        build = SourcePackageRecipeBuild.makeDailyBuilds()[0]
+        self.assertEqual(recipe, build.recipe)
+        self.assertEqual(list(recipe.distroseries), [build.distroseries])
 
     def test_getRecentBuilds(self):
         """Recent builds match the same person, series and receipe.
@@ -230,6 +239,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         a_second = datetime.timedelta(seconds=1)
         removeSecurityProxy(recent_build).datecreated += a_second
         self.assertContentEqual([recent_build], get_recent())
+
 
 class TestAsBuildmaster(TestCaseWithFactory):
 
