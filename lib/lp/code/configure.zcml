@@ -467,6 +467,7 @@
                     revision_count
                     bug_branches
                     linked_bugs
+                    getLinkedBugsAndTasks
                     linkBug
                     unlinkBug
                     spec_links
