@@ -1052,6 +1052,7 @@
        set_attributes="
            build_daily
            builder_recipe
+           daily_build_archive
            date_last_modified
            description
            distroseries

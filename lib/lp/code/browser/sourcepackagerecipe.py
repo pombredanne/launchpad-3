@@ -309,7 +309,10 @@ class ISourcePackageAddEditSchema(Interface):
         'name',
         'description',
         'owner',
+        'build_daily'
         ])
+    daily_build_archive = Choice(vocabulary='TargetPPAs',
+        title=u'Daily build archive')
     distros = List(
         Choice(vocabulary='BuildableDistroSeries'),
         title=u'Default Distribution series')
@@ -318,10 +321,16 @@ class ISourcePackageAddEditSchema(Interface):
         description=u'The text of the recipe.')
 
 
+
 class RecipeTextValidatorMixin:
     """Class to validate that the Source Package Recipe text is valid."""
 
     def validate(self, data):
+        if data['build_daily']:
+            if len(data['distros']) == 0:
+                self.setFieldError(
+                    'distros',
+                    'You must specify at least one series for daily builds.')
         try:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
@@ -343,7 +352,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     def initial_values(self):
         return {
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
-            'owner': self.user}
+            'owner': self.user,
+            'build_daily': False}
 
     @property
     def cancel_url(self):
@@ -357,7 +367,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
             source_package_recipe = getUtility(
                 ISourcePackageRecipeSource).new(
                     self.user, self.user, data['name'], recipe,
-                    data['description'], data['distros'])
+                    data['description'], data['distros'],
+                    data['daily_build_archive'], data['build_daily'])
         except ForbiddenInstruction:
             # XXX: bug=592513 We shouldn't be hardcoding "run" here.
             self.setFieldError(
