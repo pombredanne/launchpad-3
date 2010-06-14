@@ -12,8 +12,11 @@ __all__ = [
     'CodeImportAlreadyRunning',
     'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
+    'ForbiddenInstruction',
     'InvalidBranchMergeProposal',
     'ReviewNotPending',
+    'TooManyBuilds',
+    'TooNewRecipeFormat',
     'UnknownBranchTypeError',
     'UserHasExistingReview',
     'UserNotBranchReviewer',
@@ -91,3 +94,32 @@ class CodeImportAlreadyRunning(Exception):
     """Raised when the user requests an import that is already running."""
 
     webservice_error(400)
+
+
+class ForbiddenInstruction(Exception):
+    """A forbidden instruction was found in the recipe."""
+
+    def __init__(self, instruction_name):
+        super(ForbiddenInstruction, self).__init__()
+        self.instruction_name = instruction_name
+
+
+class TooNewRecipeFormat(Exception):
+    """The format of the recipe supplied was too new."""
+
+    def __init__(self, supplied_format, newest_supported):
+        super(TooNewRecipeFormat, self).__init__()
+        self.supplied_format = supplied_format
+        self.newest_supported = newest_supported
+
+
+class TooManyBuilds(Exception):
+    """A build was requested that exceeded the quota."""
+
+    def __init__(self, recipe, distroseries):
+        self.recipe = recipe
+        self.distroseries = distroseries
+        msg = (
+            'You have exceeded your quota for recipe %s for distroseries %s'
+            % (self.recipe, distroseries))
+        Exception.__init__(self, msg)

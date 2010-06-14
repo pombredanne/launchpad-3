@@ -22,6 +22,7 @@ from zope.component import getUtility
 from canonical.launchpad.validators.name import invalid_name_pattern
 from canonical.launchpad.validators.version import sane_version
 
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productrelease import UpstreamFileType
 from lp.registry.scripts.productreleasefinder.hose import Hose
@@ -105,7 +106,8 @@ class ProductReleaseFinder:
             filters = []
 
             for series in product.series:
-                if not series.releasefileglob:
+                if (series.status == SeriesStatus.OBSOLETE
+                    or not series.releasefileglob):
                     continue
 
                 filters.append(FilterPattern(series.name,

@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-__all__ = ['BaseMailer']
+__all__ = ['BaseMailer', 'RecipientReason']
 
 import logging
 from smtplib import SMTPException
@@ -14,7 +14,9 @@ from canonical.launchpad.helpers import get_email_template
 
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
-from lp.services.mail.sendmail import format_address, MailController
+from lp.services.mail.sendmail import (
+    append_footer, format_address, MailController
+)
 from lp.services.utils import text_delta
 
 
@@ -130,7 +132,16 @@ class BaseMailer:
     def _getBody(self, email):
         """Return the complete body to use for this email."""
         template = get_email_template(self._template_name)
-        return template % self._getTemplateParams(email)
+        params = self._getTemplateParams(email)
+        body = template % params
+        footer = self._getFooter(params)
+        if footer is not None:
+            body = append_footer(body, footer)
+        return body
+
+    def _getFooter(self, params):
+        """Provide a footer to attach to the body, or None."""
+        return None
 
     def sendAll(self):
         """Send notifications to all recipients."""
@@ -150,3 +161,46 @@ class BaseMailer:
                     # Don't want an entire stack trace, just some details.
                     self.logger.warning(
                         'send failed for %s, %s' % (email, e))
+
+
+class RecipientReason:
+    """Reason for sending mail to a recipient."""
+
+    def __init__(self, subscriber, recipient, mail_header, reason_template):
+        self.subscriber = subscriber
+        self.recipient = recipient
+        self.mail_header = mail_header
+        self.reason_template = reason_template
+
+    @staticmethod
+    def makeRationale(rationale_base, person):
+        if person.is_team:
+            return '%s @%s' % (rationale_base, person.name)
+        else:
+            return rationale_base
+
+    def _getTemplateValues(self):
+        template_values = {
+            'entity_is': 'You are',
+            'lc_entity_is': 'you are',
+            }
+        if self.recipient != self.subscriber:
+            assert self.recipient.hasParticipationEntryFor(self.subscriber), (
+                '%s does not participate in team %s.' %
+                (self.recipient.displayname, self.subscriber.displayname))
+        if self.recipient != self.subscriber or self.subscriber.is_team:
+            template_values['entity_is'] = (
+                'Your team %s is' % self.subscriber.displayname)
+            template_values['lc_entity_is'] = (
+                'your team %s is' % self.subscriber.displayname)
+        return template_values
+
+    def getReason(self):
+        """Return a string explaining why the recipient is a recipient."""
+        return (self.reason_template % self._getTemplateValues())
+
+    @classmethod
+    def forBuildRequester(cls, requester):
+        header = cls.makeRationale('Requester', requester)
+        reason = '%(entity_is)s the requester of the build.'
+        return cls(requester, requester, header, reason)
