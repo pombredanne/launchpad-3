@@ -29,7 +29,8 @@ informing them of their new list.  We can ignore these.
     >>> transaction.commit()
     >>> logout()
 
-    >>> browser = Browser('%s:%s' %
+    >>> from canonical.launchpad.testing.pages import setupBrowser
+    >>> browser = setupBrowser('Basic %s:%s' %
     ...     (owner._preferredemail_cached.email,
     ...      owner._password_cleartext_cached))
 

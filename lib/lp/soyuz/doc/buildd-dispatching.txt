@@ -357,10 +357,10 @@ check if legitimate pending candidates will remain valid.
     ...     breezy_i386, PackagePublishingPocket.UPDATES, hoary.main_archive)
     >>> pending_job = pending_build.queueBuild()
 
-We increase the score of the security job to ensure it is considered
+We set the score of the security job to ensure it is considered
 before the legitimate job.
 
-    >>> sec_job.lastscore = 1000
+    >>> sec_job.lastscore = pending_job.lastscore + 1
     >>> flush_database_updates()
 
 New we can check that the next valid candidate is the just-added
