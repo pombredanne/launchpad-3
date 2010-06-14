@@ -32,13 +32,13 @@ class MemcachedStormRepresentationCache(BaseRepresentationCache):
         obj = removeSecurityProxy(obj)
         try:
             storm_info = storm.info.get_obj_info(obj)
-            table_name = storm_info.cls_info.table
-            primary_key = tuple(var.get() for var in storm_info.primary_vars)
-            identifier = table_name + repr(primary_key)
         except storm.exceptions.ClassInfoError, e:
             # There's no Storm data for this object. Don't cache it,
             # since we don't know how to invalidate the cache.
             return self.DO_NOT_CACHE
+        table_name = storm_info.cls_info.table
+        primary_key = tuple(var.get() for var in storm_info.primary_vars)
+        identifier = table_name + repr(primary_key)
 
         key = (identifier
                + ',' + config._instance_name
@@ -47,7 +47,10 @@ class MemcachedStormRepresentationCache(BaseRepresentationCache):
 
     def get_by_key(self, key, default=None):
         """See `BaseRepresentationCache`."""
-        return self.client.get(key) or default
+        value = self.client.get(key)
+        if value is None:
+            value = default
+        return value
 
     def set_by_key(self, key, value):
         """See `BaseRepresentationCache`."""
