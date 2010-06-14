@@ -66,7 +66,7 @@ Cleanup: re-disable the cache.
 
     >>> ignore = config.pop('enable cache')
 
-Note that ocuments are never served from a disabled cache, even if the
+Note that documents are never served from a disabled cache, even if the
 cache is populated.
 
     >>> print webservice.get("/~salgado", api_version="devel").jsonBody()

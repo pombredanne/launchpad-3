@@ -35,7 +35,7 @@ class MemcachedStormRepresentationCache(BaseRepresentationCache):
             table_name = storm_info.cls_info.table
             primary_key = tuple(var.get() for var in storm_info.primary_vars)
             identifier = table_name + repr(primary_key)
-        except Exception, e:
+        except storm.exceptions.ClassInfoError, e:
             # There's no Storm data for this object. Don't cache it,
             # since we don't know how to invalidate the cache.
             return self.DO_NOT_CACHE
