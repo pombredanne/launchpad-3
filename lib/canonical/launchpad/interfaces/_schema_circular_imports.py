@@ -36,7 +36,8 @@ from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob, ISpecificBuildFarmJob)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -284,7 +285,7 @@ patch_plain_parameter_type(
 # IBuildFarmJob
 IBuildFarmJob['status'].vocabulary = BuildStatus
 IBuildFarmJob['buildqueue_record'].schema = IBuildQueue
-IBuildFarmJob['specific_job'].schema = IBuildFarmJob
+IBuildFarmJob['specific_job'].schema = ISpecificBuildFarmJob
 
 # IDistribution
 IDistribution['series'].value_type.schema = IDistroSeries

@@ -19,7 +19,7 @@ import pytz
 from storm.locals import Bool, DateTime, Int, Reference, Storm
 from storm.store import Store
 
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 from zope.interface import classProvides, implements
 from zope.security.proxy import removeSecurityProxy
 
@@ -32,7 +32,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob, IBuildFarmJobOld,
-    IBuildFarmJobSource)
+    IBuildFarmJobSource, ISpecificBuildFarmJob)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 
 
@@ -312,13 +312,8 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     @property
     def specific_job(self):
         """See `IBuild`"""
-        # XXX - update to use ISpecificBuildFarmJob so adaption is done
-        # automatically
-        if self.job_type == BuildFarmJobType.PACKAGEBUILD:
-            from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
-            return IBinaryPackageBuild(self)
-
-        return None
+        # Adapt ourselves based on our job type.
+        return getAdapter(self, ISpecificBuildFarmJob, self.job_type.name)
 
 
 class BuildFarmJobDerived:

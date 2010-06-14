@@ -11,6 +11,7 @@ __all__ = [
     'IBuildFarmJob',
     'IBuildFarmJobOld',
     'IBuildFarmJobSource',
+    'ISpecificBuildFarmJob',
     'BuildFarmJobType',
     ]
 
@@ -247,7 +248,7 @@ class IBuildFarmJob(IBuildFarmJobOld):
         description=_("The specific type of job."))
 
     specific_job = Reference(
-        # Really IBuildFarmJob, set in _schema_circular_imports to
+        # Really ISpecificBuildFarmJob, set in _schema_circular_imports to
         # enable the reference to its own interface.
         schema=Interface, title=_("Specific job"),
         description=_("The specific job related to this build farm job."))
@@ -255,6 +256,14 @@ class IBuildFarmJob(IBuildFarmJobOld):
     title = exported(TextLine(title=_("Title"), required=False))
 
     was_built = Attribute("Whether or not modified by the builddfarm.")
+
+
+class ISpecificBuildFarmJob(IBuildFarmJob):
+    """A marker interface with which to define adapters for IBuildFarmJob.
+
+    This enables the registered adapters for ISpecificBuildFarmJob to be
+    iterated when calculating IBuildFarmJob.specific_job.
+    """
 
 
 class IBuildFarmJobSource(Interface):
