@@ -443,7 +443,7 @@ class FileBugViewBase(LaunchpadFormView):
         else:
             private = False
 
-        notifications = ["Thank you for your bug report."]
+        notifications = [self.getAcknowledgementMessage(self.context)]
         params = CreateBugParams(
             title=title, comment=comment, owner=self.user,
             security_related=security_related, private=private,
@@ -774,6 +774,47 @@ class FileBugViewBase(LaunchpadFormView):
                             "content": content,
                             })
         return guidelines
+
+    default_bug_reported_acknowledgement = "Thank you for your bug report."
+
+    def getAcknowledgementMessage(self, context):
+        """An acknowlegement message displayed to the user."""
+        # If a given context has not a custom message, we go up in the
+        # "object hierachy" until we find one. If no cusotmized messages
+        # exist for any conext, a default message is returned.
+        #
+        # bug_reported_acknowledgement is defined as a "real" property
+        # for IDistribution, IDistributionSourcePackage, IProduct and
+        # IProjectGroup. Other IBugTarget implementations inherit this
+        # property from their parents. For these classes, we can directly
+        # try to find a custom message farther up in the hierarchy.
+        message = context.bug_reported_acknowledgement
+        if message is not None and len(message.strip()) > 0:
+            return message
+        next_context = None
+        if IProductSeries.providedBy(context):
+            # we don't need to look at
+            # context.product.bug_reported_acknowledgement because a
+            # product series inherits this property from the product.
+            next_context = context.product.project
+        elif IProduct.providedBy(context):
+            next_context = context.project
+        elif IDistributionSourcePackage.providedBy(context):
+            next_context = context.distribution
+        # IDistroseries and ISourcePackage inherit
+        # bug_reported_acknowledgement from their IDistribution, so we
+        # don't need to look up this property in IDistribution.
+        # IDistribution and IProjectGroup don't have any parents.
+        elif (IDistribution.providedBy(context) or
+              IProjectGroup.providedBy(context) or
+              IDistroSeries.providedBy(context) or
+              ISourcePackage.providedBy(context)):
+            pass
+        else:
+            raise TypeError("Unexpected bug target: %r" % context)
+        if next_context is not None:
+            return self.getAcknowledgementMessage(next_context)
+        return self.default_bug_reported_acknowledgement
 
     @cachedproperty
     def extra_data_processing_job(self):
