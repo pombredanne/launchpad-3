@@ -380,9 +380,13 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
+            Build daily:
+            False
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: 1.0
+            Daily build archive:
+            Secret PPA
             Distribution series: Mumbly Midget
             .*
 
