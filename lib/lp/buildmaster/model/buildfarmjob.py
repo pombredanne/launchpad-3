@@ -313,7 +313,12 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     def specific_job(self):
         """See `IBuild`"""
         # Adapt ourselves based on our job type.
-        return getAdapter(self, ISpecificBuildFarmJob, self.job_type.name)
+        build = getAdapter(self, ISpecificBuildFarmJob, self.job_type.name)
+        from canonical.launchpad.webapp.authorization import check_permission
+        from canonical.lazr.debug import debug_proxy
+        import pdb;pdb.set_trace()
+
+        return build
 
 
 class BuildFarmJobDerived:

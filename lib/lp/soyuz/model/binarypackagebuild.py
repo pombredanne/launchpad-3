@@ -15,7 +15,7 @@ from storm.locals import Int, Reference
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from storm.expr import (
     Desc, In, Join, LeftJoin)
 from storm.store import Store
@@ -82,7 +82,11 @@ def get_binary_build_for_build_farm_job(build_farm_job):
     if resulting_tuple is None:
         return None
 
-    return resulting_tuple[0]
+    # We specifically return a proxied BinaryPackageBuild so that we can
+    # be sure it has the correct proxy.
+    proxied_version = ProxyFactory(resulting_tuple[0])
+
+    return ProxyFactory(resulting_tuple[0])
 
 
 class BinaryPackageBuild(PackageBuildDerived, SQLBase):
