@@ -515,6 +515,11 @@
         for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         factory="lp.soyuz.browser.build.BuildBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        provides="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
+        for="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
+        factory="lp.soyuz.model.binarypackagebuild.get_binary_build_for_build_farm_job"
+        permission="zope.Public"/>
 
     <!-- BinaryPackageBuildSet -->
 
