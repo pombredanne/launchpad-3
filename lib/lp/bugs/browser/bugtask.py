@@ -918,6 +918,28 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
         return activity_by_date
 
+    def activity_for_comment(self, comment, activity_by_date):
+        """
+        Check to see if there are any activities for this comment's
+        datecreated, and return comment's activities as a list.
+        """
+        activity_for_comment = []
+
+        # Loop over a copy of activity_by_date to ensure that we
+        # don't break the looping by removing things from the list
+        # over which we're iterating.
+        for activity_dict in list(activity_by_date):
+            if activity_dict['date'] == comment.datecreated:
+                activity_for_comment.extend(activity_dict['activity'])
+
+                # Remove the activity from the list of activity by date;
+                # we don't need it there any more.
+                activity_by_date.remove(activity_dict)
+
+                activity_for_comment.sort(key=itemgetter('target'))
+
+        return activity_for_comment
+
     @cachedproperty
     def activity_and_comments(self):
         # Add the activity to the activity_and_comments list. For each
@@ -927,30 +949,33 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             {'activity': activity_dict, 'date': date,
              'person': activity_dict[0]['activity'][0].person}
             for date, activity_dict in self.activity_by_date.items()]
-
-        comments = []
-        comments.extend(self.visible_oldest_comments_for_display)
-        comments.extend(self.visible_newest_comments_for_display)
         activity_and_comments = []
-        for comment in comments:
-            # Check to see if there are any activities for this
-            # comment's datecreated.
-            activity_for_comment = []
 
-            # Loop over a copy of activity_by_date to ensure that we
-            # don't break the looping by removing things from the list
-            # over which we're iterating.
-            for activity_dict in list(activity_by_date):
-                if activity_dict['date'] == comment.datecreated:
-                    activity_for_comment.extend(activity_dict['activity'])
+        newest_comments = self.visible_newest_comments_for_display
+        oldest_comments = self.visible_oldest_comments_for_display
 
-                    # Remove the activity from the list of activity by date;
-                    # we don't need it there any more.
-                    activity_by_date.remove(activity_dict)
+        # Oldest comments and activities
+        for comment in oldest_comments:
+            comment.activity = self.activity_for_comment(comment,
+                                                         activity_by_date)
+            activity_and_comments.append({
+                'comment': comment,
+                'date': comment.datecreated,
+                })
 
-            activity_for_comment.sort(key=itemgetter('target'))
-            comment.activity = activity_for_comment
+        # Insert blank if we're showing only a subset of the comment list
+        if len(newest_comments) > 0:
+            activity_and_comments.append({
+                'num_hidden': (len(self.visible_comments)
+                               - len(oldest_comments)
+                               - len(newest_comments)),
+                'date': newest_comments[0].datecreated,
+                })
 
+        # Most recent comments and activities (if showing a subset)
+        for comment in newest_comments:
+            comment.activity = self.activity_for_comment(comment,
+                                                         activity_by_date)
             activity_and_comments.append({
                 'comment': comment,
                 'date': comment.datecreated,

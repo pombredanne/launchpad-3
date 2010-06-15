@@ -252,6 +252,14 @@
               <metal:comment-box
                   metal:use-macro="context/@@bugcomment-macros/activity-box" />
           </tal:is-activity>
+
+          <tal:is-break
+             define="num_hidden comment_or_activity/num_hidden|nothing"
+             condition="num_hidden">
+              <metal:comment-box
+                  metal:use-macro="context/@@bugcomment-macros/break" />
+          </tal:is-break>
+
         </tal:comment>
         <div style="float: right;">
           <tal:activity_log
