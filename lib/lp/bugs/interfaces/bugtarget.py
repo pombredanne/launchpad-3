@@ -231,9 +231,9 @@ class IBugTarget(IHasBugs):
     bug_reporting_guidelines = exported(
         Text(
             title=(
-                "Helpful guidelines for reporting a bug"),
+                u"Helpful guidelines for reporting a bug"),
             description=(
-                "These guidelines will be shown to "
+                u"These guidelines will be shown to "
                 "everyone reporting a bug and should be "
                 "text or a bulleted list with your particular "
                 "requirements, if any."),
