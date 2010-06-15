@@ -638,6 +638,19 @@ all the URLs to the private archives that the person can access.
 
 IPerson supports a bunch of operations.
 
+Team subscriptions for source packages:
+
+    >>> login('test@canonical.com')
+    >>> team = factory.makeTeam()
+    >>> package = factory.makeDistributionSourcePackage()
+    >>> subscription = package.addSubscription(None, team)
+    >>> packages = team.getBugSubscriberPackages()
+    >>> print len(packages)
+    1
+    >>> print packages[0] == package
+    True
+    >>> logout()
+
 
 === Team membership operations ===
 
