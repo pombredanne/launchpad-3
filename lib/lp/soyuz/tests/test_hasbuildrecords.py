@@ -89,7 +89,7 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
     def test_binary_only_false(self):
         # An archive can optionally return the more general
         # package build objects.
-        spr_build = getUtility(IPackageBuildSource).new(
+        getUtility(IPackageBuildSource).new(
             job_type=BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
             archive=self.context, pocket=PackagePublishingPocket.RELEASE)
 
