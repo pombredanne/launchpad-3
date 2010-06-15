@@ -437,7 +437,7 @@ class ProductNameWidget(LowerCaseTextWidget):
 
 class GhostWidget(TextWidget):
     """A simple widget that has no HTML."""
-
+    visible = False
     # This suppresses the stuff above the widget.
     display_label = False
     # This suppresses the stuff underneath the widget.
@@ -447,3 +447,5 @@ class GhostWidget(TextWidget):
     def __call__(self):
         """See `SimpleInputWidget`."""
         return ''
+
+    hidden = __call__

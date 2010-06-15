@@ -214,7 +214,6 @@ Choosing a License
 
 A custom widget is used to display a link to the license policy.
 
-    >>> from canonical.launchpad.interfaces import License
     >>> from canonical.widgets.product import LicenseWidget
 
     >>> form = {'field.licenses': []}
@@ -412,7 +411,7 @@ Many licenses have links to the official pages describing their licenses.
     >>> print_checked_items(license_widget(), links=True)
     [ ] Apache License ... <http://www.opensource.org/licenses/apache2.0.php>
     [ ] GNU LGPL v2.1 ... <http://www.opensource.org/licenses/lgpl-2.1.php>
-    [ ] GNU Affero GPL v3 ... <http://www.opensource.org/licenses/agpl-v3.html>
+    [ ] GNU Affero GPL v3 ... <http://www.opensource.org/licenses/agpl-v3...>
     ...
 
 But not all of them.
@@ -423,3 +422,47 @@ But not all of them.
     [ ] I don't know yet
     [ ] Other/Proprietary
     [ ] Other/Open Source
+
+
+GhostWidget
+-----------
+
+The GhostWidget is used to suppress the markup of a field in cases where
+another mechanism is used to insert the field's markup into the page. Some
+widget for example generate the markup for subordinate fields, but they
+do not manage the field itself. The LicenseWidget widget for example
+generates the markup for the license_info field; the view must use a
+GhostWidget to suppress the markup.
+
+    >>> from canonical.widgets.product import GhostWidget
+
+    >>> license_info = IProduct['license_info'].bind(firefox)
+    >>> ghost_widget = GhostWidget(license_info, LaunchpadTestRequest())
+    >>> ghost_widget.visible
+    False
+    >>> ghost_widget.hidden()
+    ''
+    >>> ghost_widget()
+    ''
+
+Launchpad form macros do not generate table rows for the GhostWidget.
+
+    >>> from z3c.ptcompat import ViewPageTemplateFile
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.webapp.launchpadform import (
+    ...     custom_widget, LaunchpadFormView)
+
+    >>> class GhostWidgetView(LaunchpadFormView):
+    ...     page_title = 'Test'
+    ...     template = ViewPageTemplateFile(
+    ...         config.root + '/lib/lp/app/templates/generic-edit.pt')
+    ...     schema = IProduct
+    ...     field_names = ['license_info']
+    ...     custom_widget('license_info', GhostWidget)
+
+    >>> request = LaunchpadTestRequest()
+    >>> request.setPrincipal(factory.makePerson())
+    >>> view = GhostWidgetView(firefox, request)
+    >>> view.initialize()
+    >>> extract_text(find_tag_by_id(view.render(), 'launchpad-form-widgets'))
+    u''
