@@ -316,7 +316,7 @@ def setupCompleteBuilds(batch):
     Return a list of built CompleteBuild instances, or empty
     list if no builds were contained in the received batch.
     """
-    builds = [build.specific_job for build in batch]
+    builds = [build.getSpecificJob() for build in batch]
     if not builds:
         return []
 
