@@ -11,6 +11,7 @@ __all__ = [
     'IBuildFarmJob',
     'IBuildFarmJobOld',
     'IBuildFarmJobSource',
+    'InconsistentBuildFarmJobError',
     'ISpecificBuildFarmJob',
     'BuildFarmJobType',
     ]
@@ -26,6 +27,15 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.soyuz.interfaces.processor import IProcessor
+
+
+class InconsistentBuildFarmJobError(Exception):
+    """Raised when a BuildFarmJob is in an inconsistent state.
+
+    For example, if a BuildFarmJob has a job type for which no adapter
+    is yet implemented. Or when adapting the BuildFarmJob to a specific
+    type of build job (such as a BinaryPackageBuild) fails.
+    """
 
 
 class BuildFarmJobType(DBEnumeratedType):
@@ -247,11 +257,12 @@ class IBuildFarmJob(IBuildFarmJobOld):
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
 
-    specific_job = Reference(
-        # Really ISpecificBuildFarmJob, set in _schema_circular_imports to
-        # enable the reference to its own interface.
-        schema=Interface, title=_("Specific job"),
-        description=_("The specific job related to this build farm job."))
+    def getSpecificJob():
+        """Return the specific build job associated with this record.
+
+        :raises InconsistentBuildFarmJobError: if a specific job could not be
+            returned.
+        """
 
     title = exported(TextLine(title=_("Title"), required=False))
 

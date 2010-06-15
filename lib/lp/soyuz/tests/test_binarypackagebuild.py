@@ -128,15 +128,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         store = Store.of(build_farm_job)
         store.flush()
 
-        self.failUnlessEqual(self.build, build_farm_job.specific_job)
-
-    def test_adapt_from_build_farm_job_wrong_type(self):
-        # An `IBuildFarmJob` of the wrong type results is None.
-        build_farm_job = self.build.build_farm_job
-        removeSecurityProxy(build_farm_job).job_type = (
-            BuildFarmJobType.RECIPEBRANCHBUILD)
-
-        self.failUnlessEqual(None, build_farm_job.specific_job)
+        self.failUnlessEqual(self.build, build_farm_job.getSpecificJob())
 
     def test_adapt_from_build_farm_job_prefetching(self):
         # The package_build is prefetched for efficiency.
@@ -148,7 +140,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         store.flush()
         store.reset()
 
-        binary_package_build = build_farm_job.specific_job
+        binary_package_build = build_farm_job.getSpecificJob()
 
         package_build, statements = record_statements(
             getattr, binary_package_build, 'package_build')

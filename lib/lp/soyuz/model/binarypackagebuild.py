@@ -67,11 +67,6 @@ from lp.soyuz.model.queue import (
 
 def get_binary_build_for_build_farm_job(build_farm_job):
     """Factory method to returning a binary for a build farm job."""
-    # No need to query the db if the build_farm_job doesn't have
-    # the correct job type.
-    if build_farm_job.job_type != BuildFarmJobType.PACKAGEBUILD:
-        return None
-
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     resulting_tuple =  store.find(
         (BinaryPackageBuild, PackageBuild, BuildFarmJob),

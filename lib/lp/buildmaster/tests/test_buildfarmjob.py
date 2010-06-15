@@ -19,7 +19,8 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobSource)
+    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobSource,
+    InconsistentBuildFarmJobError)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.testing import login, TestCaseWithFactory
 
@@ -150,10 +151,19 @@ class TestBuildFarmJob(TestBuildFarmJobBase):
             date_created=ten_years_ago)
         self.failUnlessEqual(ten_years_ago, build_farm_job.date_created)
 
-    def test_specific_job(self):
-        # The specific_job attribute will be None if there is no
-        # corresponding specific_job.
-        self.assertEqual(None, self.build_farm_job.specific_job)
+    def test_getSpecificJob_none(self):
+        # An exception is raised if there is no related specific job.
+        self.assertRaises(
+            InconsistentBuildFarmJobError, self.build_farm_job.getSpecificJob)
+
+    def test_getSpecificJob_unimplemented_type(self):
+        # An `IBuildFarmJob` with an unimplemented type results in an
+        # exception.
+        removeSecurityProxy(self.build_farm_job).job_type = (
+            BuildFarmJobType.RECIPEBRANCHBUILD)
+
+        self.assertRaises(
+            InconsistentBuildFarmJobError, self.build_farm_job.getSpecificJob)
 
 
 class TestBuildFarmJobSecurity(TestBuildFarmJobBase):
