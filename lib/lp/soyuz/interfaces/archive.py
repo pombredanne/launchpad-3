@@ -374,7 +374,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
     commercial = exported(
         Bool(
             title=_("Commercial Archive"),
-            required=False,
+            required=True,
             description=_(
                 "Set if this archive is used for commercial purposes and "
                 "should appear in the Software Center listings.  The archive "
