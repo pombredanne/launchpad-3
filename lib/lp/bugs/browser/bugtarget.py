@@ -143,7 +143,7 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
         "bug_reporting_guidelines",
         ]
     # This ProductBugTrackerWidget renders enable_bug_expiration and
-    # remote_product as subordinate fields, so this view their rendering.
+    # remote_product as subordinate fields, so this view supresses them.
     custom_widget('bugtracker', ProductBugTrackerWidget)
     custom_widget('enable_bug_expiration', GhostWidget)
     custom_widget('remote_product', GhostWidget)
