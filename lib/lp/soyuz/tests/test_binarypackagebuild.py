@@ -15,7 +15,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
 from lp.services.job.model.job import Job
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild

@@ -79,8 +79,6 @@ def get_binary_build_for_build_farm_job(build_farm_job):
 
     # We specifically return a proxied BinaryPackageBuild so that we can
     # be sure it has the correct proxy.
-    proxied_version = ProxyFactory(resulting_tuple[0])
-
     return ProxyFactory(resulting_tuple[0])
 
 

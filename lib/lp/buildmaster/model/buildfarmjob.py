@@ -314,7 +314,8 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """See `IBuild`"""
         # Adapt ourselves based on our job type.
         try:
-            build = getAdapter(self, ISpecificBuildFarmJob, self.job_type.name)
+            build = getAdapter(
+                self, ISpecificBuildFarmJob, self.job_type.name)
         except ComponentLookupError:
             raise InconsistentBuildFarmJobError(
                 "No adapter was found for the build farm job type %s." % (
