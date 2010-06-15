@@ -97,7 +97,9 @@
         --></script>
       </tal:has_bugtasks>
 
-      <tal:has_hot_bugs condition="view/hot_bugs_info/bugtasks">
+      <tal:has_hot_bugs condition="view/hot_bugs_info/bugtasks"
+        content="cache:private, 10 minute">
+        <!-- hot_bugs_info/bugtasks cache:private 10 minute -->
         <h2>Hot bugs</h2>
 
         <table class="listing" id="hot-bugs"
