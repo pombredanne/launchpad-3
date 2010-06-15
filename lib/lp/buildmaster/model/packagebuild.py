@@ -228,12 +228,9 @@ class PackageBuildSet:
 
         extra_exprs = []
 
-        # Add query clause that filters on build status if the latter is
-        # provided.
         if status is not None:
             extra_exprs.append(BuildFarmJob.status == status)
 
-        # Add query clause that filters on pocket if the latter is provided.
         if pocket:
             extra_exprs.append(PackageBuild.pocket == pocket)
 
@@ -243,11 +240,14 @@ class PackageBuildSet:
             PackageBuild.build_farm_job == BuildFarmJob.id,
             *extra_exprs)
 
-        # Ordering according status
-        # * SUPERSEDED & All by -datecreated
-        # * FULLYBUILT & FAILURES by -datebuilt
-        # It should present the builds in a more natural order.
-        if status == BuildStatus.SUPERSEDED or status is None:
+        # When we have a set of builds that may include pending or
+        # superseded builds, we order by -date_created (as we won't
+        # always have a date_finished). Otherwise we can order by
+        # -date_finished.
+        if status is None or status in [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.SUPERSEDED]:
             result_set.order_by(
                 Desc(BuildFarmJob.date_created), BuildFarmJob.id)
         else:

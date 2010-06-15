@@ -184,8 +184,8 @@ class TestPackageBuildSet(TestPackageBuildBase):
 
     def setUp(self):
         super(TestPackageBuildSet, self).setUp()
-        joe = self.factory.makePerson(name="joe")
-        self.archive = self.factory.makeArchive(owner=joe, name="ppa")
+        person = self.factory.makePerson()
+        self.archive = self.factory.makeArchive(owner=person)
         self.package_builds = []
         self.package_builds.append(
             self.makePackageBuild(archive=self.archive,

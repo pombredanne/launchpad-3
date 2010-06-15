@@ -89,6 +89,10 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
     def test_binary_only_false(self):
         # An archive can optionally return the more general
         # package build objects.
+
+        # Until we have different IBuildFarmJob types implemented, we
+        # can only test this by creating a lone PackageBuild of a
+        # different type.
         getUtility(IPackageBuildSource).new(
             job_type=BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
             archive=self.context, pocket=PackagePublishingPocket.RELEASE)
