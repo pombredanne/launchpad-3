@@ -27,11 +27,10 @@ from zope.component import getUtility
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
 
+from lp.code.errors import ForbiddenInstruction, TooNewRecipeFormat
 from lp.code.model.branch import Branch
 from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.sourcepackagerecipe import (
-    ForbiddenInstruction, TooNewRecipeFormat)
 
 
 class InstructionType(DBEnumeratedType):

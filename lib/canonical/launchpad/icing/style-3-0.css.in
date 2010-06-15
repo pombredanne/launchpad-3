@@ -2176,6 +2176,10 @@ body.tab-bugs #portlet-subscribers .sprite {
     background-image: url(/@@/haspatch-icon.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+.tour {
+    background-image: url(/@@/tour-icon); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
 .large-branch {
     background-image: url(/@@/branch-large.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
