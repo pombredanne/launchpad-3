@@ -61,12 +61,8 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             self, 'bugtracker', self.bugtracker, IInputWidget,
             prefix=self.name, value=field.context.bugtracker,
             context=field.context)
-        if self.bugtracker_widget.extra is None:
-            self.bugtracker_widget.extra = ''
-        ## Select the corresponding radio option automatically if
-        ## the user selects a bug tracker.
-        self.bugtracker_widget.extra += (
-            ' onchange="selectWidget(\'%s.2\', event);"' % self.name)
+        self.bugtracker_widget.onKeyPress = (
+            "selectWidget('%s.2', event);" % self.name)
 
         # Upstream email address field and widget.
         ## This is to make email address bug trackers appear
