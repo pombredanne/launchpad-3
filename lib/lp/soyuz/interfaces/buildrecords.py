@@ -40,7 +40,7 @@ class IHasBuildRecords(Interface):
             description=_("The pocket into which this entry is published"),
             # Really a PackagePublishingPocket see _schema_circular_imports.
             vocabulary=DBEnumeratedType))
-    @call_with(user=REQUEST_USER)
+    @call_with(user=REQUEST_USER, binary_only=True)
     # Really a IBuild see _schema_circular_imports.
     @operation_returns_collection_of(Interface)
     @export_read_operation()

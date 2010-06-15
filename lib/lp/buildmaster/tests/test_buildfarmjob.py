@@ -15,11 +15,12 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobSource,
+    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobSet, IBuildFarmJobSource,
     InconsistentBuildFarmJobError)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.testing import login, TestCaseWithFactory
@@ -34,9 +35,13 @@ class TestBuildFarmJobBase(TestCaseWithFactory):
         super(TestBuildFarmJobBase, self).setUp()
         self.build_farm_job = self.makeBuildFarmJob()
 
-    def makeBuildFarmJob(self):
-        return getUtility(IBuildFarmJobSource).new(
-            job_type=BuildFarmJobType.PACKAGEBUILD)
+    def makeBuildFarmJob(self, builder=None,
+                         job_type=BuildFarmJobType.PACKAGEBUILD,
+                         status=BuildStatus.FULLYBUILT):
+        build_farm_job = getUtility(IBuildFarmJobSource).new(
+            job_type=job_type, status=status)
+        removeSecurityProxy(build_farm_job).builder = builder
+        return build_farm_job
 
 
 class TestBuildFarmJob(TestBuildFarmJobBase):
@@ -182,6 +187,41 @@ class TestBuildFarmJobSecurity(TestBuildFarmJobBase):
         self.build_farm_job.status = BuildStatus.FULLYBUILT
         self.failUnlessEqual(
             BuildStatus.FULLYBUILT, self.build_farm_job.status)
+
+
+class TestBuildFarmJobSet(TestBuildFarmJobBase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBuildFarmJobSet, self).setUp()
+        self.builder = self.factory.makeBuilder()
+        self.build_farm_jobs = []
+        self.build_farm_jobs.append(
+            self.makeBuildFarmJob(builder=self.builder))
+        self.build_farm_jobs.append(self.makeBuildFarmJob(
+            builder=self.builder,
+            job_type=BuildFarmJobType.RECIPEBRANCHBUILD))
+        self.build_farm_jobs.append(self.makeBuildFarmJob(
+            builder=self.builder, status=BuildStatus.BUILDING))
+
+        self.build_farm_job_set = getUtility(IBuildFarmJobSet)
+
+    def test_getBuildsForBuilder_all(self):
+        # The default call without arguments returns all builds for the
+        # builder, and not those for other builders.
+        self.makeBuildFarmJob(builder=self.factory.makeBuilder())
+        self.assertContentEqual(
+            self.build_farm_jobs, self.build_farm_job_set.getBuildsForBuilder(
+                self.builder))
+
+    def test_getBuildsForBuilder_by_status(self):
+        # If the status arg is used, the results will be filtered by
+        # status.
+        self.assertContentEqual(
+            self.build_farm_jobs[:2],
+            self.build_farm_job_set.getBuildsForBuilder(
+                self.builder, status=BuildStatus.FULLYBUILT))
 
 
 def test_suite():

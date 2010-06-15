@@ -33,7 +33,8 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob, IBuildFarmJobOld,
-    IBuildFarmJobSource, InconsistentBuildFarmJobError, ISpecificBuildFarmJob)
+    IBuildFarmJobSet, IBuildFarmJobSource,
+    InconsistentBuildFarmJobError, ISpecificBuildFarmJob)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 
 
@@ -342,3 +343,13 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
 class BuildFarmJobDerived:
     implements(IBuildFarmJob)
     delegates(IBuildFarmJob, context='build_farm_job')
+
+
+class BuildFarmJobSet:
+    implements(IBuildFarmJobSet)
+
+    def getBuildsForBuilder(self, builder_id, status=None, name=None,
+                            arch_tag=None):
+        """See `IBuildFarmJobSet`."""
+        return None
+
