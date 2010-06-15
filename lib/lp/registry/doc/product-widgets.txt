@@ -124,7 +124,7 @@ Launchpad.
 
     >>> form = {
     ...     'field.bugtracker': 'malone',
-    ...     'field.bugtracker.bugtracker': '3',
+    ...     'field.bugtracker.bugtracker': 'debbugs',
     ...     }
     >>> widget = ProductBugTrackerWidget(
     ...     product_bugtracker, product_bugtracker.vocabulary,
@@ -137,8 +137,6 @@ Launchpad.
 The bugtracker value passed to the widget caused the sub-widget used to select
 the bug tracker to have the correct value.
 
-    >>> widget.bugtracker_widget.getInputValue().id
-    3
     >>> print widget.bugtracker_widget.getInputValue().name
     debbugs
 

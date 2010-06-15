@@ -33,11 +33,10 @@ from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerSet, ILaunchBag)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.vocabularies.dbobjects import (
-    WebBugTrackerVocabulary)
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import (
-    CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
+    CheckBoxMatrixWidget, LaunchpadRadioWidget)
+from canonical.widgets.popup import  VocabularyPickerWidget
 from canonical.widgets.textwidgets import (
     LowerCaseTextWidget, StrippedTextWidget)
 from lp.registry.interfaces.product import IProduct
@@ -55,9 +54,9 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
 
         # Bug tracker widget.
         self.bugtracker = Choice(
-            vocabulary=WebBugTrackerVocabulary(),
+            vocabulary="WebBugTracker",
             __name__='bugtracker')
-        self.bugtracker_widget = CustomWidgetFactory(LaunchpadDropdownWidget)
+        self.bugtracker_widget = CustomWidgetFactory(VocabularyPickerWidget)
         setUpWidget(
             self, 'bugtracker', self.bugtracker, IInputWidget,
             prefix=self.name, value=field.context.bugtracker,
