@@ -151,7 +151,7 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
             False, select all builds that are not pending.
         """
 
-    def getLastBuild(self):
+    def getLastBuild():
         """Return the the most recent build of this recipe."""
 
     def destroySelf():

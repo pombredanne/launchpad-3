@@ -22,6 +22,7 @@ from canonical.testing.layers import (
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.testing import verifyObject
 from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.tests.test_buildbase import (
@@ -66,6 +67,10 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         spb = self.makeSourcePackageRecipeBuild()
         self.assertProvides(spb, IBuildBase)
         self.assertProvides(spb, ISourcePackageRecipeBuild)
+
+    def test_implements_interface(self):
+        build = self.makeSourcePackageRecipeBuild()
+        verifyObject(ISourcePackageRecipeBuild, build)
 
     def test_saves_record(self):
         # A source package recipe build can be stored in the database

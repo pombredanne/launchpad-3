@@ -24,6 +24,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
 
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.testing import verifyObject
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled, ArchivePurpose, CannotUploadToArchive,
     InvalidPocketForPPA)
@@ -52,6 +53,11 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     """Tests for `SourcePackageRecipe` objects."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_implements_interface(self):
+        """SourcePackageRecipe implements ISourcePackageRecipe."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        verifyObject(ISourcePackageRecipe, recipe)
 
     def makeSourcePackageRecipeFromBuilderRecipe(self, builder_recipe):
         """Make a SourcePackageRecipe from a recipe with arbitrary other data.
