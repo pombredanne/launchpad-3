@@ -928,8 +928,11 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
              'person': activity_dict[0]['activity'][0].person}
             for date, activity_dict in self.activity_by_date.items()]
 
+        comments = []
+        comments.extend(self.visible_oldest_comments_for_display)
+        comments.extend(self.visible_newest_comments_for_display)
         activity_and_comments = []
-        for comment in self.visible_comments_for_display:
+        for comment in comments:
             # Check to see if there are any activities for this
             # comment's datecreated.
             activity_for_comment = []
@@ -967,8 +970,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         return get_visible_comments(self.comments)
 
     @cachedproperty
-    def visible_comments_for_display(self):
-        """The list of visible comments to be rendered.
+    def visible_oldest_comments_for_display(self):
+        """The list of oldest visible comments to be rendered.
 
         This considers truncating the comment list if there are tons
         of comments, but also obeys any explicitly requested ways to
@@ -979,14 +982,42 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         if show_all or len(self.visible_comments) <= max_comments:
             return self.visible_comments
         else:
+            oldest_count = config.malone.comments_list_truncate_oldest_to
+            return self.visible_comments[:oldest_count]
+
+    @cachedproperty
+    def visible_newest_comments_for_display(self):
+        """The list of newest visible comments to be rendered.
+
+        If the number of comments is beyond the maximum threshold,
+        this returns the newest few comments.  If we're under the
+        threshold this will return an empty set.
+        """
+        show_all = (self.request.form_ng.getOne('comments') == 'all')
+        max_comments = config.malone.comments_list_max_length
+        total_count = len(self.visible_comments)
+        if show_all or total_count <= max_comments:
+            return []
+        else:
+            newest_count = config.malone.comments_list_truncate_newest_to
+            return self.visible_comments[total_count-newest_count:total_count]
+
+    @cachedproperty
+    def visible_comments_for_display(self):
+        """Deprecated"""
+        show_all = (self.request.form_ng.getOne('comments') == 'all')
+        max_comments = config.malone.comments_list_max_length
+        if show_all or len(self.visible_comments) <= max_comments:
+            return self.visible_comments
+        else:
             truncate_to = config.malone.comments_list_truncate_to
             return self.visible_comments[:truncate_to]
 
     @property
     def visible_comments_truncated_for_display(self):
-        """Wether the visible comment list truncated for display."""
+        """Whether the visible comment list truncated for display."""
         return (len(self.visible_comments) >
-                len(self.visible_comments_for_display))
+                len(self.visible_oldest_comments_for_display))
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
