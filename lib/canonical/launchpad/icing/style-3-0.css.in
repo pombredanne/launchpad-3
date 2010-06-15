@@ -747,6 +747,9 @@ button {
 .fieldRequired, .fieldOptional {
     color: #999;
     }
+.field.subordinate {
+    margin-left: 2.6em;
+    }
 .formHelp {
     margin: 0.2em 0 0.5em 0.2em;
     color: #777;

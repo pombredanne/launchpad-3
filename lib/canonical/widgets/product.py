@@ -15,6 +15,7 @@ import cgi
 import math
 
 from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget
@@ -23,6 +24,8 @@ from zope.component import getUtility
 from zope.schema import Choice, Text
 
 from z3c.ptcompat import ViewPageTemplateFile
+
+from lazr.restful.interface import copy_field
 
 from canonical.launchpad.browser.widgets import DescriptionWidget
 from canonical.launchpad.fields import StrippedTextLine
@@ -37,6 +40,7 @@ from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
 from canonical.widgets.textwidgets import (
     LowerCaseTextWidget, StrippedTextWidget)
+from lp.registry.interfaces.product import IProduct
 
 
 class ProductBugTrackerWidget(LaunchpadRadioWidget):
@@ -232,6 +236,24 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
     def renderValue(self, value):
         # Render the items with subordinate fields and support markup.
         self.bug_trackers = dict(self.renderItems(value))
+        self.product = self.context.context
+        # The view must also use GhostWidget for the 'remote_product' field.
+        self.remote_product = copy_field(IProduct['remote_product'])
+        self.remote_product_widget = CustomWidgetFactory(TextWidget)
+        setUpWidget(
+            self, 'remote_product', self.remote_product, IInputWidget,
+            prefix='field', value=self.product.remote_product,
+            context=self.product)
+        # The view must also use GhostWidget for the 'enable_bug_expiration'
+        # field.
+        self.enable_bug_expiration = copy_field(
+            IProduct['enable_bug_expiration'])
+        self.enable_bug_expiration_widget = CustomWidgetFactory(
+            CheckBoxWidget)
+        setUpWidget(
+            self, 'enable_bug_expiration', self.enable_bug_expiration,
+            IInputWidget, prefix='field',
+            value=self.product.enable_bug_expiration, context=self.product)
         return self.template()
 
 

@@ -3,13 +3,17 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
+
+
   <div tal:content="structure view/bug_trackers/launchpad" />
-  <div class="subordinate">
-  [ ] expire incomplete bugs when the become inactive
+  <div class="field subordinate">
+    <input  tal:replace="structure view/enable_bug_expiration_widget" />
+    expire incomplete bugs when the become inactive
   </div>
   <div tal:content="structure view/bug_trackers/external_bugtracker" />
-  <div class="subordinate">
-  [ &nbsp; &nbsp; &nbsp; &nbsp; ] Project ID in external bug tracker
+  <div class="field subordinate">
+    Project ID in bug tracker:
+    <input  tal:replace="structure view/remote_product_widget" />
   </div>
   <div tal:content="structure view/bug_trackers/external_email" />
   <div tal:content="structure view/bug_trackers/unknown" />
