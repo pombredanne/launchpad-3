@@ -8,7 +8,7 @@
   <div tal:content="structure view/bug_trackers/launchpad" />
   <div class="field subordinate">
     <input  tal:replace="structure view/enable_bug_expiration_widget" />
-    expire incomplete bugs when the become inactive
+    Expire incomplete bugs when the become inactive
   </div>
   <div tal:content="structure view/bug_trackers/external_bugtracker" />
   <div class="field subordinate">
