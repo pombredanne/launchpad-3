@@ -366,7 +366,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
                 'The bzr-builder instruction "run" is not permitted here.')
             return
         except NoSuchBranch, e:
-            self.setFieldError('recipe_text', 'Unknown branch: %s.' % e.name)
+            self.setFieldError(
+                'recipe_text', '%s is not a branch on Launchpad.' % e.name)
             return
 
         self.next_url = canonical_url(source_package_recipe)

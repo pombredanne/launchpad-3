@@ -200,7 +200,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         # branch location, they should get an error.
         browser = self.createRecipe(MINIMAL_RECIPE_TEXT % 'foo')
         self.assertEqual(
-            get_message_text(browser, 1), 'Unknown branch: foo.')
+            get_message_text(browser, 1), 'foo is not a branch on Launchpad.')
 
     def test_create_recipe_bad_instruction_branch(self):
         # If a user tries to create source package recipe with a bad
@@ -213,7 +213,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         recipe += 'nest packaging foo debian'
         browser = self.createRecipe(recipe, branch)
         self.assertEqual(
-            get_message_text(browser, 1), 'Unknown branch: foo.')
+            get_message_text(browser, 1), 'foo is not a branch on Launchpad.')
 
     def test_create_dupe_recipe(self):
         # You shouldn't be able to create a duplicate recipe owned by the same
