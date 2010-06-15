@@ -73,8 +73,9 @@ def get_binary_build_for_build_farm_job(build_farm_job):
         return None
 
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    resulting_tuple =  store.find(
-        (BinaryPackageBuild, PackageBuild, BuildFarmJob),
+    find_spec = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
+    resulting_tuple = store.find(
+        find_spec,
         BinaryPackageBuild.package_build == PackageBuild.id,
         PackageBuild.build_farm_job == BuildFarmJob.id,
         BuildFarmJob.id == build_farm_job.id).one()

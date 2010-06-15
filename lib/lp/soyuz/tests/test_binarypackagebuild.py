@@ -32,7 +32,7 @@ from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import record_statements, TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 
 
 class TestBinaryPackageBuild(TestCaseWithFactory):
@@ -152,13 +152,10 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
 
         binary_package_build = IBinaryPackageBuild(build_farm_job)
 
-        package_build, statements = record_statements(
-            getattr, binary_package_build, 'package_build')
-        self.failUnlessEqual(0, len(statements))
-
-        build_farm_job, statements = record_statements(
-            getattr, package_build, 'build_farm_job')
-        self.failUnlessEqual(0, len(statements))
+        self.assertStatementCount(
+            0, getattr, binary_package_build, "package_build")
+        self.assertStatementCount(
+            0, getattr, binary_package_build, "build_farm_job")
 
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):

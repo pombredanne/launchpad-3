@@ -509,6 +509,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):
+        """See `IHasBuildRecords`"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now and this method only returns records for SPRs in a
@@ -518,7 +519,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # binary_only parameter as a source package can only have
         # binary builds.
 
-        """See `IHasBuildRecords`"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
 
