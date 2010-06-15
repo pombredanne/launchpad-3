@@ -712,6 +712,12 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
 
         raise NotFoundError(filename)
 
+    def getSpecificJob(self):
+        """See `IBuildFarmJob`."""
+        # If we are asked to adapt an object that is already a binary
+        # package build, then don't hit the db.
+        return self
+
 
 class BinaryPackageBuildSet:
     implements(IBinaryPackageBuildSet)
