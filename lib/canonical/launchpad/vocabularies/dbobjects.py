@@ -229,7 +229,7 @@ class BugVocabulary(SQLObjectVocabularyBase):
 
 
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
-    """All web and email based exteranl bug trackers."""
+    """All web and email based external bug trackers."""
     implements(IHugeVocabulary)
     _table = BugTracker
     _orderBy = 'title'

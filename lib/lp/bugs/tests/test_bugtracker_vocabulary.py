@@ -28,9 +28,9 @@ class TestWebBugTrackerVocabulary(TestCaseWithFactory):
         # Verify the data in the term.
         bug_tracker = self.factory.makeBugTracker()
         login_person(bug_tracker.owner)
-        bug_tracker.name = 'weezle'
-        bug_tracker.title = 'The Weezle Bug Tracker'
-        [term] = self.vocab.searchForTerms('weezle')
+        bug_tracker.name = 'weasel'
+        bug_tracker.title = 'The Weasel Bug Tracker'
+        [term] = self.vocab.searchForTerms('weasel')
         self.assertEqual(bug_tracker, term.value)
         self.assertEqual(bug_tracker.name, term.token)
         self.assertEqual(bug_tracker.title, term.title)
@@ -69,10 +69,10 @@ class TestWebBugTrackerVocabulary(TestCaseWithFactory):
         self.assertEqual([bug_tracker], bug_trackers)
 
     def test_search_summary(self):
-        # Verify that queries match summar text.
+        # Verify that queries match summary text.
         bug_tracker = self.factory.makeBugTracker()
         login_person(bug_tracker.owner)
-        bug_tracker.summary = 'A badger is a member of the weezle family.'
+        bug_tracker.summary = 'A badger is a member of the weasel family.'
         bug_trackers = self.searchForBugTrackers('badger')
         self.assertEqual([bug_tracker], bug_trackers)
 
