@@ -428,6 +428,8 @@ class Publisher(object):
         """
         if self.archive.is_ppa:
             return self.archive.displayname
+        elif self.archive.purpose == ArchivePurpose.PARTNER:
+            return "Partner archive"
         else:
             return self.distro.displayname
 
@@ -443,6 +445,8 @@ class Publisher(object):
         """
         # XXX al-maisan, 2008-11-19, bug=299981. If this file is released
         # from a copy archive then modify the origin to indicate so.
+        if self.archive.purpose == ArchivePurpose.PARTNER:
+            return "Canonical"
         if not self.archive.is_ppa:
             return self.distro.displayname
         return "LP-PPA-%s" % get_ppa_reference(self.archive)

@@ -3,6 +3,8 @@
 
 """Test Build features."""
 
+from datetime import datetime, timedelta
+import pytz
 import unittest
 
 from storm.store import Store
@@ -61,6 +63,34 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.failUnlessEqual(self.build.is_virtualized, bq.virtualized)
         self.failIfEqual(None, bq.processor)
         self.failUnless(bq, self.build.buildqueue_record)
+
+    def test_estimateDuration(self):
+        # Without previous builds, a negligable package size estimate is 60s
+        self.assertEqual(60, self.build.estimateDuration().seconds)
+
+    def create_previous_build(self, duration):
+        spr = self.build.source_package_release
+        build = spr.createBuild(
+            distro_arch_series=self.build.distro_arch_series,
+            archive=spr.upload_archive, pocket=spr.package_upload.pocket)
+        build.status = BuildStatus.FULLYBUILT
+        now = datetime.now(pytz.UTC)
+        build.date_finished = now
+        build.date_started = now - timedelta(seconds=duration)
+        return build
+
+    def test_estimateDuration_with_history(self):
+        # Previous builds of the same source are used for estimates.
+        self.create_previous_build(335)
+        self.assertEqual(335, self.build.estimateDuration().seconds)
+
+    def test_estimateDuration_with_bad_history(self):
+        # If the latest matching build has bad data, ignore it.
+        # See bug 589068.
+        previous_build = self.create_previous_build(335)
+        previous_build.date_started = None
+        self.assertEqual(60, self.build.estimateDuration().seconds)
+
 
     def addFakeBuildLog(self):
         lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')

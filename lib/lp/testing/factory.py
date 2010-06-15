@@ -1092,7 +1092,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
-                date_created=None, description=None, comment=None):
+                date_created=None, description=None, comment=None,
+                status=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -1114,7 +1115,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             comment = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, private=private,
-            datecreated=date_created, description=description)
+            datecreated=date_created, description=description,
+            status=status)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
@@ -1763,8 +1765,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         return parser.parse()
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
-                                distroseries=None, name=None, description=None,
-                                branches=()):
+                                distroseries=None, name=None,
+                                description=None, branches=(),
+                                build_daily=False, daily_build_archive=None):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -1780,16 +1783,20 @@ class LaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString().decode('utf8')
         if description is None:
             description = self.getUniqueString().decode('utf8')
+        if daily_build_archive is None:
+            daily_build_archive = self.makeArchive(
+                distribution=distroseries.distribution, owner=owner)
         recipe = self.makeRecipe(*branches)
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            registrant, owner, [distroseries], name, recipe, description)
+            registrant, owner, name, recipe, description, [distroseries],
+            daily_build_archive, build_daily)
         IStore(source_package_recipe).flush()
         return source_package_recipe
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
                                      sourcename=None, distroseries=None,
-                                     pocket=None,
+                                     pocket=None, date_created=None,
                                      status=BuildStatus.NEEDSBUILD):
         """Make a new SourcePackageRecipeBuild."""
         if recipe is None:
@@ -1806,7 +1813,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             recipe=recipe,
             archive=archive,
             requester=requester,
-            pocket=pocket)
+            pocket=pocket,
+            date_created=date_created)
         removeSecurityProxy(spr_build).buildstate = status
         return spr_build
 
@@ -2179,7 +2187,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         else:
             archive = source_package_release.upload_archive
         if source_package_release is None:
-            source_package_release = self.makeSourcePackageRelease(archive)
+            multiverse = self.makeComponent(name='multiverse')
+            source_package_release = self.makeSourcePackageRelease(
+                archive, component=multiverse)
         processor = self.makeProcessor()
         if distroarchseries is None:
             distroarchseries = self.makeDistroArchSeries(

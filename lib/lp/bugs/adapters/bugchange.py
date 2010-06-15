@@ -373,7 +373,7 @@ class BugDuplicateChange(AttributeChange):
             else:
                 old_value_text = (
                     "** This bug is no longer a duplicate of bug %d\n"
-                    "   %s\n")
+                    "   %s" % (self.old_value.id, self.old_value.title))
             if self.new_value.private:
                 new_value_text = (
                     "** This bug has been marked a duplicate of private bug "

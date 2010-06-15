@@ -29,15 +29,16 @@ from lp.soyuz.interfaces.archive import (
     InvalidPocketForPPA)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.code.errors import (
+    ForbiddenInstruction, TooManyBuilds, TooNewRecipeFormat)
 from lp.code.interfaces.sourcepackagerecipe import (
-    ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
-    TooNewRecipeFormat, MINIMAL_RECIPE_TEXT)
+    ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
 from lp.code.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildJob)
 from lp.code.model.sourcepackagerecipe import (
-    NonPPABuildRequest)
+    NonPPABuildRequest, SourcePackageRecipe)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
@@ -251,6 +252,51 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertRaises(ArchiveDisabled, recipe.requestBuild, ppa,
                 ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
 
+    def test_requestBuildScore(self):
+        """Normal build requests have a relatively low queue score (900)."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = recipe.requestBuild(recipe.daily_build_archive,
+            recipe.owner, list(recipe.distroseries)[0],
+            PackagePublishingPocket.RELEASE)
+        queue_record = build.buildqueue_record
+        queue_record.score()
+        self.assertEqual(900, queue_record.lastscore)
+
+    def test_requestBuildManualScore(self):
+        """Normal build requests have a higher queue score (1000)."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = recipe.requestBuild(recipe.daily_build_archive,
+            recipe.owner, list(recipe.distroseries)[0],
+            PackagePublishingPocket.RELEASE, manual=True)
+        queue_record = build.buildqueue_record
+        queue_record.score()
+        self.assertEqual(1000, queue_record.lastscore)
+
+    def test_requestBuildHonoursConfig(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        (distroseries,) = list(recipe.distroseries)
+        ppa = self.factory.makeArchive()
+        self.pushConfig('build_from_branch', enabled=False)
+        self.assertRaises(
+            ValueError, recipe.requestBuild, ppa, ppa.owner, distroseries,
+            PackagePublishingPocket.RELEASE)
+
+    def test_requestBuildRejectsOverQuota(self):
+        """Build requests that exceed quota raise an exception."""
+        requester = self.factory.makePerson(name='requester')
+        recipe = self.factory.makeSourcePackageRecipe(
+            name=u'myrecipe', owner=requester)
+        series = list(recipe.distroseries)[0]
+        archive = self.factory.makeArchive(owner=requester)
+        def request_build():
+            recipe.requestBuild(archive, requester, series,
+                    PackagePublishingPocket.RELEASE)
+        [request_build() for num in range(5)]
+        e = self.assertRaises(TooManyBuilds, request_build)
+        self.assertIn(
+            'You have exceeded your quota for recipe requester/myrecipe',
+            str(e))
+
     def test_sourcepackagerecipe_description(self):
         """Ensure that the SourcePackageRecipe has a proper description."""
         description = u'The whoozits and whatzits.'
@@ -327,6 +373,37 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.destroySelf()
         # Show no database constraints were violated
         Store.of(recipe).flush()
+
+    def test_findStaleDailyBuilds_requires_build_daily(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        self.assertContentEqual(
+            [], SourcePackageRecipe.findStaleDailyBuilds())
+        removeSecurityProxy(recipe).build_daily = True
+        self.assertEqual([recipe],
+            [sprd.sourcepackage_recipe for sprd
+             in SourcePackageRecipe.findStaleDailyBuilds()])
+
+    def test_findStaleDailyBuilds_for_modified_base_branch(self):
+        recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
+        now = self.factory.getUniqueDate()
+        self.assertEqual([recipe],
+            [sprd.sourcepackage_recipe for sprd
+             in SourcePackageRecipe.findStaleDailyBuilds()])
+        recipe.base_branch.date_last_modified = now - timedelta(hours=1)
+        build = recipe.requestBuild(
+            archive=recipe.daily_build_archive, requester=recipe.owner,
+            distroseries=list(recipe.distroseries)[0],
+            pocket=PackagePublishingPocket.RELEASE)
+        removeSecurityProxy(build).datebuilt = now
+        self.assertContentEqual(
+            [], SourcePackageRecipe.findStaleDailyBuilds())
+        distro2 = self.factory.makeDistroSeries()
+        distro3 = self.factory.makeDistroSeries()
+        recipe.distroseries.add(distro2)
+        recipe.distroseries.add(distro3)
+        self.assertContentEqual(set([(recipe, distro2), (recipe, distro3)]),
+            set((sprd.sourcepackage_recipe, sprd.distroseries) for sprd
+                in SourcePackageRecipe.findStaleDailyBuilds()))
 
     def test_getMedianBuildDuration(self):
         recipe = removeSecurityProxy(self.factory.makeSourcePackageRecipe())
@@ -558,8 +635,8 @@ class TestWebservice(TestCaseWithFactory):
         distroseries = ws_object(launchpad, db_distroseries)
         ws_owner = ws_object(launchpad, owner)
         recipe = ws_owner.createRecipe(
-            name='toaster-1', description='a recipe',
-            distroseries=[distroseries.self_link], recipe_text=recipe_text)
+            name='toaster-1', description='a recipe', recipe_text=recipe_text,
+            distroseries=[distroseries.self_link])
         # at the moment, distroseries is not exposed in the API.
         transaction.commit()
         db_recipe = owner.getRecipe(name=u'toaster-1')

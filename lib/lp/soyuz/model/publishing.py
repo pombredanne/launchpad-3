@@ -574,7 +574,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             distro_arch_series=arch, archive=self.archive, pocket=self.pocket)
         # Create the builds in suspended mode for disabled archives.
         build_queue = build.queueBuild(suspended=not self.archive.enabled)
-        build_queue.score()
         Store.of(build).flush()
 
         if logger is not None:
