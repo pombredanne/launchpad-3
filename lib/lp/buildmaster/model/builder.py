@@ -429,7 +429,7 @@ class Builder(SQLBase):
     # of the options.
 
     def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
-                        user=None):
+                        user=None, binary_only=True):
         """See IHasBuildRecords."""
         return getUtility(IBinaryPackageBuildSet).getBuildsForBuilder(
             self.id, build_state, name, arch_tag, user)
