@@ -228,7 +228,7 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/bugs/filebug_dupefinder.js">
+            tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js">
     </script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
