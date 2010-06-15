@@ -782,7 +782,7 @@ class FileBugViewBase(LaunchpadFormView):
 
     def getAcknowledgementMessage(self, context):
         """An acknowlegement message displayed to the user."""
-        # If a given context has not a custom message, we go up in the
+        # If a given context doesnot have a custom message, we go up in the
         # "object hierachy" until we find one. If no cusotmized messages
         # exist for any conext, a default message is returned.
         #
