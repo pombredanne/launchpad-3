@@ -31,15 +31,11 @@
                 tal:define="lp_js string:${icingroot}/build"
                 tal:attributes="src string:${lp_js}/lp/errors.js">
         </script>
-        <script type="text/javascript"
-                tal:define="lp_js string:${icingroot}/build"
-                tal:attributes="src string:${lp_js}/code/popupdiff.js">
-        </script>
       </tal:devmode>
       <script type="text/javascript">
-        LPS.use('base', 'node', 'oop', 'event', 'bugs.bugtask_index',
+        LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
                   'lp.code.branchmergeproposal.diff', function(Y) {
-            Y.bugs.setup_bugtask_index();
+            Y.lp.bugs.bugtask_index.setup_bugtask_index();
             Y.on('load', function(e) {
               Y.lp.code.branchmergeproposal.diff.connect_diff_links();
             }, window);
