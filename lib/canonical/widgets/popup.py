@@ -180,6 +180,35 @@ class PersonPickerWidget(VocabularyPickerWidget):
         return '/people/'
 
 
+class BugTrackerPickerWidget(VocabularyPickerWidget):
+    include_create_team_link = False
+
+    def chooseLink(self):
+        link = super(BugTrackerPickerWidget, self).chooseLink()
+        link += ('or (<a id="nbt" href="/bugs/bugtrackers/+newbugtracker">'
+                     'Register an external bug tracker&hellip;</a>)'
+                    '''
+            <script>
+            LPS.use('lp.bugs.bugtracker_overlay', function(Y) {
+                setup_bugtracker_popup = function(config) {
+                    if (Y.UA.ie) {
+                        return;
+                    }
+                    Y.on('domready', function () {
+                        Y.lp.registry.bugtracker_overlay.attach_widget(config);
+                    });
+                };
+            });
+            </script>
+            <script tal:content="string: setup_bugtracker({activate_node: Y.get('#nbt'), next_step: function() { alert('next step'); });" />
+            ''')
+        return link
+
+    @property
+    def nonajax_uri(self):
+        return '/bugs/bugtrackers/'
+
+
 class SearchForUpstreamPopupWidget(VocabularyPickerWidget):
     """A SinglePopupWidget with a custom error message.
 

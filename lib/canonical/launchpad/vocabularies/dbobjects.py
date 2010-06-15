@@ -229,6 +229,7 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
 
     _table = BugTracker
     _orderBy = 'title'
+    displayname = 'Select a bug tracker'
 
 
 class WebBugTrackerVocabulary(BugTrackerVocabulary):

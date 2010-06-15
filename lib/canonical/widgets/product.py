@@ -34,7 +34,8 @@ from canonical.launchpad.vocabularies.dbobjects import (
     WebBugTrackerVocabulary)
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import (
-    CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
+    CheckBoxMatrixWidget, LaunchpadRadioWidget)
+from canonical.widgets.popup import BugTrackerPickerWidget
 from canonical.widgets.textwidgets import (
     LowerCaseTextWidget, StrippedTextWidget)
 
@@ -50,9 +51,9 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
 
         # Bug tracker widget.
         self.bugtracker = Choice(
-            vocabulary=WebBugTrackerVocabulary(),
+            vocabulary='WebBugTracker',
             __name__='bugtracker')
-        self.bugtracker_widget = CustomWidgetFactory(LaunchpadDropdownWidget)
+        self.bugtracker_widget = CustomWidgetFactory(BugTrackerPickerWidget)
         setUpWidget(
             self, 'bugtracker', self.bugtracker, IInputWidget,
             prefix=self.name, value=field.context.bugtracker,
