@@ -15,6 +15,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
@@ -23,7 +24,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob, IBuildFarmJobSet, IBuildFarmJobSource,
     InconsistentBuildFarmJobError)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.testing import login, TestCaseWithFactory
+from lp.testing import login, login_person, TestCaseWithFactory
 
 
 class TestBuildFarmJobBase(TestCaseWithFactory):
@@ -222,6 +223,45 @@ class TestBuildFarmJobSet(TestBuildFarmJobBase):
             self.build_farm_jobs[:2],
             self.build_farm_job_set.getBuildsForBuilder(
                 self.builder, status=BuildStatus.FULLYBUILT))
+
+    def makeBuildPrivate(self, build):
+        """Helper to privatise a package build."""
+        removeSecurityProxy(build.archive).buildd_secret = "blah"
+        removeSecurityProxy(build.archive).private = True
+
+    def test_getBuildsForBuilder_hides_private_from_anon(self):
+        # If no user is passed, all private builds are filtered out.
+        binary_package_build = self.factory.makeBinaryPackageBuild()
+        removeSecurityProxy(binary_package_build).builder = self.builder
+        owning_team = self.factory.makeTeam()
+        removeSecurityProxy(binary_package_build.archive).owning_team = owning_team
+
+        # While it is public the new build is included in the result set.
+        result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
+        self.assertTrue(binary_package_build.build_farm_job in result)
+
+        # When private it is not included for anon requests.
+        self.makeBuildPrivate(binary_package_build)
+        result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
+        self.assertTrue(binary_package_build.build_farm_job not in result)
+
+        # Neither is it included for authenticated requests for non
+        # owners.
+        result = self.build_farm_job_set.getBuildsForBuilder(
+            self.builder, user=self.factory.makePerson())
+        self.assertTrue(binary_package_build.build_farm_job not in result)
+
+        # But if the user is an admin they can see it.
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        result = self.build_farm_job_set.getBuildsForBuilder(
+            self.builder, user=admin_team.teamowner)
+        self.assertTrue(binary_package_build.build_farm_job in result)
+
+
+        # Similarly, if the user is in the owning team they can see it.
+        # result = self.build_farm_job_set.getBuildsForBuilder(
+        #     self.builder, user=binary_package_build.archive.owner.teamowner)
+        # self.assertTrue(binary_package_build.build_farm_job in result)
 
 
 def test_suite():

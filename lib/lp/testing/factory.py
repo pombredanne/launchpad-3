@@ -2174,18 +2174,21 @@ class LaunchpadObjectFactory(ObjectFactory):
             source_package_recipe_build=source_package_recipe_build)
 
     def makeBinaryPackageBuild(self, source_package_release=None,
-            distroarchseries=None):
+            distroarchseries=None, archive=None):
         """Create a BinaryPackageBuild.
 
-        If supplied, the source_package_release is used to determine archive.
+        If archive is not supplied, the source_package_release is used
+        to determine archive.
         :param source_package_release: The SourcePackageRelease this binary
             build uses as its source.
         :param distroarchseries: The DistroArchSeries to use.
+        :param archive: The Archive to use.
         """
-        if source_package_release is None:
-            archive = self.makeArchive()
-        else:
-            archive = source_package_release.upload_archive
+        if archive is None:
+            if source_package_release is None:
+                archive = self.makeArchive()
+            else:
+                archive = source_package_release.upload_archive
         if source_package_release is None:
             multiverse = self.makeComponent(name='multiverse')
             source_package_release = self.makeSourcePackageRelease(

@@ -296,16 +296,11 @@ class IBuildFarmJobSource(Interface):
 class IBuildFarmJobSet(Interface):
     """A utility representing a set of package builds."""
 
-    def getBuildsForBuilder(builder_id, status=None, name=None,
-                            arch_tag=None):
+    def getBuildsForBuilder(builder_id, status=None, user=None):
         """Return `IBuildFarmJob` records touched by a builder.
 
         :param builder_id: The id of the builder for which to find builds.
         :param status: If status is provided, only builds with that status
             will be returned.
-        :param name: If name is provided, only builds which correspond to a
-            matching sourcepackagename will be returned (SQL LIKE).
-        :param arch_tag: If arch_tag is provided, only builds for that
-            architecture will be returned.
         :return: a `ResultSet` representing the requested builds.
         """

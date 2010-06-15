@@ -26,6 +26,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
@@ -348,8 +349,70 @@ class BuildFarmJobDerived:
 class BuildFarmJobSet:
     implements(IBuildFarmJobSet)
 
-    def getBuildsForBuilder(self, builder_id, status=None, name=None,
-                            arch_tag=None):
+    def getBuildsForBuilder(self, builder_id, status=None, user=None):
         """See `IBuildFarmJobSet`."""
-        return None
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        filtered_builds = store.find(
+            BuildFarmJob,
+            BuildFarmJob.builder == builder_id)
+
+        if status is not None:
+            filtered_builds = filtered_builds.find(
+                BuildFarmJob.status == status)
+
+        # We need to ensure that we don't include any private builds.
+        # Currently only package builds can be private (via their
+        # related archive.)
+        # XXX Would this be possible/more efficient as a LJoin?
+        from lp.buildmaster.model.packagebuild import PackageBuild
+        from lp.soyuz.model.archive import Archive
+        if user is not None:
+            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+                hidden_builds = store.find(
+                    BuildFarmJob,
+                    PackageBuild.build_farm_job == BuildFarmJob.id,
+                    PackageBuild.archive == Archive.id,
+                    Archive.private == True)
+                filtered_builds = filtered_builds.difference(hidden_builds)
+
+        else:
+            hidden_builds = store.find(
+                BuildFarmJob,
+                PackageBuild.build_farm_job == BuildFarmJob.id,
+                PackageBuild.archive == Archive.id,
+                Archive.private == True)
+            filtered_builds = filtered_builds.difference(hidden_builds)
+
+
+
+        return filtered_builds
+
+        # queries = []
+        # clauseTables = []
+
+        # self.handleOptionalParamsForBuildQueries(
+        #     queries, clauseTables, status, name, pocket=None,
+        #     arch_tag=arch_tag)
+
+        # # This code MUST match the logic in the Build security adapter,
+        # # otherwise users are likely to get 403 errors, or worse.
+        # queries.append("Archive.id = PackageBuild.archive")
+        # clauseTables.append('Archive')
+        # if user is not None:
+        #     if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+        #         queries.append("""
+        #         (Archive.private = FALSE
+        #          OR %s IN (SELECT TeamParticipation.person
+        #                FROM TeamParticipation
+        #                WHERE TeamParticipation.person = %s
+        #                    AND TeamParticipation.team = Archive.owner)
+        #         )""" % sqlvalues(user, user))
+        # else:
+        #     queries.append("Archive.private = FALSE")
+
+        # queries.append("builder=%s" % builder_id)
+
+        # return BinaryPackageBuild.select(
+        #     " AND ".join(queries), clauseTables=clauseTables,
+        #     orderBy=["-BuildFarmJob.date_finished", "id"])
 
