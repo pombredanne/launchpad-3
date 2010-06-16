@@ -433,12 +433,12 @@ for which the uploader must have explicit permissions (bug 589073).
     >>> commit()
 
     >>> addr = sig_file.parseAddress("Foo <foo@canonical.com>")
-    >>> addr['person'].creation_rationale.name
-    'UNKNOWN'
+    >>> print addr['person'].creation_rationale.name
+    UNKNOWN
     >>> commit()
 
-    >>> addr['email']
-    'foo@canonical.com'
+    >>> print addr['email']
+    foo@canonical.com
 
 If the use an un-initialised policy to create a launchpad person the
 creation_rationale will still be possible, however missing important
