@@ -87,6 +87,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             (registrant, owner, set([distroseries]), name),
             (recipe.registrant, recipe.owner, set(recipe.distroseries),
              recipe.name))
+        self.assertEqual(True, recipe.is_stale)
 
     def test_exists(self):
         # Test ISourcePackageRecipeSource.exists

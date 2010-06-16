@@ -1747,13 +1747,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             processor, url, name, title, description, owner, active,
             virtualized, vm_host, manual=manual)
 
-    def makeRecipe(self, *branches):
-        """Make a builder recipe that references `branches`.
-
-        If no branches are passed, return a recipe text that references an
-        arbitrary branch.
-        """
-        from bzrlib.plugins.builder.recipe import RecipeParser
+    def makeRecipeText(self, *branches):
         if len(branches) == 0:
             branches = (self.makeAnyBranch(),)
         base_branch = branches[0]
@@ -1761,8 +1755,20 @@ class LaunchpadObjectFactory(ObjectFactory):
         text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
         for i, branch in enumerate(other_branches):
             text += 'merge dummy-%s %s\n' % (i, branch.bzr_identity)
-        parser = RecipeParser(text)
+        return text
+
+    def makeRecipe(self, *branches):
+        """Make a builder recipe that references `branches`.
+
+        If no branches are passed, return a recipe text that references an
+        arbitrary branch.
+        """
+        from bzrlib.plugins.builder.recipe import RecipeParser
+        parser = RecipeParser(self.makeRecipeText(*branches))
         return parser.parse()
+
+    def makeSourcePackageRecipeData(self):
+        return SourcePackageRecipeData(self.makeRecipe(), None)
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, name=None,

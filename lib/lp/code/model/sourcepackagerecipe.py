@@ -89,6 +89,8 @@ class SourcePackageRecipe(Storm):
 
     build_daily = Bool()
 
+    is_stale = Bool()
+
     @property
     def _sourcepackagename_text(self):
         return self.sourcepackagename.name

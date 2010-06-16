@@ -96,6 +96,7 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         readonly=False)
     build_daily = exported(Bool(
         title=_("Build daily")))
+    is_stale = Bool(title=_('Recipe is stale.'))
 
     name = exported(TextLine(
             title=_("Name"), required=True,

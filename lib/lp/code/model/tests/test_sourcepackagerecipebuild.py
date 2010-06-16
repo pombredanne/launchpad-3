@@ -31,6 +31,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail.sendmail import format_address
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
@@ -206,6 +207,25 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.factory.makeBinaryPackageBuild()
         Store.of(binary).flush()
         self.assertEqual([binary], list(spb.binary_builds))
+
+    def test_manifest(self):
+        """Manifest should start empty, but accept SourcePackageRecipeData."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = recipe.requestBuild(
+            recipe.daily_build_archive, recipe.owner,
+            list(recipe.distroseries)[0], PackagePublishingPocket.RELEASE)
+        self.assertIs(None, build.manifest)
+        self.assertIs(None, build.getManifestText())
+        manifest_text = self.factory.makeRecipeText()
+        removeSecurityProxy(build).setManifestText(manifest_text)
+        self.assertEqual(manifest_text, build.getManifestText())
+        self.assertIsNot(None, build.manifest)
+        IStore(build).flush()
+        manifest_text = self.factory.makeRecipeText()
+        removeSecurityProxy(build).setManifestText(manifest_text)
+        self.assertEqual(manifest_text, build.getManifestText())
+        removeSecurityProxy(build).setManifestText(None)
+        self.assertIs(None, build.manifest)
 
     def test_makeDailyBuilds(self):
         self.assertEqual([],

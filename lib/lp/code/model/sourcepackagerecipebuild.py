@@ -18,7 +18,7 @@ from pytz import utc
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import DBEnum
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 
 from storm.locals import Int, Reference, Storm, TimeDelta, Unicode
@@ -38,6 +38,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer)
+from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
@@ -135,6 +136,25 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     recipe_id = Int(name='recipe', allow_none=False)
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
+
+    manifest = Reference(
+        id, 'SourcePackageRecipeData.sourcepackage_recipe_build_id',
+        on_remote=True)
+
+    def setManifestText(self, text):
+        if text is None:
+            if self.manifest is not None:
+                IStore(self.manifest).remove(self.manifest)
+        elif self.manifest is None:
+            SourcePackageRecipeData.manifestFromText(text, self)
+        else:
+            from bzrlib.plugins.builder.recipe import RecipeParser
+            self.manifest.setRecipe(RecipeParser(text).parse())
+
+    def getManifestText(self):
+        if self.manifest is None:
+            return None
+        return str(self.manifest.getRecipe())
 
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
