@@ -46,7 +46,7 @@ from lp.services.mail.mailwrapper import MailWrapper
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
 
-# XXX 2010-06-16 gmb
+# XXX 2010-06-16 gmb bug=594985
 #     This shouldn't be here, but if we take it out lots of things cry,
 #     which is sad.
 from lp.services.mail.notificationrecipientset import (
