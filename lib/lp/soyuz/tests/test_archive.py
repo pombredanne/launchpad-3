@@ -240,7 +240,7 @@ class TestSeriesWithSources(TestCaseWithFactory):
         ubuntu_test = breezy_autotest.distribution
         self.series = [breezy_autotest]
         self.series.append(self.factory.makeDistroRelease(
-            distribution=ubuntu_test, name="foo-series"))
+            distribution=ubuntu_test, name="foo-series", version='1.0'))
 
         self.sources = []
         gedit_src_hist = self.publisher.getPubSource(
