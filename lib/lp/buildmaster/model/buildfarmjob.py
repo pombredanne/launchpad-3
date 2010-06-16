@@ -16,7 +16,7 @@ from lazr.delegates import delegates
 
 import pytz
 
-from storm.expr import And, Desc, Join, LeftJoin, Or, Select
+from storm.expr import And, Coalesce, Desc, Join, LeftJoin, Select
 from storm.locals import Bool, DateTime, Int, Reference, Storm
 from storm.store import Store
 
@@ -357,6 +357,10 @@ class BuildFarmJobSet:
         from lp.buildmaster.model.packagebuild import PackageBuild
         from lp.soyuz.model.archive import Archive
 
+        extra_clauses = [BuildFarmJob.builder == builder_id]
+        if status is not None:
+            extra_clauses.append(BuildFarmJob.status == status)
+
         # We need to ensure that we don't include any private builds.
         # Currently only package builds can be private (via their
         # related archive), but not all build farm jobs will have a
@@ -370,32 +374,37 @@ class BuildFarmJobSet:
             PackageBuild.build_farm_job == BuildFarmJob.id)
 
         filtered_builds = IStore(BuildFarmJob).using(
-            left_join_pkg_builds).find(BuildFarmJob,
-                                       BuildFarmJob.builder == builder_id)
+            left_join_pkg_builds).find(BuildFarmJob, *extra_clauses)
 
-        if status is not None:
-            filtered_builds = filtered_builds.find(
-                BuildFarmJob.status == status)
-
-        # Anonymous users can only see public builds.
         if user is None:
+            # Anonymous requests don't get to see private builds at all.
             filtered_builds = filtered_builds.find(
-                Or(Archive.private == None, Archive.private == False))
+                Coalesce(Archive.private, False) == False)
 
-        elif not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
-            # All other non-admins can additionally see private builds for
-            # which they are a member of the team owning the archive.
+        elif user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            # Admins get to see everything.
+            pass
+        else:
+            # Everyone else sees a union of all public builds and the
+            # specific private builds to which they have access.
+            filtered_builds = filtered_builds.find(
+                Coalesce(Archive.private, False) == False)
+
             user_teams_subselect = Select(
                 TeamParticipation.teamID,
                 where=And(
                    TeamParticipation.personID == user.id,
                    TeamParticipation.teamID == Archive.ownerID))
-            filtered_builds = filtered_builds.find(
-                Or(
-                    Archive.private == None,
-                    Or(
-                        Archive.private == False,
-                        Archive.ownerID.is_in(user_teams_subselect))))
+            private_builds_for_user = IStore(BuildFarmJob).find(
+                BuildFarmJob,
+                PackageBuild.build_farm_job == BuildFarmJob.id,
+                PackageBuild.archive == Archive.id,
+                Archive.private == True,
+                Archive.ownerID.is_in(user_teams_subselect),
+                *extra_clauses)
+
+            filtered_builds = filtered_builds.union(
+                private_builds_for_user)
 
         filtered_builds.order_by(
             Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
