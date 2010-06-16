@@ -876,6 +876,7 @@ virtual host.
     official_bug_tags: []
     owner_link: u'http://.../~babadoo-owner'
     project_link: u'http://.../babadoo'
+    release_finder_url_pattern: None
     releases_collection_link: u'http://.../babadoo/foobadoo/releases'
     resource_type_link: u'...'
     self_link: u'http://.../babadoo/foobadoo'
@@ -1249,6 +1250,8 @@ through the API.
 
     >>> logout()
 
+    >>> from lazr.restful.interfaces import IRepresentationCache
+    >>> ws_uncache(mmm)
     >>> mmm = webservice.get("/mega-money-maker").jsonBody()
     >>> print mmm['display_name']
     Mega Money Maker
