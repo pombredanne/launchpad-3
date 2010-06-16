@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'PackageBuild',
     'PackageBuildDerived',
+    'PackageBuildSet',
     ]
 
 
@@ -244,10 +245,11 @@ class PackageBuildSet:
         # superseded builds, we order by -date_created (as we won't
         # always have a date_finished). Otherwise we can order by
         # -date_finished.
-        if status is None or status in [
+        unfinished_states = [
             BuildStatus.NEEDSBUILD,
             BuildStatus.BUILDING,
-            BuildStatus.SUPERSEDED]:
+            BuildStatus.SUPERSEDED]
+        if status is None or status in unfinished_states:
             result_set.order_by(
                 Desc(BuildFarmJob.date_created), BuildFarmJob.id)
         else:
