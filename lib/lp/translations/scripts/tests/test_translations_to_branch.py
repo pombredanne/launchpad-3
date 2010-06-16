@@ -187,8 +187,6 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         self.assertEqual(0, exporter._handleUnpushedBranch.call_count)
 
     def test_handleUnpushedBranch_mails_branch_owner(self):
-        # If configured to do so, _handleUnpushedBranch sends out
-        # notification emails.
         exporter = ExportTranslationsToBranch(test_args=[])
         exporter.logger = QuietFakeLogger()
         productseries = self.factory.makeProductSeries()
@@ -201,10 +199,6 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
         self.becomeDbUser('translationstobranch')
 
-        # XXX JeroenVermeulen 2010-06-14 bug=593522: This is needed
-        # because the staging codehosting server's email isn't being
-        # captured like it should.
-        self.pushConfig('rosetta', notify_unpushed_branches=True)
         exporter._exportToBranches([productseries])
 
         self.assertEqual(1, exporter._sendMail.call_count)
@@ -220,29 +214,6 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         self.assertIn(productseries.title, text)
         self.assertIn(productseries.translations_branch.bzr_identity, text)
         self.assertIn('bzr push lp://', text)
-
-    def test_handleUnpushedBranch_email_suppressed_by_default(self):
-        # The default configuration suppresses notification emails, so
-        # we don't accidentally send out emails from staging
-        # codehosting.
-        # XXX JeroenVermeulen 2010-06-14 bug=593522: This is needed
-        # because the staging codehosting server's email isn't being
-        # captured like it should.
-        exporter = ExportTranslationsToBranch(test_args=[])
-        exporter.logger = QuietFakeLogger()
-        productseries = self.factory.makeProductSeries()
-        email = self.factory.getUniqueEmailAddress()
-        branch_owner = self.factory.makePerson(email=email)
-        productseries.translations_branch = self.factory.makeBranch(
-            owner=branch_owner)
-        exporter._exportToBranch = FakeMethod(failure=NotBranchError("Ow"))
-        exporter._sendMail = FakeMethod()
-
-        self.becomeDbUser('translationstobranch')
-
-        exporter._exportToBranches([productseries])
-
-        self.assertEqual(0, exporter._sendMail.call_count)
 
     def test_handleUnpushedBranch_has_required_privileges(self):
         # Dealing with an unpushed branch is a special code path that
