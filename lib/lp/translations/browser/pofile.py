@@ -283,10 +283,22 @@ class POFileBaseView(LaunchpadView):
             return True
         return False
 
+    def _get_form_string(self, name):
+        """Only return strings or None for a form value.
+
+        Raises UnexpectedFormData if the value is anything else. Usually this
+        will be a list if the name appears in the query string more than once.
+        """
+        value = self.request.form.get(name)
+        if value is None or isinstance(value, basestring):
+            return value
+        raise UnexpectedFormData(
+            "Unexpected value for %s: %r" % (name, value))
+
     def _initializeShowOption(self):
         # Get any value given by the user
-        self.show = self.request.form.get('show')
-        self.search_text = self.request.form.get('search')
+        self.show = self._get_form_string('show')
+        self.search_text = self._get_form_string('search')
         if self.search_text is not None:
             self.show = 'all'
 
@@ -309,7 +321,7 @@ class POFileBaseView(LaunchpadView):
         """Construct a BatchNavigator of POTMsgSets and return it."""
 
         # Changing the "show" option resets batching.
-        old_show_option = self.request.form.get('old_show')
+        old_show_option = self._get_form_string('old_show')
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
         if show_option_changed:
