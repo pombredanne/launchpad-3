@@ -402,7 +402,7 @@ def print_html_report(options, categories, pageid_times):
             <th>Mean Time (secs)</th>
             <th>Median Time (secs)</th>
             <th>Time Standard<br/>Deviation</th>
-            <th>Distribution</th>
+            <th class="sorttable_nosort">Distribution</th>
             </tr>
         </thead>
         <tbody>
