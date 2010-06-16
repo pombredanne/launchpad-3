@@ -28,7 +28,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
@@ -353,7 +353,6 @@ class BuildFarmJobSet:
 
     def getBuildsForBuilder(self, builder_id, status=None, user=None):
         """See `IBuildFarmJobSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         # Imported here to avoid circular imports.
         from lp.buildmaster.model.packagebuild import PackageBuild
         from lp.soyuz.model.archive import Archive
@@ -362,7 +361,7 @@ class BuildFarmJobSet:
         # Currently only package builds can be private (via their
         # related archive), but not all build farm jobs will have a
         # related package build - hence the left join.
-        bfjs_with_optional_package_builds = LeftJoin(
+        left_join_pkg_builds = LeftJoin(
             BuildFarmJob,
             Join(
                 PackageBuild,
@@ -370,9 +369,9 @@ class BuildFarmJobSet:
                 And(PackageBuild.archive == Archive.id)),
             PackageBuild.build_farm_job == BuildFarmJob.id)
 
-        filtered_builds = store.using(bfjs_with_optional_package_builds).find(
-            BuildFarmJob,
-            BuildFarmJob.builder == builder_id)
+        filtered_builds = IStore(BuildFarmJob).using(
+            left_join_pkg_builds).find(BuildFarmJob,
+                                       BuildFarmJob.builder == builder_id)
 
         if status is not None:
             filtered_builds = filtered_builds.find(
@@ -383,9 +382,9 @@ class BuildFarmJobSet:
             filtered_builds = filtered_builds.find(
                 Or(Archive.private == None, Archive.private == False))
 
-        # All other non-admins can additionally see private builds for
-        # which they are a member of the team owning the archive.
         elif not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            # All other non-admins can additionally see private builds for
+            # which they are a member of the team owning the archive.
             user_teams_subselect = Select(
                 TeamParticipation.teamID,
                 where=And(
@@ -398,7 +397,8 @@ class BuildFarmJobSet:
                         Archive.private == False,
                         Archive.ownerID.is_in(user_teams_subselect))))
 
-        filtered_builds.order_by(Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
+        filtered_builds.order_by(
+            Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
 
         return filtered_builds
 
