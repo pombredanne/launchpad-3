@@ -449,8 +449,8 @@ class GhostMixin:
 
 
 class GhostWidget(GhostMixin, TextWidget):
-    """Supress the rendering of Text input fields."""
+    """Suppress the rendering of Text input fields."""
 
 
 class GhostCheckBoxWidget(GhostMixin, CheckBoxWidget):
-    """Supress the rendering of Bool input fields."""
+    """Suppress the rendering of Bool input fields."""
