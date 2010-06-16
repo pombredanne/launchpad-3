@@ -211,6 +211,28 @@ using Malone, and its bug tracker will be set to None.
     >>> print firefox.bugtracker
     None
 
+The ProductBugTrackerWidget renders two fields that are subordinate to
+the 4 choices.
+
+    >>> def print_controls(html):
+    ...     soup = BeautifulSoup(html)
+    ...     controls = soup('input')
+    ...     for control in controls:
+    ...         if control['type'] != 'hidden':
+    ...             if 'subordinate' in control.parent.get('class', ''):
+    ...                 print '--'
+    ...             print control['id'], control['type']
+
+    >>> print_controls(widget())
+    field.bugtracker.0 radio
+    -- field.enable_bug_expiration checkbox
+    field.bugtracker.2 radio
+    field.bugtracker.bugtracker text
+    -- field.remote_product text
+    field.bugtracker.3 radio
+    field.bugtracker.upstream_email_address text
+    field.bugtracker.1 radio
+
 
 Choosing a License
 ==================
