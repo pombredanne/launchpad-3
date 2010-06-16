@@ -369,7 +369,7 @@ def print_html_report(options, categories, pageid_times):
         <script language="javascript" type="text/javascript"
             src="http://people.canonical.com/~stub/sorttable.js"></script>
         <style type="text/css">
-            h2 { font-weight: normal; font-size: 100%%; }
+            h3 { font-weight: normal; font-size: 100%%; }
             thead th { padding-left: 1em; padding-right: 1em; }
             .category-title { text-align: right; padding-right: 2em; }
             .regexp { font-size: x-small; font-weight: normal; }
@@ -385,23 +385,29 @@ def print_html_report(options, categories, pageid_times):
                 font-weight: bold;
                 cursor: default;
                 }
+            td.numeric {
+                font-family: monospace;
+                text-align: right;
+                padding: 1em;
+                }
+            .clickable { cursor: hand; }
         </style>
         </head>
         <body>
         <h1>Launchpad Page Performance Report</h1>
-        <h2>%(date)s</h2>
+        <h3>%(date)s</h2>
         ''' % {'date': time.ctime()})
 
     table_header = dedent('''\
         <table class="sortable page-performance-report">
         <thead>
             <tr>
-            <th>Name</th>
-            <th>Total Time (secs)</th>
-            <th>Total Hits</th>
-            <th>Mean Time (secs)</th>
-            <th>Median Time (secs)</th>
-            <th>Time Standard<br/>Deviation</th>
+            <th class="clickable">Name</th>
+            <th class="clickable">Total Time (secs)</th>
+            <th class="clickable">Total Hits</th>
+            <th class="clickable">Mean Time (secs)</th>
+            <th class="clickable">Median Time (secs)</th>
+            <th class="clickable">Time Standard<br/>Deviation</th>
             <th class="sorttable_nosort">Distribution</th>
             </tr>
         </thead>
@@ -418,11 +424,11 @@ def print_html_report(options, categories, pageid_times):
         print dedent("""\
             <tr>
             <th class="category-title">%s</th>
-            <td class="total_time">%.2f</td>
-            <td class="total_hits">%d</td>
-            <td class="mean">%.2f</td>
-            <td class="median">%.2f</td>
-            <td class="standard-deviation">%.2f</td>
+            <td class="numeric total_time">%.2f</td>
+            <td class="numeric total_hits">%d</td>
+            <td class="numeric mean">%.2f</td>
+            <td class="numeric median">%.2f</td>
+            <td class="numeric standard-deviation">%.2f</td>
             <td>
                 <div class="histogram" id="histogram%d"></div>
             </td>
@@ -433,7 +439,16 @@ def print_html_report(options, categories, pageid_times):
                 stats.mean, stats.median, stats.standard_deviation,
                 len(histograms)-1))
 
+    # Table of contents
+    print '<ol>'
     if options.categories:
+        print '<li><a href="#catrep">Category Report</a></li>'
+    if options.pageids:
+        print '<li><a href="#pageidrep">Pageid Report</a></li>'
+    print '</ol>'
+
+    if options.categories:
+        print '<h2 id="catrep">Category Report</h2>'
         print table_header
         for category in categories:
             html_title = '%s<br/><span class="regexp">%s</span>' % (
@@ -442,6 +457,7 @@ def print_html_report(options, categories, pageid_times):
         print table_footer
 
     if options.pageids:
+        print '<h2 id="pageidrep">Pageid Report</h2>'
         print table_header
         for pageid, times in sorted(pageid_times.items()):
             handle_times(html_quote(pageid), times)
