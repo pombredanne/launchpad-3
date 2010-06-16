@@ -190,17 +190,17 @@ class BugTrackerPickerWidget(VocabularyPickerWidget):
                     '''
             <script>
             LPS.use('lp.bugs.bugtracker_overlay', function(Y) {
-                setup_bugtracker_popup = function(config) {
-                    if (Y.UA.ie) {
-                        return;
-                    }
-                    Y.on('domready', function () {
-                        Y.lp.registry.bugtracker_overlay.attach_widget(config);
+                if (Y.UA.ie) {
+                    return;
+                }
+                Y.on('domready', function () {
+                    Y.lp.bugs.bugtracker_overlay.attach_widget({
+                        activate_node: Y.get('#nbt'),
+                        next_step: function(){alert('next step');}
+                        });
                     });
-                };
             });
             </script>
-            <script tal:content="string: setup_bugtracker({activate_node: Y.get('#nbt'), next_step: function() { alert('next step'); });" />
             ''')
         return link
 
