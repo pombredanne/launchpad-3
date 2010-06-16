@@ -15,14 +15,14 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.testing import TestCaseWithFactory
 
 
-class TestWebBugTrackerVocabulary(TestCaseWithFactory):
+class TestBugTrackerVocabulary(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestWebBugTrackerVocabulary, self).setUp()
+        super(TestBugTrackerVocabulary, self).setUp()
         vocabulary_registry = getVocabularyRegistry()
-        self.vocab = vocabulary_registry.get(None, 'WebBugTracker')
+        self.vocab = vocabulary_registry.get(None, 'BugTracker')
 
     def test_toTerm(self):
         # Verify the data in the term.
@@ -95,6 +95,16 @@ class TestWebBugTrackerVocabulary(TestCaseWithFactory):
         term = self.vocab.getTermByToken('stoat')
         self.assertEqual(bug_tracker, term.value)
 
+
+class TestWebBugTrackerVocabulary(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestWebBugTrackerVocabulary, self).setUp()
+        vocabulary_registry = getVocabularyRegistry()
+        self.vocab = vocabulary_registry.get(None, 'WebBugTracker')
+
     def test_search_no_email_type(self):
         # Verify that emailaddress bug trackers are not returned by search,
         # and are not in the vocabulary.
@@ -102,7 +112,8 @@ class TestWebBugTrackerVocabulary(TestCaseWithFactory):
             bugtrackertype=BugTrackerType.EMAILADDRESS)
         login_person(bug_tracker.owner)
         bug_tracker.name = 'marten'
-        bug_trackers = self.searchForBugTrackers('marten')
+        terms = self.vocab.searchForTerms('marten')
+        bug_trackers = [term.value for term in terms]
         self.assertEqual([], bug_trackers)
         self.assertRaises(
             LookupError, self.vocab.getTermByToken, 'marten')
