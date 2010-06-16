@@ -48,10 +48,13 @@ Firefox has not yet selected a bug tracker.
     ...     soup = BeautifulSoup(html)
     ...     labels = soup('label')
     ...     for label in labels:
-    ...         if label.previous.previous.get('checked'):
+    ...         control = label.previous.previous
+    ...         if control['type'] == 'radio' and control.get('checked'):
     ...             print '[X]', extract_text(label)
-    ...         else:
+    ...         elif control['type'] == 'radio':
     ...             print '[ ]', extract_text(label)
+    ...         else:
+    ...             pass
     >>> print_items(widget())
     [ ] In Launchpad
     [ ] In a registered bug tracker:

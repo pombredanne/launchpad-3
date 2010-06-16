@@ -233,13 +233,9 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
     displayname = 'Select a bug tracker'
     implements(IHugeVocabulary)
     _table = BugTracker
+    _filter = 1 == 1
     _orderBy = 'title'
     _order_by = [BugTracker.title]
-
-
-class WebBugTrackerVocabulary(BugTrackerVocabulary):
-    """All web-based bug tracker types."""
-    _filter = BugTracker.bugtrackertype != BugTrackerType.EMAILADDRESS
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
@@ -274,6 +270,11 @@ class WebBugTrackerVocabulary(BugTrackerVocabulary):
         """See `IHugeVocabulary`."""
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)
+
+
+class WebBugTrackerVocabulary(BugTrackerVocabulary):
+    """All web-based bug tracker types."""
+    _filter = BugTracker.bugtrackertype != BugTrackerType.EMAILADDRESS
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
