@@ -271,18 +271,6 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         This means that as far as the Launchpad database knows, there is
         no actual bzr branch behind this `IBranch` yet.
         """
-        if not config.rosetta.notify_unpushed_branches:
-            # Configurable since it's perfectly reasonable for staging
-            # codehosting to contain unpushed branches.  If the emails
-            # were sent out from the staging appserver this wouldn't
-            # matter; outgoing email there is walled off.  But this
-            # script runs on the codehosting server.  The staging
-            # codehosting server sends out real email.
-            # XXX JeroenVermeulen 2010-06-14 bug=593522: This is needed
-            # because the staging codehosting server's email isn't being
-            # captured like it should.
-            return
-
         branch = productseries.translations_branch
         self.logger.info("Notifying %s of unpushed branch %s." % (
             branch.owner.name, branch.bzr_identity))
