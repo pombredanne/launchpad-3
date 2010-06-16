@@ -53,28 +53,28 @@ description.
     *
     Ubuntu
       <http://launchpad.dev/ubuntu/+filebug>
-    Ubuntu guidelines:
+    Ubuntu bug reporting guidelines:
     The version of Ubuntu you're using.
     *
     Mozilla
       <http://launchpad.dev/mozilla/+filebug>
-    The Mozilla Project guidelines:
+    The Mozilla Project bug reporting guidelines:
     The version of Mozilla you're using.
     *
     Firefox
       <http://launchpad.dev/firefox/+filebug>
-    Mozilla Firefox guidelines:
+    Mozilla Firefox bug reporting guidelines:
     The version of Firefox you're using.
     *
     alsa-utils in Ubuntu
       <http://launchpad.dev/ubuntu/+source/alsa-utils/+filebug>
-    alsa-utils (Ubuntu) guidelines:
+    alsa-utils (Ubuntu) bug reporting guidelines:
     The version of alsa-utils in Ubuntu you're using.
-    Ubuntu guidelines:
+    Ubuntu bug reporting guidelines:
     The version of Ubuntu you're using.
 
 Note how the alsa-utils in Ubuntu specific guidelines were displayed
-followed by the general Ubuntu guidelines.
+followed by the general Ubuntu bug reporting guidelines.
 
 Bugs can also be reported directly against a distribution series, for
 which the guidelines are taken from the respective distribution.
@@ -85,7 +85,7 @@ which the guidelines are taken from the respective distribution.
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Ubuntu guidelines:
+    Ubuntu bug reporting guidelines:
     The version of Ubuntu you're using.
 
 
@@ -111,7 +111,7 @@ shown.
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Ubuntu guidelines:
+    Ubuntu bug reporting guidelines:
     The version of Ubuntu you're using.
 
 Changing the package to alsa-utils does not make the alsa-utils
@@ -123,7 +123,7 @@ guidelines appear.
     ...     name='field.packagename').value = "alsa-utils"
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Ubuntu guidelines:
+    Ubuntu bug reporting guidelines:
     The version of Ubuntu you're using.
 
 XXX: allenap 2008-11-14 bug=297743: These limitations have been filed
