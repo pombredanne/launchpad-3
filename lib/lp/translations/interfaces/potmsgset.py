@@ -264,8 +264,8 @@ class IPOTMsgSet(Interface):
     def resetCurrentTranslation(pofile, lock_timestamp):
         """Reset the currently used translation.
 
-        This will set the "is_current" attribute to False and if the message
-        is diverge, will try to converge it.
+        This will set the "is_current_ubuntu" attribute to False and if the
+        message is diverged, will try to converge it.
         :param pofile: a `POFile` to dismiss suggestions from.
         :param lock_timestamp: the timestamp when we checked the values we
             want to update.

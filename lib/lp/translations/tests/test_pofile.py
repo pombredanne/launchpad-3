@@ -1027,8 +1027,8 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
 
         translated_potmsgsets = list(
             self.devel_sr_pofile.getPOTMsgSetTranslated())
-        self.assertEquals(translated_potmsgsets,
-                          [self.potmsgset1, self.potmsgset2])
+        self.assertEquals(
+            [self.potmsgset1, self.potmsgset2], translated_potmsgsets)
 
         # Insert these two POTMsgSets into self.stable_potemplate in reverse
         # order.
@@ -1038,21 +1038,21 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         # And they are returned in the new order as desired.
         translated_potmsgsets = list(
             self.stable_sr_pofile.getPOTMsgSetTranslated())
-        self.assertEquals(translated_potmsgsets,
-                          [self.potmsgset2, self.potmsgset1])
+        self.assertEquals(
+            [self.potmsgset2, self.potmsgset1], translated_potmsgsets)
 
         # Order is unchanged for the previous template.
         translated_potmsgsets = list(
             self.devel_sr_pofile.getPOTMsgSetTranslated())
-        self.assertEquals(translated_potmsgsets,
-                          [self.potmsgset1, self.potmsgset2])
+        self.assertEquals(
+            [self.potmsgset1, self.potmsgset2], translated_potmsgsets)
 
     def test_getPOTMsgSetUntranslated_ordering(self):
         # Both POTMsgSets in devel_sr_pofile are untranslated.
         untranslated_potmsgsets = list(
             self.devel_sr_pofile.getPOTMsgSetUntranslated())
-        self.assertEquals(untranslated_potmsgsets,
-                          [self.potmsgset1, self.potmsgset2])
+        self.assertEquals(
+            [self.potmsgset1, self.potmsgset2], untranslated_potmsgsets)
 
         # Insert these two POTMsgSets into self.stable_potemplate in reverse
         # order.
@@ -1062,14 +1062,14 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         # And they are returned in the new order as desired.
         untranslated_potmsgsets = list(
             self.stable_sr_pofile.getPOTMsgSetUntranslated())
-        self.assertEquals(untranslated_potmsgsets,
-                          [self.potmsgset2, self.potmsgset1])
+        self.assertEquals(
+            [self.potmsgset2, self.potmsgset1], untranslated_potmsgsets)
 
         # Order is unchanged for the previous template.
         untranslated_potmsgsets = list(
             self.devel_sr_pofile.getPOTMsgSetUntranslated())
-        self.assertEquals(untranslated_potmsgsets,
-                          [self.potmsgset1, self.potmsgset2])
+        self.assertEquals(
+            [self.potmsgset1, self.potmsgset2], untranslated_potmsgsets)
 
     def test_getPOTMsgSetChangedInUbuntu_ordering(self):
         # Suggest a translation on both POTMsgSets in devel_sr_pofile,
@@ -1097,8 +1097,8 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
 
         potmsgsets = list(
             self.devel_sr_pofile.getPOTMsgSetChangedInUbuntu())
-        self.assertEquals(potmsgsets,
-                          [self.potmsgset1, self.potmsgset2])
+        self.assertEquals(
+            [self.potmsgset1, self.potmsgset2], potmsgsets)
 
         # Insert these two POTMsgSets into self.stable_potemplate in reverse
         # order.
@@ -1108,26 +1108,26 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         # And they are returned in the new order as desired.
         potmsgsets = list(
             self.stable_sr_pofile.getPOTMsgSetChangedInUbuntu())
-        self.assertEquals(potmsgsets,
-                          [self.potmsgset2, self.potmsgset1])
+        self.assertEquals(
+            [self.potmsgset2, self.potmsgset1], potmsgsets)
 
         # Order is unchanged for the previous template.
         potmsgsets = list(
             self.devel_sr_pofile.getPOTMsgSetChangedInUbuntu())
-        self.assertEquals(potmsgsets,
-                          [self.potmsgset1, self.potmsgset2])
+        self.assertEquals(
+            [self.potmsgset1, self.potmsgset2], potmsgsets)
 
     def test_getPOTMsgSetWithErrors_ordering(self):
         # Suggest a translation on both POTMsgSets in devel_sr_pofile,
         # so they are returned with getPOTMsgSetWithNewSuggestions() call.
-        self.factory.makeSharedTranslationMessage(
+        imported1 = self.factory.makeSharedTranslationMessage(
             pofile=self.devel_sr_pofile,
             potmsgset=self.potmsgset1,
             translations=["Imported"],
             is_current_upstream=True)
         removeSecurityProxy(imported1).validation_status = (
             TranslationValidationStatus.UNKNOWNERROR)
-        self.factory.makeSharedTranslationMessage(
+        imported2 = self.factory.makeSharedTranslationMessage(
             pofile=self.devel_sr_pofile,
             potmsgset=self.potmsgset2,
             translations=["Another imported"],
@@ -1137,8 +1137,8 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
 
         potmsgsets = list(
             self.devel_sr_pofile.getPOTMsgSetWithErrors())
-        self.assertEquals(potmsgsets,
-                          [self.potmsgset1, self.potmsgset2])
+        self.assertEquals(
+            [self.potmsgset1, self.potmsgset2], potmsgsets)
 
         # Insert these two POTMsgSets into self.stable_potemplate in reverse
         # order.
@@ -1148,21 +1148,21 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         # And they are returned in the new order as desired.
         potmsgsets = list(
             self.stable_sr_pofile.getPOTMsgSetWithErrors())
-        self.assertEquals(potmsgsets,
-                          [self.potmsgset2, self.potmsgset1])
+        self.assertEquals(
+            [self.potmsgset2, self.potmsgset1], potmsgsets)
 
         # Order is unchanged for the previous template.
         potmsgsets = list(
             self.devel_sr_pofile.getPOTMsgSetWithErrors())
-        self.assertEquals(potmsgsets,
-                          [self.potmsgset1, self.potmsgset2])
+        self.assertEquals(
+            [self.potmsgset1, self.potmsgset2], potmsgsets)
 
     def test_getPOTMsgSets_ordering(self):
         # Both POTMsgSets in devel_potemplate are untranslated.
         potmsgsets = list(
             self.devel_potemplate.getPOTMsgSets())
-        self.assertEquals(potmsgsets,
-                          [self.potmsgset1, self.potmsgset2])
+        self.assertEquals(
+            [self.potmsgset1, self.potmsgset2], potmsgsets)
 
         # Insert these two POTMsgSets into self.stable_potemplate in reverse
         # order.
@@ -1172,14 +1172,14 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         # And they are returned in the new order as desired.
         potmsgsets = list(
             self.stable_potemplate.getPOTMsgSets())
-        self.assertEquals(potmsgsets,
-                          [self.potmsgset2, self.potmsgset1])
+        self.assertEquals(
+            [self.potmsgset2, self.potmsgset1], potmsgsets)
 
         # Order is unchanged for the previous template.
         potmsgsets = list(
             self.devel_potemplate.getPOTMsgSets())
-        self.assertEquals(potmsgsets,
-                          [self.potmsgset1, self.potmsgset2])
+        self.assertEquals(
+            [self.potmsgset1, self.potmsgset2], potmsgsets)
 
     def test_findPOTMsgSetsContaining_ordering(self):
         # As per bug 388473 findPOTMsgSetsContaining still used the old
@@ -1204,8 +1204,8 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
             self.devel_sr_pofile.findPOTMsgSetsContaining("translation"))
 
         # Order ignores potmsgset.sequence.
-        self.assertEquals([self.potmsgset1, self.potmsgset2],
-                          potmsgsets)
+        self.assertEquals(
+            [self.potmsgset1, self.potmsgset2], potmsgsets)
 
 
 class TestPOFileSet(TestCaseWithFactory):

@@ -1019,7 +1019,7 @@ class TranslationImportQueue:
 
             path = upload_files[tarinfo.name]
             entry = approver.approve(self.addOrUpdateEntry(
-                path, file_content, is_published, importer,
+                path, file_content, from_upstream, importer,
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
                 potemplate=potemplate))
