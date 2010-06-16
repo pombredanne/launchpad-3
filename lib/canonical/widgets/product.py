@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'GhostCheckBoxWidget',
     'GhostWidget',
     'LicenseWidget',
     'ProductBugTrackerWidget',
@@ -431,7 +432,7 @@ class ProductNameWidget(LowerCaseTextWidget):
             return 'text'
 
 
-class GhostWidget(TextWidget):
+class GhostMixin:
     """A simple widget that has no HTML."""
     visible = False
     # This suppresses the stuff above the widget.
@@ -445,3 +446,11 @@ class GhostWidget(TextWidget):
         return ''
 
     hidden = __call__
+
+
+class GhostWidget(GhostMixin, TextWidget):
+    """Supress the rendering of Text input fields."""
+
+
+class GhostCheckBoxWidget(GhostMixin, CheckBoxWidget):
+    """Supress the rendering of Bool input fields."""

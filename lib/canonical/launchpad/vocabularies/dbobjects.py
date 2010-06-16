@@ -230,16 +230,16 @@ class BugVocabulary(SQLObjectVocabularyBase):
 
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
     """All web and email based external bug trackers."""
+    displayname = 'Select a bug tracker'
     implements(IHugeVocabulary)
     _table = BugTracker
     _orderBy = 'title'
+    _order_by = [BugTracker.title]
 
 
 class WebBugTrackerVocabulary(BugTrackerVocabulary):
     """All web-based bug tracker types."""
-    displayname = 'Select a bug tracker'
     _filter = BugTracker.bugtrackertype != BugTrackerType.EMAILADDRESS
-    _order_by = [BugTracker.title]
 
     def toTerm(self, obj):
         """See `IVocabulary`."""

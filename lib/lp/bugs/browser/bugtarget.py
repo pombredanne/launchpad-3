@@ -98,7 +98,8 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
 from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
 from canonical.widgets.bugtask import NewLineToSpacesWidget
-from canonical.widgets.product import ProductBugTrackerWidget, GhostWidget
+from canonical.widgets.product import (
+    ProductBugTrackerWidget, GhostCheckBoxWidget, GhostWidget)
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
 
@@ -145,7 +146,7 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
     # This ProductBugTrackerWidget renders enable_bug_expiration and
     # remote_product as subordinate fields, so this view supresses them.
     custom_widget('bugtracker', ProductBugTrackerWidget)
-    custom_widget('enable_bug_expiration', GhostWidget)
+    custom_widget('enable_bug_expiration', GhostCheckBoxWidget)
     custom_widget('remote_product', GhostWidget)
 
     def validate(self, data):
