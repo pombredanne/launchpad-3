@@ -584,6 +584,42 @@ class TestUpdatePreviewDiffJob(BzrSyncTestCase):
         self.assertIsNot(None, bmp.next_preview_diff_job)
 
 
+class TestSetRecipeStale(BzrSyncTestCase):
+    """Test recipes associated with the branch are marked stale."""
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def test_base_branch_recipe(self):
+        """On tip change, recipes where this branch is base become stale."""
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[self.db_branch])
+        removeSecurityProxy(recipe).is_stale = False
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(True, recipe.is_stale)
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def test_instruction_branch_recipe(self):
+        """On tip change, recipes including this branch become stale."""
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[self.factory.makeBranch(), self.db_branch])
+        removeSecurityProxy(recipe).is_stale = False
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(True, recipe.is_stale)
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def test_unrelated_branch_recipe(self):
+        """On tip unrelated recipes are left alone."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        removeSecurityProxy(recipe).is_stale = False
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(False, recipe.is_stale)
+
+
 class TestRevisionProperty(BzrSyncTestCase):
     """Tests for storting revision properties."""
 
