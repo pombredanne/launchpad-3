@@ -294,13 +294,14 @@ class IBuildFarmJobSource(Interface):
 
 
 class IBuildFarmJobSet(Interface):
-    """A utility representing a set of package builds."""
+    """A utility representing a set of build farm jobs."""
 
     def getBuildsForBuilder(builder_id, status=None, user=None):
         """Return `IBuildFarmJob` records touched by a builder.
 
         :param builder_id: The id of the builder for which to find builds.
-        :param status: If status is provided, only builds with that status
-            will be returned.
+        :param status: If given, limit the search to builds with this status.
+        :param user: If given, this will be used to determine private builds
+            that should be included.
         :return: a `ResultSet` representing the requested builds.
         """
