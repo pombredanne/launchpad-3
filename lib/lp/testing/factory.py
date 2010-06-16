@@ -1767,9 +1767,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         parser = RecipeParser(self.makeRecipeText(*branches))
         return parser.parse()
 
-    def makeSourcePackageRecipeData(self):
-        return SourcePackageRecipeData(self.makeRecipe(), None)
-
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, name=None,
                                 description=None, branches=(),

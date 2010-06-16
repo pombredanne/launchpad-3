@@ -157,6 +157,13 @@ class SourcePackageRecipeData(Storm):
 
     @classmethod
     def manifestFromText(cls, text, sourcepackage_recipe_build):
+        """Create a manifest for the specified build.
+
+        :param text: The text of the recipe to create a manifest for.
+        :param sourcepackage_recipe_build: The build to associate the manifest
+            with.
+        :return: an instance of SourcePackageRecipeData.
+        """
         from bzrlib.plugins.builder.recipe import RecipeParser
         parser = RecipeParser(text)
         return cls(parser.parse(),
