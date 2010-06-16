@@ -70,7 +70,7 @@ class Times:
     def stats(self):
         """Generate statistics about our request times.
 
-        Returns (mean, median, standard_deviation, histogram).
+        Returns (total, mean, median, standard_deviation, histogram).
 
         The histogram is a list of request counts per 1 second bucket.
         ie. histogram[0] contains the number of requests taking between 0 and
@@ -78,10 +78,10 @@ class Times:
         1 and 2 seconds etc. histogram is None if there are no requests in
         this Category.
         """
-
         if not self.request_times:
-            return 0, 0, 0, None
+            return 0, 0, 0, 0, None
         array = numpy.asarray(self.request_times, numpy.float32)
+        total = numpy.sum(array)
         mean = numpy.mean(array)
         median = numpy.median(array)
         standard_deviation = numpy.std(array)
@@ -89,14 +89,14 @@ class Times:
             array, normed=True,
             range=(0, self.timeout), bins=self.timeout)
         histogram = zip(histogram[1], histogram[0])
-        return mean, median, standard_deviation, histogram
+        return total, mean, median, standard_deviation, histogram
 
     def __str__(self):
         results = self.stats()
-        mean, median, standard_deviation, histogram = results
+        total, mean, median, standard_deviation, histogram = results
         hstr = " ".join("%2d" % v for v in histogram)
         return "%2.2f %2.2f %2.2f %s" % (
-            mean, median, standard_deviation, hstr)
+            total, mean, median, standard_deviation, hstr)
 
 
 def main():
@@ -358,6 +358,7 @@ def print_html_report(options, categories, pageid_times):
         <thead>
             <tr>
             <td></td>
+            <th>Total</th>
             <th>Mean</th>
             <th>Median</th>
             <th>Standard<br/>Deviation</th>
@@ -383,11 +384,12 @@ def print_html_report(options, categories, pageid_times):
     histograms = []
 
     def handle_times(html_title, times):
-        mean, median, standard_deviation, histogram = times.stats()
+        total, mean, median, standard_deviation, histogram = times.stats()
         histograms.append(histogram)
         print dedent("""\
             <tr class="%s">
             <th class="category-title">%s</th>
+            <td class="total">%.2f s</td>
             <td class="mean">%.2f s</td>
             <td class="median">%.2f s</td>
             <td class="standard-deviation">%.2f s</td>
@@ -397,7 +399,8 @@ def print_html_report(options, categories, pageid_times):
             </tr>
             """ % (
                 row_class.next(), html_title,
-                mean, median, standard_deviation, len(histograms)-1))
+                total, mean, median, standard_deviation,
+                len(histograms)-1))
 
     if options.categories:
         print table_header
