@@ -280,6 +280,21 @@ class TestBranchView(TestCaseWithFactory):
         self.assertEqual(len(BugTaskStatus), len(view.linked_bugs))
         self.assertFalse(view.context.is_series_branch)
 
+    def test_linked_bugs_privacy(self):
+        # If a linked bug is private, it is not in the linked bugs if the user
+        # can't see it.
+        branch = self.factory.makeAnyBranch()
+        reporter = self.factory.makePerson()
+        bug = self.factory.makeBug(private=True, owner=reporter)
+        with person_logged_in(reporter):
+            branch.linkBug(bug, reporter)
+            view = create_initialized_view(branch, '+index')
+            # Comparing bug ids as the linked bugs are decorated bugs.
+            self.assertEqual([bug.id], [bug.id for bug in view.linked_bugs])
+        with person_logged_in(branch.owner):
+            view = create_initialized_view(branch, '+index')
+            self.assertEqual([], view.linked_bugs)
+
     def test_linked_bugs_series_branch(self):
         # The linked bugs for a series branch shows only unresolved bugs.
         product = self.factory.makeProduct()

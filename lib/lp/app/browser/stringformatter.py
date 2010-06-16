@@ -722,27 +722,35 @@ class FormattersAPI:
         result = ['<table class="diff">']
 
         max_format_lines = config.diff.max_format_lines
+        header_next = False
         for row, line in enumerate(text.splitlines()[:max_format_lines]):
             result.append('<tr>')
             result.append('<td class="line-no">%s</td>' % (row+1))
             if line.startswith('==='):
                 css_class = 'diff-file text'
-            elif (line.startswith('+++') or
-                  line.startswith('---')):
+                header_next = True
+            elif (header_next and
+                  (line.startswith('+++') or
+                  line.startswith('---'))):
                 css_class = 'diff-header text'
             elif line.startswith('@@'):
                 css_class = 'diff-chunk text'
+                header_next = False
             elif line.startswith('+'):
                 css_class = 'diff-added text'
+                header_next = False
             elif line.startswith('-'):
                 css_class = 'diff-removed text'
+                header_next = False
             elif line.startswith('#'):
                 # This doesn't occur in normal unified diffs, but does
                 # appear in merge directives, which use text/x-diff or
                 # text/x-patch.
                 css_class = 'diff-comment text'
+                header_next = False
             else:
                 css_class = 'text'
+                header_next = False
             result.append(
                 '<td class="%s">%s</td>' % (css_class, escape(line)))
             result.append('</tr>')

@@ -34,7 +34,6 @@ __all__ = [
 import cgi
 from collections import defaultdict
 from datetime import datetime, timedelta
-from operator import attrgetter
 
 import pytz
 import simplejson
@@ -378,7 +377,8 @@ class DecoratedBranch(BzrIdentityMixin):
         for bug, task in self.branch.getLinkedBugsAndTasks():
             bugs[bug].append(task)
         return [DecoratedBug(bug, self.branch, tasks)
-                for bug, tasks in bugs.iteritems()]
+                for bug, tasks in bugs.iteritems()
+                if check_permission('launchpad.View', bug)]
 
     @property
     def displayname(self):
