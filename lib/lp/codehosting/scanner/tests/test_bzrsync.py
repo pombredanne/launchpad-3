@@ -27,7 +27,6 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
-from lp.code.model.branchmergeproposaljob import IUpdatePreviewDiffJobSource
 from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.testing import TestCaseWithFactory

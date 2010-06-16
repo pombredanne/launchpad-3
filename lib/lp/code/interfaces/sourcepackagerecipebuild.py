@@ -17,7 +17,7 @@ from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import export_as_webservice_entry
 
 from zope.interface import Interface
-from zope.schema import Bool, Datetime, Int, Object, Text
+from zope.schema import Bool, Datetime, Int, Object
 
 from canonical.launchpad import _
 
