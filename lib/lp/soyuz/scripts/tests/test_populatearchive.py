@@ -28,6 +28,7 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet, PackageCopyStatus)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.scripts.ftpmaster import PackageLocationError, SoyuzScriptError
 from lp.soyuz.scripts.populate_archive import ArchivePopulator
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -151,6 +152,11 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         distroseries_name = "maudlin"
         distroseries = self.factory.makeDistroSeries(
             distribution=distro, name=distroseries_name)
+        das = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="i386",
+            processorfamily=ProcessorFamilySet().getByName("x86"),
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = das
         return distroseries
 
     def createTargetOwner(self):
@@ -242,6 +248,19 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         copy_archive = self.copyArchive(distroseries, archive_name, owner)
         return (copy_archive, distroseries)
 
+    def checkBuilds(self, archive, package_infos):
+        expected_builds = set(
+            [(info.name, info.version) for info in package_infos])
+        builds = list(
+            getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
+            archive, status=BuildStatus.NEEDSBUILD))
+        actual_builds = set()
+        for build in builds:
+            build = removeSecurityProxy(build)
+            spr = build.source_package_release
+            actual_builds.add((spr.name, spr.version))
+        self.assertEqual(expected_builds, actual_builds)
+
     def testCopyArchiveCreateCopiesPublished(self):
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
@@ -276,6 +295,12 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         copy_archive, distroseries = self.makeCopyArchive(package_info)
         self.checkCopiedSources(
             copy_archive, distroseries, [])
+
+    def testCopyArchiveCreatesBuilds(self):
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        copy_archive, distroseries = self.makeCopyArchive(package_info)
+        self.checkBuilds(copy_archive, [package_info])
 
     def runScript(
         self, archive_name=None, suite='hoary', user='salgado',
@@ -396,7 +421,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         the script should fail with an appropriate error message.
         """
         now = int(time.time())
-        # The colons in the name make it invalid.
+        # The slashes in the name make it invalid.
         invalid_name = "ra//%s" % now
 
         extra_args = ['-a', '386']
