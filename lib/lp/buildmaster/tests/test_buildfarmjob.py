@@ -271,6 +271,20 @@ class TestBuildFarmJobSet(TestBuildFarmJobBase):
             user=self.binary_package_build.archive.owner.teamowner)
         self.assertTrue(self.binary_package_build.build_farm_job in result)
 
+    def test_getBuildsForBuilder_ordered_by_date_finished(self):
+        # Results are returned with the oldest build last.
+        naked_build_0 = removeSecurityProxy(self.build_farm_jobs[0])
+        naked_build_1 = removeSecurityProxy(self.build_farm_jobs[1])
+
+        naked_build_0.date_finished = datetime(2008, 10, 10, tzinfo=pytz.UTC)
+        naked_build_1.date_finished = datetime(2008, 11, 10, tzinfo=pytz.UTC)
+        result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
+        self.assertEqual(self.build_farm_jobs[0], result[3])
+
+        naked_build_0.date_finished = datetime(2008, 12, 10, tzinfo=pytz.UTC)
+        result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
+        self.assertEqual(self.build_farm_jobs[1], result[3])
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

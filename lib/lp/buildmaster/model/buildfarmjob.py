@@ -16,7 +16,7 @@ from lazr.delegates import delegates
 
 import pytz
 
-from storm.expr import And, Join, LeftJoin, Or, Select
+from storm.expr import And, Desc, Join, LeftJoin, Or, Select
 from storm.locals import Bool, DateTime, Int, Reference, Storm
 from storm.store import Store
 
@@ -397,6 +397,8 @@ class BuildFarmJobSet:
                     Or(
                         Archive.private == False,
                         Archive.ownerID.is_in(user_teams_subselect))))
+
+        filtered_builds.order_by(Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
 
         return filtered_builds
 
