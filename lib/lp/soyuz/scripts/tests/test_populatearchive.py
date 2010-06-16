@@ -183,9 +183,10 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             archive=distroseries.distribution.main_archive,
             status=info.status, pocket=PackagePublishingPocket.RELEASE)
 
-    def copyArchive(self, distroseries, archive_name, owner):
+    def copyArchive(self, distroseries, archive_name, owner,
+        architecture="386"):
         extra_args = [
-            '-a', '386',
+            '-a', architecture,
             '--from-distribution', distroseries.distribution.name,
             '--from-suite', distroseries.name,
             '--to-distribution', distroseries.distribution.name,
@@ -301,6 +302,20 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
         copy_archive, distroseries = self.makeCopyArchive(package_info)
         self.checkBuilds(copy_archive, [package_info])
+
+    def testCopyArchiveDoesntCreateBuildsForNonCopyArchitectures(self):
+        family = self.factory.makeProcessorFamily(name="armel")
+        self.factory.makeProcessor(family=family, name="armel")
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        owner = self.createTargetOwner()
+        # Creates an archive with just x86
+        distroseries = self.createSourceDistribution([package_info])
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        # Different architecture, so there won't be any builds
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner, architecture="armel")
+        self.checkBuilds(copy_archive, [])
 
     def runScript(
         self, archive_name=None, suite='hoary', user='salgado',
