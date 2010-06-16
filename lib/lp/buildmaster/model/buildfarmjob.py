@@ -16,6 +16,7 @@ from lazr.delegates import delegates
 
 import pytz
 
+from storm.expr import And, Join, LeftJoin, Or, Select
 from storm.locals import Bool, DateTime, Int, Reference, Storm
 from storm.store import Store
 
@@ -37,6 +38,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobSet, IBuildFarmJobSource,
     InconsistentBuildFarmJobError, ISpecificBuildFarmJob)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.registry.model.teammembership import TeamParticipation
 
 
 class BuildFarmJobOld:
@@ -352,7 +354,23 @@ class BuildFarmJobSet:
     def getBuildsForBuilder(self, builder_id, status=None, user=None):
         """See `IBuildFarmJobSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        filtered_builds = store.find(
+        # Imported here to avoid circular imports.
+        from lp.buildmaster.model.packagebuild import PackageBuild
+        from lp.soyuz.model.archive import Archive
+
+        # We need to ensure that we don't include any private builds.
+        # Currently only package builds can be private (via their
+        # related archive), but not all build farm jobs will have a
+        # related package build - hence the left join.
+        bfjs_with_optional_package_builds = LeftJoin(
+            BuildFarmJob,
+            Join(
+                PackageBuild,
+                Archive,
+                And(PackageBuild.archive == Archive.id)),
+            PackageBuild.build_farm_job == BuildFarmJob.id)
+
+        filtered_builds = store.using(bfjs_with_optional_package_builds).find(
             BuildFarmJob,
             BuildFarmJob.builder == builder_id)
 
@@ -360,59 +378,25 @@ class BuildFarmJobSet:
             filtered_builds = filtered_builds.find(
                 BuildFarmJob.status == status)
 
-        # We need to ensure that we don't include any private builds.
-        # Currently only package builds can be private (via their
-        # related archive.)
-        # XXX Would this be possible/more efficient as a LJoin?
-        from lp.buildmaster.model.packagebuild import PackageBuild
-        from lp.soyuz.model.archive import Archive
-        if user is not None:
-            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
-                hidden_builds = store.find(
-                    BuildFarmJob,
-                    PackageBuild.build_farm_job == BuildFarmJob.id,
-                    PackageBuild.archive == Archive.id,
-                    Archive.private == True)
-                filtered_builds = filtered_builds.difference(hidden_builds)
+        # Anonymous users can only see public builds.
+        if user is None:
+            filtered_builds = filtered_builds.find(
+                Or(Archive.private == None, Archive.private == False))
 
-        else:
-            hidden_builds = store.find(
-                BuildFarmJob,
-                PackageBuild.build_farm_job == BuildFarmJob.id,
-                PackageBuild.archive == Archive.id,
-                Archive.private == True)
-            filtered_builds = filtered_builds.difference(hidden_builds)
-
-
+        # All other non-admins can additionally see private builds for
+        # which they are a member of the team owning the archive.
+        elif not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            user_teams_subselect = Select(
+                TeamParticipation.teamID,
+                where=And(
+                   TeamParticipation.personID == user.id,
+                   TeamParticipation.teamID == Archive.ownerID))
+            filtered_builds = filtered_builds.find(
+                Or(
+                    Archive.private == None,
+                    Or(
+                        Archive.private == False,
+                        Archive.ownerID.is_in(user_teams_subselect))))
 
         return filtered_builds
-
-        # queries = []
-        # clauseTables = []
-
-        # self.handleOptionalParamsForBuildQueries(
-        #     queries, clauseTables, status, name, pocket=None,
-        #     arch_tag=arch_tag)
-
-        # # This code MUST match the logic in the Build security adapter,
-        # # otherwise users are likely to get 403 errors, or worse.
-        # queries.append("Archive.id = PackageBuild.archive")
-        # clauseTables.append('Archive')
-        # if user is not None:
-        #     if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
-        #         queries.append("""
-        #         (Archive.private = FALSE
-        #          OR %s IN (SELECT TeamParticipation.person
-        #                FROM TeamParticipation
-        #                WHERE TeamParticipation.person = %s
-        #                    AND TeamParticipation.team = Archive.owner)
-        #         )""" % sqlvalues(user, user))
-        # else:
-        #     queries.append("Archive.private = FALSE")
-
-        # queries.append("builder=%s" % builder_id)
-
-        # return BinaryPackageBuild.select(
-        #     " AND ".join(queries), clauseTables=clauseTables,
-        #     orderBy=["-BuildFarmJob.date_finished", "id"])
 

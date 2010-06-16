@@ -2174,7 +2174,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             source_package_recipe_build=source_package_recipe_build)
 
     def makeBinaryPackageBuild(self, source_package_release=None,
-            distroarchseries=None, archive=None):
+            distroarchseries=None, archive=None, builder=None):
         """Create a BinaryPackageBuild.
 
         If archive is not supplied, the source_package_release is used
@@ -2183,6 +2183,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             build uses as its source.
         :param distroarchseries: The DistroArchSeries to use.
         :param archive: The Archive to use.
+        :param builder: An optional builder to assign.
         """
         if archive is None:
             if source_package_release is None:
@@ -2206,6 +2207,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             archive=archive,
             pocket=PackagePublishingPocket.RELEASE,
             date_created=self.getUniqueDate())
+        removeSecurityProxy(binary_package_build).builder = builder
         binary_package_build_job = binary_package_build.makeJob()
         BuildQueue(
             job=binary_package_build_job.job,

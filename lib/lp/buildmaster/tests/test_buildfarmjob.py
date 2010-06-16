@@ -24,7 +24,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob, IBuildFarmJobSet, IBuildFarmJobSource,
     InconsistentBuildFarmJobError)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing import login, TestCaseWithFactory
 
 
 class TestBuildFarmJobBase(TestCaseWithFactory):
@@ -206,6 +206,14 @@ class TestBuildFarmJobSet(TestBuildFarmJobBase):
         self.build_farm_jobs.append(self.makeBuildFarmJob(
             builder=self.builder, status=BuildStatus.BUILDING))
 
+        # For good measure, create a different type of build that will
+        # also have an associated PackageBuild.
+        owning_team = self.factory.makeTeam()
+        archive = self.factory.makeArchive(owner=owning_team)
+        self.binary_package_build = self.factory.makeBinaryPackageBuild(
+            archive=archive, builder=self.builder)
+        self.build_farm_jobs.append(self.binary_package_build.build_farm_job)
+
         self.build_farm_job_set = getUtility(IBuildFarmJobSet)
 
     def test_getBuildsForBuilder_all(self):
@@ -231,37 +239,37 @@ class TestBuildFarmJobSet(TestBuildFarmJobBase):
 
     def test_getBuildsForBuilder_hides_private_from_anon(self):
         # If no user is passed, all private builds are filtered out.
-        binary_package_build = self.factory.makeBinaryPackageBuild()
-        removeSecurityProxy(binary_package_build).builder = self.builder
-        owning_team = self.factory.makeTeam()
-        removeSecurityProxy(binary_package_build.archive).owning_team = owning_team
-
-        # While it is public the new build is included in the result set.
-        result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
-        self.assertTrue(binary_package_build.build_farm_job in result)
 
         # When private it is not included for anon requests.
-        self.makeBuildPrivate(binary_package_build)
+        self.makeBuildPrivate(self.binary_package_build)
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
-        self.assertTrue(binary_package_build.build_farm_job not in result)
+        self.assertTrue(
+            self.binary_package_build.build_farm_job not in result)
 
-        # Neither is it included for authenticated requests for non
-        # owners.
+    def test_getBuildsForBuilder_hides_private_other_users(self):
+        # Private builds are not returned for users without permission
+        # to view them.
+        self.makeBuildPrivate(self.binary_package_build)
         result = self.build_farm_job_set.getBuildsForBuilder(
             self.builder, user=self.factory.makePerson())
-        self.assertTrue(binary_package_build.build_farm_job not in result)
+        self.assertTrue(
+            self.binary_package_build.build_farm_job not in result)
 
-        # But if the user is an admin they can see it.
+    def test_getBuildsForBuilder_shows_private_to_admin(self):
+        # Admin users can see private builds.
         admin_team = getUtility(ILaunchpadCelebrities).admin
+        self.makeBuildPrivate(self.binary_package_build)
         result = self.build_farm_job_set.getBuildsForBuilder(
             self.builder, user=admin_team.teamowner)
-        self.assertTrue(binary_package_build.build_farm_job in result)
+        self.assertTrue(self.binary_package_build.build_farm_job in result)
 
-
+    def test_getBuildsForBuilder_shows_private_to_authorised(self):
         # Similarly, if the user is in the owning team they can see it.
-        # result = self.build_farm_job_set.getBuildsForBuilder(
-        #     self.builder, user=binary_package_build.archive.owner.teamowner)
-        # self.assertTrue(binary_package_build.build_farm_job in result)
+        self.makeBuildPrivate(self.binary_package_build)
+        result = self.build_farm_job_set.getBuildsForBuilder(
+            self.builder,
+            user=self.binary_package_build.archive.owner.teamowner)
+        self.assertTrue(self.binary_package_build.build_farm_job in result)
 
 
 def test_suite():
