@@ -192,7 +192,12 @@ class POTemplate(SQLBase, RosettaStats):
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
         # Convert  to a list for caching.
-        return list(subset.getSharingPOTemplateIDs(self.name))
+        result = list(subset.getSharingPOTemplateIDs(self.name))
+        if len(result) == 0:
+            # Always return at least the template itself.
+            return [self.id]
+        else:
+            return result
 
     def __storm_invalidated__(self):
         self.clearPOFileCache()
@@ -1366,16 +1371,14 @@ class POTemplateSharingSubset(object):
         self.subset = None
 
         if distribution is not None:
-            assert sourcepackagename is not None, (
-                   "Need sourcepackagename to select from distribution.")
-            product = self._findUpstreamProduct(
-                distribution, sourcepackagename)
-            if product is None:
-                self.share_by_name = self._canShareByName(
+            self.distribution = distribution
+            self.sourcepackagename = sourcepackagename
+            if sourcepackagename is not None:
+                product = self._findUpstreamProduct(
                     distribution, sourcepackagename)
-                if self.share_by_name:
-                    self.distribution = distribution
-                    self.sourcepackagename = sourcepackagename
+                if product is None:
+                    self.share_by_name = self._canShareByName(
+                        distribution, sourcepackagename)
         if product is not None:
             self.product = product
 
@@ -1422,7 +1425,7 @@ class POTemplateSharingSubset(object):
             package = template.sourcepackagename.name
         return (template.name, package)
 
-    def _queryByProduct(self, templatename):
+    def _queryByProduct(self, templatename_clause):
         from lp.registry.model.productseries import ProductSeries
 
         ProductSeries1 = ClassAlias(ProductSeries)
@@ -1446,10 +1449,10 @@ class POTemplateSharingSubset(object):
                     ProductSeries.productID == self.product.id,
                     ProductSeries1.productID == self.product.id
                     ),
-                POTemplate.name == templatename
+                templatename_clause
                 ))
 
-    def _queryBySourcepackagename(self, templatename):
+    def _queryBySourcepackagename(self, templatename_clause):
         from lp.registry.model.distroseries import DistroSeries
         origin = Join(
             POTemplate, DistroSeries,
@@ -1459,20 +1462,32 @@ class POTemplateSharingSubset(object):
             And(
                 DistroSeries.distributionID == self.distribution.id,
                 POTemplate.sourcepackagename == self.sourcepackagename,
-                POTemplate.name == templatename
+                templatename_clause
                 ))
+
+    def _queryByDistribution(self, templatename_clause):
+        """Special case when templates are searched across a distribution."""
+        return Store.of(self.distribution).find(
+            POTemplate, templatename_clause)
+
+    def _queryPOTemplates(self, templatename_clause):
+        
+        if self.product is not None:
+            return self._queryByProduct(templatename_clause)
+        elif self.share_by_name:
+            return self._queryBySourcepackagename(templatename_clause)
+        elif self.distribution is not None and self.sourcepackagename is None:
+            return self._queryByDistribution(templatename_clause)
+        else:
+            return EmptyResultSet()
 
     def getSharingPOTemplates(self, potemplate_name):
         """See IPOTemplateSharingSubset."""
-
-        if self.product is not None:
-            return self._queryByProduct(potemplate_name)
-        elif self.share_by_name:
-            return self._queryBySourcepackagename(potemplate_name)
-        else:
-            return EmptyResultSet()
-#        escaped_potemplate_name = re.escape(potemplate_name)
-#        return self._iterate_potemplates("^%s$" % escaped_potemplate_name)
+        if self.distribution is not None:
+            assert self.sourcepackagename is not None, (
+                   "Need sourcepackagename to select from distribution.")
+        return self._queryPOTemplates(
+            POTemplate.name == potemplate_name)
 
     def getSharingPOTemplateIDs(self, potemplate_name):
         """See IPOTemplateSharingSubset."""
@@ -1483,7 +1498,12 @@ class POTemplateSharingSubset(object):
         """See IPOTemplateSharingSubset."""
         equivalents = {}
 
-        for template in self._iterate_potemplates(name_pattern):
+        if name_pattern is None:
+            templatename_clause = "1=1"
+        else:
+            templatename_clause = "potemplate.name ~ '%s'" % name_pattern
+
+        for template in self._queryPOTemplates(templatename_clause):
             key = self._get_potemplate_equivalence_class(template)
             if key not in equivalents:
                 equivalents[key] = []
