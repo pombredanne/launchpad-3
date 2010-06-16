@@ -20,6 +20,7 @@ from canonical.testing.layers import DatabaseLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
@@ -37,6 +38,16 @@ def get_spn(build):
     """Return the SourcePackageName of the given Build."""
     pub = build.current_source_publication
     return pub.sourcepackagerelease.sourcepackagename
+
+
+class PackageInfo:
+
+    def __init__(self, name, version,
+        status=PackagePublishingStatus.PUBLISHED, component="main"):
+        self.name = name
+        self.version = version
+        self.status = status
+        self.component = component
 
 
 class TestPopulateArchiveScript(TestCaseWithFactory):
@@ -118,14 +129,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             distro, ArchivePurpose.COPY, archive_name)
         self.assertTrue(copy_archive is not None)
 
-        # Ascertain that the new copy archive was created with the 'enabled'
-        # flag turned off.
-        self.assertFalse(copy_archive.enabled)
-
-        # Also, make sure that the builds for the new copy archive will be
-        # carried out on non-virtual builders.
-        self.assertTrue(copy_archive.require_virtualized)
-
         # Make sure the right source packages were cloned.
         self._verifyClonedSourcePackages(copy_archive, hoary)
 
@@ -141,6 +144,138 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             get_spn(removeSecurityProxy(build)).name for build in builds]
 
         self.assertEqual(build_spns, self.expected_build_spns)
+
+    def createSourceDistroSeries(self):
+        distro_name = "foobuntu"
+        distro = self.factory.makeDistribution(name=distro_name)
+        distroseries_name = "maudlin"
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distro, name=distroseries_name)
+        return distroseries
+
+    def createTargetOwner(self):
+        person_name = "copy-archive-owner"
+        owner = self.factory.makePerson(name=person_name)
+        return owner
+
+    def getTargetArchiveName(self, distribution):
+        archive_name = "msa%s" % int(time.time())
+        copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distribution, ArchivePurpose.COPY, archive_name)
+        # This is a sanity check: a copy archive with this name should not
+        # exist yet.
+        self.assertTrue(copy_archive is None)
+        return archive_name
+
+    def createSourcePublication(self, info, distroseries, component="main"):
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.factory.getOrMakeSourcePackageName(
+                name=info.name),
+            distroseries=distroseries, component=self.factory.makeComponent(
+                component),
+            version=info.version,
+            archive=distroseries.distribution.main_archive,
+            status=info.status, pocket=PackagePublishingPocket.RELEASE)
+
+    def copyArchive(self, distroseries, archive_name, owner):
+        extra_args = [
+            '-a', '386',
+            '--from-distribution', distroseries.distribution.name,
+            '--from-suite', distroseries.name,
+            '--to-distribution', distroseries.distribution.name,
+            '--to-suite', distroseries.name,
+            '--to-archive', archive_name,
+            '--to-user', owner.name,
+            '--reason',
+            '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
+            '--component', 'main'
+            ]
+
+        (exitcode, out, err) = self.runWrapperScript(extra_args)
+        # Check for zero exit code.
+        self.assertEqual(
+            exitcode, 0, "\n=> %s\n=> %s\n=> %s\n" % (exitcode, out, err))
+
+        # Make sure the copy archive with the desired name was
+        # created
+        copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distroseries.distribution, ArchivePurpose.COPY, archive_name)
+        self.assertTrue(copy_archive is not None)
+
+        # Ascertain that the new copy archive was created with the 'enabled'
+        # flag turned off.
+        self.assertFalse(copy_archive.enabled)
+
+        # Also, make sure that the builds for the new copy archive will be
+        # carried out on non-virtual builders.
+        self.assertTrue(copy_archive.require_virtualized)
+
+        return copy_archive
+
+    def checkCopiedSources(self, archive, distroseries, expected):
+        expected_set = set([(info.name, info.version) for info in expected])
+        sources = archive.getPublishedSources(
+            distroseries=distroseries, status=self.pending_statuses)
+        actual_set = set()
+        for source in sources:
+            source = removeSecurityProxy(source)
+            actual_set.add(
+                (source.source_package_name, source.source_package_version))
+        self.assertEqual(expected_set, actual_set)
+
+    def createSourcePublications(self, package_infos, distroseries):
+        for package_info in package_infos:
+            self.createSourcePublication(package_info, distroseries)
+
+    def createSourceDistribution(self, package_infos):
+        distroseries = self.createSourceDistroSeries()
+        distribution = distroseries.distribution
+        archive = distribution.main_archive
+        self.createSourcePublications(package_infos, distroseries)
+        self.layer.commit()
+        return distroseries
+
+    def makeCopyArchive(self, package_info):
+        owner = self.createTargetOwner()
+        distroseries = self.createSourceDistribution([package_info])
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        copy_archive = self.copyArchive(distroseries, archive_name, owner)
+        return (copy_archive, distroseries)
+
+    def testCopyArchiveCreateCopiesPublished(self):
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        copy_archive, distroseries = self.makeCopyArchive(package_info)
+        self.checkCopiedSources(
+            copy_archive, distroseries, [package_info])
+
+    def testCopyArchiveCreateCopiesPending(self):
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PENDING)
+        copy_archive, distroseries = self.makeCopyArchive(package_info)
+        self.checkCopiedSources(
+            copy_archive, distroseries, [package_info])
+
+    def testCopyArchiveCreateDoesntCopySuperseded(self):
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.SUPERSEDED)
+        copy_archive, distroseries = self.makeCopyArchive(package_info)
+        self.checkCopiedSources(
+            copy_archive, distroseries, [])
+
+    def testCopyArchiveCreateDoesntCopyDeleted(self):
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.DELETED)
+        copy_archive, distroseries = self.makeCopyArchive(package_info)
+        self.checkCopiedSources(
+            copy_archive, distroseries, [])
+
+    def testCopyArchiveCreateDoesntCopyObsolete(self):
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.OBSOLETE)
+        copy_archive, distroseries = self.makeCopyArchive(package_info)
+        self.checkCopiedSources(
+            copy_archive, distroseries, [])
 
     def runScript(
         self, archive_name=None, suite='hoary', user='salgado',
