@@ -767,7 +767,8 @@ class DistributionEditView(RegistryEditFormView):
 
     schema = IDistribution
     field_names = ['displayname', 'title', 'summary', 'description',
-                   'bug_reporting_guidelines', 'icon', 'logo', 'mugshot',
+                   'bug_reporting_guidelines', 'bug_reported_acknowledgement',
+                   'icon', 'logo', 'mugshot',
                    'official_malone', 'enable_bug_expiration',
                    'official_blueprints', 'official_rosetta',
                    'official_answers', 'translation_focus', ]
