@@ -1426,6 +1426,16 @@ class POTemplateSharingSubset(object):
         return (template.name, package)
 
     def _queryByProduct(self, templatename_clause):
+        """Build the query that finds POTemplates by their linked product.
+
+        Queries the Packaging table to find templates in linked source
+        packages, too.
+
+        :param templatename_clause: A string or a storm expression to
+        add to the where clause of the query that will select the template
+        name.
+        :return: A ResultSet for the query.
+        """
         from lp.registry.model.productseries import ProductSeries
 
         ProductSeries1 = ClassAlias(ProductSeries)
@@ -1453,6 +1463,13 @@ class POTemplateSharingSubset(object):
                 ))
 
     def _queryBySourcepackagename(self, templatename_clause):
+        """Build the query that finds POTemplates by their names.
+
+        :param templatename_clause: A string or a storm expression to
+        add to the where clause of the query that will select the template
+        name.
+        :return: A ResultSet for the query.
+        """
         from lp.registry.model.distroseries import DistroSeries
         origin = Join(
             POTemplate, DistroSeries,
@@ -1471,7 +1488,7 @@ class POTemplateSharingSubset(object):
             POTemplate, templatename_clause)
 
     def _queryPOTemplates(self, templatename_clause):
-        
+        """Select the right query to be used."""
         if self.product is not None:
             return self._queryByProduct(templatename_clause)
         elif self.share_by_name:
