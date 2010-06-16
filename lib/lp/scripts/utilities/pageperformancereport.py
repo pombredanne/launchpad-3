@@ -54,6 +54,21 @@ class Category:
         return cmp(self.title.lower(), other.title.lower())
 
 
+class Stats:
+    """Bag to hold request statistics.
+
+    All times are in seconds.
+    """
+    total_time = 0 # Total time spent rendering.
+    total_hits = 0 # Total hits.
+    mean = 0 # Mean time per hit.
+    median = 0 # Median time per hit.
+    standard_deviation = 0 # Standard deviation per hit.
+    histogram = None # # Request times histogram.
+
+empty_stats = Stats() # Singleton.
+
+
 class Times:
     """Collection of request times."""
     def __init__(self, timeout):
@@ -70,7 +85,7 @@ class Times:
     def stats(self):
         """Generate statistics about our request times.
 
-        Returns (total, mean, median, standard_deviation, histogram).
+        Returns a `Stats` instance.
 
         The histogram is a list of request counts per 1 second bucket.
         ie. histogram[0] contains the number of requests taking between 0 and
@@ -79,17 +94,19 @@ class Times:
         this Category.
         """
         if not self.request_times:
-            return 0, 0, 0, 0, None
+            return empty_stats
+        stats = Stats()
         array = numpy.asarray(self.request_times, numpy.float32)
-        total = numpy.sum(array)
-        mean = numpy.mean(array)
-        median = numpy.median(array)
-        standard_deviation = numpy.std(array)
+        stats.total_time = numpy.sum(array)
+        stats.total_hits = len(array)
+        stats.mean = numpy.mean(array)
+        stats.median = numpy.median(array)
+        stats.standard_deviation = numpy.std(array)
         histogram = numpy.histogram(
             array, normed=True,
             range=(0, self.timeout), bins=self.timeout)
-        histogram = zip(histogram[1], histogram[0])
-        return total, mean, median, standard_deviation, histogram
+        stats.histogram = zip(histogram[1], histogram[0])
+        return stats
 
     def __str__(self):
         results = self.stats()
@@ -358,7 +375,13 @@ def print_html_report(options, categories, pageid_times):
         <thead>
             <tr>
             <td></td>
-            <th>Total</th>
+            <th colspan="2">Cumulative</th>
+            <th colspan="4">Per Request</th>
+            </tr>
+            <tr>
+            <td></td>
+            <th>Time</th>
+            <th>Hits</th>
             <th>Mean</th>
             <th>Median</th>
             <th>Standard<br/>Deviation</th>
@@ -384,12 +407,13 @@ def print_html_report(options, categories, pageid_times):
     histograms = []
 
     def handle_times(html_title, times):
-        total, mean, median, standard_deviation, histogram = times.stats()
-        histograms.append(histogram)
+        stats = times.stats()
+        histograms.append(stats.histogram)
         print dedent("""\
             <tr class="%s">
             <th class="category-title">%s</th>
-            <td class="total">%.2f s</td>
+            <td class="total_time">%.2f s</td>
+            <td class="total_hits">%d</td>
             <td class="mean">%.2f s</td>
             <td class="median">%.2f s</td>
             <td class="standard-deviation">%.2f s</td>
@@ -399,7 +423,8 @@ def print_html_report(options, categories, pageid_times):
             </tr>
             """ % (
                 row_class.next(), html_title,
-                total, mean, median, standard_deviation,
+                stats.total_time, stats.total_hits,
+                stats.mean, stats.median, stats.standard_deviation,
                 len(histograms)-1))
 
     if options.categories:
