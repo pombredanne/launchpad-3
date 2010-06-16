@@ -376,10 +376,16 @@ class BuildRecordsView(LaunchpadView):
         # build self.state & self.available_states structures
         self._setupMappedStates(state_tag)
 
+        # By default, we use the binary_only class attribute, but we
+        # ensure it is true if we are passed an arch tag or a name.
+        binary_only = self.binary_only
+        if self.text is not None or self.arch_tag is not None:
+            binary_only = True
+
         # request context build records according the selected state
         builds = self.context.getBuildRecords(
             build_state=self.state, name=self.text, arch_tag=self.arch_tag,
-            user=self.user, binary_only=self.binary_only)
+            user=self.user, binary_only=binary_only)
         self.batchnav = BatchNavigator(builds, self.request)
         # We perform this extra step because we don't what to issue one
         # extra query to retrieve the BuildQueue for each Build (batch item)
