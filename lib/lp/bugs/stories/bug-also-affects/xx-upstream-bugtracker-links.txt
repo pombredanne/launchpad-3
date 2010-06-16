@@ -33,7 +33,7 @@ to reflect this.
     >>> admin_browser.getControl(
     ...     name='field.bugtracker').value = ['external']
     >>> admin_browser.getControl(
-    ...     name='field.bugtracker.bugtracker').value = ['1']
+    ...     name='field.bugtracker.bugtracker').value = 'mozilla.org'
     >>> admin_browser.getControl('Change').click()
 
     >>> user_browser.open('http://launchpad.dev/bugs/13/')
