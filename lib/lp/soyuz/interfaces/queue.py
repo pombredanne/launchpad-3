@@ -742,3 +742,10 @@ class PackageUploadCustomFormat(DBEnumeratedType):
 
         A tarball containing raw (Gnome) help file translations.
         """)
+
+    META_DATA = DBItem(5, """
+        meta-data
+
+        A file containing meta-data about the package, mainly for use in
+        the Software Center.
+        """)
