@@ -145,7 +145,7 @@
             <tal:navigation
              replace="structure batch/@@+navigation-links-upper"/>
           </tal:multipage>
-          <table class="listing">
+          <table id="people-results" class="listing sortable">
             <thead>
               <tr>
                 <th>Name</th>
