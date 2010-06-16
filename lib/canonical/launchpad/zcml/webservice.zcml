@@ -16,6 +16,11 @@
         provides="lazr.restful.interfaces.IWebServiceConfiguration">
     </utility>
 
+    <utility
+        factory="lp.services.memcache.restful.MemcachedStormRepresentationCache"
+        provides="lazr.restful.interfaces.IRepresentationCache">
+    </utility>
+
     <securedutility
         class="canonical.launchpad.systemhomes.WebServiceApplication"
         provides="canonical.launchpad.interfaces.IWebServiceApplication">
