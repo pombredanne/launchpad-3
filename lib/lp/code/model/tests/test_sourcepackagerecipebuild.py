@@ -235,6 +235,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(recipe, build.recipe)
         self.assertEqual(list(recipe.distroseries), [build.distroseries])
 
+    def test_makeDailyBuilds_clears_is_stale(self):
+        recipe = self.factory.makeSourcePackageRecipe(build_daily=True,
+            is_stale=True)
+        build = SourcePackageRecipeBuild.makeDailyBuilds()[0]
+        self.assertFalse(recipe.is_stale)
+
     def test_getRecentBuilds(self):
         """Recent builds match the same person, series and receipe.
 

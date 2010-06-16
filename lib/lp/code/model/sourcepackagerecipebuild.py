@@ -221,20 +221,20 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     @staticmethod
     def makeDailyBuilds():
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-        candidates = SourcePackageRecipe.findStaleDailyBuilds()
+        recipes = SourcePackageRecipe.findStaleDailyBuilds()
         builds = []
-        for candidate in candidates:
-            recipe = candidate.sourcepackage_recipe
-            try:
-                build = recipe.requestBuild(recipe.daily_build_archive,
-                    recipe.owner, candidate.distroseries,
-                    PackagePublishingPocket.RELEASE)
-            except:
-                info = sys.exc_info()
-                errorlog.globalErrorUtility.raising(info)
-            else:
-                builds.append(build)
-
+        for recipe in recipes:
+            for distroseries in recipe.distroseries:
+                try:
+                    build = recipe.requestBuild(
+                        recipe.daily_build_archive, recipe.owner,
+                        distroseries, PackagePublishingPocket.RELEASE)
+                except:
+                    info = sys.exc_info()
+                    errorlog.globalErrorUtility.raising(info)
+                else:
+                    builds.append(build)
+            recipe.is_stale = False
         return builds
 
     def destroySelf(self):

@@ -381,36 +381,14 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # Show no database constraints were violated
         Store.of(recipe).flush()
 
-    def test_findStaleDailyBuilds_requires_build_daily(self):
-        recipe = self.factory.makeSourcePackageRecipe()
-        self.assertContentEqual(
-            [], SourcePackageRecipe.findStaleDailyBuilds())
-        removeSecurityProxy(recipe).build_daily = True
-        self.assertEqual([recipe],
-            [sprd.sourcepackage_recipe for sprd
-             in SourcePackageRecipe.findStaleDailyBuilds()])
-
-    def test_findStaleDailyBuilds_for_modified_base_branch(self):
-        recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
-        now = self.factory.getUniqueDate()
-        self.assertEqual([recipe],
-            [sprd.sourcepackage_recipe for sprd
-             in SourcePackageRecipe.findStaleDailyBuilds()])
-        recipe.base_branch.date_last_modified = now - timedelta(hours=1)
-        build = recipe.requestBuild(
-            archive=recipe.daily_build_archive, requester=recipe.owner,
-            distroseries=list(recipe.distroseries)[0],
-            pocket=PackagePublishingPocket.RELEASE)
-        removeSecurityProxy(build).datebuilt = now
-        self.assertContentEqual(
-            [], SourcePackageRecipe.findStaleDailyBuilds())
-        distro2 = self.factory.makeDistroSeries()
-        distro3 = self.factory.makeDistroSeries()
-        recipe.distroseries.add(distro2)
-        recipe.distroseries.add(distro3)
-        self.assertContentEqual(set([(recipe, distro2), (recipe, distro3)]),
-            set((sprd.sourcepackage_recipe, sprd.distroseries) for sprd
-                in SourcePackageRecipe.findStaleDailyBuilds()))
+    def test_findStaleDailyBuilds(self):
+        stale_non_daily = self.factory.makeSourcePackageRecipe()
+        daily_non_stale = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=False)
+        stale_daily = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
+        self.assertContentEqual([stale_daily],
+            SourcePackageRecipe.findStaleDailyBuilds())
 
     def test_getMedianBuildDuration(self):
         recipe = removeSecurityProxy(self.factory.makeSourcePackageRecipe())
