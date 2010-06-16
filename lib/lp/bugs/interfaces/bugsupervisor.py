@@ -28,9 +28,9 @@ class IHasBugSupervisor(Interface):
         title=_("Bug Supervisor"),
         description=_(
             "The Launchpad id of the person or team (preferred) responsible "
-            "for bug management.  The bug supervisor will be subscribed to all"
-            "bugs and will receive email about all activity on all bugs for "
-            "this project, so that should be a factor in your decision.  "
+            "for bug management.  The bug supervisor will be subscribed to "
+            "all bugs and will receive email about all activity on all bugs "
+            "for this project, so that should be a factor in your decision.  "
             "The bug supervisor will also have access to all private bugs."),
 
 
