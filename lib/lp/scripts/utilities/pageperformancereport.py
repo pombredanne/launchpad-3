@@ -30,6 +30,20 @@ class Request(zc.zservertracelog.tracereport.Request):
     url = None
     pageid = None
 
+    # Override the broken version in our superclass that always
+    # returns an integer.
+    @property
+    def app_seconds(self):
+        interval = self.app_time - self.start_app_time
+        return interval.seconds + interval.microseconds / 1000000.0
+
+    # Override the broken version in our superclass that always
+    # returns an integer.
+    @property
+    def total_seconds(self):
+        interval = self.end - self.start
+        return interval.seconds + interval.microseconds / 1000000.0
+
 
 class Category:
     """A Category in our report.
@@ -352,6 +366,8 @@ def print_html_report(options, categories, pageid_times):
         <script language="javascript" type="text/javascript"
             src="http://people.canonical.com/~stub/flot/jquery.flot.min.js"
             ></script>
+        <script language="javascript" type="text/javascript"
+            src="http://people.canonical.com/~stub/sorttable.js"></script>
         <style type="text/css">
             h2 { font-weight: normal; font-size: 100%%; }
             thead th { padding-left: 1em; padding-right: 1em; }
@@ -363,6 +379,12 @@ def print_html_report(options, categories, pageid_times):
             .histogram { padding: 0.5em 1em; width:400px; height:250px; }
             .odd-row { background-color: #eeeeff; }
             .even-row { background-color: #ffffee; }
+            table.sortable thead {
+                background-color:#eee;
+                color:#666666;
+                font-weight: bold;
+                cursor: default;
+                }
         </style>
         </head>
         <body>
@@ -371,37 +393,21 @@ def print_html_report(options, categories, pageid_times):
         ''' % {'date': time.ctime()})
 
     table_header = dedent('''\
-        <table class="launchpad-performance-report">
+        <table class="sortable page-performance-report">
         <thead>
             <tr>
-            <td></td>
-            <th colspan="2">Cumulative</th>
-            <th colspan="4">Per Request</th>
-            </tr>
-            <tr>
-            <td></td>
-            <th>Time</th>
-            <th>Hits</th>
-            <th>Mean</th>
-            <th>Median</th>
-            <th>Standard<br/>Deviation</th>
+            <th>Name</th>
+            <th>Total Time (secs)</th>
+            <th>Total Hits</th>
+            <th>Mean Time (secs)</th>
+            <th>Median Time (secs)</th>
+            <th>Time Standard<br/>Deviation</th>
             <th>Distribution</th>
             </tr>
         </thead>
         <tbody>
         ''')
     table_footer = "</tbody></table>"
-
-    # Generator to produce class names for odd or even rows.
-    def _row_class():
-        _row_toggle = 0
-        while True:
-            _row_toggle = (_row_toggle + 1) % 2
-            if _row_toggle == 1:
-                yield "even-row"
-            else:
-                yield "odd-row"
-    row_class = _row_class()
 
     # Store our generated histograms to output Javascript later.
     histograms = []
@@ -410,19 +416,19 @@ def print_html_report(options, categories, pageid_times):
         stats = times.stats()
         histograms.append(stats.histogram)
         print dedent("""\
-            <tr class="%s">
+            <tr>
             <th class="category-title">%s</th>
-            <td class="total_time">%.2f s</td>
+            <td class="total_time">%.2f</td>
             <td class="total_hits">%d</td>
-            <td class="mean">%.2f s</td>
-            <td class="median">%.2f s</td>
-            <td class="standard-deviation">%.2f s</td>
+            <td class="mean">%.2f</td>
+            <td class="median">%.2f</td>
+            <td class="standard-deviation">%.2f</td>
             <td>
                 <div class="histogram" id="histogram%d"></div>
             </td>
             </tr>
             """ % (
-                row_class.next(), html_title,
+                html_title,
                 stats.total_time, stats.total_hits,
                 stats.mean, stats.median, stats.standard_deviation,
                 len(histograms)-1))
@@ -430,7 +436,7 @@ def print_html_report(options, categories, pageid_times):
     if options.categories:
         print table_header
         for category in categories:
-            html_title = '%s <span class="regexp">%s</span>' % (
+            html_title = '%s<br/><span class="regexp">%s</span>' % (
                 html_quote(category.title), html_quote(category.regexp))
             handle_times(html_title, category.times)
         print table_footer
