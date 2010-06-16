@@ -425,14 +425,9 @@ associated with a new Person.
     >>> (acct, email) = getUtility(IAccountSet).createAccountAndEmail(
     ...          "foo@canonical.com", PersonCreationRationale.UNKNOWN,
     ...          "fo", "secr1t")
-    >>> commit()
     >>> person = getUtility(IPersonSet).createPersonWithoutEmail("fo",
     ...          rationale=PersonCreationRationale.UNKNOWN)
 	>>> person.account = acct
-	>>> acct.person = person
-    >>> commit()
-    >>> print email.person
-    None
 
     Commit the changes so the emailaddress will have to be updated later 
     rather than inserted.
@@ -441,7 +436,7 @@ associated with a new Person.
 
     >>> addr = sig_file.parseAddress("Foo <foo@canonical.com>")
     >>> addr['person'].creation_rationale.name
-    'SOURCEPACKAGEUPLOAD'
+    'UNKNOWN'
     >>> commit()
 
     >>> addr['person'].creation_comment
