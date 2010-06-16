@@ -12,6 +12,7 @@ __metaclass__ = type
 
 __all__ = [
     'IHasBuildRecords',
+    'IncompatibleArguments',
     ]
 
 from zope.interface import Interface
@@ -21,7 +22,12 @@ from lazr.enum import DBEnumeratedType
 from canonical.launchpad import _
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_read_operation, operation_parameters,
-    operation_returns_collection_of, rename_parameters_as)
+    operation_returns_collection_of, rename_parameters_as, webservice_error)
+
+
+class IncompatibleArguments(Exception):
+    """Raised when incompatible arguments are passed to a method."""
+    webservice_error(400) # Bad request.
 
 
 class IHasBuildRecords(Interface):

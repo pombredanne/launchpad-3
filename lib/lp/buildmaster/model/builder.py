@@ -45,6 +45,7 @@ from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
     CannotResumeHost, CorruptBuildCookie, IBuilder, IBuilderSet,
     ProtocolVersionMismatch)
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
@@ -59,7 +60,8 @@ from lp.services.job.interfaces.job import JobStatus
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.buildrecords import (
+    IHasBuildRecords, IncompatibleArguments)
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 
 
@@ -426,8 +428,16 @@ class Builder(SQLBase):
     def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
                         user=None, binary_only=True):
         """See IHasBuildRecords."""
-        return getUtility(IBinaryPackageBuildSet).getBuildsForBuilder(
-            self.id, build_state, name, arch_tag, user)
+        if binary_only:
+            return getUtility(IBinaryPackageBuildSet).getBuildsForBuilder(
+                self.id, build_state, name, arch_tag, user)
+        else:
+            if arch_tag is not None or name is not None:
+                raise IncompatibleArguments(
+                    "The 'arch_tag' and 'name' parameters can be used only "
+                    "with binary_only=True.")
+            return getUtility(IBuildFarmJobSet).getBuildsForBuilder(
+                self, status=build_state, user=user)
 
     def slaveStatus(self):
         """See IBuilder."""

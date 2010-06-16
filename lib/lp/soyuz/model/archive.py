@@ -66,7 +66,7 @@ from lp.soyuz.interfaces.archive import (
     ArchiveNotPrivate, ArchivePurpose, ArchiveStatus, CannotCopy,
     CannotSwitchPrivacy, CannotUploadToPPA, CannotUploadToPocket,
     DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
-    IncompatibleArguments, InsufficientUploadRights, InvalidPocketForPPA,
+    InsufficientUploadRights, InvalidPocketForPPA,
     InvalidPocketForPartnerArchive, InvalidComponent, IPPA,
     MAIN_ARCHIVE_PURPOSES, NoRightsForArchive, NoRightsForComponent,
     NoSuchPPA, NoTokensForTeams, PocketNotFound, VersionRequiresName,
@@ -79,7 +79,8 @@ from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.buildrecords import (
+    IHasBuildRecords, IncompatibleArguments)
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import PersonVisibility
@@ -1044,7 +1045,7 @@ class Archive(SQLBase):
         if isinstance(sourcepackagename, basestring):
             sourcepackagename = getUtility(
                 ISourcePackageNameSet)[sourcepackagename]
-        reason = self.checkUpload(person, distroseries, sourcepackagename, 
+        reason = self.checkUpload(person, distroseries, sourcepackagename,
             component, pocket, strict_component)
         if reason is not None:
             raise reason

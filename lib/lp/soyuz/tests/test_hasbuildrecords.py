@@ -16,8 +16,8 @@ from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuildSource)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.archive import IncompatibleArguments
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.buildrecords import (
+    IHasBuildRecords, IncompatibleArguments)
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_binarypackagebuild import (
     BaseTestCaseWithThreeBuilds)
@@ -131,6 +131,34 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
         for build in self.builds:
             build.builder = self.context
 
+    def test_binary_only_false(self):
+        # A builder can optionally return the more general
+        # build farm job objects.
+
+        # Until we have different IBuildFarmJob types implemented, we
+        # can only test this by creating a lone IBuildFarmJob of a
+        # different type.
+        from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
+        from lp.buildmaster.interfaces.buildbase import BuildStatus
+        build_farm_job = getUtility(IBuildFarmJobSource).new(
+            job_type=BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
+            status=BuildStatus.BUILDING)
+        removeSecurityProxy(build_farm_job).builder = self.context
+
+        builds = self.context.getBuildRecords(binary_only=True)
+        self.failUnlessEqual(3, builds.count())
+
+        builds = self.context.getBuildRecords(binary_only=False)
+        self.failUnlessEqual(4, builds.count())
+
+    def test_incompatible_arguments(self):
+        # binary_only=False is incompatible with arch_tag and name.
+        self.failUnlessRaises(
+            IncompatibleArguments, self.context.getBuildRecords,
+            binary_only=False, arch_tag="anything")
+        self.failUnlessRaises(
+            IncompatibleArguments, self.context.getBuildRecords,
+            binary_only=False, name="anything")
 
 class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the SourcePackage implementation of IHasBuildRecords."""
