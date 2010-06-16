@@ -58,7 +58,7 @@ from canonical.launchpad.interfaces.message import (
     IMessage, IndexedMessage)
 from lp.registry.interfaces.structuralsubscription import (
     BugNotificationLevel, IStructuralSubscriptionTarget)
-from canonical.launchpad.mailnotification import BugNotificationRecipients
+from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
