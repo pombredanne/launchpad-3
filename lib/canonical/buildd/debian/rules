@@ -24,8 +24,8 @@ pytarget = $(targetshare)/canonical/buildd
 pyfiles = debian.py slave.py binarypackage.py utils.py __init__.py \
     sourcepackagerecipe.py translationtemplates.py
 slavebins = unpack-chroot mount-chroot update-debian-chroot sbuild-package \
-scan-for-processes umount-chroot remove-build apply-ogre-model \
-override-sources-list buildrecipe generate-translation-templates
+    scan-for-processes umount-chroot remove-build override-sources-list \
+    buildrecipe generate-translation-templates
 
 BUILDDUID=65500
 BUILDDGID=65500
