@@ -96,6 +96,7 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         readonly=False)
     build_daily = exported(Bool(
         title=_("Build daily")))
+    is_stale = Bool(title=_('Recipe is stale.'))
 
     name = exported(TextLine(
             title=_("Name"), required=True,
@@ -151,7 +152,7 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
             False, select all builds that are not pending.
         """
 
-    def getLastBuild(self):
+    def getLastBuild():
         """Return the the most recent build of this recipe."""
 
     def destroySelf():
