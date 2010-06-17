@@ -716,6 +716,9 @@ form table tbody th {
 form table label {
     font-weight: bold;
     }
+.compound {
+    margin-bottom: .5em;
+    }
 .field.subordinate label {
     font-weight: normal;
     }
