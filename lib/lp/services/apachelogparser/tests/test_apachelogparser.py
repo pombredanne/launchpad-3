@@ -237,7 +237,6 @@ class TestLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
-        config.pop("log_parser config")
 
         self.assertEqual(self.logger.buffer.getvalue(), '')
         date = datetime(2008, 6, 13)
@@ -246,10 +245,22 @@ class TestLogFileParsing(TestCase):
             [('/12060796/me-tv-icon-64x64.png', {date: {'AU': 1}}),
              ('/9096290/me-tv-icon-14x14.png', {date: {'AU': 1}})])
 
-        # We should have parsed only the first two lines of data.
+        # We have initially parsed only the first two lines of data.
         fd.seek(0)
         lines = fd.readlines()
-        self.assertEqual(parsed_bytes, len(lines[0]) + len(lines[1]))
+        line_lengths = [len(line) for line in lines]
+        self.assertEqual(parsed_bytes, sum(line_lengths[:2]))
+
+        # And the subsequent parse will be for the 3rd and 4th lines,
+        # corresponding to two downloads of the same file.
+        downloads, parsed_bytes = parse_file(
+            fd, start_position=parsed_bytes, logger=self.logger,
+            get_download_key=get_path_download_key)
+        config.pop("log_parser config")
+        self.assertContentEqual(
+            downloads.items(),
+            [('/8196569/mediumubuntulogo.png', {date: {'AR': 1, 'JP': 1}})])
+        self.assertEqual(parsed_bytes, sum(line_lengths[:4]))
 
 
 class TestParsedFilesDetection(TestCase):
