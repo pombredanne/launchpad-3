@@ -21,25 +21,38 @@ from lp.code.interfaces.branch import BzrIdentityMixin, IBranch
 
 
 class DecoratedBug:
-    """Provide some additional attributes to a normal bug."""
+    """Provide some cached attributes to a normal bug.
+
+    We provide cached properties where sensible, and override default bug
+    behaviour where the cached properties can be used to avoid extra database
+    queries.
+    """
     delegates(IBug, 'bug')
 
     def __init__(self, bug, branch, tasks=None):
         self.bug = bug
         self.branch = branch
-        self.tasks = tasks
-        if self.tasks is None:
-            self.tasks = self.bug.bugtasks
-
-    @property
-    def bugtasks(self):
-        return self.tasks
+        if tasks is None:
+            tasks = self.bug.bugtasks
+        self.bugtasks = tasks
 
     @property
     def default_bugtask(self):
-        return self.tasks[0]
+        """Use the first bugtask.
+
+        Use the cached tasks as calling default_bugtask on the bug object
+        causes a DB query.
+        """
+        return self.bugtasks[0]
 
     def getBugTask(self, target):
+        """Get the bugtask for a specific target.
+
+        This method is overridden rather than letting it fall through to the
+        underlying bug as the underlying implementation gets the bugtasks from
+        self, which would in that case be the normal bug model object, which
+        would then hit the database to get the tasks.
+        """
         # Copied from Bug.getBugTarget to avoid importing.
         for bugtask in self.bugtasks:
             if bugtask.target == target:
@@ -49,6 +62,9 @@ class DecoratedBug:
     @property
     def bugtask(self):
         """Return the bugtask for the branch project, or the default bugtask.
+
+        This method defers the identitication of the appropriate task to the
+        branch target.
         """
         return self.branch.target.getBugTask(self)
 
@@ -65,6 +81,13 @@ class DecoratedBranch(BzrIdentityMixin):
 
     @cachedproperty
     def linked_bugs(self):
+        """Override the default behaviour of the branch object.
+
+        The default behaviour is just to get the bugs.  We want to display the
+        tasks however, and to avoid the extra database queries to get the
+        tasks, we get them all at once, and provide decorated bugs (that have
+        their tasks cached).
+        """
         bugs = defaultdict(list)
         for bug, task in self.branch.getLinkedBugsAndTasks():
             bugs[bug].append(task)
@@ -74,14 +97,26 @@ class DecoratedBranch(BzrIdentityMixin):
 
     @property
     def displayname(self):
+        """Override the default model property.
+
+        If left to the underlying model, it would call the bzr_identity on the
+        underlying branch rather than the cached bzr_identity on the decorated
+        branch.  And that would cause two database queries.
+        """
         return self.bzr_identity
 
     @cachedproperty
     def bzr_identity(self):
+        """Cache the result of the bzr identity.
+
+        The property is defined in the bzrIdentityMixin class.  This uses the
+        associatedProductSeries and associatedSuiteSourcePackages methods.
+        """
         return super(DecoratedBranch, self).bzr_identity
 
     @cachedproperty
     def is_series_branch(self):
+        """A simple property to see if there are any series links."""
         # True if linked to a product series or suite source package.
         return (
             len(self.associated_product_series) > 0 or
@@ -97,21 +132,31 @@ class DecoratedBranch(BzrIdentityMixin):
 
     @cachedproperty
     def associated_product_series(self):
+        """Cache the realized product series links."""
         return list(self.branch.associatedProductSeries())
 
     @cachedproperty
     def suite_source_packages(self):
+        """Cache the realized suite source package links."""
         return list(self.branch.associatedSuiteSourcePackages())
 
     @cachedproperty
     def upgrade_pending(self):
+        """Cache the result as the property hits the database."""
         return self.branch.upgrade_pending
 
     @cachedproperty
     def subscriptions(self):
+        """Cache the realized branch subscription objects."""
         return list(self.branch.subscriptions)
 
     def hasSubscription(self, user):
+        """Override the default branch implementation.
+
+        The default implementation hits the database.  Since we have a full
+        list of subscribers anyway, a simple check over the list is
+        sufficient.
+        """
         for sub in self.subscriptions:
             if sub.person == user:
                 return True
@@ -119,6 +164,11 @@ class DecoratedBranch(BzrIdentityMixin):
 
     @cachedproperty
     def latest_revisions(self):
+        """Cache the query result.
+
+        When a tal:repeat is used, the method is called twice.  Firstly to
+        check that there is something to iterate over, and secondly for the
+        actual iteration.  Without the cached property, the database is hit
+        twice.
+        """
         return list(self.branch.latest_revisions())
-
-
