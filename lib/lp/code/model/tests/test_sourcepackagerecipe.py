@@ -700,6 +700,51 @@ class TestWebservice(TestCaseWithFactory):
             archive=archive, distroseries=distroseries,
             pocket=PackagePublishingPocket.RELEASE.title)
 
+    def test_requestBuildRejectRepeat(self):
+        """Build requests are rejected if already pending."""
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive(owner=person)
+        distroseries = self.factory.makeDistroSeries()
+        distroseries_i386 = distroseries.newArch(
+            'i386', ProcessorFamily.get(1), False, person,
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+
+        recipe, user, launchpad = self.makeRecipe(person)
+        distroseries = ws_object(launchpad, distroseries)
+        archive = ws_object(launchpad, archive)
+        recipe.requestBuild(
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
+        e = self.assertRaises(Exception, recipe.requestBuild,
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
+        self.assertIn('BuildAlreadyPending', str(e))
+
+    def test_requestBuildRejectOverQuota(self):
+        """Build requests are rejected if already pending."""
+        person = self.factory.makePerson()
+        archives = [self.factory.makeArchive(owner=person) for x in range(6)]
+        distroseries = self.factory.makeDistroSeries()
+        distroseries_i386 = distroseries.newArch(
+            'i386', ProcessorFamily.get(1), False, person,
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+
+        recipe, user, launchpad = self.makeRecipe(person)
+        distroseries = ws_object(launchpad, distroseries)
+        for archive in archives[:-1]:
+            archive = ws_object(launchpad, archive)
+            recipe.requestBuild(
+                archive=archive, distroseries=distroseries,
+                pocket=PackagePublishingPocket.RELEASE.title)
+
+        archive = ws_object(launchpad, archives[-1])
+        e = self.assertRaises(Exception, recipe.requestBuild,
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
+        self.assertIn('TooManyBuilds', str(e))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

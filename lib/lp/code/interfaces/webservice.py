@@ -6,8 +6,8 @@
 # The exceptions are imported so that they can produce the special
 # status code defined by webservice_error when they are raised.
 from lp.code.errors import (
-    BranchMergeProposalExists, CodeImportAlreadyRunning,
-    CodeImportNotInReviewedState)
+    BuildAlreadyPending, BranchMergeProposalExists, CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState, TooManyBuilds)
 from lp.code.interfaces.branch import (
     IBranch, IBranchSet, BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner, BranchExists)

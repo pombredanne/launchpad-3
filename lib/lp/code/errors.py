@@ -126,6 +126,8 @@ class RecipeBuildException(Exception):
 class TooManyBuilds(RecipeBuildException):
     """A build was requested that exceeded the quota."""
 
+    webservice_error(400)
+
     def __init__(self, recipe, distroseries):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
@@ -135,6 +137,8 @@ class TooManyBuilds(RecipeBuildException):
 
 class BuildAlreadyPending(RecipeBuildException):
     """A build was requested when an identical build was already pending."""
+
+    webservice_error(400)
 
     def __init__(self, recipe, distroseries):
         RecipeBuildException.__init__(
