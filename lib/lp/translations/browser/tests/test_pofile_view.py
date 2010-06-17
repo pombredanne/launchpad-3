@@ -11,7 +11,7 @@ from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
-from lp.translations.browser.pofile import POFileBaseView
+from lp.translations.browser.pofile import POFileBaseView, POFileTranslateView
 
 
 class TestPOFileBaseViewFiltering(TestCaseWithFactory):
@@ -119,28 +119,26 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
             view.messages)
 
 
-class TestPOFileBaseViewInvalidFiltering(TestCaseWithFactory):
-    """Test how POFileBaseView reacts to malformed GET requests.
+class TestInvalidFilteringMixin:
+    """Test how POFile views reacts to malformed GET requests.
 
     Since any number of parameters can be entered throug the URL, the view
     should be robust about them and not produce OOPSes. This is achieved by
     raising UnexpectedFormData which is communicated to the user instead of
     being recorded as an OOPS.
+
+    POFileBaseView and POFileTranslateView implement this separately, so
+    two test cases are needed.
     """
 
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestPOFileBaseViewInvalidFiltering, self).setUp()
-        self.potemplate = self.factory.makePOTemplate()
-        self.pofile = self.factory.makePOFile('eo', self.potemplate)
+    view_class = None
 
     def _test_parameter_list(self, parameter_name):
         # When a parameter is entered multiple times in an URL, it will be
         # converted to a list. This view has no such parameters but it must
         # not throw a TypeError when it gets a list.
         form = {parameter_name: ['foo', 'bar']}
-        view = POFileBaseView(self.pofile, LaunchpadTestRequest(form=form))
+        view = self.view_class(self.pofile, LaunchpadTestRequest(form=form))
         self.assertRaises(UnexpectedFormData, view.initialize)
 
     def test_parameter_list_old_show(self):
@@ -151,6 +149,28 @@ class TestPOFileBaseViewInvalidFiltering(TestCaseWithFactory):
 
     def test_parameter_list_show(self):
         self._test_parameter_list('show')
+
+
+class TestPOFileBaseViewInvalidFiltering(TestCaseWithFactory,
+                                         TestInvalidFilteringMixin):
+    """Test for POFilleBaseView."""
+    layer = LaunchpadZopelessLayer
+    view_class = POFileBaseView
+
+    def setUp(self):
+        super(TestPOFileBaseViewInvalidFiltering, self).setUp()
+        self.pofile = self.factory.makePOFile('eo')
+
+
+class TestPOFileTranslateViewInvalidFiltering(TestCaseWithFactory,
+                                              TestInvalidFilteringMixin):
+    """Test for POFilleTranslateView."""
+    layer = LaunchpadZopelessLayer
+    view_class = POFileTranslateView
+
+    def setUp(self):
+        super(TestPOFileTranslateViewInvalidFiltering, self).setUp()
+        self.pofile = self.factory.makePOFile('eo')
 
 
 def test_suite():
