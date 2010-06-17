@@ -233,7 +233,7 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
     displayname = 'Select a bug tracker'
     implements(IHugeVocabulary)
     _table = BugTracker
-    _filter = 1 == 1
+    _filter = True
     _orderBy = 'title'
     _order_by = [BugTracker.title]
 
