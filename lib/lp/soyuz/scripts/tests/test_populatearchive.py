@@ -184,7 +184,8 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             status=info.status, pocket=PackagePublishingPocket.RELEASE)
 
     def copyArchive(self, distroseries, archive_name, owner,
-        architecture="386", component="main"):
+        architecture="386", component="main", from_user=None,
+        from_archive=None):
         extra_args = [
             '-a', architecture,
             '--from-distribution', distroseries.distribution.name,
@@ -197,6 +198,12 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
             '--component', component,
             ]
+
+        if from_user is not None:
+            extra_args.extend(["--from-user", from_user])
+
+        if from_archive is not None:
+            extra_args.extend(["--from-archive", from_archive])
 
         (exitcode, out, err) = self.runWrapperScript(extra_args)
         # Check for zero exit code.
@@ -318,6 +325,19 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             distroseries, archive_name, owner, architecture="armel")
         self.checkBuilds(copy_archive, [])
 
+        # Also, make sure the package copy request status was updated.
+        [pcr] = getUtility(
+            IPackageCopyRequestSet).getByTargetArchive(copy_archive)
+        self.assertTrue(pcr.status == PackageCopyStatus.COMPLETE)
+
+        # This date is set when the copy request makes the transition to
+        # the "in progress" state.
+        self.assertTrue(pcr.date_started is not None)
+        # This date is set when the copy request makes the transition to
+        # the "completed" state.
+        self.assertTrue(pcr.date_completed is not None)
+        self.assertTrue(pcr.date_started <= pcr.date_completed)
+
     def testCopyArchiveCopiesAllComponents(self):
         package_infos = [
             PackageInfo(
@@ -329,6 +349,34 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         copy_archive, distroseries = self.makeCopyArchive(package_infos,
             component="main")
         self.checkBuilds(copy_archive, package_infos)
+
+    def testCopyFromPPA(self):
+        ppa_owner_name = "ppa-owner"
+        ppa_name = "ppa"
+        ppa_owner = self.factory.makePerson(name=ppa_owner_name)
+        distroseries = self.createSourceDistroSeries()
+        ppa = self.factory.makeArchive(
+            name=ppa_name, purpose=ArchivePurpose.PPA,
+            distribution=distroseries.distribution, owner=ppa_owner)
+        package_info = PackageInfo(
+                "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED,
+                component="universe")
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.factory.getOrMakeSourcePackageName(
+                name=package_info.name),
+            distroseries=distroseries, component=self.factory.makeComponent(
+                package_info.component),
+            version=package_info.version, archive=ppa,
+            status=package_info.status,
+            pocket=PackagePublishingPocket.RELEASE)
+        owner = self.createTargetOwner()
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        self.layer.commit()
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner, from_user=ppa_owner_name,
+            from_archive=ppa_name)
+        self.checkCopiedSources(
+            copy_archive, distroseries, [package_info])
 
     def runScript(
         self, archive_name=None, suite='hoary', user='salgado',
@@ -492,77 +540,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             user=invalid_user,
             exception_type=SoyuzScriptError,
             exception_text="Invalid user name: '%s'" % invalid_user)
-
-    def testArchWithoutBuilds(self):
-        """Try copy archive population with no builds.
-
-        The user may specify a number of given architecture tags on the
-        command line.
-        The script should create build records only for the specified
-        architecture tags that are supported by the destination distro series.
-
-        In this (test) case the specified architecture tag should have the
-        effect that no build records are created.
-        """
-        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
-
-        # Verify that we have the right source packages in the sample data.
-        self._verifyPackagesInSampleData(hoary)
-
-        # Restrict the builds to be created to the 'amd64' architecture
-        # only. This should result in zero builds.
-        extra_args = ['-a', 'amd64']
-        copy_archive = self.runScript(
-            extra_args=extra_args, exists_after=True, reason="zero builds")
-
-        # Make sure the right source packages were cloned.
-        self._verifyClonedSourcePackages(copy_archive, hoary)
-
-        # Now check that we have zero build records for the sources cloned.
-        builds = list(getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
-            copy_archive, status=BuildStatus.NEEDSBUILD))
-        build_spns = [
-            get_spn(removeSecurityProxy(build)).name for build in builds]
-
-        self.assertTrue(len(build_spns) == 0)
-
-        # Also, make sure the package copy request status was updated.
-        [pcr] = getUtility(
-            IPackageCopyRequestSet).getByTargetArchive(copy_archive)
-        self.assertTrue(pcr.status == PackageCopyStatus.COMPLETE)
-
-        # This date is set when the copy request makes the transition to
-        # the "in progress" state.
-        self.assertTrue(pcr.date_started is not None)
-        # This date is set when the copy request makes the transition to
-        # the "completed" state.
-        self.assertTrue(pcr.date_completed is not None)
-        self.assertTrue(pcr.date_started <= pcr.date_completed)
-
-        # Last but not least, check that the copy archive creation reason was
-        # captured as well.
-        self.assertTrue(pcr.reason == 'zero builds')
-
-    def testCopyFromPPA(self):
-        """Try copy archive population from a PPA.
-
-        In this (test) case an archive is populated from a PPA.
-        """
-        warty = getUtility(IDistributionSet)['ubuntu']['warty']
-        archive_set = getUtility(IArchiveSet)
-        ppa = archive_set.getPPAByDistributionAndOwnerName(
-            warty.distribution, 'cprov', 'ppa')
-
-        # Verify that we have the right source packages in the sample data.
-        packages = self._getPendingPackageNames(ppa, warty)
-
-        # Take a snapshot of the PPA.
-        extra_args = ['-a', 'amd64', '--from-user', 'cprov']
-        copy_archive = self.runScript(
-            suite='warty', extra_args=extra_args, exists_after=True)
-
-        copies = self._getPendingPackageNames(copy_archive, warty)
-        self.assertEqual(packages, copies)
 
     def testPackagesetDelta(self):
         """Try to calculate the delta between two source package sets."""
