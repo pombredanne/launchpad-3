@@ -38,11 +38,16 @@ class TestProductSeries(TestCaseWithFactory):
 
         potemplate1 = self.factory.makePOTemplate(
             productseries=self.productseries)
-        self.assertTrue(self.view.single_potemplate)
+
+        fresh_view = ProductSeriesView(
+            self.productseries, LaunchpadTestRequest())
+        self.assertTrue(fresh_view.single_potemplate)
 
         potemplate2 = self.factory.makePOTemplate(
             productseries=self.productseries)
-        self.assertFalse(self.view.single_potemplate)
+        fresh_view = ProductSeriesView(
+            self.productseries, LaunchpadTestRequest())
+        self.assertFalse(fresh_view.single_potemplate)
 
     def test_has_translation_documentation(self):
         self.assertFalse(self.view.has_translation_documentation)
