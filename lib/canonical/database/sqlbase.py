@@ -28,6 +28,8 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from lazr.restful.interfaces import IRepresentationCache
+
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import ISQLBase
 
@@ -245,6 +247,11 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
     def __ne__(self, other):
         """Inverse of __eq__."""
         return not (self == other)
+
+    def __storm_flushed__(self):
+        """Invalidate the web service cache."""
+        cache = getUtility(IRepresentationCache)
+        cache.delete(self)
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
 "already installed.  This is probably caused by calling initZopeless twice.")
