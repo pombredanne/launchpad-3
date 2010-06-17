@@ -395,7 +395,7 @@ def print_html_report(options, categories, pageid_times):
         </head>
         <body>
         <h1>Launchpad Page Performance Report</h1>
-        <h3>%(date)s</h2>
+        <h3>%(date)s</h3>
         ''' % {'date': time.ctime()})
 
     table_header = dedent('''\
