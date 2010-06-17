@@ -232,8 +232,10 @@ class TestLogFileParsing(TestCase):
                 [launchpad]
                 logparser_max_parsed_lines: 2
                 '''))
+        self.addCleanup(config.pop, 'log_parser config')
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
+        self.addCleanup(fd.close)
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
@@ -242,8 +244,7 @@ class TestLogFileParsing(TestCase):
         date = datetime(2008, 6, 13)
         self.assertContentEqual(
             downloads.items(),
-            [('/12060796/me-tv-icon-64x64.png', {date: {'AU': 1}}),
-             ('/9096290/me-tv-icon-14x14.png', {date: {'AU': 1}})])
+            [('/9096290/me-tv-icon-14x14.png', {date: {'AU': 1}})])
 
         # We have initially parsed only the first two lines of data.
         fd.seek(0)
@@ -256,10 +257,10 @@ class TestLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=parsed_bytes, logger=self.logger,
             get_download_key=get_path_download_key)
-        config.pop("log_parser config")
         self.assertContentEqual(
             downloads.items(),
-            [('/8196569/mediumubuntulogo.png', {date: {'AR': 1, 'JP': 1}})])
+            [('/12060796/me-tv-icon-64x64.png', {date: {'AU': 1}}),
+             ('/8196569/mediumubuntulogo.png', {date: {'AR': 1}})])
         self.assertEqual(parsed_bytes, sum(line_lengths[:4]))
 
 
