@@ -39,7 +39,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.code.errors import ForbiddenInstruction
+from lp.code.errors import BuildAlreadyPending, ForbiddenInstruction
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -214,10 +214,8 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     label = title
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         return canonical_url(self.context)
-
-    cancel_url = next_url
 
     def validate(self, data):
         over_quota_distroseries = []
@@ -234,9 +232,18 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     def request_action(self, action, data):
         """User action for requesting a number of builds."""
         for distroseries in data['distros']:
-            self.context.requestBuild(
-                data['archive'], self.user, distroseries,
-                PackagePublishingPocket.RELEASE, manual=True)
+            try:
+                self.context.requestBuild(
+                    data['archive'], self.user, distroseries,
+                    PackagePublishingPocket.RELEASE, manual=True)
+            except BuildAlreadyPending, e:
+                self.setFieldError(
+                    'distros',
+                    'An identical build is already pending for %s.' %
+                    e.distroseries)
+                return
+        self.next_url = self.cancel_url
+
 
 
 class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
