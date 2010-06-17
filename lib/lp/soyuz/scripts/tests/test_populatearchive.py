@@ -179,15 +179,14 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
                 name=info.name),
             distroseries=distroseries, component=self.factory.makeComponent(
                 component),
-            version=info.version,
+            version=info.version, architecturehintlist='any',
             archive=distroseries.distribution.main_archive,
             status=info.status, pocket=PackagePublishingPocket.RELEASE)
 
     def copyArchive(self, distroseries, archive_name, owner,
-        architecture="386", component="main", from_user=None,
+        architectures=["386"], component="main", from_user=None,
         from_archive=None):
         extra_args = [
-            '-a', architecture,
             '--from-distribution', distroseries.distribution.name,
             '--from-suite', distroseries.name,
             '--to-distribution', distroseries.distribution.name,
@@ -204,6 +203,9 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
         if from_archive is not None:
             extra_args.extend(["--from-archive", from_archive])
+
+        for architecture in architectures:
+            extra_args.extend(['-a', architecture])
 
         (exitcode, out, err) = self.runWrapperScript(extra_args)
         # Check for zero exit code.
@@ -258,17 +260,17 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         return (copy_archive, distroseries)
 
     def checkBuilds(self, archive, package_infos):
-        expected_builds = set(
+        expected_builds = list(
             [(info.name, info.version) for info in package_infos])
         builds = list(
             getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
             archive, status=BuildStatus.NEEDSBUILD))
-        actual_builds = set()
+        actual_builds = list()
         for build in builds:
             build = removeSecurityProxy(build)
             spr = build.source_package_release
-            actual_builds.add((spr.name, spr.version))
-        self.assertEqual(expected_builds, actual_builds)
+            actual_builds.append((spr.name, spr.version))
+        self.assertEqual(sorted(expected_builds), sorted(actual_builds))
 
     def testCopyArchiveCreateCopiesPublished(self):
         package_info = PackageInfo(
@@ -311,7 +313,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         copy_archive, distroseries = self.makeCopyArchive([package_info])
         self.checkBuilds(copy_archive, [package_info])
 
-    def testCopyArchiveDoesntCreateBuildsForNonCopyArchitectures(self):
+    def testCopyArchiveArchTagNotAvailableInSource(self):
         family = self.factory.makeProcessorFamily(name="armel")
         self.factory.makeProcessor(family=family, name="armel")
         package_info = PackageInfo(
@@ -322,7 +324,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         archive_name = self.getTargetArchiveName(distroseries.distribution)
         # Different architecture, so there won't be any builds
         copy_archive = self.copyArchive(
-            distroseries, archive_name, owner, architecture="armel")
+            distroseries, archive_name, owner, architectures=["armel"])
         self.checkBuilds(copy_archive, [])
 
         # Also, make sure the package copy request status was updated.
@@ -337,6 +339,70 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # the "completed" state.
         self.assertTrue(pcr.date_completed is not None)
         self.assertTrue(pcr.date_started <= pcr.date_completed)
+
+    def testMultipleArchTagsWithSubsetInSource(self):
+        """Try copy archive population with multiple architecture tags.
+
+        The user may specify a number of given architecture tags on the
+        command line.
+        The script should create build records only for the specified
+        architecture tags that are supported by the destination distro series.
+
+        In this (test) case the script should create the build records for the
+        '386' architecture.
+        """
+        family = self.factory.makeProcessorFamily(name="armel")
+        self.factory.makeProcessor(family=family, name="armel")
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        owner = self.createTargetOwner()
+        # Creates an archive with just x86
+        distroseries = self.createSourceDistribution([package_info])
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        # There is only a DAS for i386, so armel won't produce any
+        # builds
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner,
+            architectures=["386", "armel"])
+        self.checkBuilds(copy_archive, [package_info])
+
+    def testCopyArchiveCreatesSubsetOfBuilds(self):
+        family = self.factory.makeProcessorFamily(name="armel")
+        self.factory.makeProcessor(family=family, name="armel")
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        owner = self.createTargetOwner()
+        distroseries = self.createSourceDistribution([package_info])
+        das = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="amd64",
+            processorfamily=ProcessorFamilySet().getByName("amd64"),
+            supports_virtualized=True)
+        self.layer.commit()
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner,
+            architectures=["386"])
+        # We only get a single build, as we only requested 386, not
+        # amd64 too
+        self.checkBuilds(copy_archive, [package_info])
+
+    def testMultipleArchTags(self):
+        family = self.factory.makeProcessorFamily(name="armel")
+        self.factory.makeProcessor(family=family, name="armel")
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        owner = self.createTargetOwner()
+        distroseries = self.createSourceDistribution([package_info])
+        das = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="amd64",
+            processorfamily=ProcessorFamilySet().getByName("amd64"),
+            supports_virtualized=True)
+        self.layer.commit()
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner,
+            architectures=["386", "amd64"])
+        self.checkBuilds(copy_archive, [package_info, package_info])
 
     def testCopyArchiveCopiesAllComponents(self):
         package_infos = [
@@ -367,7 +433,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             distroseries=distroseries, component=self.factory.makeComponent(
                 package_info.component),
             version=package_info.version, archive=ppa,
-            status=package_info.status,
+            status=package_info.status, architecturehintlist='any',
             pocket=PackagePublishingPocket.RELEASE)
         owner = self.createTargetOwner()
         archive_name = self.getTargetArchiveName(distroseries.distribution)
@@ -765,17 +831,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             exception_type=SoyuzScriptError,
             exception_text="error: architecture tags not specified.")
 
-    def testMultipleArchTags(self):
-        """Try copy archive population with multiple architecture tags.
-
-        The user may specify a number of given architecture tags on the
-        command line.
-        The script should create build records only for the specified
-        architecture tags that are supported by the destination distro series.
-
-        In this (test) case the script should create the build records for the
-        '386' architecture.
-        """
+    def testMultipleArchTagsOld(self):
         hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
         # Verify that we have the right source packages in the sample data.
