@@ -156,7 +156,7 @@ class SourcePackageRecipeData(Storm):
         )
 
     @classmethod
-    def manifestFromText(cls, text, sourcepackage_recipe_build):
+    def createManifestFromText(cls, text, sourcepackage_recipe_build):
         """Create a manifest for the specified build.
 
         :param text: The text of the recipe to create a manifest for.

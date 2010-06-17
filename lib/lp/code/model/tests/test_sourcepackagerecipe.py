@@ -410,9 +410,12 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         Store.of(recipe).flush()
 
     def test_findStaleDailyBuilds(self):
-        stale_non_daily = self.factory.makeSourcePackageRecipe()
-        daily_non_stale = self.factory.makeSourcePackageRecipe(
+        # Stale recipe not built daily.
+        self.factory.makeSourcePackageRecipe()
+        # Daily build recipe not stale.
+        self.factory.makeSourcePackageRecipe(
             build_daily=True, is_stale=False)
+        # Stale daily build.
         stale_daily = self.factory.makeSourcePackageRecipe(
             build_daily=True, is_stale=True)
         self.assertContentEqual([stale_daily],

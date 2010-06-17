@@ -147,7 +147,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
             if self.manifest is not None:
                 IStore(self.manifest).remove(self.manifest)
         elif self.manifest is None:
-            SourcePackageRecipeData.manifestFromText(text, self)
+            SourcePackageRecipeData.createManifestFromText(text, self)
         else:
             from bzrlib.plugins.builder.recipe import RecipeParser
             self.manifest.setRecipe(RecipeParser(text).parse())
