@@ -478,6 +478,7 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
     schema = IDistributionSourcePackage
     field_names = [
         'bug_reporting_guidelines',
+        'bug_reported_acknowledgement',
         ]
 
     @property
