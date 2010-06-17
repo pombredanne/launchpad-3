@@ -24,7 +24,8 @@ from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
-from lp.code.errors import TooManyBuilds
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.errors import BuildAlreadyPending, TooManyBuilds
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
     ISourcePackageRecipeData)
@@ -193,6 +194,13 @@ class SourcePackageRecipe(Storm):
             raise reject_reason
         if self.isOverQuota(requester, distroseries):
             raise TooManyBuilds(self, distroseries)
+        pending = IStore(self).find(SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.recipe_id == self.id,
+            SourcePackageRecipeBuild.distroseries_id == distroseries.id,
+            SourcePackageRecipeBuild.archive_id == archive.id,
+            SourcePackageRecipeBuild.buildstate == BuildStatus.NEEDSBUILD)
+        if pending.any() is not None:
+            raise BuildAlreadyPending(self, distroseries)
 
         build = getUtility(ISourcePackageRecipeBuildSource).new(distroseries,
             self, requester, archive)

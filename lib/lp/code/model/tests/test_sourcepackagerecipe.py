@@ -28,10 +28,12 @@ from canonical.launchpad.webapp.testing import verifyObject
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled, ArchivePurpose, CannotUploadToArchive,
     InvalidPocketForPPA)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
-    ForbiddenInstruction, TooManyBuilds, TooNewRecipeFormat)
+    BuildAlreadyPending, ForbiddenInstruction, TooManyBuilds,
+    TooNewRecipeFormat)
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -303,6 +305,31 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertIn(
             'You have exceeded your quota for recipe requester/myrecipe',
             str(e))
+
+    def test_requestBuildRejectRepeats(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        series = list(recipe.distroseries)[0]
+        archive = self.factory.makeArchive(owner=recipe.owner)
+        old_build = recipe.requestBuild(archive, recipe.owner, series,
+                PackagePublishingPocket.RELEASE)
+        self.assertRaises(
+            BuildAlreadyPending, recipe.requestBuild, archive, recipe.owner,
+            series, PackagePublishingPocket.RELEASE)
+        # Varying archive allows build.
+        recipe.requestBuild(
+            self.factory.makeArchive(owner=recipe.owner), recipe.owner,
+            series, PackagePublishingPocket.RELEASE)
+        # Varying distroseries allows build.
+        new_distroseries = self.factory.makeDistroSeries()
+        new_distroseries.nominatedarchindep = new_distroseries.newArch(
+            'i386', ProcessorFamily.get(1), False, recipe.owner,
+            supports_virtualized=True)
+        recipe.requestBuild(archive, recipe.owner,
+            new_distroseries, PackagePublishingPocket.RELEASE)
+        # Changing status of old build allows new build.
+        removeSecurityProxy(old_build).buildstate = BuildStatus.FULLYBUILT
+        recipe.requestBuild(archive, recipe.owner, series,
+                PackagePublishingPocket.RELEASE)
 
     def test_sourcepackagerecipe_description(self):
         """Ensure that the SourcePackageRecipe has a proper description."""
