@@ -162,10 +162,10 @@
                 <td class="amount"
                   tal:condition="not: view/is_teams_only">
                   <tal:user
-                    condition="not: person/teamowner"
+                    condition="not: person/is_team"
                     content="person/karma">34</tal:user>
                   <tal:team
-                    condition="person/teamowner">&mdash;</tal:team>
+                    condition="person/is_team">&mdash;</tal:team>
                 </td>
               </tr>
             </tbody>
