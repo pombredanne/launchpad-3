@@ -39,6 +39,8 @@ class TestProductSeries(TestCaseWithFactory):
         potemplate1 = self.factory.makePOTemplate(
             productseries=self.productseries)
 
+        # self.view may cache the old single_potemplate value, so create
+        # a fresh view now that the underlying data has changed.
         fresh_view = ProductSeriesView(
             self.productseries, LaunchpadTestRequest())
         self.assertTrue(fresh_view.single_potemplate)
