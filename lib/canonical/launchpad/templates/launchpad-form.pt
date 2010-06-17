@@ -171,9 +171,12 @@
         </td>
       </tr>
     </tal:is-visible>
-    <tal:not-visible condition="not: widget/visible">
-      <tr>
-        <td tal:content="structure widget/hidden" />
+    <tal:not-visible
+      condition="not: widget/visible">
+      <tr
+        tal:define="markup widget/hidden"
+        tal:condition="markup">
+        <td tal:content="structure markup" />
       </tr>
     </tal:not-visible>
   </metal:macro>
