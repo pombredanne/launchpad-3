@@ -27,25 +27,32 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.testing import login, TestCaseWithFactory
 
 
-class TestBuildFarmJobBase(TestCaseWithFactory):
+class TestBuildFarmJobMixin:
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Create a build farm job with which to test."""
-        super(TestBuildFarmJobBase, self).setUp()
+        super(TestBuildFarmJobMixin, self).setUp()
         self.build_farm_job = self.makeBuildFarmJob()
 
     def makeBuildFarmJob(self, builder=None,
                          job_type=BuildFarmJobType.PACKAGEBUILD,
-                         status=BuildStatus.FULLYBUILT):
+                         status=BuildStatus.NEEDSBUILD):
+        """A factory method for creating PackageBuilds.
+
+        This is not included in the launchpad test factory because
+        a build farm job should never be instantiated outside the
+        context of a derived class (such as a BinaryPackageBuild
+        or eventually a SPRecipeBuild).
+        """
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             job_type=job_type, status=status)
         removeSecurityProxy(build_farm_job).builder = builder
         return build_farm_job
 
 
-class TestBuildFarmJob(TestBuildFarmJobBase):
+class TestBuildFarmJob(TestBuildFarmJobMixin, TestCaseWithFactory):
     """Tests for the build farm job object."""
 
     def test_providesInterface(self):
@@ -62,7 +69,6 @@ class TestBuildFarmJob(TestBuildFarmJobBase):
         self.assertEqual(self.build_farm_job, retrieved_job)
 
     def test_default_values(self):
-        # A build farm job defaults to the NEEDSBUILD status.
         # We flush the database updates to ensure sql defaults
         # are set for various attributes.
         flush_database_updates()
@@ -172,7 +178,7 @@ class TestBuildFarmJob(TestBuildFarmJobBase):
             InconsistentBuildFarmJobError, self.build_farm_job.getSpecificJob)
 
 
-class TestBuildFarmJobSecurity(TestBuildFarmJobBase):
+class TestBuildFarmJobSecurity(TestBuildFarmJobMixin, TestCaseWithFactory):
 
     def test_view_build_farm_job(self):
         # Anonymous access can read public builds, but not edit.
@@ -190,7 +196,7 @@ class TestBuildFarmJobSecurity(TestBuildFarmJobBase):
             BuildStatus.FULLYBUILT, self.build_farm_job.status)
 
 
-class TestBuildFarmJobSet(TestBuildFarmJobBase):
+class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -227,10 +233,15 @@ class TestBuildFarmJobSet(TestBuildFarmJobBase):
     def test_getBuildsForBuilder_by_status(self):
         # If the status arg is used, the results will be filtered by
         # status.
-        self.assertContentEqual(
-            self.build_farm_jobs[:2],
-            self.build_farm_job_set.getBuildsForBuilder(
-                self.builder, status=BuildStatus.FULLYBUILT))
+        building_builds = [
+            bfj for bfj in self.build_farm_jobs if (
+                bfj.status == BuildStatus.BUILDING)
+            ]
+        self.assertEqual(1, len(building_builds))
+        query_by_status = self.build_farm_job_set.getBuildsForBuilder(
+                self.builder, status=BuildStatus.BUILDING)
+
+        self.assertContentEqual(building_builds, query_by_status)
 
     def makeBuildPrivate(self, build):
         """Helper to privatise a package build."""
