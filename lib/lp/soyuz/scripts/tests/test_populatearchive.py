@@ -184,7 +184,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             status=info.status, pocket=PackagePublishingPocket.RELEASE)
 
     def copyArchive(self, distroseries, archive_name, owner,
-        architecture="386"):
+        architecture="386", component="main"):
         extra_args = [
             '-a', architecture,
             '--from-distribution', distroseries.distribution.name,
@@ -195,7 +195,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             '--to-user', owner.name,
             '--reason',
             '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '--component', 'main'
+            '--component', component,
             ]
 
         (exitcode, out, err) = self.runWrapperScript(extra_args)
@@ -242,11 +242,12 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.layer.commit()
         return distroseries
 
-    def makeCopyArchive(self, package_info):
+    def makeCopyArchive(self, package_infos, component="main"):
         owner = self.createTargetOwner()
-        distroseries = self.createSourceDistribution([package_info])
+        distroseries = self.createSourceDistribution(package_infos)
         archive_name = self.getTargetArchiveName(distroseries.distribution)
-        copy_archive = self.copyArchive(distroseries, archive_name, owner)
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner, component=component)
         return (copy_archive, distroseries)
 
     def checkBuilds(self, archive, package_infos):
@@ -265,42 +266,42 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
     def testCopyArchiveCreateCopiesPublished(self):
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
-        copy_archive, distroseries = self.makeCopyArchive(package_info)
+        copy_archive, distroseries = self.makeCopyArchive([package_info])
         self.checkCopiedSources(
             copy_archive, distroseries, [package_info])
 
     def testCopyArchiveCreateCopiesPending(self):
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PENDING)
-        copy_archive, distroseries = self.makeCopyArchive(package_info)
+        copy_archive, distroseries = self.makeCopyArchive([package_info])
         self.checkCopiedSources(
             copy_archive, distroseries, [package_info])
 
     def testCopyArchiveCreateDoesntCopySuperseded(self):
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.SUPERSEDED)
-        copy_archive, distroseries = self.makeCopyArchive(package_info)
+        copy_archive, distroseries = self.makeCopyArchive([package_info])
         self.checkCopiedSources(
             copy_archive, distroseries, [])
 
     def testCopyArchiveCreateDoesntCopyDeleted(self):
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.DELETED)
-        copy_archive, distroseries = self.makeCopyArchive(package_info)
+        copy_archive, distroseries = self.makeCopyArchive([package_info])
         self.checkCopiedSources(
             copy_archive, distroseries, [])
 
     def testCopyArchiveCreateDoesntCopyObsolete(self):
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.OBSOLETE)
-        copy_archive, distroseries = self.makeCopyArchive(package_info)
+        copy_archive, distroseries = self.makeCopyArchive([package_info])
         self.checkCopiedSources(
             copy_archive, distroseries, [])
 
     def testCopyArchiveCreatesBuilds(self):
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
-        copy_archive, distroseries = self.makeCopyArchive(package_info)
+        copy_archive, distroseries = self.makeCopyArchive([package_info])
         self.checkBuilds(copy_archive, [package_info])
 
     def testCopyArchiveDoesntCreateBuildsForNonCopyArchitectures(self):
@@ -316,6 +317,18 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         copy_archive = self.copyArchive(
             distroseries, archive_name, owner, architecture="armel")
         self.checkBuilds(copy_archive, [])
+
+    def testCopyArchiveCopiesAllComponents(self):
+        package_infos = [
+            PackageInfo(
+                "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED,
+                component="universe"),
+            PackageInfo(
+                "apt", "2.2", status=PackagePublishingStatus.PUBLISHED,
+                component="main")]
+        copy_archive, distroseries = self.makeCopyArchive(package_infos,
+            component="main")
+        self.checkBuilds(copy_archive, package_infos)
 
     def runScript(
         self, archive_name=None, suite='hoary', user='salgado',
