@@ -24,7 +24,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob, IBuildFarmJobSet, IBuildFarmJobSource,
     InconsistentBuildFarmJobError)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.testing import login, TestCaseWithFactory
+from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
 
 
 class TestBuildFarmJobMixin:
@@ -38,7 +38,8 @@ class TestBuildFarmJobMixin:
 
     def makeBuildFarmJob(self, builder=None,
                          job_type=BuildFarmJobType.PACKAGEBUILD,
-                         status=BuildStatus.NEEDSBUILD):
+                         status=BuildStatus.NEEDSBUILD,
+                         date_finished=None):
         """A factory method for creating PackageBuilds.
 
         This is not included in the launchpad test factory because
@@ -49,6 +50,7 @@ class TestBuildFarmJobMixin:
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             job_type=job_type, status=status)
         removeSecurityProxy(build_farm_job).builder = builder
+        removeSecurityProxy(build_farm_job).date_finished = date_finished
         return build_farm_job
 
 
@@ -203,98 +205,95 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
     def setUp(self):
         super(TestBuildFarmJobSet, self).setUp()
         self.builder = self.factory.makeBuilder()
-        self.build_farm_jobs = []
-        self.build_farm_jobs.append(
-            self.makeBuildFarmJob(builder=self.builder))
-        self.build_farm_jobs.append(self.makeBuildFarmJob(
-            builder=self.builder,
-            job_type=BuildFarmJobType.RECIPEBRANCHBUILD))
-        self.build_farm_jobs.append(self.makeBuildFarmJob(
-            builder=self.builder, status=BuildStatus.BUILDING))
-
-        # For good measure, create a different type of build that will
-        # also have an associated PackageBuild.
-        owning_team = self.factory.makeTeam()
-        archive = self.factory.makeArchive(owner=owning_team)
-        self.binary_package_build = self.factory.makeBinaryPackageBuild(
-            archive=archive, builder=self.builder)
-        self.build_farm_jobs.append(self.binary_package_build.build_farm_job)
-
         self.build_farm_job_set = getUtility(IBuildFarmJobSet)
 
     def test_getBuildsForBuilder_all(self):
         # The default call without arguments returns all builds for the
         # builder, and not those for other builders.
+        build1 = self.makeBuildFarmJob(builder=self.builder)
+        build2 = self.makeBuildFarmJob(builder=self.builder)
         self.makeBuildFarmJob(builder=self.factory.makeBuilder())
-        self.assertContentEqual(
-            self.build_farm_jobs, self.build_farm_job_set.getBuildsForBuilder(
-                self.builder))
+        result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
+
+        self.assertContentEqual([build1, build2], result)
 
     def test_getBuildsForBuilder_by_status(self):
         # If the status arg is used, the results will be filtered by
         # status.
-        building_builds = [
-            bfj for bfj in self.build_farm_jobs if (
-                bfj.status == BuildStatus.BUILDING)
+        successful_builds = [
+            self.makeBuildFarmJob(
+                builder=self.builder, status=BuildStatus.FULLYBUILT),
+            self.makeBuildFarmJob(
+                builder=self.builder, status=BuildStatus.FULLYBUILT),
             ]
-        self.assertEqual(1, len(building_builds))
+        self.makeBuildFarmJob(builder=self.builder)
+
         query_by_status = self.build_farm_job_set.getBuildsForBuilder(
-                self.builder, status=BuildStatus.BUILDING)
+                self.builder, status=BuildStatus.FULLYBUILT)
 
-        self.assertContentEqual(building_builds, query_by_status)
+        self.assertContentEqual(successful_builds, query_by_status)
 
-    def makeBuildPrivate(self, build):
-        """Helper to privatise a package build."""
-        removeSecurityProxy(build.archive).buildd_secret = "blah"
-        removeSecurityProxy(build.archive).private = True
+    def _makePrivateAndNonPrivateBuilds(self, owning_team=None):
+        """Return a tuple of a private and non-private build farm job."""
+        if owning_team is None:
+            owning_team = self.factory.makeTeam()
+        archive = self.factory.makeArchive(owner=owning_team, private=True)
+        login_person(owning_team.teamowner)
+        private_build = self.factory.makeBinaryPackageBuild(
+            archive=archive, builder=self.builder)
+        private_build = private_build.build_farm_job
+        login(ANONYMOUS)
+        other_build = self.makeBuildFarmJob(builder=self.builder)
+        return (private_build, other_build)
 
     def test_getBuildsForBuilder_hides_private_from_anon(self):
         # If no user is passed, all private builds are filtered out.
-
-        # When private it is not included for anon requests.
-        self.makeBuildPrivate(self.binary_package_build)
+        private_build, other_build = self._makePrivateAndNonPrivateBuilds()
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
-        self.assertTrue(
-            self.binary_package_build.build_farm_job not in result)
+        self.assertContentEqual([other_build], result)
 
     def test_getBuildsForBuilder_hides_private_other_users(self):
         # Private builds are not returned for users without permission
         # to view them.
-        self.makeBuildPrivate(self.binary_package_build)
+        private_build, other_build = self._makePrivateAndNonPrivateBuilds()
         result = self.build_farm_job_set.getBuildsForBuilder(
             self.builder, user=self.factory.makePerson())
-        self.assertTrue(
-            self.binary_package_build.build_farm_job not in result)
+        self.assertContentEqual([other_build], result)
 
     def test_getBuildsForBuilder_shows_private_to_admin(self):
         # Admin users can see private builds.
         admin_team = getUtility(ILaunchpadCelebrities).admin
-        self.makeBuildPrivate(self.binary_package_build)
+        private_build, other_build = self._makePrivateAndNonPrivateBuilds()
         result = self.build_farm_job_set.getBuildsForBuilder(
             self.builder, user=admin_team.teamowner)
-        self.assertTrue(self.binary_package_build.build_farm_job in result)
+        self.assertContentEqual([private_build, other_build], result)
 
     def test_getBuildsForBuilder_shows_private_to_authorised(self):
         # Similarly, if the user is in the owning team they can see it.
-        self.makeBuildPrivate(self.binary_package_build)
+        owning_team = self.factory.makeTeam()
+        private_build, other_build = self._makePrivateAndNonPrivateBuilds(
+            owning_team=owning_team)
         result = self.build_farm_job_set.getBuildsForBuilder(
             self.builder,
-            user=self.binary_package_build.archive.owner.teamowner)
-        self.assertTrue(self.binary_package_build.build_farm_job in result)
+            user=owning_team.teamowner)
+        self.assertContentEqual([private_build, other_build], result)
 
     def test_getBuildsForBuilder_ordered_by_date_finished(self):
         # Results are returned with the oldest build last.
-        naked_build_0 = removeSecurityProxy(self.build_farm_jobs[0])
-        naked_build_1 = removeSecurityProxy(self.build_farm_jobs[1])
+        build_1 = self.makeBuildFarmJob(
+            builder=self.builder,
+            date_finished=datetime(2008, 10, 10, tzinfo=pytz.UTC))
+        build_2 = self.makeBuildFarmJob(
+            builder=self.builder,
+            date_finished=datetime(2008, 11, 10, tzinfo=pytz.UTC))
 
-        naked_build_0.date_finished = datetime(2008, 10, 10, tzinfo=pytz.UTC)
-        naked_build_1.date_finished = datetime(2008, 11, 10, tzinfo=pytz.UTC)
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
-        self.assertEqual(self.build_farm_jobs[0], result[3])
+        self.assertEqual([build_2, build_1], list(result))
 
-        naked_build_0.date_finished = datetime(2008, 12, 10, tzinfo=pytz.UTC)
+        removeSecurityProxy(build_2).date_finished = (
+            datetime(2008, 8, 10, tzinfo=pytz.UTC))
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
-        self.assertEqual(self.build_farm_jobs[1], result[3])
+        self.assertEqual([build_1, build_2], list(result))
 
 
 def test_suite():
