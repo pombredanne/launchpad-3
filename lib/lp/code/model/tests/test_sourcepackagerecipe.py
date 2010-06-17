@@ -298,8 +298,9 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         series = list(recipe.distroseries)[0]
         archive = self.factory.makeArchive(owner=requester)
         def request_build():
-            recipe.requestBuild(archive, requester, series,
+            build = recipe.requestBuild(archive, requester, series,
                     PackagePublishingPocket.RELEASE)
+            removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
         [request_build() for num in range(5)]
         e = self.assertRaises(TooManyBuilds, request_build)
         self.assertIn(

@@ -565,9 +565,10 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             supports_virtualized=True)
 
         recipe = self.makeRecipe()
-        [recipe.requestBuild(
-            self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
-            for x in range(5)]
+        for x in range(5):
+            build = recipe.requestBuild(
+                self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
+            removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
 
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
