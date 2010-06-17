@@ -24,7 +24,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob, IBuildFarmJobSet, IBuildFarmJobSource,
     InconsistentBuildFarmJobError)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
+from lp.testing import login, TestCaseWithFactory
 
 
 class TestBuildFarmJobMixin:
@@ -213,6 +213,7 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
         build1 = self.makeBuildFarmJob(builder=self.builder)
         build2 = self.makeBuildFarmJob(builder=self.builder)
         self.makeBuildFarmJob(builder=self.factory.makeBuilder())
+
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
 
         self.assertContentEqual([build1, build2], result)
@@ -238,34 +239,38 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
         if owning_team is None:
             owning_team = self.factory.makeTeam()
         archive = self.factory.makeArchive(owner=owning_team, private=True)
-        login_person(owning_team.teamowner)
         private_build = self.factory.makeBinaryPackageBuild(
             archive=archive, builder=self.builder)
-        private_build = private_build.build_farm_job
-        login(ANONYMOUS)
+        private_build = removeSecurityProxy(private_build).build_farm_job
         other_build = self.makeBuildFarmJob(builder=self.builder)
         return (private_build, other_build)
 
     def test_getBuildsForBuilder_hides_private_from_anon(self):
         # If no user is passed, all private builds are filtered out.
         private_build, other_build = self._makePrivateAndNonPrivateBuilds()
+
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
+
         self.assertContentEqual([other_build], result)
 
     def test_getBuildsForBuilder_hides_private_other_users(self):
         # Private builds are not returned for users without permission
         # to view them.
         private_build, other_build = self._makePrivateAndNonPrivateBuilds()
+
         result = self.build_farm_job_set.getBuildsForBuilder(
             self.builder, user=self.factory.makePerson())
+
         self.assertContentEqual([other_build], result)
 
     def test_getBuildsForBuilder_shows_private_to_admin(self):
         # Admin users can see private builds.
         admin_team = getUtility(ILaunchpadCelebrities).admin
         private_build, other_build = self._makePrivateAndNonPrivateBuilds()
+
         result = self.build_farm_job_set.getBuildsForBuilder(
             self.builder, user=admin_team.teamowner)
+
         self.assertContentEqual([private_build, other_build], result)
 
     def test_getBuildsForBuilder_shows_private_to_authorised(self):
@@ -273,9 +278,11 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
         owning_team = self.factory.makeTeam()
         private_build, other_build = self._makePrivateAndNonPrivateBuilds(
             owning_team=owning_team)
+
         result = self.build_farm_job_set.getBuildsForBuilder(
             self.builder,
             user=owning_team.teamowner)
+
         self.assertContentEqual([private_build, other_build], result)
 
     def test_getBuildsForBuilder_ordered_by_date_finished(self):
@@ -293,6 +300,7 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
         removeSecurityProxy(build_2).date_finished = (
             datetime(2008, 8, 10, tzinfo=pytz.UTC))
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
+
         self.assertEqual([build_1, build_2], list(result))
 
 

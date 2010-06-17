@@ -2216,8 +2216,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             archive=archive,
             pocket=PackagePublishingPocket.RELEASE,
             date_created=self.getUniqueDate())
-        removeSecurityProxy(binary_package_build).builder = builder
-        binary_package_build_job = binary_package_build.makeJob()
+        naked_build = removeSecurityProxy(binary_package_build)
+        naked_build.builder = builder
+        binary_package_build_job = naked_build.makeJob()
         BuildQueue(
             job=binary_package_build_job.job,
             job_type=BuildFarmJobType.PACKAGEBUILD)
