@@ -1381,23 +1381,16 @@ class Archive(SQLBase):
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
 
+        # Bail if the archive isn't private
+        if not self.private:
+            raise ArchiveNotPrivate("Archive must be private.")
+
         # Tokens can only be created for individuals.
         if person.is_team:
             raise NoTokensForTeams(
                 "Subscription tokens can be created for individuals only.")
 
-        # First, ensure that a current subscription exists for the
-        # person and archive:
-        # XXX: noodles 2009-03-02 bug=336779: This can be removed once
-        # newAuthToken() is moved into IArchiveView.
-        subscription_set = getUtility(IArchiveSubscriberSet)
-        subscriptions = subscription_set.getBySubscriber(person, archive=self)
-        if subscriptions.count() == 0:
-            raise Unauthorized(
-                "You do not have a subscription for %s." % self.displayname)
-
-        # Second, ensure that the current subscription does not already
-        # have a token:
+        # Ensure that the current subscription does not already have a token
         token_set = getUtility(IArchiveAuthTokenSet)
         previous_token = token_set.getActiveTokenForArchiveAndPerson(
             self, person)

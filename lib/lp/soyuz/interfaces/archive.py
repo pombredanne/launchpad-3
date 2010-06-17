@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -620,24 +620,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return The new `IPackageCopyRequest`
         """
 
-    # XXX: noodles 2009-03-02 bug=336779: This should be moved into
-    # IArchiveView once the archive permissions are updated to grant
-    # IArchiveView to archive subscribers.
-    def newAuthToken(person, token=None, date_created=None):
-        """Create a new authorisation token.
-
-        XXX: noodles 2009-03-12 bug=341600 This method should not be exposed
-        through the API as we do not yet check that the callsite has
-        launchpad.Edit on the person.
-
-        :param person: An IPerson whom this token is for
-        :param token: Optional unicode text to use as the token. One will be
-            generated if not given
-        :param date_created: Optional, defaults to now
-
-        :return: A new IArchiveAuthToken
-        """
-
     @operation_parameters(
         person=Reference(schema=IPerson),
         # Really IPackageset, corrected in _schema_circular_imports to avoid
@@ -1102,6 +1084,20 @@ class IArchiveView(IHasBuildRecords):
         :param source_files: A list of filenames to return SHA1s of
         :return: A dictionary of filenames and SHA1s.
         """
+
+    @operation_parameters(person=Reference(schema=IPerson))
+    @export_read_operation()
+    def newAuthToken(person, token=None, date_created=None):
+        """Create a new authorisation token.
+
+        :param person: An IPerson whom this token is for
+        :param token: Optional unicode text to use as the token. One will be
+            generated if not given
+        :param date_created: Optional, defaults to now
+
+        :return: A new IArchiveAuthToken
+        """
+
 
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
