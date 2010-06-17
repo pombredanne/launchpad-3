@@ -58,21 +58,6 @@ class CustomDropdownWidget(DropdownWidget):
         return contents
 
 
-class FormDataMixin:
-
-    def get_form_string(self, name):
-        """Only return strings or None for a form value.
-
-        Raises UnexpectedFormData if the value is anything else. Usually this
-        will be a list if the name appears in the query string more than once.
-        """
-        value = self.request.form.get(name)
-        if value is None or isinstance(value, basestring):
-            return value
-        raise UnexpectedFormData(
-            "Unexpected value for %s: %r" % (name, value))
-
-
 class POFileNavigation(Navigation):
 
     usedfor = IPOFile
@@ -151,7 +136,7 @@ class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
     links = ('details', 'translate', 'upload', 'download')
 
 
-class POFileBaseView(LaunchpadView, FormDataMixin):
+class POFileBaseView(LaunchpadView):
     """A basic view for a POFile
 
     This view is different from POFileView as it is the base for a new
@@ -300,8 +285,8 @@ class POFileBaseView(LaunchpadView, FormDataMixin):
 
     def _initializeShowOption(self):
         # Get any value given by the user
-        self.show = self.get_form_string('show')
-        self.search_text = self.get_form_string('search')
+        self.show = self.request.form_ng.getOne('show')
+        self.search_text = self.request.form_ng.getOne('search')
         if self.search_text is not None:
             self.show = 'all'
 
@@ -324,7 +309,7 @@ class POFileBaseView(LaunchpadView, FormDataMixin):
         """Construct a BatchNavigator of POTMsgSets and return it."""
 
         # Changing the "show" option resets batching.
-        old_show_option = self.get_form_string('old_show')
+        old_show_option = self.request.form_ng.getOne('old_show')
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
         if show_option_changed:
@@ -671,7 +656,7 @@ class POFileBatchNavigator(BatchNavigator):
         return config.rosetta.translate_pages_max_batch_size
 
 
-class POFileTranslateView(BaseTranslationView, FormDataMixin):
+class POFileTranslateView(BaseTranslationView):
     """The View class for a `POFile` or a `DummyPOFile`.
 
     This view is based on `BaseTranslationView` and implements the API
@@ -756,7 +741,7 @@ class POFileTranslateView(BaseTranslationView, FormDataMixin):
         """See BaseTranslationView._buildBatchNavigator."""
 
         # Changing the "show" option resets batching.
-        old_show_option = self.get_form_string('old_show')
+        old_show_option = self.request.form_ng.getOne('old_show')
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
         if show_option_changed:
@@ -880,8 +865,8 @@ class POFileTranslateView(BaseTranslationView, FormDataMixin):
 
     def _initializeShowOption(self):
         # Get any value given by the user
-        self.show = self.get_form_string('show')
-        self.search_text = self.get_form_string('search')
+        self.show = self.request.form_ng.getOne('show')
+        self.search_text = self.request.form_ng.getOne('search')
         if self.search_text is not None:
             self.show = 'all'
 
