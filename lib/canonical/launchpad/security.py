@@ -2194,6 +2194,10 @@ class ViewArchive(AuthorizationBase):
         if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
 
+        # Subscribers can view private PPAs.
+        if self.obj.is_ppa and (user.person == self.obj.subscriber):
+            return True
+
         return False
 
     def checkUnauthenticated(self):

@@ -424,6 +424,7 @@ class ArchiveMenuMixin:
         text = 'View in-progress builds'
         return Link('+builds?build_state=building', text, icon='info')
 
+    @enabled_with_permission('launchpad.Append')
     def packages(self):
         text = 'View package details'
         return Link('+packages', text, icon='info')
@@ -451,6 +452,9 @@ class ArchiveMenuMixin:
 
         # This link should not be available for copy archives.
         if self.context.is_copy:
+            link.enabled = False
+        # This link should not be available for commerical P3As
+        if self.context.commerical:
             link.enabled = False
         return link
 
