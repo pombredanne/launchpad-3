@@ -12,10 +12,12 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.interfaces.buildfarmjob import (
+    BuildFarmJobType, IBuildFarmJob)
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuildSource)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildrecords import (
     IHasBuildRecords, IncompatibleArguments)
 from lp.soyuz.model.processor import ProcessorFamilySet
@@ -146,10 +148,19 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
         removeSecurityProxy(build_farm_job).builder = self.context
 
         builds = self.context.getBuildRecords(binary_only=True)
-        self.failUnlessEqual(3, builds.count())
+        binary_only_count = builds.count()
+
+        self.assertTrue(
+            all([IBinaryPackageBuild.providedBy(build) for build in builds]))
 
         builds = self.context.getBuildRecords(binary_only=False)
-        self.failUnlessEqual(4, builds.count())
+        all_count = builds.count()
+
+        self.assertFalse(
+            any([IBinaryPackageBuild.providedBy(build) for build in builds]))
+        self.assertTrue(
+            all([IBuildFarmJob.providedBy(build) for build in builds]))
+        self.assertBetween(0, binary_only_count, all_count)
 
     def test_incompatible_arguments(self):
         # binary_only=False is incompatible with arch_tag and name.
