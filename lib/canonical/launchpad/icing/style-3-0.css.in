@@ -716,6 +716,12 @@ form table tbody th {
 form table label {
     font-weight: bold;
     }
+.compound {
+    margin-bottom: .5em;
+    }
+.field.subordinate label {
+    font-weight: normal;
+    }
 fieldset {
     border-width: 2px 0 0;
     margin: 1em 0;
@@ -746,6 +752,9 @@ button {
     }
 .fieldRequired, .fieldOptional {
     color: #999;
+    }
+.field.subordinate {
+    margin-left: 2.6em;
     }
 .formHelp {
     margin: 0.2em 0 0.5em 0.2em;
