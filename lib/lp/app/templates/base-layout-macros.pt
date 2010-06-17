@@ -404,6 +404,7 @@
         >System status</a>
       <span id="lp-version" tal:condition="not:is_lpnet">
       &nbsp;&bull;&nbsp;
+        r<tal:revno replace="revno" />
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
         <tal:edge condition="is_edge">beta site</tal:edge>

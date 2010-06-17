@@ -51,7 +51,7 @@ For a 3-0 page:
     <style...url(/@@/demo)...</style>
     ...
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
-    &bull;  devmode demo site
+    &bull; r... devmode demo site
 
     >>> print extract_text(find_tags_by_class(
     ...     browser.contents, 'sitemessage')[0])
@@ -70,7 +70,7 @@ First for a 3-0 page:
 
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
-    &bull; devmode
+    &bull; r... devmode
     >>> len(find_tags_by_class(browser.contents, 'sitemessage'))
     0
 
@@ -156,13 +156,6 @@ HTML comment.
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> print find_tag_by_id(browser.contents, 'lp-version')
     None
-    >>> print browser.contents
-    <...
-    <!--
-      Facet name: overview
-      ...
-      Launchpad ... (...)
-    -->
 
     >>> # Restore the previous config:
     >>> config_data = config.pop('test_data')
