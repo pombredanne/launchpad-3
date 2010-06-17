@@ -122,10 +122,11 @@ tracker, can be set from the +configure-bugtracker page, too.
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/thunderbird/+configure-bugtracker')
-    >>> admin_browser.getControl('Remote project').value = 'Thunderbird'
+    >>> admin_browser.getControl('Remote bug tracker project id').value = (
+    ...     'Thunderbird')
     >>> admin_browser.getControl('Change').click()
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/thunderbird/+configure-bugtracker')
-    >>> print admin_browser.getControl('Remote project').value
+    >>> print admin_browser.getControl('Remote bug tracker project id').value
     Thunderbird
