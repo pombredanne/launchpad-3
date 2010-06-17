@@ -154,6 +154,7 @@ class PillarView(LaunchpadView):
             link for link in important_links if not link.enabled],
             key=attrgetter('sort_key'))
 
+
 class PillarBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     """Base class for pillar bugs menus."""
 
