@@ -216,7 +216,6 @@ class TestLogFileParsing(TestCase):
             get_download_key=get_path_download_key)
         self.assertEqual(self.logger.buffer.getvalue(), '')
 
-        date = datetime(2008, 6, 13)
         self.assertEqual(downloads,
             {'/15018215/ul_logo_64x64.png':
                 {datetime(2008, 6, 13): {'US': 1}}})
