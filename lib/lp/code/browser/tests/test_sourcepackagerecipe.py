@@ -59,11 +59,6 @@ class TestCaseForRecipe(BrowserTestCase):
             ' Secret Squirrel changes.', branches=[cake_branch],
             daily_build_archive=self.ppa)
 
-    def getMainText(self, recipe, view_name=None):
-        """Return the main text of a recipe page, as seen by Chef."""
-        browser = self.getViewBrowser(recipe, view_name)
-        return extract_text(find_main_content(browser.contents))
-
 
 def get_message_text(browser, index):
     """Return the text of a message, specified by index."""
