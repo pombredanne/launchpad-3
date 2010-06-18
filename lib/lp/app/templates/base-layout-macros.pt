@@ -227,6 +227,20 @@
             tal:attributes="src string:${lp_js}/translations/languages.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/bugs/filebug_dupefinder.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/bugs/official_bug_tags.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/bugs/subscriber.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/bugs/bugtask_index.js">
+    </script>
 
   </tal:devmode>
   <tal:production condition="not:devmode">
@@ -404,6 +418,7 @@
         >System status</a>
       <span id="lp-version" tal:condition="not:is_lpnet">
       &nbsp;&bull;&nbsp;
+        r<tal:revno replace="revno" />
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
         <tal:edge condition="is_edge">beta site</tal:edge>
