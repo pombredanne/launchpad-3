@@ -238,7 +238,7 @@ Unactivated profiles
 --------------------
 
 Many profiles are created for users who contributed to projects that were
-imported into launchpad. Any user can see an unclaimed profile and a link
+imported into Launchpad. Any user can see an unclaimed profile and a link
 to request a claim the profile.
 
     >>> anon_browser.open('https://launchpad.dev/~jvprat')
@@ -253,8 +253,8 @@ to request a claim the profile.
     <Link text='Are you Jordi Vilalta?' url='.../people/+requestmerge...'>
 
 It is possible for the preferred email address to be set if it is associated
-with an Ubuntu Single Signon account. Anonymous users cannot see this, but
-admins like Foo Bar can.
+with an Ubuntu Single Signon account. Anonymous and logged in users cannot
+see this, but admins like Foo Bar can.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.emailaddress import (
@@ -268,6 +268,10 @@ admins like Foo Bar can.
 
     >>> anon_browser.open('https://launchpad.dev/~jvprat')
     >>> print find_tag_by_id(anon_browser.contents, 'email-addresses')
+    None
+
+    >>> user_browser.open('https://launchpad.dev/~jvprat')
+    >>> print find_tag_by_id(user_browser.contents, 'email-addresses')
     None
 
     >>> admin_browser.open('https://launchpad.dev/~jvprat')
