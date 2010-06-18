@@ -39,7 +39,7 @@ doesn't use any bug tracker at all.
     ...     'In Launchpad').selected
     True
     >>> registrant_browser.getControl(
-    ...     'Expire Incomplete bug reports when they '
+    ...     'Expire "Incomplete" bug reports when they '
     ...     'become inactive').selected
     False
     >>> registrant_browser.getControl('Somewhere else').selected = True
@@ -152,7 +152,7 @@ support JavaScript so this behaviour is easy to simulate.)
     True
 
     >>> registrant_browser.getControl(
-    ...     'Expire Incomplete bug reports when they '
+    ...     'Expire "Incomplete" bug reports when they '
     ...     'become inactive').selected
     True
 
@@ -173,6 +173,6 @@ also disabled by the switch from Launchpad Bugs.
     False
 
     >>> registrant_browser.getControl(
-    ...     'Expire Incomplete bug reports when they '
+    ...     'Expire "Incomplete" bug reports when they '
     ...     'become inactive').selected
     False

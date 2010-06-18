@@ -371,6 +371,15 @@ class IArchivePublic(IHasOwner, IPrivacy):
     arm_builds_allowed = Bool(
         title=_("Allow ARM builds for this archive"))
 
+    commercial = exported(
+        Bool(
+            title=_("Commercial Archive"),
+            required=True,
+            description=_(
+                "Set if this archive is used for commercial purposes and "
+                "should appear in the Software Center listings.  The archive "
+                "must also be private if this is set.")))
+
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 

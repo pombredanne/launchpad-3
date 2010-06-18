@@ -12,8 +12,7 @@ to that branch.
     >>> stdout
     ''
     >>> print stderr
-    INFO Creating lockfile:
-        /var/lock/launchpad-translations-export-to-branch.lock
+    INFO Creating lockfile: /var/lock/launchpad-translations-export-to-branch.lock
     INFO Exporting to translations branches.
     INFO Processed 0 item(s); 0 failure(s), 0 unpushed branch(es).
 
@@ -219,13 +218,8 @@ database without populating them in bzr.  Exporting to such a branch
 won't work, so we email a notification to the branch owner.
 
     >>> from email import message_from_string
-    >>> from canonical.config import config
     >>> from lp.services.mail import stub
     >>> from lp.codehosting.vfs import get_rw_server
-    >>> config.push('enable_emails', """
-    ...     [rosetta]
-    ...     notify_unpushed_branches: True
-    ...     """)
     >>> productseries = factory.makeProductSeries()
     >>> productseries.translations_branch = factory.makeBranch()
     >>> template = factory.makePOTemplate(productseries=productseries)
@@ -261,8 +255,6 @@ won't work, so we email a notification to the branch owner.
     ...
     Branch synchronization for this release series has been set up to
     commit translations snapshots to the bzr branch at lp://...
-
-    >>> extra_config = config.pop('enable_emails')
 
 For the full message text, see emailtemplates/unpushed-branch.txt.
 

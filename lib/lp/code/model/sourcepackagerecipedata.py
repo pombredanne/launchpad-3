@@ -224,6 +224,8 @@ class SourcePackageRecipeData(Storm):
             line_number += 1
             comment = None
             db_branch = branch_map[instruction.recipe_branch.url]
+            if db_branch is None:
+                raise NoSuchBranch(instruction.recipe_branch.url)
             insn = _SourcePackageRecipeDataInstruction(
                 instruction.recipe_branch.name, type, comment,
                 line_number, db_branch, instruction.recipe_branch.revspec,

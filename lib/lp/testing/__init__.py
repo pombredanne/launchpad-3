@@ -611,6 +611,13 @@ class BrowserTestCase(TestCaseWithFactory):
         url = canonical_url(context, view_name=view_name)
         return self.getUserBrowser(url, self.user)
 
+    def getMainText(self, context, view_name=None):
+        """Return the main text of a context's page."""
+        from canonical.launchpad.testing.pages import (
+            extract_text, find_main_content)
+        browser = self.getViewBrowser(context, view_name)
+        return extract_text(find_main_content(browser.contents))
+
 
 class WindmillTestCase(TestCaseWithFactory):
     """A TestCase class for Windmill tests.

@@ -18,6 +18,7 @@ or IBugTaskSet.search().
     >>> bugtask.milestone = milestone
     >>> bugtask.subscribe(person, person)
     <BugSubscription ...>
+    >>> transaction.commit()
 
 The results of a search for all bug tasks related to a person can be
 passed to getAssignedMilestonesFromSearch() to discover all the

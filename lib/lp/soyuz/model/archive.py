@@ -210,6 +210,9 @@ class Archive(SQLBase):
     external_dependencies = StringCol(
         dbName='external_dependencies', notNull=False, default=None)
 
+    commercial = BoolCol(
+        dbName='commercial', notNull=True, default=False)
+
     def _get_arm_builds_enabled(self):
         """Check whether ARM builds are allowed for this archive."""
         archive_arch_set = getUtility(IArchiveArchSet)

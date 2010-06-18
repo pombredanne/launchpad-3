@@ -175,7 +175,7 @@
 
     At least ${log}
 
-    ${version}
+    r${revno}
   --&gt;" />
 </tal:template>
 </metal:page>
