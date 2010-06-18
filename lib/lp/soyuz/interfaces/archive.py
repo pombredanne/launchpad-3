@@ -1085,8 +1085,13 @@ class IArchiveView(IHasBuildRecords):
         :return: A dictionary of filenames and SHA1s.
         """
 
-    @operation_parameters(person=Reference(schema=IPerson))
-    @export_read_operation()
+    def getAuthToken(person):
+        """Returns an IArchiveAuthToken for the archive in question for
+        IPerson provided.
+
+        :return: A IArchiveAuthToken, or None if the user has none.
+        """
+
     def newAuthToken(person, token=None, date_created=None):
         """Create a new authorisation token.
 
@@ -1098,6 +1103,14 @@ class IArchiveView(IHasBuildRecords):
         :return: A new IArchiveAuthToken
         """
 
+    @operation_parameters(person=Reference(schema=IPerson))
+    @export_write_operation()
+    def getPrivateSourcesList(person):
+        """Get a text line that is suitable to be used for a sources.list
+        entry.
+
+        It will create a new IArchiveAuthToken if one doesn't already exist.
+        """
 
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""

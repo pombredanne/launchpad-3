@@ -1378,6 +1378,12 @@ class Archive(SQLBase):
         # Perform the copy, may raise CannotCopy.
         do_copy(sources, self, series, pocket, include_binaries)
 
+    def getAuthToken(self, person):
+        """See `IArchive`."""
+
+        token_set = getUtility(IArchiveAuthTokenSet)
+        return token_set.getActiveTokenForArchiveAndPerson(self, person)
+
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
 
@@ -1391,10 +1397,7 @@ class Archive(SQLBase):
                 "Subscription tokens can be created for individuals only.")
 
         # Ensure that the current subscription does not already have a token
-        token_set = getUtility(IArchiveAuthTokenSet)
-        previous_token = token_set.getActiveTokenForArchiveAndPerson(
-            self, person)
-        if previous_token:
+        if self.getAuthToken(person) is not None:
             raise ArchiveSubscriptionError(
                 "%s already has a token for %s." % (
                     person.displayname, self.displayname))
@@ -1411,6 +1414,14 @@ class Archive(SQLBase):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.add(archive_auth_token)
         return archive_auth_token
+
+    def getPrivateSourcesList(self, person):
+        """See `IArchive`."""
+
+        token = self.getAuthToken(person)
+        if token is None:
+            token = self.newAuthToken(person)
+        return token.archive_url
 
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):
