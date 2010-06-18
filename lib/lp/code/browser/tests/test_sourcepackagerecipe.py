@@ -543,6 +543,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Secret PPA (chef/ppa)
             Distribution series:
             Secret Squirrel
+            Hoary
             Warty
             or
             Cancel""")
