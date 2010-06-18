@@ -10,9 +10,13 @@ from unittest import TestLoader
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.testing import verifyObject
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.model.potranslation import POTranslation
+from lp.translations.model.translationmessage import DummyTranslationMessage
+from lp.translations.interfaces.translationmessage import (
+    ITranslationMessage)
 from lp.translations.interfaces.translations import TranslationConstants
 from canonical.testing import ZopelessDatabaseLayer
 
@@ -25,6 +29,15 @@ class TestTranslationMessage(TestCaseWithFactory):
     """
 
     layer = ZopelessDatabaseLayer
+
+    def test_baseline(self):
+        message = self.factory.makeTranslationMessage()
+        verifyObject(ITranslationMessage, message)
+
+        pofile = self.factory.makePOFile('nl')
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        dummy = DummyTranslationMessage(pofile, potmsgset)
+        verifyObject(ITranslationMessage, dummy)
 
     def test_is_diverged(self):
         # ITranslationMessage.is_diverged is a little helper to let you

@@ -78,6 +78,11 @@ class TranslationMessageMixIn:
                 forms = 2
             return forms
 
+    @property
+    def is_diverged(self):
+        """See `ITranslationMessage`."""
+        return self.potemplate is not None
+
     def makeHTMLID(self, suffix=None):
         """See `ITranslationMessage`."""
         elements = [self.language.code]
@@ -271,11 +276,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 return False
         # We found no translations in this translation_message
         return True
-
-    @property
-    def is_diverged(self):
-        """See `ITranslationMessage`."""
-        return self.potemplate is not None
 
     def isHidden(self, pofile):
         """See `ITranslationMessage`."""
