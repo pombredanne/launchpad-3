@@ -105,7 +105,7 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         form = self._makeForm()
         form['field.enable_bug_expiration'] = 'on'
         form['field.bugtracker'] = 'external'
-        form['field.bugtracker.bugtracker'] = '3'
+        form['field.bugtracker.bugtracker'] = 'debbugs'
         view = create_initialized_view(
             self.product, name='+configure-bugtracker', form=form)
         self.assertEqual([], view.errors)

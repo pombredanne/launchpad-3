@@ -1365,14 +1365,25 @@ class PeopleSearchView(LaunchpadView):
     def number_of_teams(self):
         return self.context.teamsCount()
 
+    @property
+    def is_teams_only(self):
+        """Is the search restricted to teams."""
+        searchfor = self.request.get("searchfor", None)
+        return searchfor == 'teamsonly'
+
+    @property
+    def is_people_only(self):
+        """Is the search restricted to people."""
+        searchfor = self.request.get("searchfor", None)
+        return searchfor == 'peopleonly'
+
     def searchPeopleBatchNavigator(self):
         name = self.request.get("name")
         if not name:
             return None
-        searchfor = self.request.get("searchfor")
-        if searchfor == "peopleonly":
+        if self.is_people_only:
             results = self.context.findPerson(name)
-        elif searchfor == "teamsonly":
+        elif self.is_teams_only:
             results = self.context.findTeam(name)
         else:
             results = self.context.find(name)
