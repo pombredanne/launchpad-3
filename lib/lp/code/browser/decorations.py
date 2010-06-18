@@ -34,7 +34,16 @@ class DecoratedBug:
         self.branch = branch
         if tasks is None:
             tasks = self.bug.bugtasks
-        self.bugtasks = tasks
+        self.tasks = tasks
+
+    @property
+    def bugtasks(self):
+        """This needs to be a property rather than an attribute.
+
+        If we try to assign to self.bugtasks, the lazr.delegates things we are
+        trying to assign to the property of the bug.
+        """
+        return self.tasks
 
     @property
     def default_bugtask(self):
