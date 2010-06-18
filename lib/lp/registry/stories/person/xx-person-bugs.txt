@@ -159,7 +159,7 @@ site, yet all the menu links point to the bugs site.
     http://bugs.launchpad.dev/~name12/+subscribedbugs
     >>> print anon_browser.getLink('List all related bugs').url
     http://bugs.launchpad.dev/~name12
-    >>> print anon_browser.getLink('Show package report').url
+    >>> print anon_browser.getLink('List subscribed packages').url
     http://bugs.launchpad.dev/~name12/+packagebugs
     >>> anon_browser.open('http://launchpad.dev/~name12/+commentedbugs')
     >>> print anon_browser.getLink('List assigned bugs').url

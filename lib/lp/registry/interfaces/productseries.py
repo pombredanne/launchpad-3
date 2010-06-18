@@ -19,22 +19,20 @@ from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
-    ContentNameField, NoneableDescription, ParticipatingPersonChoice,
-    PublicPersonChoice, Title)
+    ContentNameField, ParticipatingPersonChoice, Title)
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.code.interfaces.branch import IBranch
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
-from lp.registry.interfaces.series import SeriesStatus
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers)
+from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
+from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone)
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.validation import validate_url
@@ -92,9 +90,10 @@ class IProductSeriesEditRestricted(Interface):
         """Create a new milestone for this ProjectSeries."""
 
 
-class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
-                           IBugTarget, ISpecificationGoal, IHasMilestones,
-                           IHasOfficialBugTags):
+class IProductSeriesPublic(
+    ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
+    IHasTranslationTemplates):
     """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
@@ -102,7 +101,8 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     id = Int(title=_('ID'))
 
     product = exported(
-        Choice(title=_('Project'), required=True, vocabulary='Product'),
+        ReferenceChoice(title=_('Project'), required=True,
+            vocabulary='Product', schema=Interface), # really IProduct
         exported_as='project')
 
     status = exported(
@@ -158,15 +158,6 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                           'just returns the name.')),
         exported_as='display_name')
 
-    summary = exported(
-        NoneableDescription(title=_("Summary"),
-             description=_('A single paragraph that explains the goals of '
-                           'of this series and the intended users. '
-                           'For example: "The 2.0 series of Apache '
-                           'represents the current stable series, '
-                           'and is recommended for all new deployments".'),
-             required=True))
-
     releases = exported(
         CollectionField(
             title=_("An iterator over the releases in this "
@@ -200,28 +191,6 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                     "ordered by date expected."),
             readonly=True,
             value_type=Reference(schema=IMilestone)))
-
-    drivers = exported(
-        CollectionField(
-            title=_(
-                'A list of the people or teams who are drivers for this '
-                'series. This list is made up of any drivers or owners '
-                'from this project series, the project and if it exists, '
-                'the relevant project group.'),
-            readonly=True,
-            value_type=Reference(schema=IPerson)))
-
-    bug_supervisor = CollectionField(
-        title=_('Currently just a reference to the project bug '
-                'supervisor.'),
-        readonly=True,
-        value_type=Reference(schema=IPerson))
-
-    security_contact = PublicPersonChoice(
-        title=_('Security Contact'),
-        description=_('Currently just a reference to the project '
-                      'security contact.'),
-        required=False, vocabulary='ValidPersonOrTeam')
 
     branch = exported(
         ReferenceChoice(
@@ -291,12 +260,15 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Return the POTemplate with this name for the series."""
 
     # where are the tarballs released from this branch placed?
-    releasefileglob = TextLine(title=_("Release URL pattern"),
+    releasefileglob = exported(
+        TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,
         description=_('A URL pattern that matches releases that are part '
                       'of this series.  Launchpad automatically scans this '
                       'site to import new releases.  Example: '
-                      'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz'))
+                      'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz')),
+        exported_as='release_finder_url_pattern')
+
     releaseverstyle = Attribute("The version numbering style for this "
         "series of releases.")
 
@@ -318,7 +290,6 @@ class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
     export_as_webservice_entry('project_series')
 
 
-
 class IProductSeriesSet(Interface):
     """Interface representing the set of ProductSeries."""
 
@@ -332,6 +303,20 @@ class IProductSeriesSet(Interface):
         """Return the ProductSeries with the given id.
 
         Return the default value if there is no such series.
+        """
+
+    def findByTranslationsImportBranch(
+            branch, force_translations_upload=False):
+        """Find all series importing translations from the branch.
+
+        Returns all product series that have the given branch set as their
+        branch and that have translation imports enabled on it.
+        :param branch: The branch to filter for.
+        XXX: henninge 2010-03-16 bug=521095: The following parameter should
+        go away once force_translations_upload becomes a product series
+        instead of a boolean.
+        :param force_translations_upload: Actually ignore if translations are
+        enabled for this series.
         """
 
 

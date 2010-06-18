@@ -130,7 +130,7 @@ An IDistributionSourcePackage.
     u'http://launchpad.dev/ubuntu/+source/mozilla-firefox'
 
 
-== Projects and products ==
+== Projects groups and products ==
 
     >>> from canonical.launchpad.interfaces import (
     ...     IProjectGroupSet, IProductSet)
@@ -275,7 +275,7 @@ An IBugComment.
     >>> bug_comment = BugComment(
     ...     1, bug_one.initial_message, bugtask_one, True)
     >>> canonical_url(bug_comment)
-    u'http://launchpad.dev/firefox/+bug/1/comments/1'
+    u'http://bugs.launchpad.dev/firefox/+bug/1/comments/1'
 
 An IBugNomination.
 
@@ -356,6 +356,16 @@ the merge proposal)
     http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/.../comments/...
 
 
+== Code Imports ==
+
+Code imports have a canonical URL which is a subordinate of the branch
+that they import to.
+
+    >>> from lp.code.interfaces.codeimport import ICodeImportSet
+    >>> code_import = getUtility(ICodeImportSet).get(1)
+    >>> print canonical_url(code_import)
+    http://code.launchpad.dev/~vcs-imports/gnome-terminal/import/+code-import
+
 == Specifications ==
 
     >>> from canonical.launchpad.interfaces import ISpecificationSet
@@ -366,3 +376,14 @@ the merge proposal)
     >>> canonical_url(celebs.ubuntu.getSpecification('media-integrity-check'))
     u'http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check'
 
+
+SourcePackageRecipes
+====================
+
+    >>> recipe = factory.makeSourcePackageRecipe()
+    >>> canonical_url(recipe)
+    u'http://code.launchpad.dev/~person-name.../+recipe/generic-string...'
+
+    >>> build = factory.makeSourcePackageRecipeBuild(recipe=recipe)
+    >>> canonical_url(build)
+    u'http://code.launchpad.dev/~person-name.../+recipe/generic-string.../+build/...'

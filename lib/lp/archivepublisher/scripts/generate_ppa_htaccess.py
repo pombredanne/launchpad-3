@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -17,7 +17,7 @@ from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import canonical_url
 
 from lp.archivepublisher.config import getPubConfig
-from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archive import IArchiveSet, ArchiveStatus
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivesubscriber import (
@@ -237,6 +237,13 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             if ppa.name in blacklisted_ppa_names_for_owner:
                 self.logger.info(
                     "Skipping htacess updates for blacklisted PPA "
+                    " '%s' owned by %s.",
+                        ppa.name,
+                        ppa.owner.displayname)
+                continue
+            elif ppa.status == ArchiveStatus.DELETED or ppa.enabled is False:
+                self.logger.info(
+                    "Skipping htacess updates for deleted or disabled PPA "
                     " '%s' owned by %s.",
                         ppa.name,
                         ppa.owner.displayname)

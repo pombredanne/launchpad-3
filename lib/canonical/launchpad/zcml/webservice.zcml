@@ -16,6 +16,11 @@
         provides="lazr.restful.interfaces.IWebServiceConfiguration">
     </utility>
 
+    <utility
+        factory="lp.services.memcache.restful.MemcachedStormRepresentationCache"
+        provides="lazr.restful.interfaces.IRepresentationCache">
+    </utility>
+
     <securedutility
         class="canonical.launchpad.systemhomes.WebServiceApplication"
         provides="canonical.launchpad.interfaces.IWebServiceApplication">
@@ -60,6 +65,13 @@
 
    <adapter
        for="zope.schema.interfaces.IChoice
+            zope.publisher.interfaces.http.IHTTPRequest
+            canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
+       provides="lazr.restful.interfaces.IFieldMarshaller"
+       factory="canonical.launchpad.webapp.marshallers.choiceMarshallerError"
+       />
+   <adapter
+       for="lazr.restful.interfaces.IReferenceChoice
             zope.publisher.interfaces.http.IHTTPRequest
             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
        provides="lazr.restful.interfaces.IFieldMarshaller"

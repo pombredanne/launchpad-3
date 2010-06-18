@@ -23,6 +23,7 @@ from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import Interface
+from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -37,7 +38,9 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.codeimport import (
     ICodeImport, ICodeImportSet)
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
-from lp.code.interfaces.branch import BranchExists, IBranch
+from lp.code.interfaces.branch import (
+    BranchExists, IBranch, user_has_special_branch_access)
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
@@ -117,13 +120,13 @@ class CodeImportView(LaunchpadView):
     """The default view for `ICodeImport`.
 
     We present the CodeImport as a simple page listing all the details of the
-    import such as associated product and branch, who requested the import,
+    import such as target and branch, who requested the import,
     and so on.
     """
 
     def initialize(self):
         """See `LaunchpadView.initialize`."""
-        self.title = "Code Import for %s" % (self.context.product.name,)
+        self.title = "Code Import for %s" % (self.context.branch.target.name,)
 
 
 class CodeImportBaseView(LaunchpadFormView):
@@ -200,17 +203,19 @@ class CodeImportBaseView(LaunchpadFormView):
 class NewCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
+    use_template(IBranch, ['owner'])
     use_template(
         ICodeImport,
-        ['product', 'rcs_type', 'cvs_root', 'cvs_module'])
+        ['rcs_type', 'cvs_root', 'cvs_module'])
 
     svn_branch_url = URIField(
         title=_("Branch URL"), required=False,
         description=_(
-            "The URL of a Subversion branch, starting with svn:// or"
-            " http(s)://. Only trunk branches are imported."),
+            "The URL of a Subversion branch, starting with svn:// or "
+            "http(s)://.   You can include a username and password as part "
+            "of the url, but this will be displayed on the branch page."),
         allowed_schemes=["http", "https", "svn"],
-        allow_userinfo=False,
+        allow_userinfo=True,
         allow_port=True,
         allow_query=False,
         allow_fragment=False,
@@ -249,6 +254,12 @@ class NewCodeImportForm(Interface):
             "imported branch.  Examples: main, trunk."),
         )
 
+    product = Choice(
+        title=_('Project'),
+        description=_("The Project to associate the code import with."),
+        vocabulary="Product",
+        )
+
 
 class CodeImportNewView(CodeImportBaseView):
     """The view to request a new code import."""
@@ -258,10 +269,13 @@ class CodeImportNewView(CodeImportBaseView):
 
     custom_widget('rcs_type', LaunchpadRadioWidget)
 
-    initial_values = {
-        'rcs_type': RevisionControlSystems.BZR_SVN,
-        'branch_name': 'trunk',
-        }
+    @property
+    def initial_values(self):
+        return {
+            'owner': self.user,
+            'rcs_type': RevisionControlSystems.BZR_SVN,
+            'branch_name': 'trunk',
+            }
 
     @property
     def context_is_product(self):
@@ -283,6 +297,21 @@ class CodeImportNewView(CodeImportBaseView):
         CodeImportBaseView.setUpFields(self)
         if self.context_is_product:
             self.form_fields = self.form_fields.omit('product')
+
+        # If the user can administer branches, then they should be able to
+        # assign the ownership of the branch to any valid person or team.
+        if user_has_special_branch_access(self.user):
+            owner_field = self.schema['owner']
+            any_owner_choice = Choice(
+                __name__='owner', title=owner_field.title,
+                description = _("As an administrator you are able to reassign"
+                                " this branch to any person or team."),
+                required=True, vocabulary='ValidPersonOrTeam')
+            any_owner_field = form.Fields(
+                any_owner_choice, render_context=self.render_context)
+            # Replace the normal owner field with a more permissive vocab.
+            self.form_fields = self.form_fields.omit('owner')
+            self.form_fields = any_owner_field + self.form_fields
 
     def setUpWidgets(self):
         CodeImportBaseView.setUpWidgets(self)
@@ -326,7 +355,8 @@ class CodeImportNewView(CodeImportBaseView):
         cvs_root, cvs_module, url = self._getImportLocation(data)
         return getUtility(ICodeImportSet).new(
             registrant=self.user,
-            product=product,
+            owner=data['owner'],
+            target=IBranchTarget(product),
             branch_name=data['branch_name'],
             rcs_type=data['rcs_type'],
             url=url,
@@ -343,8 +373,8 @@ class CodeImportNewView(CodeImportBaseView):
             <a href="%(product_url)s">%(product_name)s</a>
             with the name of
             <a href="%(branch_url)s">%(branch_name)s</a>.""",
-                       product_url=canonical_url(existing_branch.product),
-                       product_name=existing_branch.product.name,
+                       product_url=canonical_url(existing_branch.target),
+                       product_name=existing_branch.target.name,
                        branch_url=canonical_url(existing_branch),
                        branch_name=existing_branch.name))
 
@@ -362,7 +392,8 @@ class CodeImportNewView(CodeImportBaseView):
             self.user,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            self.user)
 
         self.next_url = canonical_url(code_import.branch)
 
@@ -402,12 +433,13 @@ class CodeImportNewView(CodeImportBaseView):
         """See `LaunchpadFormView`."""
         # Make sure that the user is able to create branches for the specified
         # namespace.
-        celebs = getUtility(ILaunchpadCelebrities)
         product = self.getProduct(data)
-        if product is not None:
-            namespace = get_branch_namespace(celebs.vcs_imports, product)
+        # 'owner' in data may be None if it failed validation.
+        owner = data.get('owner')
+        if product is not None and owner is not None:
+            namespace = get_branch_namespace(owner, product)
             policy = IBranchNamespacePolicy(namespace)
-            if not policy.canCreateBranches(celebs.vcs_imports):
+            if not policy.canCreateBranches(self.user):
                 self.setFieldError(
                     'product',
                     "You are not allowed to register imports for %s."
@@ -435,9 +467,9 @@ class CodeImportNewView(CodeImportBaseView):
 class EditCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
-    use_template(
-        ICodeImport,
-        ['url', 'cvs_root', 'cvs_module'])
+    url = copy_field(ICodeImport['url'], readonly=False)
+    cvs_root = copy_field(ICodeImport['cvs_root'], readonly=False)
+    cvs_module = copy_field(ICodeImport['cvs_module'], readonly=False)
     whiteboard = copy_field(IBranch['whiteboard'])
 
 

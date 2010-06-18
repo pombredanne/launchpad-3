@@ -24,19 +24,18 @@ class RecipeBuilder:
     """Builds a package from a recipe."""
 
     def __init__(self, build_id, author_name, author_email,
-                 package_name, suite):
+                 suite, distroseries_name):
         """Constructor.
 
         :param build_id: The id of the build (a str).
         :param author_name: The name of the author (a str).
         :param author_email: The email address of the author (a str).
-        :param package_name: The name of the package (a str).
         :param suite: The suite the package should be built for (a str).
         """
         self.build_id = build_id
         self.author_name = author_name
         self.author_email = author_email
-        self.package_name = package_name
+        self.distroseries_name = distroseries_name
         self.suite = suite
         self.base_branch = None
         self.chroot_path = get_build_path(build_id, 'chroot-autobuild')
@@ -69,7 +68,8 @@ class RecipeBuilder:
             'sudo', '-u', self.username, 'DEBEMAIL=%s' % self.author_email,
             'DEBFULLNAME=%s' % self.author_name, 'bzr', 'dailydeb',
             '--no-build', recipe_path_relative, self.tree_path_relative,
-            '--manifest', manifest_path_relative])
+            '--manifest', manifest_path_relative,
+            '--append-version', '~%s1' % self.distroseries_name])
         if retcode != 0:
             return retcode
         (source,) = [name for name in os.listdir(self.tree_path)

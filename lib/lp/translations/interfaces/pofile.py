@@ -19,6 +19,9 @@ from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleTerm, SimpleVocabulary)
 
+from lazr.restful.declarations import (
+    exported, export_as_webservice_entry)
+
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.person import IPerson
@@ -33,8 +36,12 @@ from lp.translations.interfaces.translationsperson import (
 class IPOFile(IRosettaStats):
     """A translation file."""
 
-    id = Int(
-        title=_('The translation file id.'), required=True, readonly=True)
+    export_as_webservice_entry(
+        singular_name="translation_file",
+        plural_name="translation_files")
+
+    id = exported(Int(
+        title=_('The translation file id.'), required=True, readonly=True))
 
     potemplate = Object(
         title=_('The translation file template.'),
@@ -121,8 +128,8 @@ class IPOFile(IRosettaStats):
         required=False)
 
     translation_messages = Attribute(_(
-        'All `ITranslationMessage` objects related to this translation file.'
-        ))
+        "All `ITranslationMessage` objects related to this "
+        "translation file."))
 
     plural_forms = Int(
         title=_('Number of plural forms for the language of this PO file.'),
@@ -273,7 +280,7 @@ class IPOFile(IRosettaStats):
 
     def getTranslationRows():
         """Return exportable rows of translation data.
-        
+
         :return: a list of `VPOExport` objects.
         """
 

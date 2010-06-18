@@ -50,12 +50,12 @@ to retrieve files from the slave. Verify it works...
   True
 
 
-== BuilddMaster class ==
+== BuilderSet polling operations ==
 
     >>> import logging
-    >>> from lp.buildmaster.master import BuilddMaster
-
-    >>> bm = BuilddMaster(logging.getLogger(), transaction)
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
+    >>> logger = logging.getLogger()
+    >>> builder_set = getUtility(IBuilderSet)
 
 Retrieve a known DistroArchSeries.
 
@@ -70,24 +70,17 @@ Create a totally bogus CHROOT.
     >>> unused = hoary_i386.addOrUpdateChroot(fake_chroot)
     >>> unused = warty_i386.addOrUpdateChroot(fake_chroot)
 
-Initialise the BuildMaster with all available distroarchseries.
+Initialise the BuildMaster with all its builders.
 Because the sampledata builders are busy we issue and warning stating
 that.
 
-    >>> from canonical.launchpad.interfaces import IDistroArchSeriesSet
-    >>> all_architectures = sorted(
-    ...     getUtility(IDistroArchSeriesSet),
-    ...     key=lambda dar: (dar.distroseries.distribution.name,
-    ...                      dar.distroseries.name, dar.architecturetag))
-    >>> for dar in all_architectures:
-    ...     bm.addDistroArchSeries(dar)
-    ...     bm.setupBuilders(dar)
+    >>> builder_set.checkBuilders(logging, transaction)
 
 Scan active builders looking for information about current jobs,
 collect result of finished jobs, everything is stored directly in
 the Launchpad DB. (simply check if it doesn't explode)
 
-    >>> bm.scanActiveBuilders()
+    >>> builder_set.scanActiveBuilders(logging, transaction)
     WARNING:...:Builder http://localhost:8221/ forgot about
     buildqueue 1 -- resetting buildqueue record
 
@@ -101,4 +94,4 @@ At this point the buildd-slave is not accessible anymore.
   >>> s.info()
   Traceback (most recent call last):
   ...
-  error: (111, 'Connection refused')
+  error: ...

@@ -13,15 +13,18 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.archivepublisher.debversion import Version
-from lp.buildmaster.master import BuilddMaster
-from lp.soyuz.interfaces.build import IBuildSet
-from lp.buildmaster.interfaces.builder import IBuilderSet
+from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import NotFoundError
-from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
+from lp.archivepublisher.debversion import Version
+from lp.archivepublisher.utils import process_in_batches
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.scripts.base import (
+    LaunchpadCronScript, LaunchpadScriptFailure)
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
 
 class QueueBuilder(LaunchpadCronScript):
@@ -58,8 +61,9 @@ class QueueBuilder(LaunchpadCronScript):
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
 
-        # In order to avoid the partial commits inside BuilddMaster
-        # to happen we pass a FakeZtm instance if dry-run mode is selected.
+        # In dry-run mode we use a fake transaction manager with a no-op
+        # commit(), so we avoid partial commits that are performed by some of
+        # our methods.
         class _FakeZTM:
             """A fake transaction manager."""
             def commit(self):
@@ -70,12 +74,13 @@ class QueueBuilder(LaunchpadCronScript):
             self.txn = _FakeZTM()
 
         sorted_distroseries = self.calculateDistroseries()
-        buildMaster = BuilddMaster(self.logger, self.txn)
-        # Initialize BuilddMaster with the relevant architectures.
+        archseries = []
+        # Initialize the relevant architectures (those with chroots).
         # it's needed even for 'score-only' mode.
         for series in sorted_distroseries:
-            for archseries in series.architectures:
-                buildMaster.addDistroArchSeries(archseries)
+            for das in series.architectures:
+                if das.getChroot():
+                    archseries.append(das)
 
         if not self.options.score_only:
             # For each distroseries we care about, scan for
@@ -83,14 +88,104 @@ class QueueBuilder(LaunchpadCronScript):
             # with the distroarchseries we're interested in.
             self.logger.info("Rebuilding build queue.")
             for distroseries in sorted_distroseries:
-                buildMaster.createMissingBuilds(distroseries)
+                self.createMissingBuilds(distroseries)
 
         # Ensure all NEEDSBUILD builds have a buildqueue entry
         # and re-score them.
-        buildMaster.addMissingBuildQueueEntries()
-        buildMaster.scoreCandidates()
+        self.addMissingBuildQueueEntries(archseries)
+        self.scoreCandidates(archseries)
 
         self.txn.commit()
+
+    def createMissingBuilds(self, distroseries):
+        """Ensure that each published package is completely built."""
+        self.logger.info("Processing %s" % distroseries.name)
+        # Do not create builds for distroseries with no nominatedarchindep
+        # they can't build architecture independent packages properly.
+        if not distroseries.nominatedarchindep:
+            self.logger.debug(
+                "No nominatedarchindep for %s, skipping" % distroseries.name)
+            return
+
+        # Listify the architectures to avoid hitting this MultipleJoin
+        # multiple times.
+        distroseries_architectures = list(distroseries.architectures)
+        if not distroseries_architectures:
+            self.logger.debug(
+                "No architectures defined for %s, skipping"
+                % distroseries.name)
+            return
+
+        architectures_available = list(distroseries.enabled_architectures)
+        if not architectures_available:
+            self.logger.debug(
+                "Chroots missing for %s, skipping" % distroseries.name)
+            return
+
+        self.logger.info(
+            "Supported architectures: %s" %
+            " ".join(arch_series.architecturetag
+                     for arch_series in architectures_available))
+
+        pas_verify = BuildDaemonPackagesArchSpecific(
+            config.builddmaster.root, distroseries)
+
+        sources_published = distroseries.getSourcesPublishedForAllArchives()
+        self.logger.info(
+            "Found %d source(s) published." % sources_published.count())
+
+        def process_source(pubrec):
+            builds = pubrec.createMissingBuilds(
+                architectures_available=architectures_available,
+                pas_verify=pas_verify, logger=self.logger)
+            if len(builds) > 0:
+                self.txn.commit()
+
+        process_in_batches(
+            sources_published, process_source, self.logger,
+            minimum_chunk_size=1000)
+
+    def addMissingBuildQueueEntries(self, archseries):
+        """Create missing Buildd Jobs. """
+        self.logger.info("Scanning for build queue entries that are missing")
+
+        buildset = getUtility(IBinaryPackageBuildSet)
+        builds = buildset.getPendingBuildsForArchSet(archseries)
+
+        if not builds:
+            return
+
+        for build in builds:
+            if not build.buildqueue_record:
+                name = build.source_package_release.name
+                version = build.source_package_release.version
+                tag = build.distro_arch_series.architecturetag
+                self.logger.debug(
+                    "Creating buildqueue record for %s (%s) on %s"
+                    % (name, version, tag))
+                build.queueBuild()
+
+        self.txn.commit()
+
+    def scoreCandidates(self, archseries):
+        """Iterate over the pending buildqueue entries and re-score them."""
+        if not archseries:
+            self.logger.info("No architecture found to rescore.")
+            return
+
+        # Get the current build job candidates.
+        candidates = getUtility(IBinaryPackageBuildSet).calculateCandidates(
+            archseries)
+
+        self.logger.info("Found %d build in NEEDSBUILD state. Rescoring"
+                         % candidates.count())
+
+        for job in candidates:
+            uptodate_build = getUtility(
+                IBinaryPackageBuildSet).getByQueueEntry(job)
+            if uptodate_build.status != BuildStatus.NEEDSBUILD:
+                continue
+            job.score()
 
     def calculateDistroseries(self):
         """Return an ordered list of distroseries for the given arguments."""
@@ -146,7 +241,7 @@ class RetryDepwait(LaunchpadCronScript):
                 "Could not find distribution: %s" % self.options.distribution)
 
         # Iterate over all supported distroarchseries with available chroot.
-        build_set = getUtility(IBuildSet)
+        build_set = getUtility(IBinaryPackageBuildSet)
         for distroseries in distribution:
             if distroseries.status == SeriesStatus.OBSOLETE:
                 self.logger.debug(
@@ -176,7 +271,7 @@ class SlaveScanner(LaunchpadCronScript):
                 "Unhandled arguments %s" % repr(self.args))
 
         builder_set = getUtility(IBuilderSet)
-        buildMaster = builder_set.pollBuilders(self.logger, self.txn)
+        builder_set.pollBuilders(self.logger, self.txn)
 
         self.logger.info("Dispatching Jobs.")
 

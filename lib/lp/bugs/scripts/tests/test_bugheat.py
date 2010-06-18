@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -15,8 +15,15 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.scripts.bugheat import BugHeatCalculator, BugHeatConstants
 from lp.testing import TestCaseWithFactory
 
+from zope.security.proxy import removeSecurityProxy
+
+
 class TestBugHeatCalculator(TestCaseWithFactory):
     """Tests for the BugHeatCalculator class."""
+    # If you change the way that bug heat is calculated, remember to update
+    # the description of how it is calculated at
+    # /lib/lp/bugs/help/bug-heat.html and
+    # https://help.launchpad.net/Bugs/BugHeat
 
     layer = LaunchpadZopelessLayer
 
@@ -155,7 +162,7 @@ class TestBugHeatCalculator(TestCaseWithFactory):
 
         # If, on the other hand, the bug is security_related,
         # _getHeatFromSecurity() will return BugHeatConstants.SECURITY
-        self.bug.security_related = True
+        self.bug.setSecurityRelated(True)
         self.assertEqual(
             BugHeatConstants.SECURITY, self.calculator._getHeatFromSecurity())
 
@@ -179,7 +186,7 @@ class TestBugHeatCalculator(TestCaseWithFactory):
         dupe = self.factory.makeBug()
         dupe.duplicateof = self.bug
         self.bug.setPrivate(True, self.bug.owner)
-        self.bug.security_related = True
+        self.bug.setSecurityRelated(True)
 
         expected_heat += (
             BugHeatConstants.DUPLICATE +
@@ -215,19 +222,35 @@ class TestBugHeatCalculator(TestCaseWithFactory):
             "Expected %s, got %s" % (0, heat))
 
     def test_getBugHeat_decay(self):
-        # Every month, a bug that wasn't touched has its heat reduced by 10%.
+        # Every day, a bug that wasn't touched has its heat reduced by 1%.
         aging_bug = self.factory.makeBug()
         fresh_heat = BugHeatCalculator(aging_bug).getBugHeat()
         aging_bug.date_last_updated = (
-            aging_bug.date_last_updated - timedelta(days=32))
-        expected = int(fresh_heat * 0.9)
+            aging_bug.date_last_updated - timedelta(days=1))
+        expected = int(fresh_heat * 0.99)
         heat = BugHeatCalculator(aging_bug).getBugHeat()
         self.assertEqual(
             expected, heat,
             "Expected bug heat did not match actual bug heat. "
             "Expected %s, got %s" % (expected, heat))
 
+    def test_getBugHeat_activity(self):
+        # Bug heat increases by a quarter of the maximum bug heat divided by
+        # the number of days between the bug's creating and its last activity.
+        active_bug = removeSecurityProxy(self.factory.makeBug())
+        fresh_heat = BugHeatCalculator(active_bug).getBugHeat()
+        active_bug.date_last_updated = (
+            active_bug.date_last_updated - timedelta(days=10))
+        active_bug.datecreated = (active_bug.datecreated - timedelta(days=20))
+        active_bug.default_bugtask.target.setMaxBugHeat(100)
+        expected = int((fresh_heat * (0.99 ** 20)) + (100 * 0.25 / 20))
+        heat = BugHeatCalculator(active_bug).getBugHeat()
+        self.assertEqual(
+            expected, heat,
+            "Expected bug heat did not match actual bug heat. "
+            "Expected %s, got %s" % (expected, heat))
+
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

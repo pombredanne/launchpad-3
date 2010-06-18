@@ -1,3 +1,51 @@
+launchpad-buildd (63) hardy-cat; urgency=low
+
+  * Drop apply-ogre-model, since override-sources-list replaced it three years
+    ago. Also clean up extra_args parsing a bit.
+
+ -- William Grant <wgrant@ubuntu.com>  Sat, 12 Jun 2010 11:33:11 +1000
+
+launchpad-buildd (62) hardy-cat; urgency=low
+
+  * Make the buildds cope with not having a sourcepackagename LP#587109 
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 08 Jun 2010 13:02:31 -0600
+
+launchpad-buildd (61) hardy-cat; urgency=high
+
+  [ William Grant ]
+  * Fixed translation templates slave to return files properly. LP#549422
+
+  [ Danilo Segan ]
+  * Added more output to generate-translation-templates. LP#580345
+
+  [ Henning Eggers ]
+  * Improved output of build xmplrpc call, not returning None now. LP#581746
+  * Added apache2 dependency. LP#557634
+  * Added preinst script to prevent installation when a build is running.
+    LP#557347
+
+  [ LaMont Jones ]
+  * preinst needs to detect a stale buildlog as well.
+
+ -- LaMont Jones <lamont@canonical.com>  Fri, 21 May 2010 05:52:53 -0600
+
+launchpad-buildd (60) lucid-cat; urgency=low
+
+  * Depends: lsb-release, which is ubuntu-minimal, but not essential.
+
+ -- LaMont Jones <lamont@ubuntu.com>  Thu, 01 Apr 2010 08:54:48 -0600
+
+launchpad-buildd (59) lucid-cat; urgency=low
+
+  [ Henning Eggers ]
+  * Added translation template generation code (pottery).
+
+  [ LaMont Jones ]
+  * set umask for twisted where supported
+
+ -- LaMont Jones <lamont@canonical.com>  Wed, 31 Mar 2010 10:38:15 -0600
+
 launchpad-buildd (58~1) karmic; urgency=low
 
   * Misc fixes to match APIs.

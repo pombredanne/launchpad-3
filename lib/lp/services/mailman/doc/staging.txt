@@ -22,13 +22,15 @@ informing them of their new list.  We can ignore these.
 
     >>> login('admin@canonical.com')
 
-    >>> owner = factory.makePerson()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> owner = removeSecurityProxy(factory.makePerson())
     >>> team_one = factory.makeTeam(owner=owner, name='staging-one')
     >>> team_two = factory.makeTeam(owner=owner, name='staging-two')
     >>> transaction.commit()
     >>> logout()
 
-    >>> browser = Browser('%s:%s' %
+    >>> from canonical.launchpad.testing.pages import setupBrowser
+    >>> browser = setupBrowser('Basic %s:%s' %
     ...     (owner._preferredemail_cached.email,
     ...      owner._password_cleartext_cached))
 

@@ -26,8 +26,9 @@ __metaclass__ = type
 __all__ = [
     'ActiveMailingListVocabulary',
     'AdminMergeablePersonVocabulary',
+    'AllUserTeamsParticipationVocabulary',
     'CommercialProjectsVocabulary',
-    'DistributionOrProductOrProjectVocabulary',
+    'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
     'DistributionVocabulary',
     'DistroSeriesVocabulary',
@@ -42,7 +43,7 @@ __all__ = [
     'ProductReleaseVocabulary',
     'ProductSeriesVocabulary',
     'ProductVocabulary',
-    'ProjectVocabulary',
+    'ProjectGroupVocabulary',
     'SourcePackageNameVocabulary',
     'UserTeamsParticipationVocabulary',
     'UserTeamsParticipationPlusSelfVocabulary',
@@ -122,7 +123,7 @@ from lp.registry.model.pillar import PillarName
 from lp.registry.model.product import Product
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
-from lp.registry.model.project import Project
+from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.sourcepackagename import SourcePackageName
 
 
@@ -227,11 +228,11 @@ class ProductVocabulary(SQLObjectVocabularyBase):
 
 # XXX kiko 2007-01-18: any reason why this can't be an
 # NamedSQLObjectHugeVocabulary?
-class ProjectVocabulary(SQLObjectVocabularyBase):
+class ProjectGroupVocabulary(SQLObjectVocabularyBase):
     """All `IProjectGroup` objects vocabulary."""
     implements(IHugeVocabulary)
 
-    _table = Project
+    _table = ProjectGroup
     _orderBy = 'displayname'
     displayname = 'Select a project group'
 
@@ -289,8 +290,7 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
-        return SimpleTerm(
-            obj, obj.name, '%s (%s)' % (obj.displayname, obj.name))
+        return SimpleTerm(obj, obj.name, obj.unique_displayname)
 
     def __iter__(self):
         kw = {}
@@ -441,7 +441,9 @@ class ValidPersonOrTeamVocabulary(
                 # visible.
                 private_query = AND(
                     Not(Person.teamowner == None),
-                    Person.visibility == PersonVisibility.PRIVATE)
+                    OR(
+                        Person.visibility == PersonVisibility.PRIVATE,
+                        Person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP))
             else:
                 private_query = AND(
                     TeamParticipation.person == logged_in_user.id,
@@ -754,6 +756,27 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
                 "ValidTeamOwnerVocabulary's context must provide IPerson "
                 "or IPersonSet.")
         ValidPersonOrTeamVocabulary.__init__(self, context)
+
+
+class AllUserTeamsParticipationVocabulary(ValidTeamVocabulary):
+    """The set of teams where the current user is a member.
+
+    Other than UserTeamsParticipationVocabulary, this vocabulary includes
+    private teams.
+    """
+
+    displayname = 'Select a Team of which you are a member'
+
+    def __init__(self, context):
+        super(AllUserTeamsParticipationVocabulary, self).__init__(context)
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            self.extra_clause = False
+        else:
+            self.extra_clause = AND(
+                super(AllUserTeamsParticipationVocabulary, self).extra_clause,
+                TeamParticipation.person == user.id,
+                TeamParticipation.team == Person.id)
 
 
 class PersonActiveMembershipVocabulary:
@@ -1213,7 +1236,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
 
     def __contains__(self, obj):
         if IProjectGroupMilestone.providedBy(obj):
-            # Project milestones are pseudo content objects
+            # ProjectGroup milestones are pseudo content objects
             # which aren't really a part of this vocabulary,
             # but sometimes we want to pass them to fields
             # that rely on this vocabulary for validation
@@ -1330,7 +1353,6 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
 
         query = query.lower()
         like_query = "'%%' || %s || '%%'" % quote_like(query)
-        fti_query = quote(query)
         kw = {}
         if self._orderBy:
             kw['orderBy'] = self._orderBy
@@ -1444,7 +1466,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
             return IDistribution.providedBy(obj)
 
 
-class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
+class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
     """Active `IProduct`, `IProjectGroup` or `IDistribution` vocabulary."""
     displayname = 'Select a project'
     _filter = PillarName.q.active == True
@@ -1457,7 +1479,8 @@ class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
             return IDistribution.providedBy(obj)
 
 
-class FeaturedProjectVocabulary(DistributionOrProductOrProjectVocabulary):
+class FeaturedProjectVocabulary(
+                               DistributionOrProductOrProjectGroupVocabulary):
     """Vocabulary of projects that are featured on the LP Home Page."""
 
     _filter = AND(PillarName.q.id == FeaturedProject.q.pillar_name,

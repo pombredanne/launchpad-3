@@ -4,10 +4,17 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BugWatch', 'BugWatchSet']
+__all__ = [
+    'BugWatch',
+    'BugWatchActivity',
+    'BugWatchSet',
+    ]
 
 import re
 import urllib
+
+from datetime import datetime
+from pytz import utc
 from urlparse import urlunsplit
 
 from zope.event import notify
@@ -17,7 +24,9 @@ from zope.component import getUtility
 # SQL imports
 from sqlobject import ForeignKey, SQLObjectNotFound, StringCol
 
+from storm.base import Storm
 from storm.expr import Desc, In, Not
+from storm.locals import Int, Reference, Unicode
 from storm.store import Store
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -27,7 +36,7 @@ from lazr.uri import find_uris_in_text
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -38,8 +47,9 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
-    BugWatchErrorType, IBugWatch, IBugWatchSet, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
+    BUG_WATCH_ACTIVITY_SUCCESS_STATUSES, BugWatchActivityStatus,
+    BugWatchCannotBeRescheduled, IBugWatch, IBugWatchActivity,
+    IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
@@ -60,6 +70,25 @@ BUG_TRACKER_URL_FORMATS = {
     }
 
 
+WATCH_RESCHEDULE_THRESHOLD = 0.6
+
+def get_bug_watch_ids(references):
+    """Yield bug watch IDs from any given iterator.
+
+    For each item in the given iterators, yields the ID if it provides
+    IBugWatch, and yields if it is an integer. Everything else is
+    discarded.
+    """
+    for reference in references:
+        if IBugWatch.providedBy(reference):
+            yield reference.id
+        elif isinstance(reference, (int, long)):
+            yield reference
+        else:
+            raise AssertionError(
+                '%r is not a bug watch or an ID.' % (reference,))
+
+
 class BugWatch(SQLBase):
     """See `IBugWatch`."""
     implements(IBugWatch)
@@ -72,17 +101,32 @@ class BugWatch(SQLBase):
     remote_importance = StringCol(notNull=False, default=None)
     lastchanged = UtcDateTimeCol(notNull=False, default=None)
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
-    last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
+    last_error_type = EnumCol(schema=BugWatchActivityStatus, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
+    next_check = UtcDateTimeCol()
 
     @property
     def bugtasks(self):
         tasks = Store.of(self).find(BugTask, BugTask.bugwatch == self.id)
         tasks = tasks.order_by(Desc(BugTask.datecreated))
         return shortlist(tasks, 10, 100)
+
+    @property
+    def bugtasks_to_update(self):
+        """Yield the bug tasks that are eligible for update."""
+        for bugtask in self.bugtasks:
+            # We don't update conjoined bug tasks; they must be
+            # updated through their conjoined masters.
+            if bugtask._isConjoinedBugTask():
+                continue
+            # We don't update tasks of duplicate bugs.
+            if bugtask.bug.duplicateof is not None:
+                continue
+            # Update this one.
+            yield bugtask
 
     @property
     def title(self):
@@ -118,19 +162,12 @@ class BugWatch(SQLBase):
             # Sync the object in order to convert the UTC_NOW sql
             # constant to a datetime value.
             self.sync()
-
-        for linked_bugtask in self.bugtasks:
-            # We don't updated conjoined bug tasks; they must be updated
-            # through their conjoined masters.
-            if linked_bugtask._isConjoinedBugTask():
-                continue
-
+        for linked_bugtask in self.bugtasks_to_update:
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.transitionToImportance(
                 malone_importance,
                 getUtility(ILaunchpadCelebrities).bug_watch_updater)
-
             if linked_bugtask.importance != old_bugtask.importance:
                 event = ObjectModifiedEvent(
                     linked_bugtask, old_bugtask, ['importance'],
@@ -145,12 +182,7 @@ class BugWatch(SQLBase):
             # Sync the object in order to convert the UTC_NOW sql
             # constant to a datetime value.
             self.sync()
-        for linked_bugtask in self.bugtasks:
-            # We don't updated conjoined bug tasks; they must be updated
-            # through their conjoined masters.
-            if linked_bugtask._isConjoinedBugTask():
-                continue
-
+        for linked_bugtask in self.bugtasks_to_update:
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.transitionToStatus(
@@ -168,51 +200,6 @@ class BugWatch(SQLBase):
         """See `IBugWatch`."""
         assert len(self.bugtasks) == 0, "Can't delete linked bug watches"
         SQLBase.destroySelf(self)
-
-    def getLastErrorMessage(self):
-        """See `IBugWatch`."""
-
-        if not self.last_error_type:
-            return None
-
-        error_message_mapping = {
-            BugWatchErrorType.BUG_NOT_FOUND: "%(bugtracker)s bug #"
-                "%(bug)s appears not to exist. Check that the bug "
-                "number is correct.",
-            BugWatchErrorType.CONNECTION_ERROR: "Launchpad couldn't "
-                "connect to %(bugtracker)s.",
-            BugWatchErrorType.INVALID_BUG_ID: "Bug ID %(bug)s isn't "
-                "valid on %(bugtracker)s. Check that the bug ID is "
-                "correct.",
-            BugWatchErrorType.TIMEOUT: "Launchpad's connection to "
-                "%(bugtracker)s timed out.",
-            BugWatchErrorType.UNKNOWN: "Launchpad couldn't import bug "
-                "#%(bug)s from " "%(bugtracker)s.",
-            BugWatchErrorType.UNPARSABLE_BUG: "Launchpad couldn't "
-                "extract a status from %(bug)s on %(bugtracker)s.",
-            BugWatchErrorType.UNPARSABLE_BUG_TRACKER: "Launchpad "
-                "couldn't determine the version of %(bugtrackertype)s "
-                "running on %(bugtracker)s.",
-            BugWatchErrorType.UNSUPPORTED_BUG_TRACKER: "Launchpad "
-                "doesn't support importing bugs from %(bugtrackertype)s"
-                " bug trackers.",
-            BugWatchErrorType.PRIVATE_REMOTE_BUG: "The bug is marked as "
-                "private on the remote bug tracker. Launchpad cannot import "
-                "the status of private remote bugs.",
-            }
-
-        if self.last_error_type in error_message_mapping:
-            message = error_message_mapping[self.last_error_type]
-        else:
-            message = ("Launchpad couldn't import bug #%(bug)s from "
-                "%(bugtracker)s.")
-
-        error_data = {
-            'bug': self.remotebug,
-            'bugtracker': self.bugtracker.title,
-            'bugtrackertype': self.bugtracker.bugtrackertype.title}
-
-        return message % error_data
 
     @property
     def unpushed_comments(self):
@@ -270,6 +257,87 @@ class BugWatch(SQLBase):
             BugMessage.bug == self.bug.id,
             BugMessage.bugwatch == self.id,
             Not(BugMessage.remote_comment_id == None))
+
+    def addActivity(self, result=None, message=None, oops_id=None):
+        """See `IBugWatch`."""
+        activity = BugWatchActivity()
+        activity.bug_watch = self
+        if result is None:
+            # If no result is passed we assume that the activity
+            # succeded and set the result field accordingly.
+            activity.result = BugWatchActivityStatus.SYNC_SUCCEEDED
+        else:
+            activity.result = result
+        if message is not None:
+            activity.message = unicode(message)
+        if oops_id is not None:
+            activity.oops_id = unicode(oops_id)
+        store = IStore(BugWatchActivity)
+        store.add(activity)
+
+    @property
+    def activity(self):
+        store = Store.of(self)
+        return store.find(
+            BugWatchActivity,
+            BugWatchActivity.bug_watch == self).order_by(
+                Desc('activity_date'))
+
+    @property
+    def can_be_rescheduled(self):
+        """See `IBugWatch`."""
+        if (self.next_check is not None and
+            self.next_check <= datetime.now(utc)):
+            # If the watch is already scheduled for a time in the past
+            # (or for right now) it can't be rescheduled, since it
+            # should be be checked by the next checkwatches run anyway.
+            return False
+
+        if self.activity.is_empty():
+            # Don't show the reschedule button if the watch has never
+            # been checked.
+            return False
+
+        if self.activity[0].result in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES:
+            # If the last update was successful the watch can't be
+            # rescheduled.
+            return False
+
+        if self.failed_activity.is_empty():
+            # Don't show the reschedule button if the watch has never
+            # failed.
+            return False
+
+        if self.failed_activity.count() == 1 and self.activity.count() == 1:
+            # In cases where a watch has been updated once and failed,
+            # we allow the user to reschedule it.
+            return True
+
+        # If the ratio is lower than the reschedule threshold, we
+        # can show the button.
+        failure_ratio = (
+            float(self.failed_activity.count()) /
+            self.activity.count())
+        return failure_ratio <= WATCH_RESCHEDULE_THRESHOLD
+
+    @property
+    def failed_activity(self):
+        store = Store.of(self)
+        success_status_ids = [
+            status.value for status in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES]
+
+        return store.find(
+            BugWatchActivity,
+            BugWatchActivity.bug_watch == self,
+            Not(In(BugWatchActivity.result, success_status_ids))).order_by(
+                Desc('activity_date'))
+
+    def setNextCheck(self, next_check):
+        """See `IBugWatch`."""
+        if not self.can_be_rescheduled:
+            raise BugWatchCannotBeRescheduled()
+
+        self.next_check = next_check
 
 
 class BugWatchSet(BugSetBase):
@@ -611,3 +679,46 @@ class BugWatchSet(BugSetBase):
         if bug_watch_ids is not None:
             query = query.find(In(BugWatch.id, bug_watch_ids))
         return query
+
+    def bulkSetError(self, references, last_error_type=None):
+        """See `IBugWatchSet`."""
+        bug_watch_ids = set(get_bug_watch_ids(references))
+        if len(bug_watch_ids) > 0:
+            bug_watches_in_database = IStore(BugWatch).find(
+                BugWatch, In(BugWatch.id, list(bug_watch_ids)))
+            bug_watches_in_database.set(
+                lastchecked=UTC_NOW,
+                last_error_type=last_error_type,
+                next_check=None)
+
+    def bulkAddActivity(self, references,
+                        result=BugWatchActivityStatus.SYNC_SUCCEEDED,
+                        message=None, oops_id=None):
+        """See `IBugWatchSet`."""
+        bug_watch_ids = set(get_bug_watch_ids(references))
+        if len(bug_watch_ids) > 0:
+            insert_activity_statement = (
+                "INSERT INTO BugWatchActivity"
+                " (bug_watch, result, message, oops_id) "
+                "SELECT BugWatch.id, %s, %s, %s FROM BugWatch"
+                " WHERE BugWatch.id IN %s"
+                )
+            IStore(BugWatch).execute(
+                insert_activity_statement % sqlvalues(
+                    result, message, oops_id, bug_watch_ids))
+
+
+class BugWatchActivity(Storm):
+    """See `IBugWatchActivity`."""
+
+    implements(IBugWatchActivity)
+
+    __storm_table__ = 'BugWatchActivity'
+
+    id = Int(primary=True)
+    bug_watch_id = Int(name='bug_watch')
+    bug_watch = Reference(bug_watch_id, BugWatch.id)
+    activity_date = UtcDateTimeCol(notNull=True)
+    result = EnumCol(enum=BugWatchActivityStatus, notNull=False)
+    message = Unicode()
+    oops_id = Unicode()

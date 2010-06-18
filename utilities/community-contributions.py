@@ -9,19 +9,22 @@
 Trawl a Launchpad branch's history to detect contributions by non-Canonical
 developers, then update https://dev.launchpad.net/Contributions accordingly.
 
-Usage: community-contributions.py [options] PATH_TO_LAUNCHPAD_DEVEL_BRANCH
+Usage: community-contributions.py [options] --devel=PATH --db-devel=DB_PATH
 
 Requirements:
-       You need a 'devel' branch of Launchpad available locally (see
-       https://dev.launchpad.net/Getting), your ~/.moin_ids file must
-       be set up correctly, and you need editmoin.py (if you don't
-       have it, the error message will tell you where to get it).
+       You need both the 'devel' and 'db-devel' branches of Launchpad
+       available locally (see https://dev.launchpad.net/Getting),
+       your ~/.moin_ids file must be set up correctly, and you need
+       editmoin.py (if you don't have it, the error message will tell
+       you where to get it).
 
 Options:
-  -q            Print no non-essential messages.
-  -h, --help    Print this help.
-  --dry-run     Don't update the wiki, just print the new wiki page to stdout.
-  --draft-run   Update the wiki "/Draft" page instead of the real page.
+  -q               Print no non-essential messages.
+  -h, --help       Print this help.
+  --dry-run        Don't update the wiki, just print the new page to stdout.
+  --draft-run      Update the wiki "/Draft" page instead of the real page.
+  --devel=PATH     Specify the filesystem path to the 'devel' branch.
+  --db-devel=PATH  Specify the filesystem path to the 'db-devel' branch.
 """
 
 # General notes:
@@ -105,16 +108,21 @@ known_canonical_lp_devs = \
                               u'Barry Warsaw',
                               u'Bjorn Tillenius',
                               u'Björn Tillenius',
+                              u'Brad Bollenbach',
                               u'Brad Crittenden',
                               u'Brian Fromme',
+                              u'Canonical.com Patch Queue Manager',
                               u'Carlos Perello Marin',
                               u'Carlos Perelló Marín',
+                              u'carlos.perello {_AT_} canonical.com',
                               u'Celso Providelo',
                               u'Christian Reis',
+                              u'Christian Robottom Reis',
                               u'kiko {_AT_} beetle',
                               u'Curtis Hovey',
                               u'Dafydd Harries',
                               u'Danilo Šegan',
+                              u'david <david {_AT_} marvin>',
                               u'Данило Шеган',
                               u'данило шеган',
                               u'Daniel Silverstone',
@@ -122,6 +130,8 @@ known_canonical_lp_devs = \
                               u'Deryck Hodge',
                               u'Diogo Matsubara',
                               u'Edwin Grubbs',
+                              u'Elliot Murphy',
+                              u'Firstname Lastname',
                               u'Francis Lacoste',
                               u'Francis J. Lacoste',
                               u'Gary Poster',
@@ -129,6 +139,7 @@ known_canonical_lp_devs = \
                               u'Graham Binns',
                               u'Guilherme Salgado',
                               u'Henning Eggers',
+                              u'Herb McNew',
                               u'James Henstridge',
                               u'Jelmer Vernooij',
                               u'Jeroen Vermeulen',
@@ -138,9 +149,12 @@ known_canonical_lp_devs = \
                               u'jml {_AT_} canonical.com',
                               u'jml {_AT_} mumak.net',
                               u'Jonathan Knowles',
+                              u'jonathan.knowles {_AT_} canonical.com',
                               u'Julian Edwards',
                               u'Karl Fogel',
+                              u'Launch Pad',
                               u'Launchpad APA',
+                              u'Launchpad Developers',
                               u'Launchpad Patch Queue Manager',
                               u'Launchpad PQM Bot',
                               u'Leonard Richardson',
@@ -151,20 +165,26 @@ known_canonical_lp_devs = \
                               u'Martin Pool',
                               u'Matt Zimmerman',
                               u'Matthew Paul Thomas',
+                              u'Matthew Thomas',
                               u'Matthew Revell',
                               u'matthew.revell {_AT_} canonical.com',
                               u'Michael Hudson',
+                              u'michael.hudson {_AT_} canonical.com',
                               u'Michael Nelson',
                               u'Muharem Hrnjadovic',
                               u'muharem {_AT_} canonical.com',
+                              u'Patch Queue Manager',
                               u'Paul Hummer',
                               u'Robert Collins',
                               u'Stuart Bishop',
+                              u'Steve Alexander',
                               u'Steve McInerney',
                               u'<steve {_AT_} stedee.id.au>',
+                              u'test {_AT_} canonical.com',
                               u'Tom Haddon',
                               u'Tim Penhey',
                               u'Tom Berger',
+                              u'ubuntu <ubuntu {_AT_} lp-dev>',
                               u'Ursula Junque',
                               )]
 
@@ -193,6 +213,7 @@ known_canonical_non_lp_devs = \
                               u'Michael Vogt',
                               u'Sidnei da Silva',
                               u'Steve Kowalik',
+                              u'Dustin Kirkland',
                               )]
 
 # Some people have made commits using various names and/or email 
@@ -206,6 +227,24 @@ merge_names_pairs = (
      u'Jamal Fanaian <jamal.fanaian {_AT_} gmail.com>'),
     (u'LaMont Jones <lamont {_AT_} rover3>',
      u'LaMont Jones <lamont {_AT_} debian.org>'),
+    (u'Sidnei <sidnei {_AT_} ubuntu>',
+     u'Sidnei da Silva <sidnei.da.silva {_AT_} canonical.com>'),
+    (u'Sidnei da Silva <sidnei.da.silva {_AT_} gmail.com>',
+     u'Sidnei da Silva <sidnei.da.silva {_AT_} canonical.com>'),
+    (u'Sidnei da Silva <sidnei {_AT_} canonical.com>',
+     u'Sidnei da Silva <sidnei.da.silva {_AT_} canonical.com>'),
+    (u'Adam Conrad <adconrad {_AT_} ziggup>',
+     u'Adam Conrad <adconrad {_AT_} 0c3.net>'),
+    (u'Elliot Murphy <elliot {_AT_} elliotmurphy.com>',
+     u'Elliot Murphy <elliot {_AT_} canonical.com>'),
+    (u'Elliot Murphy <elliot.murphy {_AT_} canonical.com>',
+     u'Elliot Murphy <elliot {_AT_} canonical.com>'),
+    (u'Cody Somerville <cody-somerville {_AT_} mercurial>',
+     u'Cody A.W. Somerville <cody.somerville {_AT_} canonical.com>'),
+    (u'Adam Conrad <adconrad {_AT_} chinstrap>',
+     u'Adam Conrad <adconrad {_AT_} 0c3.net>'),
+    (u'Adam Conrad <adconrad {_AT_} cthulhu>',
+     u'Adam Conrad <adconrad {_AT_} 0c3.net>'),
     )
 # Then put it in dictionary form with the correct encodings.
 merge_names_map = dict((wiki_encode(a), wiki_encode(b))
@@ -215,10 +254,16 @@ merge_names_map = dict((wiki_encode(a), wiki_encode(b))
 class ContainerRevision():
     """A wrapper for a top-level LogRevision containing child LogRevisions."""
 
-    def __init__(self, top_lr):
+    def __init__(self, top_lr, branch_info):
+        """Create a new ContainerRevision.
+
+        :param top_lr: The top-level LogRevision.
+        :param branch_info: The BranchInfo for the containing branch.
+        """
         self.top_rev = top_lr       # e.g. LogRevision for r9371.
         self.contained_revs = []    # e.g. [ {9369.1.1}, {9206.4.4}, ... ],
                                     # where "{X}" means "LogRevision for X"
+        self.branch_info = branch_info
 
     def add_subrev(self, lr):
         """Add a descendant child of this container revision."""
@@ -235,14 +280,8 @@ class ContainerRevision():
         else:
             date_str = "(NO DATE)"
 
-        # XXX: Karl Fogel 2009-09-10: just using 'devel' branch for
-        # now.  We have four trunks; that makes life hard.  Not sure
-        # what to do about that; unifying the data is possible, but a
-        # bit of work.  See https://dev.launchpad.net/Trunk for more
-        # information.
-        rev_url_base = (
-            "http://bazaar.launchpad.net/~launchpad-pqm/"
-            "launchpad/devel/revision/")
+        rev_url_base = "http://bazaar.launchpad.net/%s/revision/" % (
+            self.branch_info.loggerhead_path)
 
         # In loggerhead, you can use either a revision number or a
         # revision ID.  In other words, these would reach the same page:
@@ -273,9 +312,13 @@ class ContainerRevision():
                              "(it contains %d commits)''"
                              % (rev_id_url, len(self.contained_revs)))
 
+        name = self.branch_info.name
+
         text = [
-            " * [[%s|r%s]] -- %s\n" % (rev_id_url, self.top_rev.revno,
-                                       date_str),
+            " * [[%s|r%s%s]] -- %s\n" % (
+                rev_id_url, self.top_rev.revno,
+                ' (%s)' % name if name else '',
+                date_str),
             " {{{\n%s\n}}}\n" % message,
             " '''Commits:'''\n ",
             commits_block,
@@ -305,6 +348,11 @@ class ExCon():
         # (key == value == ContainerRevision).  We use a dictionary
         # instead of list to get set semantics; set() would be overkill.
         self._landings = {}
+        # A map of revision IDs authored by this contributor (probably
+        # not top-level) to a (LogRevision, ContainerRevision) pair. The
+        # pair contains details of the shallowest found instance of this
+        # revision.
+        self.seen_revs = {}
 
     def num_landings(self):
         """Return the number of top-level landings that include revisions
@@ -327,7 +375,7 @@ class ExCon():
             "=== %s ===\n\n" % name,
             "''%d top-level landing%s:''\n\n" % (self.num_landings(), plural),
             ''.join(map(str, sorted(self._landings,
-                                    key=lambda x: x.top_rev.revno,
+                                    key=lambda x: x.top_rev.rev.timestamp,
                                     reverse=True))),
             "\n",
             ]
@@ -402,7 +450,8 @@ class LogExCons(log.LogFormatter):
         self.all_ex_cons = {}
         # ContainerRevision object representing most-recently-seen
         # top-level rev.
-        current_top_level_rev = None
+        self.current_top_level_rev = None
+        self.branch_info = None
 
     def _toc(self, contributors):
         toc_text = []
@@ -414,9 +463,15 @@ class LogExCons(log.LogFormatter):
                             % (val.name_as_anchor, val.name,
                                val.num_landings(), plural))
         return toc_text
-      
+
     def result(self):
         "Return a moin-wiki-syntax string with TOC followed by contributions."
+
+        # Go through the shallowest authored revisions and add their
+        # top level revisions.
+        for excon in self.all_ex_cons.values():
+            for rev, top_level_rev in excon.seen_revs.values():
+                excon.add_top_level_revision(top_level_rev)
 
         # Divide contributors into non-Canonical and Canonical.
         non_canonical_contributors = [x for x in self.all_ex_cons.values()
@@ -463,12 +518,39 @@ class LogExCons(log.LogFormatter):
         """
         # We count on always seeing the containing rev before its subrevs.
         if lr.merge_depth == 0:
-            self.current_top_level_rev = ContainerRevision(lr)
+            self.current_top_level_rev = ContainerRevision(
+                lr, self.branch_info)
         else:
             self.current_top_level_rev.add_subrev(lr)
         ex_cons = get_ex_cons(lr.rev.get_apparent_authors(), self.all_ex_cons)
         for ec in ex_cons:
-            ec.add_top_level_revision(self.current_top_level_rev)
+            # If this is the shallowest sighting of a revision, note it
+            # in the ExCon. We may see the revision at different depths
+            # in different branches, mostly when one of the trunks is
+            # merged into the other. We only care about the initial
+            # merge, which should be shallowest.
+            if (lr.rev.revision_id not in ec.seen_revs or
+                lr.merge_depth <
+                    ec.seen_revs[lr.rev.revision_id][0].merge_depth):
+                ec.seen_revs[lr.rev.revision_id] = (
+                    lr, self.current_top_level_rev)
+
+
+class BranchInfo:
+    """A collection of information about a branch."""
+
+    def __init__(self, path, loggerhead_path, name=None):
+        """Create a new BranchInfo.
+
+        :param path: Filesystem path to the branch.
+        :param loggerhead_path: The path to the branch on Launchpad's
+            Loggerhead instance.
+        :param name: Optional name to identify the branch's revisions in the
+            produced document.
+        """
+        self.path = path
+        self.name = name
+        self.loggerhead_path = loggerhead_path
 
 
 # XXX: Karl Fogel 2009-09-10: is this really necessary?  See bzrlib/log.py.
@@ -485,9 +567,8 @@ def usage():
 page_intro = """This page shows contributions to Launchpad from \
 developers not on the Launchpad team at Canonical.
 
-It only lists changes that have landed in the Launchpad ''devel'' \
-tree, so changes that land in ''db-devel'' first may take a while to \
-show up (see the [[Trunk|trunk explanation]] for more).
+It lists all changes that have landed in the Launchpad ''devel'' \
+or ''db-devel'' trees (see the [[Trunk|trunk explanation]] for more).
 
 ~-''Note for maintainers: this page is updated every 10 minutes by a \
 cron job running as kfogel on devpad (though if there are no new \
@@ -500,18 +581,20 @@ in the Launchpad tree.''-~
 
 def main():
     quiet = False
-    target = None
     dry_run = False
+    devel_path = None
+    db_devel_path = None
 
     wiki_dest = "https://dev.launchpad.net/Contributions"
 
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         usage()
         sys.exit(1)
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], '?hq',
-                                   ['help', 'usage', 'dry-run', 'draft-run'])
+                                   ['help', 'usage', 'dry-run', 'draft-run',
+                                    'devel=', 'db-devel='])
     except getopt.GetoptError, e:
         sys.stderr.write("ERROR: " + str(e) + '\n\n')
         usage()
@@ -527,31 +610,40 @@ def main():
             dry_run = True
         elif opt == '--draft-run':
             wiki_dest += "/Draft"
+        elif opt == '--devel':
+            devel_path = value
+        elif opt == '--db-devel':
+            db_devel_path = value
 
     # Ensure we have the arguments we need.
-    if len(args) < 1:
-        sys.stderr.write("ERROR: path to Launchpad branch "
-                         "required as argument\n")
+    if not devel_path or not db_devel_path:
+        sys.stderr.write("ERROR: paths to Launchpad devel and db-devel "
+                         "branches required as options\n")
         usage()
         sys.exit(1)
 
-    target = args[0]
+    branches = (
+        BranchInfo(
+            devel_path, '~launchpad-pqm/launchpad/devel'),
+        BranchInfo(
+            db_devel_path, '~launchpad-pqm/launchpad/db-devel', 'db-devel'),
+        )
 
-    # Do everything.
-    b = Branch.open(target)
-
-    # XXX: Karl Fogel 2009-09-10: 8976 is the first non-Canonical
-    # contribution on 'devel'.  On 'db-devel', the magic revision
-    # number is 8327.  We're aiming at 'devel' right now, but perhaps
-    # it would be good to parameterize this, or just auto-detect the
-    # branch and choose the right number.
-    logger = log.Logger(b, {'start_revision' : 8976,
-                            'direction' : 'reverse',
-                            'levels' : 0, })
     lec = LogExCons()
-    if not quiet:
-        print "Calculating (this may take a while)..."
-    logger.show(lec)  # Won't "show" anything -- just gathers data.
+
+    for branch_info in branches:
+        # Do everything.
+        b = Branch.open(branch_info.path)
+
+        logger = log.Logger(b, {'direction' : 'reverse',
+                                'levels' : 0, })
+        if not quiet:
+            print "Calculating (this may take a while)..."
+
+        # Set information about the current branch for later formatting.
+        lec.branch_info = branch_info
+        logger.show(lec)  # Won't "show" anything -- just gathers data.
+
     page_contents = page_intro + lec.result()
     def update_if_modified(moinfile):
         if moinfile._unescape(moinfile.body) == page_contents:

@@ -39,7 +39,7 @@ errors, we need:
   4. A changes file that enumerates all the files in the upload, with
      correct md5 sum and file sizes.
   5. Actual files uploaded that match the ones described in the changes file.
- 
+
  If (1) is not available, the upload silently fails.
  If (2) is not available, the upload silently fails.
  If (3) or (4) is not available, the upload is rejected immediately with
@@ -623,12 +623,12 @@ Check there's a SourcePackageRelease with no build.
   >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
   >>> from lp.registry.model.sourcepackagename import SourcePackageName
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-  >>> from lp.soyuz.model.build import Build
+  >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
   >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
   >>> spn = SourcePackageName.selectOneBy(name="baz")
   >>> spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
   >>> spr_id = spr.id
-  >>> builds = Build.selectBy(sourcepackagereleaseID=spr_id)
+  >>> builds = BinaryPackageBuild.selectBy(source_package_release_id=spr_id)
   >>> len(list(builds))
   0
 
@@ -642,7 +642,7 @@ buildd-queuebuilder having run inbetween the source and binary uploads.
 
 Check build created
 
-  >>> len(list(Build.selectBy(sourcepackagereleaseID=spr_id)))
+  >>> len(list(BinaryPackageBuild.selectBy(source_package_release_id=spr_id)))
   1
 
 Upload the i386 binary:
@@ -656,10 +656,11 @@ Should still just have one build, and it should now be FULLYBUILT.
   >>> from canonical.database.sqlbase import clear_current_connection_cache
   >>> clear_current_connection_cache()
 
-  >>> builds = list(Build.selectBy(sourcepackagereleaseID=spr_id))
+  >>> builds = list(BinaryPackageBuild.selectBy(
+  ...     source_package_release_id=spr_id))
   >>> len(builds)
   1
-  >>> builds[0].buildstate == BuildStatus.FULLYBUILT
+  >>> builds[0].status == BuildStatus.FULLYBUILT
   True
 
 

@@ -13,6 +13,8 @@ __all__ = [
     'SignableTagFile',
     'DSCFile',
     'DSCUploadedFile',
+    'findAndMoveChangelog',
+    'findCopyright',
     ]
 
 import apt_pkg
@@ -151,8 +153,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
     # Note that files is actually only set inside verify().
     files = None
-    # Copyrigth is only set inside unpackAndCheckSource().
+    # Copyright and changelog_path are only set inside unpackAndCheckSource().
     copyright = None
+    changelog_path = None
 
     def __init__(self, filepath, digest, size, component_and_section,
                  priority, package, version, changes, policy, logger):
@@ -524,18 +527,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # XXX cprov 20070713: We should access only the expected directory
         # name (<sourcename>-<no_epoch(no_revision(version))>).
 
-        # Instead of trying to predict the unpacked source directory name,
-        # we simply use glob to retrive everything like:
-        # 'tempdir/*/debian/copyright'
-        globpath = os.path.join(tmpdir, "*", "debian/copyright")
-        for fullpath in glob.glob(globpath):
-            if not os.path.exists(fullpath):
-                continue
-            self.logger.debug("Copying copyright contents.")
-            self.copyright = open(fullpath).read().strip()
+        # Locate both the copyright and changelog files for later processing.
+        for error in findCopyright(self, tmpdir, self.logger):
+            yield error
 
-        if self.copyright is None:
-            yield UploadWarning("No copyright file found.")
+        for error in findAndMoveChangelog(self, cwd, tmpdir, self.logger):
+            yield error
 
         self.logger.debug("Cleaning up source tree.")
         try:
@@ -607,6 +604,18 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             else:
                 encoded[key] = None
 
+        # Lets upload the changelog file to librarian
+
+        # We have to do this separately because we need the librarian file
+        # alias id to embed in the SourceReleasePackage
+
+        changelog_lfa = self.librarian.create(
+            "changelog",
+            os.stat(self.changelog_path).st_size,
+            open(self.changelog_path, "r"),
+            "text/x-debian-source-changelog",
+            restricted=self.policy.archive.private)
+
         source_name = getUtility(
             ISourcePackageNameSet).getOrCreateByName(self.source)
 
@@ -628,6 +637,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             dsc_binaries=encoded['binary'],
             dsc_standards_version=encoded.get('standards-version'),
             component=self.component,
+            changelog=changelog_lfa,
             changelog_entry=encoded.get('simulated_changelog'),
             section=self.section,
             archive=self.policy.archive,
@@ -675,6 +685,80 @@ class DSCUploadedFile(NascentUploadFile):
         except UploadError, error:
             yield error
 
+
+def findFile(source_dir, filename):
+    """Find and return any file under source_dir
+
+    :param source_file: The directory where the source was extracted
+    :param source_dir: The directory where the source was extracted.
+    :return fullpath: The full path of the file, else return None if the 
+                      file is not found.
+    """
+    # Instead of trying to predict the unpacked source directory name,
+    # we simply use glob to retrieve everything like:
+    # 'tempdir/*/debian/filename'
+    globpath = os.path.join(source_dir, "*", filename)
+    for fullpath in glob.glob(globpath):
+        if not os.path.exists(fullpath):
+            continue
+        if os.path.islink(fullpath):
+            raise UploadError(
+                "Symbolic link for %s not allowed" % filename)
+        # Anything returned by this method should be less than 10MiB since it
+        # will be stored in the database assuming the source package isn't
+        # rejected before hand
+        if os.stat(fullpath).st_size > 10485760:
+            raise UploadError(
+                "%s file too large, 10MiB max" % filename)
+        else:
+            return fullpath
+    return None
+
+def findCopyright(dsc_file, source_dir, logger):
+    """Find and store any debian/copyright.
+
+    :param dsc_file: A DSCFile object where the copyright will be stored.
+    :param source_dir: The directory where the source was extracted.
+    :param logger: A logger object for debug output.
+    """
+    try:
+        copyright_file = findFile(source_dir, 'debian/copyright')
+    except UploadError, error:
+        yield error
+        return
+    if copyright_file is None:
+        yield UploadWarning("No copyright file found.")
+        return
+
+    logger.debug("Copying copyright contents.")
+    dsc_file.copyright = open(copyright_file).read().strip()
+
+def findAndMoveChangelog(dsc_file, target_dir, source_dir, logger):
+    """Find and move any debian/changelog.
+
+    This function finds the changelog file within the source package and
+    moves it to target_dir. The changelog file is later uploaded to the 
+    librarian by DSCFile.storeInDatabase().
+
+    :param dsc_file: A DSCFile object where the copyright will be stored.
+    :param target_dir: The directory where the changelog will end up.
+    :param source_dir: The directory where the source was extracted.
+    :param logger: A logger object for debug output.
+    """
+    try:
+        changelog_file = findFile(source_dir, 'debian/changelog')
+    except UploadError, error:
+        yield error
+        return
+    if changelog_file is None:
+        # Policy requires debian/changelog to always exist.
+        yield UploadError("No changelog file found.")
+        return
+
+    # Move the changelog file out of the package direcotry
+    logger.debug("Found changelog contents; moving to root directory")
+    dsc_file.changelog_path = os.path.join(target_dir, "changelog")
+    shutil.move(changelog_file, dsc_file.changelog_path)
 
 def check_format_1_0_files(filename, file_type_counts, component_counts,
                            bzip2_count):

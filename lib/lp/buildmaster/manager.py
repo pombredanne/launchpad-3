@@ -15,10 +15,11 @@ __all__ = [
     ]
 
 import logging
+import os
 import transaction
 
 from twisted.application import service
-from twisted.internet import reactor, defer
+from twisted.internet import defer, reactor
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import log
 from twisted.python.failure import Failure
@@ -26,12 +27,12 @@ from twisted.web import xmlrpc
 
 from zope.component import getUtility
 
-from canonical.buildd.utils import notes
 from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
-from canonical.twistedsupport.processmonitor import run_process_with_timeout
 from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
+from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
+
 
 buildd_success_result_map = {
     'ensurepresent': True,
@@ -113,7 +114,7 @@ class RecordingSlave:
         self.resume_requested = True
         return ['', '', 0]
 
-    def resumeSlave(self):
+    def resumeSlave(self, clock=None):
         """Resume the builder in a asynchronous fashion.
 
         Used the configuration command-line in the same way
@@ -122,14 +123,20 @@ class RecordingSlave:
         Also use the builddmaster configuration 'socket_timeout' as
         the process timeout.
 
+        :param clock: An optional twisted.internet.task.Clock to override
+                      the default clock.  For use in tests.
+
         :return: a Deferred
         """
         resume_command = config.builddmaster.vm_resume_command % {
             'vm_host': self.vm_host}
         # Twisted API require string and the configuration provides unicode.
         resume_argv = [str(term) for term in resume_command.split()]
-        d = run_process_with_timeout(
-            tuple(resume_argv), timeout=config.builddmaster.socket_timeout)
+
+        d = defer.Deferred()
+        p = ProcessWithTimeout(
+            d, config.builddmaster.socket_timeout, clock=clock)
+        p.spawnProcess(resume_argv[0], tuple(resume_argv))
         return d
 
 
@@ -180,11 +187,11 @@ class ResetDispatchResult(BaseDispatchResult):
     """Represents a failure to reset a builder.
 
     When evaluated this object simply cleans up the running job
-    (`IBuildQueue`).
+    (`IBuildQueue`) and marks the builder down.
     """
 
     def __repr__(self):
-        return  '%r reset' % self.slave
+        return  '%r reset failure' % self.slave
 
     @write_transaction
     def __call__(self):
@@ -192,6 +199,12 @@ class ResetDispatchResult(BaseDispatchResult):
         from lp.buildmaster.interfaces.builder import IBuilderSet
 
         builder = getUtility(IBuilderSet)[self.slave.name]
+        # Builders that fail to reset should be disabled as per bug
+        # 563353.
+        # XXX Julian bug=586362
+        # This is disabled until this code is not also used for dispatch
+        # failures where we *don't* want to disable the builder.
+        # builder.failBuilder(self.info)
         self._cleanJob(builder.currentjob)
 
 
@@ -236,9 +249,6 @@ class BuilddManager(service.Service):
     def startService(self):
         """Service entry point, run at the start of a scan/dispatch cycle."""
         self.logger.info('Starting scanning cycle.')
-
-        # Ensure there are no previous annotation from the previous cycle.
-        notes.notes = {}
 
         d = defer.maybeDeferred(self.scan)
         d.addCallback(self.resumeAndDispatch)
@@ -360,18 +370,24 @@ class BuilddManager(service.Service):
         return recording_slaves
 
     def checkResume(self, response, slave):
-        """Verify the results of a slave resume procedure.
+        """Deal with a slave resume failure.
 
-        If it failed, it returns a corresponding `ResetDispatchResult`
-        dispatch result.
+        Return a corresponding `ResetDispatchResult` dispatch result,
+        which is chained to the next callback, dispatchBuild.
         """
-        if not isinstance(response, Failure):
-            return None
+        # 'response' is the tuple that's constructed in
+        # ProcessWithTimeout.processEnded(), or is a Failure that
+        # contains the tuple.
+        if isinstance(response, Failure):
+            out, err, code = response.value
+        else:
+            out, err, code = response
+            if code == os.EX_OK:
+                return None
 
-        self.logger.error(
-            '%s resume failure: %s' % (slave, response.getErrorMessage()))
-        self.slaveDone(slave)
-        return self.reset_result(slave)
+        error_text = '%s\n%s' % (out, err)
+        self.logger.error('%s resume failure: %s' % (slave, error_text))
+        return self.reset_result(slave, error_text)
 
     def checkDispatch(self, response, method, slave):
         """Verify the results of a slave xmlrpc call.
@@ -445,10 +461,10 @@ class BuilddManager(service.Service):
         If the slave resuming succeed, it starts the XMLRPC dialog. See
         `_mayDispatch` for more information.
         """
-        self.logger.info('Dispatching: %s' % slave)
         if resume_result is not None:
             self.slaveDone(slave)
             return resume_result
+        self.logger.info('Dispatching: %s' % slave)
         self._mayDispatch(slave)
 
     def _getProxyForSlave(self, slave):

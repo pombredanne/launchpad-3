@@ -225,6 +225,8 @@
         class="canonical.launchpad.database.PackageUploadCustom">
         <allow
             interface="lp.soyuz.interfaces.queue.IPackageUploadCustom"/>
+        <require
+            permission="launchpad.Admin" set_attributes="libraryfilealias"/>
     </class>
 
     <!-- PackageUploadSet -->
@@ -400,11 +402,10 @@
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
-            set_attributes="description displayname arm_builds_allowed
-			                publish"/>
+            set_attributes="description displayname publish status"/>
         <require
             permission="launchpad.Commercial"
-            set_attributes="authorized_size buildd_secret
+            set_attributes="authorized_size buildd_secret arm_builds_allowed
                             external_dependencies private
                             require_virtualized relative_build_score "/>
         <require
@@ -486,19 +487,19 @@
                 deletePackagesetUploader"/>
     </securedutility>
 
-    <!-- Build -->
+    <!-- BinaryPackageBuild -->
 
     <class
-        class="canonical.launchpad.database.Build">
+        class="lp.soyuz.model.binarypackagebuild.BinaryPackageBuild">
         <require
             permission="launchpad.View"
-            interface="lp.soyuz.interfaces.build.IBuildView"/>
+            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildView"/>
         <require
             permission="launchpad.Edit"
-            interface="lp.soyuz.interfaces.build.IBuildEdit"/>
+            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildEdit"/>
         <require
             permission="launchpad.Admin"
-            interface="lp.soyuz.interfaces.build.IBuildAdmin"/>
+            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildAdmin"/>
 
         <!-- XXX cprov 2005-10-27
 
@@ -506,21 +507,22 @@
 
         <require
             permission="launchpad.Edit"
-            set_attributes="buildlog datebuilt buildduration builder                                                                                                                 buildstate dependencies upload_log"/>
+            set_attributes="log date_finished date_started builder
+                            status dependencies upload_log"/>
     </class>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         factory="lp.soyuz.browser.build.BuildBreadcrumb"
         permission="zope.Public"/>
 
-    <!-- BuildSet -->
+    <!-- BinaryPackageBuildSet -->
 
     <securedutility
-        class="canonical.launchpad.database.BuildSet"
-        provides="lp.soyuz.interfaces.build.IBuildSet">
+        class="lp.soyuz.model.binarypackagebuild.BinaryPackageBuildSet"
+        provides="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildSet">
         <allow
-            interface="lp.soyuz.interfaces.build.IBuildSet"/>
+            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildSet"/>
     </securedutility>
 
     <!-- DistroArchSeriesBinaryPackage -->
@@ -847,7 +849,7 @@
         <allow
             interface="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"/>
     </class>
-    <!-- 
+    <!--
         The registration below is used to discover all build farm job classes
         that implement the `IBuildFarmJob` interface. Please see bug #503839
         for more detail.
@@ -864,5 +866,13 @@
         provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
         factory="lp.soyuz.model.binarypackagebuildbehavior.BinaryPackageBuildBehavior"
         permission="zope.Public" />
+
+    <!-- BinaryPackageReleaseDownloadCount -->
+    <class
+        class="lp.soyuz.model.binarypackagerelease.BinaryPackageReleaseDownloadCount">
+        <require
+            permission="launchpad.View"
+            interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"/>
+    </class>
 
 </configure>

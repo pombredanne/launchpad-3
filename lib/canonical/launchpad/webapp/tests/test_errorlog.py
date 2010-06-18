@@ -34,7 +34,8 @@ from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
     ErrorReport, ErrorReportingUtility, OopsLoggingHandler, ScriptRequest,
     _is_sensitive)
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
+from canonical.launchpad.webapp.interfaces import (
+    NoReferrerError, TranslationUnavailable)
 from lazr.restful.declarations import webservice_error
 from lp.services.osutils import remove_tree
 from lp.testing import TestCase
@@ -688,6 +689,24 @@ class TestErrorReportingUtility(unittest.TestCase):
         try:
             raise TranslationUnavailable('xyz')
         except TranslationUnavailable:
+            utility.raising(sys.exc_info(), now=now)
+
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.assertFalse(os.path.exists(errorfile))
+
+    def test_raising_no_referrer_error(self):
+        """Test ErrorReportingUtility.raising() with a NoReferrerError
+        exception.
+
+        An OOPS is not recorded when a NoReferrerError exception is
+        raised.
+        """
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        try:
+            raise NoReferrerError('xyz')
+        except NoReferrerError:
             utility.raising(sys.exc_info(), now=now)
 
         errorfile = os.path.join(utility.errordir(now), '01800.T1')

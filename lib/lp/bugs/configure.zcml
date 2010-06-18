@@ -193,7 +193,9 @@
                     isSubscribed
                     getPackageComponent
                     userCanEditImportance
-                    userCanEditMilestone"/>
+                    userCanEditMilestone
+                    userCanSetAnyAssignee
+                    userCanUnassign"/>
             <require
                 permission="launchpad.View"
                 attributes="
@@ -282,6 +284,11 @@
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskBreadcrumb"
             permission="zope.Public"/>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
+            factory="lp.bugs.browser.bugcomment.BugCommentBreadcrumb"
+            permission="zope.Public"/>
 
         <!-- NullBugTask -->
 
@@ -354,16 +361,19 @@
             <require
                 permission="zope.Public"
                 attributes="
+                    active
                     aliases
                     baseurl
                     bugtrackertype
                     contactdetails
+                    getBugFilingAndSearchLinks
                     getBugsWatching
-                    getBugWatchesNeedingUpdate
                     getLinkedPersonByName
+                    has_lp_plugin
                     id
                     imported_bug_messages
                     latestwatches
+                    multi_product
                     name
                     owner
                     products
@@ -371,17 +381,27 @@
                     summary
                     title
                     watches
-                    getBugFilingAndSearchLinks
-                    has_lp_plugin
-                    multi_product
-                    active"/>
+                    watches_needing_update
+                    watches_ready_to_check
+                    watches_with_unpushed_comments
+                    "/>
             <require
                 permission="launchpad.Edit"
                 attributes="
                     destroySelf
                     ensurePersonForSelf
                     linkPersonToSelf"
-                set_attributes="aliases baseurl bugtrackertype contactdetails                                                                                                         name owner summary title has_lp_plugin"/>
+                set_attributes="
+                    aliases
+                    baseurl
+                    bugtrackertype
+                    contactdetails
+                    has_lp_plugin
+                    name
+                    owner
+                    summary
+                    title
+                    "/>
             <require
                 permission="launchpad.Admin"
                 attributes="resetWatches"
@@ -565,8 +585,6 @@
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
-                    linkBranch
-                    unlinkBranch
                     mentoring_offers
                     canMentor
                     isMentor
@@ -579,6 +597,7 @@
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate
                     heat
+                    heat_last_updated
                     has_patches
                     latest_patch
                     latest_patch_uploaded"/>
@@ -664,6 +683,7 @@
                     expireNotifications
                     setStatus
                     setPrivate
+                    setSecurityRelated
                     convertToQuestion
                     markUserAffected
                     addTask
@@ -671,7 +691,10 @@
                     markAsDuplicate
                     linkHWSubmission
                     unlinkHWSubmission
-                    linkAttachment"
+                    linkBranch
+                    unlinkBranch
+                    linkAttachment
+                    updateHeat"
                 set_attributes="
                     activity initial_message
                     activityscore
@@ -700,7 +723,8 @@
                 permission="launchpad.Admin"
                 attributes="
                     setCommentVisibility
-                    setHeat"/>
+                    setHeat"
+                set_attributes="heat_last_updated" />
         </class>
         <adapter
             for="lp.bugs.interfaces.bug.IBug"
@@ -825,11 +849,13 @@
             <require
                 permission="zope.Public"
                 attributes="
+                    activity
                     bug
                     bugtasks
                     bugtracker
+                    can_be_rescheduled
                     datecreated
-                    getLastErrorMessage
+                    failed_activity
                     hasComment
                     unpushed_comments
                     id
@@ -837,6 +863,7 @@
                     lastchanged
                     lastchecked
                     needscheck
+                    next_check
                     owner
                     remote_importance
                     remotebug
@@ -847,7 +874,9 @@
             <require
                 permission="launchpad.AnyPerson"
                 attributes="
-                    destroySelf"
+                    destroySelf
+                    addActivity
+                    setNextCheck"
                 set_attributes="bugtracker remotebug"/>
             <require
                 permission="launchpad.Admin"
@@ -855,7 +884,14 @@
                     addComment
                     updateImportance
                     updateStatus"
-                set_attributes="last_error_type lastchanged lastchecked needscheck                                                                                                 remote_importance remotestatus"/>
+                set_attributes="
+                    last_error_type
+                    lastchanged
+                    lastchecked
+                    needscheck
+                    next_check
+                    remote_importance
+                    remotestatus"/>
         </class>
 
         <!-- https://launchpad.net/bugs/98639 -->
@@ -876,6 +912,13 @@
             <allow
                 interface="lp.bugs.interfaces.bugwatch.IBugWatchSet"/>
         </securedutility>
+
+        <!-- BugWatchActivity -->
+        <class
+            class="lp.bugs.model.bugwatch.BugWatchActivity">
+            <allow
+                interface="lp.bugs.interfaces.bugwatch.IBugWatchActivity"/>
+        </class>
     </facet>
     <subscriber
         for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectCreatedEvent"

@@ -134,7 +134,7 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
                    'answers', 'translations']
 
     def branches(self):
-        text = 'Branches'
+        text = 'Code'
         return Link('', text, enabled=self.context.hasProducts())
 
     def bugs(self):
@@ -324,8 +324,9 @@ class ProjectEditView(LaunchpadEditFormView):
     schema = IProjectGroup
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
-        'bug_reporting_guidelines', 'homepageurl', 'bugtracker',
-        'sourceforgeproject', 'freshmeatproject', 'wikiurl']
+        'bug_reporting_guidelines', 'bug_reported_acknowledgement',
+        'homepageurl', 'bugtracker', 'sourceforgeproject',
+        'freshmeatproject', 'wikiurl']
 
 
     @action('Change Details', name='change')

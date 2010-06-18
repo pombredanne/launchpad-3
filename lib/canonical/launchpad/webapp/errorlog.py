@@ -20,7 +20,9 @@ import types
 import urllib
 
 import pytz
+from zope.component.interfaces import ObjectEvent
 from zope.error.interfaces import IErrorReportingUtility
+from zope.event import notify
 from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
@@ -35,7 +37,7 @@ from canonical.launchpad.webapp.adapter import (
     get_request_statements, get_request_duration,
     soft_timeout_expired)
 from canonical.launchpad.webapp.interfaces import (
-    IErrorReport, IErrorReportRequest)
+    IErrorReport, IErrorReportEvent, IErrorReportRequest)
 from canonical.launchpad.webapp.opstats import OpStats
 
 UTC = pytz.utc
@@ -128,6 +130,11 @@ def parse_iso8601_date(datestring):
     """
     return datetime.datetime(
         *(int(elem) for elem in re.findall('[0-9]+', datestring)[:7]))
+
+
+class ErrorReportEvent(ObjectEvent):
+    """A new error report has been created."""
+    implements(IErrorReportEvent)
 
 
 class ErrorReport:
@@ -231,7 +238,7 @@ class ErrorReportingUtility:
 
     _ignored_exceptions = set([
         'ReadOnlyModeDisallowedStore', 'ReadOnlyModeViolation',
-        'TranslationUnavailable'])
+        'TranslationUnavailable', 'NoReferrerError'])
     _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
     _default_config_section = 'error_reports'
 
@@ -426,6 +433,7 @@ class ErrorReportingUtility:
         if self.copy_to_zlog:
             self._do_copy_to_zlog(
                 entry.time, entry.type, entry.url, info, entry.id)
+        notify(ErrorReportEvent(entry))
 
     def _makeErrorReport(self, info, request=None, now=None,
                          informational=False):

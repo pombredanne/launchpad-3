@@ -2,7 +2,8 @@
 
     >>> from zope.component import getMultiAdapter, getUtility
     >>> from lp.buildmaster.interfaces.builder import IBuilderSet
-    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> builder = getUtility(IBuilderSet).get(1)
@@ -176,7 +177,7 @@ is widely available:
     >>> print frog.builderok
     True
 
-    >>> build_set = getUtility(IBuildSet)
+    >>> build_set = getUtility(IBinaryPackageBuildSet)
     >>> build = build_set.getByQueueEntry(frog.currentjob)
     >>> print build.title
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
@@ -389,10 +390,13 @@ processor queue in the PPA category.
     >>> any_failed_build.retry()
     >>> removeSecurityProxy(
     ...     any_failed_build.buildqueue_record).estimated_duration = one_minute
+    >>> transaction.commit()
     >>> login(ANONYMOUS)
 
 Now the pending build is included in the right category and group.
 
+    >>> builderset_view = getMultiAdapter(
+    ...     (builderset, empty_request), name="+index")
     >>> builder_category = builderset_view.ppa_builders
     >>> print_category(builder_category)
     386    2  2  0:01:00

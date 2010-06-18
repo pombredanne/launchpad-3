@@ -33,16 +33,16 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.utils import safe_hasattr
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.build import IBuild, IBuildRescoreForm
+from lp.soyuz.interfaces.binarypackagebuild import (
+    IBinaryPackageBuild, IBuildRescoreForm, IBinaryPackageBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 
 
 class BuildUrl:
-    """Dynamic URL declaration for IBuild.
+    """Dynamic URL declaration for IBinaryPackageBuild.
 
     When dealing with distribution builds we want to present them
     under IDistributionSourcePackageRelease url:
@@ -75,19 +75,20 @@ class BuildUrl:
 
 
 class BuildNavigation(GetitemNavigation, FileNavigationMixin):
-    usedfor = IBuild
+    usedfor = IBinaryPackageBuild
 
 
 class BuildFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IBuild."""
+    """The links that will appear in the facet menu for an
+    IBinaryPackageBuild."""
     enable_only = ['overview']
 
-    usedfor = IBuild
+    usedfor = IBinaryPackageBuild
 
 
 class BuildContextMenu(ContextMenu):
     """Overview menu for build records """
-    usedfor = IBuild
+    usedfor = IBinaryPackageBuild
 
     links = ['ppa', 'records', 'retry', 'rescore']
 
@@ -124,7 +125,7 @@ class BuildContextMenu(ContextMenu):
 
 
 class BuildBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IBuild`."""
+    """Builds a breadcrumb for an `IBinaryPackageBuild`."""
 
     @property
     def text(self):
@@ -134,15 +135,15 @@ class BuildBreadcrumb(Breadcrumb):
         if self.context.archive.is_ppa or self.context.archive.is_copy:
             return '%s build of %s %s' % (
                 self.context.arch_tag,
-                self.context.sourcepackagerelease.sourcepackagename.name,
-                self.context.sourcepackagerelease.version)
+                self.context.source_package_release.sourcepackagename.name,
+                self.context.source_package_release.version)
         else:
             return '%s build' % self.context.arch_tag
 
 
 class BuildView(LaunchpadView):
-    """Auxiliary view class for IBuild"""
-    __used_for__ = IBuild
+    """Auxiliary view class for IBinaryPackageBuild"""
+    __used_for__ = IBinaryPackageBuild
 
     @property
     def label(self):
@@ -226,14 +227,14 @@ class BuildView(LaunchpadView):
         in state WAITING.
         """
         return (
-            self.context.buildstate == BuildStatus.NEEDSBUILD and
+            self.context.status == BuildStatus.NEEDSBUILD and
             self.context.buildqueue_record.job.status == JobStatus.WAITING)
 
 
 class BuildRetryView(BuildView):
-    """View class for retrying `IBuild`s"""
+    """View class for retrying `IBinaryPackageBuild`s"""
 
-    __used_for__ = IBuild
+    __used_for__ = IBinaryPackageBuild
 
     @property
     def label(self):
@@ -294,8 +295,8 @@ class BuildRescoringView(LaunchpadFormView):
 
 
 class CompleteBuild:
-    """Super object to store related IBuild & IBuildQueue."""
-    delegates(IBuild)
+    """Super object to store related IBinaryPackageBuild & IBuildQueue."""
+    delegates(IBinaryPackageBuild)
     def __init__(self, build, buildqueue_record):
         self.context = build
         self._buildqueue_record = buildqueue_record
@@ -321,7 +322,8 @@ def setupCompleteBuilds(batch):
 
     prefetched_data = dict()
     build_ids = [build.id for build in builds]
-    results = getUtility(IBuildQueueSet).getForBuilds(build_ids)
+    results = getUtility(IBinaryPackageBuildSet).getQueueEntriesForBuildIDs(
+        build_ids)
     for (buildqueue, _builder, build_job) in results:
         # Get the build's id, 'buildqueue', 'sourcepackagerelease' and
         # 'buildlog' (from the result set) respectively.
@@ -525,4 +527,3 @@ class BuildRecordsView(LaunchpadView):
     @property
     def no_results(self):
         return self.form_submitted and not self.complete_builds
-

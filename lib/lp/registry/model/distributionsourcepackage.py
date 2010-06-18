@@ -29,8 +29,9 @@ from lp.registry.model.structuralsubscription import (
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
-from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -58,7 +59,8 @@ class DistributionSourcePackage(BugTargetBase,
                                 StructuralSubscriptionTargetMixin,
                                 HasBranchesMixin,
                                 HasCustomLanguageCodesMixin,
-                                HasMergeProposalsMixin):
+                                HasMergeProposalsMixin,
+                                HasBugHeatMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -67,7 +69,8 @@ class DistributionSourcePackage(BugTargetBase,
     """
 
     implements(
-        IDistributionSourcePackage, IHasCustomLanguageCodes, IQuestionTarget)
+        IDistributionSourcePackage, IHasBugHeat, IHasCustomLanguageCodes,
+        IQuestionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -143,6 +146,27 @@ class DistributionSourcePackage(BugTargetBase,
     bug_reporting_guidelines = property(
         _get_bug_reporting_guidelines,
         _set_bug_reporting_guidelines)
+
+    def _get_bug_reported_acknowledgement(self):
+        """See `IBugTarget`."""
+        dsp_in_db = self._self_in_database
+        if dsp_in_db is not None:
+            return dsp_in_db.bug_reported_acknowledgement
+        return None
+
+    def _set_bug_reported_acknowledgement(self, value):
+        """See `IBugTarget`."""
+        dsp_in_db = self._self_in_database
+        if dsp_in_db is None:
+            dsp_in_db = DistributionSourcePackageInDatabase()
+            dsp_in_db.sourcepackagename = self.sourcepackagename
+            dsp_in_db.distribution = self.distribution
+            Store.of(self.distribution).add(dsp_in_db)
+        dsp_in_db.bug_reported_acknowledgement = value
+
+    bug_reported_acknowledgement = property(
+        _get_bug_reported_acknowledgement,
+        _set_bug_reported_acknowledgement)
 
     def _get_max_bug_heat(self):
         """See `IHasBugs`."""
@@ -502,6 +526,7 @@ class DistributionSourcePackageInDatabase(Storm):
         sourcepackagename_id, 'SourcePackageName.id')
 
     bug_reporting_guidelines = Unicode()
+    bug_reported_acknowledgement = Unicode()
 
     max_bug_heat = Int()
 

@@ -25,7 +25,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
-        code_import = self.factory.makeCodeImport(
+        code_import = self.factory.makeProductCodeImport(
             cvs_root=':pserver:anonymouse@cvs.example.com:/cvsroot',
             cvs_module='a_module', branch_name='import',
             product=fooix, registrant=eric)
@@ -48,7 +48,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
-        code_import = self.factory.makeCodeImport(
+        code_import = self.factory.makeProductCodeImport(
             svn_branch_url='svn://svn.example.com/fooix/trunk',
             branch_name='trunk', product=fooix, registrant=eric,
             rcs_type=RevisionControlSystems.BZR_SVN)
@@ -71,7 +71,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
-        code_import = self.factory.makeCodeImport(
+        code_import = self.factory.makeProductCodeImport(
             git_repo_url='git://git.example.com/fooix.git',
             branch_name='master', product=fooix, registrant=eric)
         transaction.commit()
@@ -94,7 +94,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
-        code_import = self.factory.makeCodeImport(
+        code_import = self.factory.makeProductCodeImport(
             hg_repo_url='http://hg.example.com/fooix.hg',
             branch_name='master', product=fooix, registrant=eric)
         transaction.commit()
@@ -105,6 +105,34 @@ class TestNewCodeImports(TestCaseWithFactory):
             'A new mercurial code import has been requested '
             'by Eric:\n'
             '    http://code.launchpad.dev/~eric/fooix/master\n'
+            'from\n'
+            '    http://hg.example.com/fooix.hg\n'
+            '\n'
+            '-- \nYou are getting this email because you are a member of the '
+            'vcs-imports team.\n', msg.get_payload(decode=True))
+
+    def test_new_source_package_import(self):
+        # Test the email for a new sourcepackage import.
+        eric = self.factory.makePerson(name='eric')
+        distro = self.factory.makeDistribution(name='foobuntu')
+        series = self.factory.makeDistroSeries(
+            name='manic', distribution=distro)
+        fooix = self.factory.makeSourcePackage(
+            sourcepackagename='fooix', distroseries=series)
+        # Eric needs to be logged in for the mail to be sent.
+        login_person(eric)
+        code_import = self.factory.makePackageCodeImport(
+            hg_repo_url='http://hg.example.com/fooix.hg',
+            branch_name='master', sourcepackage=fooix, registrant=eric)
+        transaction.commit()
+        msg = message_from_string(stub.test_emails[0][2])
+        self.assertEqual('code-import', msg['X-Launchpad-Notification-Type'])
+        self.assertEqual(
+            '~eric/foobuntu/manic/fooix/master', msg['X-Launchpad-Branch'])
+        self.assertEqual(
+            'A new mercurial code import has been requested '
+            'by Eric:\n'
+            '    http://code.launchpad.dev/~eric/foobuntu/manic/fooix/master\n'
             'from\n'
             '    http://hg.example.com/fooix.hg\n'
             '\n'

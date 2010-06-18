@@ -98,7 +98,7 @@ class IStructuralSubscription(Interface):
     product = Int(title=_('Product'), required=False, readonly=True)
     productseries = Int(
         title=_('Product series'), required=False, readonly=True)
-    project = Int(title=_('Project'), required=False, readonly=True)
+    project = Int(title=_('Project group'), required=False, readonly=True)
     milestone = Int(title=_('Milestone'), required=False, readonly=True)
     distribution = Int(title=_('Distribution'), required=False, readonly=True)
     distroseries = Int(

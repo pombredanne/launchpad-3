@@ -11,12 +11,16 @@ __all__ = [
     'ProcessAccepted',
     ]
 
+import sys
+
 from zope.component import getUtility
 
 from lp.archiveuploader.tagfiles import parse_tagfile_lines
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -244,11 +248,15 @@ class ProcessAccepted(LaunchpadScript):
                     for queue_item in queue_items:
                         try:
                             queue_item.realiseUpload(self.logger)
-                        except:
-                            self.logger.error(
-                                "Failure processing queue_item %d" % (
-                                    queue_item.id), exc_info=True)
-                            raise
+                        except Exception:
+                            message = "Failure processing queue_item %d" % (
+                                queue_item.id)
+                            properties = [('error-explanation', message)]
+                            request = ScriptRequest(properties)
+                            error_utility = ErrorReportingUtility()
+                            error_utility.raising(sys.exc_info(), request)
+                            self.logger.error('%s (%s)' % (message,
+                                request.oopsid))
                         else:
                             processed_queue_ids.append(queue_item.id)
 

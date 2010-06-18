@@ -107,11 +107,11 @@
         <allow
             interface="lp.registry.interfaces.distroseries.IDistroSeriesPublic"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="canonical.launchpad.interfaces.IHasQueueItems"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
-        <allow
-            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
         <allow
             interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
         <require
@@ -263,12 +263,14 @@
             interface="lp.registry.interfaces.irc.IIrcIDSet"/>
     </securedutility>
 
-    <!-- Project -->
+    <!-- ProjectGroup -->
 
     <class
-        class="lp.registry.model.project.Project">
+        class="lp.registry.model.projectgroup.ProjectGroup">
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
+        <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="canonical.launchpad.interfaces.IFAQCollection"/>
         <allow
@@ -331,24 +333,24 @@
     <facet
         facet="answers"/>
 
-    <!-- ProjectSet-->
+    <!-- ProjectGroupSet-->
 
     <class
-        class="lp.registry.model.project.ProjectSet">
+        class="lp.registry.model.projectgroup.ProjectGroupSet">
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupSet"/>
     </class>
     <securedutility
-        class="lp.registry.model.project.ProjectSet"
+        class="lp.registry.model.projectgroup.ProjectGroupSet"
         provides="lp.registry.interfaces.projectgroup.IProjectGroupSet">
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupSet"/>
     </securedutility>
 
-    <!-- ProjectSeries -->
+    <!-- ProjectGroupSeries -->
 
     <class
-        class="lp.registry.model.project.ProjectSeries">
+        class="lp.registry.model.projectgroup.ProjectGroupSeries">
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupSeries"/>
     </class>
@@ -357,6 +359,8 @@
 
     <class
         class="lp.registry.model.distributionsourcepackage.DistributionSourcePackage">
+        <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
 
@@ -376,6 +380,7 @@
                 publishing_history
                 current_publishing_records
                 bug_reporting_guidelines
+                bug_reported_acknowledgement
                 latest_overall_publication
                 __getitem__
                 getVersion
@@ -386,6 +391,7 @@
                 open_bugtasks
                 closed_bugtasks
                 critical_bugtasks
+                high_bugtasks
                 inprogress_bugtasks
                 unassigned_bugtasks
                 new_bugtasks
@@ -408,9 +414,7 @@
                 official_bug_tags
                 findRelatedArchives
                 findRelatedArchivePublications
-                userHasBugSubscriptions
-                max_bug_heat
-                recalculateMaxBugHeat"/>
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -441,7 +445,9 @@
                 removeAnswerContact"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="bug_reporting_guidelines"/>
+            set_attributes="
+                bug_reported_acknowledgement
+                bug_reporting_guidelines"/>
     </class>
     <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -1067,9 +1073,14 @@
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
+        <require
+            permission="launchpad.View"
+            set_attributes="date_next_suggest_packaging"/>
         <require
             permission="launchpad.Driver"
             interface="lp.registry.interfaces.product.IProductDriverRestricted"/>
@@ -1078,7 +1089,8 @@
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="bug_reporting_guidelines bugtracker
+            set_attributes="bug_reporting_guidelines
+                            bug_reported_acknowledgement bugtracker
                             commercial_subscription description
                             development_focus displayname downloadurl
                             driver enable_bug_expiration
@@ -1312,9 +1324,9 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
         <allow
-            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
-            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Edit"
             set_attributes="product name owner driver summary branch
@@ -1380,6 +1392,8 @@
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionPublic"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Edit"
@@ -1393,7 +1407,8 @@
                 displayname title summary description driver
                 members owner security_contact mirror_admin homepage_content
                 icon logo mugshot enable_bug_expiration
-                bug_reporting_guidelines official_blueprints official_malone
+                bug_reporting_guidelines bug_reported_acknowledgement
+                official_blueprints official_malone
                 official_rosetta official_answers official_bug_tags"/>
         <require
             permission="launchpad.TranslationsAdmin"
@@ -1510,11 +1525,11 @@
         <allow
             interface="lp.registry.interfaces.sourcepackage.ISourcePackage"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
-        <allow
-            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
 
         <!-- IQuestionTarget -->
 
@@ -1632,18 +1647,60 @@
     <!-- DistributionMirror -->
     <class class="lp.registry.model.distributionmirror.DistributionMirror">
         <allow
-            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorPublic" />
+            attributes="
+                id
+                name
+                displayname
+                description
+                distribution
+                http_base_url
+                ftp_base_url
+                rsync_base_url
+                enabled
+                speed
+                status
+                country
+                content
+                owner
+                title
+                cdimage_series
+                source_series
+                arch_series
+                last_probe_record
+                all_probe_records
+                has_ftp_or_rsync_base_url
+                base_url
+                date_created
+                country_dns_mirror
+                mirrorMustHaveHTTPOrFTPURL
+                getSummarizedMirroredSourceSeries
+                getSummarizedMirroredArchSeries
+                getOverallFreshness
+                isOfficial
+                shouldDisable
+                disable
+                newProbeRecord
+                deleteMirrorDistroArchSeries
+                ensureMirrorDistroArchSeries
+                ensureMirrorDistroSeriesSource
+                deleteMirrorDistroSeriesSource
+                ensureMirrorCDImageSeries
+                deleteMirrorCDImageSeries
+                deleteAllMirrorCDImageSeries
+                getExpectedPackagesPaths
+                getExpectedSourcesPaths
+                canTransitionToCountryMirror" />
         <require
             permission="launchpad.Edit"
-            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorEditRestricted"
             set_attributes="name displayname description whiteboard
                             http_base_url ftp_base_url rsync_base_url enabled
-                            speed country content official_candidate owner" />
+                            speed country content official_candidate owner"
+            attributes="official_candidate whiteboard" />
         <require
             permission="launchpad.Admin"
-            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorAdminRestricted"
             set_attributes="status reviewer date_reviewed"
-            attributes="destroySelf" />
+            attributes="reviewer date_reviewed destroySelf
+                transitionToCountryMirror" />
     </class>
 
     <adapter

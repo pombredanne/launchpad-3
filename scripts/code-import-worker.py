@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -8,7 +8,7 @@
 By 'processing a code import' we mean importing or updating code from a
 remote, non-Bazaar, repository.
 
-This script is usually run by the code-import-worker-db.py script that
+This script is usually run by the code-import-worker-monitor.py script that
 communicates progress and results to the database.
 """
 
