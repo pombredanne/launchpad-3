@@ -55,7 +55,7 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
-from zope.schema import Choice
+from zope.schema import Bool, Choice
 from zope.schema.vocabulary import (
     SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import removeSecurityProxy
@@ -1823,7 +1823,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'licenses', 'license_info']
+                    'description', 'licenses', 'license_info',
+                    ]
     main_action_label = u'Complete Registration'
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -1843,6 +1844,33 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         if self.search_results_count > 0:
             return 'Check for duplicate projects'
         return 'Registration details'
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(ProjectAddStepTwo, self).setUpFields()
+        self.form_fields = (self.form_fields +
+                            self._createDisclaimMaintainerField())
+
+    def _createDisclaimMaintainerField(self):
+        """Return a Bool field for disclaiming maintainer.
+
+        If the registrant does not want to maintain the project she can select
+        this checkbox and the ownership will be transfered to the registry
+        admins team.
+        """
+
+        return form.Fields(
+            Bool(__name__='disclaim_maintainer',
+                 title=_("I do not want to maintain this project"),
+                 description=_(
+                     "Select if you are registering this project "
+                     "for the purpose of taking an action (such as "
+                     "reporting a bug) but you don't want to actually "
+                     "maintain the project in Launchpad.  "
+                     "The Registry Administrators team will become "
+                     "the maintainers until a community maintainer "
+                     "can be found.")),
+            render_context=self.render_context)
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
@@ -1903,8 +1931,14 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # Get optional data.
         project = data.get('project')
         description = data.get('description')
+        disclaim_maintainer = data.get('disclaim_maintainer', False)
+        if disclaim_maintainer:
+            owner = getUtility(ILaunchpadCelebrities).registry_experts
+        else:
+            owner = self.user
         return getUtility(IProductSet).createProduct(
-            owner=self.user,
+            registrant=self.user,
+            owner=owner,
             name=data['name'],
             displayname=data['displayname'],
             title=data['title'],
