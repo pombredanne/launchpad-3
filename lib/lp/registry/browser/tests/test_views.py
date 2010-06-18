@@ -18,16 +18,20 @@ from canonical.testing import (
 here = os.path.dirname(os.path.realpath(__file__))
 
 # The default layer of view tests is the DatabaseFunctionalLayer. Tests
-# that require something special like the librarian or mailman must run
-# on a layer that sets those services up.
+# that require something special like the librarian, memcaches, or mailman
+# must run on a layer that sets those services up.
 special_test_layer = {
+    'distribution-views.txt': LaunchpadFunctionalLayer,
+    'distributionsourcepackage-views.txt': LaunchpadFunctionalLayer,
+    'karmacontext-views.txt': LaunchpadFunctionalLayer,
     'mailinglist-message-views.txt': LaunchpadFunctionalLayer,
     'milestone-views.txt': LaunchpadFunctionalLayer,
     'person-views.txt': LaunchpadFunctionalLayer,
-    'user-to-user-views.txt': LaunchpadFunctionalLayer,
-    'distributionsourcepackage-views.txt': LaunchpadFunctionalLayer,
     'product-edit-people-view.txt': LaunchpadFunctionalLayer,
     'product-files-views.txt': LaunchpadFunctionalLayer,
+    'product-views.txt': LaunchpadFunctionalLayer,
+    'projectgroup-views.txt': LaunchpadFunctionalLayer,
+    'user-to-user-views.txt': LaunchpadFunctionalLayer,
 }
 
 
@@ -46,8 +50,7 @@ def test_suite():
         layer = special_test_layer.get(path, DatabaseFunctionalLayer)
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown, layer=layer,
-            stdout_logging_level=logging.WARNING
-            )
+            stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)
 
     return suite

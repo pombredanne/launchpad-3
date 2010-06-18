@@ -1243,13 +1243,14 @@ class POTMsgSet(SQLBase):
             pofile.potemplate, pofile.language)
 
         if (current is not None):
-            # Check for transltion conflicts and update the required
+            # Check for translation conflicts and update the required
             # attributes.
             self._maybeRaiseTranslationConflict(current, lock_timestamp)
-            current.is_current = False
+            current.is_current_ubuntu = False
             # Converge the current translation only if it is diverged and not
-            # imported.
-            if current.potemplate is not None and not current.is_imported:
+            # current upstream.
+            is_diverged =  current.potemplate is not None
+            if is_diverged and not current.is_current_upstream:
                 current.potemplate = None
             pofile.date_changed = UTC_NOW
 

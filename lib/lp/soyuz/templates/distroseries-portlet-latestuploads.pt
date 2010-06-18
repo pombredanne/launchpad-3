@@ -12,7 +12,8 @@
   </h2>
 
   <ul id="latest-uploads" class="binary package"
-    tal:condition="latest_uploads">
+    tal:condition="latest_uploads"
+    tal:content="cache:public, 1 hour">
     <li tal:repeat="source context/getLatestUploads">
       <a
        tal:attributes="href source/fmt:url"

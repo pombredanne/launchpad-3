@@ -948,33 +948,33 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         translation = self.factory.makeTranslationMessage(
             self.pofile, self.potmsgset, translations=[u'Shared translation'],
             reviewer=self.factory.makePerson(),
-            is_imported=False, force_diverged=False,
+            is_current_upstream=False, force_diverged=False,
             date_updated=self.now())
 
         self.potmsgset.resetCurrentTranslation(self.pofile, self.now())
         current = self.potmsgset.getCurrentTranslationMessage(
             self.potemplate, self.pofile.language)
         self.assertTrue(current is None)
-        self.assertFalse(translation.is_current)
-        self.assertFalse(translation.is_imported)
+        self.assertFalse(translation.is_current_ubuntu)
+        self.assertFalse(translation.is_current_upstream)
         self.assertTrue(translation.potemplate is None)
 
     def test_resetCurrentTranslation_diverged_not_imported(self):
         # Resettting a diverged current translation that was not imported, will
-        # change is_current to False and will make it shared.
+        # change is_current_ubuntu to False and will make it shared.
 
         translation = self.factory.makeTranslationMessage(
             self.pofile, self.potmsgset, translations=[u'Diverged text'],
             reviewer=self.factory.makePerson(),
-            is_imported=False, force_diverged=True,
+            is_current_upstream=False, force_diverged=True,
             date_updated=self.now())
 
         self.potmsgset.resetCurrentTranslation(self.pofile, self.now())
         current = self.potmsgset.getCurrentTranslationMessage(
             self.potemplate, self.pofile.language)
         self.assertTrue(current is None)
-        self.assertFalse(translation.is_current)
-        self.assertFalse(translation.is_imported)
+        self.assertFalse(translation.is_current_ubuntu)
+        self.assertFalse(translation.is_current_upstream)
         self.assertTrue(translation.potemplate is None)
 
     def test_resetCurrentTranslation_diverged_imported(self):
@@ -985,15 +985,15 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         translation = self.factory.makeTranslationMessage(
             self.pofile, self.potmsgset, translations=[u'Imported diverged'],
             reviewer=self.factory.makePerson(),
-            is_imported=True, force_diverged=True,
+            is_current_upstream=True, force_diverged=True,
             date_updated=self.now())
 
         self.potmsgset.resetCurrentTranslation(self.pofile, self.now())
         current = self.potmsgset.getCurrentTranslationMessage(
             self.potemplate, self.pofile.language)
         self.assertTrue(current is None)
-        self.assertFalse(translation.is_current)
-        self.assertTrue(translation.is_imported)
+        self.assertFalse(translation.is_current_ubuntu)
+        self.assertTrue(translation.is_current_upstream)
         self.assertFalse(translation.potemplate is None)
 
 
