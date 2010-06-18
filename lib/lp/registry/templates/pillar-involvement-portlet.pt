@@ -10,7 +10,6 @@
     <li tal:repeat="link view/enabled_links">
       <a tal:replace="structure link/fmt:link" />
     </li>
-
     <tal:disabled repeat="link view/visible_disabled_links">
       <li tal:condition="not: link/enabled"
           tal:attributes="title string:Launchpad needs to know where the user can ${link/text/lower}"

@@ -16,7 +16,7 @@ The maintainer of a project can edit its details.
     >>> browser.getControl('Project Group Summary').value = 'New Summary.'
     >>> browser.getControl('Description').value = 'New Description.'
     >>> browser.getControl('Homepage URL').value = 'http://new-url.com/'
-    >>> browser.getControl(name='field.bugtracker').value = ['1']
+    >>> browser.getControl(name='field.bugtracker').value = 'mozilla.org'
     >>> browser.getControl('Change Details').click()
 
     >>> browser.url

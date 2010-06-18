@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common views for objects that implement `IPillar`."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'InvolvedMenu',
     'PillarView',
+    'PillarBugsMenu',
     ]
 
 
@@ -16,10 +17,13 @@ from operator import attrgetter
 from zope.interface import implements, Interface
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp.menu import Link, NavigationMenu
+from canonical.launchpad.webapp.menu import (
+    ApplicationMenu, enabled_with_permission, Link, NavigationMenu)
 from canonical.launchpad.webapp.publisher import LaunchpadView, nearest
 from canonical.launchpad.webapp.tales import MenuAPI
 
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -149,3 +153,28 @@ class PillarView(LaunchpadView):
         return sorted([
             link for link in important_links if not link.enabled],
             key=attrgetter('sort_key'))
+
+
+class PillarBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
+    """Base class for pillar bugs menus."""
+
+    facet = 'bugs'
+    configurable_bugtracker = False
+
+    @enabled_with_permission('launchpad.Edit')
+    def bugsupervisor(self):
+        text = 'Change bug supervisor'
+        return Link('+bugsupervisor', text, icon='edit')
+
+    def cve(self):
+        text = 'CVE reports'
+        return Link('+cve', text, icon='cve')
+
+    def filebug(self):
+        text = 'Report a bug'
+        return Link('+filebug', text, icon='bug')
+
+    @enabled_with_permission('launchpad.Edit')
+    def securitycontact(self):
+        text = 'Change security contact'
+        return Link('+securitycontact', text, icon='edit')
