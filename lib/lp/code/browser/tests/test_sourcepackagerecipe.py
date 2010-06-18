@@ -612,7 +612,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             supports_virtualized=True)
 
         recipe = self.makeRecipe()
-        build = recipe.requestBuild(
+        recipe.requestBuild(
             self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
 
         browser = self.getViewBrowser(recipe, '+request-builds')
