@@ -8,6 +8,7 @@ __metaclass__ = type
 
 import unittest
 
+from storm.exceptions import DataError
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -218,17 +219,18 @@ class TestSharingPOTemplatesRegex(TestCaseWithFactory):
 
     def test_getSharingPOTemplatesRegex_robustness_quotes(self):
         # Quotes in the pattern can be dangerous.
-        self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
         subset = self.potemplateset.getSharingSubset(product=self.product)
         self.assertContentEqual(
             [], subset.getSharingPOTemplatesRegex("'\""))
 
     def test_getSharingPOTemplatesRegex_robustness_backslash(self):
-        # A backslash placed right can cause an explosion, too.
-        self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
+        # A backslash at the end could escape enclosing quotes without
+        # proper escaping, leading to a SyntaxError or even a successful
+        # exploit. Instead, storm should complain about an invalid expression
+        # by raising DataError.
         subset = self.potemplateset.getSharingSubset(product=self.product)
-        self.assertContentEqual(
-            [], subset.getSharingPOTemplatesRegex("foo.*\\"))
+        self.assertRaises(
+            DataError, list, subset.getSharingPOTemplatesRegex("foo.*\\"))
 
 
 class TestMessageSharingProductPackage(TestCaseWithFactory):
