@@ -269,15 +269,18 @@ class IPOTMsgSet(Interface):
                               translation_side, share_with_other_side=False):
         """Set the message's translation in Ubuntu, or upstream, or both.
 
-        :param pofile:
-        :param submitter:
-        :param translations:
-        :param origin:
-        :param translation_side: a `TranslationSide` value.
-        :param share_with_other_side:
+        :param pofile: `POFile` you're setting translations in.  Other
+            `POFiles` that share translations with this one may also be
+            affected.
+        :param submitter: `Person` who is setting these translations.
+        :param translations: a dict mapping plural-form numbers to the
+            translated string for that form.
+        :param origin: A `RosettaTranslationOrigin`.
+        :param translation_side: The `TranslationSide` that this
+            translation is for (Ubuntu or upstream).
+        :param share_with_other_side: When sharing this translation,
+            share it with the other `TranslationSide` as well.
         """
-        # XXX: Check signature before completing branch.
-        # XXX: Update docstring.
 
     def resetCurrentTranslation(pofile, lock_timestamp):
         """Reset the currently used translation.

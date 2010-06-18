@@ -96,6 +96,10 @@ class TranslationSideMessageTraits:
     For an introduction to the Traits pattern, see
     http://www.cantrip.org/traits.html
     """
+
+    # TranslationSideMessageTraits for this message on the "other side."
+    other_side = None
+
     def __init__(self, potmsgset, potemplate=None, language=None,
                  variant=None):
         self.potmsgset = potmsgset
@@ -1059,19 +1063,22 @@ class POTMsgSet(SQLBase):
         """
         if message is None:
             return 'none'
-        elif message.potemplate is None:
-            if translation_side_traits.other_side.getFlag(message):
-                return 'other_shared'
-            else:
-                return 'shared'
-        else:
-            assert message.potemplate is not None, "Confused message state."
+        elif message.is_diverged:
             return 'diverged'
+        elif translation_side_traits.other_side.getFlag(message):
+            return 'other_shared'
+        else:
+            return 'shared'
 
     def _makeTranslationMessage(self, pofile, submitter, translations, origin,
                                 diverged=False):
-        # XXX: Document.
-        """."""
+        """Create a new `TranslationMessage`.
+
+        The message will not be made current on either side (Ubuntu or
+        upstream), but it can be diverged.  Only messages that are
+        current should be diverged, but it's up to the caller to ensure
+        the right state.
+        """
         if diverged:
             potemplate = pofile.potemplate
         else:
@@ -1101,7 +1108,13 @@ class POTMsgSet(SQLBase):
             variant=pofile.variant)
 
         translations = self._findPOTranslations(translations)
+
+        # The current message on this translation side, if any.
         incumbent_message = traits.incumbent_message
+
+        # An already existing message, if any, that's either shared, or
+        # diverged for the template/pofile we're working on, whose
+        # translations are identical to the ones we're setting.
         twin = self._findTranslationMessage(
             pofile, translations, prefer_shared=False)
 
@@ -1118,10 +1131,6 @@ class POTMsgSet(SQLBase):
         #  * If there is a diverged twin, activate it (and converge it
         #    if appropriate; see above).
         #  * If there is a twin that's shared on the other side,
-
-        # XXX: Steal flag if policy permits and either:
-        #  - there is no shared active message on the other side, or
-        #  - we're returning a shared message.
 
         decision_matrix = {
             'incumbent_none': {
@@ -1155,7 +1164,6 @@ class POTMsgSet(SQLBase):
         twin_state = "twin_%s" % self._nameMessageStatus(twin, traits)
 
         decisions = decision_matrix[incumbent_state][twin_state]
-        file('/tmp/matrix.log','a').write(decisions+'\n') # XXX: DEBUG CODE
         assert re.match('[ABZ]?[124567]?[+*]?$', decisions), (
             "Bad decision string.")
 

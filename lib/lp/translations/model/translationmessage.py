@@ -272,6 +272,11 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # We found no translations in this translation_message
         return True
 
+    @property
+    def is_diverged(self):
+        """See `ITranslationMessage`."""
+        return self.potemplate is not None
+
     def isHidden(self, pofile):
         """See `ITranslationMessage`."""
         # If this message is currently used, it's not hidden.

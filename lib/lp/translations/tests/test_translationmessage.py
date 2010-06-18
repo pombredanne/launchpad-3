@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for `TranslationMessage`."""
@@ -15,6 +15,27 @@ from lp.testing import TestCaseWithFactory
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.interfaces.translations import TranslationConstants
 from canonical.testing import ZopelessDatabaseLayer
+
+
+class TestTranslationMessage(TestCaseWithFactory):
+    """Unit tests for `TranslationMessage`.
+
+    There aren't many of these.  We didn't do much unit testing back
+    then.
+    """
+
+    layer = ZopelessDatabaseLayer
+
+    def test_is_diverged(self):
+        # ITranslationMessage.is_diverged is a little helper to let you
+        # say "message.is_diverged" which can be clearer than
+        # "message.potemplate is not None."
+        message = self.factory.makeTranslationMessage(force_diverged=False)
+        self.assertFalse(message.is_diverged)
+
+        message = self.factory.makeTranslationMessage(force_diverged=True)
+        self.assertTrue(message.is_diverged)
+
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
     """Tests for `TranslationMessage.findIdenticalMessage`."""
