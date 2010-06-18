@@ -1,3 +1,4 @@
+# coding: utf-8
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -194,12 +195,40 @@ class TestSharingPOTemplatesRegex(TestCaseWithFactory):
             self.factory.makePOTemplate(productseries=self.trunk, name=name)
             for name in names]
 
-    def test_getSharingPOTemplatesRegex(self):
+    def test_getSharingPOTemplatesRegex_baseline(self):
         # Baseline test.
         templates = self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
         subset = self.potemplateset.getSharingSubset(product=self.product)
         self.assertContentEqual(
             templates, subset.getSharingPOTemplatesRegex('foo.*'))
+
+    def test_getSharingPOTemplatesRegex_not_all(self):
+        # A template may not match.
+        templates = self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
+        subset = self.potemplateset.getSharingSubset(product=self.product)
+        self.assertContentEqual(
+            templates[1:], subset.getSharingPOTemplatesRegex('foo-.*'))
+
+    def test_getSharingPOTemplatesRegex_all(self):
+        # Not passing a pattern returns all templates.
+        templates = self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
+        subset = self.potemplateset.getSharingSubset(product=self.product)
+        self.assertContentEqual(
+            templates, subset.getSharingPOTemplatesRegex())
+
+    def test_getSharingPOTemplatesRegex_robustness_quotes(self):
+        # Quotes in the pattern can be dangerous.
+        self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
+        subset = self.potemplateset.getSharingSubset(product=self.product)
+        self.assertContentEqual(
+            [], subset.getSharingPOTemplatesRegex("'\""))
+
+    def test_getSharingPOTemplatesRegex_robustness_backslash(self):
+        # A backslash placed right can cause an explosion, too.
+        self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
+        subset = self.potemplateset.getSharingSubset(product=self.product)
+        self.assertContentEqual(
+            [], subset.getSharingPOTemplatesRegex("foo.*\\"))
 
 
 class TestMessageSharingProductPackage(TestCaseWithFactory):
