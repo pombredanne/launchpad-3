@@ -176,13 +176,40 @@ class TestTranslationSharingPOTemplate(TestCaseWithFactory):
         self.assertEquals(potmsgset, shared_potmsgset)
 
 
+class TestSharingPOTemplatesRegex(TestCaseWithFactory):
+    """Isolate tests for regular expression use in SharingSubset."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestSharingPOTemplatesRegex, self).setUp()
+        self.product = self.factory.makeProduct()
+        self.product.official_rosetta = True
+        self.trunk = self.product.getSeries('trunk')
+        self.potemplateset = getUtility(IPOTemplateSet)
+
+    def _makeTemplates(self, names):
+        # Create some templates with the given names.
+        return [
+            self.factory.makePOTemplate(productseries=self.trunk, name=name)
+            for name in names]
+
+    def test_getSharingPOTemplatesRegex(self):
+        # Baseline test.
+        templates = self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
+        subset = self.potemplateset.getSharingSubset(product=self.product)
+        self.assertContentEqual(
+            templates, subset.getSharingPOTemplatesRegex('foo.*'))
+
+
 class TestMessageSharingProductPackage(TestCaseWithFactory):
     """Test message sharing between a product and a package.
 
     Each test uses assertStatementCount to make sure the number of SQL
     queries does not change. This was integrated here to avoid having
     a second test case just for statement counts.
-    The current implementation is good and only needs one statement."""
+    The current implementation is good and only needs one statement.
+    """
 
     layer = ZopelessDatabaseLayer
 
