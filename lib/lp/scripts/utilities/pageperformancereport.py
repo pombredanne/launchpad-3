@@ -400,6 +400,7 @@ def print_html_report(options, categories, pageid_times):
 
     table_header = dedent('''\
         <table class="sortable page-performance-report">
+        <caption align="top">Click on column headings to sort.</caption>
         <thead>
             <tr>
             <th class="clickable">Name</th>
