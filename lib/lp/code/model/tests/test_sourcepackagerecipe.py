@@ -308,6 +308,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             str(e))
 
     def test_requestBuildRejectRepeats(self):
+        """Reject build requests that are identical to pending builds."""
         recipe = self.factory.makeSourcePackageRecipe()
         series = list(recipe.distroseries)[0]
         archive = self.factory.makeArchive(owner=recipe.owner)
@@ -725,7 +726,7 @@ class TestWebservice(TestCaseWithFactory):
         self.assertIn('BuildAlreadyPending', str(e))
 
     def test_requestBuildRejectOverQuota(self):
-        """Build requests are rejected if already pending."""
+        """Build requests are rejected if they exceed quota."""
         person = self.factory.makePerson()
         archives = [self.factory.makeArchive(owner=person) for x in range(6)]
         distroseries = self.factory.makeDistroSeries()
