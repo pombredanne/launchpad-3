@@ -1509,9 +1509,10 @@ class POTemplateSharingSubset(object):
     def getSharingPOTemplatesRegex(self, name_pattern=None):
         """See IPOTemplateSharingSubset."""
         if name_pattern is None:
-            templatename_clause = "1=1"
+            templatename_clause = True
         else:
-            templatename_clause = "potemplate.name ~ '%s'" % name_pattern
+            templatename_clause = (
+                "potemplate.name ~ %s" % sqlvalues(name_pattern))
 
         return self._queryPOTemplates(templatename_clause)
 
