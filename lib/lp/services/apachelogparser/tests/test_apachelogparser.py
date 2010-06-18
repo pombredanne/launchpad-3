@@ -126,7 +126,9 @@ class TestLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
-        self.assertEqual(self.logger.buffer.getvalue(), '')
+        self.assertEqual(
+            self.logger.buffer.getvalue().strip(),
+            'INFO: Parsed 5 lines resulting in 3 download stats.')
         date = datetime(2008, 6, 13)
         self.assertContentEqual(
             downloads.items(),
@@ -148,7 +150,9 @@ class TestLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=self._getLastLineStart(fd), logger=self.logger,
             get_download_key=get_path_download_key)
-        self.assertEqual(self.logger.buffer.getvalue(), '')
+        self.assertEqual(
+            self.logger.buffer.getvalue().strip(),
+            'INFO: Parsed 1 lines resulting in 1 download stats.')
         self.assertEqual(parsed_bytes, fd.tell())
 
         self.assertContentEqual(
@@ -175,7 +179,9 @@ class TestLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
-        self.assertEqual(self.logger.buffer.getvalue(), '')
+        self.assertEqual(
+            self.logger.buffer.getvalue().strip(),
+            'INFO: Parsed 1 lines resulting in 0 download stats.')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
 
@@ -198,7 +204,9 @@ class TestLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
-        self.assertEqual(self.logger.buffer.getvalue(), '')
+        self.assertEqual(
+            self.logger.buffer.getvalue().strip(),
+            'INFO: Parsed 1 lines resulting in 0 download stats.')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
 
@@ -214,7 +222,9 @@ class TestLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
-        self.assertEqual(self.logger.buffer.getvalue(), '')
+        self.assertEqual(
+            self.logger.buffer.getvalue().strip(),
+            'INFO: Parsed 1 lines resulting in 1 download stats.')
 
         self.assertEqual(downloads,
             {'/15018215/ul_logo_64x64.png':
@@ -235,17 +245,18 @@ class TestLogFileParsing(TestCase):
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
         self.addCleanup(fd.close)
+
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
 
-        self.assertEqual(self.logger.buffer.getvalue(), '')
+        # We have initially parsed only the first two lines of data,
+        # corresponding to one download (the first line is a 404 and
+        # so ignored).
         date = datetime(2008, 6, 13)
         self.assertContentEqual(
             downloads.items(),
             [('/9096290/me-tv-icon-14x14.png', {date: {'AU': 1}})])
-
-        # We have initially parsed only the first two lines of data.
         fd.seek(0)
         lines = fd.readlines()
         line_lengths = [len(line) for line in lines]
