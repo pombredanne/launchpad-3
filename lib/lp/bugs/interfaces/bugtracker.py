@@ -68,7 +68,8 @@ class BugTrackerURL(URIField):
         bugtracker = getUtility(IBugTrackerSet).queryByBaseURL(input)
         if bugtracker is not None and bugtracker != self.context:
             raise LaunchpadValidationError(
-                "%s is already registered in Launchpad." % input)
+                "%s is already registered in Launchpad as %r (%s)."
+                % (input, bugtracker.title, bugtracker.name))
 
 
 class BugTrackerType(DBEnumeratedType):
