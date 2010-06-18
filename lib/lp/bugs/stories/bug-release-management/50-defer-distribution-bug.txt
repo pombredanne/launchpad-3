@@ -25,7 +25,10 @@ for Ubuntu:
 
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print tag.renderContents()
-    Successfully changed the bug supervisor to...No Privileges Person...
+
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'bug-supervisor'))
+    Bug supervisor:
+    No Privileges Person
 
     >>> user_browser.reload()
 

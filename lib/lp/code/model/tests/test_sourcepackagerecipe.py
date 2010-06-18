@@ -24,20 +24,22 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
 
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.testing import verifyObject
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled, ArchivePurpose, CannotUploadToArchive,
     InvalidPocketForPPA)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.code.errors import (
+    ForbiddenInstruction, TooManyBuilds, TooNewRecipeFormat)
 from lp.code.interfaces.sourcepackagerecipe import (
-    ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
-    TooManyBuilds, TooNewRecipeFormat, MINIMAL_RECIPE_TEXT)
+    ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
 from lp.code.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildJob)
 from lp.code.model.sourcepackagerecipe import (
-    NonPPABuildRequest)
+    NonPPABuildRequest, SourcePackageRecipe)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
@@ -51,6 +53,11 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     """Tests for `SourcePackageRecipe` objects."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_implements_interface(self):
+        """SourcePackageRecipe implements ISourcePackageRecipe."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        verifyObject(ISourcePackageRecipe, recipe)
 
     def makeSourcePackageRecipeFromBuilderRecipe(self, builder_recipe):
         """Make a SourcePackageRecipe from a recipe with arbitrary other data.
@@ -80,6 +87,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             (registrant, owner, set([distroseries]), name),
             (recipe.registrant, recipe.owner, set(recipe.distroseries),
              recipe.name))
+        self.assertEqual(True, recipe.is_stale)
 
     def test_exists(self):
         # Test ISourcePackageRecipeSource.exists
@@ -251,6 +259,26 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertRaises(ArchiveDisabled, recipe.requestBuild, ppa,
                 ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
 
+    def test_requestBuildScore(self):
+        """Normal build requests have a relatively low queue score (900)."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = recipe.requestBuild(recipe.daily_build_archive,
+            recipe.owner, list(recipe.distroseries)[0],
+            PackagePublishingPocket.RELEASE)
+        queue_record = build.buildqueue_record
+        queue_record.score()
+        self.assertEqual(900, queue_record.lastscore)
+
+    def test_requestBuildManualScore(self):
+        """Normal build requests have a higher queue score (1000)."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = recipe.requestBuild(recipe.daily_build_archive,
+            recipe.owner, list(recipe.distroseries)[0],
+            PackagePublishingPocket.RELEASE, manual=True)
+        queue_record = build.buildqueue_record
+        queue_record.score()
+        self.assertEqual(1000, queue_record.lastscore)
+
     def test_requestBuildHonoursConfig(self):
         recipe = self.factory.makeSourcePackageRecipe()
         (distroseries,) = list(recipe.distroseries)
@@ -352,6 +380,18 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.destroySelf()
         # Show no database constraints were violated
         Store.of(recipe).flush()
+
+    def test_findStaleDailyBuilds(self):
+        # Stale recipe not built daily.
+        self.factory.makeSourcePackageRecipe()
+        # Daily build recipe not stale.
+        self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=False)
+        # Stale daily build.
+        stale_daily = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
+        self.assertContentEqual([stale_daily],
+            SourcePackageRecipe.findStaleDailyBuilds())
 
     def test_getMedianBuildDuration(self):
         recipe = removeSecurityProxy(self.factory.makeSourcePackageRecipe())
@@ -577,14 +617,17 @@ class TestWebservice(TestCaseWithFactory):
         db_distroseries = self.factory.makeDistroSeries()
         if recipe_text is None:
             recipe_text = self.makeRecipeText()
+        db_archive = self.factory.makeArchive(owner=owner, name="recipe-ppa")
         launchpad = launchpadlib_for('test', user,
                 service_root="http://api.launchpad.dev:8085")
         login(ANONYMOUS)
         distroseries = ws_object(launchpad, db_distroseries)
         ws_owner = ws_object(launchpad, owner)
+        ws_archive = ws_object(launchpad, db_archive)
         recipe = ws_owner.createRecipe(
-            name='toaster-1', description='a recipe',
-            distroseries=[distroseries.self_link], recipe_text=recipe_text)
+            name='toaster-1', description='a recipe', recipe_text=recipe_text,
+            distroseries=[distroseries.self_link], build_daily=True,
+            daily_build_archive=ws_archive)
         # at the moment, distroseries is not exposed in the API.
         transaction.commit()
         db_recipe = owner.getRecipe(name=u'toaster-1')
@@ -601,6 +644,8 @@ class TestWebservice(TestCaseWithFactory):
         self.assertEqual(team.teamowner.name, recipe.registrant.name)
         self.assertEqual('toaster-1', recipe.name)
         self.assertEqual(recipe_text, recipe.recipe_text)
+        self.assertTrue(recipe.build_daily)
+        self.assertEqual('recipe-ppa', recipe.daily_build_archive.name)
 
     def test_recipe_text(self):
         recipe_text2 = self.makeRecipeText()

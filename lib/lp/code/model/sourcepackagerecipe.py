@@ -14,7 +14,8 @@ from bzrlib.plugins.builder import RecipeParser
 from lazr.delegates import delegates
 
 from storm.locals import (
-    Bool, Desc, Int, Reference, ReferenceSet, Store, Storm, Unicode)
+    Bool, Desc, Int, Reference, ReferenceSet, Store, Storm,
+    Unicode)
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
@@ -23,9 +24,10 @@ from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
+from lp.code.errors import TooManyBuilds
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
-    ISourcePackageRecipeData, TooManyBuilds)
+    ISourcePackageRecipeData)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
@@ -46,7 +48,10 @@ class _SourcePackageRecipeDistroSeries(Storm):
     __storm_table__ = "SourcePackageRecipeDistroSeries"
     id = Int(primary=True)
     sourcepackagerecipe_id = Int(name='sourcepackagerecipe', allow_none=False)
+    sourcepackage_recipe = Reference(
+        sourcepackagerecipe_id, 'SourcePackageRecipe.id')
     distroseries_id = Int(name='distroseries', allow_none=False)
+    distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
 
 class SourcePackageRecipe(Storm):
@@ -83,6 +88,8 @@ class SourcePackageRecipe(Storm):
 
     build_daily = Bool()
 
+    is_stale = Bool()
+
     @property
     def _sourcepackagename_text(self):
         return self.sourcepackagename.name
@@ -118,8 +125,8 @@ class SourcePackageRecipe(Storm):
         return str(self.builder_recipe)
 
     @staticmethod
-    def new(registrant, owner, distroseries, name, builder_recipe,
-            description):
+    def new(registrant, owner, name, builder_recipe, description,
+            distroseries=None, daily_build_archive=None, build_daily=False):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
@@ -127,11 +134,19 @@ class SourcePackageRecipe(Storm):
         sprecipe.registrant = registrant
         sprecipe.owner = owner
         sprecipe.name = name
-        for distroseries_item in distroseries:
-            sprecipe.distroseries.add(distroseries_item)
+        if distroseries is not None:
+            for distroseries_item in distroseries:
+                sprecipe.distroseries.add(distroseries_item)
         sprecipe.description = description
+        sprecipe.daily_build_archive = daily_build_archive
+        sprecipe.build_daily = build_daily
         store.add(sprecipe)
         return sprecipe
+
+    @classmethod
+    def findStaleDailyBuilds(cls):
+        store = IStore(cls)
+        return store.find(cls, cls.is_stale == True, cls.build_daily == True)
 
     @staticmethod
     def exists(owner, name):
@@ -164,7 +179,8 @@ class SourcePackageRecipe(Storm):
         return SourcePackageRecipeBuild.getRecentBuilds(
             requester, self, distroseries).count() >= 5
 
-    def requestBuild(self, archive, requester, distroseries, pocket):
+    def requestBuild(self, archive, requester, distroseries, pocket,
+                     manual=False):
         """See `ISourcePackageRecipe`."""
         if not config.build_from_branch.enabled:
             raise ValueError('Source package recipe builds disabled.')
@@ -181,6 +197,8 @@ class SourcePackageRecipe(Storm):
         build = getUtility(ISourcePackageRecipeBuildSource).new(distroseries,
             self, requester, archive)
         build.queueBuild(build)
+        if manual:
+            build.buildqueue_record.manualScore(1000)
         return build
 
     def getBuilds(self, pending=False):

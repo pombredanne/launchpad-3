@@ -13,6 +13,7 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.registry.interfaces.person import IPerson
+from lp.services.mail import basemailer
 from lp.services.mail.basemailer import BaseMailer
 
 
@@ -27,19 +28,16 @@ def send_branch_modified_notifications(branch, event):
     mailer.sendAll()
 
 
-class RecipientReason:
-    """Reason for sending mail to a recipient."""
+class RecipientReason(basemailer.RecipientReason):
 
     def __init__(self, subscriber, recipient, branch, mail_header,
                  reason_template, merge_proposal=None,
                  max_diff_lines=BranchSubscriptionDiffSize.WHOLEDIFF,
                  branch_identity_cache=None,
                  review_level=CodeReviewNotificationLevel.FULL):
-        self.subscriber = subscriber
-        self.recipient = recipient
+        super(RecipientReason, self).__init__(subscriber, recipient,
+              mail_header, reason_template)
         self.branch = branch
-        self.mail_header = mail_header
-        self.reason_template = reason_template
         self.merge_proposal = merge_proposal
         self.max_diff_lines = max_diff_lines
         if branch_identity_cache is None:
@@ -129,20 +127,9 @@ class RecipientReason:
                      ' details.',
                      branch_identity_cache=branch_identity_cache)
 
-    @staticmethod
-    def makeRationale(rationale_base, person):
-        if person.is_team:
-            return '%s @%s' % (rationale_base, person.name)
-        else:
-            return rationale_base
-
-    def getReason(self):
-        """Return a string explaining why the recipient is a recipient."""
-        template_values = {
-            'branch_name': self._getBranchIdentity(self.branch),
-            'entity_is': 'You are',
-            'lc_entity_is': 'you are',
-            }
+    def _getTemplateValues(self):
+        template_values = super(RecipientReason, self)._getTemplateValues()
+        template_values['branch_name'] = self._getBranchIdentity(self.branch)
         if self.merge_proposal is not None:
             source = self._getBranchIdentity(
                 self.merge_proposal.source_branch)
@@ -150,16 +137,7 @@ class RecipientReason:
                 self.merge_proposal.target_branch)
             template_values['merge_proposal'] = (
                 'the proposed merge of %s into %s' % (source, target))
-        if self.recipient != self.subscriber:
-            assert self.recipient.hasParticipationEntryFor(self.subscriber), (
-                '%s does not participate in team %s.' %
-                (self.recipient.displayname, self.subscriber.displayname))
-        if self.recipient != self.subscriber or self.subscriber.is_team:
-            template_values['entity_is'] = (
-                'Your team %s is' % self.subscriber.displayname)
-            template_values['lc_entity_is'] = (
-                'your team %s is' % self.subscriber.displayname)
-        return (self.reason_template % template_values)
+        return template_values
 
 
 class BranchMailer(BaseMailer):

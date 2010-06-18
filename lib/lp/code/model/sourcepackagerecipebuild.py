@@ -11,13 +11,14 @@ __all__ = [
     ]
 
 import datetime
+import sys
 
 from pytz import utc
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import DBEnum
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 
 from storm.locals import Int, Reference, Storm, TimeDelta, Unicode
@@ -26,6 +27,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.launchpad.webapp import errorlog
 from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
@@ -34,6 +36,9 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
+from lp.code.mail.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuildMailer)
+from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
@@ -65,7 +70,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     def binary_builds(self):
         """See `ISourcePackageRecipeBuild`."""
         return Store.of(self).find(BinaryPackageBuild,
-            BinaryPackageBuild.source_package_release==SourcePackageRelease.id,
+            BinaryPackageBuild.source_package_release==
+            SourcePackageRelease.id,
             SourcePackageRelease.source_package_recipe_build==self.id)
 
     buildduration = TimeDelta(name='build_duration', default=None)
@@ -131,6 +137,25 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     recipe_id = Int(name='recipe', allow_none=False)
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
 
+    manifest = Reference(
+        id, 'SourcePackageRecipeData.sourcepackage_recipe_build_id',
+        on_remote=True)
+
+    def setManifestText(self, text):
+        if text is None:
+            if self.manifest is not None:
+                IStore(self.manifest).remove(self.manifest)
+        elif self.manifest is None:
+            SourcePackageRecipeData.createManifestFromText(text, self)
+        else:
+            from bzrlib.plugins.builder.recipe import RecipeParser
+            self.manifest.setRecipe(RecipeParser(text).parse())
+
+    def getManifestText(self):
+        if self.manifest is None:
+            return None
+        return str(self.manifest.getRecipe())
+
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
 
@@ -193,6 +218,25 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         store.add(spbuild)
         return spbuild
 
+    @staticmethod
+    def makeDailyBuilds():
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        recipes = SourcePackageRecipe.findStaleDailyBuilds()
+        builds = []
+        for recipe in recipes:
+            for distroseries in recipe.distroseries:
+                try:
+                    build = recipe.requestBuild(
+                        recipe.daily_build_archive, recipe.owner,
+                        distroseries, PackagePublishingPocket.RELEASE)
+                except:
+                    info = sys.exc_info()
+                    errorlog.globalErrorUtility.raising(info)
+                else:
+                    builds.append(build)
+            recipe.is_stale = False
+        return builds
+
     def destroySelf(self):
         store = Store.of(self)
         job = self.buildqueue_record.job
@@ -240,8 +284,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def notify(self, extra_info=None):
         """See `IBuildBase`."""
-        # XXX: wgrant 2010-01-20 bug=509893: Implement this.
-        return
+        mailer = SourcePackageRecipeBuildMailer.forStatus(self)
+        mailer.sendAll()
 
     def getFileByName(self, filename):
         """See `ISourcePackageRecipeBuild`."""
@@ -253,6 +297,13 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         except KeyError:
             raise NotFoundError(filename)
 
+    @staticmethod
+    def _handleStatus_OK(build, librarian, slave_status, logger):
+        """See `IBuildBase`."""
+        BuildBase._handleStatus_OK(build, librarian, slave_status, logger)
+        # base implementation doesn't notify on success.
+        if build.status == BuildStatus.FULLYBUILT:
+            build.notify()
 
 class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
@@ -299,3 +350,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
 
     def getName(self):
         return "%s-%s" % (self.id, self.build_id)
+
+    def score(self):
+        return 900

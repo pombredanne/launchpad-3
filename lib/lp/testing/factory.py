@@ -22,8 +22,10 @@ from email.message import Message as EmailMessage
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itertools import count
-from StringIO import StringIO
 import os.path
+from random import randint
+from StringIO import StringIO
+from threading import local
 
 import pytz
 
@@ -56,7 +58,6 @@ from canonical.launchpad.ftests._sqlobject import syncUpdate
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.uuid import generate_uuid
 
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
@@ -213,14 +214,22 @@ class ObjectFactory:
 
     def __init__(self):
         # Initialise the unique identifier.
-        self._integer = count(1)
+        self._local = local()
 
     def getUniqueEmailAddress(self):
         return "%s@example.com" % self.getUniqueString('email')
 
     def getUniqueInteger(self):
-        """Return an integer unique to this factory instance."""
-        return self._integer.next()
+        """Return an integer unique to this factory instance.
+
+        For each thread, this will be a series of increasing numbers, but the
+        starting point will be unique per thread.
+        """
+        counter = getattr(self._local, 'integer', None)
+        if counter is None:
+            counter = count(randint(0, 1000000))
+            self._local.integer = counter
+        return counter.next()
 
     def getUniqueHexString(self, digits=None):
         """Return a unique hexadecimal string.
@@ -245,7 +254,7 @@ class ObjectFactory:
         """
         if prefix is None:
             prefix = "generic-string"
-        string = "%s%s" % (prefix, generate_uuid())
+        string = "%s%s" % (prefix, self.getUniqueInteger())
         return string.replace('_', '-').lower()
 
     def getUniqueUnicode(self):
@@ -1092,7 +1101,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
-                date_created=None, description=None, comment=None):
+                date_created=None, description=None, comment=None,
+                status=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -1114,7 +1124,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             comment = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, private=private,
-            datecreated=date_created, description=description)
+            datecreated=date_created, description=description,
+            status=status)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
@@ -1745,13 +1756,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             processor, url, name, title, description, owner, active,
             virtualized, vm_host, manual=manual)
 
-    def makeRecipe(self, *branches):
-        """Make a builder recipe that references `branches`.
-
-        If no branches are passed, return a recipe text that references an
-        arbitrary branch.
-        """
-        from bzrlib.plugins.builder.recipe import RecipeParser
+    def makeRecipeText(self, *branches):
         if len(branches) == 0:
             branches = (self.makeAnyBranch(),)
         base_branch = branches[0]
@@ -1759,12 +1764,23 @@ class LaunchpadObjectFactory(ObjectFactory):
         text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
         for i, branch in enumerate(other_branches):
             text += 'merge dummy-%s %s\n' % (i, branch.bzr_identity)
-        parser = RecipeParser(text)
+        return text
+
+    def makeRecipe(self, *branches):
+        """Make a builder recipe that references `branches`.
+
+        If no branches are passed, return a recipe text that references an
+        arbitrary branch.
+        """
+        from bzrlib.plugins.builder.recipe import RecipeParser
+        parser = RecipeParser(self.makeRecipeText(*branches))
         return parser.parse()
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
-                                distroseries=None, name=None, description=None,
-                                branches=()):
+                                distroseries=None, name=None,
+                                description=None, branches=(),
+                                build_daily=False, daily_build_archive=None,
+                                is_stale=None):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -1780,9 +1796,15 @@ class LaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString().decode('utf8')
         if description is None:
             description = self.getUniqueString().decode('utf8')
+        if daily_build_archive is None:
+            daily_build_archive = self.makeArchive(
+                distribution=distroseries.distribution, owner=owner)
         recipe = self.makeRecipe(*branches)
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            registrant, owner, [distroseries], name, recipe, description)
+            registrant, owner, name, recipe, description, [distroseries],
+            daily_build_archive, build_daily)
+        if is_stale is not None:
+            removeSecurityProxy(source_package_recipe).is_stale = is_stale
         IStore(source_package_recipe).flush()
         return source_package_recipe
 
@@ -2180,7 +2202,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         else:
             archive = source_package_release.upload_archive
         if source_package_release is None:
-            source_package_release = self.makeSourcePackageRelease(archive)
+            multiverse = self.makeComponent(name='multiverse')
+            source_package_release = self.makeSourcePackageRelease(
+                archive, component=multiverse)
         processor = self.makeProcessor()
         if distroarchseries is None:
             distroarchseries = self.makeDistroArchSeries(

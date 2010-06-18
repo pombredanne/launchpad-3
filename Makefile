@@ -153,7 +153,7 @@ jsbuild: jsbuild_lazr bin/jsbuild bin/jssize
 		-s lib/canonical/launchpad/javascript \
 		-b $(LP_BUILT_JS_ROOT) \
 		$(shell $(HERE)/utilities/yui-deps.py) \
-		$(shell $(HERE)/utilities/lp-deps.py) \
+		$(shell $(PY) $(HERE)/utilities/lp-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
 	${SHHH} bin/jssize
 
