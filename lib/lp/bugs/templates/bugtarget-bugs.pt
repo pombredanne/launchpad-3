@@ -16,8 +16,8 @@
   </metal:block>
   <body>
     <tal:side metal:fill-slot="side" condition="view/uses_launchpad_bugtracker">
-      <div id="involvement" class="portlet involvement">
-        <ul>
+      <div id="involvement" class="portlet">
+        <ul class="involvement">
           <li style="border: none">
             <a href="+filebug" class="menu-link-filebug sprite bugs">
               Report a bug
@@ -32,6 +32,16 @@
             </a>
           </li>
         </ul>
+        <tal:bugtracker
+           define="link context/menu:bugs/configure_bugtracker|nothing"
+           condition="link">
+          <ul tal:condition="link/enabled"
+              style="padding-top: 1em">
+            <li>
+              <a tal:replace="structure link/fmt:link" />
+            </li>
+          </ul>
+        </tal:bugtracker>
       </div>
       <div class="portlet">
         <dl tal:define="bug_supervisor context/bug_supervisor"

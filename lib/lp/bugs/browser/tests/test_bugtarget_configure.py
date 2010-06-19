@@ -31,6 +31,7 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
             'field.enable_bug_expiration': 'on',
             'field.remote_product': 'sf-boing',
             'field.bug_reporting_guidelines': 'guidelines',
+            'field.bug_reported_acknowledgement': 'acknowledgement message',
             'field.actions.change': 'Change',
             }
 
@@ -42,7 +43,7 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         fields = [
             'bug_supervisor', 'security_contact', 'bugtracker',
             'enable_bug_expiration', 'remote_product',
-            'bug_reporting_guidelines']
+            'bug_reporting_guidelines', 'bug_reported_acknowledgement']
         self.assertEqual(fields, view.field_names)
         self.assertEqual('http://launchpad.dev/boing', view.next_url)
         self.assertEqual('http://launchpad.dev/boing', view.cancel_url)
@@ -61,6 +62,9 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         self.assertTrue(self.product.enable_bug_expiration)
         self.assertEqual('sf-boing', self.product.remote_product)
         self.assertEqual('guidelines', self.product.bug_reporting_guidelines)
+        self.assertEqual(
+            'acknowledgement message',
+            self.product.bug_reported_acknowledgement)
 
     def test_bug_supervisor_invalid(self):
         # Verify that invalid bug_supervisor states are reported.
@@ -101,7 +105,7 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         form = self._makeForm()
         form['field.enable_bug_expiration'] = 'on'
         form['field.bugtracker'] = 'external'
-        form['field.bugtracker.bugtracker'] = '3'
+        form['field.bugtracker.bugtracker'] = 'debbugs'
         view = create_initialized_view(
             self.product, name='+configure-bugtracker', form=form)
         self.assertEqual([], view.errors)
