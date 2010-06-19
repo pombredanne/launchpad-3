@@ -3113,9 +3113,11 @@ class PersonParticipationView(LaunchpadView):
         """Return the participation information for active memberships."""
         participations = [self._asParticipation(membership)
                 for membership in self.context.myactivememberships
-                if check_permission('launchpad.View', membership)]
+                if check_permission('launchpad.View', membership.team)]
         membership_set = getUtility(ITeamMembershipSet)
         for team in self.context.teams_indirectly_participated_in:
+            if not check_permission('launchpad.View', team):
+                continue
             # The key points of the path for presentation are:
             # [-?] indirect memberships, [-2] direct membership, [-1] team.
             team_path = self.context.findPathToTeam(team)
