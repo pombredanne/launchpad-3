@@ -96,9 +96,14 @@ class TranslationSideMessageTraits:
     For an introduction to the Traits pattern, see
     http://www.cantrip.org/traits.html
     """
+    # The TranslationSide that these Traits are for.
+    side = None
 
     # TranslationSideMessageTraits for this message on the "other side."
     other_side = None
+
+    # Name of this side's flag.
+    flag_name = None
 
     def __init__(self, potmsgset, potemplate=None, language=None,
                  variant=None):
