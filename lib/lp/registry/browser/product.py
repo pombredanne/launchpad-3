@@ -51,7 +51,7 @@ import pytz
 
 from zope.component import getUtility
 from zope.event import notify
-from zope.app.form.browser import TextAreaWidget, TextWidget
+from zope.app.form.browser import CheckBoxWidget, TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
@@ -1968,20 +1968,47 @@ class ProductAddView(MultiStepView):
         return ProjectAddStepOne
 
 
+class IProductEditPeopleSchema(IProduct):
+    """Defines the fields for the edit form.
+
+    Specifically adds a new checkbox for transferring the maintainer role to
+    Registry Administrators.
+    """
+    transfer_to_registry =  Bool(
+        title=_("Assign to Registry Administrators"),
+        required=False,
+        description=_(
+            "Select if you want the Registry Administrators team to "
+            "become the new project maintainers.  Make this "
+            "assignment if you no longer want to maintain the "
+            "project in Launchpad but do not have another individual "
+            "or team to take over."))
+
+
 class ProductEditPeopleView(LaunchpadEditFormView):
     """Enable editing of important people on the project."""
 
     implements(IProductEditMenu)
 
     label = "Change the roles of people"
-    schema = IProduct
+    schema = IProductEditPeopleSchema
     field_names = [
         'owner',
+        'transfer_to_registry',
         'driver',
         ]
 
+    for_input = True
+
+    # Initial value must be provided for the 'transfer_to_registry' field to
+    # avoid having the non-existent attribute queried on the context and
+    # failing.
+    initial_values = {'transfer_to_registry': False}
+
     custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
                   include_create_team_link=True)
+    custom_widget('transfer_to_registry', CheckBoxWidget,
+                  cssClass='field subordinate')
     custom_widget('driver', PersonPickerWidget, header="Select the driver",
                   include_create_team_link=True)
 
@@ -1995,6 +2022,8 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         """Save the changes to the associated people."""
         old_owner = self.context.owner
         old_driver = self.context.driver
+        if 'transfer_to_registry' in data:
+            del data['transfer_to_registry']
         self.updateContextFromData(data)
         if self.context.owner != old_owner:
             self.request.response.addNotification(
@@ -2018,3 +2047,8 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {IProductEditPeopleSchema: self.context}
