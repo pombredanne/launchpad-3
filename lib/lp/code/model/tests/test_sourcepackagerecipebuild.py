@@ -236,10 +236,27 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(list(recipe.distroseries), [build.distroseries])
 
     def test_makeDailyBuilds_clears_is_stale(self):
-        recipe = self.factory.makeSourcePackageRecipe(build_daily=True,
-            is_stale=True)
+        recipe = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
         SourcePackageRecipeBuild.makeDailyBuilds()[0]
         self.assertFalse(recipe.is_stale)
+
+    def test_makeDailyBuilds_skips_pending(self):
+        """When creating daily builds, skip ones that are already pending."""
+        recipe = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
+        first_distroseries = list(recipe.distroseries)[0]
+        recipe.requestBuild(
+            recipe.daily_build_archive, recipe.owner, first_distroseries,
+            PackagePublishingPocket.RELEASE)
+        second_distroseries = self.factory.makeDistroSeries()
+        second_distroseries.nominatedarchindep = second_distroseries.newArch(
+            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
+            supports_virtualized=True)
+        recipe.distroseries.add(second_distroseries)
+        builds = SourcePackageRecipeBuild.makeDailyBuilds()
+        self.assertEqual(
+            [second_distroseries], [build.distroseries for build in builds])
 
     def test_getRecentBuilds(self):
         """Recent builds match the same person, series and receipe.

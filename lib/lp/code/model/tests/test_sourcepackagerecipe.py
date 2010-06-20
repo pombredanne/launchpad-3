@@ -28,10 +28,12 @@ from canonical.launchpad.webapp.testing import verifyObject
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled, ArchivePurpose, CannotUploadToArchive,
     InvalidPocketForPPA)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
-    ForbiddenInstruction, TooManyBuilds, TooNewRecipeFormat)
+    BuildAlreadyPending, ForbiddenInstruction, TooManyBuilds,
+    TooNewRecipeFormat)
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -296,13 +298,40 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         series = list(recipe.distroseries)[0]
         archive = self.factory.makeArchive(owner=requester)
         def request_build():
-            recipe.requestBuild(archive, requester, series,
+            build = recipe.requestBuild(archive, requester, series,
                     PackagePublishingPocket.RELEASE)
+            removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
         [request_build() for num in range(5)]
         e = self.assertRaises(TooManyBuilds, request_build)
         self.assertIn(
             'You have exceeded your quota for recipe requester/myrecipe',
             str(e))
+
+    def test_requestBuildRejectRepeats(self):
+        """Reject build requests that are identical to pending builds."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        series = list(recipe.distroseries)[0]
+        archive = self.factory.makeArchive(owner=recipe.owner)
+        old_build = recipe.requestBuild(archive, recipe.owner, series,
+                PackagePublishingPocket.RELEASE)
+        self.assertRaises(
+            BuildAlreadyPending, recipe.requestBuild, archive, recipe.owner,
+            series, PackagePublishingPocket.RELEASE)
+        # Varying archive allows build.
+        recipe.requestBuild(
+            self.factory.makeArchive(owner=recipe.owner), recipe.owner,
+            series, PackagePublishingPocket.RELEASE)
+        # Varying distroseries allows build.
+        new_distroseries = self.factory.makeDistroSeries()
+        new_distroseries.nominatedarchindep = new_distroseries.newArch(
+            'i386', ProcessorFamily.get(1), False, recipe.owner,
+            supports_virtualized=True)
+        recipe.requestBuild(archive, recipe.owner,
+            new_distroseries, PackagePublishingPocket.RELEASE)
+        # Changing status of old build allows new build.
+        removeSecurityProxy(old_build).buildstate = BuildStatus.FULLYBUILT
+        recipe.requestBuild(archive, recipe.owner, series,
+                PackagePublishingPocket.RELEASE)
 
     def test_sourcepackagerecipe_description(self):
         """Ensure that the SourcePackageRecipe has a proper description."""
@@ -674,6 +703,51 @@ class TestWebservice(TestCaseWithFactory):
         recipe.requestBuild(
             archive=archive, distroseries=distroseries,
             pocket=PackagePublishingPocket.RELEASE.title)
+
+    def test_requestBuildRejectRepeat(self):
+        """Build requests are rejected if already pending."""
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive(owner=person)
+        distroseries = self.factory.makeDistroSeries()
+        distroseries_i386 = distroseries.newArch(
+            'i386', ProcessorFamily.get(1), False, person,
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+
+        recipe, user, launchpad = self.makeRecipe(person)
+        distroseries = ws_object(launchpad, distroseries)
+        archive = ws_object(launchpad, archive)
+        recipe.requestBuild(
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
+        e = self.assertRaises(Exception, recipe.requestBuild,
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
+        self.assertIn('BuildAlreadyPending', str(e))
+
+    def test_requestBuildRejectOverQuota(self):
+        """Build requests are rejected if they exceed quota."""
+        person = self.factory.makePerson()
+        archives = [self.factory.makeArchive(owner=person) for x in range(6)]
+        distroseries = self.factory.makeDistroSeries()
+        distroseries_i386 = distroseries.newArch(
+            'i386', ProcessorFamily.get(1), False, person,
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+
+        recipe, user, launchpad = self.makeRecipe(person)
+        distroseries = ws_object(launchpad, distroseries)
+        for archive in archives[:-1]:
+            archive = ws_object(launchpad, archive)
+            recipe.requestBuild(
+                archive=archive, distroseries=distroseries,
+                pocket=PackagePublishingPocket.RELEASE.title)
+
+        archive = ws_object(launchpad, archives[-1])
+        e = self.assertRaises(Exception, recipe.requestBuild,
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
+        self.assertIn('TooManyBuilds', str(e))
 
 
 def test_suite():

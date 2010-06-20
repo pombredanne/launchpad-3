@@ -592,15 +592,36 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             supports_virtualized=True)
 
         recipe = self.makeRecipe()
-        [recipe.requestBuild(
-            self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
-            for x in range(5)]
+        for x in range(5):
+            build = recipe.requestBuild(
+                self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
+            removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
 
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
         browser.getControl('Request builds').click()
         self.assertIn("You have exceeded today's quota for ubuntu woody.",
                 extract_text(find_main_content(browser.contents)))
+
+    def test_request_builds_rejects_duplicate(self):
+        """Over-quota build requests cause validation failures."""
+        woody = self.factory.makeDistroSeries(
+            name='woody', displayname='Woody',
+            distribution=self.ppa.distribution)
+        woody.nominatedarchindep = woody.newArch(
+            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
+            supports_virtualized=True)
+
+        recipe = self.makeRecipe()
+        recipe.requestBuild(
+            self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
+
+        browser = self.getViewBrowser(recipe, '+request-builds')
+        browser.getControl('Woody').click()
+        browser.getControl('Request builds').click()
+        self.assertIn(
+            "An identical build is already pending for ubuntu woody.",
+            extract_text(find_main_content(browser.contents)))
 
 
 class TestSourcePackageRecipeBuildView(BrowserTestCase):
