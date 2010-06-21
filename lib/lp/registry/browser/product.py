@@ -2041,9 +2041,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):
         """Save the changes to the associated people."""
-        old_owner = self.context.owner
-        old_driver = self.context.driver
-
         # Since 'transfer_to_registry' is not a real attribute on a Product,
         # it must be removed from data before the context is updated.
         if 'transfer_to_registry' in data:

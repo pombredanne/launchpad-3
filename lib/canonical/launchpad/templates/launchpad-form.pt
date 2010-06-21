@@ -102,7 +102,8 @@
       tal:define="field_name widget/context/__name__;
                   error python:view.getFieldError(field_name);
                   error_class python:error and 'error' or None;
-                  show_optional python:view.showOptionalMarker(field_name)">
+                  show_optional python:view.showOptionalMarker(field_name);
+                  css_class widget/cssClass|nothing">
     <tal:is-visible condition="widget/visible">
       <tr
         tal:condition="python: view.isSingleLineLayout(field_name)"
@@ -120,7 +121,7 @@
           </div>
           <div class="message" tal:condition="error"
                tal:content="structure error">Error message</div>
-          <p class="formHelp"
+          <p tal:attributes="class string:formHelp ${css_class}"
              tal:condition="widget/hint"
              tal:content="widget/hint">Some Help Text
           </p>
@@ -147,7 +148,7 @@
             <div tal:content="structure widget">
               <input type="text" />
             </div>
-            <p class="formHelp"
+            <p tal:attributes="class string:formHelp ${css_class}"
                tal:condition="widget/hint"
                tal:content="widget/hint">Some Help Text
             </p>
@@ -164,7 +165,7 @@
             tal:content="structure error"
             class="message"
           >Error message</div>
-          <p class="formHelp"
+          <p tal:attributes="class string:formHelp ${css_class}"
              tal:condition="widget/hint"
              tal:content="widget/hint">Some Help Text
           </p>
