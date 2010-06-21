@@ -12,7 +12,14 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.buildmaster.interfaces.buildfarmjob import (
+    BuildFarmJobType, IBuildFarmJob)
+from lp.buildmaster.interfaces.packagebuild import (
+    IPackageBuildSource)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
+from lp.soyuz.interfaces.buildrecords import (
+    IHasBuildRecords, IncompatibleArguments)
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_binarypackagebuild import (
     BaseTestCaseWithThreeBuilds)
@@ -81,6 +88,32 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
 
         self.context = self.publisher.distroseries.main_archive
 
+    def test_binary_only_false(self):
+        # An archive can optionally return the more general
+        # package build objects.
+
+        # Until we have different IBuildFarmJob types implemented, we
+        # can only test this by creating a lone PackageBuild of a
+        # different type.
+        getUtility(IPackageBuildSource).new(
+            job_type=BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
+            archive=self.context, pocket=PackagePublishingPocket.RELEASE)
+
+        builds = self.context.getBuildRecords(binary_only=True)
+        self.failUnlessEqual(3, builds.count())
+
+        builds = self.context.getBuildRecords(binary_only=False)
+        self.failUnlessEqual(4, builds.count())
+
+    def test_incompatible_arguments(self):
+        # binary_only=False is incompatible with arch_tag and name.
+        self.failUnlessRaises(
+            IncompatibleArguments, self.context.getBuildRecords,
+            binary_only=False, arch_tag="anything")
+        self.failUnlessRaises(
+            IncompatibleArguments, self.context.getBuildRecords,
+            binary_only=False, name="anything")
+
 
 class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the Builder implementation of IHasBuildRecords."""
@@ -100,6 +133,43 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
         for build in self.builds:
             build.builder = self.context
 
+    def test_binary_only_false(self):
+        # A builder can optionally return the more general
+        # build farm job objects.
+
+        # Until we have different IBuildFarmJob types implemented, we
+        # can only test this by creating a lone IBuildFarmJob of a
+        # different type.
+        from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
+        from lp.buildmaster.interfaces.buildbase import BuildStatus
+        build_farm_job = getUtility(IBuildFarmJobSource).new(
+            job_type=BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
+            status=BuildStatus.BUILDING)
+        removeSecurityProxy(build_farm_job).builder = self.context
+
+        builds = self.context.getBuildRecords(binary_only=True)
+        binary_only_count = builds.count()
+
+        self.assertTrue(
+            all([IBinaryPackageBuild.providedBy(build) for build in builds]))
+
+        builds = self.context.getBuildRecords(binary_only=False)
+        all_count = builds.count()
+
+        self.assertFalse(
+            any([IBinaryPackageBuild.providedBy(build) for build in builds]))
+        self.assertTrue(
+            all([IBuildFarmJob.providedBy(build) for build in builds]))
+        self.assertBetween(0, binary_only_count, all_count)
+
+    def test_incompatible_arguments(self):
+        # binary_only=False is incompatible with arch_tag and name.
+        self.failUnlessRaises(
+            IncompatibleArguments, self.context.getBuildRecords,
+            binary_only=False, arch_tag="anything")
+        self.failUnlessRaises(
+            IncompatibleArguments, self.context.getBuildRecords,
+            binary_only=False, name="anything")
 
 class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the SourcePackage implementation of IHasBuildRecords."""
