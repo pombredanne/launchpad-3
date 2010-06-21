@@ -106,7 +106,6 @@
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
-
   <securedutility
     name="BugWatch"
     component="canonical.launchpad.vocabularies.BugWatchVocabulary"

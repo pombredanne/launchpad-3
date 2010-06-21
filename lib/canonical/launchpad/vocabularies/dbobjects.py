@@ -234,6 +234,7 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
     _table = BugTracker
     _filter = True
+    _orderBy = 'title'
     _order_by = [BugTracker.title]
 
     def toTerm(self, obj):

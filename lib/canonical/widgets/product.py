@@ -82,7 +82,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         if self.upstream_email_address_widget.extra is None:
             self.upstream_email_address_widget.extra = ''
         self.upstream_email_address_widget.extra += (
-            ' onkeypress="selectWidget(\'%s.3\', event);"\n' % self.name)
+            ''' onkeypress="selectWidget('%s.3', event);"\n''' % self.name)
 
     def _renderItem(self, index, text, value, name, cssClass, checked=False):
         # This form has a custom need to render their labels separately,

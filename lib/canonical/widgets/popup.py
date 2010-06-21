@@ -181,27 +181,39 @@ class PersonPickerWidget(VocabularyPickerWidget):
 
 
 class BugTrackerPickerWidget(VocabularyPickerWidget):
-    include_create_team_link = False
+    link_template = """
+        or (<a id="%(activator_id)s" href="/bugs/bugtrackers/+newbugtracker"
+                    >Register an external bug tracker&hellip;</a>)
+        <script>
+        LPS.use('lp.bugs.bugtracker_overlay', function(Y) {
+            if (Y.UA.ie) {
+                return;
+            }
+            Y.on('domready', function () {
+                // After the success handler finishes, it calls the
+                // next_step function.
+                var next_step = function(bug_tracker) {
+                    // Fill in the text field with either the name of
+                    // the newly created bug tracker or the name of an
+                    // existing bug tracker whose base_url matches.
+                    var bugtracker_text_box = Y.one(
+                        Y.DOM.byId('field.bugtracker.bugtracker'));
+                    bugtracker_text_box.set('value', bug_tracker.get('name'));
+                    bugtracker_text_box.scrollIntoView();
+                }
+                Y.lp.bugs.bugtracker_overlay.attach_widget({
+                    activate_node: Y.get('#%(activator_id)s'),
+                    next_step: next_step
+                    });
+                });
+        });
+        </script>
+        """
 
     def chooseLink(self):
         link = super(BugTrackerPickerWidget, self).chooseLink()
-        link += ('or (<a id="nbt" href="/bugs/bugtrackers/+newbugtracker">'
-                     'Register an external bug tracker&hellip;</a>)'
-                    '''
-            <script>
-            LPS.use('lp.bugs.bugtracker_overlay', function(Y) {
-                if (Y.UA.ie) {
-                    return;
-                }
-                Y.on('domready', function () {
-                    Y.lp.bugs.bugtracker_overlay.attach_widget({
-                        activate_node: Y.get('#nbt'),
-                        next_step: function(){alert('next step');}
-                        });
-                    });
-            });
-            </script>
-            ''')
+        link += self.link_template % dict(
+            activator_id='new-bug-tracker-%s' % id(self))
         return link
 
     @property
