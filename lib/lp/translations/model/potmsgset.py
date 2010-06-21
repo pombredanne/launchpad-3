@@ -1203,8 +1203,8 @@ class POTMsgSet(SQLBase):
                 message = twin
                 if not traits.getFlag(twin):
                     assert not traits.other_side.getFlag(twin), (
-                        "Decision matrix says '5' for a message that's "
-                        "active on the other side.")
+                        "Trying to diverge a message that is current on the "
+                        "other side.")
                     message.potemplate = pofile.potemplate
             elif character == '6':
                 # If other is not active, fork a diverged message.

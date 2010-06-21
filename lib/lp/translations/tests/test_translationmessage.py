@@ -34,18 +34,20 @@ class TestTranslationMessage(TestCaseWithFactory):
         message = self.factory.makeTranslationMessage()
         verifyObject(ITranslationMessage, message)
 
+    def test_dummy_translationmessage(self):
         pofile = self.factory.makePOFile('nl')
         potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
         dummy = DummyTranslationMessage(pofile, potmsgset)
         verifyObject(ITranslationMessage, dummy)
 
-    def test_is_diverged(self):
+    def test_is_diverged_false(self):
         # ITranslationMessage.is_diverged is a little helper to let you
         # say "message.is_diverged" which can be clearer than
         # "message.potemplate is not None."
         message = self.factory.makeTranslationMessage(force_diverged=False)
         self.assertFalse(message.is_diverged)
 
+    def test_is_diverged_true(self):
         message = self.factory.makeTranslationMessage(force_diverged=True)
         self.assertTrue(message.is_diverged)
 
