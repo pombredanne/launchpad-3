@@ -20,7 +20,6 @@ import datetime
 import logging
 import os
 import pytz
-import subprocess
 from cStringIO import StringIO
 
 from storm.store import Store
@@ -28,18 +27,17 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-    clear_current_connection_cache, cursor, flush_database_updates)
+from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.librarian.utils import copy_and_close
+from lp.archiveuploader.uploadpolicy import findPolicyByOptions
+from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
 from lp.registry.interfaces.pocket import pocketsuffix
-
-
-UPLOAD_LOG_FILENAME = 'uploader.log'
 
 
 def handle_status_for_build(build, status, librarian, slave_status,
@@ -89,27 +87,6 @@ class BuildBase:
         """Return the directory that things will be stored in."""
         return os.path.join(config.builddmaster.root, 'incoming', upload_leaf)
 
-    @staticmethod
-    def getUploaderCommand(build, upload_leaf, uploader_logfilename):
-        """See `IBuildBase`."""
-        root = os.path.abspath(config.builddmaster.root)
-        uploader_command = list(config.builddmaster.uploader.split())
-
-        # add extra arguments for processing a binary upload
-        extra_args = [
-            "--log-file", "%s" % uploader_logfilename,
-            "-d", "%s" % build.distribution.name,
-            "-s", "%s" % (build.distro_series.name +
-                          pocketsuffix[build.pocket]),
-            "-b", "%s" % build.id,
-            "-J", "%s" % upload_leaf,
-            '--context=%s' % build.policy_name,
-            "%s" % root,
-            ]
-
-        uploader_command.extend(extra_args)
-        return uploader_command
-
     def _getProxiedFileURL(self, library_file):
         """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
         # Avoiding circular imports.
@@ -126,26 +103,6 @@ class BuildBase:
             return None
         return self._getProxiedFileURL(self.buildlog)
 
-    @staticmethod
-    def getUploadLogContent(root, leaf):
-        """Retrieve the upload log contents.
-
-        :param root: Root directory for the uploads
-        :param leaf: Leaf for this particular upload
-        :return: Contents of log file or message saying no log file was found.
-        """
-        # Retrieve log file content.
-        possible_locations = (
-            'failed', 'failed-to-move', 'rejected', 'accepted')
-        for location_dir in possible_locations:
-            log_filepath = os.path.join(root, location_dir, leaf,
-                UPLOAD_LOG_FILENAME)
-            if os.path.exists(log_filepath):
-                with open(log_filepath, 'r') as uploader_log_file:
-                    return uploader_log_file.read()
-        else:
-            return 'Could not find upload log file'
-
     @property
     def upload_log_url(self):
         """See `IBuildBase`."""
@@ -157,6 +114,34 @@ class BuildBase:
         """See `IBuildBase`."""
         return handle_status_for_build(
             self, status, librarian, slave_status, self.__class__)
+
+    def processUpload(self, leaf, root, logger):
+        """Process an upload.
+        
+        :param leaf: Leaf for this particular upload
+        :param root: Root directory for the uploads
+        :param logger: A logger object
+        """
+        class ProcessUploadOptions(object):
+
+            def __init__(self, policy_name, distribution, distroseries, pocket,
+                         buildid):
+                self.context = policy_name
+                self.distro = distribution.name
+                self.distroseries = distroseries.name + pocketsuffix[pocket]
+                self.buildid = buildid
+                self.announce = []
+
+        options = ProcessUploadOptions(self.policy_name, self.distribution,
+            self.distroseries, self.pocket, self.id)
+        # XXX JRV 20100317: This should not create a mock options 
+        # object and derive the policy from that but rather create a
+        # policy object in a more sensible way.
+        policy = findPolicyByOptions(options)
+        processor = UploadProcessor(root, dry_run=False, no_mails=True,
+            keep=False, policy_for_distro=lambda distro: policy,
+            ztm=ZopelessTransactionManager, log=logger)
+        processor.processUploadQueue(leaf)
 
     @staticmethod
     def _handleStatus_OK(build, librarian, slave_status, logger):
@@ -192,10 +177,8 @@ class BuildBase:
         # can be correctly found during the upload:
         #       <archive_id>/distribution_name
         # for all destination archive types.
-        archive = build.archive
-        distribution_name = build.distribution.name
-        target_path = '%s/%s' % (archive.id, distribution_name)
-        upload_path = os.path.join(upload_dir, target_path)
+        upload_path = os.path.join(upload_dir, str(build.archive.id),
+                                   build.distribution.name)
         os.makedirs(upload_path)
 
         slave = removeSecurityProxy(build.buildqueue_record.builder.slave)
@@ -219,28 +202,12 @@ class BuildBase:
         # We only attempt the upload if we successfully copied all the
         # files from the slave.
         if successful_copy_from_slave:
-            uploader_logfilename = os.path.join(
-                upload_dir, UPLOAD_LOG_FILENAME)
-            uploader_command = build.getUploaderCommand(
-                build, upload_leaf, uploader_logfilename)
-            logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
-
-            logger.info("Invoking uploader on %s" % root)
-            logger.info("%s" % uploader_command)
-
-            uploader_process = subprocess.Popen(
-                uploader_command, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-
-            # Nothing should be written to the stdout/stderr.
-            upload_stdout, upload_stderr = uploader_process.communicate()
-
-            # XXX cprov 2007-04-17: we do not check uploader_result_code
-            # anywhere. We need to find out what will be best strategy
-            # when it failed HARD (there is a huge effort in process-upload
-            # to not return error, it only happen when the code is broken).
-            uploader_result_code = uploader_process.returncode
-            logger.info("Uploader returned %d" % uploader_result_code)
+            logger.info("Invoking uploader on %s for %s" % (root, upload_leaf))
+            upload_logger = BufferLogger()
+            upload_log = self.processUpload(upload_leaf, root, upload_logger)
+            uploader_log_content = upload_logger.buffer.getvalue()
+        else:
+            uploader_log_content = 'Copy from slave was unsuccessful.'
 
         # Quick and dirty hack to carry on on process-upload failures
         if os.path.exists(upload_dir):
@@ -249,34 +216,6 @@ class BuildBase:
             if not os.path.exists(failed_dir):
                 os.mkdir(failed_dir)
             os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
-
-        # The famous 'flush_updates + clear_cache' will make visible
-        # the DB changes done in process-upload, considering that the
-        # transaction was set with ISOLATION_LEVEL_READ_COMMITED
-        # isolation level.
-        cur = cursor()
-        cur.execute('SHOW transaction_isolation')
-        isolation_str = cur.fetchone()[0]
-        assert isolation_str == 'read committed', (
-            'BuildMaster/BuilderGroup transaction isolation should be '
-            'ISOLATION_LEVEL_READ_COMMITTED (not "%s")' % isolation_str)
-
-        original_slave = build.buildqueue_record.builder.slave
-
-        # XXX Robert Collins, Celso Providelo 2007-05-26 bug=506256:
-        # 'Refreshing' objects  procedure  is forced on us by using a
-        # different process to do the upload, but as that process runs
-        # in the same unix account, it is simply double handling and we
-        # would be better off to do it within this process.
-        flush_database_updates()
-        clear_current_connection_cache()
-
-        # XXX cprov 2007-06-15: Re-issuing removeSecurityProxy is forced on
-        # us by sqlobject refreshing the builder object during the
-        # transaction cache clearing. Once we sort the previous problem
-        # this step should probably not be required anymore.
-        build.buildqueue_record.builder.setSlaveForTesting(
-            removeSecurityProxy(original_slave))
 
         # Store build information, build record was already updated during
         # the binary upload.
@@ -298,10 +237,8 @@ class BuildBase:
         if (build.status != BuildStatus.FULLYBUILT or
             not successful_copy_from_slave or
             not build.verifySuccessfulUpload()):
-            logger.warning("Build %s upload failed." % build.id)
+            logger.warning("Build %s upload failed." % self.id)
             build.status = BuildStatus.FAILEDTOUPLOAD
-            uploader_log_content = build.getUploadLogContent(root,
-                upload_leaf)
             # Store the upload_log_contents in librarian so it can be
             # accessed by anyone with permission to see the build.
             build.storeUploadLog(uploader_log_content)
