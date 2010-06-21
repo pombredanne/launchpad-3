@@ -184,50 +184,61 @@ class TestSharingPOTemplatesByRegex(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSharingPOTemplatesByRegex, self).setUp()
-        self.product = self.factory.makeProduct()
-        self.product.official_rosetta = True
-        self.trunk = self.product.getSeries('trunk')
-        self.potemplateset = getUtility(IPOTemplateSet)
 
-    def _makeTemplates(self, names):
-        # Create some templates with the given names.
+    def _makeAndFind(self, names, name_pattern=None):
+        product = self.factory.makeProduct()
+        product.official_rosetta = True
+        trunk = product.getSeries('trunk')
+        for name in names:
+            self.factory.makePOTemplate(productseries=trunk, name=name)
+        subset = getUtility(IPOTemplateSet).getSharingSubset(product=product)
         return [
-            self.factory.makePOTemplate(productseries=self.trunk, name=name)
-            for name in names]
+            template.name
+            for template in subset.getSharingPOTemplatesByRegex(name_pattern)]
 
     def test_getSharingPOTemplatesByRegex_baseline(self):
         # Baseline test.
-        templates = self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
-        subset = self.potemplateset.getSharingSubset(product=self.product)
         self.assertContentEqual(
-            templates, subset.getSharingPOTemplatesByRegex('foo.*'))
+            ['foo', 'foo-bar', 'foo-two'],
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], 'foo.*'))
 
     def test_getSharingPOTemplatesByRegex_not_all(self):
         # A template may not match.
-        templates = self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
-        subset = self.potemplateset.getSharingSubset(product=self.product)
         self.assertContentEqual(
-            templates[1:], subset.getSharingPOTemplatesByRegex('foo-.*'))
+            ['foo-bar', 'foo-two'],
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], 'foo-.*'))
 
     def test_getSharingPOTemplatesByRegex_all(self):
         # Not passing a pattern returns all templates.
-        templates = self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
-        subset = self.potemplateset.getSharingSubset(product=self.product)
         self.assertContentEqual(
-            templates, subset.getSharingPOTemplatesByRegex())
+            ['foo', 'foo-bar', 'foo-two'],
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two']))
 
-    def test_getSharingPOTemplatesByRegex_robustness_quotes(self):
-        # Quotes in the pattern can be dangerous.
-        subset = self.potemplateset.getSharingSubset(product=self.product)
+    def test_getSharingPOTemplatesByRegex_no_match(self):
+        # A not matching pattern returns no templates.
         self.assertContentEqual(
-            [], subset.getSharingPOTemplatesByRegex("'\""))
+            [],
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two']), "doo.+dle")
+
+    def test_getSharingPOTemplatesByRegex_robustness_single_quotes(self):
+        # Single quotes do not confuse the regex match.
+        self.assertContentEqual(
+            [],
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two']), "'")
+
+    def test_getSharingPOTemplatesByRegex_robustness_double_quotes(self):
+        # Double quotes do not confuse the regex match.
+        self.assertContentEqual(
+            [],
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two']), '"')
 
     def test_getSharingPOTemplatesByRegex_robustness_backslash(self):
         # A backslash at the end could escape enclosing quotes without
         # proper escaping, leading to a SyntaxError or even a successful
         # exploit. Instead, storm should complain about an invalid expression
         # by raising DataError.
-        subset = self.potemplateset.getSharingSubset(product=self.product)
+        product = self.factory.makeProduct()
+        subset = self.potemplateset.getSharingSubset(product=product)
         self.assertRaises(
             DataError, list, subset.getSharingPOTemplatesByRegex("foo.*\\"))
 
