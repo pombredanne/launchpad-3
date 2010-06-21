@@ -150,8 +150,8 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         # If getSpecificJob is called on the binary build it is a noop.
         store = Store.of(self.build)
         store.flush()
-        build, statements = record_statements(self.build.getSpecificJob)
-        self.assertEqual(0, len(statements))
+        self.assertStatementCount(
+            0, self.build.getSpecificJob)
 
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):
