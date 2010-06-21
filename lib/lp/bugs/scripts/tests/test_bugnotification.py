@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces.message import IMessageSet
 from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from canonical.launchpad.mailnotification import BugNotificationRecipients
+from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.scripts.bugnotification import (
     get_email_notifications)
 from canonical.testing import LaunchpadZopelessLayer
