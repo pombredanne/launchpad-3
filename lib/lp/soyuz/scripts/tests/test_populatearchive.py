@@ -761,7 +761,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         This test should provoke a `SoyuzScriptError` exception.
         """
         extra_args = ['-a', 'amd64', '--from-archive', '9th-level-cache']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
             exception_text="Origin archive does not exist: '9th-level-cache'")
@@ -772,7 +772,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         This test should provoke a `SoyuzScriptError` exception.
         """
         extra_args = ['-a', 'amd64', '--from-user', 'king-kong']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
             exception_text="No PPA for user: 'king-kong'")
@@ -784,7 +784,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         """
         extra_args = [
             '-a', 'amd64', '--from-archive', '//']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
             exception_text="Invalid origin archive name: '//'")
@@ -795,7 +795,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         This test should provoke a `SoyuzScriptError` exception.
         """
         extra_args = ['-a', 'wintel']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
             exception_text="Invalid architecture tag: 'wintel'")
@@ -815,7 +815,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             extra_args=extra_args, exists_before=False)
 
         extra_args = ['--merge-copy', '-a', '386', '-a', 'amd64']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args, copy_archive_name=copy_archive.name,
             exception_type=SoyuzScriptError,
             exception_text=(
@@ -833,7 +833,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         needed.
         """
         extra_args = ['-a', 'amd64']
-        copy_archive = self.runScript(
+        self.runScript(
             # Pass an empty reason parameter string to indicate that no
             # '--reason' command line argument is to be provided.
             extra_args=extra_args, reason='',
@@ -850,7 +850,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         *existing* archives.
         """
         extra_args = ['--merge-copy', '-a', 'amd64']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
             exception_text=(
@@ -865,11 +865,11 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         with the same name and distribution.
         """
         extra_args = ['-a', 'amd64']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args, exists_after=True,
             copy_archive_name='hello-1')
         extra_args = ['-a', 'amd64']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args,
             copy_archive_name='hello-1', exception_type=SoyuzScriptError,
             exception_text=(
@@ -880,7 +880,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
         This test should provoke a `SoyuzScriptError` exception.
         """
-        copy_archive = self.runScript(
+        self.runScript(
             exception_type=SoyuzScriptError,
             exception_text="error: architecture tags not specified.")
 
@@ -929,11 +929,11 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # We will make a private PPA and then attempt to copy from it.
         joe = self.factory.makePerson(name='joe')
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        joes_private_ppa = self.factory.makeArchive(
+        self.factory.makeArchive(
             owner=joe, private=True, name="ppa", distribution=ubuntu)
 
         extra_args = ['--from-user', 'joe', '-a', 'amd64']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args, exception_type=SoyuzScriptError,
             exception_text=(
                 "Cannot copy from private archive ('joe/ppa')"))
@@ -953,7 +953,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             enabled=False)
 
         extra_args = ['--from-user', 'cprov', '--merge-copy']
-        copy_archive = self.runScript(
+        self.runScript(
             copy_archive_name=disabled_archive.name, reason='',
             extra_args=extra_args, exception_type=SoyuzScriptError,
             exception_text='error: cannot copy to disabled archive')
@@ -992,11 +992,11 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
         test_publisher.addFakeChroots(hoary)
-        unused = test_publisher.setUpDefaultDistroSeries(hoary)
-        new_package = test_publisher.getPubSource(
+        test_publisher.setUpDefaultDistroSeries(hoary)
+        test_publisher.getPubSource(
             sourcename="new-in-second-round", version="1.0",
             distroseries=hoary, archive=ubuntu.main_archive)
-        fresher_package = test_publisher.getPubSource(
+        test_publisher.getPubSource(
             sourcename="alsa-utils", version="2.0", distroseries=hoary,
             archive=ubuntu.main_archive)
         sources = ubuntu.main_archive.getPublishedSources(
