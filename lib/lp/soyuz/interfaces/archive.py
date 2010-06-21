@@ -162,7 +162,7 @@ class CannotUploadToPocket(Exception):
     """Returned when a pocket is closed for uploads."""
 
     def __init__(self, distroseries, pocket):
-        Exception.__init__(self, 
+        Exception.__init__(self,
             "Not permitted to upload to the %s pocket in a series in the "
             "'%s' state." % (pocket.name, distroseries.status.name))
 
@@ -523,11 +523,11 @@ class IArchivePublic(IHasOwner, IPrivacy):
         )
     @export_operation_as("checkUpload")
     @export_read_operation()
-    def _checkUpload(person, distroseries, sourcepackagename, component, 
+    def _checkUpload(person, distroseries, sourcepackagename, component,
             pocket, strict_component=True):
         """Wrapper around checkUpload for the web service API."""
 
-    def checkUpload(person, distroseries, sourcepackagename, component, 
+    def checkUpload(person, distroseries, sourcepackagename, component,
                     pocket, strict_component=True):
         """Check if 'person' upload 'suitesourcepackage' to 'archive'.
 

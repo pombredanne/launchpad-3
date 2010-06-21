@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'IPackageBuild',
     'IPackageBuildSource',
+    'IPackageBuildSet',
     ]
 
 
@@ -16,6 +17,7 @@ from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -162,10 +164,33 @@ class IPackageBuild(IBuildFarmJob):
 class IPackageBuildSource(Interface):
     """A utility of this interface used to create _things_."""
 
-    def new(archive, pocket, dependencies=None):
+    def new(job_type, virtualized, archive, pocket, processor=None,
+            status=BuildStatus.NEEDSBUILD, dependencies=None):
         """Create a new `IPackageBuild`.
 
+        :param job_type: A `BuildFarmJobType` item.
+        :param virtualized: A boolean indicating whether this build was
+            virtualized.
         :param archive: An `IArchive`.
         :param pocket: An item of `PackagePublishingPocket`.
+        :param processor: An `IProcessor` required to run this build farm
+            job. Default is None (processor-independent).
+        :param status: A `BuildStatus` item defaulting to NEEDSBUILD.
         :param dependencies: An optional debian-like dependency line.
         """
+
+
+class IPackageBuildSet(Interface):
+    """A utility representing a set of package builds."""
+
+    def getBuildsForArchive(archive, status=None, pocket=None):
+        """Return package build records targeted to a given IArchive.
+
+        :param archive: The archive for which builds will be returned.
+        :param status: If status is provided, only builders with that
+            status will be returned.
+        :param pocket: If pocket is provided only builds for that pocket
+            will be returned.
+        :return: a `ResultSet` representing the requested package builds.
+        """
+

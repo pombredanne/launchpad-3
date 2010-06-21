@@ -797,11 +797,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         raise NotFoundError(filename)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
         """See `IHasBuildRecords`"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now).
+        # The "binary_only" option is not yet supported for
+        # IDistribution.
 
         # Find out the distroarchseries in question.
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
