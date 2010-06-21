@@ -31,7 +31,7 @@ class TestArchivePrivacy(TestCaseWithFactory):
     def test_no_subscription(self):
         login_person(self.fred)
         p3a = getUtility(IArchiveSet).get(self.private_ppa.id)
-        self.assertRaises(Unauthorized, self._getDescription(p3a))
+        self.assertRaises(Unauthorized, self._getDescription, p3a)
 
     def test_subscription(self):
         login_person(self.joe)
