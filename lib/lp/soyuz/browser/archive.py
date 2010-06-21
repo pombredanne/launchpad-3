@@ -453,8 +453,8 @@ class ArchiveMenuMixin:
         # This link should not be available for copy archives.
         if self.context.is_copy:
             link.enabled = False
-        # This link should not be available for commerical P3As
-        if self.context.commerical:
+        # This link should not be available for commercial P3As
+        if self.context.commercial:
             link.enabled = False
         return link
 
@@ -963,6 +963,13 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     """Detailed packages view for an archive."""
     implements(IArchivePackagesActionMenu)
+
+    def initialize(self):
+        if self.context.private:
+            archive_subs = getUtility(IArchiveSubscriberSet).getBySubscriber(
+                user.person, self.obj)
+            if not archive_subs:
+                raise Unauthorized
 
     @property
     def page_title(self):

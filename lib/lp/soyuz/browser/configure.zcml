@@ -240,7 +240,7 @@
         class="lp.soyuz.browser.archive.ArchiveView"/>
     <browser:page
         for="lp.soyuz.interfaces.archive.IArchive"
-        permission="launchpad.Append"
+        permission="launchpad.View"
         name="+packages"
         template="../templates/archive-packages.pt"
         facet="overview"
