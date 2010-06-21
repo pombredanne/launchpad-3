@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E1002
 
@@ -24,6 +24,7 @@ from bzrlib.revision import NULL_REVISION
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_tar_filename
 from canonical.launchpad.webapp import (
@@ -394,7 +395,7 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         return (translation_group is not None and
                 translation_group.translation_guide_url is not None)
 
-    @property
+    @cachedproperty
     def single_potemplate(self):
         """Does this ProductSeries have exactly one POTemplate."""
         return self.context.potemplate_count == 1

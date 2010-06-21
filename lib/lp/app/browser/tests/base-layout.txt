@@ -421,7 +421,7 @@ The page includes a comment after the document with diagnostic information.
       Has application tabs: False
       Has side portlets: False
       At least ... queries issued in ... seconds
-      Launchpad ... (r...)
+      r...
     -->
 
 
