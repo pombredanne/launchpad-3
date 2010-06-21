@@ -716,7 +716,8 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
         key=operator.attrgetter('displayname'))
 
 
-def add_bug_change_notifications(bug_delta, old_bugtask=None, new_subscribers=None):
+def add_bug_change_notifications(bug_delta, old_bugtask=None,
+                                 new_subscribers=None):
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_changes(bug_delta)
     recipients = bug_delta.bug.getBugNotificationRecipients(
@@ -744,10 +745,10 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None, new_subscribers=No
             elif (isinstance(change, BugTaskAssigneeChange) and
                   new_subscribers is not None):
                 for person in new_subscribers:
-                   reason = recipients.getReason(person)
-                   if reason == 'Assignee':
-                       recipients.remove(person)
-                       bug_delta.bug.addChange(change, recipients=recipients)
+                    reason = recipients.getReason(person)
+                    if reason == 'Assignee':
+                        recipients.remove(person)
+                        bug_delta.bug.addChange(change, recipients=recipients)
             else:
                 bug_delta.bug.addChange(change, recipients=recipients)
         else:
