@@ -443,7 +443,10 @@ class UploadProcessor:
             self.options.base_fsroot, subdir_name, pathname)
         self.log.debug("Moving upload directory %s to %s" %
             (upload, target_path))
-        shutil.move(upload, target_path)
+        if subdir_name == "accepted":
+            shutil.rmtree(upload)
+        else:
+            shutil.move(upload, target_path)
 
         distro_filename = upload + ".distro"
         if os.path.isfile(distro_filename):
@@ -451,7 +454,10 @@ class UploadProcessor:
                                        os.path.basename(distro_filename))
             self.log.debug("Moving distro file %s to %s" % (distro_filename,
                                                             target_path))
-            shutil.move(distro_filename, target_path)
+            if subdir_name == "accepted":
+                os.remove(distro_filename)
+            else:
+                shutil.move(distro_filename, target_path)
 
     def orderFilenames(self, fnames):
         """Order filenames, sorting *_source.changes before others.
