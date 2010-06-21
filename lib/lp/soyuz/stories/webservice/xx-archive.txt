@@ -889,12 +889,13 @@ First we'll subscribe mark to cprov's archive:
 We can print the sources.list entry for the archive, which will include an
 AuthToken:
 
-    >>> response = webservice.named_post(cprov_private_ppa['self_link'],
-    ...     'getPrivateSourcesList', person=mark['self_link'])
-    >>> print response
+    >>> sources_response = webservice.named_post(
+    ...     cprov_private_ppa['self_link'], 'getPrivateSourcesList',
+    ...     person=mark['self_link'])
+    >>> print sources_response
     HTTP/1.1 200 Ok
     ...
-    http://mark:...@private-ppa.launchpad.dev/cprov/p3a/ubuntu
+    "http://mark:...@private-ppa.launchpad.dev/cprov/p3a/ubuntu"
 
 We publish a subset of the IArchiveSubscriber attributes.
 
