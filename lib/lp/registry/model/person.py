@@ -3519,7 +3519,7 @@ class PersonSet:
         # Change the merged Account's OpenID identifier so that it cannot be
         # used to lookup the merged Person; Launchpad will instead select the
         # remaining Person based on the email address. The rename uses a
-        # dash which does not occur in SSO identifier. The epoch from
+        # dash, which does not occur in SSO identifiers. The epoch from
         # the account date_created is used to ensure it is unique if the
         # original identifier is reused and merged.
         if from_person.account is not None:
