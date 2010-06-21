@@ -23,7 +23,6 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet, PackageCopyStatus)
@@ -147,6 +146,11 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.assertEqual(build_spns, self.expected_build_spns)
 
     def createSourceDistroSeries(self):
+        """Create a DistroSeries suitable for copying.
+
+        Creates a distroseries with a DistroArchSeries and nominatedarchindep,
+        which makes it suitable for copying because it will create some builds.
+        """
         distro_name = "foobuntu"
         distro = self.factory.makeDistribution(name=distro_name)
         distroseries_name = "maudlin"
@@ -160,11 +164,16 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         return distroseries
 
     def createTargetOwner(self):
+        """Create a person suitable to own a copy archive."""
         person_name = "copy-archive-owner"
         owner = self.factory.makePerson(name=person_name)
         return owner
 
     def getTargetArchiveName(self, distribution):
+        """Get a suitable name for a copy archive.
+
+        It also checks that the archive doesn't currently exist.
+        """
         archive_name = "msa%s" % int(time.time())
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
             distribution, ArchivePurpose.COPY, archive_name)
@@ -174,6 +183,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         return archive_name
 
     def createSourcePublication(self, info, distroseries, component="main"):
+        """Create a SourcePackagePublishingHistory based on a PackageInfo."""
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=self.factory.getOrMakeSourcePackageName(
                 name=info.name),
@@ -183,9 +193,15 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             archive=distroseries.distribution.main_archive,
             status=info.status, pocket=PackagePublishingPocket.RELEASE)
 
+    def createSourcePublications(self, package_infos, distroseries):
+        """Create a source publication for each item in package_infos."""
+        for package_info in package_infos:
+            self.createSourcePublication(package_info, distroseries)
+
     def copyArchive(self, distroseries, archive_name, owner,
-        architectures=["386"], component="main", from_user=None,
+        architectures=None, component="main", from_user=None,
         from_archive=None):
+        """Run the copy-archive script."""
         extra_args = [
             '--from-distribution', distroseries.distribution.name,
             '--from-suite', distroseries.name,
@@ -203,6 +219,9 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
         if from_archive is not None:
             extra_args.extend(["--from-archive", from_archive])
+
+        if architectures is None:
+            architectures = ["386"]
 
         for architecture in architectures:
             extra_args.extend(['-a', architecture])
@@ -229,6 +248,12 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         return copy_archive
 
     def checkCopiedSources(self, archive, distroseries, expected):
+        """Check the sources published in an archive against an expected set.
+
+        Given an archive and a target distroseries the sources published in
+        that distroseries are checked against a set of PackageInfo to
+        ensure that the correct package names and versions are published.
+        """
         expected_set = set([(info.name, info.version) for info in expected])
         sources = archive.getPublishedSources(
             distroseries=distroseries, status=self.pending_statuses)
@@ -239,19 +264,15 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
                 (source.source_package_name, source.source_package_version))
         self.assertEqual(expected_set, actual_set)
 
-    def createSourcePublications(self, package_infos, distroseries):
-        for package_info in package_infos:
-            self.createSourcePublication(package_info, distroseries)
-
     def createSourceDistribution(self, package_infos):
+        """Create a distribution to be the source of a copy archive."""
         distroseries = self.createSourceDistroSeries()
-        distribution = distroseries.distribution
-        archive = distribution.main_archive
         self.createSourcePublications(package_infos, distroseries)
         self.layer.commit()
         return distroseries
 
     def makeCopyArchive(self, package_infos, component="main"):
+        """Make a copy archive based on a new distribution."""
         owner = self.createTargetOwner()
         distroseries = self.createSourceDistribution(package_infos)
         archive_name = self.getTargetArchiveName(distroseries.distribution)
@@ -260,6 +281,11 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         return (copy_archive, distroseries)
 
     def checkBuilds(self, archive, package_infos):
+        """Check the build records pending in an archive.
+
+        Given a set of PackageInfo objects check that each has a build
+        created for it.
+        """
         expected_builds = list(
             [(info.name, info.version) for info in package_infos])
         builds = list(
@@ -273,6 +299,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.assertEqual(sorted(expected_builds), sorted(actual_builds))
 
     def testCopyArchiveCreateCopiesPublished(self):
+        """Test that PUBLISHED sources are copied."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
         copy_archive, distroseries = self.makeCopyArchive([package_info])
@@ -280,6 +307,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             copy_archive, distroseries, [package_info])
 
     def testCopyArchiveCreateCopiesPending(self):
+        """Test that PENDING sources are copied."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PENDING)
         copy_archive, distroseries = self.makeCopyArchive([package_info])
@@ -287,6 +315,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             copy_archive, distroseries, [package_info])
 
     def testCopyArchiveCreateDoesntCopySuperseded(self):
+        """Test that SUPERSEDED sources are not copied."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.SUPERSEDED)
         copy_archive, distroseries = self.makeCopyArchive([package_info])
@@ -294,6 +323,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             copy_archive, distroseries, [])
 
     def testCopyArchiveCreateDoesntCopyDeleted(self):
+        """Test that DELETED sources are not copied."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.DELETED)
         copy_archive, distroseries = self.makeCopyArchive([package_info])
@@ -301,6 +331,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             copy_archive, distroseries, [])
 
     def testCopyArchiveCreateDoesntCopyObsolete(self):
+        """Test that OBSOLETE sources are not copied."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.OBSOLETE)
         copy_archive, distroseries = self.makeCopyArchive([package_info])
@@ -308,12 +339,19 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             copy_archive, distroseries, [])
 
     def testCopyArchiveCreatesBuilds(self):
+        """Test that a copy archive creates builds for the copied packages."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
         copy_archive, distroseries = self.makeCopyArchive([package_info])
         self.checkBuilds(copy_archive, [package_info])
 
     def testCopyArchiveArchTagNotAvailableInSource(self):
+        """Test creating a copy archive for an arch not in the source.
+
+        If we request a copy to an architecture that doesn't have
+        a DistroArchSeries in the source then we won't get any builds
+        created in the copy archive.
+        """
         family = self.factory.makeProcessorFamily(name="armel")
         self.factory.makeProcessor(family=family, name="armel")
         package_info = PackageInfo(
@@ -367,13 +405,17 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.checkBuilds(copy_archive, [package_info])
 
     def testCopyArchiveCreatesSubsetOfBuilds(self):
-        family = self.factory.makeProcessorFamily(name="armel")
-        self.factory.makeProcessor(family=family, name="armel")
+        """Create a copy archive with a subset of the architectures.
+
+        We copy from an archive with multiple architecture DistroArchSeries,
+        but request only one of those architectures in the target,
+        so we only get builds for that one architecture.
+        """
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
         owner = self.createTargetOwner()
         distroseries = self.createSourceDistribution([package_info])
-        das = self.factory.makeDistroArchSeries(
+        self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="amd64",
             processorfamily=ProcessorFamilySet().getByName("amd64"),
             supports_virtualized=True)
@@ -387,13 +429,16 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.checkBuilds(copy_archive, [package_info])
 
     def testMultipleArchTags(self):
-        family = self.factory.makeProcessorFamily(name="armel")
-        self.factory.makeProcessor(family=family, name="armel")
+        """Test copying an archive with multiple architectures.
+
+        We create a source with two architectures, and then request
+        a copy of both, so we get a build for each of those architectures.
+        """
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
         owner = self.createTargetOwner()
         distroseries = self.createSourceDistribution([package_info])
-        das = self.factory.makeDistroArchSeries(
+        self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="amd64",
             processorfamily=ProcessorFamilySet().getByName("amd64"),
             supports_virtualized=True)
@@ -405,6 +450,13 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.checkBuilds(copy_archive, [package_info, package_info])
 
     def testCopyArchiveCopiesAllComponents(self):
+        """Test that packages from all components are copied.
+
+        When copying you specify a component, but that component doesn't
+        limit the packages copied. We create a source in main and one in
+        universe, and then copy with --component main, and expect to see
+        both sources in the copy.
+        """
         package_infos = [
             PackageInfo(
                 "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED,
@@ -417,6 +469,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.checkBuilds(copy_archive, package_infos)
 
     def testCopyFromPPA(self):
+        """Test we can create a copy archive with a PPA as the source."""
         ppa_owner_name = "ppa-owner"
         ppa_name = "ppa"
         ppa_owner = self.factory.makePerson(name=ppa_owner_name)
@@ -633,7 +686,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             "INFO: * new-in-second-round (1.0)\n")
 
         extra_args = ['--package-set-delta']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args, reason='', output_substr=expected_output,
             copy_archive_name=first_stage.name)
 
@@ -830,46 +883,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         copy_archive = self.runScript(
             exception_type=SoyuzScriptError,
             exception_text="error: architecture tags not specified.")
-
-    def testMultipleArchTagsOld(self):
-        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
-
-        # Verify that we have the right source packages in the sample data.
-        self._verifyPackagesInSampleData(hoary)
-
-        # Please note:
-        #   * the 'amd64' DistroArchSeries has no resulting builds.
-        #   * the '-a' command line parameter is cumulative in nature
-        #     i.e. the 'amd64' architecture tag specified after the '386'
-        #     tag does not overwrite the latter but is added to it.
-        extra_args = ['-a', '386', '-a', 'amd64']
-        copy_archive = self.runScript(
-            extra_args=extra_args, exists_after=True)
-
-        # Make sure the right source packages were cloned.
-        self._verifyClonedSourcePackages(copy_archive, hoary)
-
-        # Now check that we have the build records expected.
-        builds = list(getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
-            copy_archive, status=BuildStatus.NEEDSBUILD))
-        build_spns = [
-            get_spn(removeSecurityProxy(build)).name for build in builds]
-        self.assertEqual(build_spns, self.expected_build_spns)
-
-        def get_family_names(result_set):
-            """Extract processor family names from result set."""
-            family_names = []
-            for archivearch in rset:
-                family_names.append(
-                    removeSecurityProxy(archivearch).processorfamily.name)
-
-            family_names.sort()
-            return family_names
-
-        # Make sure that the processor family names specified for the copy
-        # archive at hand were stored in the database.
-        rset = getUtility(IArchiveArchSet).getByArchive(copy_archive)
-        self.assertEqual(get_family_names(rset), [u'amd64', u'x86'])
 
     def testBuildsPendingAndSuspended(self):
         """All builds in the new copy archive are pending and suspended."""
