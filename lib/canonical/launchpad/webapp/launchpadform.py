@@ -481,10 +481,12 @@ class ReturnToReferrerMixin:
                 and getattr(self.context, attribute_name) != attribute_value):
                 returnNotChanged = False
 
+        # If the location header is None, then it is a windmill test.
         if (referrer is not None
             and returnNotChanged
             and referrer.startswith(self.request.getApplicationURL())
-            and referrer != self.request.getHeader('location')):
+            and referrer != self.request.getHeader('location')
+            and self.request.getHeader('location') is not None):
             return referrer
         else:
             return canonical_url(self.context)

@@ -198,8 +198,17 @@ class BugTrackerPickerWidget(VocabularyPickerWidget):
                     // existing bug tracker whose base_url matches.
                     var bugtracker_text_box = Y.one(
                         Y.DOM.byId('field.bugtracker.bugtracker'));
-                    bugtracker_text_box.set('value', bug_tracker.get('name'));
-                    bugtracker_text_box.scrollIntoView();
+                    if (bugtracker_text_box !== null) {
+                        bugtracker_text_box.set(
+                            'value', bug_tracker.get('name'));
+                        // It doesn't appear possible to use onChange
+                        // event, so the onKeyPress event is explicitely
+                        // fired here.
+                        if (bugtracker_text_box.get('onkeypress')) {
+                            bugtracker_text_box.get('onkeypress')();
+                        }
+                        bugtracker_text_box.scrollIntoView();
+                    }
                 }
                 Y.lp.bugs.bugtracker_overlay.attach_widget({
                     activate_node: Y.get('#%(activator_id)s'),
@@ -213,7 +222,7 @@ class BugTrackerPickerWidget(VocabularyPickerWidget):
     def chooseLink(self):
         link = super(BugTrackerPickerWidget, self).chooseLink()
         link += self.link_template % dict(
-            activator_id='new-bug-tracker-%s' % id(self))
+            activator_id='create-bugtracker-link')
         return link
 
     @property
