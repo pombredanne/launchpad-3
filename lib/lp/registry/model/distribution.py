@@ -13,7 +13,7 @@ __all__ = [
 
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import Desc, In, Int, Join, SQL
+from storm.locals import Desc, In, Int, Join, Or, SQL
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
@@ -524,13 +524,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getSeries(self, name_or_version):
         """See `IDistribution`."""
-        distroseries = DistroSeries.selectOneBy(
-            distribution=self, name=name_or_version)
-        if distroseries is None:
-            distroseries = DistroSeries.selectOneBy(
-                distribution=self, version=name_or_version)
-            if distroseries is None:
-                raise NoSuchDistroSeries(name_or_version)
+        distroseries = Store.of(self).find(DistroSeries,
+               Or(DistroSeries.name == name_or_version,
+               DistroSeries.version == name_or_version),
+            DistroSeries.distribution == self).one()
+        if not distroseries:
+            raise NoSuchDistroSeries(name_or_version)
         return distroseries
 
     def getDevelopmentSeries(self):
@@ -772,6 +771,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                     pass
 
         raise NotFoundError(distroseries_name)
+
+    def getSeriesByStatus(self, status):
+        """See `IDistribution`."""
+        return Store.of(self).find(DistroSeries, 
+            DistroSeries.distribution == self,
+            DistroSeries.status == status)
 
     def getFileByName(self, filename, archive=None, source=True, binary=True):
         """See `IDistribution`."""
