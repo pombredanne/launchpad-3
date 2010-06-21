@@ -6,27 +6,33 @@
 from zope.component import getUtility
 from lp.soyuz.interfaces.archive import IArchiveSet
 
-from canonical.testing import LaunchpadZopelessLayer
-from lp.testing import TestCaseWithFactory
+from canonical.testing import LaunchpadFunctionalLayer
+from lp.testing import login, login_person, TestCaseWithFactory
 
 
 class TestArchivePrivacy(TestCaseWithFactory):
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestArchivePrivacy, self).setUp()
-        self.owner = self.factory.makePerson()
-        self.private_ppa = self.factory.makeArchive(owner=self.owner)
+        owner = self.factory.makePerson()
+        self.private_ppa = self.factory.makeArchive(
+            owner=owner, description='Foo')
+        login('admin@canonical.com')
         self.private_ppa.buildd_secret = 'blah'
         self.private_ppa.private = True
         self.joe = self.factory.makePerson(name='joe')
+        self.fred = self.factory.makePerson(name='fred')
+        login_person(owner)
+        self.private_ppa.newSubscription(self.joe, owner)
 
     def test_no_subscription(self):
+        login_person(self.fred)
         p3a = getUtility(IArchiveSet).get(self.private_ppa.id)
-        self.assertEqual(p3a, None)
+        self.assertRaises(p3a.description, Unauthorized)
 
     def test_subscription(self):
-        self.private_ppa.newSubscription(self.joe, self.owner)
+        login_person(self.joe)
         p3a = getUtility(IArchiveSet).get(self.private_ppa.id)
-        self.assertEqual(p3a.id, self.private_ppa.id)
+        self.assertEqual(p3a.description, "Foo")
 

@@ -967,8 +967,8 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     def initialize(self):
         if self.context.private:
             archive_subs = getUtility(IArchiveSubscriberSet).getBySubscriber(
-                user.person, self.obj)
-            if not archive_subs:
+                user.person, self.obj).one()
+            if archive_subs is None:
                 raise Unauthorized
 
     @property
