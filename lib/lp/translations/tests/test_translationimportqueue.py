@@ -13,8 +13,11 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
+from lp.services.worlddata.interfaces.language import (
+    ILanguageSet)
 
 from lp.testing import TestCaseWithFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -213,6 +216,83 @@ class TestCanSetStatusPOFileWithQueuedUser(TestCanSetStatusPOFile):
     dbuser = 'queued'
 
 
+class TestGetGuessedPOFile(TestCaseWithFactory):
+    """Test matching of PO files with respective templates and languages."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Set up context to test in."""
+        super(TestGetGuessedPOFile, self).setUp()
+        self.queue = getUtility(ITranslationImportQueue)
+        self.factory = LaunchpadObjectFactory()
+        self.distribution = self.factory.makeDistribution('boohoo')
+        self.distroseries = self.factory.makeDistroRelease(self.distribution)
+        self.uploaderperson = self.factory.makePerson()
+
+    def createSourcePackageAndPOTemplate(self, sourcepackagename, template):
+        """Create and return a source package and a POTemplate.
+
+        Creates a source package in the self.distroseries with the passed-in
+        sourcepackagename, and a template in that sourcepackage named
+        template with the identical translation domain.
+        """
+        target_sourcepackage = self.factory.makeSourcePackage(
+            distroseries=self.distroseries)
+        pot = self.factory.makePOTemplate(
+            sourcepackagename=target_sourcepackage.sourcepackagename,
+            distroseries=target_sourcepackage.distroseries,
+            name=template, translation_domain=template)
+        spn = self.factory.makeSourcePackageName(sourcepackagename)
+        l10n_sourcepackage = self.factory.makeSourcePackage(
+            sourcepackagename=spn,
+            distroseries=self.distroseries)
+        return (l10n_sourcepackage, pot)
+
+    def _getGuessedPOFile(self, source_name, template_name):
+        """Return new POTemplate and matched POFile for package and template.
+        """
+        package, pot = self.createSourcePackageAndPOTemplate(
+            source_name, template_name)
+        queue_entry = self.queue.addOrUpdateEntry(
+            '%s.po' % template_name, template_name, True, self.uploaderperson,
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        pofile = queue_entry.getGuessedPOFile()
+        return (pot, pofile)
+
+    def test_KDE4_language(self):
+        # PO files 'something.po' in a package named like 'kde-l10n-sr'
+        # belong in the 'something' translation domain as Serbian (sr)
+        # translations.
+        potemplate, pofile = self._getGuessedPOFile(
+            'kde-l10n-sr', 'template')
+        serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
+        self.assertEquals(potemplate, pofile.potemplate)
+        self.assertEquals(serbian, pofile.language)
+        self.assertIs(None, pofile.variant)
+
+    def test_KDE4_language_country(self):
+        # If package name is kde-l10n-engb, it needs to be mapped
+        # to British English (en_GB).
+        potemplate, pofile = self._getGuessedPOFile(
+            'kde-l10n-engb', 'template')
+        real_english = getUtility(ILanguageSet).getLanguageByCode('en_GB')
+        self.assertEquals(potemplate, pofile.potemplate)
+        self.assertEquals(real_english, pofile.language)
+        self.assertIs(None, pofile.variant)
+
+    def test_KDE4_language_variant(self):
+        # If package name is kde-l10n-ca-valencia, it needs to be mapped
+        # to Valencian variant of Catalan (ca@valencia).
+        potemplate, pofile = self._getGuessedPOFile(
+            'kde-l10n-ca-valencia', 'template')
+        catalan = getUtility(ILanguageSet).getLanguageByCode('ca')
+        self.assertEquals(potemplate, pofile.potemplate)
+        self.assertEquals(catalan, pofile.language)
+        self.assertEquals(u'valencia', pofile.variant)
+
+
 def test_suite():
     """Add only specific test cases and leave out the base case."""
     suite = unittest.TestSuite()
@@ -221,5 +301,6 @@ def test_suite():
     suite.addTest(
         unittest.makeSuite(TestCanSetStatusPOTemplateWithQueuedUser))
     suite.addTest(unittest.makeSuite(TestCanSetStatusPOFileWithQueuedUser))
+    suite.addTest(unittest.makeSuite(TestGetGuessedPOFile))
     return suite
 

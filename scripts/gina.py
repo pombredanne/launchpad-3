@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -11,7 +11,7 @@ Gina launcher script. Handles commandline options and makes the proper
 calls to the other classes and instances.
 
 The callstack is essentially:
-    main -> run_gina 
+    main -> run_gina
                 -> import_sourcepackages -> do_one_sourcepackage
                 -> import_binarypackages -> do_one_binarypackage
 """

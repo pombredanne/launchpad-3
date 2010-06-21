@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -125,7 +125,7 @@ def wait_for_service(timeout=15.0):
             try:
                 sock.connect((host, port))
             except socket.error, err:
-                if err.args[0] == errno.ECONNREFUSED:
+                if err.args[0] in [errno.ECONNREFUSED, errno.ECONNABORTED]:
                     elapsed = (time.time() - start)
                     if elapsed > timeout:
                         raise RuntimeError("Socket poll time exceeded.")

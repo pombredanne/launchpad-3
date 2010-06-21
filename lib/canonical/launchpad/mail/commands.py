@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
         IDistributionSourcePackage, EmailProcessingError,
         NotFoundError, CreateBugParams, IPillarNameSet,
         BugTargetNotFound, IProjectGroup, ISourcePackage, IProductSeries,
-        BugTaskStatus, UserCannotUnsubscribePerson)
+        BugTaskStatus)
 from lazr.lifecycle.event import (
     ObjectModifiedEvent, ObjectCreatedEvent)
 from lazr.lifecycle.interfaces import (
@@ -33,6 +33,8 @@ from canonical.launchpad.mail.helpers import (
     get_error_message, get_person_or_team)
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
+
+from lp.app.errors import UserCannotUnsubscribePerson
 
 
 def normalize_arguments(string_args):
@@ -279,7 +281,7 @@ class SecurityEmailCommand(EmailCommand):
                 edited = True
                 edited_fields.add('private')
         if context.security_related != security_related:
-            context.security_related = security_related
+            context.setSecurityRelated(security_related)
             edited = True
             edited_fields.add('security_related')
 
@@ -496,7 +498,7 @@ class AffectsEmailCommand(EmailCommand):
                 "There is no project named '%s' registered in Launchpad." %
                     name)
 
-        # We can't check for IBugTarget, since Project is an IBugTarget
+        # We can't check for IBugTarget, since ProjectGroup is an IBugTarget
         # we don't allow bugs to be filed against.
         if IProjectGroup.providedBy(pillar):
             products = ", ".join(product.name for product in pillar.products)

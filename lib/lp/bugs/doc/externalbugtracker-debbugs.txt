@@ -14,7 +14,7 @@ test:
 You can specify the db_location explicitly:
 
     >>> from lp.bugs.externalbugtracker import (
-    ...     DebBugs)
+    ...     BATCH_SIZE_UNLIMITED, DebBugs)
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_debbugs = DebBugs(
@@ -42,8 +42,8 @@ Because we keep a local copy of the DebBugs database we don't need to
 worry about batching bug watch updates for performance reasons, so
 DebBugs instances don't have a batch_size limit.
 
-    >>> print external_debbugs.batch_size
-    None
+    >>> external_debbugs.batch_size == BATCH_SIZE_UNLIMITED
+    True
 
 
 == Retrieving bug status from the debbugs database ==
@@ -115,8 +115,8 @@ option, is disabled here and will be tested later.
 
     >>> transaction.commit()
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> external_debbugs.sync_comments = False
     >>> bug_watch_ids = sorted([bug_watch.id for bug_watch in bug_watches])
     >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
@@ -419,7 +419,7 @@ However, getCommentIds() will only return the comment ID once.
 The debbugs implementation of fetchComments() doesn't actually do
 anything, since DebBugs comments are stored locally and there is no need
 to pre-fetch them. It exists, nevertheless, so that
-BugWatchUpdater.importBugComments() can call it.
+CheckwatchesMaster.importBugComments() can call it.
 
     >>> external_debbugs.fetchComments(bug_watch, comment_ids)
 

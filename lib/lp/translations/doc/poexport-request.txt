@@ -108,8 +108,10 @@ Let's download it and make sure the contents look ok.
     >>> from canonical.launchpad.helpers import string_to_tarfile
     >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
     >>> for name in sorted(tarball.getnames()):
-    ...   print name
-    pmount/
+    ...     # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to
+    ...     # make this pass on python2.5 and 2.6.
+    ...     print name.rstrip('/')
+    pmount
     pmount/pmount-ca.po
     pmount/pmount-cs.po
 
@@ -266,7 +268,7 @@ The script is run.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-rosetta-export-queue.lock
     DEBUG   Exporting objects for Happy Downloader, related to template
     evolution-2.2 in Evolution trunk
     DEBUG   Exporting objects for Happy Downloader, related to template

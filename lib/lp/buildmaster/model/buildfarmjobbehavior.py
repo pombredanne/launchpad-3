@@ -16,23 +16,17 @@ import logging
 import socket
 import xmlrpclib
 
-from sqlobject import SQLObjectNotFound
-
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy, isinstance as zisinstance
+from zope.security.proxy import removeSecurityProxy
 
 from canonical import encoding
 from canonical.librarian.interfaces import ILibrarianClient
 
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.buildmaster.interfaces.builder import CorruptBuildID
+from lp.buildmaster.interfaces.builder import CorruptBuildCookie
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch, IBuildFarmJobBehavior)
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.build import IBuildSet
 
 
 class BuildFarmJobBehaviorBase:
@@ -64,102 +58,11 @@ class BuildFarmJobBehaviorBase:
         The default behavior is that we don't add any extra values."""
         pass
 
-    def _helpVerifyBuildIDComponent(self, raw_id, item_type, finder):
-        """Helper for verifying parts of a `BuildFarmJob` name.
-
-        Different `IBuildFarmJob` implementations can have different
-        ways of constructing their identifying names.  The names are
-        produced by `IBuildFarmJob.getName` and verified by
-        `IBuildFarmJobBehavior.verifySlaveBuildID`.
-
-        This little helper makes it easier to verify an object id
-        embedded in that name, check that it's a valid number, and
-        retrieve the associated database object.
-
-        :param raw_id: An unverified id string as extracted from the
-            build name.  The method will verify that it is a number, and
-            try to retrieve the associated object.
-        :param item_type: The type of object this id represents.  Should
-            be a class.
-        :param finder: A function that, given an integral id, finds the
-            associated object of type `item_type`.
-        :raise CorruptBuildID: If `raw_id` is malformed in some way or
-            the associated `item_type` object is not found.
-        :return: An object that is an instance of `item_type`.
-        """
-        type_name = item_type.__name__
-        try:
-            numeric_id = int(raw_id)
-        except ValueError:
-            raise CorruptBuildID(
-                "%s ID is not a number: '%s'" % (type_name, raw_id))
-
-        try:
-            item = finder(numeric_id)
-        except (NotFoundError, SQLObjectNotFound), reason:
-            raise CorruptBuildID(
-                "%s %d is not available: %s" % (
-                    type_name, numeric_id, reason))
-        except Exception, reason:
-            raise CorruptBuildID(
-                "Error while looking up %s %d: %s" % (
-                    type_name, numeric_id, reason))
-
-        if item is None:
-            raise CorruptBuildID("There is no %s with id %d." % (
-                type_name, numeric_id))
-
-        assert zisinstance(item, item_type), (
-            "Looked for %s, but found %s." % (type_name, repr(item)))
-
-        return item
-
-    def getVerifiedBuild(self, raw_id):
-        """Verify and retrieve the `Build` component of a slave build id.
-
-        This does part of the verification for `verifySlaveBuildID`.
-
-        By default, a `BuildFarmJob` has an identifying name of the form
-        "b-q", where b is the id of its `Build` and q is the id of its
-        `BuildQueue` record.
-
-        Use `getVerifiedBuild` to verify the "b" part, and retrieve the
-        associated `Build`.
-        """
-        # Avoid circular import.
-        from lp.soyuz.model.build import Build
-
-        return self._helpVerifyBuildIDComponent(
-            raw_id, Build, getUtility(IBuildSet).getByBuildID)
-
-    def getVerifiedBuildQueue(self, raw_id):
-        """Verify and retrieve the `BuildQueue` component of a slave build id.
-
-        This does part of the verification for `verifySlaveBuildID`.
-
-        By default, a `BuildFarmJob` has an identifying name of the form
-        "b-q", where b is the id of its `Build` and q is the id of its
-        `BuildQueue` record.
-
-        Use `getVerifiedBuildQueue` to verify the "q" part, and retrieve
-        the associated `BuildQueue` object.
-        """
-        return self._helpVerifyBuildIDComponent(
-            raw_id, BuildQueue, getUtility(IBuildQueueSet).get)
-
-    def verifySlaveBuildID(self, slave_build_id):
+    def verifySlaveBuildCookie(self, slave_build_cookie):
         """See `IBuildFarmJobBehavior`."""
-        # Extract information from the identifier.
-        try:
-            build_id, queue_item_id = slave_build_id.split('-')
-        except ValueError:
-            raise CorruptBuildID('Malformed build ID')
-            
-        build = self.getVerifiedBuild(build_id)
-        queue_item = self.getVerifiedBuildQueue(queue_item_id)
-
-        if build != queue_item.specific_job.build:
-            raise CorruptBuildID('Job build entry mismatch')
+        expected_cookie = self.buildfarmjob.generateSlaveBuildCookie()
+        if slave_build_cookie != expected_cookie:
+            raise CorruptBuildCookie("Invalid slave build cookie.")
 
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
@@ -280,8 +183,8 @@ class BuildFarmJobBehaviorBase:
 
         # XXX: dsilvers 2005-03-02: Confirm the builder has the right build?
 
-        queueItem.specific_job.build.handleStatus(
-            build_status, librarian, slave_status)
+        build = queueItem.specific_job.build
+        build.handleStatus(build_status, librarian, slave_status)
 
 
 class IdleBuildBehavior(BuildFarmJobBehaviorBase):
@@ -310,6 +213,6 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         return "Idle"
 
-    def verifySlaveBuildID(self, slave_build_id):
+    def verifySlaveBuildCookie(self, slave_build_id):
         """See `IBuildFarmJobBehavior`."""
-        raise CorruptBuildID('No job assigned to builder')
+        raise CorruptBuildCookie('No job assigned to builder')

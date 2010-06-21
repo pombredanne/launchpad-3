@@ -12,12 +12,13 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Object, Int, TextLine
+from zope.schema import Choice, Datetime, Int, Object, TextLine
 
 from canonical.launchpad import _
 from lp.code.enums import CodeReviewVote
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.message import IMessage
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
@@ -39,6 +40,13 @@ class ICodeReviewComment(Interface):
             required=True, readonly=True))
 
     message = Object(schema=IMessage, title=_('The message.'))
+
+    author = exported(
+        Reference(title=_('Comment Author'), schema=IPerson,
+                  required=True, readonly=True))
+
+    date_created = exported(
+        Datetime(title=_('Date Created'), required=True, readonly=True))
 
     vote = exported(
         Choice(
@@ -66,10 +74,14 @@ class ICodeReviewComment(Interface):
             attachments.
         """
 
+    def getOriginalEmail():
+        """An email object of the original raw email if there was one."""
+
     as_quoted_email = exported(
         TextLine(
             title=_('The message as quoted in email.'),
             readonly=True))
+
 
 
 class ICodeReviewCommentDeletion(Interface):

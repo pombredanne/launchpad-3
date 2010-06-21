@@ -24,6 +24,7 @@ import xmlrpclib
 
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
+from storm.expr import Count, Sum
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
@@ -36,29 +37,29 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, SLAVE_FLAVOR)
 from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
-    CannotResumeHost, CorruptBuildID, IBuilder, IBuilderSet,
+    CannotResumeHost, CorruptBuildCookie, IBuilder, IBuilderSet,
     ProtocolVersionMismatch)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.master import BuilddMaster
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue, specific_job_classes
+from lp.buildmaster.model.packagebuild import PackageBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 
 
@@ -184,8 +185,8 @@ def rescueBuilderIfLost(builder, logger=None):
     slave_build_id = status_sentence[ident_position[status]]
 
     try:
-        builder.verifySlaveBuildID(slave_build_id)
-    except CorruptBuildID, reason:
+        builder.verifySlaveBuildCookie(slave_build_id)
+    except CorruptBuildCookie, reason:
         if status == 'BuilderStatus.WAITING':
             builder.cleanSlave()
         else:
@@ -325,6 +326,7 @@ class Builder(SQLBase):
         rescueBuilderIfLost(self, logger)
 
     def updateStatus(self, logger=None):
+        """See `IBuilder`."""
         updateBuilderStatus(self, logger)
 
     def cleanSlave(self):
@@ -429,7 +431,7 @@ class Builder(SQLBase):
     def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
                         user=None):
         """See IHasBuildRecords."""
-        return getUtility(IBuildSet).getBuildsForBuilder(
+        return getUtility(IBinaryPackageBuildSet).getBuildsForBuilder(
             self.id, build_state, name, arch_tag, user)
 
     def slaveStatus(self):
@@ -439,12 +441,12 @@ class Builder(SQLBase):
 
         status = {'builder_status': status_sentence[0]}
 
-        # Extract detailed status, ID and log information if present.
+        # Extract detailed status and log information if present.
+        # Although build_id is also easily extractable here, there is no
+        # valid reason for anything to use it, so we exclude it.
         if status['builder_status'] == 'BuilderStatus.WAITING':
             status['build_status'] = status_sentence[1]
-            status['build_id'] = status_sentence[2]
         else:
-            status['build_id'] = status_sentence[1]
             if status['builder_status'] == 'BuilderStatus.BUILDING':
                 status['logtail'] = status_sentence[2]
 
@@ -455,9 +457,10 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.status()
 
-    def verifySlaveBuildID(self, slave_build_id):
+    def verifySlaveBuildCookie(self, slave_build_id):
         """See `IBuilder`."""
-        return self.current_build_behavior.verifySlaveBuildID(slave_build_id)
+        return self.current_build_behavior.verifySlaveBuildCookie(
+            slave_build_id)
 
     def updateBuild(self, queueItem):
         """See `IBuilder`."""
@@ -664,12 +667,12 @@ class BuilderSet(object):
             raise NotFoundError(name)
 
     def new(self, processor, url, name, title, description, owner,
-            active=True, virtualized=False, vm_host=None):
+            active=True, virtualized=False, vm_host=None, manual=True):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
                        description=description, owner=owner, active=active,
                        virtualized=virtualized, vm_host=vm_host,
-                       builderok=True, manual=True)
+                       builderok=True, manual=manual)
 
     def get(self, builder_id):
         """See IBuilderSet."""
@@ -691,56 +694,78 @@ class BuilderSet(object):
                               % arch.processorfamily.id,
                               clauseTables=("Processor",))
 
-    def getBuildQueueSizeForProcessor(self, processor, virtualized=False):
+    def getBuildQueueSizes(self):
         """See `IBuilderSet`."""
         # Avoiding circular imports.
         from lp.soyuz.model.archive import Archive
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
         from lp.soyuz.model.processor import Processor
 
-        store = Store.of(processor)
-        origin = (
-            Archive,
-            Build,
-            BuildPackageJob,
-            BuildQueue,
-            DistroArchSeries,
+        find_spec = (
+            Count(),
+            Sum(BuildQueue.estimated_duration),
             Processor,
+            Archive.require_virtualized,
             )
-        queue = store.using(*origin).find(
-            BuildQueue,
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        results = store.find(
+            find_spec,
             BuildPackageJob.job == BuildQueue.jobID,
-            BuildPackageJob.build == Build.id,
-            Build.distroarchseries == DistroArchSeries.id,
-            Build.archive == Archive.id,
+            BuildPackageJob.build == BinaryPackageBuild.id,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            PackageBuild.archive == Archive.id,
+            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             DistroArchSeries.processorfamilyID == Processor.familyID,
-            Build.buildstate == BuildStatus.NEEDSBUILD,
-            Archive._enabled == True,
-            Processor.id == processor.id,
-            Archive.require_virtualized == virtualized,
-            )
+            BuildFarmJob.status == BuildStatus.NEEDSBUILD,
+            Archive._enabled == True).group_by(
+                Processor, Archive.require_virtualized)
 
-        return (queue.count(), queue.sum(BuildQueue.estimated_duration))
+        result_dict = {'virt': {}, 'nonvirt': {}}
+        for size, duration, processor, virtualized in results:
+            virt_str = 'virt' if virtualized else 'nonvirt'
+            result_dict[virt_str][processor.name] = (
+                size, duration)
+
+        return result_dict
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""
         logger.debug("Slave Scan Process Initiated.")
 
-        buildMaster = BuilddMaster(logger, txn)
-
         logger.debug("Setting Builders.")
-        # Put every distroarchseries we can find into the build master.
-        for archseries in getUtility(IDistroArchSeriesSet):
-            buildMaster.addDistroArchSeries(archseries)
-            buildMaster.setupBuilders(archseries)
+        self.checkBuilders(logger, txn)
 
         logger.debug("Scanning Builders.")
         # Scan all the pending builds, update logtails and retrieve
         # builds where they are completed
-        buildMaster.scanActiveBuilders()
-        return buildMaster
+        self.scanActiveBuilders(logger, txn)
+
+    def checkBuilders(self, logger, txn):
+        """See `IBuilderSet`."""
+        for builder in self:
+            # XXX Robert Collins 2007-05-23 bug=31546: builders that are not
+            # 'ok' are not worth rechecking here for some currently
+            # undocumented reason. This also relates to bug #30633.
+            if builder.builderok:
+                builder.updateStatus(logger)
+
+        txn.commit()
+
+    def scanActiveBuilders(self, logger, txn):
+        """See `IBuilderSet`."""
+
+        queueItems = getUtility(IBuildQueueSet).getActiveBuildJobs()
+
+        logger.debug(
+            "scanActiveBuilders() found %d active build(s) to check"
+            % queueItems.count())
+
+        for job in queueItems:
+            job.builder.updateBuild(job)
+            txn.commit()
 
     def getBuildersForQueue(self, processor, virtualized):
         """See `IBuilderSet`."""

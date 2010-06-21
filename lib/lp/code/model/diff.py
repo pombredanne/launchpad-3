@@ -25,7 +25,7 @@ from zope.interface import classProvides, implements
 
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase
-from canonical.uuid import generate_uuid
+from uuid import uuid1
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.launchpad import NotFoundError
@@ -194,7 +194,7 @@ class Diff(SQLBase):
             diff_content_bytes = ''
         else:
             if filename is None:
-                filename = generate_uuid() + '.txt'
+                filename = str(uuid1()) + '.txt'
             diff_text = getUtility(ILibraryFileAliasSet).create(
                 filename, size, diff_content, 'text/x-diff', restricted=True)
             diff_content.seek(0)
@@ -322,16 +322,15 @@ class PreviewDiff(Storm):
         :param bmp: The `BranchMergeProposal` to generate a `PreviewDiff` for.
         :return: A `PreviewDiff`.
         """
-        source_branch = Branch.open(bmp.source_branch.warehouse_url)
+        source_branch = bmp.source_branch.getBzrBranch()
         source_revision = source_branch.last_revision()
-        target_branch = Branch.open(bmp.target_branch.warehouse_url)
+        target_branch = bmp.target_branch.getBzrBranch()
         target_revision = target_branch.last_revision()
         preview = cls()
         preview.source_revision_id = source_revision.decode('utf-8')
         preview.target_revision_id = target_revision.decode('utf-8')
         if bmp.prerequisite_branch is not None:
-            prerequisite_branch = Branch.open(
-                bmp.prerequisite_branch.warehouse_url)
+            prerequisite_branch = bmp.prerequisite_branch.getBzrBranch()
         else:
             prerequisite_branch = None
         preview.diff, conflicts = Diff.mergePreviewFromBranches(
@@ -360,7 +359,7 @@ class PreviewDiff(Storm):
         preview.prerequisite_revision_id = prerequisite_revision_id
         preview.conflicts = conflicts
 
-        filename = generate_uuid() + '.txt'
+        filename = str(uuid1()) + '.txt'
         size = len(diff_content)
         preview.diff = Diff.fromFile(StringIO(diff_content), size, filename)
         return preview

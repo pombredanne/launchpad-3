@@ -17,7 +17,8 @@
     </p>
   </form>
 
-  <ul tal:condition="faqs">
+  <ul tal:condition="faqs"
+    tal:content="cache:public, 3 hour">
     <li tal:repeat="faq faqs">
       <a class="sprite question"
         tal:attributes="href faq/fmt:url"

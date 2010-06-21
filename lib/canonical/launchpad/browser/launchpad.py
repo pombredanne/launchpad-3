@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'ApplicationButtons',
-    'BrowserWindowDimensions',
     'DoesNotExistView',
     'Hierarchy',
     'IcingContribFolder',
@@ -100,7 +99,6 @@ from lp.registry.interfaces.karma import IKarmaActionSet
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.product import (
@@ -227,6 +225,8 @@ class LinkView(LaunchpadView):
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
+    vhost_breadcrumb = True
+
     @property
     def objects(self):
         """The objects for which we want breadcrumbs."""
@@ -240,13 +240,15 @@ class Hierarchy(LaunchpadView):
         """
         breadcrumbs = []
         for obj in self.objects:
-            breadcrumb = queryAdapter(obj, IBreadcrumb)
+            breadcrumb = IBreadcrumb(obj, None)
             if breadcrumb is not None:
                 breadcrumbs.append(breadcrumb)
 
         host = URI(self.request.getURL()).host
         mainhost = allvhosts.configs['mainsite'].hostname
-        if len(breadcrumbs) != 0 and host != mainhost:
+        if (len(breadcrumbs) != 0 and
+            host != mainhost and
+            self.vhost_breadcrumb):
             # We have breadcrumbs and we're not on the mainsite, so we'll
             # sneak an extra breadcrumb for the vhost we're on.
             vhost = host.split('.')[0]
@@ -403,7 +405,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = ''
-        text = 'Branches'
+        text = 'Code'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
@@ -578,7 +580,6 @@ class LaunchpadRootNavigation(Navigation):
         'translations': IRosettaApplication,
         'testopenid': ITestOpenIDApplication,
         'questions': IQuestionSet,
-        '+rpconfig': IOpenIDRPConfigSet,
         'temporary-blobs': ITemporaryStorageManager,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
@@ -996,13 +997,6 @@ class AppFrontPageSearchView(LaunchpadFormView):
     def scope_error(self):
         """The error message for the scope widget."""
         return self.getFieldError('scope')
-
-
-class BrowserWindowDimensions(LaunchpadView):
-    """Allow capture of browser window dimensions."""
-
-    def render(self):
-        return u'Thanks.'
 
 
 class LaunchpadGraphics(LaunchpadView):

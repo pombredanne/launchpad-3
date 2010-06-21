@@ -51,6 +51,7 @@ class HasBugsBase:
                     importance=None,
                     assignee=None, bug_reporter=None, bug_supervisor=None,
                     bug_commenter=None, bug_subscriber=None, owner=None,
+                    structural_subscriber=None,
                     affected_user=None, affects_me=False,
                     has_patch=None, has_cve=None, distribution=None,
                     tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
@@ -126,6 +127,17 @@ class HasBugsBase:
         return self.searchTasks(open_tasks_query)
 
     @property
+    def high_bugtasks(self):
+        """See `IHasBugs`."""
+        high_tasks_query = BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            importance=BugTaskImportance.HIGH,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+
+        return self.searchTasks(high_tasks_query)
+
+    @property
     def critical_bugtasks(self):
         """See `IHasBugs`."""
         critical_tasks_query = BugTaskSearchParams(
@@ -140,7 +152,8 @@ class HasBugsBase:
     def inprogress_bugtasks(self):
         """See `IHasBugs`."""
         inprogress_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, status=BugTaskStatus.INPROGRESS,
+            user=getUtility(ILaunchBag).user,
+            status=BugTaskStatus.INPROGRESS,
             omit_dupes=True)
 
         return self.searchTasks(inprogress_tasks_query)
@@ -294,10 +307,10 @@ class OfficialBugTagTargetMixin:
     """See `IOfficialBugTagTarget`.
 
     This class is inteneded to be used as a mixin for the classes
-    Distribution, Product and Project, which can define official
+    Distribution, Product and ProjectGroup, which can define official
     bug tags.
 
-    Using this call in Project requires a fix of bug 341203, see
+    Using this call in ProjectGroup requires a fix of bug 341203, see
     below, class OfficialBugTag.
     """
 

@@ -50,6 +50,8 @@ class IHasBugs(Interface):
     closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
     inprogress_bugtasks = Attribute(
         "A list of in-progress bugTasks for this target.")
+    high_bugtasks = Attribute(
+        "A list of high importance BugTasks for this target.")
     critical_bugtasks = Attribute(
         "A list of critical BugTasks for this target.")
     new_bugtasks = Attribute("A list of New BugTasks for this target.")
@@ -74,6 +76,7 @@ class IHasBugs(Interface):
         bug_supervisor=Reference(schema=Interface),
         bug_commenter=Reference(schema=Interface),
         bug_subscriber=Reference(schema=Interface),
+        structural_subscriber=Reference(schema=Interface),
         owner=Reference(schema=Interface),
         affected_user=Reference(schema=Interface),
         has_patch=copy_field(IBugTaskSearch['has_patch']),
@@ -154,12 +157,12 @@ class IHasBugs(Interface):
         hardware_is_linked_to_bug=Bool(
             title=(
                 u"Search for bugs which are linked to hardware reports "
-                "wich contain the given device or whcih contain a device"
-                "contolled by the given driver."),
+                "which contain the given device or whcih contain a device"
+                "controlled by the given driver."),
             required=False),
         linked_branches=Choice(
             title=(
-                u"Search for bugs that are linked to branches or for bugs"
+                u"Search for bugs that are linked to branches or for bugs "
                 "that are not linked to branches."),
             vocabulary=BugBranchSearch, required=False))
     @operation_returns_collection_of(IBugTask)
@@ -182,7 +185,8 @@ class IHasBugs(Interface):
                     hardware_owner_is_bug_reporter=None,
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
-                    hardware_is_linked_to_bug=False, linked_branches=None):
+                    hardware_is_linked_to_bug=False, linked_branches=None,
+                    structural_subscriber=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
@@ -227,11 +231,22 @@ class IBugTarget(IHasBugs):
     bug_reporting_guidelines = exported(
         Text(
             title=(
-                u"If I\N{right single quotation mark}m reporting a bug, "
-                u"I should include, if possible"),
+                u"Helpful guidelines for reporting a bug"),
             description=(
                 u"These guidelines will be shown to "
-                "anyone reporting a bug."),
+                "everyone reporting a bug and should be "
+                "text or a bulleted list with your particular "
+                "requirements, if any."),
+            required=False,
+            max_length=50000))
+
+    bug_reported_acknowledgement = exported(
+        Text(
+            title=(
+                u"After reporting a bug, I can expect the following."),
+            description=(
+                u"This message of acknowledgement will be displayed "
+                "to anyone after reporting a bug."),
             required=False,
             max_length=50000))
 

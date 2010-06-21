@@ -14,7 +14,7 @@ from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
     IDistributionSet, PackageUploadStatus)
@@ -73,7 +73,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         # Set up the uploadprocessor with appropriate options and logger
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
-        self.builds_before_upload = Build.select().count()
+        self.builds_before_upload = BinaryPackageBuild.select().count()
         self.source_queue = None
         self._uploadSource()
         self.log.lines = []
@@ -81,7 +81,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
 
     def assertBuildsCreated(self, amount):
         """Assert that a given 'amount' of build records was created."""
-        builds_count = Build.select().count()
+        builds_count = BinaryPackageBuild.select().count()
         self.assertEqual(
             self.builds_before_upload + amount, builds_count)
 
@@ -131,7 +131,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         """Create a build record attached to the base source."""
         spr = self.source_queue.sources[0].sourcepackagerelease
         build = spr.createBuild(
-            distroarchseries=self.distroseries[archtag],
+            distro_arch_series=self.distroseries[archtag],
             pocket=self.pocket, archive=self.distroseries.main_archive)
         self.layer.txn.commit()
         return build
@@ -187,7 +187,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         self.assertEqual(
             u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
         build_used = self._uploadBinary('amd64')
 
@@ -196,7 +196,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
             u'amd64 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
 
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
     def testBuildLookup(self):
         """Check if an available build gets used when it is appropriate.
@@ -219,7 +219,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         self.assertEqual(
             u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
     def testCorrectBuildPassedViaCommandLine(self):
         """Check if command-line build argument gets attached correctly.
@@ -244,7 +244,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
             u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
 
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
     def testWrongBuildPassedViaCommandLine(self):
         """Check if a misapplied passed buildid is correctly identified.

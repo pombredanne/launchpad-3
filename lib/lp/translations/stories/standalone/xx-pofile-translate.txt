@@ -42,7 +42,8 @@ In fact, no input widgets at all are displayed.
 
 As an anynoymous user you will have access to the download and details
 pages for the pofile this message belongs to. The link to upload page
-should not be in that list.
+should not be in that list and so does the link for switching between
+translator and reviewer working mode.
 
     >>> nav = find_tag_by_id(browser.contents, 'nav-pofile-subpages')
     >>> print extract_text(nav)
@@ -84,11 +85,14 @@ Let's log in.
   ...     'evolution/+pots/evolution-2.2/es/+translate')
 
 As a translation admin you will have access to the download, upload
-and details pages for the pofile this message belongs to.
+and details pages for the pofile this message belongs to. In the same time
+you have access to the link for switching between translator and reviewer
+working mode
 
   >>> nav = find_tag_by_id(admin_browser.contents, 'nav-pofile-subpages')
   >>> print extract_text(nav)
   Download translation Upload translation Translation details
+  Reviewer mode (What's this?)
 
 All those links should linked the proper pages
 
@@ -231,13 +235,13 @@ single message.
 
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/ab/+translate')
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'maincontent'))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Launchpad can&#8217;t handle the plural items ...
 
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/ab/5/+translate')
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'maincontent'))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Launchpad can&#8217;t handle the plural items ...
 

@@ -19,7 +19,7 @@ from bzrlib.errors import NoSuchFile, NotBranchError
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
-from bzrlib.urlutils import join as urljoin
+from bzrlib.urlutils import join as urljoin, local_path_from_url
 
 from CVS import Repository, tree as CVSTree
 
@@ -28,6 +28,7 @@ from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import BaseLayer
 
 from lp.codehosting import load_optional_plugin
+from lp.codehosting.codeimport.tarball import create_tarball, extract_tarball
 from lp.codehosting.codeimport.worker import (
     BazaarBranchStore, BzrSvnImportWorker, CodeImportWorkerExitCode,
     ForeignTreeStore, GitImportWorker, HgImportWorker, ImportDataStore,
@@ -119,22 +120,57 @@ class TestBazaarBranchStore(WorkerTest):
 
     def test_getNewBranch(self):
         # If there's no Bazaar branch of this id, then pull creates a new
-        # Bazaar working tree.
+        # Bazaar branch.
         store = self.makeBranchStore()
-        bzr_working_tree = store.pull(
+        bzr_branch = store.pull(
             self.arbitrary_branch_id, self.temp_dir, default_format)
-        self.assertEqual([], bzr_working_tree.branch.revision_history())
+        self.assertEqual([], bzr_branch.revision_history())
+
+    def test_getNewBranch_without_tree(self):
+        # If pull() with needs_tree=False creates a new branch, it doesn't
+        # create a working tree.
+        store = self.makeBranchStore()
+        bzr_branch = store.pull(
+            self.arbitrary_branch_id, self.temp_dir, default_format, False)
+        self.assertFalse(bzr_branch.bzrdir.has_workingtree())
+
+    def test_getNewBranch_with_tree(self):
+        # If pull() with needs_tree=True creates a new branch, it creates a
+        # working tree.
+        store = self.makeBranchStore()
+        bzr_branch = store.pull(
+            self.arbitrary_branch_id, self.temp_dir, default_format, True)
+        self.assertTrue(bzr_branch.bzrdir.has_workingtree())
 
     def test_pushBranchThenPull(self):
         # After we've pushed up a branch to the store, we can then pull it
         # from the store.
         store = self.makeBranchStore()
         tree = create_branch_with_one_revision('original')
-        store.push(self.arbitrary_branch_id, tree, default_format)
-        new_tree = store.pull(
+        store.push(self.arbitrary_branch_id, tree.branch, default_format)
+        new_branch = store.pull(
             self.arbitrary_branch_id, self.temp_dir, default_format)
         self.assertEqual(
-            tree.branch.last_revision(), new_tree.branch.last_revision())
+            tree.branch.last_revision(), new_branch.last_revision())
+
+    def test_pull_without_needs_tree_doesnt_create_tree(self):
+        # pull with needs_tree=False doesn't spend the time to create a
+        # working tree.
+        store = self.makeBranchStore()
+        tree = create_branch_with_one_revision('original')
+        store.push(self.arbitrary_branch_id, tree.branch, default_format)
+        new_branch = store.pull(
+            self.arbitrary_branch_id, self.temp_dir, default_format, False)
+        self.assertFalse(new_branch.bzrdir.has_workingtree())
+
+    def test_pull_needs_tree_creates_tree(self):
+        # pull with needs_tree=True creates a working tree.
+        store = self.makeBranchStore()
+        tree = create_branch_with_one_revision('original')
+        store.push(self.arbitrary_branch_id, tree.branch, default_format)
+        new_branch = store.pull(
+            self.arbitrary_branch_id, self.temp_dir, default_format, True)
+        self.assertTrue(new_branch.bzrdir.has_workingtree())
 
     # XXX Tim Penhey 2009-09-18 bug 432217 Automatic upgrade of import
     # branches disabled.  Need an orderly upgrade process.
@@ -187,21 +223,21 @@ class TestBazaarBranchStore(WorkerTest):
         # store.
         store = self.makeBranchStore()
         tree = create_branch_with_one_revision('original')
-        store.push(self.arbitrary_branch_id, tree, default_format)
-        store.push(self.arbitrary_branch_id, tree, default_format)
-        new_tree = store.pull(
+        store.push(self.arbitrary_branch_id, tree.branch, default_format)
+        store.push(self.arbitrary_branch_id, tree.branch, default_format)
+        new_branch = store.pull(
             self.arbitrary_branch_id, self.temp_dir, default_format)
         self.assertEqual(
-            tree.branch.last_revision(), new_tree.branch.last_revision())
+            tree.branch.last_revision(), new_branch.last_revision())
 
     def test_push_divergant_branches(self):
         # push() uses overwrite=True, so divergent branches (rebased) can be
         # pushed.
         store = self.makeBranchStore()
         tree = create_branch_with_one_revision('original')
-        store.push(self.arbitrary_branch_id, tree, default_format)
+        store.push(self.arbitrary_branch_id, tree.branch, default_format)
         tree = create_branch_with_one_revision('divergant')
-        store.push(self.arbitrary_branch_id, tree, default_format)
+        store.push(self.arbitrary_branch_id, tree.branch, default_format)
 
     def fetchBranch(self, from_url, target_path):
         """Pull a branch from `from_url` to `target_path`.
@@ -220,7 +256,7 @@ class TestBazaarBranchStore(WorkerTest):
         # doesn't already exist.
         store = BazaarBranchStore(self.get_transport('doesntexist'))
         tree = create_branch_with_one_revision('original')
-        store.push(self.arbitrary_branch_id, tree, default_format)
+        store.push(self.arbitrary_branch_id, tree.branch, default_format)
         self.assertIsDirectory('doesntexist', self.get_transport())
 
     def test_storedLocation(self):
@@ -228,12 +264,12 @@ class TestBazaarBranchStore(WorkerTest):
         # the BazaarBranchStore's transport.
         store = self.makeBranchStore()
         tree = create_branch_with_one_revision('original')
-        store.push(self.arbitrary_branch_id, tree, default_format)
-        new_tree = self.fetchBranch(
+        store.push(self.arbitrary_branch_id, tree.branch, default_format)
+        new_branch = self.fetchBranch(
             urljoin(store.transport.base, '%08x' % self.arbitrary_branch_id),
             'new_tree')
         self.assertEqual(
-            tree.branch.last_revision(), new_tree.branch.last_revision())
+            tree.branch.last_revision(), new_branch.last_revision())
 
     def test_sftpPrefix(self):
         # Since branches are mirrored by importd via sftp, _getMirrorURL must
@@ -269,15 +305,29 @@ class TestBazaarBranchStore(WorkerTest):
             None, None, [('add', ('', 'root-id', 'directory', ''))])
         revid1 = builder.build_snapshot(None, [revid], [])
         revid2 = builder.build_snapshot(None, [revid], [])
-        branch = builder.get_branch()
-        source_tree = branch.bzrdir.create_workingtree()
         store = self.makeBranchStore()
-        store.push(self.arbitrary_branch_id, source_tree, default_format)
-        retrieved_tree = store.pull(
+        store.push(
+            self.arbitrary_branch_id, builder.get_branch(), default_format)
+        retrieved_branch = store.pull(
             self.arbitrary_branch_id, 'pulled', default_format)
         self.assertEqual(
             set([revid, revid1, revid2]),
-            set(retrieved_tree.branch.repository.all_revision_ids()))
+            set(retrieved_branch.repository.all_revision_ids()))
+
+    def test_pull_doesnt_bring_backup_directories(self):
+        # If the branch has been upgraded in the branch store, `pull` does not
+        # copy the backup.bzr directory to `target_path`, just the .bzr
+        # directory.
+        store = self.makeBranchStore()
+        tree = create_branch_with_one_revision('original')
+        store.push(self.arbitrary_branch_id, tree.branch, default_format)
+        t = get_transport(store._getMirrorURL(self.arbitrary_branch_id))
+        t.mkdir('backup.bzr')
+        retrieved_branch = store.pull(
+            self.arbitrary_branch_id, 'pulled', default_format,
+            needs_tree=False)
+        self.assertEqual(
+            ['.bzr'], retrieved_branch.bzrdir.root_transport.list_dir('.'))
 
 
 class TestImportDataStore(WorkerTest):
@@ -531,21 +581,21 @@ class TestWorkerCore(WorkerTest):
         worker = self.makeImportWorker()
         self.assertEqual(self.source_details, worker.source_details)
 
-    def test_getBazaarWorkingTreeMakesEmptyTree(self):
-        # getBazaarWorkingTree returns a brand-new working tree for an initial
+    def test_getBazaarWorkingBranchMakesEmptyBranch(self):
+        # getBazaarBranch returns a brand-new working tree for an initial
         # import.
         worker = self.makeImportWorker()
-        bzr_working_tree = worker.getBazaarWorkingTree()
-        self.assertEqual([], bzr_working_tree.branch.revision_history())
+        bzr_branch = worker.getBazaarBranch()
+        self.assertEqual([], bzr_branch.revision_history())
 
-    def test_bazaarWorkingTreeLocation(self):
-        # getBazaarWorkingTree makes the working tree under the current
-        # working directory.
+    def test_bazaarBranchLocation(self):
+        # getBazaarBranch makes the working tree under the current working
+        # directory.
         worker = self.makeImportWorker()
-        bzr_working_tree = worker.getBazaarWorkingTree()
+        bzr_branch = worker.getBazaarBranch()
         self.assertIsSameRealPath(
-            os.path.abspath(worker.BZR_WORKING_TREE_PATH),
-            os.path.abspath(bzr_working_tree.basedir))
+            os.path.abspath(worker.BZR_BRANCH_PATH),
+            os.path.abspath(local_path_from_url(bzr_branch.base)))
 
 
 class TestCSCVSWorker(WorkerTest):
@@ -590,32 +640,55 @@ class TestGitImportWorker(WorkerTest):
             source_details, self.get_transport('import_data'),
             self.makeBazaarBranchStore(), logging.getLogger("silent"))
 
-    def test_pushBazaarWorkingTree_saves_git_db(self):
-        # GitImportWorker.pushBazaarWorkingTree saves the git.db file from the
-        # tree's repository in the worker's ImportDataStore.
+    def test_pushBazaarBranch_saves_git_cache(self):
+        # GitImportWorker.pushBazaarBranch saves a tarball of the git cache
+        # from the tree's repository in the worker's ImportDataStore.
         content = self.factory.getUniqueString()
-        tree = self.make_branch_and_tree('.')
-        tree.branch.repository._transport.put_bytes('git.db', content)
+        branch = self.make_branch('.')
+        branch.repository._transport.mkdir('git')
+        branch.repository._transport.put_bytes('git/cache', content)
         import_worker = self.makeImportWorker()
-        import_worker.pushBazaarWorkingTree(tree)
-        import_worker.import_data_store.fetch('git.db')
-        self.assertEqual(content, open('git.db').read())
+        import_worker.pushBazaarBranch(branch)
+        import_worker.import_data_store.fetch('git-cache.tar.gz')
+        extract_tarball('git-cache.tar.gz', '.')
+        self.assertEqual(content, open('cache').read())
 
-    def test_getBazaarWorkingTree_fetches_git_db(self):
-        # GitImportWorker.getBazaarWorkingTree fetches the git.db file from
-        # the worker's ImportDataStore into the tree's repository.
+    def test_getBazaarBranch_fetches_legacy_git_db(self):
+        # GitImportWorker.getBazaarBranch fetches the legacy git.db file, if
+        # present, from the worker's ImportDataStore into the tree's
+        # repository.
         import_worker = self.makeImportWorker()
         # Store the git.db file in the store.
         content = self.factory.getUniqueString()
         open('git.db', 'w').write(content)
         import_worker.import_data_store.put('git.db')
         # Make sure there's a Bazaar branch in the branch store.
-        tree = self.make_branch_and_tree('tree')
-        ImportWorker.pushBazaarWorkingTree(import_worker, tree)
+        branch = self.make_branch('branch')
+        ImportWorker.pushBazaarBranch(import_worker, branch)
         # Finally, fetching the tree gets the git.db file too.
-        tree = import_worker.getBazaarWorkingTree()
+        branch = import_worker.getBazaarBranch()
         self.assertEqual(
-            content, tree.branch.repository._transport.get('git.db').read())
+            content, branch.repository._transport.get('git.db').read())
+
+    def test_getBazaarBranch_fetches_git_cache(self):
+        # GitImportWorker.getBazaarBranch fetches the tarball of the git
+        # cache from the worker's ImportDataStore and expands it into the
+        # tree's repository.
+        import_worker = self.makeImportWorker()
+        # Store a tarred-up cache in the store.x
+        content = self.factory.getUniqueString()
+        os.mkdir('cache')
+        open('cache/git-cache', 'w').write(content)
+        create_tarball('cache', 'git-cache.tar.gz')
+        import_worker.import_data_store.put('git-cache.tar.gz')
+        # Make sure there's a Bazaar branch in the branch store.
+        branch = self.make_branch('branch')
+        ImportWorker.pushBazaarBranch(import_worker, branch)
+        # Finally, fetching the tree gets the git.db file too.
+        new_branch = import_worker.getBazaarBranch()
+        self.assertEqual(
+            content,
+            new_branch.repository._transport.get('git/git-cache').read())
 
 
 def clean_up_default_stores_for_import(source_details):
@@ -913,7 +986,10 @@ class PartialTest:
         self.makeForeignCommit(worker.source_details)
         self.assertTrue(self.foreign_commit_count > 1)
         self.pushConfig(
-            'codeimport', revisions_import_limit=self.foreign_commit_count-1)
+            'codeimport',
+            git_revisions_import_limit=self.foreign_commit_count-1,
+            svn_revisions_import_limit=self.foreign_commit_count-1,
+            )
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS_PARTIAL, worker.run())
         self.assertEqual(

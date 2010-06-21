@@ -11,9 +11,6 @@
       <div class="boardCommentBody attachmentBody" tal:content="structure attachment/diff_text/fmt:diff"/>
     </div>
   </tal:good-attachments>
-  <tal:other-attachments repeat="attachment view/other_attachments">
-    <tal:comment replace="structure string:&lt;!-- '${attachment/filename}' '${attachment/mimetype}' --&gt;"/>
-  </tal:other-attachments>
 
   <div class="replyLink">
     <tal:reply tal:define="link context/menu:context/reply"

@@ -47,6 +47,7 @@ restriction was added as a fix to https://bugs.launchpad.net/bugs/290681.
     >>> parent_team = factory.makeTeam()
     >>> child_team = factory.makeTeam(name='child-team')
     >>> random_team = factory.makeTeam()
+    >>> transaction.commit()
     >>> login('foo.bar@canonical.com')
     >>> ignored = parent_team.addMember(
     ...     child_team, reviewer=parent_team.teamowner, force_team_add=True)
@@ -211,6 +212,7 @@ The delete team view cannot be hacked to delete another team, or change
 the team that the merge operation is performed with.
 
     >>> deletable_team = factory.makeTeam(owner=team_owner, name='deletable')
+    >>> transaction.commit()
     >>> form = {
     ...     'field.target_person': 'rosetta-admins',
     ...     'field.dupe_person': 'landscape-developers',
@@ -249,23 +251,56 @@ A team with a mailing list cannot be deleted.
     >>> print find_tag_by_id(content, 'field.actions.delete')
     None
 
-The registry experts should be able to delete a team with an
-validated email address, which will be invisible, since only
-preferred email addresses are shown for teams.
+The registry experts can delete a team with a new email address (from
+an import), which will be invisible, since only preferred email addresses are
+shown for teams.
 
     >>> from canonical.launchpad.interfaces.emailaddress import (
-    ...     IEmailAddressSet)
+    ...     IEmailAddressSet, EmailAddressStatus)
     >>> login_person(registry_expert)
     >>> admin = getUtility(ILaunchpadCelebrities).admin
     >>> registry_expert.inTeam(admin)
     False
-    >>> deletable_team = factory.makeTeam(email="del@example.com")
-    >>> deletable_team.setContactAddress(None)
+    >>> deletable_team = factory.makeTeam()
+    >>> email = factory.makeEmail(
+    ...     "del@example.com", deletable_team,
+    ...     email_status=EmailAddressStatus.NEW)
     >>> for email in getUtility(IEmailAddressSet).getByPerson(deletable_team):
     ...     print email.email, email.status.title
-    del@example.com Validated Email Address
+    del@example.com New Email Address
     >>> form = {'field.actions.delete': 'Delete'}
     >>> view = create_initialized_view(deletable_team, '+delete', form=form)
+    >>> view.errors
+    []
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Team deleted.
+
+Private teams can be deleted by admins.
+
+    >>> from lp.registry.interfaces.person import PersonVisibility
+
+    >>> login('commercial-member@canonical.com')
+    >>> private_team = factory.makeTeam(
+    ...     name='secret', visibility=PersonVisibility.PRIVATE)
+    >>> login('admin@canonical.com')
+    >>> form = {'field.actions.delete': 'Delete'}
+    >>> view = create_initialized_view(private_team, '+delete', form=form)
+    >>> view.errors
+    []
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Team deleted.
+
+Private membership teams can be deleted by admins, and when they are all
+deleted, we can remove this visibility type.
+
+    >>> login('commercial-member@canonical.com')
+    >>> pm_team = factory.makeTeam(
+    ...     name='sekret', visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+    >>> login('admin@canonical.com')
+    >>> form = {'field.actions.delete': 'Delete'}
+    >>> view = create_initialized_view(pm_team, '+delete', form=form)
     >>> view.errors
     []
     >>> for notification in view.request.response.notifications:

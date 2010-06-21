@@ -539,13 +539,13 @@ A build was created to represent the relationship between ed_src
 
   >>> ed_build = ed_bin.queue_root.builds[0].build
 
-  >>> ed_spr.id  == ed_build.sourcepackagerelease.id
+  >>> ed_spr.id  == ed_build.source_package_release.id
   True
 
   >>> ed_build.title
   u'i386 build of ed 0.2-20 in ubuntu hoary RELEASE'
 
-  >>> ed_build.buildstate.name
+  >>> ed_build.status.name
   'FULLYBUILT'
 
 Binary control file attributes are stored as text in the
@@ -640,7 +640,7 @@ Build creation is done based on the SourcePackageRelease object, step 5:
   ...     hoary['i386'], PackagePublishingPocket.RELEASE,
   ...     multibar_src_queue.archive)
 
-  >>> multibar_build.buildstate.name
+  >>> multibar_build.status.name
   'NEEDSBUILD'
 
 We have just created a pending build record for hoary/i386.
@@ -687,7 +687,7 @@ that we have created in step 5:
 
 Also the build record was updated to FULLYBUILT in nascentupload domain.
 
-  >>> build.buildstate.name
+  >>> build.status.name
   'FULLYBUILT'
 
 After certifying that the build record is marked as FULLYBUILT the
@@ -879,9 +879,8 @@ This time the upload will fail because the ACLs don't let
   >>> bar_failed.is_rejected
   True
   >>> print bar_failed.rejection_message
-  The signer of this package has no upload rights to this distribution's
-  primary archive.  Did you mean to upload to a PPA?
-
+  The signer of this package is lacking the upload rights for the source
+  package, component or package set in question.
 
 Even in a rejected upload using 'insecure' policy, the DSC signing key
 and the changesfile sigining key are stored in NascentUpload instance

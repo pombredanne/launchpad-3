@@ -1,4 +1,4 @@
-#! /usr/bin/python2.5
+#! /usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -12,7 +12,6 @@ Usage hint:
 
 import _pythonpath
 
-from cStringIO import StringIO
 import os
 import pkg_resources
 import subprocess
@@ -22,13 +21,15 @@ import urlparse
 from zope.component import getUtility
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 
-from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.webapp.interaction import (
+    ANONYMOUS, setupInteractionByEmail)
 from canonical.launchpad.webapp.servers import (
     WebServicePublication, WebServiceTestRequest)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.systemhomes import WebServiceApplication
 from lazr.restful.interfaces import IWebServiceConfiguration
+
 
 def main(path_template):
     WebServiceApplication.cached_wadl = None # do not use cached file version
@@ -61,7 +62,7 @@ def main(path_template):
         # publisher) and then calling the root resource - retrieved through
         # getApplication().
         request.setPublication(WebServicePublication(None))
-        login(ANONYMOUS, request)
+        setupInteractionByEmail(ANONYMOUS, request)
         filename = path_template % {'version' : version}
         print "Writing WADL for version %s to %s." % (version, filename)
         f = open(filename, 'w')

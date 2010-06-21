@@ -28,8 +28,9 @@ Neither any input widget:
   ...     raise AssertionError, 'Found input:\n%s' % input
 
 As an anynoymous user you will have access to the download and details
-pages for the pofile this message belongs to. The link to upload page
-should not be in that list.
+pages for the pofile this message belongs to. The link to upload page and
+the link for switching between translator and reviewer working mode will not
+be displayed in that list.
 
   >>> nav = find_tag_by_id(browser.contents, 'nav-pofile-subpages')
   >>> print extract_text(nav)
@@ -92,7 +93,8 @@ When we are on the first message, we should be 100% sure that the 'First' and
 
 And the link to the IPOFile view should be there too:
 
-  >>> print browser.getLink('Return to multiple messages view').url
+  >>> zoom_link = browser.getLink(id="zoom-out")
+  >>> print zoom_link.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=0
 
 when we choose the next entry, all links should appear.
@@ -110,7 +112,8 @@ when we choose the next entry, all links should appear.
 
 And the link to the IPOFile view should be there too:
 
-  >>> print browser.getLink('Return to multiple messages view').url
+  >>> zoom_link = browser.getLink(id="zoom-out")
+  >>> print zoom_link.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=1
 
 And the last one.
@@ -134,7 +137,8 @@ And the last one.
 
 And the link to the IPOFile view should be there too:
 
-  >>> print browser.getLink('Return to multiple messages view').url
+  >>> zoom_link = browser.getLink(id="zoom-out")
+  >>> print zoom_link.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=21
 
 Let's test the ones at the end of the form.
@@ -150,11 +154,14 @@ Let's test the ones at the end of the form.
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
 
 As a translation admin you will have access to the download, upload
-and details pages for the pofile this message belongs to.
+and details pages for the pofile this message belongs to. In the same time
+you have access to the link for switching between translator and reviewer
+working mode
 
   >>> nav = find_tag_by_id(browser.contents, 'nav-pofile-subpages')
   >>> print extract_text(nav)
   Download translation Upload translation Translation details
+  Reviewer mode (What's this?)
 
 All those links should linked the proper pages
 

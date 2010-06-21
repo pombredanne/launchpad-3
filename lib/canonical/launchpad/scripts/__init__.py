@@ -20,18 +20,19 @@ __all__ = [
 
 import atexit
 import os
+import sys
 from textwrap import dedent
 import threading
 
-import zope.app.appsetup
 import zope.sendmail.delivery
 import zope.site.hooks
 from zope.configuration.config import ConfigurationMachine
-from zope.configuration.config import GroupingContextDecorator
 from zope.security.management import setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.interaction import (
+    ANONYMOUS, setupInteractionByEmail)
 
 from canonical import lp
 from canonical.config import config
@@ -42,51 +43,6 @@ from canonical.launchpad.scripts.logger import (
 # Intentional re-export, following along the lines of the logger module.
 from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
 
-# XXX StuartBishop 2005-06-02:
-# We should probably split out all the stuff in this directory that
-# doesn't rely on Zope and migrate it to canonical/scripts.
-
-# XXX SteveAlexander 2005-04-11:
-# This is a total mess.  I need to work out what this all means.
-
-class NullItem:
-    def __init__(self, context, handler, info, *argdata):
-        newcontext = GroupingContextDecorator(context)
-        newcontext.info = info
-        self.context = newcontext
-        self.handler = handler
-        self.argdata = argdata
-
-    def contained(self, name, data, info):
-        return NullItem(self.context, None, None)
-
-    def finish(self):
-        pass
-
-
-def NullFactory(context, data, info):
-    return NullItem(context, data, info)
-
-
-class CustomMachine(ConfigurationMachine):
-
-    def factory(self, context, name):
-        # Hackery to remove 'browser:xxx' directives from being processed.
-        # This is needed to avoid page directives, which screw up when you
-        # parse the zcml from a cwd that isn't the launchpad root.
-        # XXX: Bjorn Tillenius 2005-07-14:
-        #      I added a workaround so that browser:url directives get
-        #      processed, though. SteveA said he will fix it better when
-        #      he lands the navigation stuff.
-        ns, simplename = name
-        if (ns == u'http://namespaces.zope.org/browser'
-            and simplename != 'url'):
-            return NullFactory
-        else:
-            f = ConfigurationMachine.factory(self, context, name)
-            return f
-
-
 def execute_zcml_for_scripts(use_web_security=False):
     """Execute the zcml rooted at launchpad/script.zcml
 
@@ -94,15 +50,18 @@ def execute_zcml_for_scripts(use_web_security=False):
     application uses will be used. Otherwise everything protected by a
     permission is allowed, and everything else denied.
     """
-    # Prevent some cases of erroneous layer useage.
-    from canonical.testing import (
-            FunctionalLayer, BaseLayer, ZopelessLayer
-            )
-    assert not FunctionalLayer.isSetUp, \
-            'Setting up Zopeless CA when Zopefull CA is already running'
-    assert not BaseLayer.isSetUp or ZopelessLayer.isSetUp, """
-            execute_zcml_for_scripts should not be called from tests.
-            Instead, your test should use the Zopeless layer.
+
+    # When in testing mode, prevent some cases of erroneous layer usage.
+    # But we don't want to import that module in production usage, thus
+    # the conditional block.
+    if 'canonical.testing.layers' in sys.modules:
+        from canonical.testing.layers import (
+                FunctionalLayer, BaseLayer, ZopelessLayer)
+        assert not FunctionalLayer.isSetUp, \
+                'Setting up Zopeless CA when Zopefull CA is already running'
+        assert not BaseLayer.isSetUp or ZopelessLayer.isSetUp, """
+                execute_zcml_for_scripts should not be called from tests.
+                Instead, your test should use the Zopeless layer.
             """
 
     if config.instance_name == 'testrunner':
@@ -119,7 +78,7 @@ def execute_zcml_for_scripts(use_web_security=False):
     zope.site.hooks.setHooks()
 
     # Load server-independent site config
-    context = CustomMachine()
+    context = ConfigurationMachine()
     xmlconfig.registerCommonDirectives(context)
     context = xmlconfig.file(
         scriptzcmlfilename, execute=True, context=context)
@@ -150,15 +109,7 @@ def execute_zcml_for_scripts(use_web_security=False):
     # the proper API for having a principal / user running in scripts.
     # The script will have full permissions because of the
     # PermissiveSecurityPolicy set up in script.zcml.
-    # XXX gary 20-Oct-2008 bug 285808
-    # The wisdom of using a test fixture for production should be
-    # reconsidered.
-    from canonical.launchpad.ftests import login
-    # The Participation is used to specify that we do not want a
-    # LaunchpadTestRequest, which ftests normally use. shipit scripts, in
-    # particular, need to be careful, because of code in canonical_url.
-    from canonical.launchpad.webapp.interaction import Participation
-    login('launchpad.anonymous', Participation())
+    setupInteractionByEmail(ANONYMOUS)
 
 
 def db_options(parser):

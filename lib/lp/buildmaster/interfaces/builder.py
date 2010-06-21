@@ -9,7 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildDaemonError',
-    'CorruptBuildID',
+    'CorruptBuildCookie',
     'BuildSlaveFailure',
     'CannotBuild',
     'CannotFetchFile',
@@ -46,7 +46,7 @@ class ProtocolVersionMismatch(BuildDaemonError):
     """The build slave had a protocol version. This is a serious error."""
 
 
-class CorruptBuildID(BuildDaemonError):
+class CorruptBuildCookie(BuildDaemonError):
     """The build slave is working with mismatched information.
 
     It needs to be rescued.
@@ -229,8 +229,8 @@ class IBuilder(IHasOwner):
             the status.
         """
 
-    def verifySlaveBuildID(slave_build_id):
-        """Verify that a slave's build ID is consistent.
+    def verifySlaveBuildCookie(slave_build_id):
+        """Verify that a slave's build cookie is consistent.
 
         This should delegate to the current `IBuildFarmJobBehavior`.
         """
@@ -327,14 +327,20 @@ class IBuilderSet(Interface):
     def getBuildersByArch(arch):
         """Return all configured builders for a given DistroArchSeries."""
 
-    def getBuildQueueSizeForProcessor(processor, virtualized=False):
-        """Return the number of pending builds for a given processor.
+    def getBuildQueueSizes():
+        """Return the number of pending builds for each processor.
 
-        :param processor: IProcessor;
-        :param virtualized: boolean, controls which queue to check,
-            'virtualized' means PPA.
+        :return: a dict of tuples with the queue size and duration for
+            each processor and virtualisation. For example:
+            {
+                'virt': {
+                            '386': (1, datetime.timedelta(0, 60)),
+                            'amd64': (2, datetime.timedelta(0, 30)),
+                        },
+                'nonvirt':...
+            }
 
-        :return: a tuple containing the size of the queue, as an integer,
+            The tuple contains the size of the queue, as an integer,
             and the sum of the jobs 'estimated_duration' in queue,
             as a timedelta or None for empty queues.
         """
@@ -350,10 +356,13 @@ class IBuilderSet(Interface):
         :param txn: A zopeless transaction object which is currently used by
             legacy code that we are in the process of removing. DO NOT add
             additional uses of this parameter.
-        :return: A lp.buildmaster.master.BuilddMaster instance. This is
-            temporary and once the dispatchBuilds method no longer requires
-            a used instance this return parameter will be dropped.
         """
+
+    def checkBuilders(logger, txn):
+        """Update the status of all builders and commit."""
+
+    def scanActiveBuilders(logger, txn):
+        """Scan all active builders, updating the current build jobs."""
 
     def getBuildersForQueue(processor, virtualized):
         """Return all builders for given processor/virtualization setting."""

@@ -32,6 +32,7 @@ from lp.registry.interfaces.milestone import (
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.validation import validate_url
@@ -91,7 +92,8 @@ class IProductSeriesEditRestricted(Interface):
 
 class IProductSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
-    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags):
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
+    IHasTranslationTemplates):
     """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
@@ -258,12 +260,15 @@ class IProductSeriesPublic(
         """Return the POTemplate with this name for the series."""
 
     # where are the tarballs released from this branch placed?
-    releasefileglob = TextLine(title=_("Release URL pattern"),
+    releasefileglob = exported(
+        TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,
         description=_('A URL pattern that matches releases that are part '
                       'of this series.  Launchpad automatically scans this '
                       'site to import new releases.  Example: '
-                      'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz'))
+                      'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz')),
+        exported_as='release_finder_url_pattern')
+
     releaseverstyle = Attribute("The version numbering style for this "
         "series of releases.")
 

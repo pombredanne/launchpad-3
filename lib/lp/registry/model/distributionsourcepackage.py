@@ -147,6 +147,27 @@ class DistributionSourcePackage(BugTargetBase,
         _get_bug_reporting_guidelines,
         _set_bug_reporting_guidelines)
 
+    def _get_bug_reported_acknowledgement(self):
+        """See `IBugTarget`."""
+        dsp_in_db = self._self_in_database
+        if dsp_in_db is not None:
+            return dsp_in_db.bug_reported_acknowledgement
+        return None
+
+    def _set_bug_reported_acknowledgement(self, value):
+        """See `IBugTarget`."""
+        dsp_in_db = self._self_in_database
+        if dsp_in_db is None:
+            dsp_in_db = DistributionSourcePackageInDatabase()
+            dsp_in_db.sourcepackagename = self.sourcepackagename
+            dsp_in_db.distribution = self.distribution
+            Store.of(self.distribution).add(dsp_in_db)
+        dsp_in_db.bug_reported_acknowledgement = value
+
+    bug_reported_acknowledgement = property(
+        _get_bug_reported_acknowledgement,
+        _set_bug_reported_acknowledgement)
+
     def _get_max_bug_heat(self):
         """See `IHasBugs`."""
         dsp_in_db = self._self_in_database
@@ -505,6 +526,7 @@ class DistributionSourcePackageInDatabase(Storm):
         sourcepackagename_id, 'SourcePackageName.id')
 
     bug_reporting_guidelines = Unicode()
+    bug_reported_acknowledgement = Unicode()
 
     max_bug_heat = Int()
 

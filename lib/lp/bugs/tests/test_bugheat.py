@@ -96,7 +96,7 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
             expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(
-            'INFO    Ran 1 ICalculateBugHeatJobSource jobs.\n', stderr)
+            'INFO    Ran 1 CalculateBugHeatJob jobs.\n', stderr)
 
     def test_getOopsVars(self):
         # BugJobDerived.getOopsVars() returns the variables to be used
@@ -111,108 +111,6 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
         self.assertIn(('bug_id', self.bug.id), vars)
         self.assertIn(('bug_job_id', job.context.id), vars)
         self.assertIn(('bug_job_type', job.context.job_type.title), vars)
-
-    def test_bug_changes_adds_job(self):
-        # Calling addChange() on a Bug will add a CalculateBugHeatJob
-        # for that bug to the queue.
-        self.assertEqual(0, self._getJobCount())
-
-        change = BugDescriptionChange(
-            when=datetime.now().replace(tzinfo=pytz.timezone('UTC')),
-            person=self.bug.owner, what_changed='description',
-            old_value=self.bug.description, new_value='Some text')
-        self.bug.addChange(change)
-
-        # There will now be a job in the queue.
-        self.assertEqual(1, self._getJobCount())
-
-    def test_subscribing_adds_job(self):
-        # Calling Bug.subscribe() will add a CalculateBugHeatJob for the
-        # Bug.
-        self.assertEqual(0, self._getJobCount())
-
-        person = self.factory.makePerson()
-        self.bug.subscribe(person, person)
-        transaction.commit()
-
-        # There will now be a job in the queue.
-        self.assertEqual(1, self._getJobCount())
-
-    def test_unsubscribing_adds_job(self):
-        # Calling Bug.unsubscribe() will add a CalculateBugHeatJob for the
-        # Bug.
-        self.assertEqual(0, self._getJobCount())
-
-        self.bug.unsubscribe(self.bug.owner, self.bug.owner)
-        transaction.commit()
-
-        # There will now be a job in the queue.
-        self.assertEqual(1, self._getJobCount())
-
-    def test_marking_affected_adds_job(self):
-        # Marking a user as affected by a bug adds a CalculateBugHeatJob
-        # for the bug.
-        self.assertEqual(0, self._getJobCount())
-
-        person = self.factory.makePerson()
-        self.bug.markUserAffected(person)
-
-        # There will now be a job in the queue.
-        self.assertEqual(1, self._getJobCount())
-
-    def test_marking_unaffected_adds_job(self):
-        # Marking a user as unaffected by a bug adds a CalculateBugHeatJob
-        # for the bug.
-        self.assertEqual(0, self._getJobCount())
-
-        self.bug.markUserAffected(self.bug.owner, False)
-
-        # There will now be a job in the queue.
-        self.assertEqual(1, self._getJobCount())
-
-    def test_bug_creation_creates_job(self):
-        # Creating a bug adds a CalculateBugHeatJob for the new bug.
-        self.assertEqual(0, self._getJobCount())
-
-        new_bug = self.factory.makeBug()
-
-        # There will now be a job in the queue.
-        self.assertEqual(1, self._getJobCount())
-
-    def test_marking_dupe_creates_job(self):
-        # Marking a bug as a duplicate of another bug creates a job to
-        # update the master bug.
-        new_bug = self.factory.makeBug()
-        new_bug.setHeat(42)
-        self._completeJobsAndAssertQueueEmpty()
-
-        new_bug.markAsDuplicate(self.bug)
-
-        # There will now be a job in the queue.
-        self.assertEqual(1, self._getJobCount())
-
-        # And the job will be for the master bug.
-        bug_job = self._getJobs()[0]
-        self.assertEqual(bug_job.bug, self.bug)
-
-        # Also, the duplicate bug's heat will have been set to zero.
-        self.assertEqual(0, new_bug.heat)
-
-    def test_unmarking_dupe_creates_job(self):
-        # Unmarking a bug as a duplicate will create a
-        # CalculateBugHeatJob for the bug, since its heat will be 0 from
-        # having been marked as a duplicate.
-        new_bug = self.factory.makeBug()
-        new_bug.markAsDuplicate(self.bug)
-        self._completeJobsAndAssertQueueEmpty()
-        new_bug.markAsDuplicate(None)
-
-        # There will now be a job in the queue.
-        self.assertEqual(1, self._getJobCount())
-
-        # And the job will be for the master bug.
-        bug_job = self._getJobs()[0]
-        self.assertEqual(bug_job.bug, new_bug)
 
 
 class MaxHeatByTargetBase:
