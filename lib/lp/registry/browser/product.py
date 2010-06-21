@@ -66,6 +66,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.config import config
 from lazr.delegates import delegates
+from lazr.restful.interface import copy_field
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from lp.app.interfaces.headings import IEditableContextTitle
@@ -1968,12 +1969,17 @@ class ProductAddView(MultiStepView):
         return ProjectAddStepOne
 
 
-class IProductEditPeopleSchema(IProduct):
+class IProductEditPeopleSchema(Interface):
     """Defines the fields for the edit form.
 
     Specifically adds a new checkbox for transferring the maintainer role to
-    Registry Administrators.
+    Registry Administrators and makes the owner optional.
     """
+    owner = copy_field(IProduct['owner'])
+    owner.required = False
+
+    driver = copy_field(IProduct['driver'])
+
     transfer_to_registry =  Bool(
         title=_("Assign to Registry Administrators"),
         required=False,
@@ -2017,26 +2023,32 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         """The HTML page title."""
         return "Change the roles of %s's people" % self.context.title
 
+    def validate(self, data):
+        """Validate owner and transfer_to_registry are consistent.
+
+        At most one may be specified.
+        """
+        xfer = data.get('transfer_to_registry', False)
+        owner = data.get('owner')
+        if owner is not None and xfer:
+            self.setFieldError(
+                'owner',
+                'You may not specify a new owner if you '
+                'select "transfer_to_registry".')
+        elif xfer:
+            data['owner'] = getUtility(ILaunchpadCelebrities).registry_experts
+
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):
         """Save the changes to the associated people."""
         old_owner = self.context.owner
         old_driver = self.context.driver
+
+        # Since 'transfer_to_registry' is not a real attribute on a Product,
+        # it must be removed from data before the context is updated.
         if 'transfer_to_registry' in data:
             del data['transfer_to_registry']
         self.updateContextFromData(data)
-        if self.context.owner != old_owner:
-            self.request.response.addNotification(
-                "Successfully changed the maintainer to %s"
-                % self.context.owner.displayname)
-        if self.context.driver != old_driver:
-            if self.context.driver is not None:
-                self.request.response.addNotification(
-                    "Successfully changed the driver to %s"
-                    % self.context.driver.displayname)
-            else:
-                self.request.response.addNotification(
-                    "Successfully removed the driver")
 
     @property
     def next_url(self):
