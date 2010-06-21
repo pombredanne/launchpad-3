@@ -243,7 +243,7 @@ class LaunchpadFormView(LaunchpadView):
         self.errors.append(cleanmsg)
 
     @staticmethod
-    def validate_none(self, action, data):
+    def validate_none(action, data):
         """Do not do any validation.
 
         This is to be used in subclasses that have actions in which no
