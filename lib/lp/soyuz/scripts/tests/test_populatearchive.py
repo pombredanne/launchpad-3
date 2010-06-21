@@ -43,7 +43,7 @@ def get_spn(build):
 class PackageInfo:
 
     def __init__(self, name, version,
-        status=PackagePublishingStatus.PUBLISHED, component="main"):
+                 status=PackagePublishingStatus.PUBLISHED, component="main"):
         self.name = name
         self.version = version
         self.status = status
@@ -88,6 +88,10 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
         Use the hoary-RELEASE suite along with the main component.
         """
+        # XXX: JamesWestby 2010-06-21 bug=596984: it is not clear
+        # what this test is testing that is not covered in more
+        # specific tests. It should be removed if there is nothing
+        # else as it is fragile due to use of sampledata.
         DatabaseLayer.force_dirty_database()
         # Make sure a copy archive with the desired name does
         # not exist yet.
@@ -179,16 +183,16 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             distribution, ArchivePurpose.COPY, archive_name)
         # This is a sanity check: a copy archive with this name should not
         # exist yet.
-        self.assertTrue(copy_archive is None)
+        self.assertIs(None, copy_archive)
         return archive_name
 
-    def createSourcePublication(self, info, distroseries, component="main"):
+    def createSourcePublication(self, info, distroseries):
         """Create a SourcePackagePublishingHistory based on a PackageInfo."""
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=self.factory.getOrMakeSourcePackageName(
                 name=info.name),
             distroseries=distroseries, component=self.factory.makeComponent(
-                component),
+                info.component),
             version=info.version, architecturehintlist='any',
             archive=distroseries.distribution.main_archive,
             status=info.status, pocket=PackagePublishingPocket.RELEASE)
@@ -268,6 +272,9 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         """Create a distribution to be the source of a copy archive."""
         distroseries = self.createSourceDistroSeries()
         self.createSourcePublications(package_infos, distroseries)
+        # We must commit as we are going to exec a script that will run
+        # in a different transaction and must be able to see the
+        # objects we just created.
         self.layer.commit()
         return distroseries
 
@@ -293,8 +300,8 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             archive, status=BuildStatus.NEEDSBUILD))
         actual_builds = list()
         for build in builds:
-            build = removeSecurityProxy(build)
-            spr = build.source_package_release
+            naked_build = removeSecurityProxy(build)
+            spr = naked_build.source_package_release
             actual_builds.append((spr.name, spr.version))
         self.assertEqual(sorted(expected_builds), sorted(actual_builds))
 
@@ -419,6 +426,9 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             distroseries=distroseries, architecturetag="amd64",
             processorfamily=ProcessorFamilySet().getByName("amd64"),
             supports_virtualized=True)
+        # We must commit as we are going to exec a script that will run
+        # in a different transaction and must be able to see the DAS
+        # we just created.
         self.layer.commit()
         archive_name = self.getTargetArchiveName(distroseries.distribution)
         copy_archive = self.copyArchive(
