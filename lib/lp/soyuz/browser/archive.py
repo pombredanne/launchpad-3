@@ -1807,6 +1807,10 @@ class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
 
     __used_for__ = IHasBuildRecords
 
+    # The archive builds view presents all package builds (binary
+    # or source package recipe builds).
+    binary_only = False
+
     @property
     def default_build_state(self):
         """See `IBuildRecordsView`.
