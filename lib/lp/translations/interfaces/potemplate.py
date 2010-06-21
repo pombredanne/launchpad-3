@@ -695,7 +695,7 @@ class IPOTemplateSharingSubset(Interface):
         :return: A list of all potemplates of the same name from all series.
         """
 
-    def getSharingPOTemplatesRegex(name_pattern=None):
+    def getSharingPOTemplatesByRegex(name_pattern=None):
         """Find all sharing templates with names matching the given pattern.
 
         If name_pattern is None, match is performed on the template name.

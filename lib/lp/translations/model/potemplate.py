@@ -1499,15 +1499,15 @@ class POTemplateSharingSubset(object):
             return EmptyResultSet()
 
     def getSharingPOTemplates(self, potemplate_name):
-        """See IPOTemplateSharingSubset."""
+        """See `IPOTemplateSharingSubset`."""
         if self.distribution is not None:
             assert self.sourcepackagename is not None, (
                    "Need sourcepackagename to select from distribution.")
         return self._queryPOTemplates(
             POTemplate.name == potemplate_name)
 
-    def getSharingPOTemplatesRegex(self, name_pattern=None):
-        """See IPOTemplateSharingSubset."""
+    def getSharingPOTemplatesByRegex(self, name_pattern=None):
+        """See `IPOTemplateSharingSubset`."""
         if name_pattern is None:
             templatename_clause = True
         else:
@@ -1517,15 +1517,15 @@ class POTemplateSharingSubset(object):
         return self._queryPOTemplates(templatename_clause)
 
     def getSharingPOTemplateIDs(self, potemplate_name):
-        """See IPOTemplateSharingSubset."""
+        """See `IPOTemplateSharingSubset`."""
         return self.getSharingPOTemplates(potemplate_name).values(
             POTemplate.id)
 
     def groupEquivalentPOTemplates(self, name_pattern=None):
-        """See IPOTemplateSharingSubset."""
+        """See `IPOTemplateSharingSubset`."""
         equivalents = {}
 
-        for template in self.getSharingPOTemplatesRegex(name_pattern):
+        for template in self.getSharingPOTemplatesByRegex(name_pattern):
             key = self._get_potemplate_equivalence_class(template)
             if key not in equivalents:
                 equivalents[key] = []

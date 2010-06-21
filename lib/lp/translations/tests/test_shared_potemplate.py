@@ -177,13 +177,13 @@ class TestTranslationSharingPOTemplate(TestCaseWithFactory):
         self.assertEquals(potmsgset, shared_potmsgset)
 
 
-class TestSharingPOTemplatesRegex(TestCaseWithFactory):
+class TestSharingPOTemplatesByRegex(TestCaseWithFactory):
     """Isolate tests for regular expression use in SharingSubset."""
 
     layer = ZopelessDatabaseLayer
 
     def setUp(self):
-        super(TestSharingPOTemplatesRegex, self).setUp()
+        super(TestSharingPOTemplatesByRegex, self).setUp()
         self.product = self.factory.makeProduct()
         self.product.official_rosetta = True
         self.trunk = self.product.getSeries('trunk')
@@ -195,41 +195,41 @@ class TestSharingPOTemplatesRegex(TestCaseWithFactory):
             self.factory.makePOTemplate(productseries=self.trunk, name=name)
             for name in names]
 
-    def test_getSharingPOTemplatesRegex_baseline(self):
+    def test_getSharingPOTemplatesByRegex_baseline(self):
         # Baseline test.
         templates = self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
         subset = self.potemplateset.getSharingSubset(product=self.product)
         self.assertContentEqual(
-            templates, subset.getSharingPOTemplatesRegex('foo.*'))
+            templates, subset.getSharingPOTemplatesByRegex('foo.*'))
 
-    def test_getSharingPOTemplatesRegex_not_all(self):
+    def test_getSharingPOTemplatesByRegex_not_all(self):
         # A template may not match.
         templates = self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
         subset = self.potemplateset.getSharingSubset(product=self.product)
         self.assertContentEqual(
-            templates[1:], subset.getSharingPOTemplatesRegex('foo-.*'))
+            templates[1:], subset.getSharingPOTemplatesByRegex('foo-.*'))
 
-    def test_getSharingPOTemplatesRegex_all(self):
+    def test_getSharingPOTemplatesByRegex_all(self):
         # Not passing a pattern returns all templates.
         templates = self._makeTemplates(['foo', 'foo-bar', 'foo-two'])
         subset = self.potemplateset.getSharingSubset(product=self.product)
         self.assertContentEqual(
-            templates, subset.getSharingPOTemplatesRegex())
+            templates, subset.getSharingPOTemplatesByRegex())
 
-    def test_getSharingPOTemplatesRegex_robustness_quotes(self):
+    def test_getSharingPOTemplatesByRegex_robustness_quotes(self):
         # Quotes in the pattern can be dangerous.
         subset = self.potemplateset.getSharingSubset(product=self.product)
         self.assertContentEqual(
-            [], subset.getSharingPOTemplatesRegex("'\""))
+            [], subset.getSharingPOTemplatesByRegex("'\""))
 
-    def test_getSharingPOTemplatesRegex_robustness_backslash(self):
+    def test_getSharingPOTemplatesByRegex_robustness_backslash(self):
         # A backslash at the end could escape enclosing quotes without
         # proper escaping, leading to a SyntaxError or even a successful
         # exploit. Instead, storm should complain about an invalid expression
         # by raising DataError.
         subset = self.potemplateset.getSharingSubset(product=self.product)
         self.assertRaises(
-            DataError, list, subset.getSharingPOTemplatesRegex("foo.*\\"))
+            DataError, list, subset.getSharingPOTemplatesByRegex("foo.*\\"))
 
 
 class TestMessageSharingProductPackage(TestCaseWithFactory):
