@@ -24,9 +24,7 @@ def test_inline_add_milestone(client, url, name=None, suite='milestone',
     :param suite: The suite in which this test is part of.
     :param user: The user who should be logged in.
     """
-    # Ensure that the milestone name doesn't conflict with previous
-    # test runs, and test that it correctly lowercases the name.
-    milestone_name = u'FOObar%x' % int(time.time())
+    milestone_name = u'FOObar'
     code_name = u'code-%s' % milestone_name
 
     user.ensure_login(client)

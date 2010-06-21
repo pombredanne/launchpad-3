@@ -24,9 +24,7 @@ def test_inline_add_bugtracker(client, url, name=None, suite='bugtracker',
     :param suite: The suite in which this test is part of.
     :param user: The user who should be logged in.
     """
-    # Ensure that the bugtracker name doesn't conflict with previous
-    # test runs, and test that it correctly lowercases the name.
-    bugtracker_name = u'FOObar%x' % int(time.time())
+    bugtracker_name = u'FOObar'
     title = u'\xdf-title-%s' % bugtracker_name
     location = u'http://example.com/%s' % bugtracker_name
 
