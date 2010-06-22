@@ -242,10 +242,7 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin, TestCaseWithFactory):
             creator_id, '/~%s/%s/%s' % (user, product, branch))
         branch_url = 'file://' + os.path.abspath(
             os.path.join(branch_root, branch_id_to_path(branch_id)))
-        self.runInChdir(
-            self.local_branch_path,
-            self.run_bzr, ['push', '--create-prefix', branch_url],
-            retcode=None)
+        self.push(self.local_branch_path, branch_url, ['--create-prefix'])
         return branch_url
 
 
