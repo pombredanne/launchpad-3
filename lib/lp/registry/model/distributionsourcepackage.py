@@ -85,7 +85,9 @@ class DistributionSourcePackageProperty:
                 ).order_by(Desc(SourcePackagePublishingHistory.id)).first()
             # Upstream links shouldn't be added for meta packages, which are
             # normally in the misc section.
-            is_upstream_link_allowed = spph.section.name == 'misc'
+            is_upstream_link_allowed = True
+            if spph is not None:
+                is_upstream_link_allowed = spph.section.name == 'misc'
             obj._new(obj.distribution, obj.sourcepackagename,
                      is_upstream_link_allowed)
         setattr(obj._self_in_database, self.attrname, value)
