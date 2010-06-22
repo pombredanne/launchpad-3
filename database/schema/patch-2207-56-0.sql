@@ -54,15 +54,15 @@ SET max_bug_heat = subquery.max_bug_heat,
     bug_count = subquery.bug_count
 FROM (
     SELECT
-        MAX(Bug.heat) as max_bug_heat,
-        SUM(Bug.heat) as total_bug_heat,
-        COUNT(Bug.id) as bug_count,
+        COALESCE(MAX(Bug.heat), 0) as max_bug_heat,
+        COALESCE(SUM(Bug.heat), 0) as total_bug_heat,
+        COALESCE(COUNT(Bug.id), 0) as bug_count,
         distribution as distro,
         sourcepackagename as spn
-    FROM Bug
-        JOIN BugTask ON BugTask.bug = Bug.id
-        JOIN DistributionSourcePackage dsp
-            USING(distribution, sourcepackagename)
+    FROM
+        DistributionSourcePackage
+        LEFT JOIN BugTask USING(distribution, sourcepackagename)
+        LEFT JOIN Bug ON BugTask.bug = Bug.id
     GROUP BY distribution, sourcepackagename
     ) AS subquery
 WHERE distribution = distro

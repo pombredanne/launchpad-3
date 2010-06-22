@@ -172,30 +172,19 @@ class DistributionSourcePackage(BugTargetBase,
 
     def recalculateBugHeatCache(self):
         """See `IHasBugHeat`."""
-        self.max_bug_heat = IStore(Bug).find(
-            Max(Bug.heat),
+        row = IStore(Bug).find(
+            (Max(Bug.heat), Sum(Bug.heat), Count(Bug.id)),
             BugTask.bug == Bug.id,
             BugTask.distributionID == self.distribution.id,
             BugTask.sourcepackagenameID == self.sourcepackagename.id).one()
-        if self.max_bug_heat is None:
-            # SELECT MAX(Bug.heat) returns NULL if zero rows match.
-            self.max_bug_heat = 0
 
-        self.total_bug_heat = IStore(Bug).find(
-            Sum(Bug.heat),
-            BugTask.bug == Bug.id,
-            BugTask.distributionID == self.distribution.id,
-            BugTask.sourcepackagenameID == self.sourcepackagename.id).one()
-        if self.total_bug_heat is None:
-            self.total_bug_heat = 0
+        # Aggregate functions return NULL if zero rows match.
+        row = list(row)
+        for i in range(len(row)):
+            if row[i] is None:
+                row[i] = 0
 
-        self.bug_count = IStore(Bug).find(
-            Count(Bug.heat),
-            BugTask.bug == Bug.id,
-            BugTask.distributionID == self.distribution.id,
-            BugTask.sourcepackagenameID == self.sourcepackagename.id).one()
-        if self.bug_count is None:
-            self.bug_count = 0
+        self.max_bug_heat, self.total_bug_heat, self.bug_count = row
 
     @property
     def latest_overall_publication(self):
