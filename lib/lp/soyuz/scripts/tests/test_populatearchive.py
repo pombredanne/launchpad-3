@@ -214,7 +214,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
     def copyArchive(self, distroseries, archive_name, owner,
         architectures=None, component="main", from_user=None,
-        from_archive=None):
+        from_archive=None, packageset_names=None):
         """Run the copy-archive script."""
         extra_args = [
             '--from-distribution', distroseries.distribution.name,
@@ -239,6 +239,12 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
         for architecture in architectures:
             extra_args.extend(['-a', architecture])
+
+        if packageset_names is None:
+            packageset_names = []
+
+        for packageset_name in packageset_names:
+            extra_args.extend(['--package-set', packageset_name])
 
         script = self.getScript(test_args=extra_args)
         script.mainTask()
@@ -520,6 +526,56 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         copy_archive, distroseries = self.makeCopyArchive(package_infos,
             component="main")
         self.checkBuilds(copy_archive, package_infos)
+
+    def testCopyArchiveSubsetsBasedOnPackageset(self):
+        """Test that --package-set limits the sources copied."""
+        package_infos = [
+            PackageInfo(
+                "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+                "apt", "2.2", status=PackagePublishingStatus.PUBLISHED),
+            ]
+        owner = self.createTargetOwner()
+        distroseries = self.createSourceDistribution(package_infos)
+        packageset_name = u"apt-packageset"
+        spn = self.factory.getOrMakeSourcePackageName(name="apt")
+        packageset = self.factory.makePackageset(
+            name=packageset_name, distroseries=distroseries, packages=(spn,))
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner,
+            packageset_names=[packageset_name])
+        self.checkCopiedSources(
+            copy_archive, distroseries, [package_infos[1]])
+
+    def testCopyArchiveUnionsPackagesets(self):
+        """Test that package sets are unioned when copying archives."""
+        package_infos = [
+            PackageInfo(
+                "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+                "apt", "2.2", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+                "gcc", "4.5", status=PackagePublishingStatus.PUBLISHED),
+            ]
+        owner = self.createTargetOwner()
+        distroseries = self.createSourceDistribution(package_infos)
+        apt_packageset_name = u"apt-packageset"
+        apt_spn = self.factory.getOrMakeSourcePackageName(name="apt")
+        gcc_packageset_name = u"gcc-packageset"
+        gcc_spn = self.factory.getOrMakeSourcePackageName(name="gcc")
+        apt_packageset = self.factory.makePackageset(
+            name=apt_packageset_name, distroseries=distroseries,
+            packages=(apt_spn,))
+        gcc_packageset = self.factory.makePackageset(
+            name=gcc_packageset_name, distroseries=distroseries,
+            packages=(gcc_spn,))
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner,
+            packageset_names=[apt_packageset_name, gcc_packageset_name])
+        self.checkCopiedSources(
+            copy_archive, distroseries, package_infos[1:])
 
     def testCopyFromPPA(self):
         """Test we can create a copy archive with a PPA as the source."""
