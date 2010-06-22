@@ -218,19 +218,19 @@ class TestSharingPOTemplatesByRegex(TestCaseWithFactory):
         # A not matching pattern returns no templates.
         self.assertContentEqual(
             [],
-            self._makeAndFind(['foo', 'foo-bar', 'foo-two']), "doo.+dle")
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], "doo.+dle"))
 
     def test_getSharingPOTemplatesByRegex_robustness_single_quotes(self):
         # Single quotes do not confuse the regex match.
         self.assertContentEqual(
             [],
-            self._makeAndFind(['foo', 'foo-bar', 'foo-two']), "'")
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], "'"))
 
     def test_getSharingPOTemplatesByRegex_robustness_double_quotes(self):
         # Double quotes do not confuse the regex match.
         self.assertContentEqual(
             [],
-            self._makeAndFind(['foo', 'foo-bar', 'foo-two']), '"')
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], '"'))
 
     def test_getSharingPOTemplatesByRegex_robustness_backslash(self):
         # A backslash at the end could escape enclosing quotes without
@@ -238,7 +238,7 @@ class TestSharingPOTemplatesByRegex(TestCaseWithFactory):
         # exploit. Instead, storm should complain about an invalid expression
         # by raising DataError.
         product = self.factory.makeProduct()
-        subset = self.potemplateset.getSharingSubset(product=product)
+        subset = getUtility(IPOTemplateSet).getSharingSubset(product=product)
         self.assertRaises(
             DataError, list, subset.getSharingPOTemplatesByRegex("foo.*\\"))
 
