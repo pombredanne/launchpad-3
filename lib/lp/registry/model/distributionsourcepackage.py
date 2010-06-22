@@ -15,13 +15,17 @@ import itertools
 import operator
 
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import And, Desc, In, Join, Lower
+from storm.expr import And, Count, Desc, In, Join, Lower, Max, Sum
 from storm.store import EmptyResultSet
 from storm.locals import Int, Reference, Store, Storm, Unicode
+from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
+
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.structuralsubscription import (
@@ -30,7 +34,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
+from lp.bugs.model.bug import Bug, BugSet, get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
@@ -43,6 +47,7 @@ from lp.registry.model.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -52,6 +57,40 @@ from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes)
 from lp.translations.model.customlanguagecode import (
     CustomLanguageCode, HasCustomLanguageCodesMixin)
+
+
+class DistributionSourcePackageProperty:
+    def __init__(self, attrname):
+        self.attrname = attrname
+
+    def __get__(self, obj, class_):
+        return getattr(obj._self_in_database, self.attrname, None)
+
+    def __set__(self, obj, value):
+        if obj._self_in_database is None:
+            # Log an oops without raising an error.
+            exception = AssertionError(
+                "DistributionSourcePackage record should have been created "
+                "earlier in the database for distro=%s, sourcepackagename=%s"
+                % (obj.distribution.name, obj.sourcepackagename.name))
+            getUtility(IErrorReportingUtility).raising(
+                (exception.__class__, exception, None))
+            spph = Store.of(obj.distribution).find(
+                SourcePackagePublishingHistory,
+                SourcePackagePublishingHistory.distroseriesID ==
+                    DistroSeries.id,
+                DistroSeries.distributionID == obj.distribution.id,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id,
+                SourcePackageRelease.sourcepackagenameID ==
+                    obj.sourcepackagename.id
+                ).order_by(Desc(SourcePackagePublishingHistory.id)).first()
+            if spph is None:
+                section = getUtility(ISectionSet)['misc']
+            else:
+                section = spph.section
+            obj._new(obj.distribution, obj.sourcepackagename, section)
+        setattr(obj._self_in_database, self.attrname, value)
 
 
 class DistributionSourcePackage(BugTargetBase,
@@ -71,6 +110,16 @@ class DistributionSourcePackage(BugTargetBase,
     implements(
         IDistributionSourcePackage, IHasBugHeat, IHasCustomLanguageCodes,
         IQuestionTarget)
+
+    bug_reporting_guidelines = DistributionSourcePackageProperty(
+        'bug_reporting_guidelines')
+    bug_reported_acknowledgement = DistributionSourcePackageProperty(
+        'bug_reported_acknowledgement')
+    max_bug_heat = DistributionSourcePackageProperty('max_bug_heat')
+    total_bug_heat = DistributionSourcePackageProperty('total_bug_heat')
+    bug_count = DistributionSourcePackageProperty('bug_count')
+    po_message_count = DistributionSourcePackageProperty('po_message_count')
+    section = DistributionSourcePackageProperty('section')
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -118,75 +167,34 @@ class DistributionSourcePackage(BugTargetBase,
         # measure while DistributionSourcePackage is not yet hooked
         # into the database but we need access to some of the fields
         # in the database.
-        return Store.of(self.distribution).find(
-            DistributionSourcePackageInDatabase,
-            DistributionSourcePackageInDatabase.sourcepackagename == (
-                self.sourcepackagename),
-            DistributionSourcePackageInDatabase.distribution == (
-                self.distribution)
-            ).one()
+        return self._get(self.distribution, self.sourcepackagename)
 
-    def _get_bug_reporting_guidelines(self):
-        """See `IBugTarget`."""
-        dsp_in_db = self._self_in_database
-        if dsp_in_db is not None:
-            return dsp_in_db.bug_reporting_guidelines
-        return None
+    def recalculateBugHeatCache(self):
+        """See `IHasBugHeat`."""
+        self.max_bug_heat = IStore(Bug).find(
+            Max(Bug.heat),
+            BugTask.bug == Bug.id,
+            BugTask.distributionID == self.distribution.id,
+            BugTask.sourcepackagenameID == self.sourcepackagename.id).one()
+        if self.max_bug_heat is None:
+            # SELECT MAX(Bug.heat) returns NULL if zero rows match.
+            self.max_bug_heat = 0
 
-    def _set_bug_reporting_guidelines(self, value):
-        """See `IBugTarget`."""
-        dsp_in_db = self._self_in_database
-        if dsp_in_db is None:
-            dsp_in_db = DistributionSourcePackageInDatabase()
-            dsp_in_db.sourcepackagename = self.sourcepackagename
-            dsp_in_db.distribution = self.distribution
-            Store.of(self.distribution).add(dsp_in_db)
-        dsp_in_db.bug_reporting_guidelines = value
+        self.total_bug_heat = IStore(Bug).find(
+            Sum(Bug.heat),
+            BugTask.bug == Bug.id,
+            BugTask.distributionID == self.distribution.id,
+            BugTask.sourcepackagenameID == self.sourcepackagename.id).one()
+        if self.total_bug_heat is None:
+            self.total_bug_heat = 0
 
-    bug_reporting_guidelines = property(
-        _get_bug_reporting_guidelines,
-        _set_bug_reporting_guidelines)
-
-    def _get_bug_reported_acknowledgement(self):
-        """See `IBugTarget`."""
-        dsp_in_db = self._self_in_database
-        if dsp_in_db is not None:
-            return dsp_in_db.bug_reported_acknowledgement
-        return None
-
-    def _set_bug_reported_acknowledgement(self, value):
-        """See `IBugTarget`."""
-        dsp_in_db = self._self_in_database
-        if dsp_in_db is None:
-            dsp_in_db = DistributionSourcePackageInDatabase()
-            dsp_in_db.sourcepackagename = self.sourcepackagename
-            dsp_in_db.distribution = self.distribution
-            Store.of(self.distribution).add(dsp_in_db)
-        dsp_in_db.bug_reported_acknowledgement = value
-
-    bug_reported_acknowledgement = property(
-        _get_bug_reported_acknowledgement,
-        _set_bug_reported_acknowledgement)
-
-    def _get_max_bug_heat(self):
-        """See `IHasBugs`."""
-        dsp_in_db = self._self_in_database
-        if dsp_in_db is None:
-            return None
-        else:
-            return dsp_in_db.max_bug_heat
-
-    def _set_max_bug_heat(self, value):
-        """See `IHasBugs`."""
-        dsp_in_db = self._self_in_database
-        if dsp_in_db is None:
-            dsp_in_db = DistributionSourcePackageInDatabase()
-            dsp_in_db.sourcepackagename = self.sourcepackagename
-            dsp_in_db.distribution = self.distribution
-            Store.of(self.distribution).add(dsp_in_db)
-        dsp_in_db.max_bug_heat = value
-
-    max_bug_heat = property(_get_max_bug_heat, _set_max_bug_heat)
+        self.bug_count = IStore(Bug).find(
+            Count(Bug.heat),
+            BugTask.bug == Bug.id,
+            BugTask.distributionID == self.distribution.id,
+            BugTask.sourcepackagenameID == self.sourcepackagename.id).one()
+        if self.bug_count is None:
+            self.bug_count = 0
 
     @property
     def latest_overall_publication(self):
@@ -504,6 +512,47 @@ class DistributionSourcePackage(BugTargetBase,
             In(Lower(EmailAddress.email), email_addresses))
         return result_set
 
+    @classmethod
+    def _get(cls, distribution, sourcepackagename):
+        return Store.of(distribution).find(
+            DistributionSourcePackageInDatabase,
+            DistributionSourcePackageInDatabase.sourcepackagename ==
+                sourcepackagename,
+            DistributionSourcePackageInDatabase.distribution ==
+                distribution
+            ).one()
+
+    @classmethod
+    def _new(cls, distribution, sourcepackagename, section):
+        dsp = DistributionSourcePackageInDatabase()
+        dsp.distribution = distribution
+        dsp.sourcepackagename = sourcepackagename
+        dsp.section = section
+        Store.of(distribution).add(dsp)
+        return dsp
+
+    @classmethod
+    def ensure(cls, spph):
+        """Create DistributionSourcePackage record, if necessary.
+
+        Only create a record for primary archives (i.e. not for PPAs).
+        If it already exists, update the section attribute.
+        """
+        # Import here to avoid import loop.
+        sourcepackagename = spph.sourcepackagerelease.sourcepackagename
+        distribution = spph.distroseries.distribution
+        section = spph.section
+
+        if spph.archive.purpose == ArchivePurpose.PRIMARY:
+            dsp = cls._get(distribution, sourcepackagename)
+            if dsp is None:
+                dsp = cls._new(distribution, sourcepackagename, section)
+            elif spph.distroseries.status == SeriesStatus.CURRENT:
+                # If the distroseries.status is not CURRENT, it should
+                # not override the section from a previously created
+                # SourcePackagePublishingHistory.
+                dsp.section = section
+
 
 class DistributionSourcePackageInDatabase(Storm):
     """Temporary class to allow access to the database."""
@@ -529,4 +578,9 @@ class DistributionSourcePackageInDatabase(Storm):
     bug_reported_acknowledgement = Unicode()
 
     max_bug_heat = Int()
+    total_bug_heat = Int()
+    bug_count = Int()
+    po_message_count = Int()
 
+    section_id = Int(name='section')
+    section = Reference(section_id, 'Section.id')
