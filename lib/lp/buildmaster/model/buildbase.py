@@ -61,6 +61,42 @@ def handle_status_for_build(build, status, librarian, slave_status,
     method(build, librarian, slave_status, logger)
 
 
+def process_upload(leaf, root, buildid, logger, distribution, distroseries, pocket,
+                   policy_name='buildd'):
+    """Process an upload.
+    
+    :param leaf: Leaf for this particular upload
+    :param root: Root directory for the uploads
+    :param buildid: Build id
+    :param logger: A logger object
+    :param distribution: A `IDistribution`
+    :param distroseries: A `IDistroSeries`
+    :param pocket: A pocket
+    :param policy_name: Optional policy name
+    """
+    class ProcessUploadOptions(object):
+
+        def __init__(self, policy_name, distribution, distroseries, pocket,
+                     buildid):
+            self.context = policy_name
+            self.distro = distribution.name
+            self.distroseries = distroseries.name + pocketsuffix[pocket]
+            self.buildid = buildid
+            self.announce = []
+
+    options = ProcessUploadOptions(policy_name, distribution,
+        distroseries, pocket, buildid)
+    # XXX JRV 20100317: This should not create a mock options 
+    # object and derive the policy from that but rather create a
+    # policy object in a more sensible way.
+    policy = findPolicyByOptions(options)
+    processor = UploadProcessor(root, dry_run=False, no_mails=True,
+        keep=False, policy_for_distro=lambda distro: policy,
+        ztm=ZopelessTransactionManager, log=logger)
+    processor.processUploadQueue(leaf)
+
+
+
 class BuildBase:
     """A mixin class providing functionality for farm jobs that build a
     package.
@@ -114,34 +150,6 @@ class BuildBase:
         """See `IBuildBase`."""
         return handle_status_for_build(
             self, status, librarian, slave_status, self.__class__)
-
-    def processUpload(self, leaf, root, logger):
-        """Process an upload.
-        
-        :param leaf: Leaf for this particular upload
-        :param root: Root directory for the uploads
-        :param logger: A logger object
-        """
-        class ProcessUploadOptions(object):
-
-            def __init__(self, policy_name, distribution, distroseries, pocket,
-                         buildid):
-                self.context = policy_name
-                self.distro = distribution.name
-                self.distroseries = distroseries.name + pocketsuffix[pocket]
-                self.buildid = buildid
-                self.announce = []
-
-        options = ProcessUploadOptions(self.policy_name, self.distribution,
-            self.distroseries, self.pocket, self.id)
-        # XXX JRV 20100317: This should not create a mock options 
-        # object and derive the policy from that but rather create a
-        # policy object in a more sensible way.
-        policy = findPolicyByOptions(options)
-        processor = UploadProcessor(root, dry_run=False, no_mails=True,
-            keep=False, policy_for_distro=lambda distro: policy,
-            ztm=ZopelessTransactionManager, log=logger)
-        processor.processUploadQueue(leaf)
 
     @staticmethod
     def _handleStatus_OK(build, librarian, slave_status, logger):
@@ -204,7 +212,9 @@ class BuildBase:
         if successful_copy_from_slave:
             logger.info("Invoking uploader on %s for %s" % (root, upload_leaf))
             upload_logger = BufferLogger()
-            upload_log = self.processUpload(upload_leaf, root, upload_logger)
+            upload_log = process_upload(upload_leaf, root, build.id, upload_logger,
+                build.distribution, build.distro_series, build.pocket,
+                build.policy_name)
             uploader_log_content = upload_logger.buffer.getvalue()
         else:
             uploader_log_content = 'Copy from slave was unsuccessful.'
@@ -237,7 +247,7 @@ class BuildBase:
         if (build.status != BuildStatus.FULLYBUILT or
             not successful_copy_from_slave or
             not build.verifySuccessfulUpload()):
-            logger.warning("Build %s upload failed." % self.id)
+            logger.warning("Build %s upload failed." % build.id)
             build.status = BuildStatus.FAILEDTOUPLOAD
             # Store the upload_log_contents in librarian so it can be
             # accessed by anyone with permission to see the build.
