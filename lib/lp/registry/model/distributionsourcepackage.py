@@ -25,7 +25,6 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.structuralsubscription import (
@@ -47,7 +46,6 @@ from lp.registry.model.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -85,7 +83,11 @@ class DistributionSourcePackageProperty:
                 SourcePackageRelease.sourcepackagenameID ==
                     obj.sourcepackagename.id
                 ).order_by(Desc(SourcePackagePublishingHistory.id)).first()
-            obj._new(obj.distribution, obj.sourcepackagename)
+            # Upstream links shouldn't be added for meta packages, which are
+            # normally in the misc section.
+            is_upstream_link_allowed = spph.section.name == 'misc'
+            obj._new(obj.distribution, obj.sourcepackagename,
+                     is_upstream_link_allowed)
         setattr(obj._self_in_database, self.attrname, value)
 
 
