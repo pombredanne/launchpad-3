@@ -35,6 +35,7 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements, Interface
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.schema import Choice, List, TextLine
 from zope.schema.interfaces import IContextSourceBinder
@@ -967,7 +968,7 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     def initialize(self):
         if self.context.private:
             archive_subs = getUtility(IArchiveSubscriberSet).getBySubscriber(
-                user.person, self.obj).one()
+                self.user, self.context).one()
             if archive_subs is None:
                 raise Unauthorized
 
