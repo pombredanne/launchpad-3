@@ -1,7 +1,8 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest, doctest
+import unittest
+import doctest
 
 from zope.app.form.interfaces import IDisplayWidget, IInputWidget
 from zope.interface import directlyProvides, implements
@@ -120,6 +121,7 @@ def doctest_custom_widget_with_setUpFields_override():
         >>> isinstance(view.widgets['my_bool'], CustomStubWidget)
         True
     """
+
 
 def test_suite():
     return unittest.TestSuite((
