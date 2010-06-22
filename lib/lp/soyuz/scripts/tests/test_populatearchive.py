@@ -14,7 +14,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts import BufferLogger
+from canonical.launchpad.scripts import (
+    BufferLogger, QuietFakeLogger)
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -202,6 +203,15 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         for package_info in package_infos:
             self.createSourcePublication(package_info, distroseries)
 
+    def getScript(self, test_args=None):
+        """Return an ArchivePopulator instance."""
+        if test_args is None:
+           test_args = []
+        script = ArchivePopulator("test copy archives", test_args=test_args)
+        script.logger = QuietFakeLogger()
+        script.txn = self.layer.txn
+        return script
+
     def copyArchive(self, distroseries, archive_name, owner,
         architectures=None, component="main", from_user=None,
         from_archive=None):
@@ -230,10 +240,8 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         for architecture in architectures:
             extra_args.extend(['-a', architecture])
 
-        (exitcode, out, err) = self.runWrapperScript(extra_args)
-        # Check for zero exit code.
-        self.assertEqual(
-            exitcode, 0, "\n=> %s\n=> %s\n=> %s\n" % (exitcode, out, err))
+        script = self.getScript(test_args=extra_args)
+        script.mainTask()
 
         # Make sure the copy archive with the desired name was
         # created
@@ -272,10 +280,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         """Create a distribution to be the source of a copy archive."""
         distroseries = self.createSourceDistroSeries()
         self.createSourcePublications(package_infos, distroseries)
-        # We must commit as we are going to exec a script that will run
-        # in a different transaction and must be able to see the
-        # objects we just created.
-        self.layer.commit()
         return distroseries
 
     def makeCopyArchive(self, package_infos, component="main"):
@@ -304,6 +308,50 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             spr = naked_build.source_package_release
             actual_builds.append((spr.name, spr.version))
         self.assertEqual(sorted(expected_builds), sorted(actual_builds))
+
+    def testCopyArchiveRunScript(self):
+        """Check that we can exec the script to copy an archive."""
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        owner = self.createTargetOwner()
+        distroseries = self.createSourceDistribution([package_info])
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        # We must commit as we are going to exec a script that will run
+        # in a different transaction and must be able to see the
+        # objects we just created.
+        self.layer.commit()
+
+        extra_args = [
+            '--from-distribution', distroseries.distribution.name,
+            '--from-suite', distroseries.name,
+            '--to-distribution', distroseries.distribution.name,
+            '--to-suite', distroseries.name,
+            '--to-archive', archive_name,
+            '--to-user', owner.name,
+            '--reason',
+            '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
+            '--component', "main",
+            '-a', '386',
+            ]
+        (exitcode, out, err) = self.runWrapperScript(extra_args)
+        # Check for zero exit code.
+        self.assertEqual(
+            exitcode, 0, "\n=> %s\n=> %s\n=> %s\n" % (exitcode, out, err))
+        # Make sure the copy archive with the desired name was
+        # created
+        copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distroseries.distribution, ArchivePurpose.COPY, archive_name)
+        self.assertTrue(copy_archive is not None)
+
+        # Ascertain that the new copy archive was created with the 'enabled'
+        # flag turned off.
+        self.assertFalse(copy_archive.enabled)
+
+        # Also, make sure that the builds for the new copy archive will be
+        # carried out on non-virtual builders.
+        self.assertTrue(copy_archive.require_virtualized)
+        self.checkCopiedSources(
+            copy_archive, distroseries, [package_info])
 
     def testCopyArchiveCreateCopiesPublished(self):
         """Test that PUBLISHED sources are copied."""
@@ -426,10 +474,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             distroseries=distroseries, architecturetag="amd64",
             processorfamily=ProcessorFamilySet().getByName("amd64"),
             supports_virtualized=True)
-        # We must commit as we are going to exec a script that will run
-        # in a different transaction and must be able to see the DAS
-        # we just created.
-        self.layer.commit()
         archive_name = self.getTargetArchiveName(distroseries.distribution)
         copy_archive = self.copyArchive(
             distroseries, archive_name, owner,
@@ -452,7 +496,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             distroseries=distroseries, architecturetag="amd64",
             processorfamily=ProcessorFamilySet().getByName("amd64"),
             supports_virtualized=True)
-        self.layer.commit()
         archive_name = self.getTargetArchiveName(distroseries.distribution)
         copy_archive = self.copyArchive(
             distroseries, archive_name, owner,
@@ -500,7 +543,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE)
         owner = self.createTargetOwner()
         archive_name = self.getTargetArchiveName(distroseries.distribution)
-        self.layer.commit()
         copy_archive = self.copyArchive(
             distroseries, archive_name, owner, from_user=ppa_owner_name,
             from_archive=ppa_name)
