@@ -27,11 +27,10 @@ from zope.component import getUtility
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
 
+from lp.code.errors import ForbiddenInstruction, TooNewRecipeFormat
 from lp.code.model.branch import Branch
 from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.sourcepackagerecipe import (
-    ForbiddenInstruction, TooNewRecipeFormat)
 
 
 class InstructionType(DBEnumeratedType):
@@ -212,6 +211,8 @@ class SourcePackageRecipeData(Storm):
             line_number += 1
             comment = None
             db_branch = branch_map[instruction.recipe_branch.url]
+            if db_branch is None:
+                raise NoSuchBranch(instruction.recipe_branch.url)
             insn = _SourcePackageRecipeDataInstruction(
                 instruction.recipe_branch.name, type, comment,
                 line_number, db_branch, instruction.recipe_branch.revspec,

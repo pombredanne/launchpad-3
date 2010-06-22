@@ -449,6 +449,18 @@ class LaunchpadBrowserPublication(
         ticks = tickcount.difference(
             request._publicationticks_start, tickcount.tickcount())
         request.setInWSGIEnvironment('launchpad.publicationticks', ticks)
+
+        # Calculate SQL statement statistics.
+        sql_statements = da.get_request_statements()
+        sql_milliseconds = sum(
+            endtime - starttime
+                for starttime, endtime, id, sql_statement in sql_statements)
+
+        # Log publication tickcount, sql statement count, and sql time
+        # to the tracelog.
+        tracelog(request, 't', '%d %d %d' % (
+            ticks, len(sql_statements), sql_milliseconds))
+
         # Annotate the transaction with user data. That was done by
         # zope.app.publication.zopepublication.ZopePublication.
         txn = transaction.get()

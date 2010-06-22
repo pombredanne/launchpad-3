@@ -22,7 +22,8 @@ product. He does not provide bug watch information.
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Thank you for your bug report...
 
     >>> browser.getLink('Also affects project').click()

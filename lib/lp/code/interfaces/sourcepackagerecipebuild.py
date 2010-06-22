@@ -1,7 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0213
+# pylint: disable-msg=E0213,E0211
 
 """Interfaces for source package builds."""
 
@@ -82,6 +82,9 @@ class ISourcePackageRecipeBuildSource(Interface):
             provided, defaults to now.
         :return: `ISourcePackageRecipeBuild`.
         """
+
+    def makeDailyBuilds():
+        """Create and return builds for stale ISourcePackageRecipes."""
 
     def getById(build_id):
         """Return the `ISourcePackageRecipeBuild` for the given build id.

@@ -10,10 +10,11 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.karma import IKarmaCacheManager
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.browser.person import PersonEditView, PersonView
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
@@ -291,7 +292,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('Subscribed', participation['subscribed'])
 
-    def test_active_participations_with_private_team(self):
+    def test_active_participations_with_direct_private_team(self):
         # Users cannot see private teams that they are not members of.
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
         login_person(team.teamowner)
@@ -307,6 +308,25 @@ class TestPersonParticipationView(TestCaseWithFactory):
         view = create_view(
             self.user, name='+participation', principal=observer)
         self.assertEqual(0, len(view.active_participations))
+
+    def test_active_participations_with_indirect_private_team(self):
+        # Users cannot see private teams that they are not members of.
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        direct_team = self.factory.makeTeam(owner=team.teamowner)
+        login_person(team.teamowner)
+        direct_team.addMember(self.user, team.teamowner)
+        team.addMember(direct_team, team.teamowner)
+        # The team is included in active_participations.
+        login_person(self.user)
+        view = create_view(
+            self.user, name='+participation', principal=self.user)
+        self.assertEqual(2, len(view.active_participations))
+        # The team is not included in active_participations.
+        observer = self.factory.makePerson()
+        login_person(observer)
+        view = create_view(
+            self.user, name='+participation', principal=observer)
+        self.assertEqual(1, len(view.active_participations))
 
     def test_active_participations_indirect_membership(self):
         # Verify the path of indirect membership.
@@ -335,6 +355,51 @@ class TestPersonParticipationView(TestCaseWithFactory):
         participations = self.view.active_participations
         self.assertEqual(1, len(participations))
         self.assertEqual(True, self.view.has_participations)
+
+
+class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
+    """The related software views display links to failed builds."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonRelatedSoftwareFailedBuild, self).setUp()
+        self.user = self.factory.makePerson()
+
+        # First we need to publish some PPA packages with failed builds
+        # for this person.
+        # XXX michaeln 2010-06-10 bug=592050.
+        # Strangely, the builds need to be built in the context of a
+        # main archive to reproduce bug 591010 for which this test was
+        # written to demonstrate.
+        login('foo.bar@canonical.com')
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        ppa = self.factory.makeArchive(owner=self.user)
+        src_pub = publisher.getPubSource(
+            creator=self.user, maintainer=self.user, archive=ppa)
+        binaries = publisher.getPubBinaries(
+            pub_source=src_pub)
+        self.build = binaries[0].binarypackagerelease.build
+        self.build.status = BuildStatus.FAILEDTOBUILD
+        self.build.archive = publisher.distroseries.main_archive
+        login(ANONYMOUS)
+
+    def test_related_software_with_failed_build(self):
+        # The link to the failed build is displayed.
+        self.view = create_view(self.user, name='+related-software')
+        html = self.view()
+        self.assertTrue(
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
+
+    def test_related_ppa_packages_with_failed_build(self):
+        # The link to the failed build is displayed.
+        self.view = create_view(self.user, name='+ppa-packages')
+        html = self.view()
+        self.assertTrue(
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
 
 
 def test_suite():

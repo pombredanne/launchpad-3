@@ -92,6 +92,15 @@ def upgrade_to_59():
         'generatepath = /usr/share/launchpad-buildd/slavebin/generate-translation-templates\n'
         'resultarchive = translation-templates.tar.gz\n')
 
+def upgrade_to_63():
+    print "Upgrading %s to version 63" % conf_file
+    subprocess.call(["mv", conf_file, conf_file+"-prev63~"])
+    in_file = open(conf_file+"-prev63~", "r")
+    out_file = open(conf_file, "w")
+    for line in in_file:
+        if not line.startswith('ogrepath'):
+            out_file.write(line)
+
 
 if __name__ == "__main__":
     if old_version.find("~") > 0:
@@ -108,4 +117,6 @@ if __name__ == "__main__":
         upgrade_to_58()
     if int(old_version) < 59:
         upgrade_to_59()
+    if int(old_version) < 63:
+        upgrade_to_63()
 
