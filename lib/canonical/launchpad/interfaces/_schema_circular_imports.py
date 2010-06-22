@@ -301,6 +301,8 @@ patch_entry_return_type(
     IDistribution, 'getSourcePackage', IDistributionSourcePackage)
 patch_collection_return_type(
     IDistribution, 'searchSourcePackages', IDistributionSourcePackage)
+patch_collection_return_type(
+    IDistribution, 'getAllCommercialPPAs', IArchive)
 patch_reference_property(
     IDistribution, 'main_archive', IArchive)
 IDistribution['all_distro_archives'].value_type.schema = IArchive
