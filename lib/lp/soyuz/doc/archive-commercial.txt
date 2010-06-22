@@ -33,3 +33,24 @@ returned:
     ...     print commercial_ppa.name
     pppa
 
+
+Security
+--------
+
+Anyone is allowed to retrieve the list of commercial PPAs.  Normal security
+restrictions apply to individual PPA access though.
+
+    >>> login(ANONYMOUS)
+    >>> ppas = archive_set.getCommercialPPAs()
+
+'name is a public attribute:
+
+    >>> print ppas[0].name
+    pppa
+
+'description' is not, however.
+
+    >>> ppas[0].description
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
