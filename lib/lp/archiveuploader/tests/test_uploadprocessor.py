@@ -426,7 +426,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             shutil.rmtree(testdir)
 
     def testRemoveUpload(self):
-        """removeUpload should remove the upload directory and .distro file."""
+        """RemoveUpload should remove the upload directory and .distro file."""
         testdir = tempfile.mkdtemp()
         try:
             # Create an upload, a .distro and a target to move it to.
@@ -437,9 +437,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
             f.write("foo")
             f.close()
 
-            # Move it
+            # Remove it
             self.options.base_fsroot = testdir
-            up = UploadProcessor(self.options, None, self.log)
+            up = self.getUploadProcessor(None)
             up.removeUpload(upload)
 
             # Check it was removed, not moved
