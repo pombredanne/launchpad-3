@@ -577,6 +577,36 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.checkCopiedSources(
             copy_archive, distroseries, package_infos[1:])
 
+    def testCopyArchiveRecursivelyCopiesPackagesets(self):
+        """Test that package set copies include subsets."""
+        package_infos = [
+            PackageInfo(
+                "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+                "apt", "2.2", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+                "gcc", "4.5", status=PackagePublishingStatus.PUBLISHED),
+            ]
+        owner = self.createTargetOwner()
+        distroseries = self.createSourceDistribution(package_infos)
+        apt_packageset_name = u"apt-packageset"
+        apt_spn = self.factory.getOrMakeSourcePackageName(name="apt")
+        gcc_packageset_name = u"gcc-packageset"
+        gcc_spn = self.factory.getOrMakeSourcePackageName(name="gcc")
+        apt_packageset = self.factory.makePackageset(
+            name=apt_packageset_name, distroseries=distroseries,
+            packages=(apt_spn,))
+        gcc_packageset = self.factory.makePackageset(
+            name=gcc_packageset_name, distroseries=distroseries,
+            packages=(gcc_spn,))
+        apt_packageset.add((gcc_packageset,))
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner,
+            packageset_names=[apt_packageset_name])
+        self.checkCopiedSources(
+            copy_archive, distroseries, package_infos[1:])
+
     def testCopyFromPPA(self):
         """Test we can create a copy archive with a PPA as the source."""
         ppa_owner_name = "ppa-owner"
