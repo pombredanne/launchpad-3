@@ -54,7 +54,7 @@ class LaunchpadFormTest(unittest.TestCase):
                                      % (provides, count))
 
     def test_showOptionalMarker(self):
-        """Verify that a field marked .for_display has no (Optional) marker."""
+        """Verify a field marked .for_display has no (Optional) marker."""
         # IInputWidgets have an (Optional) marker if they are not required.
         form = LaunchpadFormView(None, None)
         class FakeInputWidget:
