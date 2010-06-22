@@ -11,9 +11,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases)
+from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
-from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import TestCaseWithFactory
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
@@ -99,6 +100,48 @@ class TestDistributionCurrentSourceReleases(
         series = distribution.series
         self.assertEqual(1, len(series))
         self.assertTrue(series is distribution._cached_series)
+
+
+class SeriesByStatusTests(TestCaseWithFactory):
+    """Test IDistribution.getSeriesByStatus().
+    """
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_get_none(self):
+        distro = self.factory.makeDistribution()
+        self.assertEquals([],
+            list(distro.getSeriesByStatus(SeriesStatus.FROZEN)))
+
+    def test_get_current(self):
+        distro = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=distro, 
+            status=SeriesStatus.CURRENT)
+        self.assertEquals([series],
+            list(distro.getSeriesByStatus(SeriesStatus.CURRENT)))
+
+
+class SeriesTests(TestCaseWithFactory):
+    """Test IDistribution.getSeries().
+    """
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_get_none(self):
+        distro = self.factory.makeDistribution()
+        self.assertRaises(NoSuchDistroSeries, distro.getSeries, "astronomy")
+
+    def test_get_by_name(self):
+        distro = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=distro, 
+            name="dappere")
+        self.assertEquals(series, distro.getSeries("dappere"))
+
+    def test_get_by_version(self):
+        distro = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=distro, 
+            name="dappere", version="42.6")
+        self.assertEquals(series, distro.getSeries("42.6"))
 
 
 def test_suite():
