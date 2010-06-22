@@ -607,6 +607,20 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             exception_type=SoyuzScriptError,
             exception_text="Invalid user name: '%s'" % invalid_user)
 
+    def testUnknownPackagesetName(self):
+        """Try copy archive population with an unknown packageset name.
+
+        The caller can request copying specific packagesets. We test
+        what happens if they request a packageset that doesn't exist.
+        """
+        unknown_packageset = "unknown"
+        extra_args = ['-a', '386', "--package-set", unknown_packageset]
+        self.runScript(
+            extra_args=extra_args,
+            exception_type=PackageLocationError,
+            exception_text="Could not find packageset No such package set"
+            " (in the specified distro series): '%s'." % unknown_packageset)
+
     def testPackagesetDelta(self):
         """Try to calculate the delta between two source package sets."""
         hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
