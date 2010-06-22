@@ -2028,6 +2028,9 @@ class ProductEditPeopleView(LaunchpadEditFormView):
 
         At most one may be specified.
         """
+        # If errors have already been found we can skip validation.
+        if len(self.errors) > 0:
+            return
         xfer = data.get('transfer_to_registry', False)
         owner = data.get('owner')
         if owner is not None and xfer:
