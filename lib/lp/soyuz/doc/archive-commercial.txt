@@ -1,0 +1,28 @@
+===============
+Commercial PPAs
+===============
+
+Commercial PPAs are to all intents and purposes identical to private PPAs.
+They contain a 'commercial' flag which indicates that the PPA is actively
+selling software and should be more discoverable.
+
+Lets start by making a private PPA for demonstration purposes:
+
+    >>> ppa = factory.makeArchive(private=True, name="pppa")
+
+IArchive.getCommercialPPAs() retrieves the subset of all private PPAs that are
+marked for commercial usage.
+
+    >>> for commercial_ppa in archive_set.getCommercialPPAs():
+    ...     print commercial_ppa.name
+
+There are none yet - if we mark "ppa" as commercial it will be
+returned:
+
+    >>> # Setting 'commercial' is restricted to admins but we don't want to
+    >>> # worry about that here.
+    >>> removeSecurityProxy(ppa).commercial = True
+    >>> for commercial_ppa in archive_set.getCommercialPPAs():
+    ...     print commercial_ppa.name
+    pppa
+
