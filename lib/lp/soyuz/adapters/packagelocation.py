@@ -66,7 +66,7 @@ class PackageLocation:
         if self.component is not None:
             result += ' (%s)' % self.component.name
 
-        if self.packagesets:
+        if len(self.packagesets) > 0:
             result += ' [%s]' % (
                 ", ".join([str(p.name) for p in self.packagesets]),)
 
