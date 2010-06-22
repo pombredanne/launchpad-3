@@ -539,7 +539,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         distroseries = self.createSourceDistribution(package_infos)
         packageset_name = u"apt-packageset"
         spn = self.factory.getOrMakeSourcePackageName(name="apt")
-        packageset = self.factory.makePackageset(
+        self.factory.makePackageset(
             name=packageset_name, distroseries=distroseries, packages=(spn,))
         archive_name = self.getTargetArchiveName(distroseries.distribution)
         copy_archive = self.copyArchive(
@@ -564,10 +564,10 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         apt_spn = self.factory.getOrMakeSourcePackageName(name="apt")
         gcc_packageset_name = u"gcc-packageset"
         gcc_spn = self.factory.getOrMakeSourcePackageName(name="gcc")
-        apt_packageset = self.factory.makePackageset(
+        self.factory.makePackageset(
             name=apt_packageset_name, distroseries=distroseries,
             packages=(apt_spn,))
-        gcc_packageset = self.factory.makePackageset(
+        self.factory.makePackageset(
             name=gcc_packageset_name, distroseries=distroseries,
             packages=(gcc_spn,))
         archive_name = self.getTargetArchiveName(distroseries.distribution)

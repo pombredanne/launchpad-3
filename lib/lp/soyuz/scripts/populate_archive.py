@@ -118,7 +118,7 @@ class ArchivePopulator(SoyuzScript):
             if component is not None:
                 try:
                     the_component = getUtility(IComponentSet)[component]
-                except NotFoundError, e:
+                except NotFoundError:
                     raise SoyuzScriptError(
                         "Invalid component name: '%s'" % component)
                 location.component = the_component

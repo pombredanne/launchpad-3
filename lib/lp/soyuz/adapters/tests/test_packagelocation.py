@@ -248,7 +248,7 @@ class TestPackageLocation(TestCaseWithFactory):
             str(location_ubuntu_partner),
             'Partner Archive for Ubuntu Linux: hoary-RELEASE')
 
-        packageset = self.factory.makePackageset(name=u"foo-packageset")
+        self.factory.makePackageset(name=u"foo-packageset")
         location_ubuntu_packageset = self.getPackageLocation(
             packageset_names=[u"foo-packageset"])
         self.assertEqual(
