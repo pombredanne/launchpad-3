@@ -2014,7 +2014,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
                   include_create_team_link=True)
     custom_widget('transfer_to_registry', CheckBoxWidget,
-                  cssClass='field subordinate')
+                  form_class='field subordinate')
     custom_widget('driver', PersonPickerWidget, header="Select the driver",
                   include_create_team_link=True)
 
@@ -2034,9 +2034,14 @@ class ProductEditPeopleView(LaunchpadEditFormView):
             self.setFieldError(
                 'owner',
                 'You may not specify a new owner if you '
-                'select "transfer_to_registry".')
+                'select "Assign to Registry Administrators".')
         elif xfer:
             data['owner'] = getUtility(ILaunchpadCelebrities).registry_experts
+        elif owner is None:
+            self.setFieldError(
+                'owner',
+                'You must specify a maintainer or select '
+                '"Assign to Registry Administrators"')
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):
