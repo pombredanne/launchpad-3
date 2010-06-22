@@ -108,4 +108,27 @@ role and transfer it to the Registry Administrators team.
     []
 
     >>> product.owner.name
-    u'no-priv'
+    u'registry'
+
+Not specifying the owner/maintainer nor checking the checkbox is an error.
+
+    >>> form = {
+    ...     'field.actions.save': 'Save changes',
+    ...     }
+
+    >>> view = create_initialized_view(product, '+edit-people', form=form)
+    >>> view.errors
+    [u'You must specify a maintainer or select "Assign to Registry Administrators"']
+
+Selecting both the owner/maintainer and the checkbox is also an error.
+
+    >>> product = factory.makeProduct(owner=sample_person)
+    >>> form = {
+    ...     'field.owner': 'no-priv',
+    ...     'field.transfer_to_registry': 'on',
+    ...     'field.actions.save': 'Save changes',
+    ...     }
+
+    >>> view = create_initialized_view(product, '+edit-people', form=form)
+    >>> view.errors
+    [u'You may not specify a new owner if you select "Assign to Registry Administrators".']
