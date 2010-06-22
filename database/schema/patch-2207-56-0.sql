@@ -21,4 +21,4 @@ ALTER TABLE DistributionSourcePackage ADD COLUMN total_bug_heat INTEGER;
 ALTER TABLE DistributionSourcePackage ADD COLUMN bug_count INTEGER;
 ALTER TABLE DistributionSourcePackage ADD COLUMN po_message_count INTEGER;
 ALTER TABLE DistributionSourcePackage
-    ADD COLUMN section INTEGER NOT NULL REFERENCES section(id);
+    ADD COLUMN is_upstream_link_allowed BOOLEAN NOT NULL DEFAULT TRUE;

@@ -17,7 +17,7 @@ import operator
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import And, Count, Desc, In, Join, Lower, Max, Sum
 from storm.store import EmptyResultSet
-from storm.locals import Int, Reference, Store, Storm, Unicode
+from storm.locals import Bool, Int, Reference, Store, Storm, Unicode
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
@@ -85,11 +85,7 @@ class DistributionSourcePackageProperty:
                 SourcePackageRelease.sourcepackagenameID ==
                     obj.sourcepackagename.id
                 ).order_by(Desc(SourcePackagePublishingHistory.id)).first()
-            if spph is None:
-                section = getUtility(ISectionSet)['misc']
-            else:
-                section = spph.section
-            obj._new(obj.distribution, obj.sourcepackagename, section)
+            obj._new(obj.distribution, obj.sourcepackagename)
         setattr(obj._self_in_database, self.attrname, value)
 
 
@@ -119,7 +115,8 @@ class DistributionSourcePackage(BugTargetBase,
     total_bug_heat = DistributionSourcePackageProperty('total_bug_heat')
     bug_count = DistributionSourcePackageProperty('bug_count')
     po_message_count = DistributionSourcePackageProperty('po_message_count')
-    section = DistributionSourcePackageProperty('section')
+    is_upstream_link_allowed = DistributionSourcePackageProperty(
+        'is_upstream_link_allowed')
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -523,11 +520,12 @@ class DistributionSourcePackage(BugTargetBase,
             ).one()
 
     @classmethod
-    def _new(cls, distribution, sourcepackagename, section):
+    def _new(cls, distribution, sourcepackagename,
+             is_upstream_link_allowed=False):
         dsp = DistributionSourcePackageInDatabase()
         dsp.distribution = distribution
         dsp.sourcepackagename = sourcepackagename
-        dsp.section = section
+        dsp.is_upstream_link_allowed = is_upstream_link_allowed
         Store.of(distribution).add(dsp)
         return dsp
 
@@ -536,22 +534,18 @@ class DistributionSourcePackage(BugTargetBase,
         """Create DistributionSourcePackage record, if necessary.
 
         Only create a record for primary archives (i.e. not for PPAs).
-        If it already exists, update the section attribute.
         """
-        # Import here to avoid import loop.
         sourcepackagename = spph.sourcepackagerelease.sourcepackagename
         distribution = spph.distroseries.distribution
-        section = spph.section
+        # Upstream links shouldn't be added for meta packages, which are
+        # normally in the misc section.
+        is_upstream_link_allowed = spph.section.name == 'misc'
 
         if spph.archive.purpose == ArchivePurpose.PRIMARY:
             dsp = cls._get(distribution, sourcepackagename)
             if dsp is None:
-                dsp = cls._new(distribution, sourcepackagename, section)
-            elif spph.distroseries.status == SeriesStatus.CURRENT:
-                # If the distroseries.status is not CURRENT, it should
-                # not override the section from a previously created
-                # SourcePackagePublishingHistory.
-                dsp.section = section
+                cls._new(distribution, sourcepackagename,
+                         is_upstream_link_allowed)
 
 
 class DistributionSourcePackageInDatabase(Storm):
@@ -581,6 +575,4 @@ class DistributionSourcePackageInDatabase(Storm):
     total_bug_heat = Int()
     bug_count = Int()
     po_message_count = Int()
-
-    section_id = Int(name='section')
-    section = Reference(section_id, 'Section.id')
+    is_upstream_link_allowed = Bool()
