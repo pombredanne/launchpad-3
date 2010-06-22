@@ -56,6 +56,15 @@ from lp.translations.interfaces.customlanguagecode import (
 from lp.translations.model.customlanguagecode import (
     CustomLanguageCode, HasCustomLanguageCodesMixin)
 
+def is_upstream_link_allowed(spph):
+    """Metapackages shouldn't have upstream links.
+
+    Metapackages normally are in the 'misc' section.
+    """
+    if spph is None:
+        return True
+    return spph.section.name == 'misc'
+
 
 class DistributionSourcePackageProperty:
     def __init__(self, attrname):
@@ -83,13 +92,8 @@ class DistributionSourcePackageProperty:
                 SourcePackageRelease.sourcepackagenameID ==
                     obj.sourcepackagename.id
                 ).order_by(Desc(SourcePackagePublishingHistory.id)).first()
-            # Upstream links shouldn't be added for meta packages, which are
-            # normally in the misc section.
-            is_upstream_link_allowed = True
-            if spph is not None:
-                is_upstream_link_allowed = spph.section.name == 'misc'
             obj._new(obj.distribution, obj.sourcepackagename,
-                     is_upstream_link_allowed)
+                     is_upstream_link_allowed(spph))
         setattr(obj._self_in_database, self.attrname, value)
 
 
@@ -530,15 +534,12 @@ class DistributionSourcePackage(BugTargetBase,
         """
         sourcepackagename = spph.sourcepackagerelease.sourcepackagename
         distribution = spph.distroseries.distribution
-        # Upstream links shouldn't be added for meta packages, which are
-        # normally in the misc section.
-        is_upstream_link_allowed = spph.section.name == 'misc'
 
         if spph.archive.purpose == ArchivePurpose.PRIMARY:
             dsp = cls._get(distribution, sourcepackagename)
             if dsp is None:
                 cls._new(distribution, sourcepackagename,
-                         is_upstream_link_allowed)
+                         is_upstream_link_allowed(spph))
 
 
 class DistributionSourcePackageInDatabase(Storm):
