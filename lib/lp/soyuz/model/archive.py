@@ -1924,6 +1924,14 @@ class ArchiveSet:
             Archive.private == True,
             Archive.purpose == ArchivePurpose.PPA)
 
+    def getCommercialPPAs(self):
+        """See `IArchiveSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            Archive,
+            Archive.commercial == True,
+            Archive.purpose == ArchivePurpose.PPA)
+
     def getArchivesForDistribution(self, distribution, name=None,
                                    purposes=None, user=None,
                                    exclude_disabled=True):

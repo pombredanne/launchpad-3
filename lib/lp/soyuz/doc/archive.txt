@@ -1717,6 +1717,22 @@ private.
     ...     print p3a.displayname
     PPA named myprivateppa for Celso Providelo
 
+getCommercialPPAs() retrieves the subset of all private PPAs that are marked
+for commercial usage.
+
+    >>> for commercial_ppa in archive_set.getCommercialPPAs():
+    ...     print commercial_ppa.displayname
+
+There are none yet - if we mark "myprivateppa" as commercial it will be
+returned:
+
+    >>> # Setting 'commercial' is restricted to admins but we don't want to
+    >>> # about that here.
+    >>> removeSecurityProxy(p3a).commercial = True
+    >>> for commercial_ppa in archive_set.getCommercialPPAs():
+    ...     print commercial_ppa.displayname
+    PPA named myprivateppa for Celso Providelo
+
 'getLatestPPASourcePublicationsForDistribution' returns up to 5
 lastest source publications available for a given distribution ordered
 by descending 'datecreated'.
