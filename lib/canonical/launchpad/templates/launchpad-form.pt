@@ -103,14 +103,14 @@
                   error python:view.getFieldError(field_name);
                   error_class python:error and 'error' or None;
                   show_optional python:view.showOptionalMarker(field_name);
-                  css_class widget/form_class|nothing">
+                  widget_class widget/widget_class|nothing">
     <tal:is-visible condition="widget/visible">
       <tr
         tal:condition="python: view.isSingleLineLayout(field_name)"
         tal:attributes="class error_class"
       >
       <td colspan="2">
-      <div tal:attributes="class css_class">
+      <div tal:attributes="class widget_class">
         <tal:block tal:condition="display_label|widget/display_label|python:True">
           <label tal:attributes="for widget/name"
                  tal:content="string:${widget/label}:">Label</label>
@@ -132,7 +132,7 @@
       <tal:block condition="python: view.isMultiLineLayout(field_name)">
         <tr tal:attributes="class error_class">
           <td colspan="2" style="text-align: left">
-            <div tal:attributes="class css_class">
+            <div tal:attributes="class widget_class">
             <tal:showlabel
               condition="display_label|widget/display_label|python:True"
             >
@@ -161,7 +161,7 @@
       </tal:block>
       <tr tal:condition="python: view.isCheckBoxLayout(field_name)">
         <td tal:attributes="class error_class" colspan="2">
-        <div tal:attributes="class css_class">
+        <div tal:attributes="class widget_class">
           <input type="checkbox" tal:replace="structure widget" />
           <label tal:attributes="for widget/name"
                  tal:content="widget/label">Label</label>

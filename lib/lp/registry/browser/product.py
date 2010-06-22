@@ -2014,7 +2014,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
                   include_create_team_link=True)
     custom_widget('transfer_to_registry', CheckBoxWidget,
-                  form_class='field subordinate')
+                  widget_class='field subordinate')
     custom_widget('driver', PersonPickerWidget, header="Select the driver",
                   include_create_team_link=True)
 
