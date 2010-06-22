@@ -456,7 +456,7 @@ class UploadProcessor:
         This includes moving the given upload directory and moving the
         matching .distro file, if it exists.
         """
-        if self.keep or self.dryrun:
+        if self.options.keep or self.options.dryrun:
             self.log.debug("Keeping contents untouched")
             return
 

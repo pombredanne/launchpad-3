@@ -439,7 +439,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
             # Remove it
             self.options.base_fsroot = testdir
-            up = self.getUploadProcessor(None)
+            up = UploadProcessor(self.options, None, self.log)
             up.removeUpload(upload)
 
             # Check it was removed, not moved
