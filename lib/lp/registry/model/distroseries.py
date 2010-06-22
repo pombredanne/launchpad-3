@@ -216,6 +216,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return self.getDistroArchSeries(archtag)
 
+    def __str__(self):
+        return '%s %s' % (self.distribution.name, self.name)
+
     def getDistroArchSeries(self, archtag):
         """See `IDistroSeries`."""
         item = DistroArchSeries.selectOneBy(
@@ -1108,11 +1111,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 for pubrecord in result]
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
         """See IHasBuildRecords"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
-        # now).
+        # now). We also ignore binary_only and always return binaries.
 
         # Find out the distroarchseries in question.
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(

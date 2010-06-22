@@ -10,12 +10,10 @@ __metaclass__ = type
 
 
 __all__ = [
-    'ForbiddenInstruction',
     'ISourcePackageRecipe',
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
     'MINIMAL_RECIPE_TEXT',
-    'TooNewRecipeFormat',
     ]
 
 
@@ -26,7 +24,7 @@ from lazr.restful.declarations import (
     operation_parameters, REQUEST_USER)
 from lazr.restful.fields import CollectionField, Reference
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Datetime, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -42,25 +40,9 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
-    # bzr-builder format 0.2 deb-version 1.0
+    # bzr-builder format 0.2 deb-version 0+{revno}
     %s
     ''')
-
-class ForbiddenInstruction(Exception):
-    """A forbidden instruction was found in the recipe."""
-
-    def __init__(self, instruction_name):
-        super(ForbiddenInstruction, self).__init__()
-        self.instruction_name = instruction_name
-
-
-class TooNewRecipeFormat(Exception):
-    """The format of the recipe supplied was too new."""
-
-    def __init__(self, supplied_format, newest_supported):
-        super(TooNewRecipeFormat, self).__init__()
-        self.supplied_format = supplied_format
-        self.newest_supported = newest_supported
 
 
 class ISourcePackageRecipeData(Interface):
@@ -86,6 +68,8 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     debianized source tree.
     """
     export_as_webservice_entry()
+
+    id = Int()
 
     daily_build_archive = Reference(
         IArchive, title=_("The archive to use for daily builds."))
@@ -135,6 +119,13 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         """Set the text of the recipe."""
 
     recipe_text = exported(Text())
+
+    def isOverQuota(requester, distroseries):
+        """True if the recipe/requester/distroseries combo is >= quota.
+
+        :param requester: The Person requesting a build.
+        :param distroseries: The distroseries to build for.
+        """
 
     @call_with(requester=REQUEST_USER)
     @operation_parameters(

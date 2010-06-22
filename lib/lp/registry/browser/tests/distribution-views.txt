@@ -111,9 +111,10 @@ The view accepts most of the distribution fields.
 
     >>> view.field_names
     ['displayname', 'title', 'summary', 'description',
-     'bug_reporting_guidelines', 'icon', 'logo', 'mugshot', 'official_malone',
-     'enable_bug_expiration', 'official_blueprints', 'official_rosetta',
-     'official_answers', 'translation_focus']
+     'bug_reporting_guidelines', 'bug_reported_acknowledgement', 'icon',
+     'logo', 'mugshot', 'official_malone', 'enable_bug_expiration',
+     'official_blueprints', 'official_rosetta', 'official_answers',
+     'translation_focus']
 
     >>> del form['field.name']
     >>> del form['field.actions.save']

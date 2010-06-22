@@ -95,6 +95,7 @@ from lp.bugs.browser.bugtask import (
 from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
+from lp.registry.browser.pillar import PillarBugsMenu
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.pillar import PillarView
@@ -555,7 +556,8 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         return Link('+addbranch', text, summary, icon='add')
 
 
-class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
+class ProductBugsMenu(PillarBugsMenu,
+                      ProductEditLinksMixin):
 
     usedfor = IProduct
     facet = 'bugs'
@@ -565,24 +567,9 @@ class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         'securitycontact',
         'cve',
         'subscribe',
+        'configure_bugtracker',
         )
-
-    def filebug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='bug')
-
-    def cve(self):
-        return Link('+cve', 'CVE reports', icon='cve')
-
-    @enabled_with_permission('launchpad.Edit')
-    def bugsupervisor(self):
-        text = 'Change bug supervisor'
-        return Link('+bugsupervisor', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def securitycontact(self):
-        text = 'Change security contact'
-        return Link('+securitycontact', text, icon='edit')
+    configurable_bugtracker = True
 
 
 class ProductSpecificationsMenu(NavigationMenu, ProductEditLinksMixin,
@@ -859,7 +846,7 @@ class ProductDownloadFileMixin:
     @cachedproperty
     def latest_release_with_download_files(self):
         """Return the latest release with download files."""
-        for series in self.sorted_series_list:
+        for series in self.sorted_active_series_list:
             for release in series.releases:
                 if len(list(release.files)) > 0:
                     return release
