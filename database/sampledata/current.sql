@@ -791,6 +791,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -2421,6 +2424,13 @@ ALTER TABLE archivedependency DISABLE TRIGGER ALL;
 
 
 ALTER TABLE archivedependency ENABLE TRIGGER ALL;
+
+
+ALTER TABLE archivejob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE archivejob ENABLE TRIGGER ALL;
 
 
 ALTER TABLE packagesetgroup DISABLE TRIGGER ALL;
