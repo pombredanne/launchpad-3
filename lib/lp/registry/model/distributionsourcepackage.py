@@ -25,7 +25,6 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.structuralsubscription import (
@@ -114,7 +113,8 @@ class DistributionSourcePackage(BugTargetBase,
     total_bug_heat = DistributionSourcePackageProperty('total_bug_heat')
     bug_count = DistributionSourcePackageProperty('bug_count')
     po_message_count = DistributionSourcePackageProperty('po_message_count')
-    is_meta = DistributionSourcePackageProperty('is_meta')
+    is_upstream_link_allowed = DistributionSourcePackageProperty(
+        'is_upstream_link_allowed')
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -518,11 +518,12 @@ class DistributionSourcePackage(BugTargetBase,
             ).one()
 
     @classmethod
-    def _new(cls, distribution, sourcepackagename, is_meta=False):
+    def _new(cls, distribution, sourcepackagename,
+             is_upstream_link_allowed=False):
         dsp = DistributionSourcePackageInDatabase()
         dsp.distribution = distribution
         dsp.sourcepackagename = sourcepackagename
-        dsp.is_meta = is_meta
+        dsp.is_upstream_link_allowed = is_upstream_link_allowed
         Store.of(distribution).add(dsp)
         return dsp
 
@@ -534,12 +535,15 @@ class DistributionSourcePackage(BugTargetBase,
         """
         sourcepackagename = spph.sourcepackagerelease.sourcepackagename
         distribution = spph.distroseries.distribution
-        is_meta = spph.section.name == 'misc'
+        # Upstream links shouldn't be added for meta packages, which are
+        # normally in the misc section.
+        is_upstream_link_allowed = spph.section.name == 'misc'
 
         if spph.archive.purpose == ArchivePurpose.PRIMARY:
             dsp = cls._get(distribution, sourcepackagename)
             if dsp is None:
-                dsp = cls._new(distribution, sourcepackagename, is_meta)
+                cls._new(distribution, sourcepackagename,
+                         is_upstream_link_allowed)
 
 
 class DistributionSourcePackageInDatabase(Storm):
@@ -569,4 +573,4 @@ class DistributionSourcePackageInDatabase(Storm):
     total_bug_heat = Int()
     bug_count = Int()
     po_message_count = Int()
-    is_meta = Bool()
+    is_upstream_link_allowed = Bool()
