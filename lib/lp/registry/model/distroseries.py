@@ -48,7 +48,6 @@ from lp.bugs.model.bug import (
 from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries, DistroArchSeriesSet, PocketChroot)
