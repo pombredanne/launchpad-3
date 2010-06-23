@@ -100,14 +100,16 @@ class PackageClonerTests(TestCaseWithFactory):
             self.createSourcePublication(package_info, distroseries)
 
     def makeCopyArchive(self, package_infos, component="main",
-                        source_pocket=None, target_pocket=None):
+                        source_pocket=None, target_pocket=None,
+                        proc_families=None):
         """Make a copy archive based on a new distribution."""
         distroseries = self.createSourceDistribution(package_infos)
         copy_archive = self.getTargetArchive(distroseries.distribution)
         to_component = getUtility(IComponentSet).ensure(component)
         cloner = self.copyArchive(
             copy_archive, distroseries, from_pocket=source_pocket,
-            to_pocket=target_pocket, to_component=to_component)
+            to_pocket=target_pocket, to_component=to_component,
+            proc_families=proc_families)
         return (copy_archive, distroseries)
 
     def checkBuilds(self, archive, package_infos):
@@ -130,8 +132,7 @@ class PackageClonerTests(TestCaseWithFactory):
 
     def copyArchive(self, to_archive, to_distroseries, from_archive=None,
                     from_distroseries=None, from_pocket=None, to_pocket=None,
-                    to_component=None, distroarchseries_list=None,
-                    packagesets=None):
+                    to_component=None, packagesets=None, proc_families=None):
         """Use a PackageCloner to copy an archive."""
         if from_distroseries is None:
            from_distroseries = to_distroseries
@@ -153,10 +154,12 @@ class PackageClonerTests(TestCaseWithFactory):
         if to_component is not None:
             destination.component = to_component
         cloner = getUtility(IPackageCloner)
-        cloner.clonePackages(origin, destination, distroarchseries_list=None)
+        cloner.clonePackages(
+            origin, destination, distroarchseries_list=None,
+            proc_families=proc_families)
         return cloner
 
-    def testCreateCopiesPublished(self):
+    def testCopiesPublished(self):
         """Test that PUBLISHED sources are copied."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
@@ -164,7 +167,7 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkCopiedSources(
             copy_archive, distroseries, [package_info])
 
-    def testCreateCopiesPending(self):
+    def testCopiesPending(self):
         """Test that PENDING sources are copied."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PENDING)
@@ -172,7 +175,7 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkCopiedSources(
             copy_archive, distroseries, [package_info])
 
-    def testCreateDoesntCopySuperseded(self):
+    def testDoesntCopySuperseded(self):
         """Test that SUPERSEDED sources are not copied."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.SUPERSEDED)
@@ -180,7 +183,7 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkCopiedSources(
             copy_archive, distroseries, [])
 
-    def testCreateDoesntCopyDeleted(self):
+    def testDoesntCopyDeleted(self):
         """Test that DELETED sources are not copied."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.DELETED)
@@ -188,7 +191,7 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkCopiedSources(
             copy_archive, distroseries, [])
 
-    def testCreateDoesntCopyObsolete(self):
+    def testDoesntCopyObsolete(self):
         """Test that OBSOLETE sources are not copied."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.OBSOLETE)
@@ -196,7 +199,7 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkCopiedSources(
             copy_archive, distroseries, [])
 
-    def testCopyArchiveCopiesAllComponents(self):
+    def testCopiesAllComponents(self):
         """Test that packages from all components are copied.
 
         When copying you specify a component, but that component doesn't
@@ -215,7 +218,7 @@ class PackageClonerTests(TestCaseWithFactory):
             component="main")
         self.checkCopiedSources(copy_archive, distroseries, package_infos)
 
-    def testCopyArchiveSubsetsBasedOnPackageset(self):
+    def testSubsetsBasedOnPackageset(self):
         """Test that --package-set limits the sources copied."""
         package_infos = [
             PackageInfo(
@@ -232,7 +235,7 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkCopiedSources(
             copy_archive, distroseries, [package_infos[1]])
 
-    def testCopyArchiveUnionsPackagesets(self):
+    def testUnionsPackagesets(self):
         """Test that package sets are unioned when copying archives."""
         package_infos = [
             PackageInfo(
@@ -256,7 +259,7 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkCopiedSources(
             copy_archive, distroseries, package_infos[1:])
 
-    def testCopyArchiveRecursivelyCopiesPackagesets(self):
+    def testRecursivelyCopiesPackagesets(self):
         """Test that package set copies include subsets."""
         package_infos = [
             PackageInfo(
@@ -280,7 +283,7 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkCopiedSources(
             copy_archive, distroseries, package_infos[1:])
 
-    def testCopyFromPPA(self):
+    def testCloneFromPPA(self):
         """Test we can create a copy archive with a PPA as the source."""
         distroseries = self.createSourceDistroSeries()
         ppa = self.factory.makeArchive(
@@ -301,3 +304,83 @@ class PackageClonerTests(TestCaseWithFactory):
         self.copyArchive(copy_archive, distroseries, from_archive=ppa)
         self.checkCopiedSources(
             copy_archive, distroseries, [package_info])
+
+    def testCreatesNoBuildsWithNoProcFamilies(self):
+        """Test that no builds are created if we specify no proc families."""
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        copy_archive, distroseries = self.makeCopyArchive([package_info])
+        self.checkBuilds(copy_archive, [])
+
+    def testCreatesBuilds(self):
+        """Test that a copy archive creates builds for the copied packages."""
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        # This is the processor family for the DAS that the source has,
+        # so we expect to get builds.
+        proc_families = [ProcessorFamilySet().getByName("x86")]
+        copy_archive, distroseries = self.makeCopyArchive(
+            [package_info], proc_families=proc_families)
+        self.checkBuilds(copy_archive, [package_info])
+
+    def testNoBuildsIfProcFamilyNotInSource(self):
+        """Test that no builds are created for a proc family without a DAS."""
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        # This is a processor family without a DAS in the source, so
+        # we expect no builds.
+        family = self.factory.makeProcessorFamily(name="armel")
+        self.factory.makeProcessor(family=family, name="armel")
+        proc_families = [family]
+        copy_archive, distroseries = self.makeCopyArchive(
+            [package_info], proc_families=proc_families)
+        self.checkBuilds(copy_archive, [])
+
+    def testBuildsOnlyForProcFamiliesInSource(self):
+        """Test that builds are only created for proc families in source."""
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        # One of these processor families has a DAS in the source, so
+        # we expect one set of builds
+        family = self.factory.makeProcessorFamily(name="armel")
+        self.factory.makeProcessor(family=family, name="armel")
+        proc_families = [family, ProcessorFamilySet().getByName("x86")]
+        copy_archive, distroseries = self.makeCopyArchive(
+            [package_info], proc_families=proc_families)
+        self.checkBuilds(copy_archive, [package_info])
+
+    def testCreatesSubsetOfBuilds(self):
+        """Test that builds are only created for requested families."""
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        distroseries = self.createSourceDistribution([package_info])
+        # Create a DAS for a second family
+        self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="amd64",
+            processorfamily=ProcessorFamilySet().getByName("amd64"),
+            supports_virtualized=True)
+        # The request builds for only one of the families, so we
+        # expect just one build for each source
+        proc_families = [ProcessorFamilySet().getByName("x86")]
+        copy_archive = self.getTargetArchive(distroseries.distribution)
+        self.copyArchive(
+            copy_archive, distroseries, proc_families=proc_families)
+        self.checkBuilds(copy_archive, [package_info])
+
+    def testCreatesMultipleBuilds(self):
+        """Test that multiple families result in mutiple builds."""
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        distroseries = self.createSourceDistribution([package_info])
+        # Create a DAS for a second family
+        amd64_family = ProcessorFamilySet().getByName("amd64")
+        self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="amd64",
+            processorfamily=amd64_family, supports_virtualized=True)
+        # The request builds for both families, so we expect two builds
+        # per source.
+        proc_families = [ProcessorFamilySet().getByName("x86"), amd64_family]
+        copy_archive = self.getTargetArchive(distroseries.distribution)
+        self.copyArchive(
+            copy_archive, distroseries, proc_families=proc_families)
+        self.checkBuilds(copy_archive, [package_info, package_info])
