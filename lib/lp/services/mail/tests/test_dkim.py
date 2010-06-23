@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test DKIM-signed messages"""
@@ -138,7 +138,8 @@ class TestDKIM(TestCaseWithFactory):
         signed_message = self.fake_signing(plain_content)
         self._dns_responses['example._domainkey.canonical.com.'] = \
             'aothuaonu'
-        principal = authenticateEmail(signed_message_from_string(signed_message))
+        principal = authenticateEmail(signed_message_from_string(signed_message),
+            signed_message)
         self.assertWeaklyAuthenticated(principal, signed_message)
         self.assertDkimLogContains('invalid format in _domainkey txt record')
 
@@ -147,31 +148,34 @@ class TestDKIM(TestCaseWithFactory):
         # message comes in (probably going too/from SignedMessage)
         # and pydkim correctly complains about that: we would need to 
         # validate against the raw bytes
-        return
         signed_message = self.fake_signing(plain_content,
             canonicalize=(dkim.Simple, dkim.Simple))
         self._dns_responses['example._domainkey.canonical.com.'] = \
             sample_dns
-        principal = authenticateEmail(signed_message_from_string(signed_message))
+        principal = authenticateEmail(signed_message_from_string(signed_message),
+            signed_message)
         self.assertStronglyAuthenticated(principal, signed_message)
 
     def test_dkim_valid(self):
         signed_message = self.fake_signing(plain_content)
         self._dns_responses['example._domainkey.canonical.com.'] = \
             sample_dns
-        principal = authenticateEmail(signed_message_from_string(signed_message))
+        principal = authenticateEmail(signed_message_from_string(signed_message),
+            signed_message)
         self.assertStronglyAuthenticated(principal, signed_message)
 
     def test_dkim_nxdomain(self):
         # if there's no DNS entry for the pubkey
         # it should be handled decently
         signed_message = self.fake_signing(plain_content)
-        principal = authenticateEmail(signed_message_from_string(signed_message))
+        principal = authenticateEmail(signed_message_from_string(signed_message),
+            signed_message)
         self.assertWeaklyAuthenticated(principal, signed_message)
 
     def test_dkim_message_unsigned(self):
         # degenerate case: no signature treated as weakly authenticated
-        principal = authenticateEmail(signed_message_from_string(plain_content))
+        principal = authenticateEmail(signed_message_from_string(plain_content),
+            plain_content)
         self.assertWeaklyAuthenticated(principal, plain_content)
         # the library doesn't log anything if there's no header at all
 
@@ -186,7 +190,8 @@ class TestDKIM(TestCaseWithFactory):
         signed_message += 'blah blah'
         self._dns_responses['example._domainkey.canonical.com.'] = \
             sample_dns
-        principal = authenticateEmail(signed_message_from_string(signed_message))
+        principal = authenticateEmail(signed_message_from_string(signed_message),
+            signed_message)
         self.assertWeaklyAuthenticated(principal, signed_message)
         self.assertDkimLogContains('body hash mismatch')
 
