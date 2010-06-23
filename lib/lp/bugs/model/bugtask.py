@@ -992,7 +992,7 @@ class BugTask(SQLBase, BugTaskMixin):
         if not self.canTransitionToAssignee(assignee):
             raise UserCannotEditBugTaskAssignee(
                 'Regular users can assign and unassign only themselves and '
-                'their teams. Only project onwers, bug supervisors, drivers '
+                'their teams. Only project owners, bug supervisors, drivers '
                 'and release managers can assign others.')
 
         now = datetime.datetime.now(pytz.UTC)

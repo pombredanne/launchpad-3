@@ -507,7 +507,7 @@ from the bug so that they are not calculated for every recipient.
     X-Launchpad-Bug-Commenters: name12
 
 The build() method of a builder accepts a number of parameters and
-returns an instance of email.MIMEText. The most basic invokation of
+returns an instance of email.MIMEText. The most basic invocation of
 this method requires a from address, a to address, a body, a subject
 and a sending date for the mail.
 
