@@ -424,7 +424,7 @@ Removing a patch also generates a different notification.
 The Reply-To: and From: addresses used to send email are generated in a
 pair of handy functions defined in mailnotification.py:
 
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from lp.bugs.mail.bugnotificationbuilder import (
     ...     get_bugmail_from_address, get_bugmail_replyto_address)
 
 The Reply-To address generation is straightforward:

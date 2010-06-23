@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BugNotificationBuilder',
     'format_rfc2822_date',
+    'get_bugmail_from_address',
     ]
 
 import rfc822
@@ -16,7 +17,11 @@ from email.Utils import formatdate
 from zope.component import getAdapter, getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.mail import (
+    sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 
 
 def format_rfc2822_date(date):
