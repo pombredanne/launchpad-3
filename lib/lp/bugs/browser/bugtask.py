@@ -1042,7 +1042,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
     @property
     def visible_comments_truncated_for_display(self):
-        """Whether the visible comment list truncated for display."""
+        """Whether the visible comment list is truncated for display."""
         return (len(self.visible_comments) >
                 len(self.visible_oldest_comments_for_display))
 
