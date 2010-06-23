@@ -15,7 +15,6 @@ __all__ = [
     'safe_action',
     ]
 
-import httplib2
 import transaction
 
 from zope.interface import classImplements, providedBy
@@ -478,9 +477,6 @@ class ReturnToReferrerMixin:
             # Windmill doesn't pass in a correct referer.
             if '/windmill-serv/remote.html' in referrer:
                 referrer = None
-            open('/tmp/return.log', 'a').write(
-                '%s: %s\n' % (self.request.environment.items(),
-                              self.request.getHeader('referer')))
         else:
             attribute_name = self.request.form.get('_return_attribute_name')
             attribute_value = self.request.form.get('_return_attribute_value')
