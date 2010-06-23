@@ -191,10 +191,10 @@
           class="bugtasks-table-row-init-script"
           tal:condition="not:view/many_bugtasks"
           tal:content="string:
-    LPS.use('event', 'bugs.bugtask_index', function(Y) {
+    LPS.use('event', 'lp.bugs.bugtask_index', function(Y) {
         Y.on('load',
              function(e) {
-                 Y.bugs.setup_bugtask_row(${view/js_config});
+                 Y.lp.bugs.bugtask_index.setup_bugtask_row(${view/js_config});
              },
              window);
     });
