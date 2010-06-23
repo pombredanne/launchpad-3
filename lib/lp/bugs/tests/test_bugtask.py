@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+from datetime import timedelta
 import unittest
 
 from zope.component import getUtility
@@ -14,8 +15,10 @@ from lazr.lifecycle.snapshot import Snapshot
 from lp.hardwaredb.interfaces.hwdb import HWBus, IHWDeviceSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import all, any
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskSearchParams, BugTaskStatus)
 from lp.bugs.model.bugtask import build_tag_search_clause
@@ -718,14 +721,48 @@ class TestDistributionBugTaskPermissionsToSetAssignee(
         self.series = self.factory.makeDistroSeries(self.target)
 
 
+class TestBugTaskSearch(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def login(self):
+        # Log in as an arbitrary person.
+        person = self.factory.makePerson()
+        login_person(person)
+        self.addCleanup(logout)
+        return person
+
+    def makeBugTarget(self):
+        """Make an arbitrary bug target with no tasks on it."""
+        return IBugTarget(self.factory.makeProduct())
+
+    def test_no_tasks(self):
+        # A brand new bug target has no tasks.
+        target = self.makeBugTarget()
+        self.assertEqual([], list(target.searchTasks(None)))
+
+    def test_new_task_shows_up(self):
+        # When we create a new bugtask on the target, it shows up in
+        # searchTasks.
+        target = self.makeBugTarget()
+        self.login()
+        task = self.factory.makeBugTask(target=target)
+        self.assertEqual([task], list(target.searchTasks(None)))
+
+    def test_modified_since_excludes_earlier_bugtasks(self):
+        # When we search for bug tasks that have been modified since a certain
+        # time, tasks for bugs that have not been modified since then are
+        # excluded.
+        target = self.makeBugTarget()
+        self.login()
+        task = self.factory.makeBugTask(target=target)
+        date = task.bug.date_last_updated + timedelta(days=1)
+        result = target.searchTasks(None, modified_since=date)
+        self.assertEqual([], list(result))
+
+
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestBugTaskDelta))
-    suite.addTest(unittest.makeSuite(TestBugTaskTagSearchClauses))
-    suite.addTest(unittest.makeSuite(TestBugTaskHardwareSearch))
-    suite.addTest(unittest.makeSuite(
-        TestProductBugTaskPermissionsToSetAssignee))
-    suite.addTest(unittest.makeSuite(
-        TestDistributionBugTaskPermissionsToSetAssignee))
+    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
     suite.addTest(DocTestSuite('lp.bugs.model.bugtask'))
     return suite
