@@ -12,6 +12,7 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivejob import (
     ArchiveJobType, ICopyArchiveJob, ICopyArchiveJobSource)
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.archivejob import ArchiveJob, ArchiveJobDerived
 
@@ -24,9 +25,9 @@ class CopyArchiveJob(ArchiveJobDerived):
     classProvides(ICopyArchiveJobSource)
 
     @classmethod
-    def create(cls, target_archive, source_archive_id,
-               source_series_id, source_pocket_value, target_series_id,
-               target_pocket_value, target_component_id, source_user_id=None):
+    def create(cls, target_archive, source_archive,
+               source_series, source_pocket, target_series, target_pocket,
+               target_component=None, proc_families=None, packagesets=None):
         """See `ICopyArchiveJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         job_for_archive = store.find(
@@ -40,16 +41,25 @@ class CopyArchiveJob(ArchiveJobDerived):
         if job_for_archive is not None:
             return cls(job_for_archive)
         else:
+            if proc_families is None:
+                proc_families = []
+            proc_family_ids = [p.id for p in proc_families]
+            if packagesets is None:
+                packagesets = []
+            packageset_names = [p.name for p in packagesets]
+            target_component_id = None
+            if target_component is not None:
+                target_component_id = target_component.id
             metadata = {
-                'source_archive_id': source_archive_id,
-                'source_distroseries_id': source_series_id,
-                'source_pocket_value': source_pocket_value,
-                'target_distroseries_id': target_series_id,
-                'target_pocket_value': target_pocket_value,
+                'source_archive_id': source_archive.id,
+                'source_distroseries_id': source_series.id,
+                'source_pocket_value': source_pocket.value,
+                'target_distroseries_id': target_series.id,
+                'target_pocket_value': target_pocket.value,
                 'target_component_id': target_component_id,
+                'proc_family_ids': proc_family_ids,
+                'packageset_names': packageset_names,
             }
-            if source_user_id is not None:
-                metadata['source_user_id'] = source_user_id
             return super(CopyArchiveJob, cls).create(target_archive, metadata)
 
     def getOopsVars(self):
@@ -65,10 +75,6 @@ class CopyArchiveJob(ArchiveJobDerived):
             ('target_pocket_value', self.metadata['target_pocket_value']),
             ('target_component_id', self.metadata['target_component_id']),
             ])
-        if 'source_user_id' in self.metadata:
-           vars.extend([
-                ('source_user_id', self.metadata['source_user_id']),
-                ])
         return vars
 
     def getSourceLocation(self):
@@ -82,9 +88,12 @@ class CopyArchiveJob(ArchiveJobDerived):
         source_distribution = source_distroseries.distribution
         source_pocket_value = self.metadata['source_pocket_value']
         source_pocket = PackagePublishingPocket.items[source_pocket_value]
+        packageset_names = self.metadata['packageset_names']
+        packagesets = [getUtility(IPackagesetSet).getByName(name)
+                        for name in packageset_names]
         source_location = PackageLocation(
             source_archive, source_distribution, source_distroseries,
-            source_pocket)
+            source_pocket, packagesets=packagesets)
         return source_location
 
     def getTargetLocation(self):
@@ -100,8 +109,9 @@ class CopyArchiveJob(ArchiveJobDerived):
             self.archive, target_distribution, target_distroseries,
             target_pocket)
         target_component_id = self.metadata['target_component_id']
-        target_component = getUtility(IComponentSet).get(
-            target_component_id)
+        if target_component_id is not None:
+            target_location.component = getUtility(IComponentSet).get(
+                target_component_id)
         return target_location
 
     def run(self):

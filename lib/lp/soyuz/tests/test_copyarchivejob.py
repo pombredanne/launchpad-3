@@ -5,6 +5,7 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.copyarchivejob import CopyArchiveJob
@@ -21,12 +22,11 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         target_distroseries = self.factory.makeDistroSeries()
         source_pocket = PackagePublishingPocket.RELEASE
         target_pocket = PackagePublishingPocket.BACKPORTS
-        source_user = self.factory.makePerson()
+        target_component = self.factory.makeComponent()
         job = CopyArchiveJob.create(
-            archive, args['source_archive'].id,
-            args['distroseries'].id, source_pocket.value,
-            target_distroseries.id, target_pocket.value,
-            args['target_component'].id, source_user_id=source_user.id)
+            archive, args['source_archive'], args['distroseries'],
+            source_pocket, target_distroseries, target_pocket,
+            target_component=target_component)
         vars = job.getOopsVars()
         self.assertIn(('archive_id', archive.id), vars)
         self.assertIn(('archive_job_id', job.context.id), vars)
@@ -39,8 +39,7 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         self.assertIn(('source_pocket_value', source_pocket.value), vars)
         self.assertIn(('target_pocket_value', target_pocket.value), vars)
         self.assertIn(
-            ('target_component_id', args['target_component'].id), vars)
-        self.assertIn(('source_user_id', source_user.id), vars)
+            ('target_component_id', target_component.id), vars)
 
     def makeDummyArgs(self):
         args = {}
@@ -50,24 +49,19 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         args['pocket'] = self.factory.getAnyPocket()
         args['source_archive'] = self.factory.makeArchive(
             distribution=distro)
-        args['target_component'] = self.factory.makeComponent()
         return args
 
     def test_create_only_creates_one(self):
         target_archive = self.factory.makeArchive()
         args = self.makeDummyArgs()
         job = CopyArchiveJob.create(
-            target_archive, args['source_archive'].id,
-            args['distroseries'].id, args['pocket'].value,
-            args['distroseries'].id, args['pocket'].value,
-            args['target_component'].id)
+            target_archive, args['source_archive'], args['distroseries'],
+            args['pocket'], args['distroseries'], args['pocket'])
         self.assertEqual(1, self._getJobCount())
         args = self.makeDummyArgs()
         new_job = CopyArchiveJob.create(
-            target_archive, args['source_archive'].id,
-            args['distroseries'].id, args['pocket'].value,
-            args['distroseries'].id, args['pocket'].value,
-            args['target_component'].id)
+            target_archive, args['source_archive'], args['distroseries'],
+            args['pocket'], args['distroseries'], args['pocket'])
         self.assertEqual(job, new_job)
         self.assertEqual(1, self._getJobCount())
 
@@ -76,10 +70,8 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         args = self.makeDummyArgs()
         source_archive = self.factory.makeArchive()
         job = CopyArchiveJob.create(
-            target_archive, source_archive.id,
-            args['distroseries'].id, args['pocket'].value,
-            args['distroseries'].id, args['pocket'].value,
-            args['target_component'].id)
+            target_archive, source_archive, args['distroseries'],
+            args['pocket'], args['distroseries'], args['pocket'])
         self.assertEqual(
             source_archive.id, job.metadata['source_archive_id'])
 
@@ -88,10 +80,8 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         args = self.makeDummyArgs()
         source_distroseries = self.factory.makeDistroSeries()
         job = CopyArchiveJob.create(
-            target_archive, args['source_archive'].id,
-            source_distroseries.id, args['pocket'].value,
-            args['distroseries'].id, args['pocket'].value,
-            args['target_component'].id)
+            target_archive, args['source_archive'], source_distroseries,
+            args['pocket'], args['distroseries'], args['pocket'])
         self.assertEqual(
             source_distroseries.id, job.metadata['source_distroseries_id'])
 
@@ -101,10 +91,8 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         source_pocket = PackagePublishingPocket.RELEASE
         target_pocket = PackagePublishingPocket.BACKPORTS
         job = CopyArchiveJob.create(
-            target_archive, args['source_archive'].id,
-            args['distroseries'].id, source_pocket.value,
-            args['distroseries'].id, target_pocket.value,
-            args['target_component'].id)
+            target_archive, args['source_archive'], args['distroseries'],
+            source_pocket, args['distroseries'], target_pocket)
         self.assertEqual(
             source_pocket.value, job.metadata['source_pocket_value'])
 
@@ -114,10 +102,8 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         source_pocket = PackagePublishingPocket.RELEASE
         target_pocket = PackagePublishingPocket.BACKPORTS
         job = CopyArchiveJob.create(
-            target_archive, args['source_archive'].id,
-            args['distroseries'].id, source_pocket.value,
-            args['distroseries'].id, target_pocket.value,
-            args['target_component'].id)
+            target_archive, args['source_archive'], args['distroseries'],
+            source_pocket, args['distroseries'], target_pocket)
         self.assertEqual(
             target_pocket.value, job.metadata['target_pocket_value'])
 
@@ -126,10 +112,8 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         args = self.makeDummyArgs()
         target_distroseries = self.factory.makeDistroSeries()
         job = CopyArchiveJob.create(
-            target_archive, args['source_archive'].id,
-            args['distroseries'].id, args['pocket'].value,
-            target_distroseries.id, args['pocket'].value,
-            args['target_component'].id)
+            target_archive, args['source_archive'], args['distroseries'],
+            args['pocket'], target_distroseries, args['pocket'])
         self.assertEqual(
             target_distroseries.id, job.metadata['target_distroseries_id'])
 
@@ -138,34 +122,114 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         args = self.makeDummyArgs()
         target_component = self.factory.makeComponent()
         job = CopyArchiveJob.create(
-            target_archive, args['source_archive'].id,
-            args['distroseries'].id, args['pocket'].value,
-            args['distroseries'].id, args['pocket'].value,
-            target_component.id)
+            target_archive, args['source_archive'], args['distroseries'],
+            args['pocket'], args['distroseries'], args['pocket'],
+            target_component=target_component)
         self.assertEqual(
             target_component.id, job.metadata['target_component_id'])
 
-    def test_doesnt_set_source_user_id_if_not_passed(self):
+    def test_create_sets_target_component_id_to_None_if_unspecified(self):
         target_archive = self.factory.makeArchive()
         args = self.makeDummyArgs()
         job = CopyArchiveJob.create(
-            target_archive, args['source_archive'].id,
-            args['distroseries'].id, args['pocket'].value,
-            args['distroseries'].id, args['pocket'].value,
-            args['target_component'].id)
-        self.assertNotIn('source_user_id', job.metadata)
+            target_archive, args['source_archive'], args['distroseries'],
+            args['pocket'], args['distroseries'], args['pocket'])
+        self.assertEqual(None, job.metadata['target_component_id'])
 
-    def test_sets_source_user_id(self):
+    def test_create_sets_proc_family_ids(self):
         target_archive = self.factory.makeArchive()
         args = self.makeDummyArgs()
-        source_owner = self.factory.makePerson()
+        family1 = self.factory.makeProcessorFamily(name="armel")
+        family2 = self.factory.makeProcessorFamily(name="ia64")
         job = CopyArchiveJob.create(
-            target_archive, args['source_archive'].id,
-            args['distroseries'].id, args['pocket'].value,
-            args['distroseries'].id, args['pocket'].value,
-            args['target_component'].id, source_user_id=source_owner.id)
+            target_archive, args['source_archive'], args['distroseries'],
+            args['pocket'], args['distroseries'], args['pocket'],
+            proc_families=[family1, family2])
         self.assertEqual(
-            source_owner.id, job.metadata['source_user_id'])
+            [f.id for f in [family1, family2]],
+            job.metadata['proc_family_ids'])
+
+    def test_create_sets_source_package_set_ids(self):
+        target_archive = self.factory.makeArchive()
+        args = self.makeDummyArgs()
+        packagesets = [
+            self.factory.makePackageset(),
+            self.factory.makePackageset(),
+        ]
+        job = CopyArchiveJob.create(
+            target_archive, args['source_archive'], args['distroseries'],
+            args['pocket'], args['distroseries'], args['pocket'],
+            packagesets=packagesets)
+        self.assertEqual(
+            [p.name for p in packagesets], job.metadata['packageset_names'])
+
+    def test_get_source_location(self):
+        target_archive = self.factory.makeArchive()
+        args = self.makeDummyArgs()
+        source_distroseries = self.factory.makeDistroSeries()
+        source_pocket = PackagePublishingPocket.RELEASE
+        target_pocket = PackagePublishingPocket.BACKPORTS
+        job = CopyArchiveJob.create(
+            target_archive, args['source_archive'], source_distroseries,
+            source_pocket, args['distroseries'], target_pocket)
+        location = job.getSourceLocation()
+        expected_location = PackageLocation(
+            args['source_archive'], source_distroseries.distribution,
+            source_distroseries, source_pocket)
+        self.assertEqual(expected_location, location)
+
+    def test_get_source_location_with_packagesets(self):
+        target_archive = self.factory.makeArchive()
+        args = self.makeDummyArgs()
+        source_distroseries = self.factory.makeDistroSeries()
+        source_pocket = PackagePublishingPocket.RELEASE
+        target_pocket = PackagePublishingPocket.BACKPORTS
+        packagesets = [
+            self.factory.makePackageset(),
+            self.factory.makePackageset(),
+        ]
+        job = CopyArchiveJob.create(
+            target_archive, args['source_archive'], source_distroseries,
+            source_pocket, args['distroseries'], target_pocket,
+            packagesets=packagesets)
+        location = job.getSourceLocation()
+        expected_location = PackageLocation(
+            args['source_archive'], source_distroseries.distribution,
+            source_distroseries, source_pocket, packagesets=packagesets)
+        self.assertEqual(expected_location, location)
+
+    def test_get_target_location(self):
+        target_archive = self.factory.makeArchive()
+        args = self.makeDummyArgs()
+        target_distroseries = self.factory.makeDistroSeries()
+        source_pocket = PackagePublishingPocket.RELEASE
+        target_pocket = PackagePublishingPocket.BACKPORTS
+        job = CopyArchiveJob.create(
+            target_archive, args['source_archive'], args['distroseries'],
+            source_pocket, target_distroseries, target_pocket)
+        location = job.getTargetLocation()
+        expected_location = PackageLocation(
+            target_archive, target_distroseries.distribution,
+            target_distroseries, target_pocket)
+        self.assertEqual(expected_location, location)
+
+    def test_get_target_location_with_component(self):
+        target_archive = self.factory.makeArchive()
+        args = self.makeDummyArgs()
+        target_distroseries = self.factory.makeDistroSeries()
+        source_pocket = PackagePublishingPocket.RELEASE
+        target_pocket = PackagePublishingPocket.BACKPORTS
+        target_component = self.factory.makeComponent()
+        job = CopyArchiveJob.create(
+            target_archive, args['source_archive'], args['distroseries'],
+            source_pocket, target_distroseries, target_pocket,
+            target_component=target_component)
+        location = job.getTargetLocation()
+        expected_location = PackageLocation(
+            target_archive, target_distroseries.distribution,
+            target_distroseries, target_pocket)
+        expected_location.component = target_component
+        self.assertEqual(expected_location, location)
 
     def _getJobs(self):
         """Return the pending CopyArchiveJobs as a list."""
@@ -202,9 +266,9 @@ class CopyArchiveJobTests(TestCaseWithFactory):
             description="Test copy archive", enabled=False)
         target_component = self.factory.makeComponent()
         job = CopyArchiveJob.create(
-            target_archive, source_archive.id, distroseries.id,
-            PackagePublishingPocket.RELEASE.value, distroseries.id,
-            PackagePublishingPocket.RELEASE.value, target_component.id)
+            target_archive, source_archive, distroseries,
+            PackagePublishingPocket.RELEASE, distroseries,
+            PackagePublishingPocket.RELEASE)
         job.run()
         sources = target_archive.getPublishedSources(
             distroseries=distroseries,
