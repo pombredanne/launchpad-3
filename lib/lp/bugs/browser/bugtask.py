@@ -1022,12 +1022,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         """
         show_all = (self.request.form_ng.getOne('comments') == 'all')
         max_comments = config.malone.comments_list_max_length
-        total_count = len(self.visible_comments)
-        if show_all or total_count <= max_comments:
+        total = len(self.visible_comments)
+        if show_all or total <= max_comments:
             return []
         else:
-            newest_count = config.malone.comments_list_truncate_newest_to
-            return self.visible_comments[total_count-newest_count:total_count]
+            start = total - config.malone.comments_list_truncate_newest_to
+            return self.visible_comments[start:total]
 
     @cachedproperty
     def visible_comments_for_display(self):
