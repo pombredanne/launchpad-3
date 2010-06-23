@@ -152,6 +152,23 @@ class TestDKIM(TestCaseWithFactory):
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
 
+    def test_dkim_signing_irrelevant(self):
+        # It's totally valid for a message to be signed by a domain other than
+        # that of the From-sender, if that domain is relaying the message.
+        # However, we shouldn't then trust the purported sender, because they
+        # might have just made it up rather than relayed it.
+        tweaked_message = plain_content.replace('foo.bar@canonical.com',
+            'steve.alexander@ubuntulinux.com')
+        signed_message = self.fake_signing(tweaked_message)
+        self._dns_responses['example._domainkey.canonical.com.'] = \
+            sample_dns
+        principal = authenticateEmail(signed_message_from_string(signed_message),
+            signed_message)
+        self.assertWeaklyAuthenticated(principal, signed_message)
+        # should come from From, not the dkim signature
+        self.assertEqual(principal.person.preferredemail.email,
+            'steve.alexander@ubuntulinux.com')
+
     def test_dkim_changed_from_address(self):
         # if the address part of the message has changed, it's detected.  we
         # still treat this as weakly authenticated by the purported From-header
