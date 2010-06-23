@@ -95,12 +95,7 @@ def _authenticateDkim(signed_message, raw_mail):
     else:
         log.info('DKIM verification result=%s' % (dkim_result,))
     log.debug('DKIM debug log: %s' % (dkim_log.getvalue(),))
-
-    if signed_message.signature:
-        log.info('message has gpg signature, therefore not treating DKIM as conclusive')
-        return False
-    else:
-        return dkim_result
+    return dkim_result
 
 
 def authenticateEmail(mail, raw_mail):
@@ -132,8 +127,12 @@ def authenticateEmail(mail, raw_mail):
     dkim_result = _authenticateDkim(mail, raw_mail)
 
     if dkim_result:
-        setupInteraction(principal, email_addr)
-        return principal
+        if mail.signature is not None:
+            log.info('message has gpg signature, therefore not treating DKIM '
+                'success as conclusive')
+        else:
+            setupInteraction(principal, email_addr)
+            return principal
 
     if signature is None:
         # Mark the principal so that application code can check that the
