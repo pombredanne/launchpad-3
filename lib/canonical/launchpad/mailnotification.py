@@ -615,10 +615,10 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
             elif (isinstance(change, BugTaskAssigneeChange) and
                   new_subscribers is not None):
                 for person in new_subscribers:
-                    reason = recipients.getReason(person)
-                    if reason == 'Assignee':
+                    reason, rationale = recipients.getReason(person)
+                    if 'Assignee' in rationale:
                         recipients.remove(person)
-                        bug_delta.bug.addChange(change, recipients=recipients)
+                bug_delta.bug.addChange(change, recipients=recipients)
             else:
                 bug_delta.bug.addChange(change, recipients=recipients)
         else:
