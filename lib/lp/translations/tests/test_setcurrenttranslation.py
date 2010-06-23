@@ -28,40 +28,10 @@ from lp.translations.tests.helpers import (
 #     /UpstreamImportIntoUbuntu/FixingIsImported
 #     /setCurrentTranslation#Execution%20matrix
 
-class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
-    """Comprehensively test setting a current translation."""
+class SetCurrentTranslationTestMixin:
+    """Tests for `POTMsgSet.setCurrentTranslation`."""
 
     layer = ZopelessDatabaseLayer
-
-    def setUp(self):
-        super(TestPOTMsgSet_setCurrentTranslation, self).setUp()
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        sharing_series = self.factory.makeDistroRelease(distribution=ubuntu)
-        sourcepackagename = self.factory.makeSourcePackageName()
-        potemplate = self.factory.makePOTemplate(
-            distroseries=ubuntu.currentseries,
-            sourcepackagename=sourcepackagename)
-        sharing_potemplate = self.factory.makePOTemplate(
-            distroseries=sharing_series,
-            sourcepackagename=sourcepackagename,
-            name=potemplate.name)
-        self.pofile = self.factory.makePOFile('sr', potemplate=potemplate,
-                                              create_sharing=True)
-
-        # A POFile in the same context as self.pofile, used for diverged
-        # translations.
-        self.diverging_pofile = sharing_potemplate.getPOFileByLang(
-            self.pofile.language.code, self.pofile.variant)
-
-        # A POFile in a different context from self.pofile and
-        # self.diverging_pofile.
-        self.other_pofile = self.factory.makePOFile(
-            language_code=self.pofile.language.code,
-            variant=self.pofile.variant)
-
-
-        self.potmsgset = self.factory.makePOTMsgSet(potemplate=potemplate,
-                                                    sequence=1)
 
     def constructTranslationMessage(self, pofile=None, potmsgset=None,
                                     current=True, other=False, diverged=False,
@@ -1769,3 +1739,69 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # are needed when current is diverged: they'd make sense only
         # when we end up converging the translation.
         self.test_current_diverged__new_diverged__other_diverged(True)
+
+
+class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
+                                       TestCaseWithFactory):
+    def setUp(self):
+        super(TestSetCurrentTranslation_Ubuntu, self).setUp()
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        sharing_series = self.factory.makeDistroRelease(distribution=ubuntu)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        potemplate = self.factory.makePOTemplate(
+            distroseries=ubuntu.currentseries,
+            sourcepackagename=sourcepackagename)
+        sharing_potemplate = self.factory.makePOTemplate(
+            distroseries=sharing_series,
+            sourcepackagename=sourcepackagename,
+            name=potemplate.name)
+        self.pofile = self.factory.makePOFile('sr', potemplate=potemplate,
+                                              create_sharing=True)
+
+        # A POFile in the same context as self.pofile, used for diverged
+        # translations.
+        self.diverging_pofile = sharing_potemplate.getPOFileByLang(
+            self.pofile.language.code, self.pofile.variant)
+
+        # A POFile in a different context from self.pofile and
+        # self.diverging_pofile.
+        self.other_pofile = self.factory.makePOFile(
+            language_code=self.pofile.language.code,
+            variant=self.pofile.variant)
+
+        self.potmsgset = self.factory.makePOTMsgSet(potemplate=potemplate,
+                                                    sequence=1)
+
+
+class TestSetCurrentTranslation_Upstream(SetCurrentTranslationTestMixin,
+                                         TestCaseWithFactory):
+    def setUp(self):
+        super(TestSetCurrentTranslation_Upstream, self).setUp()
+        series = self.factory.makeProductSeries()
+        sharing_series = self.factory.makeProductSeries(
+            product=series.product)
+        potemplate = self.factory.makePOTemplate(productseries=series)
+        sharing_potemplate = self.factory.makePOTemplate(
+            productseries=sharing_series, name=potemplate.name)
+        self.pofile = self.factory.makePOFile('sr', potemplate=potemplate,
+                                              create_sharing=True)
+
+        # A POFile in the same context as self.pofile, used for diverged
+        # translations.
+        self.diverging_pofile = sharing_potemplate.getPOFileByLang(
+            self.pofile.language.code, self.pofile.variant)
+
+        # A POFile in a different context from self.pofile and
+        # self.diverging_pofile.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        sourcepackagename = self.factory.makeSourcePackageName()
+        ubuntu_template = self.factory.makePOTemplate(
+            distroseries=ubuntu.currentseries,
+            sourcepackagename=sourcepackagename)
+        self.other_pofile = self.factory.makePOFile(
+            potemplate=ubuntu_template,
+            language_code=self.pofile.language.code,
+            variant=self.pofile.variant)
+
+        self.potmsgset = self.factory.makePOTMsgSet(potemplate=potemplate,
+                                                    sequence=1)
