@@ -106,15 +106,11 @@ class TestDKIM(TestCaseWithFactory):
         return self._log_output.getvalue()
     
     def assertStronglyAuthenticated(self, principal, signed_message):
-        self.assertTrue(principal.person.preferredemail.email,
-            'foo.bar@canonical.com')
         if IWeaklyAuthenticatedPrincipal.providedBy(principal):
             self.fail('expected strong authentication; got weak:\n'
                 + self.get_dkim_log() + '\n\n' + signed_message)
 
     def assertWeaklyAuthenticated(self, principal, signed_message):
-        self.assertTrue(principal.person.preferredemail.email,
-            'foo.bar@canonical.com')
         if not IWeaklyAuthenticatedPrincipal.providedBy(principal):
             self.fail('expected weak authentication; got strong:\n'
                 + self.get_dkim_log() + '\n\n' + signed_message)
@@ -131,6 +127,8 @@ class TestDKIM(TestCaseWithFactory):
         principal = authenticateEmail(signed_message_from_string(signed_message),
             signed_message)
         self.assertWeaklyAuthenticated(principal, signed_message)
+        self.assertEqual(principal.person.preferredemail.email,
+            'foo.bar@canonical.com')
         self.assertDkimLogContains('invalid format in _domainkey txt record')
 
     def test_dkim_valid_strict(self):
@@ -141,6 +139,8 @@ class TestDKIM(TestCaseWithFactory):
         principal = authenticateEmail(signed_message_from_string(signed_message),
             signed_message)
         self.assertStronglyAuthenticated(principal, signed_message)
+        self.assertEqual(principal.person.preferredemail.email,
+            'foo.bar@canonical.com')
 
     def test_dkim_valid(self):
         signed_message = self.fake_signing(plain_content)
@@ -149,6 +149,39 @@ class TestDKIM(TestCaseWithFactory):
         principal = authenticateEmail(signed_message_from_string(signed_message),
             signed_message)
         self.assertStronglyAuthenticated(principal, signed_message)
+        self.assertEqual(principal.person.preferredemail.email,
+            'foo.bar@canonical.com')
+
+    def test_dkim_changed_from_address(self):
+        # if the address part of the message has changed, it's detected.  we
+        # still treat this as weakly authenticated by the purported From-header
+        # sender, though perhaps in future we would prefer to reject these
+        # messages.
+        signed_message = self.fake_signing(plain_content)
+        self._dns_responses['example._domainkey.canonical.com.'] = \
+            sample_dns
+        fiddled_message = signed_message.replace('From: Foo Bar <foo.bar@canonical.com>',
+            'From: Carlos <carlos@canonical.com>')
+        principal = authenticateEmail(signed_message_from_string(fiddled_message),
+            fiddled_message)
+        self.assertWeaklyAuthenticated(principal, fiddled_message)
+        # should come from From, not the dkim signature
+        self.assertEqual(principal.person.preferredemail.email,
+            'carlos@canonical.com')
+
+    def test_dkim_changed_from_realname(self):
+        # if the real name part of the message has changed, it's detected
+        signed_message = self.fake_signing(plain_content)
+        self._dns_responses['example._domainkey.canonical.com.'] = \
+            sample_dns
+        fiddled_message = signed_message.replace('From: Foo Bar <foo.bar@canonical.com>',
+            'From: Evil Foo <foo.bar@canonical.com>')
+        principal = authenticateEmail(signed_message_from_string(fiddled_message),
+            fiddled_message)
+        # we don't care about the real name for determining the principal
+        self.assertWeaklyAuthenticated(principal, fiddled_message)
+        self.assertEqual(principal.person.preferredemail.email,
+            'foo.bar@canonical.com')
 
     def test_dkim_nxdomain(self):
         # if there's no DNS entry for the pubkey
@@ -157,12 +190,16 @@ class TestDKIM(TestCaseWithFactory):
         principal = authenticateEmail(signed_message_from_string(signed_message),
             signed_message)
         self.assertWeaklyAuthenticated(principal, signed_message)
+        self.assertEqual(principal.person.preferredemail.email,
+            'foo.bar@canonical.com')
 
     def test_dkim_message_unsigned(self):
         # degenerate case: no signature treated as weakly authenticated
         principal = authenticateEmail(signed_message_from_string(plain_content),
             plain_content)
         self.assertWeaklyAuthenticated(principal, plain_content)
+        self.assertEqual(principal.person.preferredemail.email,
+            'foo.bar@canonical.com')
         # the library doesn't log anything if there's no header at all
 
     def test_dkim_body_mismatch(self):
@@ -176,6 +213,8 @@ class TestDKIM(TestCaseWithFactory):
         principal = authenticateEmail(signed_message_from_string(signed_message),
             signed_message)
         self.assertWeaklyAuthenticated(principal, signed_message)
+        self.assertEqual(principal.person.preferredemail.email,
+            'foo.bar@canonical.com')
         self.assertDkimLogContains('body hash mismatch')
 
 
