@@ -22,7 +22,7 @@ threshold.
     ... comments_list_truncate_newest_to: 2
     ... ''')
 
-Now only 3 comments will be displayed, the oldest and the 2 newest.
+Now only 3 comments will be displayed; the oldest and the 2 newest.
 
     >>> user_browser.open('http://launchpad.dev/bugs/11')
     >>> comments = find_tags_by_class(user_browser.contents, 'bug-comment')
