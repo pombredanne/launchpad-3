@@ -18,7 +18,9 @@ class CopyArchiveJob(ArchiveJobDerived):
     classProvides(ICopyArchiveJobSource)
 
     @classmethod
-    def create(cls, target_archive):
+    def create(cls, target_archive, source_archive_id,
+               source_series_id, source_pocket_value, target_series_id,
+               target_pocket_value, target_component_id, source_user_id=None):
         """See `ICopyArchiveJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         job_for_archive = store.find(
@@ -32,4 +34,33 @@ class CopyArchiveJob(ArchiveJobDerived):
         if job_for_archive is not None:
             return cls(job_for_archive)
         else:
-            return super(CopyArchiveJob, cls).create(target_archive)
+            metadata = {
+                'source_archive_id': source_archive_id,
+                'source_distroseries_id': source_series_id,
+                'source_pocket_value': source_pocket_value,
+                'target_distroseries_id': target_series_id,
+                'target_pocket_value': target_pocket_value,
+                'target_component_id': target_component_id,
+            }
+            if source_user_id is not None:
+                metadata['source_user_id'] = source_user_id
+            return super(CopyArchiveJob, cls).create(target_archive, metadata)
+
+    def getOopsVars(self):
+        """See `ArchiveJobDerived`."""
+        vars = ArchiveJobDerived.getOopsVars(self)
+        vars.extend([
+            ('source_archive_id', self.metadata['source_archive_id']),
+            ('source_distroseries_id',
+                self.metadata['source_distroseries_id']),
+            ('target_distroseries_id',
+                self.metadata['target_distroseries_id']),
+            ('source_pocket_value', self.metadata['source_pocket_value']),
+            ('target_pocket_value', self.metadata['target_pocket_value']),
+            ('target_component_id', self.metadata['target_component_id']),
+            ])
+        if 'source_user_id' in self.metadata:
+           vars.extend([
+                ('source_user_id', self.metadata['source_user_id']),
+                ])
+        return vars
