@@ -1,9 +1,12 @@
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.testing import TestCaseWithFactory
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.copyarchivejob import CopyArchiveJob
 
 
@@ -185,9 +188,32 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         source_archive = self.factory.makeArchive(
             name="source", owner=source_archive_owner,
             purpose=ArchivePurpose.PPA, distribution=distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.factory.getOrMakeSourcePackageName(
+                name='bzr'),
+            distroseries=distroseries, component=self.factory.makeComponent(),
+            version="2.1", architecturehintlist='any',
+            archive=source_archive, status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE)
         target_archive_owner = self.factory.makePerson()
         target_archive = self.factory.makeArchive(
             purpose=ArchivePurpose.COPY, owner=target_archive_owner,
             name="test-copy-archive", distribution=distribution,
             description="Test copy archive", enabled=False)
-
+        target_component = self.factory.makeComponent()
+        job = CopyArchiveJob.create(
+            target_archive, source_archive.id, distroseries.id,
+            PackagePublishingPocket.RELEASE.value, distroseries.id,
+            PackagePublishingPocket.RELEASE.value, target_component.id)
+        job.run()
+        sources = target_archive.getPublishedSources(
+            distroseries=distroseries,
+            status=(
+                PackagePublishingStatus.PENDING,
+                PackagePublishingStatus.PUBLISHED))
+        actual = []
+        for source in sources:
+            source = removeSecurityProxy(source)
+            actual.append(
+                (source.source_package_name, source.source_package_version))
+        self.assertEqual([("bzr", "2.1")], actual)
