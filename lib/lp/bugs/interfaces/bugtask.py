@@ -1075,8 +1075,8 @@ class BugTaskSearchParams:
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
                  hardware_is_linked_to_bug=False,
-                 linked_branches=None, structural_subscriber=None
-                 ):
+                 linked_branches=None, structural_subscriber=None,
+                 modified_since=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1121,6 +1121,7 @@ class BugTaskSearchParams:
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
         self.linked_branches = linked_branches
         self.structural_subscriber = structural_subscriber
+        self.modified_since = None
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
