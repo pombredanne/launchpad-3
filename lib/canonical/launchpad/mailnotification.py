@@ -16,34 +16,35 @@ from email.Header import Header
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEMessage import MIMEMessage
-from email.Utils import formataddr, formatdate, make_msgid
+from email.Utils import formataddr, make_msgid
 
 import re
 
 from zope.component import getAdapter, getUtility
-from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from lp.bugs.adapters.bugdelta import BugDelta
-from lp.bugs.adapters.bugchange import BugDuplicateChange, get_bug_changes
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template, shortlist)
+    get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces import (
-    IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
-    IPerson, IPersonSet, ISpecification, IStructuralSubscriptionTarget,
-    ITeamMembershipSet, IUpstreamBugTask, TeamMembershipStatus)
-from lp.bugs.interfaces.bugchange import IBugChange
+    IHeldMessageDetails, IPerson, IPersonSet, ISpecification,
+    IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
+    TeamMembershipStatus)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
-from lp.services.mail.mailwrapper import MailWrapper
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
+
+from lp.bugs.adapters.bugdelta import BugDelta
+from lp.bugs.adapters.bugchange import BugDuplicateChange, get_bug_changes
+from lp.bugs.interfaces.bugchange import IBugChange
+from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
+from lp.registry.interfaces.structuralsubscription import (
+    BugNotificationLevel)
+from lp.services.mail.mailwrapper import MailWrapper
 
 # XXX 2010-06-16 gmb bug=594985
 #     This shouldn't be here, but if we take it out lots of things cry,
@@ -52,7 +53,7 @@ from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
 from lp.bugs.mail.bugnotificationbuilder import (
-    BugNotificationBuilder, format_rfc2822_date)
+    BugNotificationBuilder)
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 
 CC = "CC"
@@ -124,7 +125,8 @@ def update_security_contact_subscriptions(modified_bugtask, event):
     if (bugtask_before_modification.product !=
         bugtask_after_modification.product):
         new_product = bugtask_after_modification.product
-        if bugtask_before_modification.bug.security_related and new_product.security_contact:
+        if (bugtask_before_modification.bug.security_related and
+            new_product.security_contact):
             bugtask_after_modification.bug.subscribe(
                 new_product.security_contact, IPerson(event.user))
 
