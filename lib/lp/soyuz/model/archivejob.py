@@ -81,10 +81,11 @@ class ArchiveJobDerived(BaseRunnableJob):
         self.context = job
 
     @classmethod
-    def create(cls, archive):
+    def create(cls, archive, metadata=None):
         """See `IArchiveJob`."""
-        # If there's already a job for the archive, don't create a new one.
-        job = ArchiveJob(archive, cls.class_job_type, {})
+        if metadata is None:
+            metadata = {}
+        job = ArchiveJob(archive, cls.class_job_type, metadata)
         return cls(job)
 
     @classmethod
