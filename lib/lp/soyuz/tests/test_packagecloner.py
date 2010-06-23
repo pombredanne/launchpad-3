@@ -15,7 +15,8 @@ from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.publishing import (
+    IPublishingSet, PackagePublishingStatus)
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import TestCaseWithFactory
 
@@ -85,14 +86,22 @@ class PackageClonerTests(TestCaseWithFactory):
 
     def createSourcePublication(self, info, distroseries):
         """Create a SourcePackagePublishingHistory based on a PackageInfo."""
+        archive = distroseries.distribution.main_archive
+        sources = archive.getPublishedSources(
+            distroseries=distroseries,
+            status=(PackagePublishingStatus.PENDING,
+                PackagePublishingStatus.PUBLISHED),
+            name=info.name, exact_match=True)
+        for src in sources:
+            src.supersede()
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=self.factory.getOrMakeSourcePackageName(
                 name=info.name),
             distroseries=distroseries, component=self.factory.makeComponent(
                 info.component),
             version=info.version, architecturehintlist='any',
-            archive=distroseries.distribution.main_archive,
-            status=info.status, pocket=PackagePublishingPocket.RELEASE)
+            archive=archive, status=info.status,
+            pocket=PackagePublishingPocket.RELEASE)
 
     def createSourcePublications(self, package_infos, distroseries):
         """Create a source publication for each item in package_infos."""
@@ -384,3 +393,107 @@ class PackageClonerTests(TestCaseWithFactory):
         self.copyArchive(
             copy_archive, distroseries, proc_families=proc_families)
         self.checkBuilds(copy_archive, [package_info, package_info])
+
+
+    def diffArchives(self, target_archive, target_distroseries,
+                     source_archive=None, source_distroseries=None):
+        """Run a packageSetDiff of two archives."""
+        if source_distroseries is None:
+            source_distroseries = target_distroseries
+        if source_archive is None:
+            source_archive = source_distroseries.distribution.main_archive
+        source_location = PackageLocation(
+            source_archive, source_distroseries.distribution,
+            source_distroseries, PackagePublishingPocket.RELEASE)
+        target_location = PackageLocation(
+            target_archive, target_distroseries.distribution,
+            target_distroseries, PackagePublishingPocket.RELEASE)
+        cloner = getUtility(IPackageCloner)
+        return cloner.packageSetDiff(source_location, target_location)
+
+    def checkPackageDiff(self, expected_changed, expected_new, actual,
+                         archive):
+        """Check that the diff of two archives is as expected."""
+        actual_changed_keys, actual_new_keys = actual
+        expected_changed_tuples = [(e.name, e.version)
+                                   for e in expected_changed]
+        expected_new_tuples = [(e.name, e.version) for e in expected_new]
+        def get_tuples(source_keys):
+            tuples = []
+            for source_key in source_keys:
+                source = getUtility(IPublishingSet).getByIdAndArchive(
+                    source_key, archive, source=True).one()
+                self.assertNotEqual(source, None, "Got a non-existant "
+                        "source publishing record: %d" % source_key)
+                naked_source = removeSecurityProxy(source)
+                tuples.append(
+                    (naked_source.source_package_name,
+                     naked_source.source_package_version))
+            return tuples
+        actual_changed_tuples = get_tuples(actual_changed_keys)
+        actual_new_tuples = get_tuples(actual_new_keys)
+        self.assertEqual(expected_changed_tuples, actual_changed_tuples)
+        self.assertEqual(expected_new_tuples, actual_new_tuples)
+
+    def testPackageSetDiffWithNothingNew(self):
+        """Test packageSetDiff."""
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        copy_archive, distroseries = self.makeCopyArchive([package_info])
+        diff = self.diffArchives(copy_archive, distroseries)
+        self.checkPackageDiff(
+            [], [], diff, distroseries.distribution.main_archive)
+
+    def testPackageSetDiffWithNewPackages(self):
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        copy_archive, distroseries = self.makeCopyArchive([package_info])
+        package_infos = [
+            PackageInfo(
+            "apt", "1.2", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "gcc", "4.5", status=PackagePublishingStatus.PENDING),
+        ]
+        self.createSourcePublications(package_infos, distroseries)
+        diff = self.diffArchives(copy_archive, distroseries)
+        self.checkPackageDiff(
+            [], package_infos, diff, distroseries.distribution.main_archive)
+
+    def testPackageSetDiffWithChangedPackages(self):
+        package_infos = [
+            PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "apt", "1.2", status=PackagePublishingStatus.PUBLISHED),
+        ]
+        copy_archive, distroseries = self.makeCopyArchive(package_infos)
+        package_infos = [
+            PackageInfo(
+            "bzr", "2.2", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "apt", "1.3", status=PackagePublishingStatus.PENDING),
+        ]
+        self.createSourcePublications(package_infos, distroseries)
+        diff = self.diffArchives(copy_archive, distroseries)
+        self.checkPackageDiff(
+            package_infos, [], diff, distroseries.distribution.main_archive)
+
+    def testPackageSetDiffWithBoth(self):
+        package_infos = [
+            PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "apt", "1.2", status=PackagePublishingStatus.PUBLISHED),
+        ]
+        copy_archive, distroseries = self.makeCopyArchive(package_infos)
+        package_infos = [
+            PackageInfo(
+            "bzr", "2.2", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "gcc", "1.3", status=PackagePublishingStatus.PENDING),
+        ]
+        self.createSourcePublications(package_infos, distroseries)
+        diff = self.diffArchives(copy_archive, distroseries)
+        self.checkPackageDiff(
+            [package_infos[0]], [package_infos[1]], diff,
+            distroseries.distribution.main_archive)

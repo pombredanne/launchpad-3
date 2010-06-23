@@ -162,7 +162,7 @@ class PackageCloner:
                 PackagePublishingStatus.PUBLISHED,
                 origin.pocket, origin.archive))
 
-    def mergeCopy(self, origin, destination):
+    def mergeCopy(self, origin, destination, proc_families=None):
         """Please see `IPackageCloner`."""
         # Calculate the package set delta in order to find packages that are
         # obsolete or missing in the target archive.
@@ -200,6 +200,13 @@ class PackageCloner:
                 secsrc.id = mcd.t_sspph AND mcd.obsoleted = True
             """ % sqlvalues(
                 PackagePublishingStatus.SUPERSEDED, UTC_NOW))
+
+        if proc_families is None:
+            proc_families = []
+
+        # FIXME: untested
+        self._create_missing_builds(
+            destination.distroseries, destination.archive, proc_families)
 
     def _compute_packageset_delta(self, origin):
         """Given a source/target archive find obsolete or missing packages.
@@ -267,7 +274,7 @@ class PackageCloner:
                 PackagePublishingStatus.PENDING,
                 PackagePublishingStatus.PUBLISHED,
                 origin.distroseries, origin.pocket)
-        
+
         if origin.component is not None:
             find_origin_only_packages += (
                 " AND secsrc.component = %s" % quote(origin.component))
@@ -336,7 +343,7 @@ class PackageCloner:
                 PackagePublishingStatus.PENDING,
                 PackagePublishingStatus.PUBLISHED,
                 destination.distroseries, destination.pocket)
-        
+
         if destination.component is not None:
             pop_query += (
                 " AND secsrc.component = %s" % quote(destination.component))
@@ -432,5 +439,3 @@ class PackageCloner:
         logger.info('New packages: %d' % len(new_info))
         for info in new_info:
             logger.info('* %s (%s)' % info)
- 
-
