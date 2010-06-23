@@ -15,7 +15,9 @@ __all__ = [
     'safe_action',
     ]
 
+import httplib2
 import transaction
+
 from zope.interface import classImplements, providedBy
 from zope.interface.advice import addClassAdvisor
 from zope.event import notify
@@ -243,7 +245,7 @@ class LaunchpadFormView(LaunchpadView):
         self.errors.append(cleanmsg)
 
     @staticmethod
-    def validate_none(action, data):
+    def validate_none(form, action, data):
         """Do not do any validation.
 
         This is to be used in subclasses that have actions in which no
@@ -481,15 +483,16 @@ class ReturnToReferrerMixin:
                 and getattr(self.context, attribute_name) != attribute_value):
                 returnNotChanged = False
 
-        # If the location header is None, then it is a windmill test.
-        if (referrer is not None
-            and returnNotChanged
-            and referrer.startswith(self.request.getApplicationURL())
-            and referrer != self.request.getHeader('location')
-            and self.request.getHeader('location') is not None):
-            return referrer
-        else:
-            return canonical_url(self.context)
+        if referrer is not None:
+            proto, host, path, params, anchor = httplib2.parse_uri(referrer)
+            referrer_subset = (host, path)
+            env = self.request.environment
+            location_subset = (env['HTTP_HOST'], env['PATH_INFO'])
+            if (returnNotChanged
+                and referrer.startswith(self.request.getApplicationURL())
+                and referrer_subset != location_subset):
+                return referrer
+        return canonical_url(self.context)
 
     next_url = _return_url
     cancel_url = _return_url
