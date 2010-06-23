@@ -475,6 +475,12 @@ class ReturnToReferrerMixin:
         if referrer is None:
             # "referer" is misspelled in the HTTP specification.
             referrer = self.request.getHeader('referer')
+            # Windmill doesn't pass in a correct referer.
+            if '/windmill-serv/remote.html' in referrer:
+                referrer = None
+            open('/tmp/return.log', 'a').write(
+                '%s: %s\n' % (self.request.environment.items(),
+                              self.request.getHeader('referer')))
         else:
             attribute_name = self.request.form.get('_return_attribute_name')
             attribute_value = self.request.form.get('_return_attribute_value')
@@ -483,16 +489,13 @@ class ReturnToReferrerMixin:
                 and getattr(self.context, attribute_name) != attribute_value):
                 returnNotChanged = False
 
-        if referrer is not None:
-            proto, host, path, params, anchor = httplib2.parse_uri(referrer)
-            referrer_subset = (host, path)
-            env = self.request.environment
-            location_subset = (env['HTTP_HOST'], env['PATH_INFO'])
-            if (returnNotChanged
-                and referrer.startswith(self.request.getApplicationURL())
-                and referrer_subset != location_subset):
-                return referrer
-        return canonical_url(self.context)
+        if (referrer is not None
+            and returnNotChanged
+            and referrer.startswith(self.request.getApplicationURL())
+            and referrer != self.request.getHeader('location')):
+            return referrer
+        else:
+            return canonical_url(self.context)
 
     next_url = _return_url
     cancel_url = _return_url

@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-import time
 import unittest
 
 from canonical.launchpad.windmill.testing import lpuser
