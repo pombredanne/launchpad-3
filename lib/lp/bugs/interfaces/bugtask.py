@@ -1263,6 +1263,7 @@ class BugTaskSearchParams:
             hardware_is_linked_to_bug)
         search_params.linked_branches=linked_branches
         search_params.structural_subscriber = structural_subscriber
+        search_params.modified_since = modified_since
 
         return search_params
 
