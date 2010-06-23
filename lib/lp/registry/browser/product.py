@@ -1981,14 +1981,12 @@ class IProductEditPeopleSchema(Interface):
     driver = copy_field(IProduct['driver'])
 
     transfer_to_registry =  Bool(
-        title=_("Assign to Registry Administrators"),
+        title=_("I do not want to maintain this project"),
         required=False,
         description=_(
-            "Select if you want the Registry Administrators team to "
-            "become the new project maintainers.  Make this "
-            "assignment if you no longer want to maintain the "
-            "project in Launchpad but do not have another individual "
-            "or team to take over."))
+            "Select this if you no longer want to maintain this project in "
+            "Launchpad.  Launchpad's Registry Administrators team will "
+            "become the project's new maintainers."))
 
 
 class ProductEditPeopleView(LaunchpadEditFormView):
@@ -2037,14 +2035,14 @@ class ProductEditPeopleView(LaunchpadEditFormView):
             self.setFieldError(
                 'owner',
                 'You may not specify a new owner if you '
-                'select "Assign to Registry Administrators".')
+                'select the checkbox.')
         elif xfer:
             data['owner'] = getUtility(ILaunchpadCelebrities).registry_experts
         elif owner is None:
             self.setFieldError(
                 'owner',
                 'You must specify a maintainer or select '
-                '"Assign to Registry Administrators"')
+                'the checkbox.')
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):

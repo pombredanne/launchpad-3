@@ -118,7 +118,7 @@ Not specifying the owner/maintainer nor checking the checkbox is an error.
 
     >>> view = create_initialized_view(product, '+edit-people', form=form)
     >>> view.errors
-    [u'You must specify a maintainer or select "Assign to Registry Administrators"']
+    [u'You must specify a maintainer or select the checkbox.']
 
 Selecting both the owner/maintainer and the checkbox is also an error.
 
@@ -131,4 +131,4 @@ Selecting both the owner/maintainer and the checkbox is also an error.
 
     >>> view = create_initialized_view(product, '+edit-people', form=form)
     >>> view.errors
-    [u'You may not specify a new owner if you select "Assign to Registry Administrators".']
+    [u'You may not specify a new owner if you select the checkbox.']
