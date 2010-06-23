@@ -19,7 +19,7 @@ from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
 from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriber, IPersonalArchiveSubscription)
+    IArchiveSubscriber, IArchiveSubscriberSet, IPersonalArchiveSubscription)
 from lp.code.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import (
@@ -2193,6 +2193,13 @@ class ViewArchive(AuthorizationBase):
         # Uploaders can view private PPAs.
         if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
+
+        # Subscribers can view private PPAs.
+        if self.obj.is_ppa and self.obj.private:
+            archive_subs = getUtility(IArchiveSubscriberSet).getBySubscriber(
+                user.person, self.obj).any()
+            if archive_subs:
+                return True
 
         return False
 

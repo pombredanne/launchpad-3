@@ -35,6 +35,7 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements, Interface
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.schema import Choice, List, TextLine
 from zope.schema.interfaces import IContextSourceBinder
@@ -426,7 +427,12 @@ class ArchiveMenuMixin:
 
     def packages(self):
         text = 'View package details'
-        return Link('+packages', text, icon='info')
+        link = Link('+packages', text, icon='info')
+        # Disable the link for P3As if they don't have upload rights.
+        if self.context.context.private:
+            if not check_permission('launchpad.Append', self.context):
+                link.enabled = False
+        return link
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
@@ -959,6 +965,11 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     """Detailed packages view for an archive."""
     implements(IArchivePackagesActionMenu)
+
+    def initialize(self):
+        if self.context.private:
+            if not check_permission('launchpad.Append', self.context):
+                raise Unauthorized
 
     @property
     def page_title(self):
