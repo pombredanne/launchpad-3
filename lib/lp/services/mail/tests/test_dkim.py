@@ -5,12 +5,7 @@
 
 __metaclass__ = type
 
-from email.Message import Message
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
-from email.Utils import make_msgid, formatdate
 import logging
-from textwrap import dedent
 import unittest
 
 from StringIO import StringIO
@@ -24,13 +19,8 @@ from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.mail.incoming import (
     authenticateEmail, )
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
-from lp.registry.interfaces.person import IPersonSet
 from lp.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
-
-
-# reuse the handler that records log events
-from lp.services.sshserver.tests.test_events import ListHandler
 
 
 # sample private key made with 'openssl genrsa' and public key using 'openssl
