@@ -173,9 +173,6 @@ class TestDKIM(TestCaseWithFactory):
         # The message message has a syntactically valid DKIM signature that
         # doesn't actually correspond to the sender.  We log something about
         # this but we don't want to drop the message.
-        #
-        # XXX: This test relies on having real DNS service to look up the
-        # signing key.
         signed_message = self.fake_signing(plain_content)
         signed_message += 'blah blah'
         self._dns_responses['example._domainkey.canonical.com.'] = \
