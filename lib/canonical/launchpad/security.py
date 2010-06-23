@@ -2197,7 +2197,7 @@ class ViewArchive(AuthorizationBase):
         # Subscribers can view private PPAs.
         if self.obj.is_ppa and self.obj.private:
             archive_subs = getUtility(IArchiveSubscriberSet).getBySubscriber(
-                user.person, self.obj).one()
+                user.person, self.obj).any()
             if archive_subs:
                 return True
 

@@ -425,10 +425,15 @@ class ArchiveMenuMixin:
         text = 'View in-progress builds'
         return Link('+builds?build_state=building', text, icon='info')
 
-    @enabled_with_permission('launchpad.Append')
     def packages(self):
         text = 'View package details'
-        return Link('+packages', text, icon='info')
+        link = Link('+packages', text, icon='info')
+        # Disable the link for P3As if they don't have upload rights.
+        if self.context.context.private:
+            if not (
+                check_permission('launchpad.Append', self.context) or
+                check_permission('launchpad.Edit', self.context)):
+                link.enabled = False
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
@@ -453,9 +458,6 @@ class ArchiveMenuMixin:
 
         # This link should not be available for copy archives.
         if self.context.is_copy:
-            link.enabled = False
-        # This link should not be available for commercial P3As
-        if self.context.commercial:
             link.enabled = False
         return link
 
@@ -967,9 +969,9 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
 
     def initialize(self):
         if self.context.private:
-            archive_subs = getUtility(IArchiveSubscriberSet).getBySubscriber(
-                self.user, self.context).one()
-            if archive_subs is None:
+            if not (
+                check_permission('launchpad.Append', self.context) or
+                check_permission('launchpad.Edit', self.context)):
                 raise Unauthorized
 
     @property

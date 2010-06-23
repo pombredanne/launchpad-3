@@ -8,6 +8,7 @@
 __metaclass__ = type
 __all__ = [
     'TestP3APackages',
+    'TestPPAPackages',
     'test_suite',
     ]
 
@@ -16,6 +17,7 @@ import unittest
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing import LaunchpadFunctionalLayer
+from lp.soyuz.browser.archive import ArchiveNavigationMenu
 from lp.testing import login, login_person, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
@@ -36,29 +38,52 @@ class TestP3APackages(TestCaseWithFactory):
         login_person(self.private_ppa.owner)
         self.private_ppa.newSubscription(self.joe, self.private_ppa.owner)
 
-    def test_packages_unauthorized(self):
+    def test_p3a_packages_unauthorized(self):
+        # A person with no subscription will not be able to view +packages
         login_person(self.fred)
         self.assertRaises(
             Unauthorized, create_initialized_view, self.private_ppa,
             "+packages")
 
-    def test_packages_authorized(self):
+    def test_p3a_packages_unauthorized_subscriber(self):
+        # A person with a subscription will not be able to view +packages
         login_person(self.joe)
-        view = create_initialized_view(self.private_ppa, "+packages")
-        html = view.__call__()
-        self.failUnless('Packages in "Foo"' in html)
+        self.assertRaises(
+            Unauthorized, create_initialized_view, self.private_ppa,
+            "+packages")
 
-    def test_packages_link_unauthorized(self):
+    def test_p3a_packages_authorized(self):
+        # A person with launchpad.{Append,Edit} will be able to do so
+        login_person(self.private_ppa.owner)
+        view = create_initialized_view(self.private_ppa, "+packages")
+        menu = ArchiveNavigationMenu(view)
+        self.assertTrue(menu.packages().enabled)
+
+    def test_p3a_packages_link_unauthorized(self):
         login_person(self.fred)
         view = create_initialized_view(self.private_ppa, "+index")
-        html = view.__call__()
-        self.failUnless('View package details' not in html)
+        menu = ArchiveNavigationMenu(view)
+        self.assertEqual(menu.packages(), None)
 
-    def test_packages_link_authorized(self):
+    def test_p3a_packages_link_subscriber(self):
         login_person(self.joe)
         view = create_initialized_view(self.private_ppa, "+index")
-        html = view.__call__()
-        self.failUnless('View package details' in html)
+        menu = ArchiveNavigationMenu(view)
+        self.assertEqual(menu.packages(), None)
+
+class TestPPAPackages(TestCaseWithFactory):
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPPAPackages, self).setUp()
+        self.joe = self.factory.makePerson(name='joe')
+        self.ppa = self.factory.makeArchive()
+
+    def test_ppa_packages(self):
+        login_person(self.joe)
+        view = create_initialized_view(self.ppa, "+index")
+        menu = ArchiveNavigationMenu(view)
+        self.assertTrue(menu.packages().enabled)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
