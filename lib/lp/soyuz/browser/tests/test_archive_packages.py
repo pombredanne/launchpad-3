@@ -63,13 +63,13 @@ class TestP3APackages(TestCaseWithFactory):
         login_person(self.fred)
         view = create_initialized_view(self.private_ppa, "+index")
         menu = ArchiveNavigationMenu(view)
-        self.assertEqual(menu.packages(), None)
+        self.assertFalse(menu.packages().enabled)
 
     def test_p3a_packages_link_subscriber(self):
         login_person(self.joe)
         view = create_initialized_view(self.private_ppa, "+index")
         menu = ArchiveNavigationMenu(view)
-        self.assertEqual(menu.packages(), None)
+        self.assertFalse(menu.packages().enabled)
 
 class TestPPAPackages(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer

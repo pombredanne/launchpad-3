@@ -434,6 +434,7 @@ class ArchiveMenuMixin:
                 check_permission('launchpad.Append', self.context) or
                 check_permission('launchpad.Edit', self.context)):
                 link.enabled = False
+        return link
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
