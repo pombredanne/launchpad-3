@@ -1014,9 +1014,11 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     def visible_newest_comments_for_display(self):
         """The list of newest visible comments to be rendered.
 
-        If the number of comments is beyond the maximum threshold,
-        this returns the newest few comments.  If we're under the
-        threshold this will return an empty set.
+        If the number of comments is beyond the maximum threshold, this
+        returns the newest few comments.  If we're under the threshold,
+        then visible_oldest_comments_for_display() will be returning the
+        bugs, so this routine will return an empty set to avoid
+        duplication.
         """
         show_all = (self.request.form_ng.getOne('comments') == 'all')
         max_comments = config.malone.comments_list_max_length
