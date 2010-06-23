@@ -906,7 +906,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         # Sort all the lists to ensure that changes are written out in
         # alphabetical order.
         for date, activity_by_target in activity_by_date.items():
-            # We convert each {target: activty_list} mapping into a list
+            # We convert each {target: activity_list} mapping into a list
             # of {target, activity_list} dicts for the sake of making
             # them usable in templates.
             activity_by_date[date] = [{
