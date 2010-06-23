@@ -430,9 +430,7 @@ class ArchiveMenuMixin:
         link = Link('+packages', text, icon='info')
         # Disable the link for P3As if they don't have upload rights.
         if self.context.context.private:
-            if not (
-                check_permission('launchpad.Append', self.context) or
-                check_permission('launchpad.Edit', self.context)):
+            if not check_permission('launchpad.Append', self.context):
                 link.enabled = False
         return link
 
@@ -970,9 +968,7 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
 
     def initialize(self):
         if self.context.private:
-            if not (
-                check_permission('launchpad.Append', self.context) or
-                check_permission('launchpad.Edit', self.context)):
+            if not check_permission('launchpad.Append', self.context):
                 raise Unauthorized
 
     @property
