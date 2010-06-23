@@ -918,7 +918,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
         return activity_by_date
 
-    def activity_for_comment(self, comment, activity_by_date):
+    def listActivityForComment(self, comment, activity_by_date):
         """
         Check to see if there are any activities for this comment's
         datecreated, and return comment's activities as a list.
@@ -956,8 +956,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
         # Oldest comments and activities
         for comment in oldest_comments:
-            comment.activity = self.activity_for_comment(comment,
-                                                         activity_by_date)
+            comment.activity = self.listActivityForComment(comment,
+                                                           activity_by_date)
             activity_and_comments.append({
                 'comment': comment,
                 'date': comment.datecreated,
@@ -974,8 +974,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
         # Most recent comments and activities (if showing a subset)
         for comment in newest_comments:
-            comment.activity = self.activity_for_comment(comment,
-                                                         activity_by_date)
+            comment.activity = self.listActivityForComment(comment,
+                                                           activity_by_date)
             activity_and_comments.append({
                 'comment': comment,
                 'date': comment.datecreated,
