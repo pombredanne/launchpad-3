@@ -121,8 +121,7 @@ class PackageCloner:
             return pub.sourcepackagerelease.sourcepackagename.name
 
         for pubrec in sources_published:
-            builds = pubrec.createMissingBuilds(
-                architectures_available=architectures)
+            pubrec.createMissingBuilds(architectures_available=architectures)
             # Commit to avoid MemoryError: bug 304459
             transaction.commit()
 
