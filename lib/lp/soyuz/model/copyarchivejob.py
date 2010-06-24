@@ -13,6 +13,7 @@ from lp.soyuz.interfaces.archivejob import (
     ArchiveJobType, ICopyArchiveJob, ICopyArchiveJobSource)
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.archivejob import ArchiveJob, ArchiveJobDerived
 
@@ -27,7 +28,8 @@ class CopyArchiveJob(ArchiveJobDerived):
     @classmethod
     def create(cls, target_archive, source_archive,
                source_series, source_pocket, target_series, target_pocket,
-               target_component=None, proc_families=None, packagesets=None):
+               target_component=None, proc_families=None, packagesets=None,
+               merge=False):
         """See `ICopyArchiveJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         job_for_archive = store.find(
@@ -39,11 +41,14 @@ class CopyArchiveJob(ArchiveJobDerived):
             ).any()
 
         if job_for_archive is not None:
-            return cls(job_for_archive)
+            raise ValueError(
+                "CopyArchiveJob already in progress for %s" % target_archive)
         else:
             if proc_families is None:
                 proc_families = []
-            proc_family_ids = [p.id for p in proc_families]
+            if len(proc_families) > 0 and merge:
+                raise ValueError("Can't specify the architectures for merge.")
+            proc_family_names = [p.name for p in proc_families]
             if packagesets is None:
                 packagesets = []
             packageset_names = [p.name for p in packagesets]
@@ -57,8 +62,9 @@ class CopyArchiveJob(ArchiveJobDerived):
                 'target_distroseries_id': target_series.id,
                 'target_pocket_value': target_pocket.value,
                 'target_component_id': target_component_id,
-                'proc_family_ids': proc_family_ids,
+                'proc_family_names': proc_family_names,
                 'packageset_names': packageset_names,
+                'merge': merge,
             }
             return super(CopyArchiveJob, cls).create(target_archive, metadata)
 
@@ -74,6 +80,7 @@ class CopyArchiveJob(ArchiveJobDerived):
             ('source_pocket_value', self.metadata['source_pocket_value']),
             ('target_pocket_value', self.metadata['target_pocket_value']),
             ('target_component_id', self.metadata['target_component_id']),
+            ('merge', self.metadata['merge']),
             ])
         return vars
 
@@ -118,5 +125,14 @@ class CopyArchiveJob(ArchiveJobDerived):
         """See `IRunnableJob`."""
         source_location = self.getSourceLocation()
         target_location = self.getTargetLocation()
+        proc_family_names = self.metadata['proc_family_names']
+        proc_family_set = getUtility(IProcessorFamilySet)
+        proc_families = [proc_family_set.getByName(p)
+                         for p in proc_family_names]
         package_cloner = getUtility(IPackageCloner)
-        package_cloner.clonePackages(source_location, target_location)
+        # FIXME: mergeCopy and proc_families not tested.
+        if self.metadata['merge']:
+            package_cloner.mergeCopy(source_location, target_location)
+        else:
+            package_cloner.clonePackages(
+                source_location, target_location, proc_families=proc_families)

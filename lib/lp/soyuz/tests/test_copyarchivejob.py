@@ -40,6 +40,7 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         self.assertIn(('target_pocket_value', target_pocket.value), vars)
         self.assertIn(
             ('target_component_id', target_component.id), vars)
+        self.assertIn(('merge', False), vars)
 
     def makeDummyArgs(self):
         args = {}
@@ -51,7 +52,7 @@ class CopyArchiveJobTests(TestCaseWithFactory):
             distribution=distro)
         return args
 
-    def test_create_only_creates_one(self):
+    def test_error_if_already_exists(self):
         target_archive = self.factory.makeArchive()
         args = self.makeDummyArgs()
         job = CopyArchiveJob.create(
@@ -59,11 +60,10 @@ class CopyArchiveJobTests(TestCaseWithFactory):
             args['pocket'], args['distroseries'], args['pocket'])
         self.assertEqual(1, self._getJobCount())
         args = self.makeDummyArgs()
-        new_job = CopyArchiveJob.create(
-            target_archive, args['source_archive'], args['distroseries'],
-            args['pocket'], args['distroseries'], args['pocket'])
-        self.assertEqual(job, new_job)
-        self.assertEqual(1, self._getJobCount())
+        self.assertRaises(
+            ValueError, CopyArchiveJob.create, target_archive,
+            args['source_archive'], args['distroseries'], args['pocket'],
+            args['distroseries'], args['pocket'])
 
     def test_create_sets_source_archive_id(self):
         target_archive = self.factory.makeArchive()
@@ -146,8 +146,19 @@ class CopyArchiveJobTests(TestCaseWithFactory):
             args['pocket'], args['distroseries'], args['pocket'],
             proc_families=[family1, family2])
         self.assertEqual(
-            [f.id for f in [family1, family2]],
-            job.metadata['proc_family_ids'])
+            [f.name for f in [family1, family2]],
+            job.metadata['proc_family_names'])
+
+    def test_error_on_merge_with_proc_families(self):
+        target_archive = self.factory.makeArchive()
+        args = self.makeDummyArgs()
+        family1 = self.factory.makeProcessorFamily(name="armel")
+        family2 = self.factory.makeProcessorFamily(name="ia64")
+        self.assertRaises(
+            ValueError, CopyArchiveJob.create, target_archive,
+            args['source_archive'], args['distroseries'], args['pocket'],
+            args['distroseries'], args['pocket'],
+            proc_families=[family1, family2], merge=True)
 
     def test_create_sets_source_package_set_ids(self):
         target_archive = self.factory.makeArchive()
@@ -162,6 +173,22 @@ class CopyArchiveJobTests(TestCaseWithFactory):
             packagesets=packagesets)
         self.assertEqual(
             [p.name for p in packagesets], job.metadata['packageset_names'])
+
+    def test_create_sets_merge_False_by_default(self):
+        target_archive = self.factory.makeArchive()
+        args = self.makeDummyArgs()
+        job = CopyArchiveJob.create(
+            target_archive, args['source_archive'], args['distroseries'],
+            args['pocket'], args['distroseries'], args['pocket'])
+        self.assertEqual(False, job.metadata['merge'])
+
+    def test_create_sets_merge_True_on_request(self):
+        target_archive = self.factory.makeArchive()
+        args = self.makeDummyArgs()
+        job = CopyArchiveJob.create(
+            target_archive, args['source_archive'], args['distroseries'],
+            args['pocket'], args['distroseries'], args['pocket'], merge=True)
+        self.assertEqual(True, job.metadata['merge'])
 
     def test_get_source_location(self):
         target_archive = self.factory.makeArchive()
