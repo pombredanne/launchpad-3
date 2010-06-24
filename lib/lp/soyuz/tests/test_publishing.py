@@ -974,76 +974,50 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEquals(self.avr_distroarch, builds[0].distro_arch_series)
         self.assertEquals(self.sparc_distroarch, builds[1].distro_arch_series)
 
+
 class PublishingSetTests(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    def setUp(self):
+        super(PublishingSetTests, self).setUp()
+        self.distroseries = self.factory.makeDistroSeries()
+        self.archive = self.factory.makeArchive(
+            distribution=self.distroseries.distribution)
+        self.publishing = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.distroseries, archive=self.archive)
+        self.publishing_set = getUtility(IPublishingSet)
+
     def test_getByIdAndArchive_finds_record(self):
-        distroseries = self.factory.makeDistroSeries()
-        archive = self.factory.makeArchive(
-            distribution=distroseries.distribution)
-        publishing = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=archive)
-        publishing_set = getUtility(IPublishingSet)
-        record = publishing_set.getByIdAndArchive(publishing.id, archive)
-        self.assertEqual(publishing, record)
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, self.archive)
+        self.assertEqual(self.publishing, record)
 
     def test_getByIdAndArchive_finds_record_explicit_source(self):
-        distroseries = self.factory.makeDistroSeries()
-        archive = self.factory.makeArchive(
-            distribution=distroseries.distribution)
-        publishing = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=archive)
-        publishing_set = getUtility(IPublishingSet)
-        record = publishing_set.getByIdAndArchive(
-            publishing.id, archive, source=True)
-        self.assertEqual(publishing, record)
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, self.archive, source=True)
+        self.assertEqual(self.publishing, record)
 
     def test_getByIdAndArchive_wrong_archive(self):
-        distroseries = self.factory.makeDistroSeries()
-        archive = self.factory.makeArchive(
-            distribution=distroseries.distribution)
-        publishing = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=archive)
         wrong_archive = self.factory.makeArchive()
-        publishing_set = getUtility(IPublishingSet)
-        record = publishing_set.getByIdAndArchive(
-            publishing.id, wrong_archive)
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, wrong_archive)
         self.assertEqual(None, record)
 
     def test_getByIdAndArchive_wrong_type(self):
-        distroseries = self.factory.makeDistroSeries()
-        archive = self.factory.makeArchive(
-            distribution=distroseries.distribution)
-        publishing = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=archive)
-        wrong_archive = self.factory.makeArchive()
-        publishing_set = getUtility(IPublishingSet)
-        record = publishing_set.getByIdAndArchive(
-            publishing.id, wrong_archive, source=False)
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, self.archive, source=False)
         self.assertEqual(None, record)
 
     def test_getByIdAndArchive_finds_binary(self):
-        distroarchseries = self.factory.makeDistroArchSeries()
-        archive = self.factory.makeArchive(
-            distribution=distroarchseries.distroseries.distribution)
-        publishing = self.factory.makeBinaryPackagePublishingHistory(
-            distroarchseries=distroarchseries, archive=archive)
-        publishing_set = getUtility(IPublishingSet)
-        record = publishing_set.getByIdAndArchive(
-            publishing.id, archive, source=False)
-        self.assertEqual(publishing, record)
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, self.archive, source=False)
+        self.assertEqual(self.publishing, record)
 
     def test_getByIdAndArchive_binary_wrong_archive(self):
-        distroarchseries = self.factory.makeDistroArchSeries()
-        archive = self.factory.makeArchive(
-            distribution=distroarchseries.distroseries.distribution)
-        publishing = self.factory.makeBinaryPackagePublishingHistory(
-            distroarchseries=distroarchseries, archive=archive)
         wrong_archive = self.factory.makeArchive()
-        publishing_set = getUtility(IPublishingSet)
-        record = publishing_set.getByIdAndArchive(
-            publishing.id, wrong_archive, source=False)
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, wrong_archive, source=False)
         self.assertEqual(None, record)
 
 
