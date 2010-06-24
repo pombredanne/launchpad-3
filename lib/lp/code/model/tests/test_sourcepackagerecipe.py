@@ -77,6 +77,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=[distroseries],
             name=name, description=description, builder_recipe=builder_recipe)
+        transaction.commit()
         self.assertEquals(
             (registrant, owner, set([distroseries]), name),
             (recipe.registrant, recipe.owner, set(recipe.distroseries),
@@ -104,6 +105,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # SourcePackageRecipe objects implement ISourcePackageRecipe.
         recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             self.factory.makeRecipe())
+        transaction.commit()
         self.assertProvides(recipe, ISourcePackageRecipe)
 
     def test_base_branch(self):
@@ -112,6 +114,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         builder_recipe = self.factory.makeRecipe(branch)
         sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             builder_recipe)
+        transaction.commit()
         self.assertEquals(branch, sp_recipe.base_branch)
 
     def test_branch_links_created(self):
@@ -121,6 +124,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         builder_recipe = self.factory.makeRecipe(branch)
         sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             builder_recipe)
+        transaction.commit()
         self.assertEquals([branch], list(sp_recipe.getReferencedBranches()))
 
     def test_multiple_branch_links_created(self):
@@ -131,6 +135,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         builder_recipe = self.factory.makeRecipe(branch1, branch2)
         sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             builder_recipe)
+        transaction.commit()
         self.assertEquals(
             sorted([branch1, branch2]),
             sorted(sp_recipe.getReferencedBranches()))
@@ -450,6 +455,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=[distroseries],
             name=name, description=description, builder_recipe=builder_recipe)
+        transaction.commit()
         return recipe.builder_recipe
 
     def check_base_recipe_branch(self, branch, url, revspec=None,
@@ -638,7 +644,6 @@ class TestWebservice(TestCaseWithFactory):
             name='toaster-1', description='a recipe', recipe_text=recipe_text,
             distroseries=[distroseries.self_link])
         # at the moment, distroseries is not exposed in the API.
-        transaction.commit()
         db_recipe = owner.getRecipe(name=u'toaster-1')
         self.assertEqual(set([db_distroseries]), set(db_recipe.distroseries))
         return recipe, ws_owner, launchpad
