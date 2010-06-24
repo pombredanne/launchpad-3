@@ -1833,6 +1833,11 @@ class BugTaskSet:
             # we don't need to add any clause.
             pass
 
+        if params.modified_since:
+            extra_clauses.append(
+                "Bug.date_last_updated > %s" % (
+                    sqlvalues(params.modified_since,)))
+
         orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
