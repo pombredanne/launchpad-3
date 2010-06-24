@@ -16,8 +16,9 @@ from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.mailnotification import (
-    generate_bug_add_email, MailWrapper, BugNotificationBuilder,
-    get_bugmail_from_address)
+    generate_bug_add_email, MailWrapper)
+from lp.bugs.mail.bugnotificationbuilder import (
+    BugNotificationBuilder, get_bugmail_from_address)
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
 

@@ -386,7 +386,7 @@ class ArchivePopulator(SoyuzScript):
         :param distroseries: the distro series for which to create builds.
         :param archive: the archive for which to create builds.
         :param proc_families: the list of processor families for
-            which to create builds (optional).
+            which to create builds.
         """
         # Avoid circular imports.
         from lp.soyuz.interfaces.publishing import active_publishing_status
