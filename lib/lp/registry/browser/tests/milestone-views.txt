@@ -320,7 +320,7 @@ Active milestones cache bugtasks for 10 minutes.
     >>> print create_view(
     ...     cached_milestone, '+index', principal=person).render()
     <...<!-- Cache hit: memcache expression
-      (private, view/expire_cache_minutes minute) -->
+      (private, view/expire_cache_minutes minute) [600 seconds] -->
     <table class="listing sortable" id="milestone_bugtasks">...
 
 Inactive milestones cache bugtasks for 3 hours.
@@ -335,7 +335,7 @@ Inactive milestones cache bugtasks for 3 hours.
     >>> print create_view(
     ...     cached_milestone, '+index', principal=person).render()
     <...<!-- Cache hit: memcache expression
-      (private, view/expire_cache_minutes minute)  -->
+      (private, view/expire_cache_minutes minute) [21600 seconds] -->
     <table class="listing sortable" id="milestone_bugtasks">...
 
 

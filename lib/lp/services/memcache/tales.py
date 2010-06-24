@@ -270,8 +270,9 @@ class MemcacheMiss:
         if not config.launchpad.is_lpnet and not config.launchpad.is_edge:
             # For debugging and testing purposes, prepend a description of
             # the memcache expression used to the stored value.
+            rule = '%s [%s seconds]' % (self._memcache_expr, self._max_age)
             value = "<!-- Cache hit: %s -->%s<!-- End cache hit: %s -->" % (
-                self._memcache_expr, value, self._memcache_expr)
+                rule, value, rule)
         if getUtility(IMemcacheClient).set(
             self._key, value, self._max_age):
             logging.debug("Memcache set succeeded for %s", self._key)
