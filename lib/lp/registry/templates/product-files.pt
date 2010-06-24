@@ -37,7 +37,8 @@
 
     <div class="freeform-batch">
     <tal:batch condition="view/has_download_files"
-               define="batch view/series_and_releases_batch">
+               define="batch view/series_and_releases_batch"
+               content="cache:public, 30 minute">
       <tal:multipage tal:condition="batch/has_multiple_pages">
         <tal:navigation
            replace="structure batch/@@+navigation-links-upper"/>
