@@ -505,6 +505,7 @@ from the bug so that they are not calculated for every recipient.
     X-Launchpad-Bug-Private: yes
     X-Launchpad-Bug-Security-Vulnerability: yes
     X-Launchpad-Bug-Commenters: name12
+    X-Launchpad-Bug-Reporter: Sample Person (name12)
 
 The build() method of a builder accepts a number of parameters and
 returns an instance of email.MIMEText. The most basic invocation of

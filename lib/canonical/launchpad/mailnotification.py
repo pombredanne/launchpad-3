@@ -116,6 +116,12 @@ class BugNotificationBuilder:
         self.common_headers.append(
             ('X-Launchpad-Bug-Commenters', ' '.join(sorted(commenters))))
 
+        # Add the -Bug-Reporter header to identify the owner of the bug
+        # and the original bug task for filtering
+        self.common_headers.append(
+            ('X-Launchpad-Bug-Reporter',
+             '%s (%s)' % ( bug.owner.displayname, bug.owner.name )))
+
     def build(self, from_address, to_address, body, subject, email_date,
               rationale=None, references=None, message_id=None):
         """Construct the notification.
