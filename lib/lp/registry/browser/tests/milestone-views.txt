@@ -313,11 +313,14 @@ Active milestones cache bugtasks for 10 minutes.
     >>> cached_bugtask = factory.makeBugTask(target=cached_milestone.product)
     >>> cached_bugtask.milestone = cached_milestone
     >>> view = create_view(cached_milestone, '+index', principal=person)
+    >>> view.expire_cache_minutes
+    10
     >>> 'Cache hit' in view.render()
     False
     >>> print create_view(
     ...     cached_milestone, '+index', principal=person).render()
-    <...<!-- Cache hit: memcache expression (private, 10 minute) -->
+    <...<!-- Cache hit: memcache expression
+      (private, view/expire_cache_minutes minute) -->
     <table class="listing sortable" id="milestone_bugtasks">...
 
 Inactive milestones cache bugtasks for 3 hours.
@@ -325,11 +328,14 @@ Inactive milestones cache bugtasks for 3 hours.
     >>> MemcachedLayer.purge()
     >>> cached_milestone.active = False
     >>> view = create_view(cached_milestone, '+index', principal=person)
+    >>> view.expire_cache_minutes
+    360
     >>> 'Cache hit' in view.render()
     False
     >>> print create_view(
     ...     cached_milestone, '+index', principal=person).render()
-    <...<!-- Cache hit: memcache expression (private, 3 hour) -->
+    <...<!-- Cache hit: memcache expression
+      (private, view/expire_cache_minutes minute)  -->
     <table class="listing sortable" id="milestone_bugtasks">...
 
 
