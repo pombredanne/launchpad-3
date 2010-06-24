@@ -143,6 +143,13 @@ class SourcePackageRecipeContextMenu(ContextMenu):
 class SourcePackageRecipeView(LaunchpadView):
     """Default view of a SourcePackageRecipe."""
 
+    def initialize(self):
+        # XXX: rockstar: This should be removed when source package recipes are
+        # put into production. spec=sourcepackagerecipes
+        super(SourcePackageRecipeView, self).initialize()
+        message = 'Warning: Source package recipe builds are still in beta.'
+        self.request.response.addWarningNotification(message)
+
     @property
     def page_title(self):
         return "%(name)s\'s %(recipe_name)s recipe" % {
@@ -343,6 +350,13 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
 
     schema = ISourcePackageAddEditSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
+
+    def initialize(self):
+        # XXX: rockstar: This should be removed when source package recipes are
+        # put into production. spec=sourcepackagerecipes
+        super(SourcePackageRecipeAddView, self).initialize()
+        message = 'Warning: Source package recipe builds are still in beta.'
+        self.request.response.addWarningNotification(message)
 
     @property
     def initial_values(self):
