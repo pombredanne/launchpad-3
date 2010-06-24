@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough)
+    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
@@ -53,12 +53,12 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
 
-RECIPE_BETA_MESSAGE = (
+RECIPE_BETA_MESSAGE = structured(
     'We\'re still working on source package recipes. '
     'We would love for you to try them out, and if you have '
-    'any issues, please file a bug on the launchpad-code '
-    'project.  We\'ll be happy to fix any problems you encounter.')
-
+    'any issues, please '
+    '<a href="http://bugs.edge.launchpad.net/launchpad-code">'
+    'file a bug</a>.  We\'ll be happy to fix any problems you encounter.')
 
 
 class IRecipesForPerson(Interface):
