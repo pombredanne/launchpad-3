@@ -951,6 +951,11 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             for date, activity_dict in self.activity_by_date.items()]
         activity_and_comments = []
 
+        # Ensure truncation results in < max_length comments as expected
+        assert(config.malone.comments_list_truncate_oldest_to
+               + config.malone.comments_list_truncate_newest_to
+               < config.malone.comments_list_max_length)
+
         newest_comments = self.visible_newest_comments_for_display
         oldest_comments = self.visible_oldest_comments_for_display
 
