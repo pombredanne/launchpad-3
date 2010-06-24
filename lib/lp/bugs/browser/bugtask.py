@@ -1043,14 +1043,16 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
     @cachedproperty
     def visible_comments_for_display(self):
-        """Deprecated"""
-        show_all = (self.request.form_ng.getOne('comments') == 'all')
-        max_comments = config.malone.comments_list_max_length
-        if show_all or len(self.visible_comments) <= max_comments:
-            return self.visible_comments
-        else:
-            truncate_to = config.malone.comments_list_truncate_to
-            return self.visible_comments[:truncate_to]
+        """The list of visible comments to be rendered.
+
+        This considers truncating the comment list to the newest and
+        oldest comments if there are tons of comments, but also obeys
+        any explicitly requested ways to display comments (currently
+        only "all" is recognised).
+        """
+        comments = self.visible_oldest_comments_for_display()
+        comments.extend(self.visible_newest_comments_for_display())
+        return comments
 
     @property
     def visible_comments_truncated_for_display(self):
