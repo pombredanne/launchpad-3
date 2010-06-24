@@ -35,8 +35,7 @@
           content="structure view/active_memberships/@@+navigation-links-upper" />
       </div>
 
-      <table class="listing sortable" id="activemembers"
-        tal:content="cache:private, 30 minute">
+      <table class="listing sortable" id="activemembers">
         <thead>
           <tr>
             <th>Name</th>
@@ -208,8 +207,7 @@
 
     <li tal:condition="view/inactive_memberships/batch/total"
         tal:define="inactive_batch nocall:view/inactive_memberships/currentBatch">
-      <div tal:condition="user_can_edit_memberships"
-        tal:content="cache:private, 30 minute">
+      <div tal:condition="user_can_edit_memberships">
         <a name="former"></a>
         <h2>Former members</h2>
 
