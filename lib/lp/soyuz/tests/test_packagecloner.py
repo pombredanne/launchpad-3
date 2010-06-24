@@ -116,7 +116,7 @@ class PackageClonerTests(TestCaseWithFactory):
         distroseries = self.createSourceDistribution(package_infos)
         copy_archive = self.getTargetArchive(distroseries.distribution)
         to_component = getUtility(IComponentSet).ensure(component)
-        cloner = self.copyArchive(
+        self.copyArchive(
             copy_archive, distroseries, from_pocket=source_pocket,
             to_pocket=target_pocket, to_component=to_component,
             proc_families=proc_families)
@@ -145,15 +145,15 @@ class PackageClonerTests(TestCaseWithFactory):
                     to_component=None, packagesets=None, proc_families=None):
         """Use a PackageCloner to copy an archive."""
         if from_distroseries is None:
-           from_distroseries = to_distroseries
+            from_distroseries = to_distroseries
         if from_archive is None:
-           from_archive = from_distroseries.distribution.main_archive
+            from_archive = from_distroseries.distribution.main_archive
         if from_pocket is None:
-           from_pocket = PackagePublishingPocket.RELEASE
+            from_pocket = PackagePublishingPocket.RELEASE
         if to_pocket is None:
-           to_pocket = PackagePublishingPocket.RELEASE
+            to_pocket = PackagePublishingPocket.RELEASE
         if packagesets is None:
-           packagesets = []
+            packagesets = []
         origin = PackageLocation(
             from_archive, from_distroseries.distribution, from_distroseries,
             from_pocket)
