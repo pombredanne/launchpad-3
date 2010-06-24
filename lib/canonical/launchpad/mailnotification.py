@@ -39,7 +39,8 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
 
 from lp.bugs.adapters.bugdelta import BugDelta
-from lp.bugs.adapters.bugchange import BugDuplicateChange, get_bug_changes
+from lp.bugs.adapters.bugchange import (
+    BugDuplicateChange, get_bug_changes, BugTaskAssigneeChange)
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
 from lp.registry.interfaces.structuralsubscription import (
@@ -60,7 +61,8 @@ CC = "CC"
 
 
 def _send_bug_details_to_new_bug_subscribers(
-    bug, previous_subscribers, current_subscribers, subscribed_by=None):
+    bug, previous_subscribers, current_subscribers, subscribed_by=None,
+    event_creator=None):
     """Send an email containing full bug details to new bug subscribers.
 
     This function is designed to handle situations where bugtasks get
@@ -97,7 +99,7 @@ def _send_bug_details_to_new_bug_subscribers(
         reason, rationale = recipients.getReason(to_addr)
         subject, contents = generate_bug_add_email(
             bug, new_recipients=True, subscribed_by=subscribed_by,
-            reason=reason)
+            reason=reason, event_creator=event_creator)
         msg = bug_notification_builder.build(
             from_addr, to_addr, contents, subject, email_date,
             rationale=rationale, references=references)
@@ -185,9 +187,8 @@ def notify_errors_list(message, file_alias_url):
         template % {'url': file_alias_url, 'error_msg': message},
         headers={'X-Launchpad-Unhandled-Email': message})
 
-
 def generate_bug_add_email(bug, new_recipients=False, reason=None,
-                           subscribed_by=None):
+                           subscribed_by=None, event_creator=None):
     """Generate a new bug notification from the given IBug.
 
     If new_recipients is supplied we generate a notification explaining
@@ -235,7 +236,14 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None,
         }
 
     if new_recipients:
-        contents += "You have been subscribed to a %(visibility)s bug"
+        if "assignee" in reason:
+            contents += "You have been assigned a bug task for a %(visibility)s bug"
+            if event_creator is not None:
+                contents += " by %(assigner)s"
+                content_substitutions['assigner'] = (
+                    event_creator.unique_displayname)
+        else:
+            contents += "You have been subscribed to a %(visibility)s bug"
         if subscribed_by is not None:
             contents += " by %(subscribed_by)s"
             content_substitutions['subscribed_by'] = (
@@ -424,7 +432,8 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
         key=operator.attrgetter('displayname'))
 
 
-def add_bug_change_notifications(bug_delta, old_bugtask=None):
+def add_bug_change_notifications(bug_delta, old_bugtask=None,
+                                 new_subscribers=None):
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_changes(bug_delta)
     recipients = bug_delta.bug.getBugNotificationRecipients(
@@ -449,6 +458,13 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
                         include_master_dupe_subscribers=False))
                 bug_delta.bug.addChange(
                     change, recipients=no_dupe_master_recipients)
+            elif (isinstance(change, BugTaskAssigneeChange) and
+                  new_subscribers is not None):
+                for person in new_subscribers:
+                    reason, rationale = recipients.getReason(person)
+                    if 'Assignee' in rationale:
+                        recipients.remove(person)
+                bug_delta.bug.addChange(change, recipients=recipients)
             else:
                 bug_delta.bug.addChange(change, recipients=recipients)
         else:
@@ -471,13 +487,20 @@ def notify_bugtask_edited(modified_bugtask, event):
         bugtask_deltas=bugtask_delta,
         user=IPerson(event.user))
 
-    add_bug_change_notifications(
-        bug_delta, old_bugtask=event.object_before_modification)
-
+    event_creator = IPerson(event.user)
     previous_subscribers = event.object_before_modification.bug_subscribers
     current_subscribers = event.object.bug_subscribers
+    prev_subs_set = set(previous_subscribers)
+    cur_subs_set = set(current_subscribers)
+    new_subs = cur_subs_set.difference(prev_subs_set)
+
+    add_bug_change_notifications(
+        bug_delta, old_bugtask=event.object_before_modification,
+        new_subscribers=new_subs)
+
     _send_bug_details_to_new_bug_subscribers(
-        event.object.bug, previous_subscribers, current_subscribers)
+        event.object.bug, previous_subscribers, current_subscribers,
+        event_creator=event_creator)
     update_security_contact_subscriptions(modified_bugtask, event)
 
 
