@@ -1103,7 +1103,7 @@ class IArchiveView(IHasBuildRecords):
         :return: A new IArchiveAuthToken
         """
 
-    @operation_parameters(person=Reference(schema=IPerson))
+    @call_with(person=REQUEST_USER)
     @export_write_operation()
     def getPrivateSourcesList(person):
         """Get a text line that is suitable to be used for a sources.list
