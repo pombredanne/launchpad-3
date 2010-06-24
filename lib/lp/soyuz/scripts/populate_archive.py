@@ -246,10 +246,6 @@ class ArchivePopulator(SoyuzScript):
                 """Extract the processor family from an `IArchiveArch`."""
                 return removeSecurityProxy(archivearch).processorfamily
 
-            proc_families = [
-                get_family(archivearch) for archivearch
-                in getUtility(IArchiveArchSet).getByArchive(copy_archive)]
-
         # Now instantiate the package copy request that will capture the
         # archive population parameters in the database.
         pcr = getUtility(IPackageCopyRequestSet).new(
@@ -267,12 +263,8 @@ class ArchivePopulator(SoyuzScript):
         if merge_copy_flag:
             pkg_cloner.mergeCopy(the_origin, the_destination)
         else:
-            pkg_cloner.clonePackages(the_origin, the_destination)
-
-        # Create builds for the cloned packages.
-        self._createMissingBuilds(
-            the_destination.distroseries, the_destination.archive,
-            proc_families)
+            pkg_cloner.clonePackages(
+                the_origin, the_destination, proc_families=proc_families)
 
         # Mark the package copy request as completed.
         pcr.markAsCompleted()
@@ -389,59 +381,3 @@ class ArchivePopulator(SoyuzScript):
             "--package-set", dest="packageset_tags", action="append",
             help=(
                 'Limit to copying packages in the selected packagesets.'))
-
-    def _createMissingBuilds(
-        self, distroseries, archive, proc_families):
-        """Create builds for all cloned source packages.
-
-        :param distroseries: the distro series for which to create builds.
-        :param archive: the archive for which to create builds.
-        :param proc_families: the list of processor families for
-            which to create builds.
-        """
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.publishing import active_publishing_status
-
-        self.logger.info("Processing %s." % distroseries.name)
-
-        # Listify the architectures to avoid hitting this MultipleJoin
-        # multiple times.
-        architectures = list(distroseries.architectures)
-
-        # Filter the list of DistroArchSeries so that only the ones
-        # specified on the command line remain.
-        architectures = [architecture for architecture in architectures
-             if architecture.processorfamily in proc_families]
-
-        if len(architectures) == 0:
-            self.logger.info(
-                "No DistroArchSeries left for %s, done." % distroseries.name)
-            return
-
-        self.logger.info(
-            "Supported architectures: %s." %
-            " ".join(arch_series.architecturetag
-                     for arch_series in architectures))
-
-        # Both, PENDING and PUBLISHED sources will be considered for
-        # as PUBLISHED. It's part of the assumptions made in:
-        # https://launchpad.net/soyuz/+spec/build-unpublished-source
-        sources_published = archive.getPublishedSources(
-            distroseries=distroseries, status=active_publishing_status)
-
-        self.logger.info(
-            "Found %d source(s) published." % sources_published.count())
-
-        def get_spn(pub):
-            """Return the source package name for a publishing record."""
-            return pub.sourcepackagerelease.sourcepackagename.name
-
-        for pubrec in sources_published:
-            builds = pubrec.createMissingBuilds(
-                architectures_available=architectures, logger=self.logger)
-            if len(builds) == 0:
-                self.logger.info("%s has no builds." % get_spn(pubrec))
-            else:
-                self.logger.info(
-                    "%s has %s build(s)." % (get_spn(pubrec), len(builds)))
-            self.txn.commit()
