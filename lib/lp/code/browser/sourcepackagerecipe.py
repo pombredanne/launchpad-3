@@ -53,6 +53,13 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
 
+RECIPE_BETA_MESSAGE = (
+    'We\'re still working on source package recipes. '
+    'We would love for you to try them out, and if you have '
+    'any issues, please file a bug on the launchpad-code '
+    'project.  We\'ll be happy to fix any problems you encounter.')
+
+
 
 class IRecipesForPerson(Interface):
     """A marker interface for source package recipe sets."""
@@ -147,8 +154,7 @@ class SourcePackageRecipeView(LaunchpadView):
         # XXX: rockstar: This should be removed when source package recipes are
         # put into production. spec=sourcepackagerecipes
         super(SourcePackageRecipeView, self).initialize()
-        message = 'Warning: Source package recipe builds are still in beta.'
-        self.request.response.addWarningNotification(message)
+        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
 
     @property
     def page_title(self):
@@ -355,8 +361,7 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         # XXX: rockstar: This should be removed when source package recipes are
         # put into production. spec=sourcepackagerecipes
         super(SourcePackageRecipeAddView, self).initialize()
-        message = 'Warning: Source package recipe builds are still in beta.'
-        self.request.response.addWarningNotification(message)
+        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
 
     @property
     def initial_values(self):
