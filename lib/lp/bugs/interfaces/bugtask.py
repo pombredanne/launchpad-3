@@ -469,6 +469,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                                "Confirmed."),
                  readonly=True,
                  required=False))
+    date_incomplete = exported(
+        Datetime(title=_("Date Incomplete"),
+                 description=_("The date on which this task was marked "
+                               "Incomplete."),
+                 readonly=True,
+                 required=False))
     date_inprogress = exported(
         Datetime(title=_("Date In Progress"),
                  description=_("The date on which this task was marked "

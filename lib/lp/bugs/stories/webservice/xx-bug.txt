@@ -327,6 +327,7 @@ data in a bug task is derived from the bug.
   date_fix_committed: None
   date_fix_released: None
   date_in_progress: None
+  date_incomplete: None
   date_left_closed: None
   date_left_new: None
   date_triaged: None
