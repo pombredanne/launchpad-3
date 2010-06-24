@@ -10,6 +10,7 @@ __metaclass__ = type
 from datetime import datetime, timedelta
 from textwrap import dedent
 
+import transaction
 from pytz import utc
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -214,6 +215,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         # You shouldn't be able to create a duplicate recipe owned by the same
         # person with the same name.
         recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+        transaction.commit()
+        recipe_name = recipe.name
 
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
@@ -224,7 +227,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
         browser.getLink('Create packaging recipe').click()
 
-        browser.getControl(name='field.name').value = recipe.name
+        browser.getControl(name='field.name').value = recipe_name
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Create Recipe').click()
@@ -531,6 +534,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
         browser.getControl('Request builds').click()
+
+        login(ANONYMOUS)
         builds = recipe.getBuilds(True)
         build_distros = [
             build.distroseries.displayname for build in builds]
@@ -754,18 +759,20 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         build = self.makeBuild()
         removeSecurityProxy(build).buildlog = (
             self.factory.makeLibraryFileAlias())
+        build_log_url = build.build_log_url
         browser = self.getViewBrowser(build)
         link = browser.getLink('buildlog')
-        self.assertEqual(build.build_log_url, link.url)
+        self.assertEqual(build_log_url, link.url)
 
     def test_uploadlog(self):
         """A link to the upload log is shown if available."""
         build = self.makeBuild()
         removeSecurityProxy(build).upload_log = (
             self.factory.makeLibraryFileAlias())
+        upload_log_url = build.upload_log_url
         browser = self.getViewBrowser(build)
         link = browser.getLink('uploadlog')
-        self.assertEqual(build.upload_log_url, link.url)
+        self.assertEqual(upload_log_url, link.url)
 
 
 class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
