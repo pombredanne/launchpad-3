@@ -40,44 +40,48 @@ class TestP3APackages(TestCaseWithFactory):
         self.private_ppa.newSubscription(self.joe, self.private_ppa.owner)
         self.private_ppa.newComponentUploader(self.mary, 'main')
 
-    def test_p3a_packages_unauthorized(self):
-        # A person with no subscription will not be able to view +packages
+    def test_packages_unauthorized(self):
+        """A person with no subscription will not be able to view +packages
+        """
         login_person(self.fred)
         self.assertRaises(
             Unauthorized, create_initialized_view, self.private_ppa,
             "+packages")
 
-    def test_p3a_packages_unauthorized_subscriber(self):
-        # A person with a subscription will not be able to view +packages
+    def test_packages_unauthorized_subscriber(self):
+        """A person with a subscription will not be able to view +packages
+        """
         login_person(self.joe)
         self.assertRaises(
             Unauthorized, create_initialized_view, self.private_ppa,
             "+packages")
 
-    def test_p3a_packages_authorized(self):
-        # A person with launchpad.{Append,Edit} will be able to do so
+    def test_packages_authorized(self):
+        """A person with launchpad.{Append,Edit} will be able to do so"""
         login_person(self.private_ppa.owner)
         view = create_initialized_view(self.private_ppa, "+packages")
         menu = ArchiveNavigationMenu(view)
         self.assertTrue(menu.packages().enabled)
 
-    def test_p3a_packages_uploader(self):
+    def test_packages_uploader(self):
+        """A person with launchpad.Append will also be able to do so"""
         login_person(self.mary)
         view = create_initialized_view(self.private_ppa, "+packages")
         menu = ArchiveNavigationMenu(view)
         self.assertTrue(menu.packages().enabled)
 
-    def test_p3a_packages_link_unauthorized(self):
+    def test_packages_link_unauthorized(self):
         login_person(self.fred)
         view = create_initialized_view(self.private_ppa, "+index")
         menu = ArchiveNavigationMenu(view)
         self.assertFalse(menu.packages().enabled)
 
-    def test_p3a_packages_link_subscriber(self):
+    def test_packages_link_subscriber(self):
         login_person(self.joe)
         view = create_initialized_view(self.private_ppa, "+index")
         menu = ArchiveNavigationMenu(view)
         self.assertFalse(menu.packages().enabled)
+
 
 class TestPPAPackages(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
