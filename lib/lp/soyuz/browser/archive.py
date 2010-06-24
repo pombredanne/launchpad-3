@@ -429,7 +429,7 @@ class ArchiveMenuMixin:
         text = 'View package details'
         link = Link('+packages', text, icon='info')
         # Disable the link for P3As if they don't have upload rights.
-        if self.context.context.private:
+        if self.context.private:
             if not check_permission('launchpad.Append', self.context):
                 link.enabled = False
         return link
@@ -504,6 +504,10 @@ class ArchivePackagesActionMenu(NavigationMenu, ArchiveMenuMixin):
 
 class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
+
+    @cachedproperty
+    def private(self):
+        return self.context.private
 
     @cachedproperty
     def has_sources(self):
@@ -967,6 +971,7 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     implements(IArchivePackagesActionMenu)
 
     def initialize(self):
+        super(ArchivePackagesView, self).initialize()
         if self.context.private:
             if not check_permission('launchpad.Append', self.context):
                 raise Unauthorized
