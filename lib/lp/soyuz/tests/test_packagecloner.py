@@ -12,6 +12,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
@@ -577,3 +578,82 @@ class PackageClonerTests(TestCaseWithFactory):
         # Again bzr is obsoleted, gcc is added and apt remains.
         self.checkCopiedSources(
             copy_archive, distroseries, [package_infos[1]] + package_infos2)
+
+    def setArchiveArchitectures(self, archive, proc_families):
+        """Associate the archive with the processor families."""
+        aa_set = getUtility(IArchiveArchSet)
+        for proc_family in proc_families:
+            aa_set.new(archive, proc_family)
+
+    def testMergeCopyCreatesBuilds(self):
+        package_infos = [
+            PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "apt", "1.2", status=PackagePublishingStatus.PUBLISHED),
+        ]
+        proc_families = [ProcessorFamilySet().getByName("x86")]
+        copy_archive, distroseries = self.makeCopyArchive(
+            package_infos, proc_families=proc_families)
+        self.setArchiveArchitectures(copy_archive, proc_families)
+        package_infos2 = [
+            PackageInfo(
+            "bzr", "2.2", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "gcc", "1.3", status=PackagePublishingStatus.PENDING),
+        ]
+        self.createSourcePublications(package_infos2, distroseries)
+        self.mergeCopy(copy_archive, distroseries)
+        # We get all builds, as superseding bzr doesn't cancel the
+        # build
+        self.checkBuilds(copy_archive, package_infos + package_infos2)
+
+    def testMergeCopyCreatesNoBuildsWhenNoArchitectures(self):
+        package_infos = [
+            PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
+        ]
+        # We specify no processor families at creation time
+        copy_archive, distroseries = self.makeCopyArchive(
+            package_infos, proc_families=[])
+        package_infos2 = [
+            PackageInfo(
+            "bzr", "2.2", status=PackagePublishingStatus.PUBLISHED),
+        ]
+        self.createSourcePublications(package_infos2, distroseries)
+        self.mergeCopy(copy_archive, distroseries)
+        # And so we get no builds at merge time
+        self.checkBuilds(copy_archive, [])
+
+    def testMergeCopyCreatesBuildsForMultipleArchitectures(self):
+        package_infos = [
+            PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "apt", "1.2", status=PackagePublishingStatus.PUBLISHED),
+        ]
+        distroseries = self.createSourceDistribution(package_infos)
+        # Create a DAS for a second family
+        amd64_family = ProcessorFamilySet().getByName("amd64")
+        self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="amd64",
+            processorfamily=amd64_family, supports_virtualized=True)
+        # The request builds for both families, so we expect two builds
+        # per source.
+        proc_families = [ProcessorFamilySet().getByName("x86"), amd64_family]
+        copy_archive = self.getTargetArchive(distroseries.distribution)
+        self.setArchiveArchitectures(copy_archive, proc_families)
+        self.copyArchive(
+            copy_archive, distroseries, proc_families=proc_families)
+        package_infos2 = [
+            PackageInfo(
+            "bzr", "2.2", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "gcc", "1.3", status=PackagePublishingStatus.PENDING),
+        ]
+        self.createSourcePublications(package_infos2, distroseries)
+        self.mergeCopy(copy_archive, distroseries)
+        # We get all builds twice, one for each architecture.
+        self.checkBuilds(
+            copy_archive,
+            package_infos + package_infos + package_infos2 + package_infos2)
