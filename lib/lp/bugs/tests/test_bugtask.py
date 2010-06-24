@@ -31,7 +31,7 @@ from lp.testing import (
 
 class TestBugTaskDelta(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTaskDelta, self).setUp()
@@ -69,7 +69,6 @@ class TestBugTaskDelta(TestCaseWithFactory):
 
     def test_get_bugwatch_delta(self):
         # Exercise getDelta() with a change to bugwatch.
-        user = self.factory.makePerson()
         bug_task = self.factory.makeBugTask()
         bug_task_before_modification = Snapshot(
             bug_task, providing=providedBy(bug_task))
@@ -506,7 +505,7 @@ class TestBugTaskHardwareSearch(TestCaseWithFactory):
 
 class TestBugTaskPermissionsToSetAssigneeMixin:
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Crate the test setup.
