@@ -36,7 +36,7 @@
       </div>
 
       <table class="listing sortable" id="activemembers"
-        tal:content="cache:public, 30 minute">
+        tal:content="cache:private, 30 minute">
         <thead>
           <tr>
             <th>Name</th>
@@ -209,7 +209,7 @@
     <li tal:condition="view/inactive_memberships/batch/total"
         tal:define="inactive_batch nocall:view/inactive_memberships/currentBatch">
       <div tal:condition="user_can_edit_memberships"
-        tal:content="cache:public, 30 minute">
+        tal:content="cache:private, 30 minute">
         <a name="former"></a>
         <h2>Former members</h2>
 
