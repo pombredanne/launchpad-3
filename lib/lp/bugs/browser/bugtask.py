@@ -943,7 +943,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
                 # we don't need it there any more.
                 activity_by_date.remove(activity_dict)
 
-                activity_for_comment.sort(key=itemgetter('target'))
+        activity_for_comment.sort(key=itemgetter('target'))
 
         return activity_for_comment
 
