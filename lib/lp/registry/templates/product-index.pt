@@ -92,7 +92,7 @@
                   </tal:driver_unset>
 
                   <a target="help" href="/+help/driver.html"
-                     class="sprite maybe"><span class="invisible-link">Driver help</span></a>
+                     class="sprite maybe">&nbsp;<span class="invisible-link">Driver help</span></a>
                 </dd>
               </dl>
 
