@@ -162,7 +162,7 @@ class PackageCloner:
                 PackagePublishingStatus.PUBLISHED,
                 origin.pocket, origin.archive))
 
-    def mergeCopy(self, origin, destination, proc_families=None):
+    def mergeCopy(self, origin, destination):
         """Please see `IPackageCloner`."""
         # Calculate the package set delta in order to find packages that are
         # obsolete or missing in the target archive.
@@ -201,12 +201,12 @@ class PackageCloner:
             """ % sqlvalues(
                 PackagePublishingStatus.SUPERSEDED, UTC_NOW))
 
-        if proc_families is None:
-            proc_families = []
+        #if proc_families is None:
+        #    proc_families = []
 
-        # FIXME: untested
-        self._create_missing_builds(
-            destination.distroseries, destination.archive, proc_families)
+        ## FIXME: untested
+        #self._create_missing_builds(
+        #    destination.distroseries, destination.archive, proc_families)
 
     def _compute_packageset_delta(self, origin):
         """Given a source/target archive find obsolete or missing packages.

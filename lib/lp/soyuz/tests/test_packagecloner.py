@@ -497,3 +497,83 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkPackageDiff(
             [package_infos[0]], [package_infos[1]], diff,
             distroseries.distribution.main_archive)
+
+
+    def mergeCopy(self, target_archive, target_distroseries,
+                  source_archive=None, source_distroseries=None):
+        if source_distroseries is None:
+            source_distroseries = target_distroseries
+        if source_archive is None:
+            source_archive = source_distroseries.distribution.main_archive
+        source_location = PackageLocation(
+            source_archive, source_distroseries.distribution,
+            source_distroseries, PackagePublishingPocket.RELEASE)
+        target_location = PackageLocation(
+            target_archive, target_distroseries.distribution,
+            target_distroseries, PackagePublishingPocket.RELEASE)
+        cloner = getUtility(IPackageCloner)
+        return cloner.mergeCopy(source_location, target_location)
+
+    def testMergeCopyNoChanges(self):
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        copy_archive, distroseries = self.makeCopyArchive([package_info])
+        self.mergeCopy(copy_archive, distroseries)
+        self.checkCopiedSources(
+            copy_archive, distroseries, [package_info])
+
+    def testMergeCopyWithNewPackages(self):
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        copy_archive, distroseries = self.makeCopyArchive([package_info])
+        package_infos = [
+            PackageInfo(
+            "apt", "1.2", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "gcc", "4.5", status=PackagePublishingStatus.PENDING),
+        ]
+        self.createSourcePublications(package_infos, distroseries)
+        self.mergeCopy(copy_archive, distroseries)
+        self.checkCopiedSources(
+            copy_archive, distroseries, [package_info] + package_infos)
+
+    def testMergeCopyWithChangedPackages(self):
+        package_infos = [
+            PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "apt", "1.2", status=PackagePublishingStatus.PUBLISHED),
+        ]
+        copy_archive, distroseries = self.makeCopyArchive(package_infos)
+        package_infos = [
+            PackageInfo(
+            "bzr", "2.2", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "apt", "1.3", status=PackagePublishingStatus.PENDING),
+        ]
+        self.createSourcePublications(package_infos, distroseries)
+        self.mergeCopy(copy_archive, distroseries)
+        # Critically there is only one record for each info, as the
+        # others have been obsoleted.
+        self.checkCopiedSources(
+            copy_archive, distroseries, package_infos)
+
+    def testMergeCopyWithBoth(self):
+        package_infos = [
+            PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "apt", "1.2", status=PackagePublishingStatus.PUBLISHED),
+        ]
+        copy_archive, distroseries = self.makeCopyArchive(package_infos)
+        package_infos2 = [
+            PackageInfo(
+            "bzr", "2.2", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+            "gcc", "1.3", status=PackagePublishingStatus.PENDING),
+        ]
+        self.createSourcePublications(package_infos2, distroseries)
+        self.mergeCopy(copy_archive, distroseries)
+        # Again bzr is obsoleted, gcc is added and apt remains.
+        self.checkCopiedSources(
+            copy_archive, distroseries, [package_infos[1]] + package_infos2)
