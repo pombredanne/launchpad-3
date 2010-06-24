@@ -919,9 +919,16 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         return activity_by_date
 
     def listActivityForComment(self, comment, activity_by_date):
-        """
-        Check to see if there are any activities for this comment's
-        datecreated, and return comment's activities as a list.
+        """Return list of activities for the comment.
+        
+        List all activities that occurred on the same date as the
+        comment.
+
+        :comment: A visible comment object
+                  (See get_visible_comments)
+        :activity_by_date: A list of activity dicts.  NOTE: The
+                  activities returned by this method will also be
+                  removed from this list.
         """
         activity_for_comment = []
 
