@@ -504,7 +504,7 @@ class TestBugTaskHardwareSearch(TestCaseWithFactory):
             [bugtask.bug.id for bugtask in bugtasks])
 
 
-class TestBugTaskPermissionsToSetAssigneeBase(TestCaseWithFactory):
+class TestBugTaskPermissionsToSetAssigneeMixin:
 
     layer = LaunchpadFunctionalLayer
 
@@ -519,7 +519,7 @@ class TestBugTaskPermissionsToSetAssigneeBase(TestCaseWithFactory):
           owners, bug supervisors, drivers
         - bug tasks for the targets
         """
-        super(TestBugTaskPermissionsToSetAssigneeBase, self).setUp()
+        super(TestBugTaskPermissionsToSetAssigneeMixin, self).setUp()
         self.target_owner_member = self.factory.makePerson()
         self.target_owner_team = self.factory.makeTeam(
             owner=self.target_owner_member)
@@ -558,6 +558,14 @@ class TestBugTaskPermissionsToSetAssigneeBase(TestCaseWithFactory):
         self.target_bugtask = bug.getBugTask(self.target)
         self.target_bugtask.transitionToAssignee(self.regular_user)
         logout()
+
+    def makeTarget(self):
+        """Create a target and a series.
+
+        The target and series must be assigned as attributes of self:
+        'self.target' and 'self.series'.
+        """
+        raise NotImplementedError(self.makeTarget)
 
     def test_userCanSetAnyAssignee_anonymous_user(self):
         # Anonymous users cannot set anybody as an assignee.
@@ -703,7 +711,7 @@ class TestBugTaskPermissionsToSetAssigneeBase(TestCaseWithFactory):
 
 
 class TestProductBugTaskPermissionsToSetAssignee(
-    TestBugTaskPermissionsToSetAssigneeBase):
+    TestBugTaskPermissionsToSetAssigneeMixin, TestCaseWithFactory):
 
     def makeTarget(self):
         """Create a product and a product series."""
@@ -712,7 +720,7 @@ class TestProductBugTaskPermissionsToSetAssignee(
 
 
 class TestDistributionBugTaskPermissionsToSetAssignee(
-    TestBugTaskPermissionsToSetAssigneeBase):
+    TestBugTaskPermissionsToSetAssigneeMixin, TestCaseWithFactory):
 
     def makeTarget(self):
         """Create a distribution and a distroseries."""
