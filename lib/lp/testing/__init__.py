@@ -253,11 +253,14 @@ class TestCase(testtools.TestCase):
         """
         return self.id()
 
+    def useContext(self, context):
+        retval = context.__enter__()
+        self.addCleanup(context.__exit__, None, None, None)
+        return retval
+
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
-        tempdir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, tempdir)
-        return tempdir
+        return self.useContext(temp_dir())
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
@@ -433,6 +436,7 @@ class TestCase(testtools.TestCase):
         cwd = os.getcwd()
         os.chdir(tempdir)
         self.addCleanup(os.chdir, cwd)
+        return tempdir
 
     def _unfoldEmailHeader(self, header):
         """Unfold a multiline e-mail header."""
@@ -996,6 +1000,14 @@ def ws_object(launchpad, obj):
     return launchpad.load(
         obj_url.replace('http://api.launchpad.dev/',
         str(launchpad._root_uri)))
+
+
+@contextmanager
+def temp_dir():
+    tempdir = tempfile.mkdtemp()
+    yield tempdir
+    shutil.rmtree(tempdir)
+
 
 def unlink_source_packages(product):
     """Remove all links between the product and source packages.
