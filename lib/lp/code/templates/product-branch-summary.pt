@@ -26,10 +26,9 @@
       <a href="https://help.launchpad.net/Code/UploadingABranch">Read more.</a>
       </li>
 
-      <li>Launchpad can import code from CVS or Subversion into Bazaar
-      branches.
-      <a href="https://help.launchpad.net/VcsImports">Read more.</a>
-      </li>
+      <li>Launchpad can import code from CVS, Subversion, Mercurial or Git
+      into Bazaar branches.  <a
+      href="https://help.launchpad.net/VcsImports">Read more.</a> </li>
 
     </ul>
   </tal:no-branches>
