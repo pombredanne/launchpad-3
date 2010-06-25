@@ -3,37 +3,11 @@
 
 """Test Archive features."""
 
-from datetime import date, datetime, timedelta
-import pytz
 import unittest
 
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+from canonical.testing import DatabaseFunctionalLayer
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import PersonVisibility
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.archive import (IArchiveSet, ArchivePurpose,
-    ArchiveStatus, CannotSwitchPrivacy, InvalidPocketForPartnerArchive,
-    InvalidPocketForPPA)
-from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageReleaseDownloadCount)
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import login_person, TestCaseWithFactory
 
 
