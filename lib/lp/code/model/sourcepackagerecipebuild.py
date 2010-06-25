@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 import datetime
+import sys
 
 from pytz import utc
 
@@ -26,6 +27,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.launchpad.webapp import errorlog
 from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
@@ -196,6 +198,25 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         store.add(spbuild)
         return spbuild
 
+    @staticmethod
+    def makeDailyBuilds():
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        candidates = SourcePackageRecipe.findStaleDailyBuilds()
+        builds = []
+        for candidate in candidates:
+            recipe = candidate.sourcepackage_recipe
+            try:
+                build = recipe.requestBuild(recipe.daily_build_archive,
+                    recipe.owner, candidate.distroseries,
+                    PackagePublishingPocket.RELEASE)
+            except:
+                info = sys.exc_info()
+                errorlog.globalErrorUtility.raising(info)
+            else:
+                builds.append(build)
+
+        return builds
+
     def destroySelf(self):
         store = Store.of(self)
         job = self.buildqueue_record.job
@@ -309,3 +330,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
 
     def getName(self):
         return "%s-%s" % (self.id, self.build_id)
+
+    def score(self):
+        return 900

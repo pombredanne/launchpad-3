@@ -952,7 +952,7 @@
             interface="lp.bugs.interfaces.bugnotification.IBugNotificationRecipient"/>
     </class>
     <class
-        class="canonical.launchpad.mailnotification.BugNotificationRecipients">
+        class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients">
         <allow
             interface="canonical.launchpad.interfaces.INotificationRecipientSet"/>
     </class>

@@ -18,7 +18,7 @@ import transaction
 from zope.component import getUtility
 from zope.interface import directlyProvides, directlyProvidedBy
 
-from canonical.uuid import generate_uuid
+from uuid import uuid1
 from canonical.launchpad.interfaces import (
     AccountStatus, GPGVerificationError, IGPGHandler, ILibraryFileAliasSet,
     IMailBox, IPerson, IWeaklyAuthenticatedPrincipal)
@@ -196,7 +196,7 @@ def handleMail(trans=transaction):
                 trans.begin()
 
                 # File the raw_mail in the Librarian
-                file_name = generate_uuid() + '.txt'
+                file_name = str(uuid1()) + '.txt'
                 try:
                     file_alias = getUtility(ILibraryFileAliasSet).create(
                             file_name, len(raw_mail),

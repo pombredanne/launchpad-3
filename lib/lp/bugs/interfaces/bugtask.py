@@ -469,6 +469,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                                "Confirmed."),
                  readonly=True,
                  required=False))
+    date_incomplete = exported(
+        Datetime(title=_("Date Incomplete"),
+                 description=_("The date on which this task was marked "
+                               "Incomplete."),
+                 readonly=True,
+                 required=False))
     date_inprogress = exported(
         Datetime(title=_("Date In Progress"),
                  description=_("The date on which this task was marked "
@@ -1075,8 +1081,8 @@ class BugTaskSearchParams:
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
                  hardware_is_linked_to_bug=False,
-                 linked_branches=None, structural_subscriber=None
-                 ):
+                 linked_branches=None, structural_subscriber=None,
+                 modified_since=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1121,6 +1127,7 @@ class BugTaskSearchParams:
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
         self.linked_branches = linked_branches
         self.structural_subscriber = structural_subscriber
+        self.modified_since = None
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1194,7 +1201,7 @@ class BugTaskSearchParams:
                        hardware_owner_is_affected_by_bug=False,
                        hardware_owner_is_subscribed_to_bug=False,
                        hardware_is_linked_to_bug=False, linked_branches=None,
-                       structural_subscriber=None):
+                       structural_subscriber=None, modified_since=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1263,6 +1270,7 @@ class BugTaskSearchParams:
             hardware_is_linked_to_bug)
         search_params.linked_branches=linked_branches
         search_params.structural_subscriber = structural_subscriber
+        search_params.modified_since = modified_since
 
         return search_params
 

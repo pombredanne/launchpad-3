@@ -239,7 +239,7 @@ class TestSeriesWithSources(TestCaseWithFactory):
         ubuntu_test = breezy_autotest.distribution
         self.series = [breezy_autotest]
         self.series.append(self.factory.makeDistroRelease(
-            distribution=ubuntu_test, name="foo-series"))
+            distribution=ubuntu_test, name="foo-series", version='1.0'))
 
         self.sources = []
         gedit_src_hist = self.publisher.getPubSource(
@@ -789,6 +789,30 @@ class TestARMBuildsAllowed(TestCaseWithFactory):
                 self.archive, self.arm).count())
         self.assertFalse(self.archive.arm_builds_allowed)
 
+class TestArchiveTokens(TestCaseWithFactory):
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestArchiveTokens, self).setUp()
+        owner = self.factory.makePerson()
+        self.private_ppa = self.factory.makeArchive(owner=owner)
+        self.private_ppa.buildd_secret = 'blah'
+        self.private_ppa.private = True
+        self.joe = self.factory.makePerson(name='joe')
+        self.private_ppa.newSubscription(self.joe, owner)
+
+    def test_getAuthToken_with_no_token(self):
+        token = self.private_ppa.getAuthToken(self.joe)
+        self.assertEqual(token, None)
+
+    def test_getAuthToken_with_token(self):
+        token = self.private_ppa.newAuthToken(self.joe)
+        self.assertEqual(self.private_ppa.getAuthToken(self.joe), token)
+
+    def test_getPrivateSourcesList(self):
+        url = self.private_ppa.getPrivateSourcesList(self.joe)
+        token = self.private_ppa.getAuthToken(self.joe)
+        self.assertEqual(token.archive_url, url)
 
 class TestArchivePrivacySwitching(TestCaseWithFactory):
 

@@ -58,6 +58,12 @@
         <allow
             interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobSource" />
     </securedutility>
+    <securedutility
+        class="lp.buildmaster.model.buildfarmjob.BuildFarmJobSet"
+        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobSet">
+        <allow
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobSet" />
+    </securedutility>
 
     <!-- PackageBuild -->
     <class
@@ -74,6 +80,12 @@
         provides="lp.buildmaster.interfaces.packagebuild.IPackageBuildSource">
         <allow
             interface="lp.buildmaster.interfaces.packagebuild.IPackageBuildSource" />
+    </securedutility>
+    <securedutility
+        class="lp.buildmaster.model.packagebuild.PackageBuildSet"
+        provides="lp.buildmaster.interfaces.packagebuild.IPackageBuildSet">
+        <allow
+            interface="lp.buildmaster.interfaces.packagebuild.IPackageBuildSet" />
     </securedutility>
 
     <!-- BuildQueue -->
