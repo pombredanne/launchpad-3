@@ -506,7 +506,7 @@ class TestBugTaskPermissionsToSetAssigneeBase(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        """Crate the test setup.
+        """Create the test setup.
 
         We need
         - bug task targets (a product and a product series, or
