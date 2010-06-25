@@ -162,7 +162,6 @@ known_canonical_lp_devs = \
                               u'Maris Fogels',
                               u'Mark Shuttleworth',
                               u'Martin Albisetti',
-                              u'Martin Pool',
                               u'Matt Zimmerman',
                               u'Matthew Paul Thomas',
                               u'Matthew Thomas',
