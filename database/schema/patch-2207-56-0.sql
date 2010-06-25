@@ -44,7 +44,9 @@ INSERT INTO DistributionSourcePackage (
     SELECT
         distribution,
         sourcepackagename
-    FROM DistributionSourcePackage;
+    FROM DistributionSourcePackage
+ORDER BY distribution, sourcepackagename;
+
 
 
 /* Update cached bug values in DistributionSourcePackage. */
@@ -67,3 +69,7 @@ FROM (
     ) AS subquery
 WHERE distribution = distro
     AND sourcepackagename = spn;
+
+
+CLUSTER DistributionSourcePackage
+   USING distributionpackage__sourcepackagename__distribution__key;
