@@ -1041,17 +1041,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             start = total - config.malone.comments_list_truncate_newest_to
             return self.visible_comments[start:total]
 
-    @cachedproperty
-    def visible_comments_for_display(self):
-        """Returns a list of visible comments to be rendered.
-
-        This is a convenience function which returns a copy of
-        the oldest and newest comments.
-        """
-        comments = list(self.visible_oldest_comments_for_display)
-        comments.extend(self.visible_newest_comments_for_display)
-        return comments
-
     @property
     def visible_comments_truncated_for_display(self):
         """Whether the visible comment list is truncated for display."""
