@@ -23,7 +23,8 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
         """Create a test archive."""
         super(TestArchiveSubscriptions, self).setUp()
         self.private_team = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE)
+            visibility=PersonVisibility.PRIVATE, name="subscribertest")
+        login_person(self.private_team.teamowner)
         self.archive = self.factory.makeArchive(
             private=True, owner=self.private_team)
         self.subscriber = self.factory.makePerson()
@@ -31,13 +32,13 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
     def test_subscriber_can_access_private_team_ppa(self):
         # As per bug 597783, we need to make sure a subscriber can see
         # a private team's PPA after they have been given a subscription.
-        login_person(self.archive.owner)
         self.archive.newSubscription(
             self.subscriber, registrant=self.archive.owner)
 
         login_person(self.subscriber)
-        token = self.archive.newAuthToken(self.subscriber, token="test")
-        self.assertEqual(token.token, "test")
+        token = self.archive.newAuthToken(self.subscriber, token=u"mysub")
+        url = token.archive_url
+        self.assertEqual(token.archive.owner.name, "subscribertest")
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
