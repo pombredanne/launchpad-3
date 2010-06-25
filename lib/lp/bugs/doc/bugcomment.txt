@@ -238,16 +238,18 @@ This is normally false, but for bugs with lots of comments, the
 visible_comments_truncated_for_display property becomes True and the
 visible_comments_for_display list is truncated.
 
-The configuration keys comments_list_max_length and
-comments_list_truncate_to control the thresholds. If there are more
-comments than comments_list_max_length, the list is truncated to
-comments_list_truncate_to.
+The configuration keys comments_list_max_length,
+comments_list_truncate_oldest_to, and comments_list_truncate_newest_to
+control the thresholds. If there are more comments than
+comments_list_max_length, the list is truncated to show the oldest and
+newest bugs, with a visual break in between.
 
     >>> from canonical.config import config
     >>> config.push('malone', '''
     ... [malone]
     ... comments_list_max_length: 10
-    ... comments_list_truncate_to: 8
+    ... comments_list_truncate_oldest_to: 3
+    ... comments_list_truncate_newest_to: 5
     ... ''')
 
 We'll create an example bug with 9 comments.
@@ -288,10 +290,14 @@ Add two more comments, and the list will be truncated to only 8.
     ...     (bug.default_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_view.initialize()
 
-    >>> len(bug_view.visible_comments_for_display)
-    8
     >>> bug_view.visible_comments_truncated_for_display
     True
+    >>> len(bug_view.visible_comments_for_display)
+    8
+    >>> len(bug_view.visible_oldest_comments_for_display)
+    3
+    >>> len(bug_view.visible_newest_comments_for_display)
+    5
 
 The display of all comments can be requested with a form parameter.
 
