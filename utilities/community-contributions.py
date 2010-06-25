@@ -220,7 +220,7 @@ known_canonical_non_lp_devs = \
                               u'Dustin Kirkland',
                               )]
 
-# Some people have made commits using various names and/or email 
+# Some people have made commits using various names and/or email
 # addresses, so this map will be used to merge them accordingly.
 # The map is initialized from this list of pairs, where each pair is
 # of the form (CONTRIBUTOR_AS_SEEN, UNIFYING_IDENTITY_FOR_CONTRIBUTOR).
@@ -290,7 +290,6 @@ class ContainerRevision():
         timezone = self.top_rev.rev.timezone
         message = self.top_rev.rev.message or "(NO LOG MESSAGE)"
         rev_id = self.top_rev.rev.revision_id or "(NO REVISION ID)"
-        inventory_sha1 = self.top_rev.rev.inventory_sha1
         if timestamp:
             date_str = format_date(timestamp, timezone or 0, 'original')
         else:
@@ -341,8 +340,8 @@ class ContainerRevision():
             "\n",
             ]
         return ''.join(text)
-  
-  
+
+
 # "ExternalContributor" is too much to type, so I guess we'll just use this.
 class ExCon():
     """A contributor to Launchpad from outside Canonical's Launchpad team."""
