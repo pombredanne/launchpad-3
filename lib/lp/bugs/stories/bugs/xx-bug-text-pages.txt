@@ -281,6 +281,14 @@ Searching for bugs in a component of a distribution works too.
     >>> print anon_browser.contents
     10
 
+This page is also available for project groups.
+
+    >>> anon_browser.open('http://launchpad.dev/mozilla/+bugs-text')
+    >>> print anon_browser.contents
+    15
+    5
+    4
+
 
 == Private bugs ==
 
