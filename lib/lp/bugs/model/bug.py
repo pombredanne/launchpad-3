@@ -42,6 +42,7 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -463,6 +464,31 @@ class Bug(SQLBase):
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
             0, getUtility(ILaunchpadCelebrities).janitor, bug=self)
+        return bugtasks.count() > 0
+
+    def isExpirable(self, days_old=None):
+        """See `IBug`."""
+
+        # If days_old is None read it from the Launchpad configuration
+        # and use that value
+        if days_old is None:
+            days_old = config.malone.days_before_expiration
+
+        # IBugTaskSet.findExpirableBugTasks() is the authoritative determiner
+        # if a bug can expire, but it is expensive. We do a general check
+        # to verify the bug permits expiration before using IBugTaskSet to
+        # determine if a bugtask can cause expiration.
+        if not self.permits_expiration:
+            return False
+
+        # Do the search as the Janitor, to ensure that this bug can be
+        # found, even if it's private. We don't have access to the user
+        # calling this property. If the user has access to view this
+        # property, he has permission to see the bug, so we're not
+        # exposing something we shouldn't. The Janitor has access to
+        # view all bugs.
+        bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
+            days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
         return bugtasks.count() > 0
 
     @property

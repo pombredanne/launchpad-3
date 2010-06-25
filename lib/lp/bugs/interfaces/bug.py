@@ -809,6 +809,21 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     def updateHeat():
         """Update the heat for the bug."""
 
+    @operation_parameters(
+        days_old=Int(
+            title=_('Number of days of inactivity for which to check.'),
+            required=False))
+    @export_read_operation()
+    def isExpirable(days_old=None):
+        """Is this bug eligible for expiration and was it last updated
+        more than X days ago?
+
+        If days_old is None the default number of days without activity
+        is used.
+
+        Returns True or False.
+        """
+
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)

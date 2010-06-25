@@ -232,6 +232,31 @@ expired. The other bugs do not meet one of the preconditions.
     recent           True     31  Incomplete  False     False  False  False
     no_expire        False    61  Incomplete  False     False  False  False
 
+== isExpirable() ==
+
+In addition to can_expire bugs have an isExpirable method to which a custom
+number of days, days_old, can be passed.  days_old is then used with
+findExpirableBugTasks.  This allows projects to create their own janitor using
+a different period for bug expiration.
+
+    # Check to ensure that isExpirable() works without days_old, then set the
+    # bug to Invalid so it doesn't affect the rest of the doctest
+    >>> from lp.bugs.tests.bug import create_old_bug
+    >>> very_old_bugtask = create_old_bug('expirable_distro', 351, ubuntu)
+    >>> very_old_bugtask.bug.isExpirable()
+    True
+    >>> very_old_bugtask.transitionToStatus(
+    ...     BugTaskStatus.INVALID, sample_person)
+
+    # Pass isExpirable() a days_old parameter, then set the bug to Invalid so it
+    # doesn't affect the rest of the doctest
+    >>> from lp.bugs.tests.bug import create_old_bug
+    >>> not_so_old_bugtask = create_old_bug('expirable_distro', 31, ubuntu)
+    >>> not_so_old_bugtask.bug.isExpirable(days_old=14)
+    True
+    >>> not_so_old_bugtask.transitionToStatus(
+    ...     BugTaskStatus.INVALID, sample_person)
+
 
 == findExpirableBugTasks() Part 2 ==
 
