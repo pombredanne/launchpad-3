@@ -132,6 +132,16 @@
               <h2>Recent Launchpad blog posts</h2>
               <ul>
                 <li class="news">
+                  <a href="http://www.surveymonkey.com/s/launchpadsummer2010">
+                  Take the Launchpad survey</a><span class="registered"> &ndash; 01 July 2010</span><br />
+                  Tell us a little about how you use Launchpad by answering our short survey.
+                </li>
+                <li class="news">
+                  <a href="http://blog.launchpad.net?p=1607">
+                  SFTP uploads</a><span class="registered"> &ndash; 01 July 2010</span><br />
+                  Upload source packages to your PPA using SFTP.
+                </li>
+                <li class="news">
                   <a href="http://blog.launchpad.net?p=1513">
                   2GiB PPAs for everyone!</a><span class="registered"> &ndash; 04 May 2010</span><br />
                   We've doubled the standard Personal Package Archive size to 2 GiB.
