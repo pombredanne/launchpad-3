@@ -14,12 +14,12 @@ from zope.component import getAdapter, getUtility
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.announcement import IAnnouncement
-from lp.soyuz.interfaces.archive import IArchive
+from lp.soyuz.interfaces.archive import IArchive, IArchiveSet
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
 from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriber, IPersonalArchiveSubscription)
+    IArchiveSubscriber, IArchiveSubscriberSet, IPersonalArchiveSubscription)
 from lp.code.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import (
@@ -735,6 +735,17 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             if (invitee.is_team and
                 invitee in user.person.getAdministratedTeams()):
                 return True
+
+        if (self.obj.is_team
+            and self.obj.visibility == PersonVisibility.PRIVATE):
+            # Grant visibility to people with subscriptions on a private
+            # team's private PPA.
+            for ppa in getUtility(IArchiveSet).getPrivatePPAs():
+                subscription = getUtility(
+                    IArchiveSubscriberSet).getBySubscriber(
+                        user, archive=ppa).any()
+                if subscription.any():
+                    return True
         return False
 
 
