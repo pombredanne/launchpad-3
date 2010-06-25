@@ -282,7 +282,7 @@ visible, and we can see that the list has not been truncated.
     >>> bug_view.visible_comments_truncated_for_display
     False
 
-Add two more comments, and the list will be truncated to only 8.
+Add two more comments, and the list will be truncated to only 8 total.
 
     >>> add_comments(bug, 2)
 
@@ -292,8 +292,6 @@ Add two more comments, and the list will be truncated to only 8.
 
     >>> bug_view.visible_comments_truncated_for_display
     True
-    >>> len(bug_view.visible_comments_for_display)
-    8
     >>> len(bug_view.visible_oldest_comments_for_display)
     3
     >>> len(bug_view.visible_newest_comments_for_display)

@@ -1043,14 +1043,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
     @cachedproperty
     def visible_comments_for_display(self):
-        """The list of visible comments to be rendered.
+        """Returns a list of visible comments to be rendered.
 
-        This considers truncating the comment list to the newest and
-        oldest comments if there are tons of comments, but also obeys
-        any explicitly requested ways to display comments (currently
-        only "all" is recognised).
+        This is a convenience function which returns a copy of
+        the oldest and newest comments.
         """
-        comments = self.visible_oldest_comments_for_display
+        comments = list(self.visible_oldest_comments_for_display)
         comments.extend(self.visible_newest_comments_for_display)
         return comments
 
