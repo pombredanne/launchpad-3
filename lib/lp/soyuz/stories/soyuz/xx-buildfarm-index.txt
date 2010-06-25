@@ -80,10 +80,12 @@ the corresponding portlet with their estimated duration as well.
     386        0         1 job (a minute)
 
 If the archive for the build does not require virtual builders, then
-the pending job will appear in the 'official' queue:
+the pending job will appear in the 'official' queue. Since the build
+record already exists, we must manually set it to non-virtualized too.
 
     >>> login('foo.bar@canonical.com')
     >>> cprov.archive.require_virtualized = False
+    >>> removeSecurityProxy(bq).virtualized = False
     >>> logout()
 
     >>> anon_browser.reload()
