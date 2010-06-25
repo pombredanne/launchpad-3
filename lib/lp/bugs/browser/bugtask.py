@@ -1028,7 +1028,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
         If the number of comments is beyond the maximum threshold, this
         returns the newest few comments.  If we're under the threshold,
-        then visible_oldest_comments_for_display() will be returning the
+        then visible_oldest_comments_for_display will be returning the
         bugs, so this routine will return an empty set to avoid
         duplication.
         """
@@ -1050,8 +1050,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         any explicitly requested ways to display comments (currently
         only "all" is recognised).
         """
-        comments = self.visible_oldest_comments_for_display()
-        comments.extend(self.visible_newest_comments_for_display())
+        comments = self.visible_oldest_comments_for_display
+        comments.extend(self.visible_newest_comments_for_display)
         return comments
 
     @property
