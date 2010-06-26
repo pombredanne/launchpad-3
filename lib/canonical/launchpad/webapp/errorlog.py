@@ -253,7 +253,7 @@ class ErrorReportingUtility:
             index for index, _ignored in enumerate(repeat(None)))
 
     def configure(self, section_name=None):
-        """Configure the utility using the named section form the config.
+        """Configure the utility using the named section from the config.
 
         The 'error_reports' section is used if section_name is None.
         """
