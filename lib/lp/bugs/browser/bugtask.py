@@ -862,9 +862,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
     @cachedproperty
     def activity_by_date(self):
-        """Return a list of `BugActivityItem`s for the current bug.
+        """Return a dict of `BugActivityItem`s for the current bug.
 
-        The `BugActivityItem`s will be grouped by the date on which they
+        The `BugActivityItem`s will be keyed by the date on which they
         occurred.
         """
         activity_by_date = {}
@@ -918,45 +918,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
         return activity_by_date
 
-    def listActivityForComment(self, comment, activity_by_date):
-        """Return list of activities for the comment.
-        
-        List all activities that occurred on the same date as the
-        comment.
-
-        :comment: A visible comment object
-                  (See get_visible_comments)
-        :activity_by_date: A list of activity dicts.  NOTE: The
-                  activities returned by this method will also be
-                  removed from this list.
-        """
-        activity_for_comment = []
-
-        # Loop over a copy of activity_by_date to ensure that we
-        # don't break the looping by removing things from the list
-        # over which we're iterating.
-        for activity_dict in list(activity_by_date):
-            if activity_dict['date'] == comment.datecreated:
-                activity_for_comment.extend(activity_dict['activity'])
-
-                # Remove the activity from the list of activity by date;
-                # we don't need it there any more.
-                activity_by_date.remove(activity_dict)
-
-        activity_for_comment.sort(key=itemgetter('target'))
-
-        return activity_for_comment
-
     @cachedproperty
     def activity_and_comments(self):
-        # Add the activity to the activity_and_comments list. For each
-        # activity dict we use the person responsible for the first
-        # activity item as the owner of the list of activities.
-        activity_by_date = [
-            {'activity': activity_dict, 'date': date,
-             'person': activity_dict[0]['activity'][0].person}
-            for date, activity_dict in self.activity_by_date.items()]
         activity_and_comments = []
+        activity_log = self.activity_by_date
 
         # Ensure truncation results in < max_length comments as expected
         assert(config.malone.comments_list_truncate_oldest_to
@@ -968,8 +933,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
         # Oldest comments and activities
         for comment in oldest_comments:
-            comment.activity = self.listActivityForComment(comment,
-                                                           activity_by_date)
+            # Move any corresponding activities into the comment
+            comment.activity = activity_log.pop(comment.datecreated, [])
+            comment.activity.sort(key=itemgetter('target'))
+
             activity_and_comments.append({
                 'comment': comment,
                 'date': comment.datecreated,
@@ -986,14 +953,27 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
         # Most recent comments and activities (if showing a subset)
         for comment in newest_comments:
-            comment.activity = self.listActivityForComment(comment,
-                                                           activity_by_date)
+            # Move any corresponding activities into the comment
+            comment.activity = activity_log.pop(comment.datecreated, [])
+            comment.activity.sort(key=itemgetter('target'))
+
             activity_and_comments.append({
                 'comment': comment,
                 'date': comment.datecreated,
                 })
 
-        activity_and_comments.extend(activity_by_date)
+        # Add the remaining activities not associated with any visible
+        # comments to the activity_for_comments list.  For each
+        # activity dict we use the person responsible for the first
+        # activity item as the owner of the list of activities.
+        activity_by_date = []
+        for date, activity_dict in activity_log.items():
+            activity_and_comments.append({
+                'activity': activity_dict,
+                'date': date,
+                'person': activity_dict[0]['activity'][0].person
+                })
+
         activity_and_comments.sort(key=itemgetter('date'))
         return activity_and_comments
 
