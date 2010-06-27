@@ -69,7 +69,7 @@ When the environment isn't set, no profile is created.
     >>> print PageTestLayer.profiler
     None
 
-And no stats file is written when the layer is tore down.
+And no stats file is written when the layer is torn down.
 
     >>> PageTestLayer.tearDown()
     >>> os.path.exists(pagetests_profile)

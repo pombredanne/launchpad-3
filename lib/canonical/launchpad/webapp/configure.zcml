@@ -13,6 +13,8 @@
     <include file="errorlog.zcml" />
     -->
     <include file="bug-5133.zcml" />
+    <!-- Would be nice to turn this off in production -->
+    <include file="profile.zcml" />
 
     <class class="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest">
       <allow

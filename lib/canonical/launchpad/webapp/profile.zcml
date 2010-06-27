@@ -1,0 +1,19 @@
+<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser">
+
+    <subscriber
+        for="zope.app.publication.interfaces.IStartRequestEvent"
+        handler="canonical.launchpad.webapp.profile.start_request"
+        />
+
+    <subscriber
+        for="zope.app.publication.interfaces.IEndRequestEvent"
+        handler="canonical.launchpad.webapp.profile.end_request"
+        />
+
+</configure>
