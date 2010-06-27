@@ -74,11 +74,11 @@ class LogNamer:
             if not logid.startswith(prefix):
                 continue
             logid = logid[len(prefix):]
-            if logid.isdigit() and int(logid) > lastid:
+            if logid.isdigit() and lastid is None or int(logid) > lastid:
                 lastid = int(logid)
                 lastfilename = filename
         if lastfilename is not None:
-            lastfilename = os.path.join(directory, filename)
+            lastfilename = os.path.join(directory, lastfilename)
         return lastid, lastfilename
 
     def _findHighestSerial(self, directory):
