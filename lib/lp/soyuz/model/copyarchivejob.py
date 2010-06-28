@@ -133,7 +133,6 @@ class CopyArchiveJob(ArchiveJobDerived):
         proc_families = [proc_family_set.getByName(p)
                          for p in proc_family_names]
         package_cloner = getUtility(IPackageCloner)
-        # FIXME: mergeCopy and proc_families not tested.
         if self.metadata['merge']:
             package_cloner.mergeCopy(source_location, target_location)
         else:

@@ -1,14 +1,18 @@
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.testing import TestCaseWithFactory
 
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.copyarchivejob import CopyArchiveJob
+from lp.soyuz.model.processor import ProcessorFamilySet
 
 
 class CopyArchiveJobTests(TestCaseWithFactory):
@@ -266,12 +270,7 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         """Return the number of CopyArchiveJobs in the queue."""
         return len(self._getJobs())
 
-    def test_run(self):
-        """Test that CopyArchiveJob.run() actually copies the archive.
-
-        We just make a simple test here, and rely on PackageCloner tests
-        to cover the functionality.
-        """
+    def makeSourceAndTarget(self):
         distribution = self.factory.makeDistribution(name="foobuntu")
         distroseries = self.factory.makeDistroSeries(
             distribution=distribution, name="maudlin")
@@ -286,18 +285,21 @@ class CopyArchiveJobTests(TestCaseWithFactory):
             version="2.1", architecturehintlist='any',
             archive=source_archive, status=PackagePublishingStatus.PUBLISHED,
             pocket=PackagePublishingPocket.RELEASE)
+        das = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="i386",
+            processorfamily=ProcessorFamilySet().getByName("x86"),
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = das
         target_archive_owner = self.factory.makePerson()
         target_archive = self.factory.makeArchive(
             purpose=ArchivePurpose.COPY, owner=target_archive_owner,
             name="test-copy-archive", distribution=distribution,
             description="Test copy archive", enabled=False)
-        job = CopyArchiveJob.create(
-            target_archive, source_archive, distroseries,
-            PackagePublishingPocket.RELEASE, distroseries,
-            PackagePublishingPocket.RELEASE)
-        job.run()
-        sources = target_archive.getPublishedSources(
-            distroseries=distroseries,
+        return source_archive, target_archive, distroseries
+
+    def checkPublishedSources(self, expected, archive, series):
+        sources = archive.getPublishedSources(
+            distroseries=series,
             status=(
                 PackagePublishingStatus.PENDING,
                 PackagePublishingStatus.PUBLISHED))
@@ -306,4 +308,71 @@ class CopyArchiveJobTests(TestCaseWithFactory):
             source = removeSecurityProxy(source)
             actual.append(
                 (source.source_package_name, source.source_package_version))
-        self.assertEqual([("bzr", "2.1")], actual)
+        self.assertEqual(sorted(expected), sorted(actual))
+
+    def test_run(self):
+        """Test that CopyArchiveJob.run() actually copies the archive.
+
+        We just make a simple test here, and rely on PackageCloner tests
+        to cover the functionality.
+        """
+        source_archive, target_archive, series = self.makeSourceAndTarget()
+        job = CopyArchiveJob.create(
+            target_archive, source_archive, series,
+            PackagePublishingPocket.RELEASE, series,
+            PackagePublishingPocket.RELEASE)
+        job.run()
+        self.checkPublishedSources([("bzr", "2.1")], target_archive, series)
+
+    def test_run_mergeCopy(self):
+        """Test that CopyArchiveJob.run() when merge=True does a mergeCopy."""
+        source_archive, target_archive, series = self.makeSourceAndTarget()
+        # Create the copy archive
+        job = CopyArchiveJob.create(
+            target_archive, source_archive, series,
+            PackagePublishingPocket.RELEASE, series,
+            PackagePublishingPocket.RELEASE)
+        job.start()
+        job.run()
+        job.complete()
+        # Create a new package in the source
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.factory.getOrMakeSourcePackageName(
+                name='apt'),
+            distroseries=series, component=self.factory.makeComponent(),
+            version="1.2", architecturehintlist='any',
+            archive=source_archive, status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE)
+        # Create a job to merge
+        job = CopyArchiveJob.create(
+            target_archive, source_archive, series,
+            PackagePublishingPocket.RELEASE, series,
+            PackagePublishingPocket.RELEASE, merge=True)
+        job.run()
+        self.checkPublishedSources(
+            [("bzr", "2.1"), ("apt", "1.2")], target_archive, series)
+
+    def test_run_with_proc_families(self):
+        """Test that a CopyArchiveJob job with proc_families uses them.
+
+        If we create a CopyArchiveJob with proc_families != None then
+        they should be used when cloning packages.
+        """
+        source_archive, target_archive, series = self.makeSourceAndTarget()
+        proc_families = [ProcessorFamilySet().getByName("x86")]
+        job = CopyArchiveJob.create(
+            target_archive, source_archive, series,
+            PackagePublishingPocket.RELEASE, series,
+            PackagePublishingPocket.RELEASE, proc_families=proc_families)
+        job.run()
+        builds = list(
+            getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
+            target_archive, status=BuildStatus.NEEDSBUILD))
+        actual_builds = list()
+        for build in builds:
+            naked_build = removeSecurityProxy(build)
+            spr = naked_build.source_package_release
+            actual_builds.append((spr.name, spr.version))
+        # One build for the one package, as we specified one processor
+        # family.
+        self.assertEqual([("bzr", "2.1")], actual_builds)
