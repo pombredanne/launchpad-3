@@ -254,6 +254,10 @@ class TestCase(testtools.TestCase):
         return self.id()
 
     def useContext(self, context):
+        """Use the supplied context in this test.
+
+        The context will be cleaned via addCleanup.
+        """
         retval = context.__enter__()
         self.addCleanup(context.__exit__, None, None, None)
         return retval
@@ -1004,6 +1008,7 @@ def ws_object(launchpad, obj):
 
 @contextmanager
 def temp_dir():
+    """Provide a temporary directory as a ContextManager."""
     tempdir = tempfile.mkdtemp()
     yield tempdir
     shutil.rmtree(tempdir)
