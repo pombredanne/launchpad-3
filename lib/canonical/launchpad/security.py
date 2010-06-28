@@ -743,7 +743,7 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             for ppa in getUtility(IArchiveSet).getPrivatePPAs():
                 subscription = getUtility(
                     IArchiveSubscriberSet).getBySubscriber(
-                        user, archive=ppa).any()
+                        user.person, archive=ppa)
                 if subscription.any():
                     return True
         return False
