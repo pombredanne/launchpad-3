@@ -397,19 +397,24 @@ class TestUploadProcessor(TestUploadProcessorBase):
         finally:
             shutil.rmtree(testdir)
 
+    def createUpload(self, testdir):
+        """Create a dummy upload for testing the move/remove methods."""
+        upload = tempfile.mkdtemp(dir=testdir)
+        distro = upload + ".distro"
+        f = open(distro, mode="w")
+        f.write("foo")
+        f.close()
+        return upload, distro
+
     def testMoveUpload(self):
         """moveUpload should move the upload directory and .distro file."""
         testdir = tempfile.mkdtemp()
         try:
             # Create an upload, a .distro and a target to move it to.
-            upload = tempfile.mkdtemp(dir=testdir)
-            upload_name = os.path.basename(upload)
-            distro = upload + ".distro"
-            f = open(distro, mode="w")
-            f.write("foo")
-            f.close()
+            upload, distro = self.createUpload(testdir)
             target = tempfile.mkdtemp(dir=testdir)
             target_name = os.path.basename(target)
+            upload_name = os.path.basename(upload)
 
             # Move it
             self.options.base_fsroot = testdir
@@ -429,12 +434,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         testdir = tempfile.mkdtemp()
         try:
             # Create an upload, a .distro and a target to move it to.
-            upload = tempfile.mkdtemp(dir=testdir)
+            upload, distro = self.createUpload(testdir)
             upload_name = os.path.basename(upload)
-            distro = upload + ".distro"
-            f = open(distro, mode="w")
-            f.write("foo")
-            f.close()
 
             # Remove it
             self.options.base_fsroot = testdir
@@ -456,12 +457,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         testdir = tempfile.mkdtemp()
         try:
             # Create an upload, a .distro and a target to move it to.
-            upload = tempfile.mkdtemp(dir=testdir)
+            upload, distro = self.createUpload(testdir)
             upload_name = os.path.basename(upload)
-            distro = upload + ".distro"
-            f = open(distro, mode="w")
-            f.write("foo")
-            f.close()
 
             # Move it
             self.options.base_fsroot = testdir
@@ -483,12 +480,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         testdir = tempfile.mkdtemp()
         try:
             # Create an upload, a .distro and a target to move it to.
-            upload = tempfile.mkdtemp(dir=testdir)
+            upload, distro = self.createUpload(testdir)
             upload_name = os.path.basename(upload)
-            distro = upload + ".distro"
-            f = open(distro, mode="w")
-            f.write("foo")
-            f.close()
 
             # Remove it
             self.options.base_fsroot = testdir
