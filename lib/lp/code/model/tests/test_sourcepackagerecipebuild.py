@@ -240,6 +240,11 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         removeSecurityProxy(recent_build).datecreated += a_second
         self.assertContentEqual([recent_build], get_recent())
 
+    def test_destroySelf(self):
+        # ISourcePackageRecipeBuild should make sure to remove jobs and build
+        # queue entries and then invalidate itself.
+        pass
+
 
 class TestAsBuildmaster(TestCaseWithFactory):
 
