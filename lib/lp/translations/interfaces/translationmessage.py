@@ -209,6 +209,9 @@ class ITranslationMessage(Interface):
         title=_("Number of plural form translations in this translation."),
         readonly=True, required=True)
 
+    is_diverged = Bool(
+        title=_("Is this message diverged?"), readonly=True, required=True)
+
     def setPOFile(pofile):
         """Set a POFile for use in views."""
 

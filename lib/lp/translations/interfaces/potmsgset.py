@@ -214,6 +214,10 @@ class IPOTMsgSet(Interface):
                           force_edition_rights=False, allow_credits=False):
         """Update or create a translation message using `new_translations`.
 
+        This method is Launchpad Translations's sliderule: it does
+        everything, nobody fully understands it all, and we intend to
+        replace it with a range of less flexible tools.
+
         :param pofile: a `POFile` to add `new_translations` to.
         :param submitter: author of the translations.
         :param new_translations: a dictionary of plural forms, with the
@@ -259,6 +263,23 @@ class IPOTMsgSet(Interface):
             want to update.
 
         If a translation conflict is detected, TranslationConflict is raised.
+        """
+
+    def setCurrentTranslation(pofile, submitter, translations, origin,
+                              translation_side, share_with_other_side=False):
+        """Set the message's translation in Ubuntu, or upstream, or both.
+
+        :param pofile: `POFile` you're setting translations in.  Other
+            `POFiles` that share translations with this one may also be
+            affected.
+        :param submitter: `Person` who is setting these translations.
+        :param translations: a dict mapping plural-form numbers to the
+            translated string for that form.
+        :param origin: A `RosettaTranslationOrigin`.
+        :param translation_side: The `TranslationSide` that this
+            translation is for (Ubuntu or upstream).
+        :param share_with_other_side: When sharing this translation,
+            share it with the other `TranslationSide` as well.
         """
 
     def resetCurrentTranslation(pofile, lock_timestamp):
