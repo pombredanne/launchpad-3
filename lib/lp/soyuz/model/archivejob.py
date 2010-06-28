@@ -1,3 +1,6 @@
+
+__metaclass__ = object
+
 import simplejson
 
 from sqlobject import SQLObjectNotFound

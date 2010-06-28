@@ -55,7 +55,7 @@ class CopyArchiveJobTests(TestCaseWithFactory):
     def test_error_if_already_exists(self):
         target_archive = self.factory.makeArchive()
         args = self.makeDummyArgs()
-        job = CopyArchiveJob.create(
+        CopyArchiveJob.create(
             target_archive, args['source_archive'], args['distroseries'],
             args['pocket'], args['distroseries'], args['pocket'])
         self.assertEqual(1, self._getJobCount())
@@ -291,7 +291,6 @@ class CopyArchiveJobTests(TestCaseWithFactory):
             purpose=ArchivePurpose.COPY, owner=target_archive_owner,
             name="test-copy-archive", distribution=distribution,
             description="Test copy archive", enabled=False)
-        target_component = self.factory.makeComponent()
         job = CopyArchiveJob.create(
             target_archive, source_archive, distroseries,
             PackagePublishingPocket.RELEASE, distroseries,

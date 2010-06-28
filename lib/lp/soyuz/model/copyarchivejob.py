@@ -1,3 +1,6 @@
+
+__metaclass__ = object
+
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
