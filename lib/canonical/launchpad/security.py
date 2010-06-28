@@ -14,7 +14,6 @@ from zope.component import getAdapter, getUtility
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.announcement import IAnnouncement
-from lp.soyuz.interfaces.archive import IArchive, IArchiveSet
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
