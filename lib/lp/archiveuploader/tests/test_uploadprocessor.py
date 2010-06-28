@@ -397,7 +397,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         finally:
             shutil.rmtree(testdir)
 
-    def createUpload(self, testdir):
+    def _makeUpload(self, testdir):
         """Create a dummy upload for testing the move/remove methods."""
         upload = tempfile.mkdtemp(dir=testdir)
         distro = upload + ".distro"
@@ -411,7 +411,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         testdir = tempfile.mkdtemp()
         try:
             # Create an upload, a .distro and a target to move it to.
-            upload, distro = self.createUpload(testdir)
+            upload, distro = self._makeUpload(testdir)
             target = tempfile.mkdtemp(dir=testdir)
             target_name = os.path.basename(target)
             upload_name = os.path.basename(upload)
@@ -434,7 +434,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         testdir = tempfile.mkdtemp()
         try:
             # Create an upload, a .distro and a target to move it to.
-            upload, distro = self.createUpload(testdir)
+            upload, distro = self._makeUpload(testdir)
             upload_name = os.path.basename(upload)
 
             # Remove it
@@ -457,7 +457,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         testdir = tempfile.mkdtemp()
         try:
             # Create an upload, a .distro and a target to move it to.
-            upload, distro = self.createUpload(testdir)
+            upload, distro = self._makeUpload(testdir)
             upload_name = os.path.basename(upload)
 
             # Move it
@@ -480,7 +480,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         testdir = tempfile.mkdtemp()
         try:
             # Create an upload, a .distro and a target to move it to.
-            upload, distro = self.createUpload(testdir)
+            upload, distro = self._makeUpload(testdir)
             upload_name = os.path.basename(upload)
 
             # Remove it
