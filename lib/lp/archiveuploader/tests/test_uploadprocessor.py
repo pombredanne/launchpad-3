@@ -444,8 +444,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
             # Check it was removed, not moved
             self.assertFalse(os.path.exists(os.path.join(
-                upload, "accepted")))
-            self.assertFalse(os.path.exists(os.path.join(
+                testdir, "accepted")))
+            self.assertFalse(os.path.exists(os.path.join(testdir,
                 "accepted", upload_name + ".distro")))
             self.assertFalse(os.path.exists(upload))
             self.assertFalse(os.path.exists(distro))
@@ -466,8 +466,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             up.moveProcessedUpload(upload, "rejected")
 
             # Check it moved
-            self.assertTrue(os.path.exists(os.path.join(testdir, "rejected",
-                upload_name)))
+            self.assertTrue(os.path.exists(os.path.join(testdir,
+                "rejected", upload_name)))
             self.assertTrue(os.path.exists(os.path.join(testdir,
                 "rejected", upload_name + ".distro")))
             self.assertFalse(os.path.exists(upload))
@@ -490,9 +490,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
             # Check it was removed, not moved
             self.assertFalse(os.path.exists(os.path.join(
-                upload, "accepted")))
-            self.assertFalse(os.path.exists(os.path.join(
-                "accepted", upload_name + ".distro")))
+                testdir, "accepted")))
             self.assertFalse(os.path.exists(upload))
             self.assertFalse(os.path.exists(distro))
         finally:
