@@ -1,10 +1,13 @@
 ProductEditPeopleView
 =====================
 
+Artifact reassignment
+---------------------
+
 When a product is re-assigned to another person, objects related to that
 product (product series, product releases and translations in the import
-queue) owned by the same registrant are also re-assigned to the new
-registrant.
+queue) owned by the same owner/maintainer are also re-assigned to the new
+owner/maintainer.
 
 Firefox is owned by Sample Person (name12)
 
@@ -43,7 +46,7 @@ Add a TranslationImportQueueEntry owned by Sample Person.
     name12
 
 No Privileges Person is taking over the project, but he cannot access the
-view because he is not yet an owner or admin.
+view because he is not yet an owner/maintainer or admin.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
 
@@ -52,7 +55,8 @@ view because he is not yet an owner or admin.
     >>> check_permission('launchpad.Edit', view)
     False
 
-Sample person, as the owner can change the registrant to No Privileges Person.
+Sample person, as the owner/maintainer can change the owner/maintainer
+to No Privileges Person.
 
     >>> login_person(sample_person)
     >>> form = {
@@ -85,3 +89,46 @@ The dependencies are also correctly re-assigned.
     >>> print entry[0].importer.name
     no-priv
 
+Assigning to Registry Administrators
+------------------------------------
+
+As a short-cut, a checkbox is presented to disclaim the maintainer
+role and transfer it to the Registry Administrators team.
+
+    >>> login_person(sample_person)
+    >>> product = factory.makeProduct(owner=sample_person)
+
+    >>> form = {
+    ...     'field.transfer_to_registry': 'on',
+    ...     'field.actions.save': 'Save changes',
+    ...     }
+
+    >>> view = create_initialized_view(product, '+edit-people', form=form)
+    >>> view.errors
+    []
+
+    >>> product.owner.name
+    u'registry'
+
+Not specifying the owner/maintainer nor checking the checkbox is an error.
+
+    >>> form = {
+    ...     'field.actions.save': 'Save changes',
+    ...     }
+
+    >>> view = create_initialized_view(product, '+edit-people', form=form)
+    >>> view.errors
+    [u'You must specify a maintainer or select the checkbox.']
+
+Selecting both the owner/maintainer and the checkbox is also an error.
+
+    >>> product = factory.makeProduct(owner=sample_person)
+    >>> form = {
+    ...     'field.owner': 'no-priv',
+    ...     'field.transfer_to_registry': 'on',
+    ...     'field.actions.save': 'Save changes',
+    ...     }
+
+    >>> view = create_initialized_view(product, '+edit-people', form=form)
+    >>> view.errors
+    [u'You may not specify a new owner if you select the checkbox.']

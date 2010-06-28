@@ -1389,30 +1389,26 @@ class Archive(SQLBase):
         # Perform the copy, may raise CannotCopy.
         do_copy(sources, self, series, pocket, include_binaries)
 
+    def getAuthToken(self, person):
+        """See `IArchive`."""
+
+        token_set = getUtility(IArchiveAuthTokenSet)
+        return token_set.getActiveTokenForArchiveAndPerson(self, person)
+
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
+
+        # Bail if the archive isn't private
+        if not self.private:
+            raise ArchiveNotPrivate("Archive must be private.")
 
         # Tokens can only be created for individuals.
         if person.is_team:
             raise NoTokensForTeams(
                 "Subscription tokens can be created for individuals only.")
 
-        # First, ensure that a current subscription exists for the
-        # person and archive:
-        # XXX: noodles 2009-03-02 bug=336779: This can be removed once
-        # newAuthToken() is moved into IArchiveView.
-        subscription_set = getUtility(IArchiveSubscriberSet)
-        subscriptions = subscription_set.getBySubscriber(person, archive=self)
-        if subscriptions.count() == 0:
-            raise Unauthorized(
-                "You do not have a subscription for %s." % self.displayname)
-
-        # Second, ensure that the current subscription does not already
-        # have a token:
-        token_set = getUtility(IArchiveAuthTokenSet)
-        previous_token = token_set.getActiveTokenForArchiveAndPerson(
-            self, person)
-        if previous_token:
+        # Ensure that the current subscription does not already have a token
+        if self.getAuthToken(person) is not None:
             raise ArchiveSubscriptionError(
                 "%s already has a token for %s." % (
                     person.displayname, self.displayname))
@@ -1429,6 +1425,14 @@ class Archive(SQLBase):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.add(archive_auth_token)
         return archive_auth_token
+
+    def getPrivateSourcesList(self, person):
+        """See `IArchive`."""
+
+        token = self.getAuthToken(person)
+        if token is None:
+            token = self.newAuthToken(person)
+        return token.archive_url
 
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):

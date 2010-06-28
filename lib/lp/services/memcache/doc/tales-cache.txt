@@ -26,9 +26,9 @@ is used. We prove this here by changing our parameters, which would
 cause this template to render differently.
 
     >>> print template(param='second')
-    <div><!-- Cache hit: memcache expression (public) -->
+    <div><!-- Cache hit: memcache expression (public) [0 seconds] -->
         <span>first</span>
-    <!-- End cache hit: memcache expression (public) --></div>
+    <!-- End cache hit: memcache expression (public) [0 seconds] --></div>
 
 We also see some comments showing that we had a cache hit, and what the
 configuration was for it ("public").  These comments are only present
@@ -77,6 +77,38 @@ care will be needed to avoid 'popping'.
     This bit cached up to 1 minute.
     This bit cached up to 6 hours.
     This bit cached up to 3 days.
+
+
+The unit defaults to 'seconds' if not specified.
+
+    >>> template = TestPageTemplate(dedent("""\
+    ...     <body tal:omit-tag="">
+    ...         <div tal:content="cache:public,30" tal:omit-tag="">
+    ...             This bit cached up to 30 seconds.
+    ...         </div>
+    ...     </body>"""))
+    >>> print template()
+    This bit cached up to 30 seconds.
+
+
+A path expression can be used to dynamically calculate the cache time.
+
+    >>> template = TestPageTemplate(dedent("""\
+    ...     <body tal:omit-tag="">
+    ...         <div tal:content="cache:public,dynamic_time"
+    ...             tal:omit-tag=""> This bit cached up to <span
+    ...                 tal:content="dynamic_time"
+    ...                 tal:omit-tag="">n</span> seconds.
+    ...         </div>
+    ...         <div tal:content="cache:public,dynamic_time hours"
+    ...             tal:omit-tag=""> This bit cached up to <span
+    ...                 tal:content="dynamic_time"
+    ...                 tal:omit-tag="">n</span> hours.
+    ...         </div>
+    ...     </body>"""))
+    >>> print template(dynamic_time=30)
+    This bit cached up to 30 seconds.
+    This bit cached up to 30 hours.
 
 
 Visibility
@@ -145,9 +177,9 @@ uncached.
 
     >>> login('foo.bar@canonical.com')
     >>> print template(username='Foo Bar')
-    <!-- Cache hit: memcache expression (public) -->
+    <!-- Cache hit: memcache expression (public) [0 seconds] -->
     Public:        Anonymous
-    <!-- End cache hit: memcache expression (public) -->
+    <!-- End cache hit: memcache expression (public) [0 seconds] -->
     Private:       Foo Bar
     Anonymous:     Foo Bar
     Authenticated: Foo Bar
@@ -157,14 +189,14 @@ reuse the authenticated cache. The anonymous section is uncached.
 
     >>> login('test@canonical.com')
     >>> print template(username='Test')
-    <!-- Cache hit: memcache expression (public) -->
+    <!-- Cache hit: memcache expression (public) [0 seconds] -->
     Public:        Anonymous
-    <!-- End cache hit: memcache expression (public) -->
+    <!-- End cache hit: memcache expression (public) [0 seconds] -->
     Private:       Test
     Anonymous:     Test
-    <!-- Cache hit: memcache expression (authenticated) -->
+    <!-- Cache hit: memcache expression (authenticated) [0 seconds] -->
     Authenticated: Foo Bar
-    <!-- End cache hit: memcache expression (authenticated) -->
+    <!-- End cache hit: memcache expression (authenticated) [0 seconds] -->
 
 
 Nesting & Loops
