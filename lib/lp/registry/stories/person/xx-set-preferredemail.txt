@@ -62,17 +62,3 @@ contact address.
     >>> for msg in get_feedback_messages(second_browser.contents):
     ...     print msg
     testing@canonical.com is already set as your contact address.
-
-
-Unclaimed users
-===============
-
-An unclaimed user will probably have no contact email address.
-
-   >>> admin_browser.open('http://launchpad.dev/~matsubara')
-   >>> print admin_browser.title
-   Diogo Matsubara does not use Launchpad
-   >>> admin_browser.getLink('Change e-mail settings').click()
-   >>> print find_tag_by_id(admin_browser.contents,
-   ...                      'no-contact-address').string
-   Currently you don't have a contact address in Launchpad.

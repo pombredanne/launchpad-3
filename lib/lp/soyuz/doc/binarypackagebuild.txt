@@ -682,8 +682,8 @@ Note that they are ordered by DESC lastscore, as expected:
 
     >>> for b in builds:
     ...     b.id, b.status.value, b.buildqueue_record.lastscore
+    (9, 0, 2505)
     (11, 0, 10)
-    (9, 0, 0)
 
 Define a helper function to print out build details.
 
@@ -1004,10 +1004,13 @@ list.
     >>> login('foo.bar@canonical.com')
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> main_component = getUtility(IComponentSet)['main']
+    >>> pmount_pub = hoary_i386[
+    ...     'pmount'].currentrelease.current_publishing_record
     >>> pmount_pub.component = main_component
     >>> depwait_build.dependencies = u'mozilla-firefox, pmount'
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
+    >>> transaction.commit()
     >>> login(ANONYMOUS)
 
     >>> flush_database_updates()

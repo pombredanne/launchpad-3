@@ -11,6 +11,9 @@ __all__ = [
     ]
 
 import datetime
+import sys
+
+from pytz import utc
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -24,6 +27,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.launchpad.webapp import errorlog
 from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
@@ -32,6 +36,8 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
+from lp.code.mail.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuildMailer)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
@@ -63,7 +69,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     def binary_builds(self):
         """See `ISourcePackageRecipeBuild`."""
         return Store.of(self).find(BinaryPackageBuild,
-            BinaryPackageBuild.source_package_release==SourcePackageRelease.id,
+            BinaryPackageBuild.source_package_release==
+            SourcePackageRelease.id,
             SourcePackageRelease.source_package_recipe_build==self.id)
 
     buildduration = TimeDelta(name='build_duration', default=None)
@@ -75,7 +82,6 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     buildlog = Reference(buildlog_id, 'LibraryFileAlias.id')
 
     buildstate = DBEnum(enum=BuildStatus, name='build_state')
-
     dependencies = Unicode(allow_none=True)
 
     upload_log_id = Int(name='upload_log', allow_none=True)
@@ -87,6 +93,13 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     datecreated = UtcDateTimeCol(notNull=True, dbName='date_created')
     datebuilt = UtcDateTimeCol(notNull=False, dbName='date_built')
+
+    # See `IBuildBase` - the following attributes are aliased
+    # to allow a shared implementation of the handleStatus methods
+    # until IBuildBase is removed.
+    status = buildstate
+    date_finished = datebuilt
+    log = buildlog
 
     @property
     def datestarted(self):
@@ -185,6 +198,25 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         store.add(spbuild)
         return spbuild
 
+    @staticmethod
+    def makeDailyBuilds():
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        candidates = SourcePackageRecipe.findStaleDailyBuilds()
+        builds = []
+        for candidate in candidates:
+            recipe = candidate.sourcepackage_recipe
+            try:
+                build = recipe.requestBuild(recipe.daily_build_archive,
+                    recipe.owner, candidate.distroseries,
+                    PackagePublishingPocket.RELEASE)
+            except:
+                info = sys.exc_info()
+                errorlog.globalErrorUtility.raising(info)
+            else:
+                builds.append(build)
+
+        return builds
+
     def destroySelf(self):
         store = Store.of(self)
         job = self.buildqueue_record.job
@@ -200,6 +232,16 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         return store.find(cls, cls.id == build_id).one()
+
+    @classmethod
+    def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
+        if _now is None:
+            _now = datetime.datetime.now(utc)
+        store = IMasterStore(SourcePackageRecipeBuild)
+        old_threshold = _now - datetime.timedelta(days=1)
+        return store.find(cls, cls.distroseries_id == distroseries.id,
+            cls.requester_id == requester.id, cls.recipe_id == recipe.id,
+            cls.datecreated > old_threshold)
 
     def makeJob(self):
         """See `ISourcePackageRecipeBuildJob`."""
@@ -222,8 +264,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def notify(self, extra_info=None):
         """See `IBuildBase`."""
-        # XXX: wgrant 2010-01-20 bug=509893: Implement this.
-        return
+        mailer = SourcePackageRecipeBuildMailer.forStatus(self)
+        mailer.sendAll()
 
     def getFileByName(self, filename):
         """See `ISourcePackageRecipeBuild`."""
@@ -235,6 +277,13 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         except KeyError:
             raise NotFoundError(filename)
 
+    @staticmethod
+    def _handleStatus_OK(build, librarian, slave_status, logger):
+        """See `IBuildBase`."""
+        BuildBase._handleStatus_OK(build, librarian, slave_status, logger)
+        # base implementation doesn't notify on success.
+        if build.status == BuildStatus.FULLYBUILT:
+            build.notify()
 
 class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
@@ -281,3 +330,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
 
     def getName(self):
         return "%s-%s" % (self.id, self.build_id)
+
+    def score(self):
+        return 900

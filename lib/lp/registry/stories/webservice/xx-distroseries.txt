@@ -61,6 +61,7 @@ For distroseries we publish a subset of its attributes.
     active_milestones_collection_link:
         u'http://.../ubuntu/hoary/active_milestones'
     all_milestones_collection_link: u'http://.../ubuntu/hoary/all_milestones'
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     changeslist: u'hoary-changes@ubuntu.com'
     date_created: u'2006-10-16T18:31:43.483559+00:00'

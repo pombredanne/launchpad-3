@@ -663,9 +663,10 @@ class IProductPublic(
 
     remote_product = exported(
         TextLine(
-            title=_('Remote project'), required=False,
+            title=_('Remote bug tracker project id'), required=False,
             description=_(
-                "The ID of this project on its remote bug tracker.")))
+                "Some bug trackers host multiple projects at the same URL "
+                "and require an identifier for the specific project.")))
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
@@ -731,8 +732,8 @@ class IProductPublic(
 
 
 class IProduct(
-    IHasBugSupervisor, IProductEditRestricted, 
-    IProductProjectReviewRestricted, IProductDriverRestricted, 
+    IHasBugSupervisor, IProductEditRestricted,
+    IProductProjectReviewRestricted, IProductDriverRestricted,
     IProductPublic, IRootContext, IStructuralSubscriptionTarget):
     """A Product.
 

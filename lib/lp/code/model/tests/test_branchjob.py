@@ -264,7 +264,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             new_branch.repository._format.get_format_string(),
             'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
 
-        self.assertTrue(db_branch.pending_writes)
+        self.assertFalse(db_branch.needs_upgrading)
 
     def test_needs_no_upgrading(self):
         # Branch upgrade job creation should raise an AssertionError if the

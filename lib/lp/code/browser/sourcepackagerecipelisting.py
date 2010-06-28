@@ -12,12 +12,8 @@ __all__ = [
     'ProductRecipeListingView',
     ]
 
-from lazr.enum import EnumeratedType, Item
-from zope.interface import Interface
-from zope.schema import Choice
 
 from canonical.config import config
-from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import LaunchpadView, Link
 from lp.code.interfaces.branch import IBranch
@@ -42,7 +38,7 @@ class HasRecipesMenuMixin:
 class RecipeListingView(LaunchpadView, FeedsMixin):
 
     feed_types = ()
-    product_enabled = True
+
     branch_enabled = True
     owner_enabled = True
 
@@ -69,5 +65,3 @@ class PersonRecipeListingView(RecipeListingView):
 class ProductRecipeListingView(RecipeListingView):
 
     __used_for__ = IProduct
-
-    product_enabled = False

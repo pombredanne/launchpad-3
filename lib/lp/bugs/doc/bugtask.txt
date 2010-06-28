@@ -571,7 +571,7 @@ Ordinary users can assign themselves and teams they are a member of.
     Traceback (most recent call last):
     ...
     UserCannotEditBugTaskAssignee: Regular users can assign and unassign
-    only themselves and their teams. Only project onwers, bug supervisors,
+    only themselves and their teams. Only project owners, bug supervisors,
     drivers and release managers can assign others.
 
     >>> devel_focus_alsa_utils_task.transitionToAssignee(sample_person)
@@ -592,7 +592,7 @@ Ordinary users can assign themselves and teams they are a member of.
     Traceback (most recent call last):
     ...
     UserCannotEditBugTaskAssignee: Regular users can assign and unassign
-    only themselves and their teams. Only project onwers, bug supervisors,
+    only themselves and their teams. Only project owners, bug supervisors,
     drivers and release managers can assign others.
 
     >>> login('test@canonical.com')

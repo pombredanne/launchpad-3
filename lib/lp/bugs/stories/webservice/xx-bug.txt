@@ -327,6 +327,7 @@ data in a bug task is derived from the bug.
   date_fix_committed: None
   date_fix_released: None
   date_in_progress: None
+  date_incomplete: None
   date_left_closed: None
   date_left_new: None
   date_triaged: None
@@ -852,7 +853,6 @@ We can also create new subscriptions.
 
     >>> new_subscription = webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~cprov')).jsonBody()
     >>> pprint_entry(new_subscription)
     bug_link: ...
@@ -905,7 +905,6 @@ this, the group must first be re-subscribed.
 
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
 
@@ -949,7 +948,6 @@ himself.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~salgado'))
     HTTP/1.1 200 Ok...
 
@@ -980,7 +978,6 @@ To demonstrate, first subscribe Ubuntu Team to bug_six, the duplicate.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
     >>> bug_six_subscriptions = webservice.get(
@@ -1436,6 +1433,15 @@ setting the tags_combinator parameter to 'All'.
     ...     '/ubuntu', 'searchTasks',
     ...     tags=['crash', 'dataloss'],
     ...     tags_combinator='All').jsonBody())
+    start: None
+    total_size: 0
+    ---
+
+It can also be used to find bugs modified since a certain date.
+
+    >>> pprint_collection(webservice.named_get(
+    ...     '/ubuntu', 'searchTasks',
+    ...     modified_since=u'2011-01-01T00:00:00+00:00').jsonBody())
     start: None
     total_size: 0
     ---

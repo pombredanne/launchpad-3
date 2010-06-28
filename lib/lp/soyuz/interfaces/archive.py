@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -162,7 +162,7 @@ class CannotUploadToPocket(Exception):
     """Returned when a pocket is closed for uploads."""
 
     def __init__(self, distroseries, pocket):
-        Exception.__init__(self, 
+        Exception.__init__(self,
             "Not permitted to upload to the %s pocket in a series in the "
             "'%s' state." % (pocket.name, distroseries.status.name))
 
@@ -428,8 +428,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
     def findDepCandidateByName(distroarchseries, name):
         """Return the last published binarypackage by given name.
 
-        Return the PublishedPackage record by binarypackagename or None if
-        not found.
+        Return the `BinaryPackagePublishingHistory` record by distroarchseries
+        and name, or None if not found.
         """
 
     def removeArchiveDependency(dependency):
@@ -514,11 +514,11 @@ class IArchivePublic(IHasOwner, IPrivacy):
         )
     @export_operation_as("checkUpload")
     @export_read_operation()
-    def _checkUpload(person, distroseries, sourcepackagename, component, 
+    def _checkUpload(person, distroseries, sourcepackagename, component,
             pocket, strict_component=True):
         """Wrapper around checkUpload for the web service API."""
 
-    def checkUpload(person, distroseries, sourcepackagename, component, 
+    def checkUpload(person, distroseries, sourcepackagename, component,
                     pocket, strict_component=True):
         """Check if 'person' upload 'suitesourcepackage' to 'archive'.
 
@@ -618,24 +618,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
             archive's distribution.
 
         :return The new `IPackageCopyRequest`
-        """
-
-    # XXX: noodles 2009-03-02 bug=336779: This should be moved into
-    # IArchiveView once the archive permissions are updated to grant
-    # IArchiveView to archive subscribers.
-    def newAuthToken(person, token=None, date_created=None):
-        """Create a new authorisation token.
-
-        XXX: noodles 2009-03-12 bug=341600 This method should not be exposed
-        through the API as we do not yet check that the callsite has
-        launchpad.Edit on the person.
-
-        :param person: An IPerson whom this token is for
-        :param token: Optional unicode text to use as the token. One will be
-            generated if not given
-        :param date_created: Optional, defaults to now
-
-        :return: A new IArchiveAuthToken
         """
 
     @operation_parameters(
@@ -1101,6 +1083,33 @@ class IArchiveView(IHasBuildRecords):
 
         :param source_files: A list of filenames to return SHA1s of
         :return: A dictionary of filenames and SHA1s.
+        """
+
+    def getAuthToken(person):
+        """Returns an IArchiveAuthToken for the archive in question for
+        IPerson provided.
+
+        :return: A IArchiveAuthToken, or None if the user has none.
+        """
+
+    def newAuthToken(person, token=None, date_created=None):
+        """Create a new authorisation token.
+
+        :param person: An IPerson whom this token is for
+        :param token: Optional unicode text to use as the token. One will be
+            generated if not given
+        :param date_created: Optional, defaults to now
+
+        :return: A new IArchiveAuthToken
+        """
+
+    @call_with(person=REQUEST_USER)
+    @export_write_operation()
+    def getPrivateSourcesList(person):
+        """Get a text line that is suitable to be used for a sources.list
+        entry.
+
+        It will create a new IArchiveAuthToken if one doesn't already exist.
         """
 
 class IArchiveAppend(Interface):
