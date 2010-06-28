@@ -52,5 +52,6 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
         login_person(self.subscriber)
         self.assertEqual(self.archive.owner.name, "subscribertest")
 
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -740,12 +740,14 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             and self.obj.visibility == PersonVisibility.PRIVATE):
             # Grant visibility to people with subscriptions on a private
             # team's private PPA.
-            for ppa in getUtility(IArchiveSet).getPrivatePPAs():
-                subscription = getUtility(
-                    IArchiveSubscriberSet).getBySubscriber(
-                        user.person, archive=ppa)
-                if subscription.any():
-                    return True
+            subscriptions = getUtility(
+                IArchiveSubscriberSet).getBySubscriber(user.person)
+            subscriber_archive_ids = set(
+                sub.archive.id for sub in subscriptions)
+            team_ppa_ids = set(
+                ppa.id for ppa in self.obj.ppas if ppa.private)
+            if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
+                return True
         return False
 
 
