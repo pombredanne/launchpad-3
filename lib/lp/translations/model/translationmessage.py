@@ -179,8 +179,7 @@ def validate_is_current(self, attr, value):
             current_translation_message.is_current = False
             # Flush changes in the right order so we don't get two
             # current messages in the same place.
-            Store.of(self).add_flush_order(
-                current_translation_message, self)
+            Store.of(self).add_flush_order(current_translation_message, self)
 
     return value
 
