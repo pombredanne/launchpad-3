@@ -425,6 +425,59 @@ class TestUploadProcessor(TestUploadProcessorBase):
         finally:
             shutil.rmtree(testdir)
 
+    def testMoveProcessUploadAccepted(self):
+        testdir = tempfile.mkdtemp()
+        try:
+            # Create an upload, a .distro and a target to move it to.
+            upload = tempfile.mkdtemp(dir=testdir)
+            upload_name = os.path.basename(upload)
+            distro = upload + ".distro"
+            f = open(distro, mode="w")
+            f.write("foo")
+            f.close()
+
+            # Remove it
+            self.options.base_fsroot = testdir
+            up = UploadProcessor(self.options, None, self.log)
+            up.moveProcessedUpload(upload, "accepted")
+
+            # Check it was removed, not moved
+            self.assertFalse(os.path.exists(os.path.join(
+                upload, "accepted")))
+            self.assertFalse(os.path.exists(os.path.join(
+                "accepted", upload_name + ".distro")))
+            self.assertFalse(os.path.exists(upload))
+            self.assertFalse(os.path.exists(distro))
+        finally:
+            shutil.rmtree(testdir)
+
+    def testMoveProcessUploadFailed(self):
+        """moveProcessedUpload should move if the result was not successful."""
+        testdir = tempfile.mkdtemp()
+        try:
+            # Create an upload, a .distro and a target to move it to.
+            upload = tempfile.mkdtemp(dir=testdir)
+            upload_name = os.path.basename(upload)
+            distro = upload + ".distro"
+            f = open(distro, mode="w")
+            f.write("foo")
+            f.close()
+
+            # Move it
+            self.options.base_fsroot = testdir
+            up = UploadProcessor(self.options, None, self.log)
+            up.moveProcessedUpload(upload, "rejected")
+
+            # Check it moved
+            self.assertTrue(os.path.exists(os.path.join(testdir, "rejected",
+                upload_name)))
+            self.assertTrue(os.path.exists(os.path.join(testdir,
+                "rejected", upload_name + ".distro")))
+            self.assertFalse(os.path.exists(upload))
+            self.assertFalse(os.path.exists(distro))
+        finally:
+            shutil.rmtree(testdir)
+
     def testRemoveUpload(self):
         """RemoveUpload should remove the upload directory and .distro file."""
         testdir = tempfile.mkdtemp()

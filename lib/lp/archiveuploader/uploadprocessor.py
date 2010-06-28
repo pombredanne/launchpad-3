@@ -204,10 +204,7 @@ class UploadProcessor:
             # the upload to be failed in this case.
             destination = "failed"
 
-        if destination == "accepted":
-            self.removeUpload(upload_path)
-        else:
-            self.moveUpload(upload_path, destination)
+        self.moveProcessedUpload(upload_path, destination)
 
     def locateDirectories(self, fsroot):
         """Return a list of upload directories in a given queue.
@@ -449,6 +446,14 @@ class UploadProcessor:
         if os.path.isfile(distro_filename):
             self.log.debug("Removing distro file %s", distro_filename)
             os.remove(distro_filename)
+
+    def moveProcessedUpload(self, upload_path, destination):
+        """Move or remove the upload depending on the status of the upload.
+        """
+        if destination == "accepted":
+            self.removeUpload(upload_path)
+        else:
+            self.moveUpload(upload_path, destination)
 
     def moveUpload(self, upload, subdir_name):
         """Move the upload to the named subdir of the root, eg 'accepted'.
