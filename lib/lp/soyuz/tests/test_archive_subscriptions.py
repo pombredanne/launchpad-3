@@ -5,6 +5,8 @@
 
 import unittest
 
+from zope.security.interfaces import Unauthorized
+
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.registry.interfaces.person import PersonVisibility
@@ -32,13 +34,23 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
     def test_subscriber_can_access_private_team_ppa(self):
         # As per bug 597783, we need to make sure a subscriber can see
         # a private team's PPA after they have been given a subscription.
+        # This is essentially allowing access for the subscriber to see
+        # the private team.
+
+        def get_name():
+            return self.archive.owner.name
+
+        # Before a subscription, accessing the team name will raise.
+        login_person(self.subscriber)
+        self.assertRaises(Unauthorized, get_name)
+
+        login_person(self.private_team.teamowner)
         self.archive.newSubscription(
             self.subscriber, registrant=self.archive.owner)
 
+        # When a subscription exists, it's fine.
         login_person(self.subscriber)
-        token = self.archive.newAuthToken(self.subscriber, token=u"mysub")
-        url = token.archive_url
-        self.assertEqual(token.archive.owner.name, "subscribertest")
+        self.assertEqual(self.archive.owner.name, "subscribertest")
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
