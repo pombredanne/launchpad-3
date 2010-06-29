@@ -20,7 +20,6 @@ We publish a subset of their attributes.
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
-	enabled_restricted_families_collection_link: u'..._restricted_families'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
     private: False
@@ -85,7 +84,6 @@ The archive has the following attributes:
     description: None
     displayname: u'Primary Archive for Ubuntu Test'
     distribution_link: u'http://.../ubuntutest'
-	enabled_restricted_families_collection_link: u'...restricted_families'
     name: u'primary'
     owner_link: u'http://.../~ubuntu-team'
     private: False
@@ -825,7 +823,6 @@ the IArchive context, in this case only Celso has it.
     description: u'tag:launchpad.net:2008:redacted'
     displayname: u'PPA named p3a for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
-	enabled_restricted_families_collection_link: u'..._restricted_families'
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
@@ -839,7 +836,6 @@ the IArchive context, in this case only Celso has it.
     description: u'packages to help my friends.'
     displayname: u'PPA named p3a for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
-	enabled_restricted_families_collection_link: u'.../enabled_restricted_families'
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
