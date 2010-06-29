@@ -369,12 +369,11 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!"))
 
-    enabled_restricted_families = exported(
-        CollectionField(
+    enabled_restricted_families = CollectionField(
             title=_("Restricted architecture families this archive can build "
                     "on"),
             value_type=Reference(schema=IProcessorFamily),
-            readonly=False))
+            readonly=False)
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
