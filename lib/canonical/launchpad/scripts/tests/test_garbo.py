@@ -169,6 +169,7 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnless(earliest >= now - 24*60*60, 'Still have old nonces')
 
     def test_CodeImportResultPruner(self):
+        self.fail("This assumes that there is a code import in the database")
         now = datetime.utcnow().replace(tzinfo=UTC)
         store = IMasterStore(CodeImportResult)
 
