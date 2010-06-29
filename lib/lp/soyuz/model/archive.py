@@ -1997,4 +1997,3 @@ class ArchiveSet:
             )
 
         return results.order_by(SourcePackagePublishingHistory.id)
-
