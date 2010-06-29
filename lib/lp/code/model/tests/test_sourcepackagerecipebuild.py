@@ -243,7 +243,10 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
     def test_destroySelf(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
         # queue entries and then invalidate itself.
-        pass
+        build = self.factory.makeSourcePackageRecipeBuild()
+        recipe = build.recipe
+
+        recipe.destroySelf()
 
 
 class TestAsBuildmaster(TestCaseWithFactory):
