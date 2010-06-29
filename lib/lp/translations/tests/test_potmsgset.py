@@ -960,8 +960,9 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         self.assertTrue(translation.potemplate is None)
 
     def test_resetCurrentTranslation_diverged_not_imported(self):
-        # Resettting a diverged current translation that was not imported, will
-        # change is_current_ubuntu to False and will make it shared.
+        # Resettting a diverged current translation that was not
+        # imported will change is_current_ubuntu to False and will make
+        # it shared.
 
         translation = self.factory.makeTranslationMessage(
             self.pofile, self.potmsgset, translations=[u'Diverged text'],

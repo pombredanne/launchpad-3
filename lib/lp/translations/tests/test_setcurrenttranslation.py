@@ -400,392 +400,6 @@ class SetCurrentTranslationTestMixin:
                          tm_other.is_current_ubuntu)
         self.assertEquals(self.other_pofile.potemplate, tm_other.potemplate)
 
-    def test_current_None__new_diverged__other_None(self):
-        # Current translation is None, and we have found a
-        # diverged existing TM matching new translations.
-        # There is neither 'other' current translation.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile,
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            None, None, None, [tm_diverged])
-
-        tm = self.setCurrentTranslation(new_translations)
-
-        # We end up with tm_diverged being activated and converged.
-        self.assertTrue(tm is not None)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, None, [])
-
-    def test_current_None__new_diverged__other_None__follows(self):
-        # Current translation is None, and we have found a
-        # diverged existing TM matching new translations.
-        # There is neither 'other' current translation.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            None, None, None, [tm_diverged])
-
-        tm = self.setCurrentTranslation(
-            new_translations, share_with_other_side=True)
-
-        # We end up with tm_diverged being activated and converged,
-        # including the "other" context.
-        self.assertTrue(tm is not None)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm, [])
-
-    def test_current_None__new_diverged__other_shared(self):
-        # Current translation is None, and we have found a
-        # diverged existing TM matching new translations.
-        # There is a current translation in "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        tm_other = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=False)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            None, None, tm_other, [tm_diverged])
-
-        tm = self.setCurrentTranslation(new_translations)
-
-        # We end up with tm_diverged being activated and converged,
-        # and current for the other context stays the same.
-        self.assertTrue(tm is not None)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm_other, [])
-
-    def test_current_None__new_diverged__other_shared__follows(self):
-        # Current translation is None, and we have found a
-        # diverged existing TM matching new translations.
-        # There is a current translation in "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        tm_other = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=False)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            None, None, tm_other, [tm_diverged])
-
-        tm = self.setCurrentTranslation(
-            new_translations, share_with_other_side=True)
-
-        # We end up with tm_diverged being activated and converged,
-        # and current for the other context stays the same.
-        self.assertTrue(tm is not None)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm, [])
-
-        # Previously current and shared in other context is not
-        # current in any context anymore.
-        self.assertFalse(tm_other.is_current_upstream or
-                         tm_other.is_current_ubuntu)
-
-    def test_current_None__new_diverged__other_shared__identical(
-        self, follows=False):
-        # Current translation is None, and we have found a
-        # diverged existing TM matching new translations.
-        # There is a current translation in "other" context
-        # which is identical to the found diverged TM.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        tm_other = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=False,
-            translations=new_translations)
-        tm_other_id = tm_other.id
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            None, None, tm_other, [tm_diverged])
-
-        tm = self.setCurrentTranslation(
-            new_translations, share_with_other_side=follows)
-
-        # We end up with tm_diverged being activated and converged,
-        # and current for the other context (otherwise identical)
-        # is changed to tm_diverged as well.
-        # XXX DaniloSegan 20100528: should we keep tm_diverged or
-        # tm_other?  This test assumes that we keep only tm_diverged.
-        # If we keep tm_other, we need to assertEquals(tm_other, tm),
-        # and if we keep both, "other" will remain as tm_other, even
-        # though they are identical.  With our current design, this test
-        # is expected to fail.
-        self.assertTrue(tm is not None)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm, [])
-        # Previously current and shared in other context is not
-        # current in any context anymore.
-        self.assertTranslationMessageDeleted(tm_other_id)
-
-    def test_current_None__new_diverged__other_shared__identical__follows(
-        self):
-        # This test, unlike the one it depends on, actually passes.
-        self.test_current_None__new_diverged__other_shared__identical(True)
-
-    def test_current_None__new_diverged__other_diverged(self):
-        # Current translation is None, and we have found a
-        # diverged existing TM matching new translations.
-        # There is a current but diverged translation in "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        tm_other = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=True)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            None, None, None, [tm_other, tm_diverged])
-
-        tm = self.setCurrentTranslation(new_translations)
-
-        # We end up with tm_diverged being activated and converged,
-        # and tm_other stays as it was.
-        self.assertTrue(tm is not None)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, None, [tm_other])
-
-        # Previously current is still diverged and current
-        # in exactly one context.
-        self.assertFalse(tm_other.is_current_upstream and
-                         tm_other.is_current_ubuntu)
-        self.assertTrue(tm_other.is_current_upstream or
-                         tm_other.is_current_ubuntu)
-        self.assertEquals(self.other_pofile.potemplate, tm_other.potemplate)
-
-    def test_current_None__new_diverged__other_diverged__follows(self):
-        # Current translation is None, and we have found a
-        # diverged existing TM matching new translations.
-        # There is a current but diverged translation in "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        tm_other = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=True)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            None, None, None, [tm_other, tm_diverged])
-
-        tm = self.setCurrentTranslation(
-            new_translations, share_with_other_side=True)
-
-        # We end up with tm_diverged being activated and converged,
-        # and tm_other stays as it was.
-        self.assertTrue(tm is not None)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm, [tm_other])
-
-        # Previously current is still diverged and current
-        # in exactly one context.
-        self.assertFalse(tm_other.is_current_upstream and
-                         tm_other.is_current_ubuntu)
-        self.assertTrue(tm_other.is_current_upstream or
-                         tm_other.is_current_ubuntu)
-        self.assertEquals(self.other_pofile.potemplate, tm_other.potemplate)
-
-    def test_current_None__new_diverged__other_diverged_shared(self):
-        # Current translation is None, and we have found a
-        # diverged existing TM matching new translations.
-        # There is both a current diverged and current shared translation
-        # in "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        tm_other_shared = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=True)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            None, None, tm_other_shared, [tm_diverged, tm_other_diverged])
-
-        tm = self.setCurrentTranslation(new_translations)
-
-        # We end up with tm_diverged being activated and converged,
-        # and tm_other stays as it was.
-        self.assertTrue(tm is not None)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm_other_shared, [tm_other_diverged])
-
-        # Previously shared current in other context is still current
-        # in exactly one context.
-        self.assertFalse(tm_other_shared.is_current_upstream and
-                         tm_other_shared.is_current_ubuntu)
-        self.assertTrue(tm_other_shared.is_current_upstream or
-                         tm_other_shared.is_current_ubuntu)
-        self.assertIs(None, tm_other_shared.potemplate)
-
-        # Previously diverged current in other context is still diverged
-        # and current in exactly one context.
-        self.assertFalse(tm_other_diverged.is_current_upstream and
-                         tm_other_diverged.is_current_ubuntu)
-        self.assertTrue(tm_other_diverged.is_current_upstream or
-                         tm_other_diverged.is_current_ubuntu)
-        self.assertEquals(self.other_pofile.potemplate,
-                          tm_other_diverged.potemplate)
-
-    def test_current_None__new_diverged__other_diverged_shared__follows(self):
-        # Current translation is None, and we have found a
-        # diverged existing TM matching new translations.
-        # There is both a current diverged and current shared translation
-        # in "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        tm_other_shared = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=True)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            None, None, tm_other_shared, [tm_diverged, tm_other_diverged])
-
-        tm = self.setCurrentTranslation(
-            new_translations, share_with_other_side=True)
-
-        # We end up with tm_diverged being activated and converged,
-        # and activated for the other context as well.  Diverged
-        # translation in the other context stays as it was.
-        self.assertTrue(tm is not None)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm, [tm_other_diverged])
-
-        # Previously shared current in other context is now just
-        # a suggestion.
-        self.assertFalse(tm_other_shared.is_current_upstream or
-                         tm_other_shared.is_current_ubuntu)
-        self.assertIs(None, tm_other_shared.potemplate)
-
-        # Previously diverged current is still diverged and current
-        # in exactly one context.
-        self.assertFalse(tm_other_diverged.is_current_upstream and
-                         tm_other_diverged.is_current_ubuntu)
-        self.assertTrue(tm_other_diverged.is_current_upstream or
-                         tm_other_diverged.is_current_ubuntu)
-        self.assertEquals(self.other_pofile.potemplate,
-                          tm_other_diverged.potemplate)
-
-    def test_current_None__new_diverged__other_diverged__identical(self):
-        # Current translation is None, and we have found a
-        # diverged existing TM matching new translations.
-        # There is also an identical current diverged in "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        tm_other_diverged = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=True)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            None, None, None, [tm_diverged, tm_other_diverged])
-
-        tm = self.setCurrentTranslation(new_translations)
-
-        # We end up with tm_diverged being activated and converged,
-        # and other context stays untranslated.  Diverged
-        # translation in the other context stays as it was.
-        self.assertTrue(tm is not None)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, None, [tm_other_diverged])
-
-        # Previously diverged current is still diverged and current
-        # in exactly one context.
-        self.assertFalse(tm_other_diverged.is_current_upstream and
-                         tm_other_diverged.is_current_ubuntu)
-        self.assertTrue(tm_other_diverged.is_current_upstream or
-                         tm_other_diverged.is_current_ubuntu)
-        self.assertEquals(self.other_pofile.potemplate,
-                          tm_other_diverged.potemplate)
-
-    def test_current_None__new_diverged__other_diverged__identical__follows(
-        self):
-        # Current translation is None, and we have found a
-        # diverged existing TM matching new translations.
-        # There is also an identical current diverged in "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        tm_diverged_id = tm_diverged.id
-        tm_other_diverged = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=True)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            None, None, None, [tm_diverged, tm_other_diverged])
-
-        tm = self.setCurrentTranslation(
-            new_translations, share_with_other_side=True)
-
-        # We end up with tm_other_diverged being activated and converged,
-        # and current for both other and this context.
-        # Diverged translation in the this context is removed.
-        self.assertTrue(tm is not None)
-        self.assertEquals(tm_other_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm, [])
-
-        # Previously diverged current is still diverged and current
-        # in exactly one context.
-        self.assertTranslationMessageDeleted(tm_diverged_id)
-
     def test_current_shared__new_None__other_None(self):
         # Current translation is 'shared', and we have found
         # no existing TM matching new translations.
@@ -1054,175 +668,6 @@ class SetCurrentTranslationTestMixin:
         self.assertFalse(tm_shared.is_current_ubuntu or
                          tm_shared.is_current_upstream)
 
-    def test_current_shared__new_shared__other_diverged__identical__follows(
-        self):
-        # Current translation is 'shared', and we have found
-        # a shared existing TM matching new translations (a suggestion).
-        # There is a divergence in the 'other' context that is
-        # exactly the same as the new translation.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_shared = self.constructTranslationMessage(
-            current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm_shared, None, None, [tm_other_diverged])
-
-        tm = self.setCurrentTranslation(
-            new_translations, share_with_other_side=True)
-
-        # New translation message is shared for both contexts,
-        # and divergence on the other side is "converged".
-        self.assertTrue(tm is not None)
-        self.assertNotEquals(tm_shared, tm)
-        self.assertEquals(tm_other_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm, [])
-
-        # Previous shared translation is now a suggestion.
-        self.assertFalse(tm_shared.is_current_ubuntu or
-                         tm_shared.is_current_upstream)
-
-    def test_current_shared__new_diverged__other_None(self):
-        # Current translation is 'shared', and we have found
-        # a diverged (in this context) existing TM matching new translations.
-        # There is no translation for "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_shared = self.constructTranslationMessage(
-            current=True, other=False, diverged=False)
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm_shared, None, None, [tm_diverged])
-
-        tm = self.setCurrentTranslation(new_translations)
-
-        # New translation message is shared and current only for
-        # the active context.
-        self.assertTrue(tm is not None)
-        self.assertNotEquals(tm_shared, tm)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, None, [])
-
-        # Previous shared translation is now a suggestion.
-        self.assertFalse(tm_shared.is_current_ubuntu or
-                         tm_shared.is_current_upstream)
-
-    def test_current_shared__new_diverged__other_None__follows(self):
-        # Current translation is 'shared', and we have found
-        # a diverged (in this context) existing TM matching new translations.
-        # There is no translation for "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_shared = self.constructTranslationMessage(
-            current=True, other=False, diverged=False)
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm_shared, None, None, [tm_diverged])
-
-        tm = self.setCurrentTranslation(
-            new_translations, share_with_other_side=True)
-
-        # New translation message is shared and current for
-        # both contexts.
-        self.assertTrue(tm is not None)
-        self.assertNotEquals(tm_shared, tm)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm, [])
-
-        # Previous shared translation is now a suggestion.
-        self.assertFalse(tm_shared.is_current_ubuntu or
-                         tm_shared.is_current_upstream)
-
-    def test_current_shared__new_diverged__other_shared(self):
-        # Current translation is 'shared', and we have found
-        # a diverged (in this context) existing TM matching new translations.
-        # There is a shared translation for "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_shared = self.constructTranslationMessage(
-            current=True, other=False, diverged=False)
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        tm_other = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=False)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm_shared, None, tm_other, [tm_diverged])
-
-        tm = self.setCurrentTranslation(new_translations)
-
-        # New translation message is shared and current only for
-        # the active context.  "Other" translation is unchanged.
-        self.assertTrue(tm is not None)
-        self.assertNotEquals(tm_shared, tm)
-        self.assertNotEquals(tm_other, tm)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm_other, [])
-
-        # Previous shared translation is now a suggestion.
-        self.assertFalse(tm_shared.is_current_ubuntu or
-                         tm_shared.is_current_upstream)
-
-    def test_current_shared__new_diverged__other_shared__follows(self):
-        # Current translation is 'shared', and we have found
-        # a diverged (in this context) existing TM matching new translations.
-        # There is a shared translation for "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_shared = self.constructTranslationMessage(
-            current=True, other=False, diverged=False)
-        tm_diverged = self.constructDivergingTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        tm_other = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=False)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm_shared, None, tm_other, [tm_diverged])
-
-        tm = self.setCurrentTranslation(
-            new_translations, share_with_other_side=True)
-
-        # New translation message is shared and current only for
-        # the active context.  "Other" translation is unchanged.
-        self.assertTrue(tm is not None)
-        self.assertNotEquals(tm_shared, tm)
-        self.assertNotEquals(tm_other, tm)
-        self.assertEquals(tm_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm, [])
-
-        # Previous shared translation is now a suggestion,
-        # just like a previous shared translation in "other" context.
-        self.assertFalse(tm_shared.is_current_ubuntu or
-                         tm_shared.is_current_upstream)
-        self.assertFalse(tm_other.is_current_ubuntu or
-                         tm_other.is_current_upstream)
-
     def test_current_shared__new_diverged__other_diverged_shared(self):
         # Current translation is 'shared', and we have found
         # a diverged (in other context) existing TM matching new translations.
@@ -1253,44 +698,6 @@ class SetCurrentTranslationTestMixin:
         self.assertFalse(tm_shared.is_current_ubuntu or
                          tm_shared.is_current_upstream)
 
-    def test_current_shared__new_diverged__other_diverged_shared__follows(
-        self):
-        # Current translation is 'shared', and we have found
-        # a diverged (in other context) existing TM matching new translations.
-        # There is also a shared translation for the "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_shared = self.constructTranslationMessage(
-            current=True, other=False, diverged=False)
-        tm_other = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm_shared, None, tm_other, [tm_other_diverged])
-
-        tm = self.setCurrentTranslation(
-            new_translations, share_with_other_side=True)
-
-        # Previously diverged in "other" context is now converged to
-        # shared and current for both contexts.
-        self.assertTrue(tm is not None)
-        self.assertNotEquals(tm_shared, tm)
-        self.assertNotEquals(tm_other, tm)
-        self.assertEquals(tm_other_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm, [])
-
-        # Previously shared translations in both contexts are now suggestions.
-        self.assertFalse(tm_shared.is_current_ubuntu or
-                         tm_shared.is_current_upstream)
-        self.assertFalse(tm_other.is_current_ubuntu or
-                         tm_other.is_current_upstream)
-
     def test_current_shared__new_diverged__other_diverged__identical(self):
         # Current translation is 'shared', and we have found
         # a diverged existing TM matching new translations
@@ -1313,39 +720,6 @@ class SetCurrentTranslationTestMixin:
         self.assertNotEquals(tm_other_diverged, tm)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm, None, None, [tm_other_diverged])
-
-        # Previous shared translation is now a suggestion.
-        self.assertFalse(tm_shared.is_current_ubuntu or
-                         tm_shared.is_current_upstream)
-
-    def test_current_shared__new_diverged__other_diverged__identical__follows(
-        self):
-        # Current translation is 'shared', and we have found
-        # a diverged existing TM matching new translations
-        # for the "other" context.
-        # XXX 2010-06-21 JeroenVermeulen: disabling this test because
-        # setCurrentTranslation only looks for diverged messages in the
-        # same template it's working on.
-        return
-        new_translations = [self.factory.getUniqueString()]
-        tm_shared = self.constructTranslationMessage(
-            current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructOtherTranslationMessage(
-            current=True, other=False, diverged=True,
-            translations=new_translations)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm_shared, None, None, [tm_other_diverged])
-
-        tm = self.setCurrentTranslation(
-            new_translations, share_with_other_side=True)
-
-        # New translation message is shared and current only for
-        # the active context.  "Other" translation is unchanged.
-        self.assertTrue(tm is not None)
-        self.assertNotEquals(tm_shared, tm)
-        self.assertEquals(tm_other_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
-            tm, None, tm, [])
 
         # Previous shared translation is now a suggestion.
         self.assertFalse(tm_shared.is_current_ubuntu or
@@ -1664,7 +1038,8 @@ class SetCurrentTranslationTestMixin:
         # when we end up converging the translation.
         self.test_current_diverged__new_diverged__other_None(True)
 
-    def test_current_diverged__new_diverged__other_shared(self, follows=False):
+    def test_current_diverged__new_diverged__other_shared(self,
+                                                          follows=False):
         # Current translation is 'diverged' (no shared), and we have found
         # an existing diverged elsewhere TM matching new translations.
         # There is a shared translation for "other" context.
@@ -1773,35 +1148,39 @@ class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
                                                     sequence=1)
 
 
-class TestSetCurrentTranslation_Upstream(SetCurrentTranslationTestMixin,
-                                         TestCaseWithFactory):
-    def setUp(self):
-        super(TestSetCurrentTranslation_Upstream, self).setUp()
-        series = self.factory.makeProductSeries()
-        sharing_series = self.factory.makeProductSeries(
-            product=series.product)
-        potemplate = self.factory.makePOTemplate(productseries=series)
-        sharing_potemplate = self.factory.makePOTemplate(
-            productseries=sharing_series, name=potemplate.name)
-        self.pofile = self.factory.makePOFile('sr', potemplate=potemplate,
-                                              create_sharing=True)
+# XXX JeroenVermeulen 2010-06-29 bug=546310: we can activate this once
+# getCurrentTranslation and getImportedTranslation "change sides" based
+# on the current template: lp:~danilo/launchpad/use-upstream-translations.
 
-        # A POFile in the same context as self.pofile, used for diverged
-        # translations.
-        self.diverging_pofile = sharing_potemplate.getPOFileByLang(
-            self.pofile.language.code, self.pofile.variant)
-
-        # A POFile in a different context from self.pofile and
-        # self.diverging_pofile.
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        sourcepackagename = self.factory.makeSourcePackageName()
-        ubuntu_template = self.factory.makePOTemplate(
-            distroseries=ubuntu.currentseries,
-            sourcepackagename=sourcepackagename)
-        self.other_pofile = self.factory.makePOFile(
-            potemplate=ubuntu_template,
-            language_code=self.pofile.language.code,
-            variant=self.pofile.variant)
-
-        self.potmsgset = self.factory.makePOTMsgSet(potemplate=potemplate,
-                                                    sequence=1)
+#class TestSetCurrentTranslation_Upstream(SetCurrentTranslationTestMixin,
+#                                         TestCaseWithFactory):
+#    def setUp(self):
+#        super(TestSetCurrentTranslation_Upstream, self).setUp()
+#        series = self.factory.makeProductSeries()
+#        sharing_series = self.factory.makeProductSeries(
+#            product=series.product)
+#        potemplate = self.factory.makePOTemplate(productseries=series)
+#        sharing_potemplate = self.factory.makePOTemplate(
+#            productseries=sharing_series, name=potemplate.name)
+#        self.pofile = self.factory.makePOFile('sr', potemplate=potemplate,
+#                                              create_sharing=True)
+#
+#        # A POFile in the same context as self.pofile, used for diverged
+#        # translations.
+#        self.diverging_pofile = sharing_potemplate.getPOFileByLang(
+#            self.pofile.language.code, self.pofile.variant)
+#
+#        # A POFile in a different context from self.pofile and
+#        # self.diverging_pofile.
+#        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+#        sourcepackagename = self.factory.makeSourcePackageName()
+#        ubuntu_template = self.factory.makePOTemplate(
+#            distroseries=ubuntu.currentseries,
+#            sourcepackagename=sourcepackagename)
+#        self.other_pofile = self.factory.makePOFile(
+#            potemplate=ubuntu_template,
+#            language_code=self.pofile.language.code,
+#            variant=self.pofile.variant)
+#
+#        self.potmsgset = self.factory.makePOTMsgSet(potemplate=potemplate,
+#                                                    sequence=1)

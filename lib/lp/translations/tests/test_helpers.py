@@ -3,22 +3,12 @@
 
 __metaclass__ = type
 
-from datetime import datetime
-import pytz
-
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import ZopelessDatabaseLayer
 
 from lp.testing import TestCaseWithFactory
-from lp.translations.interfaces.translationmessage import (
-    RosettaTranslationOrigin,
-    TranslationValidationStatus)
-from lp.translations.model.translationmessage import (
-    TranslationMessage)
 
 from lp.translations.tests.helpers import (
     make_translationmessage,
@@ -132,7 +122,8 @@ class TestTranslationMessageHelpers(TestCaseWithFactory):
             self.factory, pofile=self.other_pofile, potmsgset=self.potmsgset,
             ubuntu=True, upstream=False, diverged=True)
         self.assertTrue(tm_diverged.is_current_ubuntu)
-        self.assertEquals(tm_diverged.potemplate, self.other_pofile.potemplate)
+        self.assertEquals(
+            tm_diverged.potemplate, self.other_pofile.potemplate)
         self.assertEquals(tm_diverged.potmsgset, self.potmsgset)
         current_shared, current_diverged, other, divergences = (
             get_all_important_translations(self.pofile, self.potmsgset))
