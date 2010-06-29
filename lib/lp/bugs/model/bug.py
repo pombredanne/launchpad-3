@@ -438,7 +438,7 @@ class Bug(SQLBase):
         enabled_bug_expiration set to True can be expired. To qualify for
         expiration, the bug and its bugtasks meet the follow conditions:
 
-        1. The bug is inactive; the last update of the is older than
+        1. The bug is inactive; the last update of the bug is older than
             Launchpad expiration age.
         2. The bug is not a duplicate.
         3. The bug has at least one message (a request for more information).
@@ -456,6 +456,7 @@ class Bug(SQLBase):
         if not self.permits_expiration:
             return False
 
+        days_old = config.malone.days_before_expiration
         # Do the search as the Janitor, to ensure that this bug can be
         # found, even if it's private. We don't have access to the user
         # calling this property. If the user has access to view this
@@ -463,7 +464,7 @@ class Bug(SQLBase):
         # exposing something we shouldn't. The Janitor has access to
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
-            0, getUtility(ILaunchpadCelebrities).janitor, bug=self)
+            days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
         return bugtasks.count() > 0
 
     def isExpirable(self, days_old=None):

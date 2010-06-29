@@ -1105,7 +1105,7 @@ Ubuntu has enabled bug expiration. Incomplete, unattended bugs can
 expire.
 
     >>> expirable_bugtask = create_old_bug(
-    ...     'bug c', 1, ubuntu, with_message=False)
+    ...     'bug c', 61, ubuntu, with_message=False)
     >>> sync_bugtasks(expirable_bugtask)
 
     >>> expirable_bugtask.status.name
