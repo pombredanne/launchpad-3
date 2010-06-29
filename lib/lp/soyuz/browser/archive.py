@@ -46,6 +46,7 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.lazr.utils import smartquote
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -1878,11 +1879,19 @@ class ArchiveAdminView(BaseArchiveEditView):
 
     custom_widget('external_dependencies', TextAreaWidget, height=3)
 
+    def updateContextFromData(self, data):
+        if data['private'] and data['buildd_secret'] is None:
+            # buildd secrets are only used by builders, autogenerate one.
+            self.context.buildd_secret = create_token(16)
+            del(data['buildd_secret'])
+        super(ArchiveAdminView, self).updateContextFromData(data)
+
     def validate_save(self, action, data):
         """Validate the save action on ArchiveAdminView.
 
-        buildd_secret can only be set, and must be set, when
-        this is a private archive.
+        buildd_secret can only be set when this is a private archive.
+        If it is a private archive and it is not set it will be
+        generated.
         """
         form.getWidgetsData(self.widgets, 'field', data)
 
@@ -1893,11 +1902,6 @@ class ArchiveAdminView(BaseArchiveEditView):
                     'private',
                     'This archive already has published sources. It is '
                     'not possible to switch the privacy.')
-
-        if data.get('buildd_secret') is None and data['private']:
-            self.setFieldError(
-                'buildd_secret',
-                'Required for private archives.')
 
         if self.owner_is_private_team and not data['private']:
             self.setFieldError(
