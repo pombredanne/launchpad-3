@@ -23,7 +23,7 @@ class TestTranslationMessageHelpers(TestCaseWithFactory):
     def setUp(self):
         super(TestTranslationMessageHelpers, self).setUp()
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        sharing_series = self.factory.makeDistroRelease(distribution=ubuntu)
+        self.factory.makeDistroRelease(distribution=ubuntu)
         sourcepackagename = self.factory.makeSourcePackageName()
         potemplate = self.factory.makePOTemplate(
             distroseries=ubuntu.currentseries,
