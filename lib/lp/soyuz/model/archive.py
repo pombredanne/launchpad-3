@@ -22,7 +22,6 @@ from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import alsoProvides, implements
-from zope.security.interfaces import Unauthorized
 
 from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.utils import re_issource, re_isadeb
@@ -1942,11 +1941,8 @@ class ArchiveSet:
         if name is not None:
             extra_exprs.append(Archive.name == name)
 
-        if exclude_disabled:
-            public_archive = And(Archive.private == False,
-                                 Archive._enabled == True)
-        else:
-            public_archive = (Archive.private == False)
+        public_archive = And(Archive.private == False,
+                             Archive._enabled == True)
 
         if user is not None:
             admins = getUtility(ILaunchpadCelebrities).admin
@@ -1970,15 +1966,18 @@ class ArchiveSet:
                 # is unnecessary below because there is a TeamParticipation
                 # entry showing that each person is a member of the "team"
                 # that consists of themselves.
-                extra_exprs.append(
-                    Or(
-                        public_archive,
-                        Archive.ownerID.is_in(user_teams_subselect)))
 
+                # FIXME: Include private PPA's if user is an uploader
+                extra_exprs.append(
+                    Or(public_archive,
+                       Archive.ownerID.is_in(user_teams_subselect)))
         else:
             # Anonymous user; filter to include only public archives in
             # the results.
             extra_exprs.append(public_archive)
+
+        if exclude_disabled:
+            extra_exprs.append(Archive._enabled == True)
 
         query = Store.of(distribution).find(
             Archive,
