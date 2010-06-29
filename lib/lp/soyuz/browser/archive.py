@@ -1880,6 +1880,11 @@ class ArchiveAdminView(BaseArchiveEditView):
     custom_widget('external_dependencies', TextAreaWidget, height=3)
 
     def updateContextFromData(self, data):
+        """Update context from form data.
+
+        If the user did not specify a buildd secret but marked the 
+        archive as private, generate a secret for them.
+        """
         if data['private'] and data['buildd_secret'] is None:
             # buildd secrets are only used by builders, autogenerate one.
             self.context.buildd_secret = create_token(16)
@@ -1889,8 +1894,8 @@ class ArchiveAdminView(BaseArchiveEditView):
     def validate_save(self, action, data):
         """Validate the save action on ArchiveAdminView.
 
-        buildd_secret can only be set when this is a private archive.
-        If it is a private archive and it is not set it will be
+        buildd_secret can only, and must, be set for private archives.
+        If the archive is private and the buildd secret is not set it will be
         generated.
         """
         form.getWidgetsData(self.widgets, 'field', data)
