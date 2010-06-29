@@ -41,6 +41,7 @@ class IArchiveArch(Interface):
 
 class IArchiveArchSet(Interface):
     """An interface for sets of archive/processor family associations."""
+
     def new(archive, processorfamily):
         """Create a new archive/processor family association.
 

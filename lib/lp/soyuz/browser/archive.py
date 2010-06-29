@@ -1874,9 +1874,11 @@ class ArchiveAdminView(BaseArchiveEditView):
 
     field_names = ['enabled', 'private', 'require_virtualized',
                    'buildd_secret', 'authorized_size', 'relative_build_score',
-                   'external_dependencies', 'arm_builds_allowed']
+                   'external_dependencies']
 
     custom_widget('external_dependencies', TextAreaWidget, height=3)
+
+    custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
 
     def validate_save(self, action, data):
         """Validate the save action on ArchiveAdminView.
@@ -1950,6 +1952,34 @@ class ArchiveAdminView(BaseArchiveEditView):
         :rtype: bool
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
+
+    def setUpFields(self):
+        """Override `ArchiveSourceSelectionFormView`.
+
+        See `createDestinationFields` method.
+        """
+        super(ArchiveAdminView, self).setUpFields()
+        self.form_fields += self.createEnabledRestrictedFamilies()
+
+    def createEnabledRestrictedFamilies(self):
+        """Creates the 'enabled_restricted_families' field.
+
+        """
+        from lp.soyuz.interfaces.processor import IProcessorFamilySet
+        from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+        from zope.component import getUtility
+        terms = []
+        for family in getUtility(IProcessorFamilySet).getRestricted():
+            terms.append(SimpleTerm(family, token=family.name, 
+                title=family.title))
+        return form.Fields(
+            List(__name__='enabled_restricted_families',
+                 title=_('Enabled restricted families'),
+                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                 required=False,
+                 description=_('Select one or more sources to be submitted '
+                               'to an action.')),
+                 render_context=self.render_context)
 
 
 class ArchiveDeleteView(LaunchpadFormView):
