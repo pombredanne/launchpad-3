@@ -244,9 +244,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
         # queue entries and then invalidate itself.
         build = self.factory.makeSourcePackageRecipeBuild()
-        recipe = build.recipe
-
-        recipe.destroySelf()
+        build.destroySelf()
 
 
 class TestAsBuildmaster(TestCaseWithFactory):
