@@ -327,6 +327,7 @@ data in a bug task is derived from the bug.
   date_fix_committed: None
   date_fix_released: None
   date_in_progress: None
+  date_incomplete: None
   date_left_closed: None
   date_left_new: None
   date_triaged: None
@@ -852,7 +853,6 @@ We can also create new subscriptions.
 
     >>> new_subscription = webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~cprov')).jsonBody()
     >>> pprint_entry(new_subscription)
     bug_link: ...
@@ -905,7 +905,6 @@ this, the group must first be re-subscribed.
 
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
 
@@ -949,7 +948,6 @@ himself.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~salgado'))
     HTTP/1.1 200 Ok...
 
@@ -980,7 +978,6 @@ To demonstrate, first subscribe Ubuntu Team to bug_six, the duplicate.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
     >>> bug_six_subscriptions = webservice.get(
@@ -1440,6 +1437,15 @@ setting the tags_combinator parameter to 'All'.
     total_size: 0
     ---
 
+It can also be used to find bugs modified since a certain date.
+
+    >>> pprint_collection(webservice.named_get(
+    ...     '/ubuntu', 'searchTasks',
+    ...     modified_since=u'2011-01-01T00:00:00+00:00').jsonBody())
+    start: None
+    total_size: 0
+    ---
+
 It is possible to search for bugs targeted to a milestone within a
 project group.
 
@@ -1660,7 +1666,7 @@ bugs:
     owner_link: u'http://api.launchpad.dev/beta/~testuser1'
     ...
 
-`testuser2` is subscribed to `testbugs2`, so this bug is related to this
+`testuser2` is subscribed to `testbug2`, so this bug is related to this
 user:
 
     >>> related = webservice.named_get(
@@ -1682,15 +1688,16 @@ empty:
     total_size: 0
     ---
 
-You are not allowed to overwrite all user related parameter in the same
-query, because in this case this bug will no be related to the person
-anymore. In this case a `400 Bad Request`-Error will be returned
+You are not allowed to overwrite all user related parameters in the same
+query, because this bug will not be related to the person anymore. In this
+case a `400 Bad Request`-Error will be returned.
 
     >>> name12 = webservice.get("/~name12").jsonBody()
     >>> print webservice.named_get(
     ...     '/~name16', 'searchTasks', assignee=name12['self_link'],
     ...     owner=name12['self_link'], bug_subscriber=name12['self_link'],
-    ...     bug_commenter=name12['self_link']
+    ...     bug_commenter=name12['self_link'],
+    ...     structural_subscriber=name12['self_link']
     ...     )
     HTTP/1.1 400 Bad Request...
 

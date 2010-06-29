@@ -594,7 +594,7 @@ class INotificationRecipientSet(Interface):
         """
 
     def add(person, reason, header):
-        """Add a person or sequence of person to the recipients list.
+        """Add a person or a sequence of persons to the recipients list.
 
         When the added person is a team without an email address, all its
         members emails will be added. If the person is already in the
@@ -606,6 +606,13 @@ class INotificationRecipientSet(Interface):
             notification footer.
         :param header: The code that will appear in the
             X-Launchpad-Message-Rationale header.
+        """
+
+    def remove(person):
+        """Remove a person or a list of persons from the recipients list.
+
+        :param person: The `IPerson` or a sequence of `IPerson`
+            that will removed from the recipients list.
         """
 
     def update(recipient_set):
@@ -636,5 +643,5 @@ class ILaunchpadUsage(Interface):
     official_anything = Bool (
         title=_('Uses Launchpad for something'),)
     enable_bug_expiration = Bool(
-        title=_('Expire Incomplete bug reports when they become inactive'),
+        title=_('Expire "Incomplete" bug reports when they become inactive'),
         required=True)

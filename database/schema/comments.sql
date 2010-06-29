@@ -472,7 +472,11 @@ COMMENT ON COLUMN Diff.removed_lines_count IS 'The number of lines removed in th
 
 COMMENT ON TABLE DistributionSourcePackage IS 'Representing a sourcepackage in a distribution across all distribution series.';
 COMMENT ON COLUMN DistributionSourcePackage.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on a particular a source package in a distribution.';
-COMMENT ON COLUMN DistributionSourcePackage.max_bug_heat IS 'The highest heat value across bugs for this source package.';
+COMMENT ON COLUMN DistributionSourcePackage.max_bug_heat IS 'The highest heat value across bugs for this source package. NULL means it has not yet been calculated.';
+COMMENT ON COLUMN DistributionSourcePackage.total_bug_heat IS 'Sum of bug heat matching the package distribution and sourcepackagename. NULL means it has not yet been calculated.';
+COMMENT ON COLUMN DistributionSourcePackage.bug_count IS 'Number of bugs matching the package distribution and sourcepackagename. NULL means it has not yet been calculated.';
+COMMENT ON COLUMN DistributionSourcePackage.po_message_count IS 'Number of translations matching the package distribution and sourcepackagename. NULL means it has not yet been calculated.';
+COMMENT ON COLUMN DistributionSourcePackage.is_upstream_link_allowed IS 'Whether an upstream link may be added if it does not already exist.';
 COMMENT ON COLUMN DistributionSourcePackage.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
 
 -- DistributionSourcePackageCache
@@ -1967,6 +1971,7 @@ COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days b
 COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
 COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
 COMMENT ON COLUMN Archive.external_dependencies IS 'Newline-separated list of repositories to be used to retrieve any external build dependencies when building packages in this archive, in the format: deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]  The series variable is replaced with the series name of the context build.  This column is specifically and only intended for OEM migration to Launchpad and should be re-examined in October 2010 to see if it is still relevant.';
+COMMENT ON COLUMN Archive.commercial IS 'Whether this archive is a commercial Archive and should appear in the Software Center.';
 
 -- ArchiveAuthToken
 

@@ -347,6 +347,8 @@ build on a virtualized builder.
     True
     >>> admin_browser.getControl(name="field.private").value
     False
+    >>> admin_browser.getControl(name="field.commercial").value
+    False
     >>> admin_browser.getControl(name="field.require_virtualized").value
     True
     >>> admin_browser.getControl(name="field.relative_build_score").value
@@ -356,6 +358,7 @@ build on a virtualized builder.
 
     >>> admin_browser.getControl(name="field.enabled").value = False
     >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.commercial").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl(
     ...     name="field.require_virtualized").value = False
@@ -413,8 +416,10 @@ error is issued:
     There is 1 error.
     Required for private archives.
 
-Conversely, setting the buildd secret for non-private archives also
-generates an error:
+Conversely, setting the buildd secret for non-private archives also generates
+an error.  Because the "commercial" flag is also currently set, removing
+privacy will also trigger a validation error because the commercial flag can
+only be set on private archives:
 
     >>> admin_browser.getControl(name="field.private").value = False
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
@@ -422,8 +427,10 @@ generates an error:
 
     >>> for error in get_feedback_messages(admin_browser.contents):
     ...     print error
-    There is 1 error.
+    There are 2 errors.
+    Can only set commericial for private archives.
     Do not specify for non-private archives
+
 
 There is a maximum value allowed for `IArchive.authorized_size`, it is
 currently 2147483647 and the unit used in code is MiB, so in practice
@@ -644,33 +651,31 @@ requested it. An administrator can disable Celso's 'edge' PPA.
     >>> admin_browser.getControl(name="field.enabled").value = False
     >>> admin_browser.getControl("Save").click()
 
-Anonymous access or users with no permission to view Celso's 'edge'
-ppa can see it listed in Celso's profile page.
+Anonymous users or others with no special permissions on the disabled PPA
+are unable to see it on Celso's profile page.
 
     >>> anon_browser.open("http://launchpad.dev/~cprov")
-    >>> browser.open("http://launchpad.dev/~cprov")
-
     >>> print_tag_with_id(anon_browser.contents, 'ppas')
     Personal package archives
-    Edge PPA
     PPA for Celso Providelo
 
+    >>> browser.open("http://launchpad.dev/~cprov")
     >>> print_tag_with_id(browser.contents, 'ppas')
+    Personal package archives
+    PPA for Celso Providelo
+
+Celso himself can see the PPA, and it's linked so he can reenable it if
+required.
+
+    >>> cprov_browser.open("http://launchpad.dev/~cprov")
+    >>> print_tag_with_id(cprov_browser.contents, 'ppas')
     Personal package archives
     Edge PPA
     PPA for Celso Providelo
+    Create a new PPA
 
-However the reference to Celso's 'Edge PPA' is not linked.
-
-    >>> print anon_browser.getLink('Edge PPA')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-    >>> print browser.getLink('Edge PPA')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
+    >>> print cprov_browser.getLink('Edge PPA')
+    <Link ...>
 
 And direct access to the PPA page is also denied.
 

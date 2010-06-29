@@ -609,6 +609,9 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
         readonly=True,
         value_type=Reference(schema=Interface))) # Really IBug
 
+    def getLinkedBugsAndTasks():
+        """Return a result set for the bugs with their tasks."""
+
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         bug=Reference(schema=Interface)) # Really IBug

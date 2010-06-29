@@ -13,8 +13,7 @@ from __future__ import with_statement
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pytz import UTC
-import transaction
-import unittest
+from unittest import TestLoader
 
 from zope.component import getUtility
 
@@ -36,7 +35,6 @@ from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus, translation_import_queue_entry_age)
 from lp.testing import TestCaseWithFactory
-from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -46,31 +44,25 @@ class GardenerDbUserMixin(object):
 
     Admittedly, this might be a little over-engineered but it looks good. ;)
     """
-
-    def _become(self, dbuser):
-        """Switch to a different db user."""
-        transaction.commit()
-        self.layer.switchDbUser(dbuser)
-
     def becomeTheGardener(self):
         """One-way method to avoid unnecessary switch back."""
-        self._become('translations_import_queue_gardener')
+        self.becomeDbUser('translations_import_queue_gardener')
 
     @contextmanager
     def beingTheGardener(self):
         """Context manager to restore the launchpad user."""
-        self._become('translations_import_queue_gardener')
+        self.becomeTheGardener()
         yield
-        self._become('launchpad')
+        self.becomeDbUser('launchpad')
 
 
-class TestCustomLanguageCode(unittest.TestCase):
+class TestCustomLanguageCode(TestCaseWithFactory):
     """Unit tests for `CustomLanguageCode`."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.factory = LaunchpadObjectFactory()
+        super(TestCustomLanguageCode, self).setUp()
         self.product_codes = {}
         self.package_codes = {}
 
@@ -149,8 +141,8 @@ class TestCustomLanguageCode(unittest.TestCase):
         self.assertEqual(Brazilian_code.language, Language.byCode('pt_BR'))
 
 
-class TestGuessPOFileCustomLanguageCode(
-    unittest.TestCase, GardenerDbUserMixin):
+class TestGuessPOFileCustomLanguageCode(TestCaseWithFactory,
+                                        GardenerDbUserMixin):
     """Test interaction with `TranslationImportQueueEntry.getGuessedPOFile`.
 
     Auto-approval of translation files, i.e. figuring out which existing
@@ -163,7 +155,7 @@ class TestGuessPOFileCustomLanguageCode(
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.factory = LaunchpadObjectFactory()
+        super(TestGuessPOFileCustomLanguageCode, self).setUp()
         self.product = self.factory.makeProduct()
         self.series = self.factory.makeSeries(product=self.product)
         self.queue = TranslationImportQueue()
@@ -293,12 +285,12 @@ class TestGuessPOFileCustomLanguageCode(
         self.assertEqual(zh_TW_entry.getGuessedPOFile(), zh_CN_file)
 
 
-class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
+class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
     """Test auto-approval's attempts to find the right template."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.factory = LaunchpadObjectFactory()
+        super(TestTemplateGuess, self).setUp()
         self.templateset = POTemplateSet()
 
     def _setUpProduct(self):
@@ -596,7 +588,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         self.assertEqual(template, entry.guessed_potemplate)
 
 
-class TestKdePOFileGuess(unittest.TestCase, GardenerDbUserMixin):
+class TestKdePOFileGuess(TestCaseWithFactory, GardenerDbUserMixin):
     """Test auto-approval's `POFile` guessing for KDE uploads.
 
     KDE has an unusual setup that the approver recognizes as a special
@@ -609,10 +601,10 @@ class TestKdePOFileGuess(unittest.TestCase, GardenerDbUserMixin):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        factory = LaunchpadObjectFactory()
+        super(TestKdePOFileGuess, self).setUp()
         self.queue = TranslationImportQueue()
 
-        self.distroseries = factory.makeDistroRelease()
+        self.distroseries = self.factory.makeDistroRelease()
 
         # For each of KDE3 and KDE4, set up:
         #  a translation package following that KDE's naming pattern,
@@ -621,7 +613,7 @@ class TestKdePOFileGuess(unittest.TestCase, GardenerDbUserMixin):
         #  a translation file into a language we'll test in.
         self.kde_i18n_ca = SourcePackageNameSet().new('kde-i18n-ca')
         kde3_package = SourcePackageNameSet().new('kde3')
-        ca_template = factory.makePOTemplate(
+        ca_template = self.factory.makePOTemplate(
             distroseries=self.distroseries,
             sourcepackagename=kde3_package, name='kde3',
             translation_domain='kde3')
@@ -629,7 +621,7 @@ class TestKdePOFileGuess(unittest.TestCase, GardenerDbUserMixin):
 
         self.kde_l10n_nl = SourcePackageNameSet().new('kde-l10n-nl')
         kde4_package = SourcePackageNameSet().new('kde4')
-        nl_template = factory.makePOTemplate(
+        nl_template = self.factory.makePOTemplate(
             distroseries=self.distroseries,
             sourcepackagename=kde4_package, name='kde4',
             translation_domain='kde4')
@@ -925,4 +917,4 @@ class TestAutoApprovalNewPOFile(TestCaseWithFactory, GardenerDbUserMixin):
 
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    return TestLoader().loadTestsFromName(__name__)

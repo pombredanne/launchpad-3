@@ -25,7 +25,7 @@ fi
 set -e
 
 # Config goes here.
-PRODUCTION_CONFIG=ftpmaster
+PRODUCTION_CONFIG=ftpmaster-publish
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     archiveurl=/srv/launchpad.net/ubuntu-archive/ubuntu-partner
 else

@@ -67,8 +67,8 @@
       <dd>
         <img src="/@@/private" alt="" />
         <tal:openid-login content="view/openid_identity_url" />
-        <a target="help" href="/+help/openid.html"
-           >(What&rsquo;s&nbsp;this?)</a>
+        <a target="help" href="/+help/openid.html" class="sprite maybe">&nbsp;
+          <span class="invisible-link">OpenID help</span></a>
       </dd>
     </dl>
 

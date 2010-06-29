@@ -25,7 +25,7 @@ from zope.interface import classProvides, implements
 
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase
-from canonical.uuid import generate_uuid
+from uuid import uuid1
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.launchpad import NotFoundError
@@ -194,7 +194,7 @@ class Diff(SQLBase):
             diff_content_bytes = ''
         else:
             if filename is None:
-                filename = generate_uuid() + '.txt'
+                filename = str(uuid1()) + '.txt'
             diff_text = getUtility(ILibraryFileAliasSet).create(
                 filename, size, diff_content, 'text/x-diff', restricted=True)
             diff_content.seek(0)
@@ -359,7 +359,7 @@ class PreviewDiff(Storm):
         preview.prerequisite_revision_id = prerequisite_revision_id
         preview.conflicts = conflicts
 
-        filename = generate_uuid() + '.txt'
+        filename = str(uuid1()) + '.txt'
         size = len(diff_content)
         preview.diff = Diff.fromFile(StringIO(diff_content), size, filename)
         return preview

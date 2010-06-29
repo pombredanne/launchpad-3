@@ -285,8 +285,8 @@ class POFileBaseView(LaunchpadView):
 
     def _initializeShowOption(self):
         # Get any value given by the user
-        self.show = self.request.form.get('show')
-        self.search_text = self.request.form.get('search')
+        self.show = self.request.form_ng.getOne('show')
+        self.search_text = self.request.form_ng.getOne('search')
         if self.search_text is not None:
             self.show = 'all'
 
@@ -309,7 +309,7 @@ class POFileBaseView(LaunchpadView):
         """Construct a BatchNavigator of POTMsgSets and return it."""
 
         # Changing the "show" option resets batching.
-        old_show_option = self.request.form.get('old_show')
+        old_show_option = self.request.form_ng.getOne('old_show')
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
         if show_option_changed:
@@ -741,7 +741,7 @@ class POFileTranslateView(BaseTranslationView):
         """See BaseTranslationView._buildBatchNavigator."""
 
         # Changing the "show" option resets batching.
-        old_show_option = self.request.form.get('old_show')
+        old_show_option = self.request.form_ng.getOne('old_show')
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
         if show_option_changed:
@@ -865,8 +865,8 @@ class POFileTranslateView(BaseTranslationView):
 
     def _initializeShowOption(self):
         # Get any value given by the user
-        self.show = self.request.form.get('show')
-        self.search_text = self.request.form.get('search')
+        self.show = self.request.form_ng.getOne('show')
+        self.search_text = self.request.form_ng.getOne('search')
         if self.search_text is not None:
             self.show = 'all'
 

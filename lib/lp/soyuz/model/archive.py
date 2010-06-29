@@ -15,7 +15,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import Or, And, Select, Sum
+from storm.expr import Or, And, Select, Sum, In, Desc
 from storm.locals import Count, Join
 from storm.store import Store
 from storm.zope.interfaces import IResultSet
@@ -32,7 +32,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.services.job.interfaces.job import JobStatus
@@ -42,6 +44,7 @@ from canonical.launchpad.components.tokens import (
 from lp.soyuz.model.archivedependency import ArchiveDependency
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
+from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount)
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -53,7 +56,6 @@ from lp.soyuz.model.files import (
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.publishedpackage import PublishedPackage
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
@@ -77,7 +79,8 @@ from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.buildrecords import (
+    IHasBuildRecords, IncompatibleArguments)
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import PersonVisibility
@@ -208,6 +211,9 @@ class Archive(SQLBase):
     # is still relevant.
     external_dependencies = StringCol(
         dbName='external_dependencies', notNull=False, default=None)
+
+    commercial = BoolCol(
+        dbName='commercial', notNull=True, default=False)
 
     def _get_arm_builds_enabled(self):
         """Check whether ARM builds are allowed for this archive."""
@@ -365,12 +371,21 @@ class Archive(SQLBase):
         return None
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
         """See IHasBuildRecords"""
         # Ignore "user", since anyone already accessing this archive
         # will implicitly have permission to see it.
-        return getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
-            self, build_state, name, pocket, arch_tag)
+
+        if binary_only:
+            return getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
+                self, build_state, name, pocket, arch_tag)
+        else:
+            if arch_tag is not None or name is not None:
+                raise IncompatibleArguments(
+                    "The 'arch_tag' and 'name' parameters can be used only "
+                    "with binary_only=True.")
+            return getUtility(IPackageBuildSet).getBuildsForArchive(
+                self, status=build_state, pocket=pocket)
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
@@ -801,15 +816,20 @@ class Archive(SQLBase):
             IResultSet(self.dependencies).values(
             ArchiveDependency.dependencyID))
 
-        query = """
-            binarypackagename = %s AND
-            distroarchseries = %s AND
-            archive IN %s AND
-            packagepublishingstatus = %s
-        """ % sqlvalues(name, distroarchseries, archives,
-                        PackagePublishingStatus.PUBLISHED)
-
-        return PublishedPackage.selectFirst(query, orderBy=['-id'])
+        store = ISlaveStore(BinaryPackagePublishingHistory)
+        candidate = store.find(
+            BinaryPackagePublishingHistory,
+            BinaryPackageName.name == name,
+            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                distroarchseries,
+            In(BinaryPackagePublishingHistory.archiveID, archives),
+            BinaryPackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED
+            ).order_by(Desc(BinaryPackagePublishingHistory.id))
+        return candidate.first()
 
     def getArchiveDependency(self, dependency):
         """See `IArchive`."""
@@ -993,9 +1013,10 @@ class Archive(SQLBase):
         distroseries = sourcepackage.distroseries
         sourcepackagename = sourcepackage.sourcepackagename
         component = sourcepackage.latest_published_component
-        # strict_component is True because the source package already exists
-        # (otherwise we couldn't have a suitesourcepackage object) and
-        # nascentupload passes True as a matter of policy when the package exists.
+        # strict_component is True because the source package already
+        # exists (otherwise we couldn't have a suitesourcepackage
+        # object) and nascentupload passes True as a matter of policy
+        # when the package exists.
         reason = self.checkUpload(
             person, distroseries, sourcepackagename, component, pocket,
             strict_component=True)
@@ -1019,7 +1040,7 @@ class Archive(SQLBase):
             if not distroseries.canUploadToPocket(pocket):
                 return CannotUploadToPocket(distroseries, pocket)
 
-    def _checkUpload(self, person, distroseries, sourcepackagename, component, 
+    def _checkUpload(self, person, distroseries, sourcepackagename, component,
                     pocket, strict_component=True):
         """See `IArchive`."""
         if isinstance(component, basestring):
@@ -1027,7 +1048,7 @@ class Archive(SQLBase):
         if isinstance(sourcepackagename, basestring):
             sourcepackagename = getUtility(
                 ISourcePackageNameSet)[sourcepackagename]
-        reason = self.checkUpload(person, distroseries, sourcepackagename, 
+        reason = self.checkUpload(person, distroseries, sourcepackagename,
             component, pocket, strict_component)
         if reason is not None:
             raise reason
@@ -1371,30 +1392,26 @@ class Archive(SQLBase):
         # Perform the copy, may raise CannotCopy.
         do_copy(sources, self, series, pocket, include_binaries)
 
+    def getAuthToken(self, person):
+        """See `IArchive`."""
+
+        token_set = getUtility(IArchiveAuthTokenSet)
+        return token_set.getActiveTokenForArchiveAndPerson(self, person)
+
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
+
+        # Bail if the archive isn't private
+        if not self.private:
+            raise ArchiveNotPrivate("Archive must be private.")
 
         # Tokens can only be created for individuals.
         if person.is_team:
             raise NoTokensForTeams(
                 "Subscription tokens can be created for individuals only.")
 
-        # First, ensure that a current subscription exists for the
-        # person and archive:
-        # XXX: noodles 2009-03-02 bug=336779: This can be removed once
-        # newAuthToken() is moved into IArchiveView.
-        subscription_set = getUtility(IArchiveSubscriberSet)
-        subscriptions = subscription_set.getBySubscriber(person, archive=self)
-        if subscriptions.count() == 0:
-            raise Unauthorized(
-                "You do not have a subscription for %s." % self.displayname)
-
-        # Second, ensure that the current subscription does not already
-        # have a token:
-        token_set = getUtility(IArchiveAuthTokenSet)
-        previous_token = token_set.getActiveTokenForArchiveAndPerson(
-            self, person)
-        if previous_token:
+        # Ensure that the current subscription does not already have a token
+        if self.getAuthToken(person) is not None:
             raise ArchiveSubscriptionError(
                 "%s already has a token for %s." % (
                     person.displayname, self.displayname))
@@ -1411,6 +1428,14 @@ class Archive(SQLBase):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.add(archive_auth_token)
         return archive_auth_token
+
+    def getPrivateSourcesList(self, person):
+        """See `IArchive`."""
+
+        token = self.getAuthToken(person)
+        if token is None:
+            token = self.newAuthToken(person)
+        return token.archive_url
 
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):

@@ -220,6 +220,17 @@ def run_with_storm_debug(function, *args, **kwargs):
 
 class TestCase(testtools.TestCase):
     """Provide Launchpad-specific test facilities."""
+    def becomeDbUser(self, dbuser):
+        """Commit, then log into the database as `dbuser`.
+        
+        For this to work, the test must run in a layer.
+        
+        Try to test every code path at least once under a realistic db
+        user, or you'll hit privilege violations later on.
+        """
+        assert self.layer, "becomeDbUser requires a layer."
+        transaction.commit()
+        self.layer.switchDbUser(dbuser)
 
     def installFixture(self, fixture):
         """Install 'fixture', an object that has a `setUp` and `tearDown`.
@@ -437,6 +448,7 @@ class TestCase(testtools.TestCase):
             self._unfoldEmailHeader(expected),
             self._unfoldEmailHeader(observed))
 
+
 class TestCaseWithFactory(TestCase):
 
     def setUp(self, user=ANONYMOUS):
@@ -598,6 +610,13 @@ class BrowserTestCase(TestCaseWithFactory):
         login(ANONYMOUS)
         url = canonical_url(context, view_name=view_name)
         return self.getUserBrowser(url, self.user)
+
+    def getMainText(self, context, view_name=None):
+        """Return the main text of a context's page."""
+        from canonical.launchpad.testing.pages import (
+            extract_text, find_main_content)
+        browser = self.getViewBrowser(context, view_name)
+        return extract_text(find_main_content(browser.contents))
 
 
 class WindmillTestCase(TestCaseWithFactory):

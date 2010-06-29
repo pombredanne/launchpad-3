@@ -28,7 +28,7 @@ OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
 CACHEROOT=$ARCHIVEROOT/../ubuntu-cache
 DISTSCOPYROOT=$ARCHIVEROOT/../ubuntu-distscopy
 INDICES=$ARCHIVEROOT/indices
-PRODUCTION_CONFIG=ftpmaster
+PRODUCTION_CONFIG=ftpmaster-publish
 
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     ARCHIVEROOT_PARTNER=/srv/launchpad.net/ubuntu-archive/ubuntu-partner

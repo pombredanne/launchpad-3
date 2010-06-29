@@ -7,13 +7,17 @@ __metaclass__ = type
 __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
+    'BuildAlreadyPending',
     'BranchMergeProposalExists',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
     'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
+    'ForbiddenInstruction',
     'InvalidBranchMergeProposal',
     'ReviewNotPending',
+    'TooManyBuilds',
+    'TooNewRecipeFormat',
     'UnknownBranchTypeError',
     'UserHasExistingReview',
     'UserNotBranchReviewer',
@@ -91,3 +95,52 @@ class CodeImportAlreadyRunning(Exception):
     """Raised when the user requests an import that is already running."""
 
     webservice_error(400)
+
+
+class ForbiddenInstruction(Exception):
+    """A forbidden instruction was found in the recipe."""
+
+    def __init__(self, instruction_name):
+        super(ForbiddenInstruction, self).__init__()
+        self.instruction_name = instruction_name
+
+
+class TooNewRecipeFormat(Exception):
+    """The format of the recipe supplied was too new."""
+
+    def __init__(self, supplied_format, newest_supported):
+        super(TooNewRecipeFormat, self).__init__()
+        self.supplied_format = supplied_format
+        self.newest_supported = newest_supported
+
+
+class RecipeBuildException(Exception):
+
+    def __init__(self, recipe, distroseries, template):
+        self.recipe = recipe
+        self.distroseries = distroseries
+        msg = template % {'recipe': recipe, 'distroseries': distroseries}
+        Exception.__init__(self, msg)
+
+
+class TooManyBuilds(RecipeBuildException):
+    """A build was requested that exceeded the quota."""
+
+    webservice_error(400)
+
+    def __init__(self, recipe, distroseries):
+        RecipeBuildException.__init__(
+            self, recipe, distroseries,
+            'You have exceeded your quota for recipe %(recipe)s for'
+            ' distroseries %(distroseries)s')
+
+
+class BuildAlreadyPending(RecipeBuildException):
+    """A build was requested when an identical build was already pending."""
+
+    webservice_error(400)
+
+    def __init__(self, recipe, distroseries):
+        RecipeBuildException.__init__(
+            self, recipe, distroseries,
+            'An identical build of this recipe is already pending.')

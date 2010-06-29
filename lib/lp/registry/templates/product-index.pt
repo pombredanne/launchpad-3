@@ -79,13 +79,20 @@
 
               <dl id="driver">
                 <dt>Driver:</dt>
-                <dd tal:condition="view/effective_driver">
+                <dd>
+
+                  <tal:driver_set condition="view/effective_driver">
                   <a tal:replace="structure view/effective_driver/fmt:link" />
                   <a tal:replace="structure overview_menu/reassign/fmt:icon" />
-                </dd>
-                <dd tal:condition="not: view/effective_driver">
+                  </tal:driver_set>
+
+                  <tal:driver_unset condition="not: view/effective_driver">
                   Not yet appointed.
                   <a tal:replace="structure overview_menu/reassign/fmt:icon" />
+                  </tal:driver_unset>
+
+                  <a target="help" href="/+help/driver.html"
+                     class="sprite maybe">&nbsp;<span class="invisible-link">Driver help</span></a>
                 </dd>
               </dl>
 

@@ -82,8 +82,8 @@ class BugTrackerAddView(LaunchpadFormView):
     page_title = u"Register an external bug tracker"
     schema = IBugTracker
     label = page_title
-    field_names = ['name', 'bugtrackertype', 'title', 'summary',
-                   'baseurl', 'contactdetails']
+    field_names = ['bugtrackertype', 'name', 'title', 'baseurl', 'summary',
+                   'contactdetails']
 
     def setUpWidgets(self, context=None):
         # We only show those bug tracker types for which there can be
