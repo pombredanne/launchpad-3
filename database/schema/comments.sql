@@ -472,7 +472,11 @@ COMMENT ON COLUMN Diff.removed_lines_count IS 'The number of lines removed in th
 
 COMMENT ON TABLE DistributionSourcePackage IS 'Representing a sourcepackage in a distribution across all distribution series.';
 COMMENT ON COLUMN DistributionSourcePackage.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on a particular a source package in a distribution.';
-COMMENT ON COLUMN DistributionSourcePackage.max_bug_heat IS 'The highest heat value across bugs for this source package.';
+COMMENT ON COLUMN DistributionSourcePackage.max_bug_heat IS 'The highest heat value across bugs for this source package. NULL means it has not yet been calculated.';
+COMMENT ON COLUMN DistributionSourcePackage.total_bug_heat IS 'Sum of bug heat matching the package distribution and sourcepackagename. NULL means it has not yet been calculated.';
+COMMENT ON COLUMN DistributionSourcePackage.bug_count IS 'Number of bugs matching the package distribution and sourcepackagename. NULL means it has not yet been calculated.';
+COMMENT ON COLUMN DistributionSourcePackage.po_message_count IS 'Number of translations matching the package distribution and sourcepackagename. NULL means it has not yet been calculated.';
+COMMENT ON COLUMN DistributionSourcePackage.is_upstream_link_allowed IS 'Whether an upstream link may be added if it does not already exist.';
 COMMENT ON COLUMN DistributionSourcePackage.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
 
 -- DistributionSourcePackageCache

@@ -16,35 +16,36 @@ from email.Header import Header
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEMessage import MIMEMessage
-from email.Utils import formataddr, formatdate, make_msgid
+from email.Utils import formataddr, make_msgid
 
 import re
-import rfc822
 
 from zope.component import getAdapter, getUtility
-from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from lp.bugs.adapters.bugdelta import BugDelta
-from lp.bugs.adapters.bugchange import BugDuplicateChange, get_bug_changes
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template, shortlist)
+    get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces import (
-    IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
-    IPerson, IPersonSet, ISpecification, IStructuralSubscriptionTarget,
-    ITeamMembershipSet, IUpstreamBugTask, TeamMembershipStatus)
-from lp.bugs.interfaces.bugchange import IBugChange
+    IHeldMessageDetails, IPerson, IPersonSet, ISpecification,
+    IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
+    TeamMembershipStatus)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
-from lp.services.mail.mailwrapper import MailWrapper
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
+
+from lp.bugs.adapters.bugdelta import BugDelta
+from lp.bugs.adapters.bugchange import (
+    BugDuplicateChange, get_bug_changes, BugTaskAssigneeChange)
+from lp.bugs.interfaces.bugchange import IBugChange
+from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
+from lp.registry.interfaces.structuralsubscription import (
+    BugNotificationLevel)
+from lp.services.mail.mailwrapper import MailWrapper
 
 # XXX 2010-06-16 gmb bug=594985
 #     This shouldn't be here, but if we take it out lots of things cry,
@@ -52,116 +53,16 @@ from canonical.launchpad.webapp.url import urlappend
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
+from lp.bugs.mail.bugnotificationbuilder import (
+    BugNotificationBuilder)
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 
 CC = "CC"
 
 
-def format_rfc2822_date(date):
-    """Formats a date according to RFC2822's desires."""
-    return formatdate(rfc822.mktime_tz(date.utctimetuple() + (0, )))
-
-
-class BugNotificationBuilder:
-    """Constructs a MIMEText message for a bug notification.
-
-    Takes a bug and a set of headers and returns a new MIMEText
-    object. Common and expensive to calculate headers are cached
-    up-front.
-    """
-
-    def __init__(self, bug):
-        self.bug = bug
-
-        # Pre-calculate common headers.
-        self.common_headers = [
-            ('Reply-To', get_bugmail_replyto_address(bug)),
-            ('Sender', config.canonical.bounce_address),
-            ]
-
-        # X-Launchpad-Bug
-        self.common_headers.extend(
-            ('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
-            for bugtask in bug.bugtasks)
-
-        # X-Launchpad-Bug-Tags
-        if len(bug.tags) > 0:
-            self.common_headers.append(
-                ('X-Launchpad-Bug-Tags', ' '.join(bug.tags)))
-
-        # Add the X-Launchpad-Bug-Private header. This is a simple
-        # yes/no value denoting privacy for the bug.
-        if bug.private:
-            self.common_headers.append(
-                ('X-Launchpad-Bug-Private', 'yes'))
-        else:
-            self.common_headers.append(
-                ('X-Launchpad-Bug-Private', 'no'))
-
-        # Add the X-Launchpad-Bug-Security-Vulnerability header to
-        # denote security for this bug. This follows the same form as
-        # the -Bug-Private header.
-        if bug.security_related:
-            self.common_headers.append(
-                ('X-Launchpad-Bug-Security-Vulnerability', 'yes'))
-        else:
-            self.common_headers.append(
-                ('X-Launchpad-Bug-Security-Vulnerability', 'no'))
-
-        # Add the -Bug-Commenters header, a space-separated list of
-        # distinct IDs of people who have commented on the bug. The
-        # list is sorted to aid testing.
-        commenters = set(message.owner.name for message in bug.messages)
-        self.common_headers.append(
-            ('X-Launchpad-Bug-Commenters', ' '.join(sorted(commenters))))
-
-    def build(self, from_address, to_address, body, subject, email_date,
-              rationale=None, references=None, message_id=None):
-        """Construct the notification.
-
-        :param from_address: The From address of the notification.
-        :param to_address: The To address for the notification.
-        :param body: The body text of the notification.
-        :type body: unicode
-        :param subject: The Subject of the notification.
-        :param email_date: The Date for the notification.
-        :param rationale: The rationale for why the recipient is
-            receiving this notification.
-        :param references: A value for the References header.
-        :param message_id: A value for the Message-ID header.
-
-        :return: An `email.MIMEText.MIMEText` object.
-        """
-        message = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-        message['Date'] = format_rfc2822_date(email_date)
-        message['From'] = from_address
-        message['To'] = to_address
-
-        # Add the common headers.
-        for header in self.common_headers:
-            message.add_header(*header)
-
-        if references is not None:
-            message['References'] = ' '.join(references)
-        if message_id is not None:
-            message['Message-Id'] = message_id
-
-        subject_prefix = "[Bug %d]" % self.bug.id
-        if subject is None:
-            message['Subject'] = subject_prefix
-        elif subject_prefix in subject:
-            message['Subject'] = subject
-        else:
-            message['Subject'] = "%s %s" % (subject_prefix, subject)
-
-        if rationale is not None:
-            message.add_header('X-Launchpad-Message-Rationale', rationale)
-
-        return message
-
-
 def _send_bug_details_to_new_bug_subscribers(
-    bug, previous_subscribers, current_subscribers, subscribed_by=None):
+    bug, previous_subscribers, current_subscribers, subscribed_by=None,
+    event_creator=None):
     """Send an email containing full bug details to new bug subscribers.
 
     This function is designed to handle situations where bugtasks get
@@ -198,7 +99,7 @@ def _send_bug_details_to_new_bug_subscribers(
         reason, rationale = recipients.getReason(to_addr)
         subject, contents = generate_bug_add_email(
             bug, new_recipients=True, subscribed_by=subscribed_by,
-            reason=reason)
+            reason=reason, event_creator=event_creator)
         msg = bug_notification_builder.build(
             from_addr, to_addr, contents, subject, email_date,
             rationale=rationale, references=references)
@@ -226,63 +127,10 @@ def update_security_contact_subscriptions(modified_bugtask, event):
     if (bugtask_before_modification.product !=
         bugtask_after_modification.product):
         new_product = bugtask_after_modification.product
-        if bugtask_before_modification.bug.security_related and new_product.security_contact:
+        if (bugtask_before_modification.bug.security_related and
+            new_product.security_contact):
             bugtask_after_modification.bug.subscribe(
                 new_product.security_contact, IPerson(event.user))
-
-
-def get_bugmail_from_address(person, bug):
-    """Returns the right From: address to use for a bug notification."""
-    if person == getUtility(ILaunchpadCelebrities).janitor:
-        return format_address(
-            'Launchpad Bug Tracker',
-            "%s@%s" % (bug.id, config.launchpad.bugs_domain))
-
-    if person.hide_email_addresses:
-        return format_address(
-            person.displayname,
-            "%s@%s" % (bug.id, config.launchpad.bugs_domain))
-
-    if person.preferredemail is not None:
-        return format_address(person.displayname, person.preferredemail.email)
-
-    # XXX: Bjorn Tillenius 2006-04-05:
-    # The person doesn't have a preferred email set, but he
-    # added a comment (either via the email UI, or because he was
-    # imported as a deaf reporter). It shouldn't be possible to use the
-    # email UI if you don't have a preferred email set, but work around
-    # it for now by trying hard to find the right email address to use.
-    email_addresses = shortlist(
-        getUtility(IEmailAddressSet).getByPerson(person))
-    if not email_addresses:
-        # XXX: Bjorn Tillenius 2006-05-21 bug=33427:
-        # A user should always have at least one email address,
-        # but due to bug #33427, this isn't always the case.
-        return format_address(person.displayname,
-            "%s@%s" % (bug.id, config.launchpad.bugs_domain))
-
-    # At this point we have no validated emails to use: if any of the
-    # person's emails had been validated the preferredemail would be
-    # set. Since we have no idea of which email address is best to use,
-    # we choose the first one.
-    return format_address(person.displayname, email_addresses[0].email)
-
-
-def get_bugmail_replyto_address(bug):
-    """Return an appropriate bugmail Reply-To address.
-
-    :bug: the IBug.
-
-    :user: an IPerson whose name will appear in the From address, e.g.:
-
-        From: Foo Bar via Malone <123@bugs...>
-    """
-    return u"Bug %d <%s@%s>" % (bug.id, bug.id, config.launchpad.bugs_domain)
-
-
-def get_bugmail_error_address():
-    """Return a suitable From address for a bug transaction error email."""
-    return config.malone.bugmail_error_from_address
 
 
 def send_process_error_notification(to_address, subject, error_msg,
@@ -339,9 +187,8 @@ def notify_errors_list(message, file_alias_url):
         template % {'url': file_alias_url, 'error_msg': message},
         headers={'X-Launchpad-Unhandled-Email': message})
 
-
 def generate_bug_add_email(bug, new_recipients=False, reason=None,
-                           subscribed_by=None):
+                           subscribed_by=None, event_creator=None):
     """Generate a new bug notification from the given IBug.
 
     If new_recipients is supplied we generate a notification explaining
@@ -389,7 +236,14 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None,
         }
 
     if new_recipients:
-        contents += "You have been subscribed to a %(visibility)s bug"
+        if "assignee" in reason:
+            contents += "You have been assigned a bug task for a %(visibility)s bug"
+            if event_creator is not None:
+                contents += " by %(assigner)s"
+                content_substitutions['assigner'] = (
+                    event_creator.unique_displayname)
+        else:
+            contents += "You have been subscribed to a %(visibility)s bug"
         if subscribed_by is not None:
             contents += " by %(subscribed_by)s"
             content_substitutions['subscribed_by'] = (
@@ -578,7 +432,8 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
         key=operator.attrgetter('displayname'))
 
 
-def add_bug_change_notifications(bug_delta, old_bugtask=None):
+def add_bug_change_notifications(bug_delta, old_bugtask=None,
+                                 new_subscribers=None):
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_changes(bug_delta)
     recipients = bug_delta.bug.getBugNotificationRecipients(
@@ -603,6 +458,13 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
                         include_master_dupe_subscribers=False))
                 bug_delta.bug.addChange(
                     change, recipients=no_dupe_master_recipients)
+            elif (isinstance(change, BugTaskAssigneeChange) and
+                  new_subscribers is not None):
+                for person in new_subscribers:
+                    reason, rationale = recipients.getReason(person)
+                    if 'Assignee' in rationale:
+                        recipients.remove(person)
+                bug_delta.bug.addChange(change, recipients=recipients)
             else:
                 bug_delta.bug.addChange(change, recipients=recipients)
         else:
@@ -625,13 +487,20 @@ def notify_bugtask_edited(modified_bugtask, event):
         bugtask_deltas=bugtask_delta,
         user=IPerson(event.user))
 
-    add_bug_change_notifications(
-        bug_delta, old_bugtask=event.object_before_modification)
-
+    event_creator = IPerson(event.user)
     previous_subscribers = event.object_before_modification.bug_subscribers
     current_subscribers = event.object.bug_subscribers
+    prev_subs_set = set(previous_subscribers)
+    cur_subs_set = set(current_subscribers)
+    new_subs = cur_subs_set.difference(prev_subs_set)
+
+    add_bug_change_notifications(
+        bug_delta, old_bugtask=event.object_before_modification,
+        new_subscribers=new_subs)
+
     _send_bug_details_to_new_bug_subscribers(
-        event.object.bug, previous_subscribers, current_subscribers)
+        event.object.bug, previous_subscribers, current_subscribers,
+        event_creator=event_creator)
     update_security_contact_subscriptions(modified_bugtask, event)
 
 

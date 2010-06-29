@@ -65,7 +65,8 @@ class HasBugsBase:
                     hardware_owner_is_bug_reporter=None,
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
-                    hardware_is_linked_to_bug=False, linked_branches=None):
+                    hardware_is_linked_to_bug=False, linked_branches=None,
+                    modified_since=None):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -235,12 +236,15 @@ class HasBugHeatMixin:
         else:
             raise NotImplementedError
 
-    def recalculateMaxBugHeat(self):
-        """See `IHasBugHeat`."""
+    def recalculateBugHeatCache(self):
+        """See `IHasBugHeat`.
+
+        DistributionSourcePackage overrides this method.
+        """
         if IProductSeries.providedBy(self):
-            return self.product.recalculateMaxBugHeat()
+            return self.product.recalculateBugHeatCache()
         if IDistroSeries.providedBy(self):
-            return self.distribution.recalculateMaxBugHeat()
+            return self.distribution.recalculateBugHeatCache()
         if ISourcePackage.providedBy(self):
             # Should only happen for nominations, so we can safely skip
             # recalculating max_heat.
@@ -276,13 +280,6 @@ class HasBugHeatMixin:
                       WHERE Bugtask.bug = Bug.id AND
                       Bugtask.product = Product.id AND
                       Product.project =  %s""" % sqlvalues(self)]
-        elif IDistributionSourcePackage.providedBy(self):
-            sql = ["""SELECT MAX(heat)
-                      FROM Bug, Bugtask
-                      WHERE Bugtask.bug = Bug.id AND
-                      Bugtask.distribution = %s AND
-                      Bugtask.sourcepackagename = %s""" % sqlvalues(
-                 self.distribution, self.sourcepackagename)]
         else:
             raise NotImplementedError
 
@@ -299,7 +296,7 @@ class HasBugHeatMixin:
         # If the product is part of a project group we calculate the maximum
         # heat for the project group too.
         if IProduct.providedBy(self) and self.project is not None:
-            self.project.recalculateMaxBugHeat()
+            self.project.recalculateBugHeatCache()
 
 
 
