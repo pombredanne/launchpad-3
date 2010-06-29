@@ -3049,14 +3049,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname
 
-    @property
-    def public_private_css(self):
-        """The CSS classes that represent the public or private state."""
-        if self.context.private:
-            return 'aside private'
-        else:
-            return 'aside public'
-
     @cachedproperty
     def should_show_ppa_section(self):
         """Return True if "Personal package archives" is to be shown.
