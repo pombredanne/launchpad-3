@@ -1968,8 +1968,8 @@ class ArchiveAdminView(BaseArchiveEditView):
         """
         terms = []
         for family in getUtility(IProcessorFamilySet).getRestricted():
-            terms.append(SimpleTerm(family, token=family.name, 
-                title=family.title))
+            terms.append(SimpleTerm(
+                family, token=family.name, title=family.title))
         return form.Fields(
             List(__name__='enabled_restricted_families',
                  title=_('Enabled restricted families'),
