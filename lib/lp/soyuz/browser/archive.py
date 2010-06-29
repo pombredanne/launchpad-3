@@ -1955,9 +1955,9 @@ class ArchiveAdminView(BaseArchiveEditView):
         return self.context.owner.visibility == PersonVisibility.PRIVATE
 
     def setUpFields(self):
-        """Override `ArchiveSourceSelectionFormView`.
+        """Override `LaunchpadEditFormView`.
 
-        See `createDestinationFields` method.
+        See `createEnabledRestrictedFamilies` method.
         """
         super(ArchiveAdminView, self).setUpFields()
         self.form_fields += self.createEnabledRestrictedFamilies()
@@ -1975,8 +1975,8 @@ class ArchiveAdminView(BaseArchiveEditView):
                  title=_('Enabled restricted families'),
                  value_type=Choice(vocabulary=SimpleVocabulary(terms)),
                  required=False,
-                 description=_('Select one or more sources to be submitted '
-                               'to an action.')),
+                 description=_('Select the restricted architecture families '
+                               'on which this archive is allowed to build.')),
                  render_context=self.render_context)
 
 

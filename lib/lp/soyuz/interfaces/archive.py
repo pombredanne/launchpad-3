@@ -371,7 +371,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     enabled_restricted_families = exported(
         CollectionField(
-            title=_("Restricted families this archive can build for"),
+            title=_("Restricted architecture families this archive can build "
+                    "on"),
             value_type=Reference(schema=IProcessorFamily),
             readonly=False))
 
