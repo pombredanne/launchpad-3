@@ -520,7 +520,7 @@ class IDistributionPublic(
     # _schema_circular_imports.py.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
-    def getAllCommercialPPAs():
+    def getCommercialPPAs():
         """Return all commercial PPAs.
 
         Commercial PPAs are private, but explicitly flagged up as commercial
