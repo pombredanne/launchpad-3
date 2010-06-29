@@ -246,6 +246,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         build = self.factory.makeSourcePackageRecipeBuild()
         build.destroySelf()
 
+    def test_cancelBuild(self):
+        # Builds can be cancelled, which deletes the buildqueue entry, the
+        # accompanying job, and then sets the build to cancelled.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        build.cancelBuild()
+
 
 class TestAsBuildmaster(TestCaseWithFactory):
 
