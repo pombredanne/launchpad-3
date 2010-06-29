@@ -78,6 +78,7 @@ from lp.soyuz.interfaces.packagecopyrequest import (
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.person import IPersonSet, PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, inactive_publishing_status, IPublishingSet,
     PackagePublishingStatus)
@@ -1965,9 +1966,6 @@ class ArchiveAdminView(BaseArchiveEditView):
         """Creates the 'enabled_restricted_families' field.
 
         """
-        from lp.soyuz.interfaces.processor import IProcessorFamilySet
-        from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-        from zope.component import getUtility
         terms = []
         for family in getUtility(IProcessorFamilySet).getRestricted():
             terms.append(SimpleTerm(family, token=family.name, 
