@@ -286,8 +286,6 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         if build.status == BuildStatus.FULLYBUILT:
             build.notify()
 
-    def cancelBuild(self):
-        """See `ISourcePackageRecipeBuild`."""
 
 class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
