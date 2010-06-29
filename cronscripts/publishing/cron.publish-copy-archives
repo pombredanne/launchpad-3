@@ -24,7 +24,7 @@ ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
 DISTSROOT=$ARCHIVEROOT/dists
 OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
 INDICES=$ARCHIVEROOT/indices
-PRODUCTION_CONFIG=ftpmaster
+PRODUCTION_CONFIG=ftpmaster-publish
 
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home

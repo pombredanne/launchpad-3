@@ -992,7 +992,7 @@ class BugTask(SQLBase, BugTaskMixin):
         if not self.canTransitionToAssignee(assignee):
             raise UserCannotEditBugTaskAssignee(
                 'Regular users can assign and unassign only themselves and '
-                'their teams. Only project onwers, bug supervisors, drivers '
+                'their teams. Only project owners, bug supervisors, drivers '
                 'and release managers can assign others.')
 
         now = datetime.datetime.now(pytz.UTC)
@@ -1832,6 +1832,11 @@ class BugTaskSet:
             # If no branch specific search restriction is specified,
             # we don't need to add any clause.
             pass
+
+        if params.modified_since:
+            extra_clauses.append(
+                "Bug.date_last_updated > %s" % (
+                    sqlvalues(params.modified_since,)))
 
         orderby_arg = self._processOrderBy(params)
 

@@ -59,11 +59,11 @@ When a person visits his or her own page, they'll see their OpenID login URL.
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'openid-info'))
     OpenID login:
-    http://launchpad.dev/~no-priv
+    http://launchpad.dev/~no-priv...
 
 The URL is followed by a helpful link.
 
-    >>> print user_browser.getLink('openid help').url
+    >>> print user_browser.getLink('OpenID help').url
     http://launchpad.dev/+help/openid.html
 
 However, when the user visits someone else's page, they see no such URL.
@@ -232,3 +232,50 @@ The same for teams.
     >>> anon_browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print find_tag_by_id(anon_browser.contents, 'contributions')
     None
+
+
+Unactivated profiles
+--------------------
+
+Many profiles are created for users who contributed to projects that were
+imported into Launchpad. Any user can see an unclaimed profile and a link
+to request a claim the profile.
+
+    >>> anon_browser.open('https://launchpad.dev/~jvprat')
+    >>> print anon_browser.title
+    Jordi Vilalta does not use Launchpad
+
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Jordi Vilalta does not use Launchpad. This page was created on ...
+    when importing the Catalan (ca) translation of pmount in Ubuntu Hoary...
+
+    >>> anon_browser.getLink('Are you Jordi Vilalta')
+    <Link text='Are you Jordi Vilalta?' url='.../people/+requestmerge...'>
+
+It is possible for the preferred email address to be set if it is associated
+with an Ubuntu Single Signon account. Anonymous and logged in users cannot
+see this, but admins like Foo Bar can.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ... EmailAddressStatus, IEmailAddressSet)
+
+    >>> login('admin@canonical.com')
+    >>> address = getUtility(IEmailAddressSet).getByEmail('jvprat@wanadoo.es')
+    >>> address.status = EmailAddressStatus.PREFERRED
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> anon_browser.open('https://launchpad.dev/~jvprat')
+    >>> print find_tag_by_id(anon_browser.contents, 'email-addresses')
+    None
+
+    >>> user_browser.open('https://launchpad.dev/~jvprat')
+    >>> print find_tag_by_id(user_browser.contents, 'email-addresses')
+    None
+
+    >>> admin_browser.open('https://launchpad.dev/~jvprat')
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'email-addresses'))
+    jvprat@wanadoo.es
+    Change e-mail settings
