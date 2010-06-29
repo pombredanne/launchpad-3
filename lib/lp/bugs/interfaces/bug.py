@@ -277,7 +277,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         readonly=True)
     can_expire = exported(
         Bool(
-            title=_("Can the Incomplete bug expire if it becomes inactive? "
+            title=_("Can the Incomplete bug expire? "
                 "Expiration may happen when the bug permits expiration, "
                 "and a bugtask cannot be confirmed."),
             readonly=True))
