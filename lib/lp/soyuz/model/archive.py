@@ -1593,7 +1593,7 @@ class Archive(SQLBase):
     def _get_enabled_restricted_families(self):
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedfamilies(self)
-        return [family for (family, archive_arch) in restricted_families 
+        return [family for (family, archive_arch) in restricted_families
                 if archive_arch is not None]
 
     def _set_enabled_restricted_families(self, value):

@@ -740,7 +740,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
 
 
 class TestEnabledRestrictedBuilds(TestCaseWithFactory):
-    """Ensure that restricted architecture family builds can be allowed and 
+    """Ensure that restricted architecture family builds can be allowed and
     disallowed correctly."""
 
     layer = LaunchpadZopelessLayer
@@ -766,11 +766,11 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         enable enabled_restricted_families for arm for that archive."""
         self.assertEquals([], list(self.archive.enabled_restricted_families))
         self.archive_arch_set.new(self.archive, self.arm)
-        self.assertEquals([self.arm], 
+        self.assertEquals([self.arm],
                 list(self.archive.enabled_restricted_families))
 
     def test_get_returns_restricted_only(self):
-        """Adding an entry to ArchiveArch for something that is not 
+        """Adding an entry to ArchiveArch for something that is not
         restricted does not make it show up in enabled_restricted_families.
         """
         self.assertEquals([], list(self.archive.enabled_restricted_families))
