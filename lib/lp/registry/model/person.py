@@ -2429,6 +2429,42 @@ class PersonSet:
             key=lambda obj: (obj.karma, obj.displayname, obj.id),
             reverse=True)
 
+    def getOrCreateByOpenIDIdentifier(self, requestor, openid_identifier,
+                                      email):
+        """See `IPersonSet`."""
+        account_set = getUtility(IAccountSet)
+        account = None
+        try:
+            account = account_set.getByOpenIDIdentifier(openid_identifier)
+        except LookupError:
+            pass
+
+        email_address_set = getUtility(IEmailAddressSet)
+        if account is None:
+            email_address = email_address_set.getByEmail(email)
+            if email_address is not None:
+                raise Exception(
+                    "Email already associated with a different identifier.") # TODO
+                # Or - do we need to check the related account to see if
+                # the openid identifier has been set?
+
+            account = account_set.new(
+                AccountCreationRationale.SOFTWARE_CENTER_PURCHASE,
+                displayname="Non-active person created for Software Center",
+                openid_identifier=openid_identifier)
+            email_address = email_address_set.new(email, account=account)
+            account.setPreferredEmail(email_address)
+
+        person_set = getUtility(IPersonSet)
+        person = person_set.getByAccount(account)
+        if person is None:
+            person = account.createPerson(
+                PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
+                comment="when purchasing an application via Software Center.",
+                registrant=requestor)
+
+        return person
+
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None):

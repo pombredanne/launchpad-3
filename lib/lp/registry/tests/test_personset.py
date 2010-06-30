@@ -9,6 +9,7 @@ from unittest import TestLoader
 
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.model.person import PersonSet
@@ -16,7 +17,8 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.person import (
     PersonCreationRationale, IPersonSet)
-from lp.testing import TestCaseWithFactory, login_person, logout
+from lp.testing import (
+    ANONYMOUS, TestCaseWithFactory, login, login_person, logout)
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.testing.databasehelpers import (
@@ -144,6 +146,80 @@ class TestPersonSetMerge(TestCaseWithFactory):
         self.person_set._mergeMailingListSubscriptions(
             self.cur, self.from_person.id, self.to_person.id)
         self.assertEqual(1, self.cur.rowcount)
+
+
+class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonSetGetOrCreateByOpenIDIdentifier, self).setUp()
+        self.agent = self.factory.makePerson(name='software-center-agent')
+        login_person(self.agent)
+
+    def test_only_for_agent_celebrity(self):
+        # Only the software center agent can use this method.
+        person_set = getUtility(IPersonSet)
+        other_person = self.factory.makePerson()
+        login_person(other_person)
+
+        self.assertRaises(
+            Unauthorized, getattr, person_set,
+            'getOrCreateByOpenIDIdentifier')
+
+        login(ANONYMOUS)
+        self.assertRaises(
+            Unauthorized, getattr, person_set,
+            'getOrCreateByOpenIDIdentifier')
+
+    def test_existing_person(self):
+        person = self.factory.makePerson()
+        openid_ident = removeSecurityProxy(person.account).openid_identifier
+
+        result = getUtility(IPersonSet).getOrCreateByOpenIDIdentifier(
+            self.agent, openid_ident, 'a@b.com')
+        self.assertEqual(person, result)
+
+    def test_existing_account_no_person(self):
+        # A person is created with the correct rationale.
+        account = self.factory.makeAccount('purchaser')
+        openid_ident = removeSecurityProxy(account).openid_identifier
+
+        person = getUtility(IPersonSet).getOrCreateByOpenIDIdentifier(
+            self.agent, openid_ident, 'a@b.com')
+        self.assertEqual(account, person.account)
+        # The person is created with the correct rationale, creation
+        # comment, registrant, appropriate display name and is not active.
+        self.assertEqual(
+            "when purchasing an application via Software Center.",
+            person.creation_comment)
+        self.assertEqual(
+            PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
+            person.creation_rationale)
+        self.assertEqual(self.agent, person.registrant)
+
+        # Is there some way we can ensure the person *isn't* valid?
+        # The validpersoncacheview gives either email address != pref,
+        # or account status (but we can't change that if it existed) or
+        # unlink email_address.person (leaving email_address.account)?
+        self.assertFalse(person.is_valid_person)
+
+    def test_no_account_or_email(self):
+        # A valid identifier can be used to create an account.
+        person = getUtility(IPersonSet).getOrCreateByOpenIDIdentifier(
+            self.agent, "openid-identifier", 'a@b.com')
+
+        self.assertEqual(
+            "openid-identifier",
+            removeSecurityProxy(person.account).openid_identifier)
+        self.assertEqual(self.agent, person.registrant)
+        self.assertFalse(person.is_valid_person)
+
+    def test_no_account_existing_email(self):
+        other_account = self.factory.makeAccount('test', email='a@b.com')
+        self.assertRaises(
+            Exception, getUtility(IPersonSet).getOrCreateByOpenIDIdentifier,
+            self.agent, "openid-identifier", 'a@b.com')
 
 
 def test_suite():

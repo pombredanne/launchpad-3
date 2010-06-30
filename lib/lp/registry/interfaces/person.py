@@ -297,6 +297,13 @@ class PersonCreationRationale(DBEnumeratedType):
         commented on.
         """)
 
+    SOFTWARE_CENTER_PURCHASE = DBItem(16, """
+        Created by purchasing commercial software through Software Center.
+
+        A purchase of commercial software (ie. subscriptions to a private
+        and commercial archive) was made via Software Center.
+        """)
+
 
 class TeamMembershipRenewalPolicy(DBEnumeratedType):
     """TeamMembership Renewal Policy.
@@ -1752,6 +1759,20 @@ class IPersonSet(Interface):
         call it and create a full person if needed. Email would remain the
         deciding factor, we would not try and guess if someone existed based
         on the displayname or other arguments.
+        """
+
+    def getOrCreateByOpenIDIdentifier(requestor, openid_identifier):
+        """Return the LP person corresponding to the OpenID identifier.
+
+        If a matching account exists but a person does not, the person
+        will be created.
+
+        If a matching account does not exist we trust the caller
+        (the software-center-agent) and create the account.
+
+        :param requestor: Currently must be the software-center-agent.
+        :param openid_identifier: The identifier to check.
+        :return: An `IPerson` correspending to the identifier, or None.
         """
 
     @call_with(teamowner=REQUEST_USER)
