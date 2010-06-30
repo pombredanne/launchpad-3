@@ -316,12 +316,13 @@ class PackageCloner:
             FROM SourcePackagePublishingHistory AS spph
             WHERE spph.distroseries = %s AND spph.status in (%s, %s) AND
                   spph.pocket = %s and spph.archive = %s
+                  and spph.component = %s
             ''' % sqlvalues(
                 destination.distroseries, destination.archive, UTC_NOW,
                 UTC_NOW, destination.pocket, origin.distroseries,
                 PackagePublishingStatus.PENDING,
                 PackagePublishingStatus.PUBLISHED,
-                origin.pocket, origin.archive))
+                origin.pocket, origin.archive, origin.component))
 
     def packageSetDiff(self, origin, destination, logger=None):
         """Please see `IPackageCloner`."""
