@@ -22,7 +22,6 @@ from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import alsoProvides, implements
-from zope.security.interfaces import Unauthorized
 
 from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.utils import re_issource, re_isadeb
@@ -211,39 +210,6 @@ class Archive(SQLBase):
     # is still relevant.
     external_dependencies = StringCol(
         dbName='external_dependencies', notNull=False, default=None)
-
-    def _get_arm_builds_enabled(self):
-        """Check whether ARM builds are allowed for this archive."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
-        arm = getUtility(IProcessorFamilySet).getByName('arm')
-        for (family, archive_arch) in restricted_families:
-            if family == arm:
-                return (archive_arch is not None)
-        # ARM doesn't exist or isn't restricted. Either way, there is no
-        # need for an explicit association.
-        return False
-
-    def _set_arm_builds_enabled(self, value):
-        """Set whether ARM builds are enabled for this archive."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
-        arm = getUtility(IProcessorFamilySet).getByName('arm')
-        for (family, archive_arch) in restricted_families:
-            if family == arm:
-                if value:
-                    if archive_arch is not None:
-                        # ARM builds are already enabled
-                        return
-                    else:
-                        archive_arch_set.new(self, family)
-                else:
-                    if archive_arch is not None:
-                        Store.of(self).remove(archive_arch)
-                    else:
-                        pass # ARM builds are already disabled
-    arm_builds_allowed = property(_get_arm_builds_enabled,
-        _set_arm_builds_enabled)
 
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
@@ -1389,30 +1355,26 @@ class Archive(SQLBase):
         # Perform the copy, may raise CannotCopy.
         do_copy(sources, self, series, pocket, include_binaries)
 
+    def getAuthToken(self, person):
+        """See `IArchive`."""
+
+        token_set = getUtility(IArchiveAuthTokenSet)
+        return token_set.getActiveTokenForArchiveAndPerson(self, person)
+
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
+
+        # Bail if the archive isn't private
+        if not self.private:
+            raise ArchiveNotPrivate("Archive must be private.")
 
         # Tokens can only be created for individuals.
         if person.is_team:
             raise NoTokensForTeams(
                 "Subscription tokens can be created for individuals only.")
 
-        # First, ensure that a current subscription exists for the
-        # person and archive:
-        # XXX: noodles 2009-03-02 bug=336779: This can be removed once
-        # newAuthToken() is moved into IArchiveView.
-        subscription_set = getUtility(IArchiveSubscriberSet)
-        subscriptions = subscription_set.getBySubscriber(person, archive=self)
-        if subscriptions.count() == 0:
-            raise Unauthorized(
-                "You do not have a subscription for %s." % self.displayname)
-
-        # Second, ensure that the current subscription does not already
-        # have a token:
-        token_set = getUtility(IArchiveAuthTokenSet)
-        previous_token = token_set.getActiveTokenForArchiveAndPerson(
-            self, person)
-        if previous_token:
+        # Ensure that the current subscription does not already have a token
+        if self.getAuthToken(person) is not None:
             raise ArchiveSubscriptionError(
                 "%s already has a token for %s." % (
                     person.displayname, self.displayname))
@@ -1429,6 +1391,14 @@ class Archive(SQLBase):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.add(archive_auth_token)
         return archive_auth_token
+
+    def getPrivateSourcesList(self, person):
+        """See `IArchive`."""
+
+        token = self.getAuthToken(person)
+        if token is None:
+            token = self.newAuthToken(person)
+        return token.archive_url
 
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):
@@ -1583,6 +1553,24 @@ class Archive(SQLBase):
             LibraryFileAlias.filename.is_in(source_files),
             LibraryFileContent.id == LibraryFileAlias.contentID).config(
                 distinct=True))
+
+    def _get_enabled_restricted_families(self):
+        archive_arch_set = getUtility(IArchiveArchSet)
+        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        return [family for (family, archive_arch) in restricted_families 
+                if archive_arch is not None]
+
+    def _set_enabled_restricted_families(self, value):
+        archive_arch_set = getUtility(IArchiveArchSet)
+        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        for (family, archive_arch) in restricted_families:
+            if family in value and archive_arch is None:
+                archive_arch_set.new(self, family)
+            if family not in value and archive_arch is not None:
+                Store.of(self).remove(archive_arch)
+
+    enabled_restricted_families = property(_get_enabled_restricted_families,
+                                           _set_enabled_restricted_families)
 
 
 class ArchiveSet:
@@ -1938,11 +1926,8 @@ class ArchiveSet:
         if name is not None:
             extra_exprs.append(Archive.name == name)
 
-        if exclude_disabled:
-            public_archive = And(Archive.private == False,
-                                 Archive._enabled == True)
-        else:
-            public_archive = (Archive.private == False)
+        public_archive = And(Archive.private == False,
+                             Archive._enabled == True)
 
         if user is not None:
             admins = getUtility(ILaunchpadCelebrities).admin
@@ -1966,15 +1951,18 @@ class ArchiveSet:
                 # is unnecessary below because there is a TeamParticipation
                 # entry showing that each person is a member of the "team"
                 # that consists of themselves.
-                extra_exprs.append(
-                    Or(
-                        public_archive,
-                        Archive.ownerID.is_in(user_teams_subselect)))
 
+                # FIXME: Include private PPA's if user is an uploader
+                extra_exprs.append(
+                    Or(public_archive,
+                       Archive.ownerID.is_in(user_teams_subselect)))
         else:
             # Anonymous user; filter to include only public archives in
             # the results.
             extra_exprs.append(public_archive)
+
+        if exclude_disabled:
+            extra_exprs.append(Archive._enabled == True)
 
         query = Store.of(distribution).find(
             Archive,
