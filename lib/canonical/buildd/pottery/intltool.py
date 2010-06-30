@@ -86,10 +86,9 @@ def _get_AC_PACKAGE_NAME(config_file):
     if params is None or len(params) < 2:
         return None
     if len(params) < 4:
-        value = params[0]
+        return params[0]
     else:
-        value = params[3]
-    return value.strip("[]")
+        return params[3]
 
 
 def _try_substitution(config_files, varname, substitution):
@@ -217,12 +216,23 @@ class ConfigFile(object):
         """Strip surrounding quotes from `identifier`, if present.
 
         :param identifier: a string, possibly surrounded by matching
-            'single' or "double" quotes.
-        :return: If the string was properly quoted and contains no other
-            quote-like symbols: `identifier` with the quotes removed.
-            Otherwise, `identifier` is returned unchanged.
+            'single,' "double," or [bracket] quotes.
+        :return: `identifier` but with the outer pair of matching quotes
+            removed, if they were there.
         """
-        return re.sub('^(["\'])([^"\']*)\\1$', '\\2', identifier)
+        if len(identifier) < 2:
+            return identifier
+
+        quote_pairs = [
+            ('"', '"'),
+            ("'", "'"),
+            ("[", "]"),
+            ]
+        for (left, right) in quote_pairs:
+            if identifier.startswith(left) and identifier.endswith(right):
+                return identifier[1:-1]
+
+        return identifier
 
     def getVariable(self, name):
         """Search the file for a variable definition with this name."""
@@ -240,7 +250,11 @@ class ConfigFile(object):
         result = pattern.search(self.content)
         if result is None:
             return None
-        return [param.strip() for param in result.group(1).split(',')]
+        else:
+            return [
+                self._stripQuotes(param.strip())
+                for param in result.group(1).split(',')
+                ]
 
 
 class Substitution(object):

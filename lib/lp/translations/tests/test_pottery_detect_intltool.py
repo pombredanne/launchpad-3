@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import with_statement
@@ -17,6 +17,7 @@ from canonical.buildd.pottery.intltool import (
     ConfigFile, check_potfiles_in, find_intltool_dirs, find_potfiles_in,
     generate_pot, generate_pots, get_translation_domain)
 from lp.testing import TestCase
+from lp.testing.fakemethod import FakeMethod
 
 
 class SetupTestPackageMixin(object):
@@ -437,13 +438,15 @@ class TestConfigFile(TestCase):
         configfile = self._makeConfigFile("EEE \n= eee")
         self.assertIs(None, configfile.getVariable('EEE'))
 
-    def test_getVariable_singlequotes(self):
+    def test_getVariable_strips_quotes(self):
+        # Quotes get stripped off variables.
         configfile = self._makeConfigFile("QQQ = 'qqq'")
         self.assertEqual('qqq', configfile.getVariable('QQQ'))
 
-    def test_getVariable_doublequotes(self):
-        configfile = self._makeConfigFile('QQQ = "qqq"')
-        self.assertEqual('qqq', configfile.getVariable('QQQ'))
+        # This is done by invoking _stripQuotes (tested separately).
+        configfile._stripQuotes = FakeMethod(result='foo')
+        self.assertEqual('foo', configfile.getVariable('QQQ'))
+        self.assertNotEqual(0, configfile._stripQuotes.call_count)
 
     def test_getFunctionParams_single(self):
         configfile = self._makeConfigFile("FUNC_1(param1)")
@@ -472,6 +475,71 @@ class TestConfigFile(TestCase):
             """)
         self.assertEqual(
             ['param1', 'param2'], configfile.getFunctionParams('ML_FUNC_2'))
+    
+    def test_getFunctionParams_strips_quotes(self):
+        # Quotes get stripped off function parameters.
+        configfile = self._makeConfigFile('FUNC("param")')
+        self.assertEqual(['param'], configfile.getFunctionParams('FUNC'))
+
+        # This is done by invoking _stripQuotes (tested separately).
+        configfile._stripQuotes = FakeMethod(result='arg')
+        self.assertEqual(['arg'], configfile.getFunctionParams('FUNC'))
+        self.assertNotEqual(0, configfile._stripQuotes.call_count)
+
+    def test_stripQuotes_unquoted(self):
+        # _stripQuotes leaves unquoted identifiers intact.
+        configfile = self._makeConfigFile('')
+        self.assertEqual('hello', configfile._stripQuotes('hello'))
+
+    def test_stripQuotes_empty(self):
+        configfile = self._makeConfigFile('')
+        self.assertEqual('', configfile._stripQuotes(''))
+
+    def test_stripQuotes_single_quotes(self):
+        # Single quotes are stripped.
+        configfile = self._makeConfigFile('')
+        self.assertEqual('x', configfile._stripQuotes("'x'"))
+
+    def test_stripQuotes_double_quotes(self):
+        # Double quotes are stripped.
+        configfile = self._makeConfigFile('')
+        self.assertEqual('y', configfile._stripQuotes('"y"'))
+
+    def test_stripQuotes_bracket_quotes(self):
+        # Brackets are stripped.
+        configfile = self._makeConfigFile('')
+        self.assertEqual('z', configfile._stripQuotes('[z]'))
+
+    def test_stripQuotes_opening_brackets(self):
+        # An opening bracket must be matched by a closing one.
+        configfile = self._makeConfigFile('')
+        self.assertEqual('[x[', configfile._stripQuotes('[x['))
+
+    def test_stripQuotes_closing_brackets(self):
+        # A closing bracket is not accepted as an opening quote.
+        configfile = self._makeConfigFile('')
+        self.assertEqual(']x]', configfile._stripQuotes(']x]'))
+
+    def test_stripQuotes_multiple(self):
+        # Only a single layer of quotes is stripped.
+        configfile = self._makeConfigFile('')
+        self.assertEqual('"n"', configfile._stripQuotes("'\"n\"'"))
+
+    def test_stripQuotes_single_quote(self):
+        # A string consisting of just one quote is not stripped.
+        configfile = self._makeConfigFile('')
+        self.assertEqual("'", configfile._stripQuotes("'"))
+
+    def test_stripQuotes_mismatched(self):
+        # Mismatched quotes are not stripped.
+        configfile = self._makeConfigFile('')
+        self.assertEqual("'foo\"", configfile._stripQuotes("'foo\""))
+
+    def test_stripQuotes_unilateral(self):
+        # A quote that's only on one end doesn't get stripped.
+        configfile = self._makeConfigFile('')
+        self.assertEqual('"foo', configfile._stripQuotes('"foo'))
+
 
 
 def test_suite():
