@@ -151,14 +151,14 @@ def get_translation_domain(dirname):
             if value == "AC_PACKAGE_NAME":
                 value = _get_AC_PACKAGE_NAME(config_files[-1])
             else:
-                # Check if the value need a substitution.
+                # Check if the value needs a substitution.
                 substitution = Substitution.get(value)
                 if substitution is not None:
                     # Try to substitute with value.
                     value = _try_substitution(
                         config_files, varname, substitution)
                     if value is None:
-                        # No substitution found, the setup is broken.
+                        # No substitution found; the setup is broken.
                         break
         if value is not None and not keep_trying:
             # A value has been found.
@@ -213,6 +213,17 @@ class ConfigFile(object):
             conf_file = file_or_name
         self.content = conf_file.read()
 
+    def _stripQuotes(self, identifier):
+        """Strip surrounding quotes from `identifier`, if present.
+
+        :param identifier: a string, possibly surrounded by matching
+            'single' or "double" quotes.
+        :return: If the string was properly quoted and contains no other
+            quote-like symbols: `identifier` with the quotes removed.
+            Otherwise, `identifier` is returned unchanged.
+        """
+        return re.sub('^(["\'])([^"\']*)\\1$', '\\2', identifier)
+
     def getVariable(self, name):
         """Search the file for a variable definition with this name."""
         pattern = re.compile(
@@ -220,7 +231,7 @@ class ConfigFile(object):
         result = pattern.search(self.content)
         if result is None:
             return None
-        return result.group(1)
+        return self._stripQuotes(result.group(1))
 
     def getFunctionParams(self, name):
         """Search file for a function call with this name, return parameters.

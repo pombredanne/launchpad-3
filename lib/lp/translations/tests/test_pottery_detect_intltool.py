@@ -78,7 +78,7 @@ class TestDetectIntltool(TestCase, SetupTestPackageMixin):
     def test_check_potfiles_in_content_ok(self):
         # Ideally all files listed in POTFILES.in exist in the source package.
         self.prepare_package("intltool_single_ok")
-        self.assertTrue(check_potfiles_in("./po")) 
+        self.assertTrue(check_potfiles_in("./po"))
 
     def test_check_potfiles_in_content_ok_file_added(self):
         # If a file is not listed in POTFILES.in, the file is still good for
@@ -87,7 +87,7 @@ class TestDetectIntltool(TestCase, SetupTestPackageMixin):
         added_file = file("./src/sourcefile_new.c", "w")
         added_file.write("/* Test file. */")
         added_file.close()
-        self.assertTrue(check_potfiles_in("./po")) 
+        self.assertTrue(check_potfiles_in("./po"))
 
     def test_check_potfiles_in_content_not_ok_file_removed(self):
         # If a file is missing that is listed in POTFILES.in, the file
@@ -95,13 +95,13 @@ class TestDetectIntltool(TestCase, SetupTestPackageMixin):
         # our purposes.
         self.prepare_package("intltool_single_ok")
         os.remove("./src/sourcefile1.c")
-        self.assertFalse(check_potfiles_in("./po")) 
+        self.assertFalse(check_potfiles_in("./po"))
 
     def test_check_potfiles_in_wrong_directory(self):
         # Passing in the wrong directory will cause the check to fail
         # gracefully and return False.
         self.prepare_package("intltool_single_ok")
-        self.assertFalse(check_potfiles_in("./foo")) 
+        self.assertFalse(check_potfiles_in("./foo"))
 
     def test_find_intltool_dirs(self):
         # Complete run: find all directories with intltool structure.
@@ -378,62 +378,100 @@ class TestDetectIntltoolInBzrTree(TestCase, SetupTestPackageMixin):
 
 class TestConfigFile(TestCase):
 
-    def setUp(self):
-        super(TestConfigFile, self).setUp()
-        self.configfile = ConfigFile(StringIO(dedent("""\
-            # Demo config file
+    def _makeConfigFile(self, text):
+        """Create a `ConfigFile` containing `text`."""
+        return ConfigFile(StringIO(dedent(text)))
+
+    def test_getVariable_smoke(self):
+        configfile = self._makeConfigFile("""
+            A = 1
+            B = 2
+            C = 3
+            """)
+        self.assertEqual('1', configfile.getVariable('A'))
+        self.assertEqual('2', configfile.getVariable('B'))
+        self.assertEqual('3', configfile.getVariable('C'))
+
+    def test_getVariable_exists(self):
+        configfile = self._makeConfigFile("DDD=dd.d")
+        self.assertEqual('dd.d', configfile.getVariable('DDD'))
+
+    def test_getVariable_ignores_mere_mention(self):
+        configfile = self._makeConfigFile("""
             CCC
-            AAA=
-            FUNC_1(param1)
-            BBB = 
-            FUNC_2(param1, param2,param3 )
-            CCC = ccc # comment
+            CCC = ccc # (this is the real definition)
+            CCC
+            """)
+        self.assertEqual('ccc', configfile.getVariable('CCC'))
+
+    def test_getVariable_ignores_irrelevancies(self):
+        configfile = self._makeConfigFile("""
+            A = a
+            ===
+            blah
+            FOO(n, m)
+            a = case-insensitive
+
+            Z = z
+            """)
+        self.assertEqual('a', configfile.getVariable('A'))
+        self.assertEqual('z', configfile.getVariable('Z'))
+
+    def test_getVariable_exists_spaces_comment(self):
+        configfile = self._makeConfigFile("CCC = ccc # comment")
+        self.assertEqual('ccc', configfile.getVariable('CCC'))
+
+    def test_getVariable_empty(self):
+        configfile = self._makeConfigFile("AAA=")
+        self.assertEqual('', configfile.getVariable('AAA'))
+
+    def test_getVariable_empty_spaces(self):
+        configfile = self._makeConfigFile("BBB = ")
+        self.assertEqual('', configfile.getVariable('BBB'))
+
+    def test_getVariable_nonexistent(self):
+        configfile = self._makeConfigFile("X = y")
+        self.assertIs(None, configfile.getVariable('FFF'))
+
+    def test_getVariable_broken(self):
+        configfile = self._makeConfigFile("EEE \n= eee")
+        self.assertIs(None, configfile.getVariable('EEE'))
+
+    def test_getVariable_singlequotes(self):
+        configfile = self._makeConfigFile("QQQ = 'qqq'")
+        self.assertEqual('qqq', configfile.getVariable('QQQ'))
+
+    def test_getVariable_doublequotes(self):
+        configfile = self._makeConfigFile('QQQ = "qqq"')
+        self.assertEqual('qqq', configfile.getVariable('QQQ'))
+
+    def test_getFunctionParams_single(self):
+        configfile = self._makeConfigFile("FUNC_1(param1)")
+        self.assertEqual(['param1'], configfile.getFunctionParams('FUNC_1'))
+
+    def test_getFunctionParams_multiple(self):
+        configfile = self._makeConfigFile("FUNC_2(param1, param2, param3 )")
+        self.assertEqual(
+            ['param1', 'param2', 'param3'],
+            configfile.getFunctionParams('FUNC_2'))
+
+    def test_getFunctionParams_multiline_indented(self):
+        configfile = self._makeConfigFile("""
             ML_FUNC_1(param1,
                 param2, param3)
-            DDD=dd.d
+            """)
+        self.assertEqual(
+            ['param1', 'param2', 'param3'],
+            configfile.getFunctionParams('ML_FUNC_1'))
+
+    def test_getFunctionParams_multiline_not_indented(self):
+        configfile = self._makeConfigFile("""
             ML_FUNC_2(
             param1,
             param2)
-            EEE 
-            = eee
-            """)))
-
-    def test_getVariable_exists(self):
-        self.assertEqual('dd.d', self.configfile.getVariable('DDD'))
-
-    def test_getVariable_exists_spaces_comment(self):
-        self.assertEqual('ccc', self.configfile.getVariable('CCC'))
-
-    def test_getVariable_empty(self):
-        self.assertEqual('', self.configfile.getVariable('AAA'))
-
-    def test_getVariable_empty_spaces(self):
-        self.assertEqual('', self.configfile.getVariable('BBB'))
-
-    def test_getVariable_nonexistent(self):
-        self.assertIs(None, self.configfile.getVariable('FFF'))
-
-    def test_getVariable_broken(self):
-        self.assertIs(None, self.configfile.getVariable('EEE'))
-
-    def test_getFunctionParams_single(self):
+            """)
         self.assertEqual(
-            ['param1'], self.configfile.getFunctionParams('FUNC_1'))
-
-    def test_getFunctionParams_multiple(self):
-        self.assertEqual(
-            ['param1', 'param2', 'param3'],
-            self.configfile.getFunctionParams('FUNC_2'))
-
-    def test_getFunctionParams_multiline_indented(self):
-        self.assertEqual(
-            ['param1', 'param2', 'param3'],
-            self.configfile.getFunctionParams('ML_FUNC_1'))
-
-    def test_getFunctionParams_multiline_not_indented(self):
-        self.assertEqual(
-            ['param1', 'param2'],
-            self.configfile.getFunctionParams('ML_FUNC_2'))
+            ['param1', 'param2'], configfile.getFunctionParams('ML_FUNC_2'))
 
 
 def test_suite():
