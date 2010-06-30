@@ -15,13 +15,17 @@ class TestArchivePrivacy(TestCaseWithFactory):
 
     def setUp(self):
         super(TestArchivePrivacy, self).setUp()
-        self.ppa = self.factory.makeArchive()
-        login('admin@canonical.com')
-        self.ppa.buildd_secret = 'blah'
-        self.ppa.private = True
+        self.ppa = self._makePrivateArchive()
         self.ppa.commercial = True
         self.agent = self.factory.makePerson(name='software-center-agent')
         self.joe = self.factory.makePerson(name='joe')
+
+    def _makePrivateArchive(self):
+        ppa = self.factory.makeArchive()
+        login('admin@canonical.com')
+        ppa.buildd_secret = 'blah'
+        ppa.private = True
+        return ppa
 
     def test_check_permission(self):
         """The software center agent has the relevant permissions for a
@@ -34,10 +38,7 @@ class TestArchivePrivacy(TestCaseWithFactory):
             check_permission('launchpad.Append', self.ppa), True)
 
     def test_check_permission_private(self):
-        ppa = self.factory.makeArchive()
-        login('admin@canonical.com')
-        ppa.buildd_secret = 'blah'
-        ppa.private = True
+        ppa = self._makePrivateArchive()
         login_person(self.agent)
         self.assertEqual(check_permission('launchpad.View', ppa), False)
         self.assertEqual(check_permission('launchpad.Append', ppa), False)

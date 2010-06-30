@@ -2104,6 +2104,12 @@ class AppendArchive(AuthorizationBase):
             user.in_ubuntu_security):
             return True
 
+        # The software center agent can change commercial archives
+        if self.obj.commercial:
+            agent = getUtility(ILaunchpadCelebrities).software_center_agent
+            if user.person == agent:
+                return True
+
         return False
 
 
