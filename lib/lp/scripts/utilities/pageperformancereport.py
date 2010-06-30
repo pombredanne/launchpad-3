@@ -29,6 +29,9 @@ from lp.scripts.helpers import LPOptionParser
 class Request(zc.zservertracelog.tracereport.Request):
     url = None
     pageid = None
+    ticks = None
+    sql_statements = None
+    sql_seconds = None
 
     # Override the broken version in our superclass that always
     # returns an integer.
@@ -73,12 +76,23 @@ class Stats:
 
     All times are in seconds.
     """
-    total_time = 0 # Total time spent rendering.
     total_hits = 0 # Total hits.
+
+    total_time = 0 # Total time spent rendering.
     mean = 0 # Mean time per hit.
     median = 0 # Median time per hit.
-    standard_deviation = 0 # Standard deviation per hit.
+    std = 0 # Standard deviation per hit.
     histogram = None # # Request times histogram.
+
+    total_sqltime = 0 # Total time spent waiting for SQL to process.
+    mean_sqltime = 0 # Mean time spend waiting for SQL to process.
+    median_sqltime = 0 # Median time spend waiting for SQL to process.
+    std_sqltime = 0 # Standard deviation of SQL time.
+
+    total_sqlstatements = 0 # Total number of SQL statements issued.
+    mean_sqlstatements = 0
+    median_sqlstatements = 0
+    std_sqlstatements = 0
 
 empty_stats = Stats() # Singleton.
 
@@ -87,6 +101,9 @@ class Times:
     """Collection of request times."""
     def __init__(self, timeout):
         self.request_times = []
+        self.sql_statements = []
+        self.sql_times = []
+        self.ticks = []
         self.timeout = timeout
 
     def add(self, request):
@@ -95,6 +112,12 @@ class Times:
         The application time is capped to our timeout.
         """
         self.request_times.append(min(request.app_seconds, self.timeout))
+        if request.sql_statements is not None:
+            self.sql_statements.append(request.sql_statements)
+        if request.sql_seconds is not None:
+            self.sql_times.append(request.sql_seconds)
+        if request.ticks is not None:
+            self.ticks.append(request.ticks)
 
     def stats(self):
         """Generate statistics about our request times.
@@ -110,24 +133,41 @@ class Times:
         if not self.request_times:
             return empty_stats
         stats = Stats()
+
+        # Time stats
         array = numpy.asarray(self.request_times, numpy.float32)
         stats.total_time = numpy.sum(array)
         stats.total_hits = len(array)
         stats.mean = numpy.mean(array)
         stats.median = numpy.median(array)
-        stats.standard_deviation = numpy.std(array)
+        stats.std = numpy.std(array)
         histogram = numpy.histogram(
             array, normed=True,
             range=(0, self.timeout), bins=self.timeout)
         stats.histogram = zip(histogram[1], histogram[0])
+
+        # SQL time stats.
+        array = numpy.asarray(self.sql_times, numpy.float32)
+        stats.total_sqltime = numpy.sum(array)
+        stats.mean_sqltime = numpy.mean(array)
+        stats.median_sqltime = numpy.median(array)
+        stats.std_sqltime = numpy.std(array)
+
+        # SQL query count.
+        array = numpy.asarray(self.sql_statements, numpy.int)
+        stats.total_sqlstatements = numpy.sum(array)
+        stats.mean_sqlstatements = numpy.mean(array)
+        stats.median_sqlstatements = numpy.median(array)
+        stats.std_sqlstatements = numpy.std(array)
+
         return stats
 
     def __str__(self):
         results = self.stats()
-        total, mean, median, standard_deviation, histogram = results
+        total, mean, median, std, histogram = results
         hstr = " ".join("%2d" % v for v in histogram)
         return "%2.2f %2.2f %2.2f %s" % (
-            total, mean, median, standard_deviation, hstr)
+            total, mean, median, std, hstr)
 
 
 def main():
@@ -337,15 +377,16 @@ def parse_extension_record(request, args):
     """Decode a ZServer extension records and annotate request."""
     prefix = args[0]
 
-    if len(args) > 1:
-        args = ' '.join(args[1:])
-    else:
-        args = None
-
     if prefix == 'u':
-        request.url = args
+        request.url = ' '.join(args[1:]) or None
     elif prefix == 'p':
-        request.pageid = args
+        request.pageid = ' '.join(args[1:]) or None
+    elif prefix == 't':
+        if len(args) != 4:
+            raise MalformedLine("Wrong number of arguments %s" % (args,))
+        request.ticks = args[1]
+        request.sql_statements = args[2]
+        request.sql_seconds = float(args[3]) / 1000
     else:
         raise MalformedLine(
             "Unknown extension prefix %s" % prefix)
@@ -391,6 +432,8 @@ def print_html_report(options, categories, pageid_times):
                 padding: 1em;
                 }
             .clickable { cursor: hand; }
+            .total_hits, .histogram, .median_sqltime,
+            .median_sqlstatements { border-right: 1px dashed #000000; }
         </style>
         </head>
         <body>
@@ -404,12 +447,26 @@ def print_html_report(options, categories, pageid_times):
         <thead>
             <tr>
             <th class="clickable">Name</th>
-            <th class="clickable">Total Time (secs)</th>
+
             <th class="clickable">Total Hits</th>
+
+            <th class="clickable">Total Time (secs)</th>
+
             <th class="clickable">Mean Time (secs)</th>
-            <th class="clickable">Median Time (secs)</th>
             <th class="clickable">Time Standard<br/>Deviation</th>
-            <th class="sorttable_nosort">Distribution</th>
+            <th class="clickable">Median Time (secs)</th>
+            <th class="sorttable_nosort">Time Distribution</th>
+
+            <th class="clickable">Total SQL Time (secs)</th>
+            <th class="clickable">Mean SQL Time (secs)</th>
+            <th class="clickable">SQL Time Standard Deviation</th>
+            <th class="clickable">Median SQL Time (secs)</th>
+
+            <th class="clickable">Total SQL Statements</th>
+            <th class="clickable">Mean SQL Statements</th>
+            <th class="clickable">SQL Statement Standard Deviation</th>
+            <th class="clickable">Median SQL Statements</th>
+
             </tr>
         </thead>
         <tbody>
@@ -425,20 +482,33 @@ def print_html_report(options, categories, pageid_times):
         print dedent("""\
             <tr>
             <th class="category-title">%s</th>
-            <td class="numeric total_time">%.2f</td>
             <td class="numeric total_hits">%d</td>
-            <td class="numeric mean">%.2f</td>
-            <td class="numeric median">%.2f</td>
-            <td class="numeric standard-deviation">%.2f</td>
+            <td class="numeric total_time">%.2f</td>
+            <td class="numeric mean_time">%.2f</td>
+            <td class="numeric std_time">%.2f</td>
+            <td class="numeric median_time">%.2f</td>
             <td>
                 <div class="histogram" id="histogram%d"></div>
             </td>
+            <td class="numeric total_sqltime">%.2f</td>
+            <td class="numeric mean_sqltime">%.2f</td>
+            <td class="numeric std_sqltime">%.2f</td>
+            <td class="numeric median_sqltime">%.2f</td>
+
+            <td class="numeric total_sqlstatements">%d</td>
+            <td class="numeric mean_sqlstatements">%.2f</td>
+            <td class="numeric std_sqlstatements">%.2f</td>
+            <td class="numeric median_sqlstatements">%.2f</td>
             </tr>
             """ % (
                 html_title,
-                stats.total_time, stats.total_hits,
-                stats.mean, stats.median, stats.standard_deviation,
-                len(histograms)-1))
+                stats.total_hits, stats.total_time,
+                stats.mean, stats.std, stats.median,
+                len(histograms)-1,
+                stats.total_sqltime, stats.mean_sqltime,
+                stats.std_sqltime, stats.median_sqltime,
+                stats.total_sqlstatements, stats.mean_sqlstatements,
+                stats.std_sqlstatements, stats.median_sqlstatements))
 
     # Table of contents
     print '<ol>'
