@@ -1574,7 +1574,7 @@ class Archive(SQLBase):
         if self.is_main:
             proc_family_set = getUtility(IProcessorFamilySet)
             if set(value) != set(proc_family_set.getRestricted()):
-                raise CannotRestrictArchitectures("main archives can not "
+                raise CannotRestrictArchitectures("Main archives can not "
                         "be restricted to certain architectures")
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedfamilies(self)
