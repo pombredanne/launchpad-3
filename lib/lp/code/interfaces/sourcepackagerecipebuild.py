@@ -76,6 +76,9 @@ class ISourcePackageRecipeBuild(IBuildBase):
     def getFileByName(filename):
         """Return the file under +files with specified name."""
 
+    def destroySelf():
+        """Delete the build itself."""
+
 
 class ISourcePackageRecipeBuildSource(Interface):
     """A utility of this interface be used to create source package builds."""
