@@ -2033,3 +2033,14 @@ Pass isExpirable() a string for days_old.
     HTTP/1.1 400 Bad Request
     ...
     days_old: got 'unicode', expected int: u'sixty'
+
+Can expire
+----------
+
+can_expire is not exported in the development version of the API.
+
+    >>> bug_four = webservice.get("/bugs/4", api_version='devel').jsonBody()
+    >>> bug_four[can_expire]
+    Traceback (most recent call last):
+    ...
+    NameError: name 'can_expire' is not defined

@@ -280,7 +280,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             title=_("Can the Incomplete bug expire? "
                 "Expiration may happen when the bug permits expiration, "
                 "and a bugtask cannot be confirmed."),
-            readonly=True))
+            readonly=True),
+        ('devel', dict(exported=False)), exported=True)
     date_last_message = exported(
         Datetime(title=_("Date of last bug message"),
                  required=False, readonly=True))
