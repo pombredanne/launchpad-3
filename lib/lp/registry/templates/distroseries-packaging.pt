@@ -31,7 +31,8 @@
         </ul>
       </div>
 
-      <div tal:condition="packagings/batch">
+      <div tal:condition="packagings/batch"
+        tal:content="cache:public, 30 minute">
         <h2>All upstream links</h2>
 
         <div class="results"
