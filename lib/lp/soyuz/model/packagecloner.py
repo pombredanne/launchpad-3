@@ -305,7 +305,7 @@ class PackageCloner:
             to be copied.
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        store.execute('''
+        query = '''
             INSERT INTO SourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
                 section, archive, datecreated, datepublished, pocket)
@@ -316,13 +316,17 @@ class PackageCloner:
             FROM SourcePackagePublishingHistory AS spph
             WHERE spph.distroseries = %s AND spph.status in (%s, %s) AND
                   spph.pocket = %s and spph.archive = %s
-                  and spph.component = %s
             ''' % sqlvalues(
                 destination.distroseries, destination.archive, UTC_NOW,
                 UTC_NOW, destination.pocket, origin.distroseries,
                 PackagePublishingStatus.PENDING,
                 PackagePublishingStatus.PUBLISHED,
-                origin.pocket, origin.archive, origin.component))
+                origin.pocket, origin.archive)
+
+        if origin.component:
+            query += "and spph.component = %s" % sqlvalues(origin.component)
+
+        store.execute(query)
 
     def packageSetDiff(self, origin, destination, logger=None):
         """Please see `IPackageCloner`."""

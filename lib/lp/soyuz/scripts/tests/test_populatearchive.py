@@ -119,7 +119,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             '--to-distribution', distro_name, '--to-suite', 'hoary',
             '--to-archive', archive_name, '--to-user', 'salgado', '--reason',
             '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '--component', 'main'
             ]
 
         # Start archive population now!
@@ -545,7 +544,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         archive_name = self.getTargetArchiveName(distroseries.distribution)
         copy_archive = self.copyArchive(
             distroseries, archive_name, owner, from_user=ppa_owner_name,
-            from_archive=ppa_name)
+            from_archive=ppa_name, component=package_info.component)
         self.checkCopiedSources(
             copy_archive, distroseries, [package_info])
 
