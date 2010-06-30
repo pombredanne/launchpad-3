@@ -211,39 +211,6 @@ class Archive(SQLBase):
     external_dependencies = StringCol(
         dbName='external_dependencies', notNull=False, default=None)
 
-    def _get_arm_builds_enabled(self):
-        """Check whether ARM builds are allowed for this archive."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
-        arm = getUtility(IProcessorFamilySet).getByName('arm')
-        for (family, archive_arch) in restricted_families:
-            if family == arm:
-                return (archive_arch is not None)
-        # ARM doesn't exist or isn't restricted. Either way, there is no
-        # need for an explicit association.
-        return False
-
-    def _set_arm_builds_enabled(self, value):
-        """Set whether ARM builds are enabled for this archive."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
-        arm = getUtility(IProcessorFamilySet).getByName('arm')
-        for (family, archive_arch) in restricted_families:
-            if family == arm:
-                if value:
-                    if archive_arch is not None:
-                        # ARM builds are already enabled
-                        return
-                    else:
-                        archive_arch_set.new(self, family)
-                else:
-                    if archive_arch is not None:
-                        Store.of(self).remove(archive_arch)
-                    else:
-                        pass # ARM builds are already disabled
-    arm_builds_allowed = property(_get_arm_builds_enabled,
-        _set_arm_builds_enabled)
-
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
@@ -1586,6 +1553,24 @@ class Archive(SQLBase):
             LibraryFileAlias.filename.is_in(source_files),
             LibraryFileContent.id == LibraryFileAlias.contentID).config(
                 distinct=True))
+
+    def _get_enabled_restricted_families(self):
+        archive_arch_set = getUtility(IArchiveArchSet)
+        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        return [family for (family, archive_arch) in restricted_families 
+                if archive_arch is not None]
+
+    def _set_enabled_restricted_families(self, value):
+        archive_arch_set = getUtility(IArchiveArchSet)
+        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        for (family, archive_arch) in restricted_families:
+            if family in value and archive_arch is None:
+                archive_arch_set.new(self, family)
+            if family not in value and archive_arch is not None:
+                Store.of(self).remove(archive_arch)
+
+    enabled_restricted_families = property(_get_enabled_restricted_families,
+                                           _set_enabled_restricted_families)
 
 
 class ArchiveSet:
