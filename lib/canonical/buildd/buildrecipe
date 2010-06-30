@@ -34,7 +34,7 @@ class RecipeBuilder:
         :param suite: The suite the package should be built for (a str).
         """
         self.build_id = build_id
-        self.author_name = author_name
+        self.author_name = author_name.decode('utf-8')
         self.author_email = author_email
         self.archive_purpose = archive_purpose
         self.component = component
@@ -69,9 +69,9 @@ class RecipeBuilder:
             self.tree_path_relative, 'manifest')
         retcode = self.chroot([
             'sudo', '-u', self.username, 'DEBEMAIL=%s' % self.author_email,
-            'DEBFULLNAME=%s' % self.author_name, 'bzr', 'dailydeb',
-            '--no-build', recipe_path_relative, self.tree_path_relative,
-            '--manifest', manifest_path_relative,
+            'DEBFULLNAME=%s' % self.author_name.encode('utf-8'), 'bzr',
+            'dailydeb', '--no-build', recipe_path_relative,
+            self.tree_path_relative, '--manifest', manifest_path_relative,
             '--append-version', '~%s1' % self.distroseries_name])
         if retcode != 0:
             return retcode
