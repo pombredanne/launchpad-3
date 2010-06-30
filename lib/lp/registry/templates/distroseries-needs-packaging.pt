@@ -47,7 +47,8 @@
           </thead>
 
           <tbody>
-            <tr tal:repeat="summary summaries/batch">
+            <tr tal:repeat="summary summaries/batch"
+              tal:content="cache:public, 30 minute">
               <td>
                 <a class="sprite package-source"
                   tal:attributes="href summary/package/fmt:url"
