@@ -1761,17 +1761,19 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
-    def getOrCreateByOpenIDIdentifier(requestor, openid_identifier):
+    def getOrCreateByOpenIDIdentifier(requestor, openid_identifier, email):
         """Return the LP person corresponding to the OpenID identifier.
 
         If a matching account exists but a person does not, the person
         will be created.
 
         If a matching account does not exist we trust the caller
-        (the software-center-agent) and create the account.
+        (the software-center-agent) and create both the account and
+        the person.
 
         :param requestor: Currently must be the software-center-agent.
         :param openid_identifier: The identifier to check.
+        :param email: An email to set for a newly created IPerson.
         :return: An `IPerson` correspending to the identifier, or None.
         """
 
