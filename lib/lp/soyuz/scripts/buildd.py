@@ -26,6 +26,18 @@ from lp.services.scripts.base import (
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
+# XXX cprov 2009-04-16: This function should live in
+# lp.registry.interfaces.distroseries. It cannot be done right now
+# because we haven't decided if archivepublisher.debversion will be
+# released as FOSS yet.
+def distroseries_sort_key(series):
+    """Sort `DistroSeries` by version.
+
+    See `lp.archivepublisher.debversion.Version` for more
+    information.
+    """
+    return Version(series.version)
+
 
 class QueueBuilder(LaunchpadCronScript):
 
@@ -207,8 +219,7 @@ class QueueBuilder(LaunchpadCronScript):
                 raise LaunchpadScriptFailure("Could not find suite %s" % err)
             distroseries_set.add(distroseries)
 
-        return sorted(distroseries_set,
-            key=lambda series: Version(series.version))
+        return sorted(distroseries_set, key=distroseries_sort_key)
 
 
 class RetryDepwait(LaunchpadCronScript):
