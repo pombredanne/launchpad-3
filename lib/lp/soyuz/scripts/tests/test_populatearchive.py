@@ -504,10 +504,10 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
     def testCopyArchiveCopiesRightComponents(self):
         """Test that packages from the right components are copied.
 
-        When copying you specify a component, but that component doesn't
+        When copying you specify a component, that component should
         limit the packages copied. We create a source in main and one in
         universe, and then copy with --component main, and expect to see
-        both sources in the copy.
+        only main in the copy.
         """
         package_info_universe = PackageInfo(
                 "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED,
