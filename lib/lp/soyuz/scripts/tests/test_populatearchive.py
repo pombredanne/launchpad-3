@@ -206,7 +206,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
     def getScript(self, test_args=None):
         """Return an ArchivePopulator instance."""
         if test_args is None:
-           test_args = []
+            test_args = []
         script = ArchivePopulator("test copy archives", test_args=test_args)
         script.logger = QuietFakeLogger()
         script.txn = self.layer.txn
