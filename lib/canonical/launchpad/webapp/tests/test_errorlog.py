@@ -37,8 +37,8 @@ from canonical.launchpad.webapp.errorlog import (
     _is_sensitive)
 from canonical.launchpad.webapp.interfaces import (
     NoReferrerError, TranslationUnavailable)
-from canonical.launchpad.webapp.lognamer import LogNamer
 from lazr.restful.declarations import webservice_error
+from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.osutils import remove_tree
 from lp.testing import TestCase
 
@@ -230,9 +230,9 @@ class TestErrorReportingUtility(testtools.TestCase):
         reset_logging()
         super(TestErrorReportingUtility, self).tearDown()
 
-    def test_creates_LogNamer(self):
+    def test_sets_log_namer_to_a_UniqueFileAllocator(self):
         utility = ErrorReportingUtility()
-        self.assertIsInstance(utility.log_namer, LogNamer)
+        self.assertIsInstance(utility.log_namer, UniqueFileAllocator)
 
     def test_configure(self):
         """Test ErrorReportingUtility.setConfigSection()."""

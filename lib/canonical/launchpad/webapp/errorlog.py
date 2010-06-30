@@ -38,7 +38,7 @@ from canonical.launchpad.webapp.adapter import (
     soft_timeout_expired)
 from canonical.launchpad.webapp.interfaces import (
     IErrorReport, IErrorReportEvent, IErrorReportRequest)
-from canonical.launchpad.webapp.lognamer import LogNamer
+from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from canonical.launchpad.webapp.opstats import OpStats
 
 UTC = pytz.utc
@@ -253,8 +253,8 @@ class ErrorReportingUtility:
         if section_name is None:
             section_name = self._default_config_section
         self.copy_to_zlog = config[section_name].copy_to_zlog
-        # Start a new LogNamer to activate the new configuration.
-        self.log_namer = LogNamer(
+        # Start a new UniqueFileAllocator to activate the new configuration.
+        self.log_namer = UniqueFileAllocator(
             output_root=config[section_name].error_dir,
             log_type="OOPS",
             log_subtype=config[section_name].oops_prefix,

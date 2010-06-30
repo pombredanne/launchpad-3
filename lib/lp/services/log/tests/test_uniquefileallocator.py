@@ -15,22 +15,22 @@ import unittest
 import pytz
 import testtools
 
-from canonical.launchpad.webapp.lognamer import LogNamer
+from lp.services.log.uniquefileallocator import UniqueFileAllocator
 
 
 UTC = pytz.timezone('UTC')
 
 
-class TestLogNamer(testtools.TestCase):
+class TestUniqueFileAllocator(testtools.TestCase):
 
     def setUp(self):
-        super(TestLogNamer, self).setUp()
+        super(TestUniqueFileAllocator, self).setUp()
         tempdir = tempfile.mkdtemp()
         self._tempdir = tempdir
         self.addCleanup(shutil.rmtree, tempdir, ignore_errors=True)
 
     def test_setToken(self):
-        namer = LogNamer("/any-old/path/", 'OOPS', 'T')
+        namer = UniqueFileAllocator("/any-old/path/", 'OOPS', 'T')
         self.assertEqual('T', namer._log_infix())
 
         # Some scripts will append a string token to the prefix.
@@ -42,8 +42,8 @@ class TestLogNamer(testtools.TestCase):
         namer.setToken('1')
         self.assertEqual('T1', namer._log_infix())
 
-    def assertLogNamed(self, namer, now, expected_id, expected_last_id,
-        expected_suffix, expected_lastdir):
+    def assertUniqueFileAllocator(self, namer, now, expected_id,
+        expected_last_id, expected_suffix, expected_lastdir):
         logid, filename = namer.newId(now)
         self.assertEqual(logid, expected_id)
         self.assertEqual(filename,
@@ -57,29 +57,31 @@ class TestLogNamer(testtools.TestCase):
         # reduce races with threads that are slow to use what they asked for,
         # when combined with configuration changes causing disk scans. That
         # would also permit using a completely stubbed out file system,
-        # reducing IO in tests that use LogNamer (such as all the pagetests in
-        # Launchpad.
-        namer = LogNamer(self._tempdir, 'OOPS', 'T')
+        # reducing IO in tests that use UniqueFileAllocator (such as all the
+        # pagetests in Launchpad. At that point an interface to obtain a 
+        # factory of UniqueFileAllocator's would be useful to parameterise the
+        # entire test suite.
+        namer = UniqueFileAllocator(self._tempdir, 'OOPS', 'T')
         # first name of the day
-        self.assertLogNamed(namer, 
+        self.assertUniqueFileAllocator(namer, 
             datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC),
             'OOPS-91T1', 1, '2006-04-01/01800.T1', '2006-04-01')
         # second name of the day
-        self.assertLogNamed(namer,
+        self.assertUniqueFileAllocator(namer,
             datetime.datetime(2006, 04, 01, 12, 00, 00, tzinfo=UTC),
             'OOPS-91T2', 2, '2006-04-01/43200.T2', '2006-04-01')
 
         # first name of the following day sets a new dir and the id starts
         # over.
-        self.assertLogNamed(namer, 
+        self.assertUniqueFileAllocator(namer, 
             datetime.datetime(2006, 04, 02, 00, 30, 00, tzinfo=UTC),
             'OOPS-92T1', 1, '2006-04-02/01800.T1', '2006-04-02')
 
         # Setting a token inserts the token into the filename.
-        namer.setToken('XXX')
+        namer.setToken('YYY')
         logid, filename = namer.newId(
             datetime.datetime(2006, 04, 02, 00, 30, 00, tzinfo=UTC))
-        self.assertEqual(logid, 'OOPS-92TXXX2')
+        self.assertEqual(logid, 'OOPS-92TYYY2')
 
         # Setting a type controls the log id:
         namer.setToken('')
@@ -94,14 +96,14 @@ class TestLogNamer(testtools.TestCase):
 
     def test_changeErrorDir(self):
         """Test changing the log output dur."""
-        namer = LogNamer(self._tempdir, 'OOPS', 'T')
+        namer = UniqueFileAllocator(self._tempdir, 'OOPS', 'T')
 
         # First an id in the original error directory.
-        self.assertLogNamed(namer, 
+        self.assertUniqueFileAllocator(namer, 
             datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC),
             'OOPS-91T1', 1, '2006-04-01/01800.T1', '2006-04-01')
 
-        # LogNamer uses the _output_root attribute to get the current output
+        # UniqueFileAllocator uses the _output_root attribute to get the current output
         # directory.
         new_output_dir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, new_output_dir, ignore_errors=True)
@@ -119,7 +121,7 @@ class TestLogNamer(testtools.TestCase):
             os.path.join(new_output_dir, '2006-04-01'))
 
     def test_findHighestSerial(self):
-        namer = LogNamer(self._tempdir, "OOPS", "T")
+        namer = UniqueFileAllocator(self._tempdir, "OOPS", "T")
         # Creates the dir using now as the timestamp.
         output_dir = namer.output_dir()
         # write some files, in non-serial order.
