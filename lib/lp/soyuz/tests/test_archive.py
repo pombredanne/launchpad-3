@@ -21,8 +21,8 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import (IArchiveSet, ArchivePurpose,
-    ArchiveStatus, CannotSwitchPrivacy, InvalidPocketForPartnerArchive,
-    InvalidPocketForPPA)
+    ArchiveStatus, CannotRestrictArchitectures, CannotSwitchPrivacy,
+    InvalidPocketForPartnerArchive, InvalidPocketForPPA)
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -752,6 +752,22 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.archive = self.factory.makeArchive()
         self.archive_arch_set = getUtility(IArchiveArchSet)
         self.arm = getUtility(IProcessorFamilySet).getByName('arm')
+
+    def test_main_archive_can_use_restricted(self):
+        """Main archives for distributions can always use restricted 
+        architectures."""
+        distro = self.factory.makeDistribution()
+        self.assertEquals([self.arm],
+            list(distro.main_archive.enabled_restricted_families))
+
+    def test_main_archive_can_not_be_restricted(self):
+        """A main archive can not be restricted to certain architectures."""
+        distro = self.factory.makeDistribution()
+        # Restricting to all restricted architectures is fine
+        distro.main_archive.enabled_restricted_families = [self.arm]
+        def restrict():
+            distro.main_archive.enabled_restricted_families = []
+        self.assertRaises(CannotRestrictArchitectures, restrict)
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""

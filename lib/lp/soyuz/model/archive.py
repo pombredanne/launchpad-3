@@ -63,9 +63,9 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveDisabled,
     ArchiveNotPrivate, ArchivePurpose, ArchiveStatus, CannotCopy,
-    CannotSwitchPrivacy, CannotUploadToPPA, CannotUploadToPocket,
-    DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
-    InsufficientUploadRights, InvalidPocketForPPA,
+    CannotRestrictArchitectures, CannotSwitchPrivacy, CannotUploadToPPA,
+    CannotUploadToPocket, DistroSeriesNotFound, IArchive, IArchiveSet,
+    IDistributionArchive, InsufficientUploadRights, InvalidPocketForPPA,
     InvalidPocketForPartnerArchive, InvalidComponent, IPPA,
     MAIN_ARCHIVE_PURPOSES, NoRightsForArchive, NoRightsForComponent,
     NoSuchPPA, NoTokensForTeams, PocketNotFound, VersionRequiresName,
@@ -1555,12 +1555,22 @@ class Archive(SQLBase):
                 distinct=True))
 
     def _get_enabled_restricted_families(self):
+        # Main archives are always allowed to build on restricted 
+        # architectures.
+        if self.is_main:
+            return getUtility(IProcessorFamilySet).getRestricted()
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedfamilies(self)
         return [family for (family, archive_arch) in restricted_families 
                 if archive_arch is not None]
 
     def _set_enabled_restricted_families(self, value):
+        # Main archives are always allowed to build on restricted 
+        # architectures.
+        if (self.is_main and
+            set(value) != set(
+                getUtility(IProcessorFamilySet).getRestricted())):
+            raise CannotRestrictArchitectures()
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedfamilies(self)
         for (family, archive_arch) in restricted_families:
