@@ -80,7 +80,7 @@ def _get_AC_PACKAGE_NAME(config_file):
 
     The value of AC_PACKAGE_NAME is either the first or the fourth
     parameter of the AC_INIT call if it is called with at least two
-    parameters. They may be enclosed in [].
+    parameters.
     """
     params = config_file.getFunctionParams("AC_INIT")
     if params is None or len(params) < 2:
