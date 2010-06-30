@@ -4207,7 +4207,8 @@ class TeamAddMyTeamsView(LaunchpadFormView):
                 and membership.status == TeamMembershipStatus.INVITED):
                 team.acceptInvitationToBeMemberOf(
                     context,
-                    'Accepted invitation whilst trying to propose the team.')
+                    'Accepted an already pending invitation while trying to '
+                    'propose the team for membership.')
             elif is_admin:
                 context.addMember(team, reviewer=self.user)
             else:
