@@ -181,6 +181,7 @@ class TestDistroseriesPackagingMemcache(MemcacheTestCase):
         view = create_initialized_view(
             self.hoary, name='+needs-packaging', principal=self.observer)
         self.assertCacheMiss('<table id="packages"', view.render())
+        # Hit the cache on the second render.
         view = create_initialized_view(
             self.hoary, name='+needs-packaging', principal=self.observer)
         self.assertCacheHit(
