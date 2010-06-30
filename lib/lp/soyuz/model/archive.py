@@ -1554,7 +1554,9 @@ class Archive(SQLBase):
             LibraryFileContent.id == LibraryFileAlias.contentID).config(
                 distinct=True))
 
-    def _get_enabled_restricted_families(self):
+    def _getEnabledRestrictedFamilies(self):
+        """Retrieve the restricted architecture families this archive can
+        build on."""
         # Main archives are always allowed to build on restricted 
         # architectures.
         if self.is_main:
@@ -1564,13 +1566,16 @@ class Archive(SQLBase):
         return [family for (family, archive_arch) in restricted_families 
                 if archive_arch is not None]
 
-    def _set_enabled_restricted_families(self, value):
+    def _setEnabledRestrictedFamilies(self, value):
+        """Set the restricted architecture families this archive can
+        build on."""
         # Main archives are always allowed to build on restricted 
         # architectures.
-        if (self.is_main and
-            set(value) != set(
-                getUtility(IProcessorFamilySet).getRestricted())):
-            raise CannotRestrictArchitectures()
+        if self.is_main:
+            proc_family_set = getUtility(IProcessorFamilySet)
+            if set(value) != set(proc_family_set.getRestricted()):
+                raise CannotRestrictArchitectures("main archives can not "
+                        "be restricted to certain architectures")
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedfamilies(self)
         for (family, archive_arch) in restricted_families:
@@ -1579,8 +1584,8 @@ class Archive(SQLBase):
             if family not in value and archive_arch is not None:
                 Store.of(self).remove(archive_arch)
 
-    enabled_restricted_families = property(_get_enabled_restricted_families,
-                                           _set_enabled_restricted_families)
+    enabled_restricted_families = property(_getEnabledRestrictedFamilies,
+                                           _setEnabledRestrictedFamilies)
 
 
 class ArchiveSet:

@@ -754,14 +754,14 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.arm = getUtility(IProcessorFamilySet).getByName('arm')
 
     def test_main_archive_can_use_restricted(self):
-        """Main archives for distributions can always use restricted 
-        architectures."""
+        # Main archives for distributions can always use restricted 
+        # architectures.
         distro = self.factory.makeDistribution()
-        self.assertEquals([self.arm],
-            list(distro.main_archive.enabled_restricted_families))
+        self.assertContentEqual([self.arm],
+            distro.main_archive.enabled_restricted_families)
 
     def test_main_archive_can_not_be_restricted(self):
-        """A main archive can not be restricted to certain architectures."""
+        # A main archive can not be restricted to certain architectures.
         distro = self.factory.makeDistribution()
         # Restricting to all restricted architectures is fine
         distro.main_archive.enabled_restricted_families = [self.arm]
@@ -774,24 +774,24 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.assertEquals(0,
             self.archive_arch_set.getByArchive(
                 self.archive, self.arm).count())
-        self.assertEquals([], list(self.archive.enabled_restricted_families))
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
 
     def test_get_uses_archivearch(self):
         """Adding an entry to ArchiveArch for ARM and an archive will
         enable enabled_restricted_families for arm for that archive."""
-        self.assertEquals([], list(self.archive.enabled_restricted_families))
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
         self.archive_arch_set.new(self.archive, self.arm)
-        self.assertEquals([self.arm], 
-                list(self.archive.enabled_restricted_families))
+        self.assertContentEqual([self.arm], 
+                self.archive.enabled_restricted_families)
 
     def test_get_returns_restricted_only(self):
         """Adding an entry to ArchiveArch for something that is not 
         restricted does not make it show up in enabled_restricted_families.
         """
-        self.assertEquals([], list(self.archive.enabled_restricted_families))
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
         self.archive_arch_set.new(self.archive,
             getUtility(IProcessorFamilySet).getByName('amd64'))
-        self.assertEquals([], list(self.archive.enabled_restricted_families))
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
 
     def test_set(self):
         """The property remembers its value correctly and sets ArchiveArch."""
@@ -806,7 +806,7 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.assertEquals(0,
             self.archive_arch_set.getByArchive(
                 self.archive, self.arm).count())
-        self.assertEquals([], list(self.archive.enabled_restricted_families))
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
 
 
 class TestArchiveTokens(TestCaseWithFactory):

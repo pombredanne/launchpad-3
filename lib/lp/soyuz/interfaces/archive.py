@@ -146,8 +146,6 @@ class VersionRequiresName(Exception):
 class CannotRestrictArchitectures(Exception):
     """The architectures for this archive can not be restricted."""
 
-    _fmt = "Main archives can not be restricted to architecture families."
-
 
 class CannotUploadToArchive(Exception):
     """A reason for not being able to upload to an archive."""
