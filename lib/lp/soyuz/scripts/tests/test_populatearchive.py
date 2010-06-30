@@ -502,24 +502,24 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             architectures=["386", "amd64"])
         self.checkBuilds(copy_archive, [package_info, package_info])
 
-    def testCopyArchiveCopiesAllComponents(self):
-        """Test that packages from all components are copied.
+    def testCopyArchiveCopiesRightComponents(self):
+        """Test that packages from the right components are copied.
 
         When copying you specify a component, but that component doesn't
         limit the packages copied. We create a source in main and one in
         universe, and then copy with --component main, and expect to see
         both sources in the copy.
         """
-        package_infos = [
-            PackageInfo(
+        package_info_universe = PackageInfo(
                 "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED,
-                component="universe"),
-            PackageInfo(
+                component="universe")
+        package_info_main = PackageInfo(
                 "apt", "2.2", status=PackagePublishingStatus.PUBLISHED,
-                component="main")]
-        copy_archive, distroseries = self.makeCopyArchive(package_infos,
-            component="main")
-        self.checkBuilds(copy_archive, package_infos)
+                component="main")
+        package_infos_both = [package_info_universe, package_info_main]
+        copy_archive, distroseries = self.makeCopyArchive(
+            package_infos_both, component="main")
+        self.checkBuilds(copy_archive, [package_info_main])
 
     def testCopyFromPPA(self):
         """Test we can create a copy archive with a PPA as the source."""
