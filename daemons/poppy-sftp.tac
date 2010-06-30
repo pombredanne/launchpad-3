@@ -8,6 +8,7 @@
 import os
 
 from twisted.application import service
+from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import filetransfer
 from twisted.cred.portal import IRealm, Portal
 from twisted.python import components
@@ -22,6 +23,7 @@ from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.auth import (
     LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
 from lp.services.sshserver.service import SSHService
+from lp.services.sshserver.session import DoNothingSession
 
 # XXX: Rename this file to something that doesn't mention poppy. Talk to
 # bigjools.
@@ -78,6 +80,8 @@ def poppy_sftp_adapter(avatar):
 
 components.registerAdapter(
     poppy_sftp_adapter, LaunchpadAvatar, filetransfer.ISFTPServer)
+
+components.registerAdapter(DoNothingSession, LaunchpadAvatar, ISession)
 
 
 # Construct an Application that has the Poppy SSH server.

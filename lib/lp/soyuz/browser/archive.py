@@ -79,6 +79,7 @@ from lp.soyuz.interfaces.packagecopyrequest import (
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.person import IPersonSet, PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, inactive_publishing_status, IPublishingSet,
     PackagePublishingStatus)
@@ -1875,9 +1876,11 @@ class ArchiveAdminView(BaseArchiveEditView):
 
     field_names = ['enabled', 'private', 'require_virtualized',
                    'buildd_secret', 'authorized_size', 'relative_build_score',
-                   'external_dependencies', 'arm_builds_allowed']
+                   'external_dependencies']
 
     custom_widget('external_dependencies', TextAreaWidget, height=3)
+
+    custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
 
     def updateContextFromData(self, data):
         """Update context from form data.
@@ -1959,6 +1962,31 @@ class ArchiveAdminView(BaseArchiveEditView):
         :rtype: bool
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
+
+    def setUpFields(self):
+        """Override `LaunchpadEditFormView`.
+
+        See `createEnabledRestrictedFamilies` method.
+        """
+        super(ArchiveAdminView, self).setUpFields()
+        self.form_fields += self.createEnabledRestrictedFamilies()
+
+    def createEnabledRestrictedFamilies(self):
+        """Creates the 'enabled_restricted_families' field.
+
+        """
+        terms = []
+        for family in getUtility(IProcessorFamilySet).getRestricted():
+            terms.append(SimpleTerm(
+                family, token=family.name, title=family.title))
+        return form.Fields(
+            List(__name__='enabled_restricted_families',
+                 title=_('Enabled restricted families'),
+                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                 required=False,
+                 description=_('Select the restricted architecture families '
+                               'on which this archive is allowed to build.')),
+                 render_context=self.render_context)
 
 
 class ArchiveDeleteView(LaunchpadFormView):

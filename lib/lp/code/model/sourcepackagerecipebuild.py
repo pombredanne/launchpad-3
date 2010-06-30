@@ -219,12 +219,13 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def destroySelf(self):
         store = Store.of(self)
-        job = self.buildqueue_record.job
-        store.remove(self.buildqueue_record)
-        store.find(
-            SourcePackageRecipeBuildJob,
-            SourcePackageRecipeBuildJob.build == self.id).remove()
-        store.remove(job)
+        if self.buildqueue_record is not None:
+            job = self.buildqueue_record.job
+            store.remove(self.buildqueue_record)
+            store.find(
+                SourcePackageRecipeBuildJob,
+                SourcePackageRecipeBuildJob.build == self.id).remove()
+            store.remove(job)
         store.remove(self)
 
     @classmethod
