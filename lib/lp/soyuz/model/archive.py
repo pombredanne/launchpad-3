@@ -95,6 +95,8 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.scripts.packagecopier import do_copy
+
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
@@ -1929,7 +1931,7 @@ class ArchiveSet:
 
     def getCommercialPPAs(self):
         """See `IArchiveSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(Archive)
         return store.find(
             Archive,
             Archive.commercial == True,

@@ -6,7 +6,7 @@ Commercial PPAs are to all intents and purposes identical to private PPAs.
 They contain a 'commercial' flag which indicates that the PPA is actively
 selling software and should be more discoverable.
 
-Lets start by making a private PPA for demonstration purposes:
+We have a private PPA for demonstration purposes:
 
     >>> ppa = factory.makeArchive(private=True, name="pppa")
 
