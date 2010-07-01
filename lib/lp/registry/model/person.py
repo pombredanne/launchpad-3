@@ -2434,6 +2434,9 @@ class PersonSet:
         self, openid_identifier, email_address, full_name,
         creation_rationale, comment):
         """See `IPersonSet`."""
+        assert email_address is not None and full_name is not None, (
+                "Both email address and full name are required to "
+                "create an account.")
         db_updated = False
         account_set = getUtility(IAccountSet)
         email_set = getUtility(IEmailAddressSet)

@@ -1761,9 +1761,8 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
-    def getOrCreateByOpenIDIdentifier(requestor, openid_identifier, email,
-                                      full_name, creation_rationale,
-                                      comment):
+    def getOrCreateByOpenIDIdentifier(openid_identifier, email,
+                                      full_name, creation_rationale, comment):
         """Get or create a person for a given OpenID identifier.
 
         This is used when users login. We get the account with the given
