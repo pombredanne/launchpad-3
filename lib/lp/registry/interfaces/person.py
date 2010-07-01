@@ -1479,13 +1479,25 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
+    @call_with(requester=REQUEST_USER)
     @export_read_operation()
-    def getArchiveSubscriptionURLs():
+    def getArchiveSubscriptionURLs(requester):
         """Return private archive URLs that this person can see.
 
         For each of the private archives (PPAs) that this person can see,
         return a URL that includes the HTTP basic auth data.  The URL
         returned is suitable for including in a sources.list file.
+        """
+
+    @call_with(requester=REQUEST_USER)
+    @operation_parameters(
+        archive=Reference(schema=Interface)) # Really IArchive
+    @export_write_operation()
+    def getArchiveSubscriptionURL(requester, archive):
+        """Get a text line that is suitable to be used for a sources.list
+        entry.
+
+        It will create a new IArchiveAuthToken if one doesn't already exist.
         """
 
 

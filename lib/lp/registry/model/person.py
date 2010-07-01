@@ -2314,13 +2314,31 @@ class Person(
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
 
-    def getArchiveSubscriptionURLs(self):
+    def getArchiveSubscriptionURLs(self, requester):
         """See `IPerson`."""
+        agent = getUtility(ILaunchpadCelebrities).software_center_agent
+        # If the requester isn't asking about themselves, and they aren't the
+        # software center agent, deny them
+        if self.id != requester.id and self.id != agent.id:
+            raise Unauthorized
         subscriptions = getUtility(
             IArchiveSubscriberSet).getBySubscriberWithActiveToken(
                 subscriber=self)
         return [token.archive_url for (subscription, token) in subscriptions
                 if token is not None]
+
+    def getArchiveSubscriptionURL(self, requester, archive):
+        """See `IPerson`."""
+        import pdb; pdb.set_trace()
+        agent = getUtility(ILaunchpadCelebrities).software_center_agent
+        # If the requester isn't asking about themselves, and they aren't the
+        # software center agent, deny them
+        if self.id != requester.id and self.id != agent.id:
+            raise Unauthorized
+        token = archive.getAuthToken(self)
+        if token is None:
+            token = archive.newAuthToken(self)
+        return token.archive_url
 
     @property
     def ppas(self):

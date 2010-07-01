@@ -814,8 +814,9 @@ class TestArchiveTokens(TestCaseWithFactory):
         token = self.private_ppa.newAuthToken(self.joe)
         self.assertEqual(self.private_ppa.getAuthToken(self.joe), token)
 
-    def test_getPrivateSourcesList(self):
-        url = self.private_ppa.getPrivateSourcesList(self.joe)
+    def test_getArchiveSubscriptionURL(self):
+        agent = self.factory.makePerson(name='software-center-agent')
+        url = self.joe.getArchiveSubscriptionURL(self.joe, self.private_ppa)
         token = self.private_ppa.getAuthToken(self.joe)
         self.assertEqual(token.archive_url, url)
 

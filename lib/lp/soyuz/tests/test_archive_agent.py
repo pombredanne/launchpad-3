@@ -52,9 +52,9 @@ class TestArchivePrivacy(TestCaseWithFactory):
         self.assertEqual(subscription.registrant, self.agent)
         self.assertEqual(subscription.subscriber, self.joe)
 
-    def test_getPrivateSourcesList(self):
+    def test_getArchiveSubscriptionURL(self):
         login_person(self.agent)
-        sources = self.ppa.getPrivateSourcesList(self.joe)
+        sources = self.joe.getArchiveSubscriptionURL(self.agent, self.ppa)
         authtoken = self.ppa.getAuthToken(self.joe).token
         url = self.ppa.archive_url.split('http://')[1]
         new_url = "http://joe:%s@%s" % (authtoken, url)
