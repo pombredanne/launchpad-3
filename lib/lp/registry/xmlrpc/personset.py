@@ -12,7 +12,9 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.interfaces.account import AccountSuspendedError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
+from canonical.launchpad.xmlrpc import faults
 from lp.registry.interfaces.person import (
     IPersonSet, IPersonSetAPIView, IPersonSetApplication,
     PersonCreationRationale)
@@ -25,10 +27,14 @@ class PersonSetAPIView(LaunchpadXMLRPCView):
 
     def getOrCreateByOpenIDIdentifier(self, openid_identifier, email,
                                       full_name):
-        person, db_updated = getUtility(IPersonSet).getOrCreateByOpenIDIdentifier(
-            openid_identifier, email, full_name,
-            PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
-            "when purchasing an application via Software Center.")
+        try:
+            person, db_updated = getUtility(
+                IPersonSet).getOrCreateByOpenIDIdentifier(
+                    openid_identifier, email, full_name,
+                    PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
+                    "when purchasing an application via Software Center.")
+        except AccountSuspendedError:
+            return faults.AccountSuspended(openid_identifier)
 
         return person.name
 

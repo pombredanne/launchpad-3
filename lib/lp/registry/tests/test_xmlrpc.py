@@ -6,16 +6,20 @@
 __metaclass__ = type
 
 import unittest
+import xmlrpclib
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.functional import XMLRPCTestTransport
 from canonical.launchpad.interfaces import IPrivateApplication
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import (
-    IPersonSetAPIView, IPersonSetApplication, PersonCreationRationale)
+    IPersonSet, IPersonSetAPIView, IPersonSetApplication,
+    PersonCreationRationale)
 from lp.registry.xmlrpc.personset import PersonSetAPIView
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 
 
 class TestPersonSetAPIInterfaces(TestCaseWithFactory):
@@ -30,13 +34,17 @@ class TestPersonSetAPIInterfaces(TestCaseWithFactory):
             request=LaunchpadTestRequest())
 
     def test_provides_interface(self):
+        # The application and api interfaces are provided.
         self.assertProvides(self.private_root.personset, IPersonSetApplication)
         self.assertProvides(self.personset_api, IPersonSetAPIView)
 
     def test_getOrCreateByOpenIDIdentifier(self):
-        person = self.personset_api.getOrCreateByOpenIDIdentifier(
+        # The method returns the username of the person, and sets the
+        # correct creation rational/comment.
+        user_name = self.personset_api.getOrCreateByOpenIDIdentifier(
             'openid-ident', 'a@b.com', 'Joe Blogs')
 
+        person = getUtility(IPersonSet).getByName(user_name)
         self.assertEqual(
             'openid-ident', removeSecurityProxy(person.account).openid_identifier)
         self.assertEqual(
@@ -46,20 +54,38 @@ class TestPersonSetAPIInterfaces(TestCaseWithFactory):
             "when purchasing an application via Software Center.",
             person.creation_comment)
 
-
-    def test_requires_admin_or_agent(self):
-        person = self.factory.makePerson()
-        login_person(person)
-        import xmlrpclib
-        from canonical.functional import XMLRPCTestTransport
+    def test_getOrCreateByOpenIDIdentifier_xmlrpc(self):
+        # The method can be called via xmlrpc
         personset_api_rpc = xmlrpclib.ServerProxy(
             'http://xmlrpc-private.launchpad.dev:8087/personset',
             transport=XMLRPCTestTransport())
 
-        person = personset_api_rpc.getOrCreateByOpenIDIdentifier(
+        user_name = personset_api_rpc.getOrCreateByOpenIDIdentifier(
             'openid-ident', 'a@b.com', 'Joe Blogs')
-        import pdb;pdb.set_trace()
+        person = getUtility(IPersonSet).getByName(user_name)
+        self.assertEqual(
+            'openid-ident', removeSecurityProxy(person.account).openid_identifier)
 
+    def test_getOrCreateByOpenIDIdentifier_xmlrpc_error(self):
+        suspended_account = self.factory.makeAccount(
+            'Joe Blogs', email='a@b.com', status=AccountStatus.SUSPENDED)
+        openid_identifier = removeSecurityProxy(
+            suspended_account).openid_identifier
+        personset_api_rpc = xmlrpclib.ServerProxy(
+            'http://xmlrpc-private.launchpad.dev:8087/personset',
+            transport=XMLRPCTestTransport())
+
+        # assertRaises doesn't let us check the type of Fault.
+        fault_raised = False
+        try:
+            user_name = personset_api_rpc.getOrCreateByOpenIDIdentifier(
+                openid_identifier, 'a@b.com', 'Joe Blogs')
+        except xmlrpclib.Fault, e:
+            fault_raised = True
+            self.assertEqual(370, e.faultCode)
+            self.assertIn(openid_identifier, e.faultString)
+
+        self.assertTrue(fault_raised)
 
 
 def test_suite():
