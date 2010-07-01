@@ -16,6 +16,7 @@ __all__ = [
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
+    'IPersonSetAPIView',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'ITeam',
@@ -2085,6 +2086,21 @@ class ITeamContactAddressForm(Interface):
         title=_("How do people contact these team's members?"),
         required=True, vocabulary=TeamContactMethod)
 
+
+class IPersonSetAPIView(Interface):
+    """XMLRPC API used by the software center agent."""
+
+    def getOrCreateByOpenIDIdentifier(openid_identifier, email, full_name):
+        """Get or create an LP person based on a given (authenticated) identifier.
+
+        See the method of the same name on `IPersonSet`. This XMLRPC version
+        doesn't require the creation rationale and comment.
+
+        This is added as a private XMLRPC method instead of exposing via the
+        API as it should not be needed long-term. Long term we should allow
+        the software center to create subscriptions to private PPAs without
+        requiring a Launchpad account.
+        """
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
