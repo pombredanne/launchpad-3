@@ -213,7 +213,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
     def copyArchive(self, distroseries, archive_name, owner,
         architectures=None, component="main", from_user=None,
-        from_archive=None):
+        from_archive=None, nonvirtualized=False):
         """Run the copy-archive script."""
         extra_args = [
             '--from-distribution', distroseries.distribution.name,
@@ -236,6 +236,9 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         if architectures is None:
             architectures = ["386"]
 
+        if nonvirtualized:
+            extra_args.extend(["--nonvirtualized"])
+
         for architecture in architectures:
             extra_args.extend(['-a', architecture])
 
@@ -252,9 +255,9 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # flag turned off.
         self.assertFalse(copy_archive.enabled)
 
-        # Also, make sure that the builds for the new copy archive will be
-        # carried out on non-virtual builders.
-        self.assertTrue(copy_archive.require_virtualized)
+        # Assert the virtualization is correct.
+        virtual = not nonvirtualized
+        self.assertEqual(copy_archive.require_virtualized, virtual)
 
         return copy_archive
 
@@ -281,13 +284,15 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.createSourcePublications(package_infos, distroseries)
         return distroseries
 
-    def makeCopyArchive(self, package_infos, component="main"):
+    def makeCopyArchive(self, package_infos, component="main",
+                        nonvirtualized=False):
         """Make a copy archive based on a new distribution."""
         owner = self.createTargetOwner()
         distroseries = self.createSourceDistribution(package_infos)
         archive_name = self.getTargetArchiveName(distroseries.distribution)
         copy_archive = self.copyArchive(
-            distroseries, archive_name, owner, component=component)
+            distroseries, archive_name, owner, component=component,
+            nonvirtualized=nonvirtualized)
         return (copy_archive, distroseries)
 
     def checkBuilds(self, archive, package_infos):

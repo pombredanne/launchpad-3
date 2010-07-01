@@ -53,7 +53,7 @@ class ArchivePopulator(SoyuzScript):
         self, from_archive, from_distribution, from_suite, from_user,
         component, to_distribution, to_suite, to_archive, to_user, reason,
         include_binaries, arch_tags, merge_copy_flag,
-        packageset_delta_flag):
+        packageset_delta_flag, nonvirtualized):
         """Create archive, populate it with packages and builds.
 
         Please note: if a component was specified for the origin then the
@@ -206,10 +206,12 @@ class ArchivePopulator(SoyuzScript):
             # before the switch is flipped and build activity starts.
             # Also, builds for copy archives should default to using
             # virtual builders.
+            virtual = not nonvirtualized
             copy_archive = getUtility(IArchiveSet).new(
                 ArchivePurpose.COPY, registrant, name=to_archive,
                 distribution=the_destination.distribution,
-                description=reason, enabled=False, require_virtualized=True)
+                description=reason, enabled=False,
+                require_virtualized=virtual)
             the_destination.archive = copy_archive
             # Associate the newly created copy archive with the processor
             # families specified by the user.
@@ -310,12 +312,14 @@ class ArchivePopulator(SoyuzScript):
             raise SoyuzScriptError(
                 "Invalid origin archive name: '%s'" % opts.from_archive)
 
+        # For the love of $DEITY, WTF doesn't this method just accept a
+        # single parameter "opts" ...
         self.populateArchive(
             opts.from_archive, opts.from_distribution, opts.from_suite,
             opts.from_user, opts.component, opts.to_distribution,
             opts.to_suite, opts.to_archive, opts.to_user, opts.reason,
             opts.include_binaries, opts.arch_tags, opts.merge_copy_flag,
-            opts.packageset_delta_flag)
+            opts.packageset_delta_flag, opts.nonvirtualized)
 
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.
@@ -378,6 +382,11 @@ class ArchivePopulator(SoyuzScript):
             help=(
                 'Only show packages that are fresher or new in origin '
                 'archive. Destination archive must exist already.'))
+
+        self.parser.add_option(
+            "--nonvirtualized", dest="nonvirtualized", default=False,
+            action="store_true",
+            help='Create the archive as nonvirtual if specified.')
 
     def _createMissingBuilds(
         self, distroseries, archive, proc_families):
