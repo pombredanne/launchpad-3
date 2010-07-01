@@ -1592,6 +1592,24 @@ class Archive(SQLBase):
             LibraryFileContent.id == LibraryFileAlias.contentID).config(
                 distinct=True))
 
+    def _get_enabled_restricted_families(self):
+        archive_arch_set = getUtility(IArchiveArchSet)
+        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        return [family for (family, archive_arch) in restricted_families
+                if archive_arch is not None]
+
+    def _set_enabled_restricted_families(self, value):
+        archive_arch_set = getUtility(IArchiveArchSet)
+        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        for (family, archive_arch) in restricted_families:
+            if family in value and archive_arch is None:
+                archive_arch_set.new(self, family)
+            if family not in value and archive_arch is not None:
+                Store.of(self).remove(archive_arch)
+
+    enabled_restricted_families = property(_get_enabled_restricted_families,
+                                           _set_enabled_restricted_families)
+
 
 class ArchiveSet:
     implements(IArchiveSet)
