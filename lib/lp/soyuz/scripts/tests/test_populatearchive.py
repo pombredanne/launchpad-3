@@ -119,7 +119,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             '--to-distribution', distro_name, '--to-suite', 'hoary',
             '--to-archive', archive_name, '--to-user', 'salgado', '--reason',
             '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '--component', 'main'
             ]
 
         # Start archive population now!
@@ -206,7 +205,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
     def getScript(self, test_args=None):
         """Return an ArchivePopulator instance."""
         if test_args is None:
-           test_args = []
+            test_args = []
         script = ArchivePopulator("test copy archives", test_args=test_args)
         script.logger = QuietFakeLogger()
         script.txn = self.layer.txn
@@ -502,24 +501,24 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             architectures=["386", "amd64"])
         self.checkBuilds(copy_archive, [package_info, package_info])
 
-    def testCopyArchiveCopiesAllComponents(self):
-        """Test that packages from all components are copied.
+    def testCopyArchiveCopiesRightComponents(self):
+        """Test that packages from the right components are copied.
 
-        When copying you specify a component, but that component doesn't
+        When copying you specify a component, that component should
         limit the packages copied. We create a source in main and one in
         universe, and then copy with --component main, and expect to see
-        both sources in the copy.
+        only main in the copy.
         """
-        package_infos = [
-            PackageInfo(
+        package_info_universe = PackageInfo(
                 "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED,
-                component="universe"),
-            PackageInfo(
+                component="universe")
+        package_info_main = PackageInfo(
                 "apt", "2.2", status=PackagePublishingStatus.PUBLISHED,
-                component="main")]
-        copy_archive, distroseries = self.makeCopyArchive(package_infos,
-            component="main")
-        self.checkBuilds(copy_archive, package_infos)
+                component="main")
+        package_infos_both = [package_info_universe, package_info_main]
+        copy_archive, distroseries = self.makeCopyArchive(
+            package_infos_both, component="main")
+        self.checkBuilds(copy_archive, [package_info_main])
 
     def testCopyFromPPA(self):
         """Test we can create a copy archive with a PPA as the source."""
@@ -545,7 +544,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         archive_name = self.getTargetArchiveName(distroseries.distribution)
         copy_archive = self.copyArchive(
             distroseries, archive_name, owner, from_user=ppa_owner_name,
-            from_archive=ppa_name)
+            from_archive=ppa_name, component=package_info.component)
         self.checkCopiedSources(
             copy_archive, distroseries, [package_info])
 
