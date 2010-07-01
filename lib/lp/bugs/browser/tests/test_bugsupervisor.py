@@ -65,16 +65,7 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(self.product.bug_supervisor, self.owner)
         notifications = view.request.response.notifications
-        self.assertEqual(1, len(notifications))
-        expected = (
-            'Successfully changed the bug supervisor to '
-            '<a href="http://launchpad.dev/~splat">&lt;splat /&gt;</a>.'
-            '<br /><a href="http://launchpad.dev/~splat">&lt;splat /&gt;</a> '
-            'has also been subscribed to bug notifications for '
-            '&lt;boing /&gt;.<br />You can '
-            '<a href="http://launchpad.dev/boing/+subscribe">change '
-            'the subscriptions</a> for &lt;boing /&gt; at any time.')
-        self.assertEqual(expected, notifications.pop().message)
+        self.assertEqual(0, len(notifications))
 
     def test_owner_appoint_self_from_another(self):
         self.product.setBugSupervisor(self.team, self.owner)

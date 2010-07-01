@@ -9,7 +9,7 @@ __all__ = []
 import unittest
 
 from canonical.launchpad.windmill.testing import lpuser
-from canonical.uuid import generate_uuid
+from uuid import uuid1
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 
@@ -36,7 +36,7 @@ class TestBugCommenting(WindmillTestCase):
 
         # Generate a unique piece of text, so we can run the test multiple
         # times, without resetting the db.
-        new_comment_text = generate_uuid()
+        new_comment_text = str(uuid1())
         client.type(text=new_comment_text, id="field.comment")
         client.click(xpath=ADD_COMMENT_BUTTON)
         client.waits.forElement(

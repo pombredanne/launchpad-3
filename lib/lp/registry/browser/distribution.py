@@ -51,6 +51,7 @@ from lp.blueprints.browser.specificationtarget import (
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
+from lp.registry.browser.pillar import PillarBugsMenu
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
@@ -73,7 +74,6 @@ from lp.registry.interfaces.product import IProduct
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
@@ -415,7 +415,7 @@ class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
         return Link('+addseries', text, icon='add')
 
 
-class DistributionBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
+class DistributionBugsMenu(PillarBugsMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
@@ -426,24 +426,6 @@ class DistributionBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         'filebug',
         'subscribe',
         )
-
-    def cve(self):
-        text = 'CVE reports'
-        return Link('+cve', text, icon='cve')
-
-    @enabled_with_permission('launchpad.Edit')
-    def bugsupervisor(self):
-        text = 'Change bug supervisor'
-        return Link('+bugsupervisor', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def securitycontact(self):
-        text = 'Change security contact'
-        return Link('+securitycontact', text, icon='edit')
-
-    def filebug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='bug')
 
 
 class DistributionSpecificationsMenu(NavigationMenu,
@@ -624,7 +606,8 @@ class DistributionArchivesView(LaunchpadView):
         The context may be an IDistroSeries or a users archives.
         """
         results = getUtility(IArchiveSet).getArchivesForDistribution(
-            self.context, purposes=[ArchivePurpose.COPY], user=self.user)
+            self.context, purposes=[ArchivePurpose.COPY], user=self.user,
+            exclude_disabled=False)
         return results.order_by('date_created DESC')
 
 
@@ -767,7 +750,8 @@ class DistributionEditView(RegistryEditFormView):
 
     schema = IDistribution
     field_names = ['displayname', 'title', 'summary', 'description',
-                   'bug_reporting_guidelines', 'icon', 'logo', 'mugshot',
+                   'bug_reporting_guidelines', 'bug_reported_acknowledgement',
+                   'icon', 'logo', 'mugshot',
                    'official_malone', 'enable_bug_expiration',
                    'official_blueprints', 'official_rosetta',
                    'official_answers', 'translation_focus', ]
