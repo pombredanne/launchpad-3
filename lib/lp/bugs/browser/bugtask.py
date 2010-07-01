@@ -920,6 +920,18 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
     @cachedproperty
     def activity_and_comments(self):
+        """Build list of comments interleaved with activities
+
+        When activities occur on the same day a comment was posted,
+        encapsulate them with that comment.  For the remainder, group
+        then as if owned by the person who posted the first action
+        that day.
+
+        If the number of comments exceeds the configured maximum limit,
+        the list will be truncated to just the first and last sets of
+        comments.  The division between the newest and oldest is marked
+        by an entry in the list with the key 'num_hidden' defined.
+        """
         activity_and_comments = []
         activity_log = self.activity_by_date
 
