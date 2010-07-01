@@ -15,7 +15,7 @@ from storm.locals import Int, Reference
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from storm.expr import (
     Desc, In, Join, LeftJoin)
 from storm.store import Store
@@ -63,6 +63,24 @@ from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadBuild)
+
+
+def get_binary_build_for_build_farm_job(build_farm_job):
+    """Factory method to returning a binary for a build farm job."""
+    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    find_spec = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
+    resulting_tuple = store.find(
+        find_spec,
+        BinaryPackageBuild.package_build == PackageBuild.id,
+        PackageBuild.build_farm_job == BuildFarmJob.id,
+        BuildFarmJob.id == build_farm_job.id).one()
+
+    if resulting_tuple is None:
+        return None
+
+    # We specifically return a proxied BinaryPackageBuild so that we can
+    # be sure it has the correct proxy.
+    return ProxyFactory(resulting_tuple[0])
 
 
 class BinaryPackageBuild(PackageBuildDerived, SQLBase):
@@ -694,6 +712,12 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             return file_object
 
         raise NotFoundError(filename)
+
+    def getSpecificJob(self):
+        """See `IBuildFarmJob`."""
+        # If we are asked to adapt an object that is already a binary
+        # package build, then don't hit the db.
+        return self
 
 
 class BinaryPackageBuildSet:

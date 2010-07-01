@@ -22,8 +22,10 @@ from email.message import Message as EmailMessage
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itertools import count
-from StringIO import StringIO
 import os.path
+from random import randint
+from StringIO import StringIO
+from threading import local
 
 import pytz
 
@@ -56,7 +58,6 @@ from canonical.launchpad.ftests._sqlobject import syncUpdate
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.uuid import generate_uuid
 
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
@@ -213,14 +214,22 @@ class ObjectFactory:
 
     def __init__(self):
         # Initialise the unique identifier.
-        self._integer = count(1)
+        self._local = local()
 
     def getUniqueEmailAddress(self):
         return "%s@example.com" % self.getUniqueString('email')
 
     def getUniqueInteger(self):
-        """Return an integer unique to this factory instance."""
-        return self._integer.next()
+        """Return an integer unique to this factory instance.
+
+        For each thread, this will be a series of increasing numbers, but the
+        starting point will be unique per thread.
+        """
+        counter = getattr(self._local, 'integer', None)
+        if counter is None:
+            counter = count(randint(0, 1000000))
+            self._local.integer = counter
+        return counter.next()
 
     def getUniqueHexString(self, digits=None):
         """Return a unique hexadecimal string.
@@ -245,7 +254,7 @@ class ObjectFactory:
         """
         if prefix is None:
             prefix = "generic-string"
-        string = "%s%s" % (prefix, generate_uuid())
+        string = "%s%s" % (prefix, self.getUniqueInteger())
         return string.replace('_', '-').lower()
 
     def getUniqueUnicode(self):
@@ -2174,18 +2183,22 @@ class LaunchpadObjectFactory(ObjectFactory):
             source_package_recipe_build=source_package_recipe_build)
 
     def makeBinaryPackageBuild(self, source_package_release=None,
-            distroarchseries=None):
+            distroarchseries=None, archive=None, builder=None):
         """Create a BinaryPackageBuild.
 
-        If supplied, the source_package_release is used to determine archive.
+        If archive is not supplied, the source_package_release is used
+        to determine archive.
         :param source_package_release: The SourcePackageRelease this binary
             build uses as its source.
         :param distroarchseries: The DistroArchSeries to use.
+        :param archive: The Archive to use.
+        :param builder: An optional builder to assign.
         """
-        if source_package_release is None:
-            archive = self.makeArchive()
-        else:
-            archive = source_package_release.upload_archive
+        if archive is None:
+            if source_package_release is None:
+                archive = self.makeArchive()
+            else:
+                archive = source_package_release.upload_archive
         if source_package_release is None:
             multiverse = self.makeComponent(name='multiverse')
             source_package_release = self.makeSourcePackageRelease(
@@ -2203,7 +2216,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             archive=archive,
             pocket=PackagePublishingPocket.RELEASE,
             date_created=self.getUniqueDate())
-        binary_package_build_job = binary_package_build.makeJob()
+        naked_build = removeSecurityProxy(binary_package_build)
+        naked_build.builder = builder
+        binary_package_build_job = naked_build.makeJob()
         BuildQueue(
             job=binary_package_build_job.job,
             job_type=BuildFarmJobType.PACKAGEBUILD)

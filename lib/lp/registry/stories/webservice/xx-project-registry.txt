@@ -1250,6 +1250,8 @@ through the API.
 
     >>> logout()
 
+    >>> from lazr.restful.interfaces import IRepresentationCache
+    >>> ws_uncache(mmm)
     >>> mmm = webservice.get("/mega-money-maker").jsonBody()
     >>> print mmm['display_name']
     Mega Money Maker
