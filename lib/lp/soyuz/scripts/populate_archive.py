@@ -425,7 +425,19 @@ class ArchivePopulator(SoyuzScript):
             """Return the source package name for a publishing record."""
             return pub.sourcepackagerelease.sourcepackagename.name
 
+        archindep_unavailable = distroseries.nominatedarchindep not in (
+            architectures)
+
         for pubrec in sources_published:
+            if (pubrec.sourcepackagerelease.architecturehintlist == "all"
+                and archindep_unavailable):
+                self.logger.info(
+                    "Skipping %s, arch-all package can't be built since %s "
+                    "is not requested" % (
+                        get_spn(pubrec),
+                        distroseries.nominatedarchindep.architecturetag))
+                continue
+
             builds = pubrec.createMissingBuilds(
                 architectures_available=architectures, logger=self.logger)
             if len(builds) == 0:
