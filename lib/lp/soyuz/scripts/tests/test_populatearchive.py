@@ -44,11 +44,13 @@ def get_spn(build):
 class PackageInfo:
 
     def __init__(self, name, version,
-                 status=PackagePublishingStatus.PUBLISHED, component="main"):
+                 status=PackagePublishingStatus.PUBLISHED, component="main",
+                 arch_hint=None):
         self.name = name
         self.version = version
         self.status = status
         self.component = component
+        self.arch_hint = arch_hint
 
 
 class TestPopulateArchiveScript(TestCaseWithFactory):
@@ -189,12 +191,17 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
     def createSourcePublication(self, info, distroseries):
         """Create a SourcePackagePublishingHistory based on a PackageInfo."""
+        if info.arch_hint is None:
+            arch_hint = "any"
+        else:
+            arch_hint = info.arch_hint
+
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=self.factory.getOrMakeSourcePackageName(
                 name=info.name),
             distroseries=distroseries, component=self.factory.makeComponent(
                 info.component),
-            version=info.version, architecturehintlist='any',
+            version=info.version, architecturehintlist=arch_hint,
             archive=distroseries.distribution.main_archive,
             status=info.status, pocket=PackagePublishingPocket.RELEASE)
 
@@ -481,6 +488,30 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # We only get a single build, as we only requested 386, not
         # amd64 too
         self.checkBuilds(copy_archive, [package_info])
+
+    def testNoBuildsForArchAll(self):
+        # If we have a copy for an architecture that is not the
+        # nominatedarchindep architecture, then we don't want to create
+        # builds for arch-all packages, as they can't be built at all
+        # and createMissingBuilds blows up when it checks that.
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED,
+            arch_hint="all")
+        owner = self.createTargetOwner()
+        distroseries = self.createSourceDistribution([package_info])
+        self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="amd64",
+            processorfamily=ProcessorFamilySet().getByName("amd64"),
+            supports_virtualized=True)
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner,
+            architectures=["amd64"])
+        # We don't get any builds since amd64 is not the
+        # nomindatedarchindep, i386 is.
+        self.assertEqual(
+            distroseries.nominatedarchindep.architecturetag, "i386")
+        self.checkBuilds(copy_archive, [])
 
     def testMultipleArchTags(self):
         """Test copying an archive with multiple architectures.
