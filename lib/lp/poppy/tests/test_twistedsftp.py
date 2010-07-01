@@ -9,8 +9,8 @@ import os
 import tempfile
 import unittest
 
-from lp.codehosting.sftp import FileIsADirectory
 from lp.poppy.twistedsftp import SFTPServer
+from lp.services.sshserver.sftp import FileIsADirectory
 from lp.testing import TestCase
 
 
