@@ -307,9 +307,9 @@
             tal:condition="view/visible_comments_truncated_for_display">
           <div class="informational message">
             Displaying first <span
-            tal:replace="view/visible_oldest_comments_for_display/count:len" />
+            tal:replace="view/visible_oldest_comments_for_display/count:len">23</span>
             and last <span
-            tal:replace="view/visible_newest_comments_for_display/count:len" />
+            tal:replace="view/visible_newest_comments_for_display/count:len">32</span>
             comments.
             <tal:what-next
                 define="view_all_href
