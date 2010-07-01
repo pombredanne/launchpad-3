@@ -8,12 +8,12 @@
 
     <subscriber
         for="zope.app.publication.interfaces.IStartRequestEvent"
-        handler="canonical.launchpad.webapp.profile.start_request"
+        handler="lp.services.profile.profile.start_request"
         />
 
     <subscriber
         for="zope.app.publication.interfaces.IEndRequestEvent"
-        handler="canonical.launchpad.webapp.profile.end_request"
+        handler="lp.services.profile.profile.end_request"
         />
 
 </configure>
