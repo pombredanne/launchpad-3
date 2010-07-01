@@ -9,10 +9,13 @@ __all__ = [
     ]
 
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
-from lp.registry.interfaces.person import IPersonSetAPIView
+from lp.registry.interfaces.person import (
+    IPersonSet, IPersonSetAPIView, IPersonSetApplication,
+    PersonCreationRationale)
 
 
 class PersonSetAPIView(LaunchpadXMLRPCView):
@@ -22,5 +25,17 @@ class PersonSetAPIView(LaunchpadXMLRPCView):
 
     def getOrCreateByOpenIDIdentifier(self, openid_identifier, email,
                                       full_name):
-        pass
+        person, db_updated = getUtility(IPersonSet).getOrCreateByOpenIDIdentifier(
+            openid_identifier, email, full_name,
+            PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
+            "when purchasing an application via Software Center.")
+
+        return person.name
+
+
+class PersonSetApplication:
+    """Personset end-point."""
+    implements(IPersonSetApplication)
+
+    title = "PersonSet API"
 

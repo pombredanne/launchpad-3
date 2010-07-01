@@ -17,6 +17,7 @@ __all__ = [
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
     'IPersonSetAPIView',
+    'IPersonSetApplication',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'ITeam',
@@ -76,7 +77,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchpadApplication, NameLookupFailed)
 
 from lp.app.interfaces.headings import IRootContext
 from lp.blueprints.interfaces.specificationtarget import (
@@ -2101,6 +2103,10 @@ class IPersonSetAPIView(Interface):
         the software center to create subscriptions to private PPAs without
         requiring a Launchpad account.
         """
+
+class IPersonSetApplication(ILaunchpadApplication):
+    """XMLRPC application root for IPersonSetAPIView."""
+
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
