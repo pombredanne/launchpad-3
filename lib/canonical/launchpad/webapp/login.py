@@ -297,14 +297,7 @@ class OpenIDCallbackView(OpenIDLogin):
         # exists.
         person_set = getUtility(IPersonSet)
         with MasterDatabasePolicy():
-            # If we were not sent an sreg_response, then we shouldn't
-            # require the email_address or fullname (as the account
-            # exists).
-            # XXX Find out from salgado why this is the case.
-            if self.sreg_response:
-                email_address, full_name = self._getEmailAddressAndFullName()
-            else:
-                email_address, full_name = None, None
+            email_address, full_name = self._getEmailAddressAndFullName()
             try:
                 person, db_updated = person_set.getOrCreateByOpenIDIdentifier(
                     identifier, email_address, full_name,

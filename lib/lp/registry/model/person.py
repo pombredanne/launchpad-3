@@ -2434,20 +2434,14 @@ class PersonSet:
         self, openid_identifier, email_address, full_name,
         creation_rationale, comment):
         """See `IPersonSet`."""
+        db_updated = False
         account_set = getUtility(IAccountSet)
         email_set = getUtility(IEmailAddressSet)
-        db_updated = False
-        email = None
-        checked_for_email = False
+        email = email_set.getByEmail(email_address)
         try:
             account = account_set.getByOpenIDIdentifier(
                 openid_identifier)
         except LookupError:
-            assert email_address is not None and full_name is not None, (
-                "An email address and full name are required to "
-                "create an account.")
-            email = email_set.getByEmail(email_address)
-            checked_for_email = True
             if email is None:
                 # There is no account associated with the identifier
                 # nor an email associated with the email address.
@@ -2471,8 +2465,6 @@ class PersonSet:
         elif account.status in [AccountStatus.DEACTIVATED,
                                 AccountStatus.NOACCOUNT]:
             password = '' # Needed just to please reactivate() below.
-            if not checked_for_email:
-                email = email_set.getByEmail(email_address)
             if email is None:
                 email = email_set.new(email_address, account=account)
             removeSecurityProxy(account).reactivate(
