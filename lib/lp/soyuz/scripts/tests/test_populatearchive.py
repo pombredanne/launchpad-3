@@ -214,7 +214,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
     def copyArchive(self, distroseries, archive_name, owner,
         architectures=None, component="main", from_user=None,
-        from_archive=None):
+        from_archive=None, virtualized=False):
         """Run the copy-archive script."""
         extra_args = [
             '--from-distribution', distroseries.distribution.name,
@@ -226,6 +226,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             '--reason',
             '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
             '--component', component,
+            '--virtualized', virtualized,
             ]
 
         if from_user is not None:
@@ -255,7 +256,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
         # Also, make sure that the builds for the new copy archive will be
         # carried out on non-virtual builders.
-        self.assertTrue(copy_archive.require_virtualized)
+        self.assertEqual(copy_archive.require_virtualized, virtualized)
 
         return copy_archive
 
