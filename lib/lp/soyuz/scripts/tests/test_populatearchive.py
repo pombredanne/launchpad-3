@@ -214,7 +214,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
     def copyArchive(self, distroseries, archive_name, owner,
         architectures=None, component="main", from_user=None,
-        from_archive=None, virtualized=False):
+        from_archive=None, nonvirtualized=None):
         """Run the copy-archive script."""
         extra_args = [
             '--from-distribution', distroseries.distribution.name,
@@ -226,7 +226,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             '--reason',
             '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
             '--component', component,
-            '--virtualized', virtualized,
             ]
 
         if from_user is not None:
@@ -237,6 +236,9 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
         if architectures is None:
             architectures = ["386"]
+
+        if nonvirtualized is not None:
+            extra_args.extend(["--nonvirtualized"])
 
         for architecture in architectures:
             extra_args.extend(['-a', architecture])
@@ -253,10 +255,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # Ascertain that the new copy archive was created with the 'enabled'
         # flag turned off.
         self.assertFalse(copy_archive.enabled)
-
-        # Also, make sure that the builds for the new copy archive will be
-        # carried out on non-virtual builders.
-        self.assertEqual(copy_archive.require_virtualized, virtualized)
 
         return copy_archive
 
@@ -283,13 +281,15 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.createSourcePublications(package_infos, distroseries)
         return distroseries
 
-    def makeCopyArchive(self, package_infos, component="main"):
+    def makeCopyArchive(self, package_infos, component="main",
+                        nonvirtualized=None):
         """Make a copy archive based on a new distribution."""
         owner = self.createTargetOwner()
         distroseries = self.createSourceDistribution(package_infos)
         archive_name = self.getTargetArchiveName(distroseries.distribution)
         copy_archive = self.copyArchive(
-            distroseries, archive_name, owner, component=component)
+            distroseries, archive_name, owner, component=component,
+            nonvirtualized=nonvirtualized)
         return (copy_archive, distroseries)
 
     def checkBuilds(self, archive, package_infos):
@@ -353,6 +353,15 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.assertTrue(copy_archive.require_virtualized)
         self.checkCopiedSources(
             copy_archive, distroseries, [package_info])
+
+    def testCopyArchiveVirtualization(self):
+        # Test that setting non-virtual works.
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+        copy_archive, distroseries = self.makeCopyArchive(
+            [package_info], nonvirtualized=True)
+
+        self.assertFalse(copy_archive.require_virtualized)
 
     def testCopyArchiveCreateCopiesPublished(self):
         """Test that PUBLISHED sources are copied."""
