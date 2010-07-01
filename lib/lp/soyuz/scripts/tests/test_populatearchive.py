@@ -286,7 +286,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         return distroseries
 
     def makeCopyArchive(self, package_infos, component="main",
-                        nonvirtualized=None):
+                        nonvirtualized=False):
         """Make a copy archive based on a new distribution."""
         owner = self.createTargetOwner()
         distroseries = self.createSourceDistribution(package_infos)
