@@ -256,6 +256,10 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # flag turned off.
         self.assertFalse(copy_archive.enabled)
 
+        # Assert the virtualization is correct.
+        virtual = not nonvirtualized
+        self.assertEqual(copy_archive.require_virtualized, virtual)
+
         return copy_archive
 
     def checkCopiedSources(self, archive, distroseries, expected):
@@ -353,15 +357,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.assertTrue(copy_archive.require_virtualized)
         self.checkCopiedSources(
             copy_archive, distroseries, [package_info])
-
-    def testCopyArchiveVirtualization(self):
-        # Test that setting non-virtual works.
-        package_info = PackageInfo(
-            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
-        copy_archive, distroseries = self.makeCopyArchive(
-            [package_info], nonvirtualized=True)
-
-        self.assertFalse(copy_archive.require_virtualized)
 
     def testCopyArchiveCreateCopiesPublished(self):
         """Test that PUBLISHED sources are copied."""
