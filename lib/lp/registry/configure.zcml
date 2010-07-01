@@ -873,9 +873,6 @@
             provides="lp.registry.interfaces.person.IPersonSet">
             <allow
                 interface="lp.registry.interfaces.person.IPersonSet"/>
-            <require
-                permission="launchpad.Edit"
-                attributes="getOrCreateByOpenIDIdentifier" />
         </securedutility>
         <securedutility
             class="canonical.launchpad.rest.MeLink"

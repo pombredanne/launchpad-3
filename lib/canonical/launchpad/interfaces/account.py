@@ -8,6 +8,7 @@ __metaclass__ = type
 
 __all__ = [
     'AccountStatus',
+    'AccountSuspendedError',
     'AccountCreationRationale',
     'IAccount',
     'IAccountPrivate',
@@ -25,6 +26,10 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
 from lazr.restful.fields import CollectionField, Reference
+
+
+class AccountSuspendedError(Exception):
+    """The account being accessed has been suspended."""
 
 
 class AccountStatus(DBEnumeratedType):

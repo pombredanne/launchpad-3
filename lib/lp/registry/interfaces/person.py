@@ -1761,20 +1761,32 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
-    def getOrCreateByOpenIDIdentifier(requestor, openid_identifier, email):
-        """Return the LP person corresponding to the OpenID identifier.
+    def getOrCreateByOpenIDIdentifier(requestor, openid_identifier, email,
+                                      full_name, creation_rationale,
+                                      comment):
+        """Get or create a person for a given OpenID identifier.
 
-        If a matching account exists but a person does not, the person
-        will be created.
+        This is used when users login. We get the account with the given
+        OpenID identifier (creating one if it doesn't already exist) and
+        act according to the account's state:
+          - If the account is suspended, we stop and raise an error.
+          - If the account is deactivated, we reactivate it and proceed;
+          - If the account is active, we just proceed.
 
-        If a matching account does not exist we trust the caller
-        (the software-center-agent) and create both the account and
-        the person.
+        If there is no existing Launchpad person for the account, we
+        create it.
 
-        :param requestor: Currently must be the software-center-agent.
-        :param openid_identifier: The identifier to check.
-        :param email: An email to set for a newly created IPerson.
-        :return: An `IPerson` correspending to the identifier, or None.
+        :param openid_identifier: representing the authenticated user.
+        :param email_address: the email address of the user.
+        :param full_name: the full name of the user.
+        :param creataion_rationale: When an account or person needs to
+            be created, this indicates why it was created.
+        :param comment: If the account is reactivated or person created,
+            this comment indicates why.
+        :return: a tuple of `IPerson` and a boolean indicating whether the
+            database was updated.
+        :raises AccountSuspendedError: if the account associated with the
+            identifier has been suspended.
         """
 
     @call_with(teamowner=REQUEST_USER)

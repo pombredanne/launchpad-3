@@ -61,6 +61,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
 from canonical.launchpad.database.account import Account, AccountPassword
+from canonical.launchpad.interfaces.account import AccountSuspendedError
 from lp.bugs.model.bugtarget import HasBugsBase
 from canonical.launchpad.database.stormsugar import StartsWith
 from lp.registry.model.karma import KarmaCategory
@@ -2429,41 +2430,54 @@ class PersonSet:
             key=lambda obj: (obj.karma, obj.displayname, obj.id),
             reverse=True)
 
-    def getOrCreateByOpenIDIdentifier(self, requestor, openid_identifier,
-                                      email):
+    def getOrCreateByOpenIDIdentifier(
+        self, openid_identifier, email_address, full_name,
+        creation_rationale, comment):
         """See `IPersonSet`."""
+        db_updated = False
         account_set = getUtility(IAccountSet)
-        account = None
+        email_set = getUtility(IEmailAddressSet)
+        email = email_set.getByEmail(email_address)
         try:
-            account = account_set.getByOpenIDIdentifier(openid_identifier)
+            account = account_set.getByOpenIDIdentifier(
+                openid_identifier)
         except LookupError:
+            if email is None:
+                # There is no account associated with the identifier
+                # nor an email associated with the email address.
+                # We'll create one.
+                account, email = account_set.createAccountAndEmail(
+                        email_address, creation_rationale, full_name,
+                        password=None,
+                        openid_identifier=openid_identifier)
+            else:
+                account = email.account
+                assert account is not None, (
+                    "This email address should have an associated "
+                    "account.")
+                removeSecurityProxy(account).openid_identifier = (
+                    openid_identifier)
+            db_updated = True
+
+        if account.status == AccountStatus.SUSPENDED:
+            raise AccountSuspendedError(
+                "The account matching the identifier is suspended.")
+        elif account.status in [AccountStatus.DEACTIVATED,
+                                AccountStatus.NOACCOUNT]:
+            password = '' # Needed just to please reactivate() below.
+            if email is None:
+                email = email_set.new(email_address, account=account)
+            removeSecurityProxy(account).reactivate(
+                comment, password, removeSecurityProxy(email))
+        else:
+            # Account is active, so nothing to do.
             pass
+        if IPerson(account, None) is None:
+            removeSecurityProxy(account).createPerson(
+                creation_rationale, comment=comment)
+            db_updated = True
 
-        email_address_set = getUtility(IEmailAddressSet)
-        if account is None:
-            email_address = email_address_set.getByEmail(email)
-            if email_address is not None:
-                raise Exception(
-                    "Email already associated with a different identifier.") # TODO
-                # Or - do we need to check the related account to see if
-                # the openid identifier has been set?
-
-            account = account_set.new(
-                AccountCreationRationale.SOFTWARE_CENTER_PURCHASE,
-                displayname="Non-active person created for Software Center",
-                openid_identifier=openid_identifier)
-            email_address = email_address_set.new(email, account=account)
-            account.setPreferredEmail(email_address)
-
-        person_set = getUtility(IPersonSet)
-        person = person_set.getByAccount(account)
-        if person is None:
-            person = account.createPerson(
-                PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
-                comment="when purchasing an application via Software Center.",
-                registrant=requestor)
-
-        return person
+        return IPerson(account), db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
