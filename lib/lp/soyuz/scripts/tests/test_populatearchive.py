@@ -214,7 +214,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
     def copyArchive(self, distroseries, archive_name, owner,
         architectures=None, component="main", from_user=None,
-        from_archive=None, nonvirtualized=None):
+        from_archive=None, nonvirtualized=False):
         """Run the copy-archive script."""
         extra_args = [
             '--from-distribution', distroseries.distribution.name,
@@ -237,7 +237,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         if architectures is None:
             architectures = ["386"]
 
-        if nonvirtualized is not None:
+        if nonvirtualized:
             extra_args.extend(["--nonvirtualized"])
 
         for architecture in architectures:

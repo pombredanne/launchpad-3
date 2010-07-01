@@ -313,7 +313,7 @@ class ArchivePopulator(SoyuzScript):
                 "Invalid origin archive name: '%s'" % opts.from_archive)
 
         # For the love of $DEITY, WTF doesn't this method just accept a
-        # single paramter "opts" ...
+        # single parameter "opts" ...
         self.populateArchive(
             opts.from_archive, opts.from_distribution, opts.from_suite,
             opts.from_user, opts.component, opts.to_distribution,
