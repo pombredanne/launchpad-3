@@ -16,7 +16,6 @@ from pytz import UTC
 from unittest import TestLoader
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
