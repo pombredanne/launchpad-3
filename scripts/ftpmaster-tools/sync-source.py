@@ -23,8 +23,9 @@ try:
 except ImportError:
     # In older versions of python-debian the main package was named
     # debian_bundle
-    # XXX: Remove this when an up to date version of python-debian lands in 
-    # the PPA.
+    # XXX: Remove this when an up to date version of python-debian lands in
+    # the PPA or Ubuntu. Maverick will be the first release that has an
+    # up to date version of python-debian.
     from debian_bundle.deb822 import Dsc
 
 import errno
