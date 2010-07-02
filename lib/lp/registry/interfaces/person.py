@@ -1781,7 +1781,7 @@ class IPersonSet(Interface):
         :param openid_identifier: representing the authenticated user.
         :param email_address: the email address of the user.
         :param full_name: the full name of the user.
-        :param creataion_rationale: When an account or person needs to
+        :param creation_rationale: When an account or person needs to
             be created, this indicates why it was created.
         :param comment: If the account is reactivated or person created,
             this comment indicates why.
