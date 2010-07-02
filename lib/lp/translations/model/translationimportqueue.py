@@ -1234,7 +1234,7 @@ class TranslationImportQueue:
             "path LIKE ('%%' || %s)" % quote_like(suffix)
             for suffix in importer.template_suffixes
             ])
-        
+
         store = self._getSlaveStore()
         result = store.execute("""
             SELECT
@@ -1255,7 +1255,6 @@ class TranslationImportQueue:
                 'is_template': template_patterns,
             })
 
-        # Strip the last column off the result; it's just always True.
         return set(result)
 
     def _isBlockable(self, entry, blocklist):
