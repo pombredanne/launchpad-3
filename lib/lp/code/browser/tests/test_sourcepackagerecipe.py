@@ -150,7 +150,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
 
         self.assertEqual(
-            get_message_text(browser, 1),
+            get_message_text(browser, 2),
             'The bzr-builder instruction "run" is not permitted here.')
 
     def test_create_new_recipe_empty_name(self):
@@ -170,7 +170,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
 
         self.assertEqual(
-            get_message_text(browser, 1), 'Required input is missing.')
+            get_message_text(browser, 2), 'Required input is missing.')
 
     def createRecipe(self, recipe_text, branch=None):
         if branch is None:
@@ -194,7 +194,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         # should get an error.
         browser = self.createRecipe('Foo bar baz')
         self.assertEqual(
-            get_message_text(browser, 1),
+            get_message_text(browser, 2),
             'The recipe text is not a valid bzr-builder recipe.')
 
     def test_create_recipe_no_distroseries(self):
@@ -213,7 +213,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         # branch location, they should get an error.
         browser = self.createRecipe(MINIMAL_RECIPE_TEXT % 'foo')
         self.assertEqual(
-            get_message_text(browser, 1), 'foo is not a branch on Launchpad.')
+            get_message_text(browser, 2), 'foo is not a branch on Launchpad.')
 
     def test_create_recipe_bad_instruction_branch(self):
         # If a user tries to create source package recipe with a bad
@@ -226,7 +226,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         recipe += 'nest packaging foo debian'
         browser = self.createRecipe(recipe, branch)
         self.assertEqual(
-            get_message_text(browser, 1), 'foo is not a branch on Launchpad.')
+            get_message_text(browser, 2), 'foo is not a branch on Launchpad.')
 
     def test_create_dupe_recipe(self):
         # You shouldn't be able to create a duplicate recipe owned by the same
@@ -248,7 +248,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
 
         self.assertEqual(
-            get_message_text(browser, 1),
+            get_message_text(browser, 2),
             'There is already a recipe owned by Master Chef with this name.')
 
 
@@ -425,7 +425,6 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             pattern, main_text)
 
 
-
 class TestSourcePackageRecipeView(TestCaseForRecipe):
 
     layer = DatabaseFunctionalLayer
@@ -439,6 +438,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Master Chef Recipes cake_recipe
+            .*
             Description
             This recipe .*changes.
 

@@ -31,6 +31,7 @@
         </ul>
       </div>
 
+      <tal:cache content="cache:public, 30 minute">
       <div class="narrow"
         tal:define="summaries view/cached_unlinked_packages;"
         tal:condition="summaries/batch">
@@ -47,8 +48,7 @@
           </thead>
 
           <tbody>
-            <tr tal:repeat="summary summaries/batch"
-              tal:content="cache:public, 30 minute">
+            <tr tal:repeat="summary summaries/batch">
               <td>
                 <a class="sprite package-source"
                   tal:attributes="href summary/package/fmt:url"
@@ -87,6 +87,7 @@
         <div class="results"
           tal:content="structure summaries/@@+navigation-links-lower" />
       </div>
+      </tal:cache>
     </div>
   </body>
 </html>
