@@ -2,20 +2,22 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
-    'get_all_important_translations',
+    'summarize_current_translations',
     'make_translationmessage',
     'make_translationmessage_for_context',
     ]
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import sqlvalues
+from storm.store import Store
+from storm.expr import Coalesce, Or
 
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     TranslationValidationStatus)
 from lp.translations.model.translationmessage import (
     TranslationMessage)
+
 
 def make_translationmessage_for_context(factory, pofile, potmsgset=None,
                                         current=True, other=False,
@@ -25,13 +27,12 @@ def make_translationmessage_for_context(factory, pofile, potmsgset=None,
 
     potemplate = pofile.potemplate
     if potemplate.distroseries is not None:
-        ubuntu = current
-        upstream = other
+        ubuntu, upstream = current, other
     else:
-        ubuntu = other
-        upstream = current
+        ubuntu, upstream = other, current
     return make_translationmessage(
         factory, pofile, potmsgset, ubuntu, upstream, diverged, translations)
+
 
 def make_translationmessage(factory, pofile=None, potmsgset=None,
                             ubuntu=True, upstream=True,
@@ -60,8 +61,7 @@ def make_translationmessage(factory, pofile=None, potmsgset=None,
     submitter = pofile.owner
     validation_status = TranslationValidationStatus.UNKNOWN
 
-    translations = dict(
-        [(i, translations[i]) for i in range(len(translations))])
+    translations = dict(enumerate(translations))
 
     potranslations = removeSecurityProxy(
         potmsgset)._findPOTranslations(translations)
@@ -84,33 +84,31 @@ def make_translationmessage(factory, pofile=None, potmsgset=None,
         is_current_upstream=upstream)
     return new_message
 
+
 def get_all_translations_current_anywhere(pofile, potmsgset):
-    """Get all translation messages on this POTMsgSet used anywhere."""
-    used_clause = ('(is_current_ubuntu IS TRUE OR '
-                   'is_current_upstream IS TRUE)')
-    template_clause = 'TranslationMessage.potemplate IS NOT NULL'
-    clauses = [
-        'potmsgset = %s' % sqlvalues(potmsgset),
-        used_clause,
-        template_clause,
-        'TranslationMessage.language = %s' % sqlvalues(pofile.language)]
-    if pofile.variant is None:
-        clauses.append('TranslationMessage.variant IS NULL')
-    else:
-        clauses.append(
-            'TranslationMessage.variant=%s' % sqlvalues(pofile.variant))
+    """Get current `TranslationMessage`s for this `POTMsgSet` and language.
 
-    order_by = '-COALESCE(potemplate, -1)'
+    The `TranslationMessage`s can be in use anywhere; the `pofile` only
+    selects the language.
+    """
+    result = Store.of(potmsgset).find(
+        TranslationMessage,
+        TranslationMessage.potmsgset == potmsgset,
+        Or(
+            TranslationMessage.is_current_ubuntu == True,
+            TranslationMessage.is_current_upstream == True),
+        TranslationMessage.potemplate != None,
+        TranslationMessage.language == pofile.language,
+        TranslationMessage.variant == pofile.variant)
+    return result.order_by(-Coalesce(TranslationMessage.potemplateID, -1))
 
-    return TranslationMessage.select(
-        ' AND '.join(clauses), orderBy=[order_by])
 
-def get_all_important_translations(pofile, potmsgset):
-    """Return all existing current translations.
+def summarize_current_translations(pofile, potmsgset):
+    """Return all existing current translations for `POTMsgSet`.
 
     Returns a tuple containing 4 elements:
      * current, shared translation for `potmsgset`.
-     * diverged translation for `potmsgset` in `pofile` or None.
+     * diverged translation for `potmsgset` in `pofile`, or None.
      * shared translation for `potmsgset` in "other" context.
      * list of all other diverged translations (not including the one
        diverged in `pofile`) or an empty list if there are none.
@@ -119,8 +117,7 @@ def get_all_important_translations(pofile, potmsgset):
         None, pofile.language, pofile.variant)
     current_diverged = potmsgset.getCurrentTranslationMessage(
         pofile.potemplate, pofile.language, pofile.variant)
-    if (current_diverged is not None and
-        current_diverged.potemplate is None):
+    if current_diverged is not None and not current_diverged.is_diverged:
         current_diverged = None
 
     other_shared = potmsgset.getImportedTranslationMessage(
@@ -129,7 +126,7 @@ def get_all_important_translations(pofile, potmsgset):
         pofile.potemplate, pofile.language, pofile.variant)
     assert other_diverged is None or other_diverged.potemplate is None, (
         "There is a diverged 'other' translation for "
-        "this same template, which isn't impossible.")
+        "this same template, which should be impossible.")
 
     all_used = get_all_translations_current_anywhere(
         pofile, potmsgset)

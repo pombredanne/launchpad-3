@@ -132,6 +132,8 @@ class TranslationSideMessageTraits:
             return
 
         if value and self.incumbent_message is not None:
+            Store.of(self.incumbent_message).add_flush_order(
+                self.incumbent_message, translationmessage)
             self.setFlag(self.incumbent_message, False)
 
         setattr(translationmessage, self.flag_name, value)
