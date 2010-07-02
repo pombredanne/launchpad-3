@@ -51,6 +51,18 @@
         description="Menu for displaying actions to be performed"
         />
 
+    <!-- XXX Probably make this in overrides for ISimpleReadContainer.  Safer:
+      register for all apidoc containers, one way or another -->
+    <view
+      for="zope.container.interfaces.IReadContainer"
+      type="zope.publisher.interfaces.http.IHTTPRequest"
+      provides="zope.publisher.interfaces.IPublishTraverse"
+      factory="zope.container.traversal.ContainerTraverser"
+      permission="zope.Public"
+      allowed_interface="zope.publisher.interfaces.IPublishTraverse"
+      />
+    <adapter factory="canonical.launchpad.webapp.publisher.BrowserResourceAbsoluteUrl" />
+
     <class class="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest">
       <implements interface="zope.app.apidoc.browser.skin.APIDOC" />
     </class>
