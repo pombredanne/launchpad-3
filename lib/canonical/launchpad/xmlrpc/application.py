@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces import (
 from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication)
-from lp.registry.interfaces.person import IPersonSetApplication
+from lp.registry.interfaces.person import ISoftwareCenterAgentApplication
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
@@ -60,9 +60,9 @@ class PrivateApplication:
         return getUtility(IPrivateMaloneApplication)
 
     @property
-    def personset(self):
+    def softwarecenteragent(self):
         """See `IPrivateApplication`."""
-        return getUtility(IPersonSetApplication)
+        return getUtility(ISoftwareCenterAgentApplication)
 
 
 class ISelfTest(Interface):

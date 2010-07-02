@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'PersonSetAPIView',
+    'SoftwareCenterAgentAPI',
     ]
 
 
@@ -16,16 +16,16 @@ from canonical.launchpad.interfaces.account import AccountSuspendedError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 from lp.registry.interfaces.person import (
-    IPersonSet, IPersonSetAPIView, IPersonSetApplication,
+    IPersonSet, ISoftwareCenterAgentAPI, ISoftwareCenterAgentApplication,
     PersonCreationRationale)
 
 
-class PersonSetAPIView(LaunchpadXMLRPCView):
-    """See `IPersonSetAPIView`."""
+class SoftwareCenterAgentAPI(LaunchpadXMLRPCView):
+    """See `ISoftwareCenterAgentAPI`."""
 
-    implements(IPersonSetAPIView)
+    implements(ISoftwareCenterAgentAPI)
 
-    def getOrCreateByOpenIDIdentifier(self, openid_identifier, email,
+    def getOrCreateSoftwareCenterCustomer(self, openid_identifier, email,
                                       full_name):
         try:
             person, db_updated = getUtility(
@@ -39,9 +39,9 @@ class PersonSetAPIView(LaunchpadXMLRPCView):
         return person.name
 
 
-class PersonSetApplication:
-    """Personset end-point."""
-    implements(IPersonSetApplication)
+class SoftwareCenterAgentApplication:
+    """Software center agent end-point."""
+    implements(ISoftwareCenterAgentApplication)
 
-    title = "PersonSet API"
+    title = "Software Center Agent API"
 

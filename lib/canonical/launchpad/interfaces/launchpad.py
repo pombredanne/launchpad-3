@@ -296,7 +296,8 @@ class IPrivateApplication(ILaunchpadApplication):
 
     bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")
 
-    personset = Attribute("""Launchpad personset XML-RPC end point.""")
+    softwarecenteragent = Attribute(
+        """Software center agent XML-RPC end point.""")
 
 
 class IAuthServerApplication(ILaunchpadApplication):

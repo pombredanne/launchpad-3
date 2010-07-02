@@ -1007,14 +1007,14 @@
         class="canonical.launchpad.xmlrpc.MailingListAPIView"
         permission="zope.Public"/>
     <securedutility
-        class="lp.registry.xmlrpc.personset.PersonSetApplication"
-        provides="lp.registry.interfaces.person.IPersonSetApplication">
-      <allow interface="lp.registry.interfaces.person.IPersonSetApplication" />
+        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentApplication"
+        provides="lp.registry.interfaces.person.ISoftwareCenterAgentApplication">
+      <allow interface="lp.registry.interfaces.person.ISoftwareCenterAgentApplication" />
     </securedutility>
     <xmlrpc:view
-        for="lp.registry.interfaces.person.IPersonSetApplication"
-        interface="lp.registry.interfaces.person.IPersonSetAPIView"
-        class="lp.registry.xmlrpc.personset.PersonSetAPIView"
+        for="lp.registry.interfaces.person.ISoftwareCenterAgentApplication"
+        interface="lp.registry.interfaces.person.ISoftwareCenterAgentAPI"
+        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentAPI"
         permission="zope.Public"/>
 
     <!-- Helper page for held message approval -->

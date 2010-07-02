@@ -16,8 +16,8 @@ __all__ = [
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
-    'IPersonSetAPIView',
-    'IPersonSetApplication',
+    'ISoftwareCenterAgentAPI',
+    'ISoftwareCenterAgentApplication',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'ITeam',
@@ -2089,11 +2089,12 @@ class ITeamContactAddressForm(Interface):
         required=True, vocabulary=TeamContactMethod)
 
 
-class IPersonSetAPIView(Interface):
+class ISoftwareCenterAgentAPI(Interface):
     """XMLRPC API used by the software center agent."""
 
-    def getOrCreateByOpenIDIdentifier(openid_identifier, email, full_name):
-        """Get or create an LP person based on a given (authenticated) identifier.
+    def getOrCreateSoftwareCenterCustomer(openid_identifier, email,
+                                          full_name):
+        """Get or create an LP person based on a given identifier.
 
         See the method of the same name on `IPersonSet`. This XMLRPC version
         doesn't require the creation rationale and comment.
@@ -2104,8 +2105,8 @@ class IPersonSetAPIView(Interface):
         requiring a Launchpad account.
         """
 
-class IPersonSetApplication(ILaunchpadApplication):
-    """XMLRPC application root for IPersonSetAPIView."""
+class ISoftwareCenterAgentApplication(ILaunchpadApplication):
+    """XMLRPC application root for ISoftwareCenterAgentAPI."""
 
 
 class JoinNotAllowed(Exception):
