@@ -9,7 +9,9 @@
   <body>
     <div metal:fill-slot="main">
       <div id="copyright" class="top-portlet">
-        <div tal:content="structure context/currentrelease/@@+copyright"/>
+        <div
+          tal:condition="context/currentrelease"
+          tal:content="structure context/currentrelease/@@+copyright"/>
 
         <p tal:condition="not: context/currentrelease"
            class="informational message">
