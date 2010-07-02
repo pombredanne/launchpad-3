@@ -18,7 +18,13 @@ import _pythonpath
 
 import apt_pkg
 import commands
-from debian_bundle.deb822 import Dsc
+try:
+    from debian.deb822 import Dsc
+except ImportError:
+    # In older versions of python-debian the main package was named
+    # debian_bundle
+    from debian_bundle.deb822 import Dsc
+
 import errno
 import optparse
 import os
