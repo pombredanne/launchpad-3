@@ -19,23 +19,22 @@ from lp.registry.interfaces.person import (
     IPersonSet, IPersonSetAPIView, IPersonSetApplication,
     PersonCreationRationale)
 from lp.registry.xmlrpc.personset import PersonSetAPIView
-from lp.testing import TestCaseWithFactory
+from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
 
 
-class TestPersonSetAPIInterfaces(TestCaseWithFactory):
+class TestPersonSetAPIView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestPersonSetAPIInterfaces, self).setUp()
+        super(TestPersonSetAPIView, self).setUp()
         self.private_root = getUtility(IPrivateApplication)
         self.personset_api = PersonSetAPIView(
             context=self.private_root.personset,
             request=LaunchpadTestRequest())
 
     def test_provides_interface(self):
-        # The application and api interfaces are provided.
-        self.assertProvides(self.private_root.personset, IPersonSetApplication)
+        # The view interface is provided.
         self.assertProvides(self.personset_api, IPersonSetAPIView)
 
     def test_getOrCreateByOpenIDIdentifier(self):
@@ -54,31 +53,55 @@ class TestPersonSetAPIInterfaces(TestCaseWithFactory):
             "when purchasing an application via Software Center.",
             person.creation_comment)
 
-    def test_getOrCreateByOpenIDIdentifier_xmlrpc(self):
-        # The method can be called via xmlrpc
-        personset_api_rpc = xmlrpclib.ServerProxy(
+
+class TestPersonSetAPIApplication(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonSetAPIApplication, self).setUp()
+        self.private_root = getUtility(IPrivateApplication)
+        self.xmlrpc_api = xmlrpclib.ServerProxy(
             'http://xmlrpc-private.launchpad.dev:8087/personset',
             transport=XMLRPCTestTransport())
 
-        user_name = personset_api_rpc.getOrCreateByOpenIDIdentifier(
+        agent = self.factory.makePerson(name='software-center-agent')
+        #login_person(agent)
+        login('admin@canonical.com')
+
+    def test_provides_interface(self):
+        # The application is provided.
+        self.assertProvides(
+            self.private_root.personset, IPersonSetApplication)
+
+    def test_no_anon_access_to_xmlrpc_view(self):
+        # The xmlrpc view cannot be accessed anonymously.
+        login(ANONYMOUS)
+
+        self.assertRaises(
+            xmlrpclib.ProtocolError,
+            self.xmlrpc_api.getOrCreateByOpenIDIdentifier,
+            'openid-ident', 'a@b.com', 'Joe Blogs')
+
+    def test_getOrCreateByOpenIDIdentifier_xmlrpc(self):
+        # The method can be called via xmlrpc
+        user_name = self.xmlrpc_api.getOrCreateByOpenIDIdentifier(
             'openid-ident', 'a@b.com', 'Joe Blogs')
         person = getUtility(IPersonSet).getByName(user_name)
         self.assertEqual(
-            'openid-ident', removeSecurityProxy(person.account).openid_identifier)
+            'openid-ident',
+            removeSecurityProxy(person.account).openid_identifier)
 
     def test_getOrCreateByOpenIDIdentifier_xmlrpc_error(self):
         suspended_account = self.factory.makeAccount(
             'Joe Blogs', email='a@b.com', status=AccountStatus.SUSPENDED)
         openid_identifier = removeSecurityProxy(
             suspended_account).openid_identifier
-        personset_api_rpc = xmlrpclib.ServerProxy(
-            'http://xmlrpc-private.launchpad.dev:8087/personset',
-            transport=XMLRPCTestTransport())
 
         # assertRaises doesn't let us check the type of Fault.
         fault_raised = False
         try:
-            user_name = personset_api_rpc.getOrCreateByOpenIDIdentifier(
+            user_name = self.xmlrpc_api.getOrCreateByOpenIDIdentifier(
                 openid_identifier, 'a@b.com', 'Joe Blogs')
         except xmlrpclib.Fault, e:
             fault_raised = True

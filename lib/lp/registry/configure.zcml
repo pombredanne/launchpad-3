@@ -1015,7 +1015,7 @@
         for="lp.registry.interfaces.person.IPersonSetApplication"
         interface="lp.registry.interfaces.person.IPersonSetAPIView"
         class="lp.registry.xmlrpc.personset.PersonSetAPIView"
-        permission="zope.Public"/>
+        permission="launchpad.Admin"/>
 
     <!-- Helper page for held message approval -->
 
