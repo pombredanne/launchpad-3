@@ -66,6 +66,7 @@ class TestSourcePackageReleaseView(TestCaseWithFactory):
 
     def test_highlighted_copyright_is_None(self):
         expected = ''
+        self.source_package_release.copyright = None
         view = create_initialized_view(
             self.source_package_release, '+copyright')
         self.assertEqual(expected, view.highlighted_copyright)
