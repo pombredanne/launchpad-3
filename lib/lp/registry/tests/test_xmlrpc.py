@@ -56,12 +56,12 @@ class TestSoftwareCenterAgentAPI(TestCaseWithFactory):
             person.creation_comment)
 
 
-class TestPersonSetAPIApplication(TestCaseWithFactory):
+class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestPersonSetAPIApplication, self).setUp()
+        super(TestSoftwareCenterAgentApplication, self).setUp()
         self.private_root = getUtility(IPrivateApplication)
         self.rpc_proxy = xmlrpclib.ServerProxy(
             'http://xmlrpc-private.launchpad.dev:8087/softwarecenteragent',
