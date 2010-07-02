@@ -41,8 +41,9 @@ class TestPersonSetAPIView(TestCaseWithFactory):
         # The method returns the username of the person, and sets the
         # correct creation rational/comment.
         user_name = self.personset_api.getOrCreateByOpenIDIdentifier(
-            'openid-ident', 'a@b.com', 'Joe Blogs')
+            'openid-ident', 'alice@b.com', 'Joe Blogs')
 
+        self.assertEqual('alice', user_name)
         person = getUtility(IPersonSet).getByName(user_name)
         self.assertEqual(
             'openid-ident', removeSecurityProxy(person.account).openid_identifier)
@@ -61,31 +62,18 @@ class TestPersonSetAPIApplication(TestCaseWithFactory):
     def setUp(self):
         super(TestPersonSetAPIApplication, self).setUp()
         self.private_root = getUtility(IPrivateApplication)
-        self.xmlrpc_api = xmlrpclib.ServerProxy(
+        self.rpc_proxy = xmlrpclib.ServerProxy(
             'http://xmlrpc-private.launchpad.dev:8087/personset',
             transport=XMLRPCTestTransport())
-
-        agent = self.factory.makePerson(name='software-center-agent')
-        #login_person(agent)
-        login('admin@canonical.com')
 
     def test_provides_interface(self):
         # The application is provided.
         self.assertProvides(
             self.private_root.personset, IPersonSetApplication)
 
-    def test_no_anon_access_to_xmlrpc_view(self):
-        # The xmlrpc view cannot be accessed anonymously.
-        login(ANONYMOUS)
-
-        self.assertRaises(
-            xmlrpclib.ProtocolError,
-            self.xmlrpc_api.getOrCreateByOpenIDIdentifier,
-            'openid-ident', 'a@b.com', 'Joe Blogs')
-
     def test_getOrCreateByOpenIDIdentifier_xmlrpc(self):
         # The method can be called via xmlrpc
-        user_name = self.xmlrpc_api.getOrCreateByOpenIDIdentifier(
+        user_name = self.rpc_proxy.getOrCreateByOpenIDIdentifier(
             'openid-ident', 'a@b.com', 'Joe Blogs')
         person = getUtility(IPersonSet).getByName(user_name)
         self.assertEqual(
@@ -101,7 +89,7 @@ class TestPersonSetAPIApplication(TestCaseWithFactory):
         # assertRaises doesn't let us check the type of Fault.
         fault_raised = False
         try:
-            user_name = self.xmlrpc_api.getOrCreateByOpenIDIdentifier(
+            user_name = self.rpc_proxy.getOrCreateByOpenIDIdentifier(
                 openid_identifier, 'a@b.com', 'Joe Blogs')
         except xmlrpclib.Fault, e:
             fault_raised = True

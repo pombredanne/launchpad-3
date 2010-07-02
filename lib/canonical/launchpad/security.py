@@ -2469,12 +2469,3 @@ class EditPackagesetSet(AuthorizationBase):
         """Users must be an admin or a member of the tech board."""
         return user.in_admin or user.in_ubuntu_techboard
 
-from lp.registry.interfaces.person import IPersonSetAPIView
-#from lp.registry.interfaces.person import IPersonSetApplication
-class AdminPersonSetXMLRPCView(AdminByAdminsTeam):
-    permission = 'launchpad.Admin'
-    usedfor = IPersonSetAPIView
-    #usedfor = IPersonSetApplication
-
-    def checkAuthenticated(self, user):
-        import pdb;pdb.set_trace()
