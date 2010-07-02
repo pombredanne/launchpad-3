@@ -2468,4 +2468,3 @@ class EditPackagesetSet(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         return user.in_admin or user.in_ubuntu_techboard
-

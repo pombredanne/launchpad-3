@@ -19,7 +19,7 @@ from lp.registry.interfaces.person import (
     IPersonSet, IPersonSetAPIView, IPersonSetApplication,
     PersonCreationRationale)
 from lp.registry.xmlrpc.personset import PersonSetAPIView
-from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 
 
 class TestPersonSetAPIView(TestCaseWithFactory):
@@ -46,7 +46,8 @@ class TestPersonSetAPIView(TestCaseWithFactory):
         self.assertEqual('alice', user_name)
         person = getUtility(IPersonSet).getByName(user_name)
         self.assertEqual(
-            'openid-ident', removeSecurityProxy(person.account).openid_identifier)
+            'openid-ident',
+            removeSecurityProxy(person.account).openid_identifier)
         self.assertEqual(
             PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
             person.creation_rationale)
@@ -81,6 +82,7 @@ class TestPersonSetAPIApplication(TestCaseWithFactory):
             removeSecurityProxy(person.account).openid_identifier)
 
     def test_getOrCreateByOpenIDIdentifier_xmlrpc_error(self):
+        # A suspended account results in an appropriate xmlrpc fault.
         suspended_account = self.factory.makeAccount(
             'Joe Blogs', email='a@b.com', status=AccountStatus.SUSPENDED)
         openid_identifier = removeSecurityProxy(
@@ -89,7 +91,7 @@ class TestPersonSetAPIApplication(TestCaseWithFactory):
         # assertRaises doesn't let us check the type of Fault.
         fault_raised = False
         try:
-            user_name = self.rpc_proxy.getOrCreateByOpenIDIdentifier(
+            self.rpc_proxy.getOrCreateByOpenIDIdentifier(
                 openid_identifier, 'a@b.com', 'Joe Blogs')
         except xmlrpclib.Fault, e:
             fault_raised = True
@@ -97,6 +99,24 @@ class TestPersonSetAPIApplication(TestCaseWithFactory):
             self.assertIn(openid_identifier, e.faultString)
 
         self.assertTrue(fault_raised)
+
+    def test_not_available_on_public_api(self):
+        # The person set api is not available on the public xmlrpc
+        # service.
+        public_rpc_proxy = xmlrpclib.ServerProxy(
+            'http://test@canonical.com:test@xmlrpc.launchpad.dev/personset',
+            transport=XMLRPCTestTransport())
+
+        # assertRaises doesn't let us check the type of Fault.
+        protocol_error_raised = False
+        try:
+            public_rpc_proxy.getOrCreateByOpenIDIdentifier(
+                'openid-ident', 'a@b.com', 'Joe Blogs')
+        except xmlrpclib.ProtocolError, e:
+            protocol_error_raised = True
+            self.assertEqual(404, e.errcode)
+
+        self.assertTrue(protocol_error_raised)
 
 
 def test_suite():
