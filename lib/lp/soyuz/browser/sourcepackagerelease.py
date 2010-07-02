@@ -147,3 +147,12 @@ class SourcePackageReleaseView(LaunchpadView):
     def change_summary(self):
         """Return a linkified change summary."""
         return linkify_changelog(self.user, self.context.change_summary)
+
+    @property
+    def highlighted_copyright(self):
+        """Return the copyright with markup that highlights paths and URLs."""
+        if not self.context.copyright:
+            return ''
+        pattern = re.compile(r'([\S]+/[\S]+/[\S]+)')
+        highlight = r'<span class="highlighted">\1</span>'
+        return pattern.sub(highlight, self.context.copyright)

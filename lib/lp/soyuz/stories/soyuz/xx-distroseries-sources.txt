@@ -205,6 +205,37 @@ Back to the SourcePackage page:
   >>> browser.open(
   ...     'http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox')
 
+Any user can see the copyright for the most recent source package release.
+
+    >>> # Add copyright info for the object under test.
+    >>> import transaction
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.testing import login, logout
+
+    >>> login('admin@canonical.com')
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> warty_firefox = ubuntu.getSeries(
+    ...     'warty').getSourcePackage('mozilla-firefox')
+    >>> source_package_release = warty_firefox.distinctreleases[0]
+    >>> removeSecurityProxy(source_package_release).copyright = (
+    ...     'Copyright 2010 Ford Prefect.')
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> browser.getLink('copyright').click()
+    >>> print browser.title
+    Copyright : ...mozilla-firefox... source package : Warty (4.10) : Ubuntu
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'copyright'))
+    Copyright 2010 Ford Prefect.
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox')
+
+
 We can visit a specific published release of "mozilla-firefox", this
 page is provided by an DistroSeriesSourcePackageRelease instance:
 

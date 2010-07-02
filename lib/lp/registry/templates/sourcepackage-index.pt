@@ -52,6 +52,9 @@
           <li>
             <a tal:replace="structure context/menu:overview/changelog/fmt:link" />
           </li>
+          <li>
+            <a tal:replace="structure context/menu:overview/copyright/fmt:link" />
+          </li>
         </ul>
       </div>
 
