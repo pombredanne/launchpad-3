@@ -205,7 +205,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Build daily').click()
         browser.getControl('Create Recipe').click()
         self.assertEqual(
-            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            extract_text(find_tags_by_class(browser.contents, 'message')[2]),
             'You must specify at least one series for daily builds.')
 
     def test_create_recipe_bad_base_branch(self):
