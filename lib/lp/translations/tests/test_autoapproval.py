@@ -355,8 +355,7 @@ class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
         self._setUpDistro()
         other_series = self.factory.makeDistroRelease(
             distribution=self.distro)
-        other_template = self._makeTemplateForDistroSeries(
-            other_series, 'test1')
+        self._makeTemplateForDistroSeries(other_series, 'test1')
         self.distrotemplate1.iscurrent = False
         self.distrotemplate2.iscurrent = True
         self.distrotemplate1.from_sourcepackagename = None
@@ -515,7 +514,7 @@ class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
 
         # The clashing entry goes through approval unsuccessfully, but
         # without causing breakage.
-        entry2 = queue.addOrUpdateEntry(
+        queue.addOrUpdateEntry(
             'program/nl.po', 'other contents', False, template.owner,
             productseries=template.productseries, potemplate=template)
 
@@ -713,8 +712,7 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
         template.iscurrent = True
-        credits = self.factory.makePOTMsgSet(template, "translator-credits",
-                                             sequence=1)
+        self.factory.makePOTMsgSet(template, "translator-credits", sequence=1)
 
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
@@ -886,7 +884,7 @@ class TestAutoApprovalNewPOFile(TestCaseWithFactory, GardenerDbUserMixin):
         # gardener has permissions to do this.  The POFile's owner is
         # the rosetta_experts team.
         trunk = self.product.getSeries('trunk')
-        template = self._makeTemplate(trunk)
+        self._makeTemplate(trunk)
         entry = self._makeQueueEntry(trunk)
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
@@ -910,7 +908,7 @@ class TestAutoApprovalNewPOFile(TestCaseWithFactory, GardenerDbUserMixin):
 
         self.becomeTheGardener()
 
-        pofile = entry.getGuessedPOFile()
+        entry.getGuessedPOFile()
 
         credits.getCurrentTranslationMessage(template, self.language)
         self.assertNotEqual(None, credits)
@@ -980,8 +978,7 @@ class TestAutoBlocking(TestCaseWithFactory):
     def test_getBlockableDirectories_checks_templates(self):
         old_blocklist = self.queue._getBlockableDirectories()
 
-        blocked_template = self._makeTemplateEntry(
-            status=RosettaImportStatus.BLOCKED)
+        self._makeTemplateEntry(status=RosettaImportStatus.BLOCKED)
 
         new_blocklist = self.queue._getBlockableDirectories()
 
@@ -990,7 +987,7 @@ class TestAutoBlocking(TestCaseWithFactory):
     def test_getBlockableDirectories_ignores_translations(self):
         old_blocklist = self.queue._getBlockableDirectories()
 
-        blocked_pofile = self._makeTranslationEntry(
+        self._makeTranslationEntry(
             'gl.po', status=RosettaImportStatus.BLOCKED)
 
         new_blocklist = self.queue._getBlockableDirectories()
@@ -1000,7 +997,7 @@ class TestAutoBlocking(TestCaseWithFactory):
     def test_getBlockableDirectories_checks_xpi_templates(self):
         old_blocklist = self.queue._getBlockableDirectories()
 
-        blocked_template = self._makeTemplateEntry(
+        self._makeTemplateEntry(
             suffix='.xpi', status=RosettaImportStatus.BLOCKED)
 
         new_blocklist = self.queue._getBlockableDirectories()
@@ -1010,7 +1007,7 @@ class TestAutoBlocking(TestCaseWithFactory):
     def test_getBlockableDirectories_ignores_xpi_translations(self):
         old_blocklist = self.queue._getBlockableDirectories()
 
-        blocked_xpi = self._makeTranslationEntry(
+        self._makeTranslationEntry(
             'lt.xpi', status=RosettaImportStatus.BLOCKED)
 
         new_blocklist = self.queue._getBlockableDirectories()
@@ -1034,7 +1031,7 @@ class TestAutoBlocking(TestCaseWithFactory):
 
     def test_isBlockable_multiple_blocked(self):
         blocked1 = self._makeTemplateEntry(status=RosettaImportStatus.BLOCKED)
-        blocked2 = self._makeTemplateEntry(
+        self._makeTemplateEntry(
             status=RosettaImportStatus.BLOCKED, same_target_as=blocked1)
         blocklist = self.queue._getBlockableDirectories()
 
@@ -1057,7 +1054,7 @@ class TestAutoBlocking(TestCaseWithFactory):
         # a directory, translation uploads for that directory are not
         # blocked.
         blocked = self._makeTemplateEntry(status=RosettaImportStatus.BLOCKED)
-        unblocked = self._makeTemplateEntry(same_target_as=blocked)
+        self._makeTemplateEntry(same_target_as=blocked)
         blocklist = self.queue._getBlockableDirectories()
 
         translations = self._makeTranslationEntry(
