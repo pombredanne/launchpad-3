@@ -606,7 +606,8 @@ class DistributionArchivesView(LaunchpadView):
         The context may be an IDistroSeries or a users archives.
         """
         results = getUtility(IArchiveSet).getArchivesForDistribution(
-            self.context, purposes=[ArchivePurpose.COPY], user=self.user)
+            self.context, purposes=[ArchivePurpose.COPY], user=self.user,
+            exclude_disabled=False)
         return results.order_by('date_created DESC')
 
 
