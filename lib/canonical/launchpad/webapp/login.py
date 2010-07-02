@@ -296,18 +296,18 @@ class OpenIDCallbackView(OpenIDLogin):
         # doesn't fool us into creating a Person/Account when one already
         # exists.
         person_set = getUtility(IPersonSet)
-        with MasterDatabasePolicy():
-            email_address, full_name = self._getEmailAddressAndFullName()
-            try:
-                person, db_updated = person_set.getOrCreateByOpenIDIdentifier(
-                    identifier, email_address, full_name,
-                    comment='when logging in to Launchpad.',
-                    creation_rationale=(
-                        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD))
-                should_update_last_write = db_updated
-            except AccountSuspendedError:
-                return self.suspended_account_template()
+        email_address, full_name = self._getEmailAddressAndFullName()
+        try:
+            person, db_updated = person_set.getOrCreateByOpenIDIdentifier(
+                identifier, email_address, full_name,
+                comment='when logging in to Launchpad.',
+                creation_rationale=(
+                    PersonCreationRationale.OWNER_CREATED_LAUNCHPAD))
+            should_update_last_write = db_updated
+        except AccountSuspendedError:
+            return self.suspended_account_template()
 
+        with MasterDatabasePolicy():
             self.login(person.account)
 
         if should_update_last_write:

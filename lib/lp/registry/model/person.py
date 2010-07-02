@@ -153,6 +153,7 @@ from lp.registry.model.teammembership import (
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -2438,47 +2439,48 @@ class PersonSet:
                 "Both email address and full name are required to "
                 "create an account.")
         db_updated = False
-        account_set = getUtility(IAccountSet)
-        email_set = getUtility(IEmailAddressSet)
-        email = email_set.getByEmail(email_address)
-        try:
-            account = account_set.getByOpenIDIdentifier(
-                openid_identifier)
-        except LookupError:
-            if email is None:
-                # There is no account associated with the identifier
-                # nor an email associated with the email address.
-                # We'll create one.
-                account, email = account_set.createAccountAndEmail(
-                        email_address, creation_rationale, full_name,
-                        password=None,
-                        openid_identifier=openid_identifier)
-            else:
-                account = email.account
-                assert account is not None, (
-                    "This email address should have an associated "
-                    "account.")
-                removeSecurityProxy(account).openid_identifier = (
+        with MasterDatabasePolicy():
+            account_set = getUtility(IAccountSet)
+            email_set = getUtility(IEmailAddressSet)
+            email = email_set.getByEmail(email_address)
+            try:
+                account = account_set.getByOpenIDIdentifier(
                     openid_identifier)
-            db_updated = True
+            except LookupError:
+                if email is None:
+                    # There is no account associated with the identifier
+                    # nor an email associated with the email address.
+                    # We'll create one.
+                    account, email = account_set.createAccountAndEmail(
+                            email_address, creation_rationale, full_name,
+                            password=None,
+                            openid_identifier=openid_identifier)
+                else:
+                    account = email.account
+                    assert account is not None, (
+                        "This email address should have an associated "
+                        "account.")
+                    removeSecurityProxy(account).openid_identifier = (
+                        openid_identifier)
+                db_updated = True
 
-        if account.status == AccountStatus.SUSPENDED:
-            raise AccountSuspendedError(
-                "The account matching the identifier is suspended.")
-        elif account.status in [AccountStatus.DEACTIVATED,
-                                AccountStatus.NOACCOUNT]:
-            password = '' # Needed just to please reactivate() below.
-            if email is None:
-                email = email_set.new(email_address, account=account)
-            removeSecurityProxy(account).reactivate(
-                comment, password, removeSecurityProxy(email))
-        else:
-            # Account is active, so nothing to do.
-            pass
-        if IPerson(account, None) is None:
-            removeSecurityProxy(account).createPerson(
-                creation_rationale, comment=comment)
-            db_updated = True
+            if account.status == AccountStatus.SUSPENDED:
+                raise AccountSuspendedError(
+                    "The account matching the identifier is suspended.")
+            elif account.status in [AccountStatus.DEACTIVATED,
+                                    AccountStatus.NOACCOUNT]:
+                password = '' # Needed just to please reactivate() below.
+                if email is None:
+                    email = email_set.new(email_address, account=account)
+                removeSecurityProxy(account).reactivate(
+                    comment, password, removeSecurityProxy(email))
+            else:
+                # Account is active, so nothing to do.
+                pass
+            if IPerson(account, None) is None:
+                removeSecurityProxy(account).createPerson(
+                    creation_rationale, comment=comment)
+                db_updated = True
 
         return IPerson(account), db_updated
 
