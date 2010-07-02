@@ -2,7 +2,8 @@
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
-<configure xmlns="http://namespaces.zope.org/zope">
+<configure xmlns="http://namespaces.zope.org/zope"
+           xmlns:browser="http://namespaces.zope.org/browser">
 
     <include file="zopeapp.zcml" />
     <!--<include package="zope.app" />-->
@@ -38,4 +39,28 @@
     <include file="summarizerequests.zcml" />
 
     <include package="zc.zservertracelog" />
+
+    <browser:menu
+        id="zmi_views"
+        title="Views"
+        description="Menu for displaying alternate representations of an object"
+        />
+    <browser:menu
+        id="zmi_actions"
+        title="Actions"
+        description="Menu for displaying actions to be performed"
+        />
+
+    <class class="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest">
+      <implements interface="zope.app.apidoc.browser.skin.APIDOC" />
+    </class>
+    <include package="zope.app.applicationcontrol" />
+    <include package="zope.app.preference" file="meta.zcml" />
+    <include package="zope.app.apidoc.codemodule" file="meta.zcml" />
+    <include package="zope.app.apidoc.bookmodule" file="meta.zcml" />
+    <include package="zope.app.apidoc.codemodule" />
+    <include package="zope.app.apidoc.bookmodule" />
+    <include package="zope.app.apidoc.utilitymodule" />
+    <include package="zope.app.apidoc.zcmlmodule" />
+    <include package="zope.app.apidoc" />
 </configure>
