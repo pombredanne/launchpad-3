@@ -83,7 +83,7 @@ An instance is commonly retrieved from a distroseries.
 Descriptive attributes
 ......................
 
-A source package has descriptive attributes:
+A source package has a name, displayname, title, and a summary.
 
     >>> print firefox_warty.name
     mozilla-firefox

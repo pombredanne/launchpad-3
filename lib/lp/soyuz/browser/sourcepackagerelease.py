@@ -153,6 +153,7 @@ class SourcePackageReleaseView(LaunchpadView):
         """Return the copyright with markup that highlights paths and URLs."""
         if not self.context.copyright:
             return ''
+        # Match any string with 2 or more non-consecutive slashes in it.
         pattern = re.compile(r'([\S]+/[\S]+/[\S]+)')
         highlight = r'<span class="highlighted">\1</span>'
         return pattern.sub(highlight, self.context.copyright)

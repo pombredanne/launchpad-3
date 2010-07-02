@@ -25,6 +25,8 @@ class SourcePackageChangelogView:
 
 
 class SourcePackageCopyrightView:
+    """A view to display a source package's copyright information."""
+
     page_title = "Copyright"
 
     @property

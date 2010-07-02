@@ -35,7 +35,7 @@ Use IDistribution.getSourcePackage to get a specific package by name:
 Descriptive attributes
 ----------------------
 
-A distribution source package has descriptive attributes:
+A distribution source package has a name, displayname, title, and a summary.
 
     >>> dsp = ubuntu.getSourcePackage("pmount")
     >>> print dsp.name
