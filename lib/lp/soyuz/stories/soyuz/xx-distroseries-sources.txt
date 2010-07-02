@@ -58,7 +58,7 @@ SourcePackage page:
   >>> browser.url
   'http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox'
 
-Any user can see the summary package summary.
+Any user can see the package summary.
 
     >>> content = browser.contents
     >>> print extract_text(find_tag_by_id(content, 'summary'))
