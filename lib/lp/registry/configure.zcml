@@ -372,6 +372,7 @@
                 name
                 displayname
                 title
+                summary
                 distro
                 get_distroseries_packages
                 subscribers

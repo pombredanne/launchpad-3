@@ -60,7 +60,7 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     title = Attribute("Title")
 
     summary = Attribute(
-        'The summary of binary packages build from this package')
+        'The summary of binary packages built from this package')
 
     format = Attribute("Source Package Format. This is the format of the "
                 "current source package release for this name in this "
