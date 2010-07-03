@@ -117,7 +117,8 @@ from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.salesforce import (
-    ISalesforceVoucherProxy, VOUCHER_STATUSES)
+    ISalesforceVoucherProxy, REDEEMABLE_VOUCHER_STATUSES,
+    VOUCHER_STATUSES)
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
@@ -959,22 +960,29 @@ class Person(
                                  orderBy=['displayname'])
         return results
 
-    def getCommercialSubscriptionVouchers(self):
+    def getAllCommercialSubscriptionVouchers(self):
         """See `IPerson`."""
         voucher_proxy = getUtility(ISalesforceVoucherProxy)
         commercial_vouchers = voucher_proxy.getAllVouchers(self)
-        unredeemed_commercial_vouchers = []
-        redeemed_commercial_vouchers = []
+        vouchers = {}
+        for status in VOUCHER_STATUSES:
+            vouchers[status] = []
         for voucher in commercial_vouchers:
             assert voucher.status in VOUCHER_STATUSES, (
                 "Voucher %s has unrecognized status %s" %
                 (voucher.voucher_id, voucher.status))
-            if voucher.status == 'Redeemed':
-                redeemed_commercial_vouchers.append(voucher)
-            else:
-                unredeemed_commercial_vouchers.append(voucher)
-        return (unredeemed_commercial_vouchers,
-                redeemed_commercial_vouchers)
+            vouchers[voucher.status].append(voucher)
+        return vouchers
+
+    def getRedeemableCommercialSubscriptionVouchers(self):
+        """See `IPerson`."""
+        voucher_proxy = getUtility(ISalesforceVoucherProxy)
+        vouchers = voucher_proxy.getUnredeemedVouchers(self)
+        for voucher in vouchers:
+            assert voucher.status in REDEEMABLE_VOUCHER_STATUSES, (
+                "Voucher %s has invalid status %s" %
+                (voucher.voucher_id, voucher.status))
+        return vouchers
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
