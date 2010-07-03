@@ -25,6 +25,8 @@ class TestArchiveArch(TestCaseWithFactory):
         super(TestArchiveArch, self).setUp()
 
         self.ppa = getUtility(IPersonSet).getByName('cprov').archive
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        self.ubuntu_archive = ubuntu.main_archive
         pss = getUtility(IProcessorFamilySet)
         self.cell_proc = pss.new(
             'cell-proc', 'PS cell processor', 'Screamingly faaaaaaaaaaaast',
@@ -33,7 +35,7 @@ class TestArchiveArch(TestCaseWithFactory):
             'omap', 'Multimedia applications processor',
             'Does all your sound & video', True)
 
-    def test_no_associations(self):
+    def test_no_restricted_uassociations(self):
         """Our archive is not associated with any restricted processor
         families yet."""
         result_set = list(
@@ -41,7 +43,7 @@ class TestArchiveArch(TestCaseWithFactory):
         archivearches = [row[1] for row in result_set]
         self.assertTrue(all(aa is None for aa in archivearches))
 
-    def test_single_association(self):
+    def test_single_restricted_association(self):
         """Our archive is now associated with one of the restricted processor
         families."""
         getUtility(IArchiveArchSet).new(self.ppa, self.cell_proc)
@@ -53,11 +55,23 @@ class TestArchiveArch(TestCaseWithFactory):
             { 'arm' : False, 'cell-proc' : True, 'omap' : False},
             results)
 
+    def test_restricted_association_archive_only(self):
+        """Test that only the associated archs for the archive itself are
+        returned."""
+        getUtility(IArchiveArchSet).new(self.ppa, self.cell_proc)
+        getUtility(IArchiveArchSet).new(self.ubuntu_archive, self.omap)
+        result_set = list(
+            getUtility(IArchiveArchSet).getRestrictedfamilies(self.ppa))
+        results = dict(
+            (row[0].name, row[1] is not None) for row in result_set)
+        self.assertEquals(
+            { 'arm' : False, 'cell-proc' : True, 'omap' : False},
+            results)
+
     def test_get_by_archive(self):
         """Test ArchiveArchSet.getByArchive."""
-        other_archive = getUtility(IDistributionSet)['ubuntu'].main_archive
         getUtility(IArchiveArchSet).new(self.ppa, self.cell_proc)
-        getUtility(IArchiveArchSet).new(other_archive, self.omap)
+        getUtility(IArchiveArchSet).new(self.ubuntu_archive, self.omap)
         result_set = list(
             getUtility(IArchiveArchSet).getByArchive(self.ppa))
         self.assertEquals(1, len(result_set))
