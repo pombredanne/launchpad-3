@@ -11,6 +11,7 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.testing import TestCaseWithFactory
 
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -51,6 +52,17 @@ class TestArchiveArch(TestCaseWithFactory):
         self.assertEquals(
             { 'arm' : False, 'cell-proc' : True, 'omap' : False},
             results)
+
+    def test_get_by_archive(self):
+        """Test ArchiveArchSet.getByArchive."""
+        other_archive = getUtility(IDistributionSet)['ubuntu'].main_archive
+        getUtility(IArchiveArchSet).new(self.ppa, self.cell_proc)
+        getUtility(IArchiveArchSet).new(other_archive, self.omap)
+        result_set = list(
+            getUtility(IArchiveArchSet).getByArchive(self.ppa))
+        self.assertEquals(1, len(result_set))
+        self.assertEquals(self.ppa, result_set[0].archive)
+        self.assertEquals(self.cell_proc, result_set[0].processorfamily)
 
 
 def test_suite():
