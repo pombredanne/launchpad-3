@@ -66,7 +66,7 @@ class UniqueFileAllocator:
         """
         if directory is None:
             directory = self.output_dir(time)
-        prefix = self._log_infix()
+        prefix = self.get_log_infix()
         lastid = 0
         lastfilename = None
         for filename in os.listdir(directory):
@@ -95,7 +95,7 @@ class UniqueFileAllocator:
 
     def getFilename(self, log_serial, time):
         """Get the filename for a given log serial and time."""
-        log_subtype = self._log_infix()
+        log_subtype = self.get_log_infix()
         # TODO: Calling output_dir causes a global lock to be taken and a
         # directory scan, which is bad for performance. It would be better
         # to have a split out 'directory name for time' function which the
@@ -105,7 +105,7 @@ class UniqueFileAllocator:
         return os.path.join(
             output_dir, '%05d.%s%s' % (second_in_day, log_subtype, log_serial))
 
-    def _log_infix(self):
+    def get_log_infix(self):
         """Return the current log infix to use in ids and file names."""
         return self._log_subtype + self._log_token
 
@@ -133,7 +133,7 @@ class UniqueFileAllocator:
             newid = self._last_serial
         finally:
             self._lock.release()
-        subtype = self._log_infix()
+        subtype = self.get_log_infix()
         day_number = (now - epoch).days + 1
         log_id = '%s-%d%s%d' % (self._log_type, day_number, subtype, newid)
         filename = self.getFilename(newid, now)

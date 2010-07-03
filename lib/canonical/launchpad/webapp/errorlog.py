@@ -263,6 +263,14 @@ class ErrorReportingUtility:
     def setOopsToken(self, token):
         return self.log_namer.setToken(token)
 
+    @property
+    def oops_prefix(self):
+        """Get the current effective oops prefix.
+
+        This is the log subtype + anything set via setOopsToken.
+        """
+        return self.log_namer.get_log_infix()
+
     def getOopsReport(self, time):
         """Return the contents of the OOPS report logged at 'time'."""
         # How this works - get a serial that was logging in the dir
