@@ -35,7 +35,7 @@ class TestArchiveArch(TestCaseWithFactory):
             'omap', 'Multimedia applications processor',
             'Does all your sound & video', True)
 
-    def test_no_restricted_uassociations(self):
+    def test_no_restricted_associations(self):
         """Our archive is not associated with any restricted processor
         families yet."""
         result_set = list(
@@ -68,8 +68,8 @@ class TestArchiveArch(TestCaseWithFactory):
             { 'arm' : False, 'cell-proc' : True, 'omap' : False},
             results)
 
-    def test_get_by_archive(self):
-        """Test ArchiveArchSet.getByArchive."""
+    def test_get_by_archive_no_other_archives(self):
+        """Test ArchiveArchSet.getByArchive returns no other archives."""
         getUtility(IArchiveArchSet).new(self.ppa, self.cell_proc)
         getUtility(IArchiveArchSet).new(self.ubuntu_archive, self.omap)
         result_set = list(
