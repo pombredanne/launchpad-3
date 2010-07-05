@@ -669,9 +669,6 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
 
         The admin team can also edit any Person.
         """
-        agent = getUtility(ILaunchpadCelebrities).software_center_agent
-        if user.person.id == agent.id:
-            return True
         return self.obj.id == user.person.id or user.in_admin
 
 
