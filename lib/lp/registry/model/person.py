@@ -39,6 +39,7 @@ from zope.interface import alsoProvides, implementer, implements
 from zope.component import adapter, getUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
+from zope.publisher.interfaces import Unauthorized
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
@@ -2319,8 +2320,9 @@ class Person(
         agent = getUtility(ILaunchpadCelebrities).software_center_agent
         # If the requester isn't asking about themselves, and they aren't the
         # software center agent, deny them
-        if self.id != requester.id and self.id != agent.id:
-            raise Unauthorized
+        if requester.id != agent.id:
+            if self.id != requester.id:
+                raise Unauthorized
         subscriptions = getUtility(
             IArchiveSubscriberSet).getBySubscriberWithActiveToken(
                 subscriber=self)
@@ -2329,12 +2331,12 @@ class Person(
 
     def getArchiveSubscriptionURL(self, requester, archive):
         """See `IPerson`."""
-        import pdb; pdb.set_trace()
         agent = getUtility(ILaunchpadCelebrities).software_center_agent
         # If the requester isn't asking about themselves, and they aren't the
         # software center agent, deny them
-        if self.id != requester.id and self.id != agent.id:
-            raise Unauthorized
+        if requester.id != agent.id:
+            if self.id != requester.id:
+                raise Unauthorized
         token = archive.getAuthToken(self)
         if token is None:
             token = archive.newAuthToken(self)

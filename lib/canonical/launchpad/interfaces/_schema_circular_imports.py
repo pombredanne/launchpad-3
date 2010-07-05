@@ -200,6 +200,8 @@ patch_list_parameter_type(IPerson, 'createRecipe', 'distroseries',
                           Reference(schema=IDistroSeries))
 patch_plain_parameter_type(IPerson, 'createRecipe', 'daily_build_archive',
                            IArchive)
+patch_plain_parameter_type(IPerson, 'getArchiveSubscriptionURL', 'archive',
+                           IArchive)
 
 patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
 
