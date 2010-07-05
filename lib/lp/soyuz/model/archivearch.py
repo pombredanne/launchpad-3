@@ -58,7 +58,7 @@ class ArchiveArchSet:
 
         return results
 
-    def getRestrictedfamilies(self, archive):
+    def getRestrictedFamilies(self, archive):
         """See `IArchiveArchSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
