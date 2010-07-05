@@ -323,6 +323,9 @@ class cmd_land(EC2Command):
             'testfix',
             help="Include the [testfix] prefix in the commit message."),
         Option(
+            'no-qa',
+            help="Include the [no-qa] prefix in the commit message."),
+        Option(
             'commit-text', short_name='s', type=str,
             help=(
                 'A description of the landing, not including reviewer '
@@ -355,10 +358,10 @@ class cmd_land(EC2Command):
     def run(self, merge_proposal=None, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
-            print_commit=False, force=False, attached=False):
+            no_qa=False, print_commit=False, force=False, attached=False):
         try:
             from devscripts.autoland import (
-                LaunchpadBranchLander, MissingReviewError)
+                LaunchpadBranchLander, MissingReviewError, MissingBugsError)
         except ImportError:
             self.outf.write(
                 "***************************************************\n\n"
@@ -396,12 +399,18 @@ class cmd_land(EC2Command):
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
         try:
-            commit_message = mp.get_commit_message(commit_text, testfix)
+            commit_message = mp.get_commit_message(commit_text, testfix, no_qa)
         except MissingReviewError:
             raise BzrCommandError(
                 "Cannot land branches that haven't got approved code "
                 "reviews. Get an 'Approved' vote so we can fill in the "
                 "[r=REVIEWER] section.")
+        except MissingBugsError:
+            raise BzrCommandError(
+                "Branch doesn't have linked bugs nor is a "
+                "unQAable fix. Use --no-qa, or link the related bugs to the "
+                "branch.")
+
         if print_commit:
             print commit_message
             return
