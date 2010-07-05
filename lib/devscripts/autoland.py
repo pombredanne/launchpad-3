@@ -12,6 +12,11 @@ class MissingReviewError(Exception):
     """Raised when we try to get a review message without enough reviewers."""
 
 
+class MissingBugsError(Exception):
+    """Raised when we try to land a mp without 'no-qa' tag and no linked
+    bugs."""
+
+
 class LaunchpadBranchLander:
 
     name = 'launchpad-branch-lander'
@@ -152,18 +157,28 @@ class MergeProposal:
         # URL. Do it ourselves.
         return URI(scheme='bzr+ssh', host=host, path='/' + branch.unique_name)
 
-    def get_commit_message(self, commit_text, testfix=False):
+    def get_commit_message(self, commit_text, testfix=False, no_qa=False):
         """Get the Launchpad-style commit message for a merge proposal."""
         reviews = self.get_reviews()
         bugs = self.get_bugs()
+        bugs_clause = get_bugs_clause(bugs)
         if testfix:
             testfix = '[testfix]'
         else:
             testfix = ''
-        return '%s%s%s %s' % (
+
+        if no_qa:
+            no_qa = '[no-qa]'
+        else:
+            no_qa = ''
+
+        if bugs_clause == "" and not no_qa:
+            raise MissingBugsError("Need bugs linked or --no-qa option.")
+        return '%s%s%s%s %s' % (
             testfix,
             get_reviewer_clause(reviews),
             get_bugs_clause(bugs),
+            no_qa,
             commit_text)
 
 
