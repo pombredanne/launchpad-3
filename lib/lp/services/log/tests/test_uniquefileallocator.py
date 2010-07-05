@@ -31,16 +31,16 @@ class TestUniqueFileAllocator(testtools.TestCase):
 
     def test_setToken(self):
         namer = UniqueFileAllocator("/any-old/path/", 'OOPS', 'T')
-        self.assertEqual('T', namer._log_infix())
+        self.assertEqual('T', namer.get_log_infix())
 
         # Some scripts will append a string token to the prefix.
         namer.setToken('CW')
-        self.assertEqual('TCW', namer._log_infix())
+        self.assertEqual('TCW', namer.get_log_infix())
 
         # Some scripts run multiple processes and append a string number
         # to the prefix.
         namer.setToken('1')
-        self.assertEqual('T1', namer._log_infix())
+        self.assertEqual('T1', namer.get_log_infix())
 
     def assertUniqueFileAllocator(self, namer, now, expected_id,
         expected_last_id, expected_suffix, expected_lastdir):

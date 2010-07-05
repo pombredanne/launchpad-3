@@ -240,7 +240,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         # The ErrorReportingUtility uses the config.error_reports section
         # by default.
         self.assertEqual(config.error_reports.oops_prefix,
-            utility.log_namer._log_infix())
+            utility.oops_prefix)
         self.assertEqual(config.error_reports.error_dir,
             utility.log_namer._output_root)
         self.assertEqual(
@@ -249,7 +249,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         # provide the error log configuration.
         utility.configure(section_name='branchscanner')
         self.assertEqual(config.branchscanner.oops_prefix,
-            utility.log_namer._log_infix())
+            utility.oops_prefix)
         self.assertEqual(config.branchscanner.error_dir,
             utility.log_namer._output_root)
         self.assertEqual(
@@ -258,7 +258,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         # The default error section can be restored.
         utility.configure()
         self.assertEqual(config.error_reports.oops_prefix,
-            utility.log_namer._log_infix())
+            utility.oops_prefix)
         self.assertEqual(config.error_reports.error_dir,
             utility.log_namer._output_root)
         self.assertEqual(
@@ -268,11 +268,11 @@ class TestErrorReportingUtility(testtools.TestCase):
         """Test ErrorReportingUtility.setOopsToken()."""
         utility = ErrorReportingUtility()
         utility.setOopsToken('foo')
-        self.assertEqual('Tfoo', utility.log_namer._log_infix())
+        self.assertEqual('Tfoo', utility.oops_prefix)
         # Some scripts run multiple processes and append a string number
         # to the prefix.
         utility.setOopsToken('1')
-        self.assertEqual('T1', utility.log_namer._log_infix())
+        self.assertEqual('T1', utility.oops_prefix)
 
     def test_raising(self):
         """Test ErrorReportingUtility.raising() with no request"""
