@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for `TranslationMessage`."""
@@ -10,11 +10,47 @@ from unittest import TestLoader
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.testing import verifyObject
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.model.potranslation import POTranslation
+from lp.translations.model.translationmessage import DummyTranslationMessage
+from lp.translations.interfaces.translationmessage import (
+    ITranslationMessage)
 from lp.translations.interfaces.translations import TranslationConstants
 from canonical.testing import ZopelessDatabaseLayer
+
+
+class TestTranslationMessage(TestCaseWithFactory):
+    """Unit tests for `TranslationMessage`.
+
+    There aren't many of these.  We didn't do much unit testing back
+    then.
+    """
+
+    layer = ZopelessDatabaseLayer
+
+    def test_baseline(self):
+        message = self.factory.makeTranslationMessage()
+        verifyObject(ITranslationMessage, message)
+
+    def test_dummy_translationmessage(self):
+        pofile = self.factory.makePOFile('nl')
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        dummy = DummyTranslationMessage(pofile, potmsgset)
+        verifyObject(ITranslationMessage, dummy)
+
+    def test_is_diverged_false(self):
+        # ITranslationMessage.is_diverged is a little helper to let you
+        # say "message.is_diverged" which can be clearer than
+        # "message.potemplate is not None."
+        message = self.factory.makeTranslationMessage(force_diverged=False)
+        self.assertFalse(message.is_diverged)
+
+    def test_is_diverged_true(self):
+        message = self.factory.makeTranslationMessage(force_diverged=True)
+        self.assertTrue(message.is_diverged)
+
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
     """Tests for `TranslationMessage.findIdenticalMessage`."""

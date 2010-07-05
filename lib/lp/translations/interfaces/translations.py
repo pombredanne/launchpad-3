@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -7,10 +7,12 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 __metaclass__ = type
 
-__all__ = (
+__all__ = [
     'TranslationConstants',
     'TranslationsBranchImportMode',
-    )
+    'TranslationSide',
+    ]
+
 
 class TranslationConstants:
     """Set of constants used inside the context of translations."""
@@ -52,3 +54,10 @@ class TranslationsBranchImportMode(DBEnumeratedType):
         """)
 
 
+class TranslationSide:
+    """The two "sides" of software that can be translated in Launchpad.
+
+    These are "upstream" and "Ubuntu."
+    """
+    UPSTREAM = 1
+    UBUNTU = 2

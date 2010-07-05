@@ -78,6 +78,11 @@ class TranslationMessageMixIn:
                 forms = 2
             return forms
 
+    @property
+    def is_diverged(self):
+        """See `ITranslationMessage`."""
+        return self.potemplate is not None
+
     def makeHTMLID(self, suffix=None):
         """See `ITranslationMessage`."""
         elements = [self.language.code]
