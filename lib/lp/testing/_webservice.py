@@ -12,6 +12,9 @@ __all__ = [
     ]
 
 
+import atexit
+import shutil
+import tempfile
 import transaction
 from zope.component import getUtility
 from launchpadlib.credentials import AccessToken, Credentials
@@ -121,4 +124,6 @@ def launchpadlib_for(
         consumer_name, person, permission, context)
     transaction.commit()
     version = version or Launchpad.DEFAULT_VERSION
-    return Launchpad(credentials, service_root, version=version)
+    cache = tempfile.mkdtemp(prefix='launchpadlib-cache-')
+    atexit.register(lambda: shutil.rmtree(cache, ignore_errors=True))
+    return Launchpad(credentials, service_root, version=version, cache=cache)
