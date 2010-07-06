@@ -63,9 +63,9 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveDisabled,
     ArchiveNotPrivate, ArchivePurpose, ArchiveStatus, CannotCopy,
-    CannotSwitchPrivacy, CannotUploadToPPA, CannotUploadToPocket,
-    DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
-    InsufficientUploadRights, InvalidPocketForPPA,
+    CannotRestrictArchitectures, CannotSwitchPrivacy, CannotUploadToPPA,
+    CannotUploadToPocket, DistroSeriesNotFound, IArchive, IArchiveSet,
+    IDistributionArchive, InsufficientUploadRights, InvalidPocketForPPA,
     InvalidPocketForPartnerArchive, InvalidComponent, IPPA,
     MAIN_ARCHIVE_PURPOSES, NoRightsForArchive, NoRightsForComponent,
     NoSuchPPA, NoTokensForTeams, PocketNotFound, VersionRequiresName,
@@ -948,7 +948,6 @@ class Archive(SQLBase):
 
     def checkArchivePermission(self, user, component_or_package=None):
         """See `IArchive`."""
-        assert not self.is_copy, "Uploads to copy archives are not allowed."
         # PPA access is immediately granted if the user is in the PPA
         # team.
         if self.is_ppa:
@@ -963,6 +962,10 @@ class Archive(SQLBase):
                 # then relax the database constraint on
                 # ArchivePermission.
                 component_or_package = getUtility(IComponentSet)['main']
+
+        # Flatly refuse uploads to copy archives, at least for now.
+        if self.is_copy:
+            return False
 
         # Otherwise any archive, including PPAs, uses the standard
         # ArchivePermission entries.
@@ -1554,13 +1557,28 @@ class Archive(SQLBase):
             LibraryFileContent.id == LibraryFileAlias.contentID).config(
                 distinct=True))
 
-    def _get_enabled_restricted_families(self):
+    def _getEnabledRestrictedFamilies(self):
+        """Retrieve the restricted architecture families this archive can
+        build on."""
+        # Main archives are always allowed to build on restricted 
+        # architectures.
+        if self.is_main:
+            return getUtility(IProcessorFamilySet).getRestricted()
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedfamilies(self)
         return [family for (family, archive_arch) in restricted_families 
                 if archive_arch is not None]
 
-    def _set_enabled_restricted_families(self, value):
+    def _setEnabledRestrictedFamilies(self, value):
+        """Set the restricted architecture families this archive can
+        build on."""
+        # Main archives are always allowed to build on restricted 
+        # architectures.
+        if self.is_main:
+            proc_family_set = getUtility(IProcessorFamilySet)
+            if set(value) != set(proc_family_set.getRestricted()):
+                raise CannotRestrictArchitectures("Main archives can not "
+                        "be restricted to certain architectures")
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedfamilies(self)
         for (family, archive_arch) in restricted_families:
@@ -1569,8 +1587,8 @@ class Archive(SQLBase):
             if family not in value and archive_arch is not None:
                 Store.of(self).remove(archive_arch)
 
-    enabled_restricted_families = property(_get_enabled_restricted_families,
-                                           _set_enabled_restricted_families)
+    enabled_restricted_families = property(_getEnabledRestrictedFamilies,
+                                           _setEnabledRestrictedFamilies)
 
 
 class ArchiveSet:
