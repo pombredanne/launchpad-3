@@ -152,6 +152,8 @@ Make cprov's PPA packages unsigned:
     ...     pub.sourcepackagerelease.dscsigningkey = None
     >>> logout()
 
+    >>> ws_uncache(pub)
+
 Query the source again:
 
     >>> pubs = webservice.named_get(

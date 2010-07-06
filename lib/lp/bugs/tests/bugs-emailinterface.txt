@@ -1435,7 +1435,7 @@ Invalid status:
         status foo
     ...
     The 'status' command expects any of the following arguments:
-    new, incomplete, invalid, wontfix, expired, confirmed, triaged, inprogress, fixcommitted, fixreleased
+    new, incomplete, opinion, invalid, wontfix, expired, confirmed, triaged, inprogress, fixcommitted, fixreleased
     <BLANKLINE>
     For example:
     <BLANKLINE>
@@ -1643,13 +1643,14 @@ which bug task to edit:
     >>> login('kreutzm@itp.uni-hannover.de')
 
     >>> submit_commands(
-    ...     bug_one, 'status confirmed', 'assignee no-priv@canonical.com')
+    ...     bug_one, 'status confirmed',
+    ...     'assignee kreutzm@itp.uni-hannover.de')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
     ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     Mozilla Firefox: Confirmed, assigned to Sample Person
-    mozilla-firefox (Ubuntu): Confirmed, assigned to No Privileges Person
+    mozilla-firefox (Ubuntu): Confirmed, assigned to Helge Kreutzmann
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> pending_notifications = BugNotification.select(orderBy='-id', limit=2)
@@ -1658,7 +1659,7 @@ which bug task to edit:
     ...     print bug_notification.message.text_contents
     1
     ** Changed in: mozilla-firefox (Ubuntu)
-         Assignee: (unassigned) => No Privileges Person (no-priv)
+         Assignee: (unassigned) => Helge Kreutzmann (kreutzm)
     1
     ** Changed in: mozilla-firefox (Ubuntu)
            Status: New => Confirmed
@@ -1687,7 +1688,7 @@ XXX: TBD after InitialBugContacts is implemented.
     ...     print bug_notification.message.text_contents
     1
     ** Changed in: mozilla-firefox (Ubuntu)
-         Assignee: No Privileges Person (no-priv) => Sample Person (name12)
+         Assignee: Helge Kreutzmann (kreutzm) => Sample Person (name12)
     1
     ** Changed in: mozilla-firefox (Ubuntu)
            Status: Confirmed => New
@@ -2036,16 +2037,16 @@ exist without a contact address.
     None
 
 We send another email, creating a new task (for the package in ubuntu)
-and assigning the bug to `warty-gnome`.
+and assigning the bug to `landscape-developers`.
 
     >>> submit_commands(ff_bug,
-    ...     'affects ubuntu/mozilla-firefox', 'assignee warty-gnome')
+    ...     'affects ubuntu/mozilla-firefox', 'assignee landscape-developers')
 
 The email was handled correctly - A new bugtask was added and assigned
 to the specified team.
 
     >>> print ff_bug.bugtasks[-1].assignee.name
-    warty-gnome
+    landscape-developers
 
 
 == Recovering from errors ==

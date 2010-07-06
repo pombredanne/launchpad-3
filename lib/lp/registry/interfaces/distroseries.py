@@ -51,6 +51,7 @@ from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.languagepack import ILanguagePack
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 
 
 class DistroSeriesNameField(ContentNameField):
@@ -142,7 +143,7 @@ class IDistroSeriesEditRestricted(Interface):
 class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
-    IHasBuildRecords):
+    IHasBuildRecords, IHasTranslationTemplates):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
@@ -359,6 +360,9 @@ class IDistroSeriesPublic(
         """Return the distroarchseries for this distroseries with the
         given architecturetag.
         """
+
+    def __str__():
+        """Return the name of the distroseries."""
 
     def getDistroArchSeriesByProcessor(processor):
         """Return the distroarchseries for this distroseries with the
@@ -593,7 +597,8 @@ class IDistroSeriesPublic(
          :param dsc: string, original content of the dsc file
          :param copyright: string, the original debian/copyright content
          :param changelog: LFA ID of the debian/changelog file in librarian
-         :param changelog_entry: string, changelog extracted from the changesfile
+         :param changelog_entry: string, changelog extracted from the
+                                 changesfile
          :param architecturehintlist: string, DSC architectures
          :param builddepends: string, DSC build dependencies
          :param builddependsindep: string, DSC architecture independent build

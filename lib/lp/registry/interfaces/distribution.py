@@ -296,6 +296,18 @@ class IDistributionPublic(
     def __iter__():
         """Iterate over the series for this distribution."""
 
+    @operation_parameters(
+        name=TextLine(title=_("Archive name"), required=True))
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    def getArchive(name):
+        """Return the distribution archive with the given name.
+
+        Only distribution archives are considered -- PPAs will not be found.
+
+        :param name: The name of the archive, e.g. 'partner'
+        """
+
     # Really IDistroSeries, see _schema_circular_imports.py.
     @operation_returns_collection_of(Interface)
     @export_operation_as(name="getDevelopmentSeries")
@@ -372,6 +384,13 @@ class IDistributionPublic(
     def getDistroSeriesAndPocket(distroseriesname):
         """Return a (distroseries,pocket) tuple which is the given textual
         distroseriesname in this distribution."""
+
+    def getSeriesByStatus(status):
+        """Query context distribution for distroseries with a given status.
+
+        :param status: Series status to look for
+        :return: list of `IDistroSeries`
+        """
 
     def getSourcePackageCaches(archive=None):
         """The set of all source package info caches for this distribution.
@@ -496,6 +515,18 @@ class IDistributionPublic(
 
     def getAllPPAs():
         """Return all PPAs for this distribution."""
+
+    # Really returns IArchive, see
+    # _schema_circular_imports.py.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getCommercialPPAs():
+        """Return all commercial PPAs.
+
+        Commercial PPAs are private, but explicitly flagged up as commercial
+        so that they are discoverable by people who wish to buy items
+        from them.
+        """
 
     def searchPPAs(text=None, show_inactive=False):
         """Return all PPAs matching the given text in this distribution.

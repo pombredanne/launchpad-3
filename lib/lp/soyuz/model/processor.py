@@ -59,6 +59,11 @@ class ProcessorFamilySet:
         rset = store.find(ProcessorFamily, ProcessorFamily.name == name)
         return rset.one()
 
+    def getRestricted(self):
+        """See `IProcessorFamilySet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(ProcessorFamily, ProcessorFamily.restricted == True)
+
     def getByProcessorName(self, name):
         """Please see `IProcessorFamilySet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)

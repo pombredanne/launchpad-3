@@ -1,4 +1,4 @@
-#! /usr/bin/python2.5
+#! /usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -24,10 +24,12 @@ class TestSendbranchmail(TestCaseWithFactory):
 
     def createBranch(self):
         branch, tree = self.create_branch_and_tree()
-        branch.subscribe(branch.registrant,
+        branch.subscribe(
+            branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL,
+            branch.registrant)
         transport = tree.bzrdir.root_transport
         transport.put_bytes('foo', 'bar')
         tree.add('foo')

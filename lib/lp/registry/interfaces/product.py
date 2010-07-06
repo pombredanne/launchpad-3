@@ -594,7 +594,10 @@ class IProductPublic(
             title=_('Development focus'), required=True,
             vocabulary='FilteredProductSeries',
             schema=IProductSeries,
-            description=_('The "trunk" series where development is focused')))
+            description=_(
+                'The series that represents the master or trunk branch. '
+                'The Bazaar URL lp:<project> points to the development focus '
+                'series branch.')))
 
     name_with_project = Attribute(_("Returns the product name prefixed "
         "by the project name, if a project is associated with this "
@@ -660,9 +663,10 @@ class IProductPublic(
 
     remote_product = exported(
         TextLine(
-            title=_('Remote project'), required=False,
+            title=_('Remote bug tracker project id'), required=False,
             description=_(
-                "The ID of this project on its remote bug tracker.")))
+                "Some bug trackers host multiple projects at the same URL "
+                "and require an identifier for the specific project.")))
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
@@ -728,8 +732,8 @@ class IProductPublic(
 
 
 class IProduct(
-    IHasBugSupervisor, IProductEditRestricted, 
-    IProductProjectReviewRestricted, IProductDriverRestricted, 
+    IHasBugSupervisor, IProductEditRestricted,
+    IProductProjectReviewRestricted, IProductDriverRestricted,
     IProductPublic, IRootContext, IStructuralSubscriptionTarget):
     """A Product.
 

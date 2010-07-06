@@ -134,7 +134,7 @@ The single BuildQueue found is a non-virtual pending build:
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
     >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
-    >>> build.buildstate.name
+    >>> build.status.name
     'NEEDSBUILD'
     >>> job.builder is None
     True
@@ -154,7 +154,7 @@ Update the SourcePackageReleaseFile corresponding to this job:
     >>> alias_id = librarian_client.addFile(
     ...    'foo.dsc', len(content), StringIO(content), 'application/dsc')
 
-    >>> sprf = build.sourcepackagerelease.files[0]
+    >>> sprf = build.source_package_release.files[0]
     >>> naked_sprf = removeSecurityProxy(sprf)
     >>> naked_sprf.libraryfile = getUtility(ILibraryFileAliasSet)[alias_id]
     >>> flush_database_updates()
@@ -173,8 +173,12 @@ Verify if the job (BuildQueue) was updated appropriately:
     >>> job.builder.id == bob_builder.id
     True
 
-    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
-    >>> build.buildstate.name
+    >>> dispatched_build = getUtility(
+    ...     IBinaryPackageBuildSet).getByQueueEntry(job)
+    >>> dispatched_build == build
+    True
+
+    >>> build.status.name
     'BUILDING'
 
 Shutdown builder, mark the build record as failed and remove the
@@ -183,7 +187,7 @@ buildqueue record, so the build was eliminated:
     >>> BuilddSlaveTestSetup().tearDown()
 
     >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
-    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> build.status = BuildStatus.FAILEDTOBUILD
     >>> job.destroySelf()
     >>> flush_database_updates()
 
@@ -238,8 +242,8 @@ do this by copying the existing publication in Ubuntu.
     >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
     >>> [old_pub] = SourcePackagePublishingHistory.selectBy(
-    ...    distroseries=build.distroseries,
-    ...    sourcepackagerelease=build.sourcepackagerelease)
+    ...    distroseries=build.distro_series,
+    ...    sourcepackagerelease=build.source_package_release)
     >>> new_pub = old_pub.copyTo(
     ...     old_pub.distroseries, old_pub.pocket, build.archive)
 
@@ -285,7 +289,7 @@ PPA job is building.
     >>> ppa_job.builder.name
     u'bob'
 
-    >>> build.buildstate.name
+    >>> build.status.name
     'BUILDING'
 
 Shutdown builder slave, mark the ppa build record as failed, remove the
@@ -294,7 +298,7 @@ environment is back to the initial state.
 
     >>> BuilddSlaveTestSetup().tearDown()
 
-    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> build.status = BuildStatus.FAILEDTOBUILD
     >>> ppa_job.destroySelf()
     >>> bob_builder.virtualized = False
     >>> flush_database_updates()
@@ -353,17 +357,17 @@ check if legitimate pending candidates will remain valid.
     ...     breezy_i386, PackagePublishingPocket.UPDATES, hoary.main_archive)
     >>> pending_job = pending_build.queueBuild()
 
-We increase the score of the security job to ensure it is considered
+We set the score of the security job to ensure it is considered
 before the legitimate job.
 
-    >>> sec_job.lastscore = 1000
+    >>> sec_job.lastscore = pending_job.lastscore + 1
     >>> flush_database_updates()
 
 New we can check that the next valid candidate is the just-added
 'pending_job', ensuring that it's published before doing so.
 
     >>> new_pub = old_pub.copyTo(
-    ...     pending_build.distroseries, old_pub.pocket, pending_build.archive)
+    ...     pending_build.distro_series, old_pub.pocket, pending_build.archive)
     >>> candidate = removeSecurityProxy(bob_builder)._findBuildCandidate()
     >>> flush_database_updates()
     >>> candidate.id == pending_job.id
@@ -374,7 +378,7 @@ corresponding BuildQueue record was removed.  This way the security
 builds, created due to missing binary uploads from DAK, will be
 appropriately recorded and ignored.
 
-    >>> print sec_build.buildstate.name
+    >>> print sec_build.status.name
     FAILEDTOBUILD
     >>> print sec_build.buildqueue_record
     None

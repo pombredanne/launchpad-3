@@ -260,6 +260,8 @@ class CustomUploadFile(NascentUploadFile):
         'raw-ddtp-tarball': PackageUploadCustomFormat.DDTP_TARBALL,
         'raw-translations-static':
             PackageUploadCustomFormat.STATIC_TRANSLATIONS,
+        'raw-meta-data' :
+            PackageUploadCustomFormat.META_DATA,
         }
 
     @property
@@ -806,7 +808,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             build = sourcepackagerelease.getBuildByArch(
                 dar, self.policy.archive)
             if build is not None:
-                build.buildstate = BuildStatus.FULLYBUILT
+                build.status = BuildStatus.FULLYBUILT
                 self.logger.debug("Updating build for %s: %s" % (
                     dar.architecturetag, build.id))
             else:
@@ -822,7 +824,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # Ensure gathered binary is related to a FULLYBUILT build
             # record. It will be check in slave-scanner procedure to
             # certify that the build was processed correctly.
-            build.buildstate = BuildStatus.FULLYBUILT
+            build.status = BuildStatus.FULLYBUILT
             # Also purge any previous failed upload_log stored, so its
             # content can be garbage-collected since it's not useful
             # anymore.
@@ -831,9 +833,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense (ie. is not for the right
         # source package).
-        if (build.sourcepackagerelease != sourcepackagerelease or
+        if (build.source_package_release != sourcepackagerelease or
             build.pocket != self.policy.pocket or
-            build.distroarchseries != dar or
+            build.distro_arch_series != dar or
             build.archive != self.policy.archive):
             raise UploadError(
                 "Attempt to upload binaries specifying "

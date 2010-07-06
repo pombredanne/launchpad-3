@@ -9,12 +9,19 @@ import transaction
 
 from textwrap import dedent
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+
+from bzrlib.errors import NotBranchError
+
+from canonical.config import config
 
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import ZopelessAppServerLayer
 
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet, TeamMembershipStatus)
 from lp.testing import map_branch_contents, TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 
@@ -23,7 +30,7 @@ from lp.translations.scripts.translations_to_branch import (
 
 
 class GruesomeException(Exception):
-    """CPU on fire.  Or some other kind of failure, like."""
+    """CPU on fire.  Or some other kind of failure."""
 
 
 class TestExportTranslationsToBranch(TestCaseWithFactory):
@@ -76,10 +83,13 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
         self.assertEqual('', stdout)
         self.assertEqual(
-            'INFO    Creating lockfile: /var/lock/launchpad-translations-export-to-branch.lock\n'
+            'INFO    '
+            'Creating lockfile: '
+            '/var/lock/launchpad-translations-export-to-branch.lock\n'
             'INFO    Exporting to translations branches.\n'
             'INFO    Exporting Committobranch trunk series.\n'
-            'INFO    Processed 1 item(s); 0 failure(s).',
+            'INFO    '
+            'Processed 1 item(s); 0 failure(s), 0 unpushed branch(es).',
             self._filterOutput(stderr))
         self.assertIn('No previous translations commit found.', stderr)
         self.assertEqual(0, retcode)
@@ -123,19 +133,24 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
             ['-vvv', '--no-fudge'])
         self.assertEqual(0, retcode)
         self.assertIn('Last commit was at', stderr)
-        self.assertIn("Processed 1 item(s); 0 failure(s).", stderr)
+        self.assertIn(
+            "Processed 1 item(s); 0 failure(s), 0 unpushed branch(es).",
+            stderr)
         self.assertEqual(
             None, re.search("INFO\s+Committed [0-9]+ file", stderr))
 
     def test_exportToBranches_handles_nonascii_exceptions(self):
         # There's an exception handler in _exportToBranches that must
         # cope well with non-ASCII exception strings.
+        productseries = self.factory.makeProductSeries()
         exporter = ExportTranslationsToBranch(test_args=[])
         exporter.logger = QuietFakeLogger()
         boom = u'\u2639'
         exporter._exportToBranch = FakeMethod(failure=GruesomeException(boom))
 
-        exporter._exportToBranches([self.factory.makeProductSeries()])
+        self.becomeDbUser('translationstobranch')
+
+        exporter._exportToBranches([productseries])
 
         self.assertEqual(1, exporter._exportToBranch.call_count)
 
@@ -143,6 +158,112 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         message = exporter.logger.output_file.read()
         self.assertTrue(message.startswith("ERROR"))
         self.assertTrue("GruesomeException" in message)
+
+    def test_exportToBranches_handles_unpushed_branches(self):
+        # bzrlib raises NotBranchError when accessing a nonexistent
+        # branch.  The exporter deals with that by calling
+        # _handleUnpushedBranch.
+        exporter = ExportTranslationsToBranch(test_args=[])
+        exporter.logger = QuietFakeLogger()
+        productseries = self.factory.makeProductSeries()
+        productseries.translations_branch = self.factory.makeBranch()
+
+        self.becomeDbUser('translationstobranch')
+
+        # _handleUnpushedBranch is called if _exportToBranch raises
+        # NotBranchError.
+        exporter._handleUnpushedBranch = FakeMethod()
+        exporter._exportToBranch = FakeMethod(failure=NotBranchError("No!"))
+        exporter._exportToBranches([productseries])
+        self.assertEqual(1, exporter._handleUnpushedBranch.call_count)
+
+        # This does not happen if the export succeeds.
+        exporter._handleUnpushedBranch = FakeMethod()
+        exporter._exportToBranch = FakeMethod()
+        exporter._exportToBranches([productseries])
+        self.assertEqual(0, exporter._handleUnpushedBranch.call_count)
+
+        # Nor does it happen if the export fails in some other way.
+        exporter._handleUnpushedBranch = FakeMethod()
+        exporter._exportToBranch = FakeMethod(failure=IndexError("Ayyeee!"))
+        exporter._exportToBranches([productseries])
+        self.assertEqual(0, exporter._handleUnpushedBranch.call_count)
+
+    def test_handleUnpushedBranch_mails_branch_owner(self):
+        exporter = ExportTranslationsToBranch(test_args=[])
+        exporter.logger = QuietFakeLogger()
+        productseries = self.factory.makeProductSeries()
+        email = self.factory.getUniqueEmailAddress()
+        branch_owner = self.factory.makePerson(email=email)
+        productseries.translations_branch = self.factory.makeBranch(
+            owner=branch_owner)
+        exporter._exportToBranch = FakeMethod(failure=NotBranchError("Ow"))
+        exporter._sendMail = FakeMethod()
+
+        self.becomeDbUser('translationstobranch')
+
+        exporter._exportToBranches([productseries])
+
+        self.assertEqual(1, exporter._sendMail.call_count)
+        (sender, recipients, subject, text), kwargs = (
+            exporter._sendMail.calls[-1])
+        self.assertIn(config.canonical.noreply_from_address, sender)
+        self.assertIn(email, recipients)
+        self.assertEqual(
+            "Launchpad: translations branch has not been set up.", subject)
+
+        self.assertIn(
+            "problem with translations branch synchronization", text)
+        self.assertIn(productseries.title, text)
+        self.assertIn(productseries.translations_branch.bzr_identity, text)
+        self.assertIn('bzr push lp://', text)
+
+    def test_handleUnpushedBranch_has_required_privileges(self):
+        # Dealing with an unpushed branch is a special code path that
+        # was not exercised by the full-script test.  Ensure that it has
+        # the database privileges that it requires.
+        exporter = ExportTranslationsToBranch(test_args=[])
+        exporter.logger = QuietFakeLogger()
+        productseries = self.factory.makeProductSeries()
+        email = self.factory.getUniqueEmailAddress()
+        branch_owner = self.factory.makePerson(email=email)
+        productseries.translations_branch = self.factory.makeBranch(
+            owner=branch_owner)
+        exporter._exportToBranch = FakeMethod(failure=NotBranchError("Ow"))
+
+        self.becomeDbUser('translationstobranch')
+
+        exporter._handleUnpushedBranch(productseries)
+
+        # _handleUnpushedBranch completes successfully.  There are no
+        # database changes still pending in the ORM that are going to
+        # fail either.
+        transaction.commit()
+
+    def test_handleUnpushedBranch_is_privileged_to_contact_team(self):
+        # Notifying a branch owner that is a team can require other
+        # database privileges.  The script also has these privileges.
+        exporter = ExportTranslationsToBranch(test_args=[])
+        exporter.logger = QuietFakeLogger()
+        productseries = self.factory.makeProductSeries()
+        email = self.factory.getUniqueEmailAddress()
+        team_member = self.factory.makePerson(email=email)
+        branch_owner = self.factory.makeTeam()
+        getUtility(ITeamMembershipSet).new(
+            team_member, branch_owner, TeamMembershipStatus.APPROVED,
+            branch_owner.teamowner)
+        productseries.translations_branch = self.factory.makeBranch(
+            owner=branch_owner)
+        exporter._exportToBranch = FakeMethod(failure=NotBranchError("Ow"))
+
+        self.becomeDbUser('translationstobranch')
+
+        exporter._handleUnpushedBranch(productseries)
+
+        # _handleUnpushedBranch completes successfully.  There are no
+        # database changes still pending in the ORM that are going to
+        # fail either.
+        transaction.commit()
 
 
 class TestExportToStackedBranch(TestCaseWithFactory):

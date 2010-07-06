@@ -10,7 +10,6 @@ __all__ = [
     'get_current_view',
     'get_facet',
     'structured',
-    'translate_if_msgid',
     'FacetMenu',
     'ApplicationMenu',
     'ContextMenu',

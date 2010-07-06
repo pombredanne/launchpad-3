@@ -549,7 +549,7 @@ broken package.
 James uses the 'delete-packages' interface in his PPA to delete the
 'pmount' source in hoary.
 
-    >>> jblack_browser.getLink('PPA').click()
+    >>> jblack_browser.getLink('Cancel').click()
     >>> jblack_browser.getLink('Delete packages').click()
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -974,7 +974,7 @@ in No Privileges' PPA.
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> [build] = jblack_friends_foo_src.createMissingBuilds()
     >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
-    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> build.status = BuildStatus.FAILEDTOBUILD
 
     >>> flush_database_updates()
     >>> logout()

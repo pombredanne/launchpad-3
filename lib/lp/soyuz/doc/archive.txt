@@ -276,10 +276,8 @@ archive.
 
 Uploads to copy archives are not allowed.
 
-    >>> rebuild_archive.checkArchivePermission(cprov)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Uploads to copy archives are not allowed.
+    >>> print rebuild_archive.checkArchivePermission(cprov)
+    False
 
 
 == Published Source and Binary Lookup ==
@@ -1047,13 +1045,13 @@ This method can return build records for sources matching the given
     >>> cd_lookup = cprov_archive.getBuildRecords(name='cd')
     >>> cd_lookup.count()
     1
-    >>> cd_lookup[0].sourcepackagerelease.name
+    >>> cd_lookup[0].source_package_release.name
     u'cdrkit'
 
     >>> ice_lookup = cprov_archive.getBuildRecords(name='ice')
     >>> ice_lookup.count()
     1
-    >>> ice_lookup[0].sourcepackagerelease.name
+    >>> ice_lookup[0].source_package_release.name
     u'iceweasel'
 
     >>> cprov_archive.getBuildRecords(name='foo').count()
@@ -1296,12 +1294,12 @@ candidate by its name, via the `PublishedPackage` table:
 
     >>> candidate = ubuntu.main_archive.findDepCandidateByName(
     ...     warty_i386, "pmount")
-    >>> print candidate.binarypackagename
+    >>> print candidate.binarypackagerelease.binarypackagename.name
     pmount
 
     >>> candidate = cprov.archive.findDepCandidateByName(
     ...     warty_i386, "pmount")
-    >>> print candidate.binarypackagename
+    >>> print candidate.binarypackagerelease.binarypackagename.name
     pmount
 
 Since 'python2.4' isn't available in our sampledata (not even
@@ -2047,11 +2045,13 @@ The owner of the archive will also see their private archive in the results:
     my-copy-archive  me-copy       True     True
     ultimate-copy    copy-owner1   False    True
 
-An admin will see all the private and disabled archives in the results:
+An admin will see all the private and disabled archives in the results
+if requested:
 
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
-    ...     ubuntu, purposes=[ArchivePurpose.COPY], user=foobar)
+    ...     ubuntu, purposes=[ArchivePurpose.COPY], user=foobar,
+    ...     exclude_disabled=False)
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
@@ -2059,6 +2059,20 @@ An admin will see all the private and disabled archives in the results:
     team-archive     t1            True     True
     there-we-go      juergen       False    False
     true-copy        copy-owner2   False    False
+    ultimate-copy    copy-owner1   False    True
+
+If exclude_disabled is set to True no disabled archives will be 
+included:
+
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY], user=foobar,
+    ...     exclude_disabled=True)
+    >>> print_archive_names(ubuntu_copy_archives)
+    Name             Owner         Private  Enabled
+    fine-copy        copy-owner2   False    True
+    my-copy-archive  me-copy       True     True
+    team-archive     t1            True     True
     ultimate-copy    copy-owner1   False    True
 
 And if the archive is owned by a team, then anyone in the team will also
@@ -2073,16 +2087,16 @@ be able to view the private team archive:
     team-archive     t1            True     True
     ultimate-copy    copy-owner1   False    True
 
-A separate argument allows forcing the inclusion of all disabled archives.
+A separate argument allows forcing the inclusion of all disabled archives 
+the user has access to, so it doesn't include the archive 
+of juergen that is disabled.
 
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
-    ...     ubuntu, purposes=[ArchivePurpose.COPY], user=cprov,
+    ...     ubuntu, purposes=[ArchivePurpose.COPY], user=copy_owner2,
     ...     exclude_disabled=False)
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    team-archive     t1            True     True
-    there-we-go      juergen       False    False
     true-copy        copy-owner2   False    False
     ultimate-copy    copy-owner1   False    True
 

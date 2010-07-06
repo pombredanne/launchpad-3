@@ -19,11 +19,30 @@ import time
 
 import numpy
 import simplejson as json
-from zc.zservertracelog.tracereport import Request, parsedt
+import zc.zservertracelog.tracereport
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import log
 from lp.scripts.helpers import LPOptionParser
+
+
+class Request(zc.zservertracelog.tracereport.Request):
+    url = None
+    pageid = None
+
+    # Override the broken version in our superclass that always
+    # returns an integer.
+    @property
+    def app_seconds(self):
+        interval = self.app_time - self.start_app_time
+        return interval.seconds + interval.microseconds / 1000000.0
+
+    # Override the broken version in our superclass that always
+    # returns an integer.
+    @property
+    def total_seconds(self):
+        interval = self.end - self.start
+        return interval.seconds + interval.microseconds / 1000000.0
 
 
 class Category:
@@ -49,6 +68,21 @@ class Category:
         return cmp(self.title.lower(), other.title.lower())
 
 
+class Stats:
+    """Bag to hold request statistics.
+
+    All times are in seconds.
+    """
+    total_time = 0 # Total time spent rendering.
+    total_hits = 0 # Total hits.
+    mean = 0 # Mean time per hit.
+    median = 0 # Median time per hit.
+    standard_deviation = 0 # Standard deviation per hit.
+    histogram = None # # Request times histogram.
+
+empty_stats = Stats() # Singleton.
+
+
 class Times:
     """Collection of request times."""
     def __init__(self, timeout):
@@ -65,7 +99,7 @@ class Times:
     def stats(self):
         """Generate statistics about our request times.
 
-        Returns (mean, median, standard_deviation, histogram).
+        Returns a `Stats` instance.
 
         The histogram is a list of request counts per 1 second bucket.
         ie. histogram[0] contains the number of requests taking between 0 and
@@ -73,25 +107,27 @@ class Times:
         1 and 2 seconds etc. histogram is None if there are no requests in
         this Category.
         """
-
         if not self.request_times:
-            return 0, 0, 0, None
+            return empty_stats
+        stats = Stats()
         array = numpy.asarray(self.request_times, numpy.float32)
-        mean = numpy.mean(array)
-        median = numpy.median(array)
-        standard_deviation = numpy.std(array)
+        stats.total_time = numpy.sum(array)
+        stats.total_hits = len(array)
+        stats.mean = numpy.mean(array)
+        stats.median = numpy.median(array)
+        stats.standard_deviation = numpy.std(array)
         histogram = numpy.histogram(
             array, normed=True,
             range=(0, self.timeout), bins=self.timeout)
-        histogram = zip(histogram[1], histogram[0])
-        return mean, median, standard_deviation, histogram
+        stats.histogram = zip(histogram[1], histogram[0])
+        return stats
 
     def __str__(self):
         results = self.stats()
-        mean, median, standard_deviation, histogram = results
+        total, mean, median, standard_deviation, histogram = results
         hstr = " ".join("%2d" % v for v in histogram)
         return "%2.2f %2.2f %2.2f %s" % (
-            mean, median, standard_deviation, hstr)
+            total, mean, median, standard_deviation, hstr)
 
 
 def main():
@@ -113,6 +149,14 @@ def main():
         "--until", dest="until_ts", type="datetime",
         default=None, metavar="TIMESTAMP",
         help="Ignore log entries after TIMESTAMP")
+    parser.add_option(
+        "--no-categories", dest="categories",
+        action="store_false", default=True,
+        help="Do not produce categories report")
+    parser.add_option(
+        "--no-pageids", dest="pageids",
+        action="store_false", default=True,
+        help="Do not produce pageids report")
     options, args = parser.parse_args()
     if len(args) == 0:
         parser.error("At least one zserver tracelog file must be provided")
@@ -148,9 +192,11 @@ def main():
     if len(categories) == 0:
         parser.error("No data in [categories] section of configuration.")
 
-    parse(args, categories, options)
+    pageid_times = {}
 
-    print_html_report(categories)
+    parse(args, categories, pageid_times, options)
+
+    print_html_report(options, categories, pageid_times)
 
     return 0
 
@@ -185,7 +231,7 @@ def parse_timestamp(ts_string):
         *(int(elem) for elem in match.groups() if elem is not None))
 
 
-def parse(tracefiles, categories, options):
+def parse(tracefiles, categories, pageid_times, options):
     requests = {}
     total_requests = 0
     for tracefile in tracefiles:
@@ -193,7 +239,7 @@ def parse(tracefiles, categories, options):
         for line in smart_open(tracefile):
             line = line.rstrip()
             try:
-                record = line.split(' ',7)
+                record = line.split(' ', 7)
                 try:
                     record_type, request_id, date, time_ = record[:4]
                 except ValueError:
@@ -232,12 +278,20 @@ def parse(tracefiles, categories, options):
                 if request is None: # Just ignore partial records.
                     continue
 
-                if record_type == '-': # Extension record from Launchpad.
-                    # Launchpad outputs the full URL to the tracelog,
-                    # including protocol & hostname. Use this in favor of
-                    # the ZServer logged path.
-                    require_args(1)
+                # Old stype extension record from Launchpad. Just
+                # contains the URL.
+                if (record_type == '-' and len(args) == 1
+                    and args[0].startswith('http')):
                     request.url = args[0]
+
+                # New style extension record with a prefix.
+                elif record_type == '-':
+                    # Launchpad outputs several things as tracelog
+                    # extension records. We include a prefix to tell
+                    # them apart.
+                    require_args(1)
+
+                    parse_extension_record(request, args)
 
                 elif record_type == 'I': # Got request input.
                     require_args(1)
@@ -256,8 +310,21 @@ def parse(tracefiles, categories, options):
                     total_requests += 1
                     if total_requests % 10000 == 0:
                         log.debug("Parsed %d requests", total_requests)
-                    for category in categories:
-                        category.add(request)
+
+                    # Add the request to any matching categories.
+                    if categories is not None:
+                        for category in categories:
+                            category.add(request)
+
+                    # Add the request to the times for that pageid.
+                    if pageid_times is not None and request.pageid is not None:
+                        pageid = request.pageid
+                        try:
+                            times = pageid_times[pageid]
+                        except KeyError:
+                            times = Times(options.timeout)
+                            pageid_times[pageid] = times
+                        times.add(request)
 
                 else:
                     raise MalformedLine('Unknown record type %s', record_type)
@@ -266,7 +333,25 @@ def parse(tracefiles, categories, options):
                     "Malformed line %s %s (%s)" % (repr(line), repr(args), x))
 
 
-def print_html_report(categories):
+def parse_extension_record(request, args):
+    """Decode a ZServer extension records and annotate request."""
+    prefix = args[0]
+
+    if len(args) > 1:
+        args = ' '.join(args[1:])
+    else:
+        args = None
+
+    if prefix == 'u':
+        request.url = args
+    elif prefix == 'p':
+        request.pageid = args
+    else:
+        raise MalformedLine(
+            "Unknown extension prefix %s" % prefix)
+
+
+def print_html_report(options, categories, pageid_times):
 
     print dedent('''\
         <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
@@ -281,8 +366,10 @@ def print_html_report(categories):
         <script language="javascript" type="text/javascript"
             src="http://people.canonical.com/~stub/flot/jquery.flot.min.js"
             ></script>
+        <script language="javascript" type="text/javascript"
+            src="http://people.canonical.com/~stub/sorttable.js"></script>
         <style type="text/css">
-            h2 { font-weight: normal; font-size: 100%%; }
+            h3 { font-weight: normal; font-size: 100%%; }
             thead th { padding-left: 1em; padding-right: 1em; }
             .category-title { text-align: right; padding-right: 2em; }
             .regexp { font-size: x-small; font-weight: normal; }
@@ -292,45 +379,93 @@ def print_html_report(categories):
             .histogram { padding: 0.5em 1em; width:400px; height:250px; }
             .odd-row { background-color: #eeeeff; }
             .even-row { background-color: #ffffee; }
+            table.sortable thead {
+                background-color:#eee;
+                color:#666666;
+                font-weight: bold;
+                cursor: default;
+                }
+            td.numeric {
+                font-family: monospace;
+                text-align: right;
+                padding: 1em;
+                }
+            .clickable { cursor: hand; }
         </style>
         </head>
         <body>
         <h1>Launchpad Page Performance Report</h1>
-        <h2>%(date)s</h2>
+        <h3>%(date)s</h3>
+        ''' % {'date': time.ctime()})
 
-        <table class="launchpad-performance-report">
+    table_header = dedent('''\
+        <table class="sortable page-performance-report">
+        <caption align="top">Click on column headings to sort.</caption>
         <thead>
             <tr>
-            <td></td>
-            <th>Mean</th>
-            <th>Median</th>
-            <th>Standard<br/>Deviation</th>
-            <th>Distribution</th>
+            <th class="clickable">Name</th>
+            <th class="clickable">Total Time (secs)</th>
+            <th class="clickable">Total Hits</th>
+            <th class="clickable">Mean Time (secs)</th>
+            <th class="clickable">Median Time (secs)</th>
+            <th class="clickable">Time Standard<br/>Deviation</th>
+            <th class="sorttable_nosort">Distribution</th>
             </tr>
         </thead>
         <tbody>
-        ''' % {'date': time.ctime()})
+        ''')
+    table_footer = "</tbody></table>"
 
+    # Store our generated histograms to output Javascript later.
     histograms = []
-    for i, category in enumerate(categories):
-        row_class = "even-row" if i % 2 else "odd-row"
-        mean, median, standard_deviation, histogram = category.times.stats()
-        histograms.append(histogram)
+
+    def handle_times(html_title, times):
+        stats = times.stats()
+        histograms.append(stats.histogram)
         print dedent("""\
-            <tr class="%s">
-            <th class="category-title">%s <div class="regexp">%s</span></th>
-            <td class="mean">%.2f s</td>
-            <td class="median">%.2f s</td>
-            <td class="standard-deviation">%.2f s</td>
+            <tr>
+            <th class="category-title">%s</th>
+            <td class="numeric total_time">%.2f</td>
+            <td class="numeric total_hits">%d</td>
+            <td class="numeric mean">%.2f</td>
+            <td class="numeric median">%.2f</td>
+            <td class="numeric standard-deviation">%.2f</td>
             <td>
                 <div class="histogram" id="histogram%d"></div>
             </td>
             </tr>
             """ % (
-                row_class,
-                html_quote(category.title), html_quote(category.regexp),
-                mean, median, standard_deviation, i))
+                html_title,
+                stats.total_time, stats.total_hits,
+                stats.mean, stats.median, stats.standard_deviation,
+                len(histograms)-1))
 
+    # Table of contents
+    print '<ol>'
+    if options.categories:
+        print '<li><a href="#catrep">Category Report</a></li>'
+    if options.pageids:
+        print '<li><a href="#pageidrep">Pageid Report</a></li>'
+    print '</ol>'
+
+    if options.categories:
+        print '<h2 id="catrep">Category Report</h2>'
+        print table_header
+        for category in categories:
+            html_title = '%s<br/><span class="regexp">%s</span>' % (
+                html_quote(category.title), html_quote(category.regexp))
+            handle_times(html_title, category.times)
+        print table_footer
+
+    if options.pageids:
+        print '<h2 id="pageidrep">Pageid Report</h2>'
+        print table_header
+        for pageid, times in sorted(pageid_times.items()):
+            handle_times(html_quote(pageid), times)
+        print table_footer
+
+    # Ourput the javascript to render our histograms nicely, replacing
+    # the placeholder <div> tags output earlier.
     print dedent("""\
         <script language="javascript" type="text/javascript">
         $(function () {

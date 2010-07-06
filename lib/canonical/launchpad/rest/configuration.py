@@ -63,6 +63,10 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
         return request
 
     @property
+    def enable_server_side_representation_cache(self):
+        return config.vhost.api.enable_server_side_representation_cache
+
+    @property
     def default_batch_size(self):
         return config.launchpad.default_batch_size
 

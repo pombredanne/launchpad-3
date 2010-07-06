@@ -13,7 +13,7 @@ __all__ = [
 
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import Desc, In, Int, Join, SQL
+from storm.locals import Desc, In, Int, Join, Or, SQL
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
@@ -75,7 +75,7 @@ from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+    ArchivePurpose, ArchiveStatus, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -156,6 +156,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         notNull=False,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
+    bug_reported_acknowledgement = StringCol(default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
@@ -516,15 +517,19 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def __iter__(self):
         return iter(self.series)
 
+    def getArchive(self, name):
+        """See `IDistribution.`"""
+        return getUtility(
+            IArchiveSet).getByDistroAndName(self, name)
+
     def getSeries(self, name_or_version):
         """See `IDistribution`."""
-        distroseries = DistroSeries.selectOneBy(
-            distribution=self, name=name_or_version)
-        if distroseries is None:
-            distroseries = DistroSeries.selectOneBy(
-                distribution=self, version=name_or_version)
-            if distroseries is None:
-                raise NoSuchDistroSeries(name_or_version)
+        distroseries = Store.of(self).find(DistroSeries,
+               Or(DistroSeries.name == name_or_version,
+               DistroSeries.version == name_or_version),
+            DistroSeries.distribution == self).one()
+        if not distroseries:
+            raise NoSuchDistroSeries(name_or_version)
         return distroseries
 
     def getDevelopmentSeries(self):
@@ -767,6 +772,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         raise NotFoundError(distroseries_name)
 
+    def getSeriesByStatus(self, status):
+        """See `IDistribution`."""
+        return Store.of(self).find(DistroSeries, 
+            DistroSeries.distribution == self,
+            DistroSeries.status == status)
+
     def getFileByName(self, filename, archive=None, source=True, binary=True):
         """See `IDistribution`."""
         assert (source or binary), "searching in an explicitly empty " \
@@ -791,11 +802,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         raise NotFoundError(filename)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
         """See `IHasBuildRecords`"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now).
+        # The "binary_only" option is not yet supported for
+        # IDistribution.
 
         # Find out the distroarchseries in question.
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
@@ -947,10 +960,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             if spr.changelog_entry is not None:
                 sprchangelog.add(spr.changelog_entry)
             binpkgs = BinaryPackageRelease.select("""
-                BinaryPackageRelease.build = Build.id AND
-                Build.sourcepackagerelease = %s
+                BinaryPackageRelease.build = BinaryPackageBuild.id AND
+                BinaryPackageBuild.source_package_release = %s
                 """ % sqlvalues(spr.id),
-                clauseTables=['Build'])
+                clauseTables=['BinaryPackageBuild'])
             for binpkg in binpkgs:
                 log.debug("Considering binary '%s'" % binpkg.name)
                 binpkgnames.add(binpkg.name)
@@ -1061,9 +1074,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.status != SeriesStatus.OBSOLETE,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
-            BinaryPackageBuild.distroarchseries == DistroArchSeries.id,
+            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             BinaryPackageRelease.build == BinaryPackageBuild.id,
-            (BinaryPackageBuild.sourcepackagerelease ==
+            (BinaryPackageBuild.source_package_release ==
                 SourcePackageRelease.id),
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==
@@ -1246,6 +1259,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             distribution=self,
             purpose=ArchivePurpose.PPA).order_by('id')
 
+    def getCommercialPPAs(self):
+        """See `IDistribution`."""
+        # If we ever see non-Ubuntu PPAs, this will return more than
+        # just the PPAs for the Ubuntu context.
+        return getUtility(IArchiveSet).getCommercialPPAs()
+
     def searchPPAs(self, text=None, show_inactive=False, user=None):
         """See `IDistribution`."""
         clauses = ["""
@@ -1340,7 +1359,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             bin_query, clauseTables=['BinaryPackagePublishingHistory'],
             orderBy=['archive.id'], distinct=True)
 
-        return src_archives.union(bin_archives)
+        deleting_archives = Archive.selectBy(
+            status=ArchiveStatus.DELETING).orderBy(['archive.id'])
+
+        return src_archives.union(bin_archives).union(deleting_archives)
 
     def getArchiveByComponent(self, component_name):
         """See `IDistribution`."""

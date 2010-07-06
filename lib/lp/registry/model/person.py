@@ -30,6 +30,7 @@ from operator import attrgetter
 import pytz
 import random
 import re
+import time
 import weakref
 
 from bzrlib.plugins.builder import RecipeParser
@@ -2263,15 +2264,14 @@ class Person(
         return rset
 
     def createRecipe(self, name, description, recipe_text, distroseries,
-                     sourcepackagename, registrant):
+                     registrant, daily_build_archive=None, build_daily=False):
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         builder_recipe = RecipeParser(recipe_text).parse()
         spnset = getUtility(ISourcePackageNameSet)
-        sourcepackagename = spnset.getOrCreateByName(sourcepackagename)
         return SourcePackageRecipe.new(
-            registrant, self, distroseries, sourcepackagename, name,
-            builder_recipe, description)
+            registrant, self, name, builder_recipe, description, distroseries,
+            daily_build_archive, build_daily)
 
     def getRecipe(self, name):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
@@ -3519,13 +3519,17 @@ class PersonSet:
 
         # Change the merged Account's OpenID identifier so that it cannot be
         # used to lookup the merged Person; Launchpad will instead select the
-        # remaining Person based on the email address.
+        # remaining Person based on the email address. The rename uses a
+        # dash, which does not occur in SSO identifiers. The epoch from
+        # the account date_created is used to ensure it is unique if the
+        # original identifier is reused and merged.
         if from_person.account is not None:
             account = IMasterObject(from_person.account)
-            # This works because dashes do not occur in SSO identifiers.
-            merge_identifier = 'merged-%s' % removeSecurityProxy(
-                account).openid_identifier
-            removeSecurityProxy(account).openid_identifier = merge_identifier
+            naked_account = removeSecurityProxy(account)
+            unique_part = time.mktime(naked_account.date_created.timetuple())
+            merge_identifier = 'merged-%s-%s' % (
+                naked_account.openid_identifier, unique_part)
+            naked_account.openid_identifier = merge_identifier
 
         # Inform the user of the merge changes.
         if not to_person.isTeam():

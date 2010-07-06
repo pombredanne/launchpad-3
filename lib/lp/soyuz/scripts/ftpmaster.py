@@ -1036,23 +1036,6 @@ class LpQueryDistro(LaunchpadScript):
             raise LaunchpadScriptFailure(
                 "Action does not accept defined suite.")
 
-    # XXX cprov 2007-04-20 bug=113563.: Should be implemented in
-    # IDistribution.
-    def getSeriesByStatus(self, status):
-        """Query context distribution for a distroseries in a given status.
-
-        I may raise LaunchpadScriptError if no suitable distroseries in a
-        given status was found.
-        """
-        # XXX sabdfl 2007-05-27: Isn't this a bit risky, if there are
-        # multiple series with the desired status?
-        for series in self.location.distribution.series:
-            if series.status == status:
-                return series
-        raise NotFoundError(
-                "Could not find a %s distroseries in %s"
-                % (status.name, self.location.distribution.name))
-
     @property
     def current(self):
         """Return the name of the CURRENT distroseries.
@@ -1063,12 +1046,12 @@ class LpQueryDistro(LaunchpadScript):
         command-line or if not CURRENT distroseries was found.
         """
         self.checkNoSuiteDefined()
-        try:
-            series = self.getSeriesByStatus(SeriesStatus.CURRENT)
-        except NotFoundError, err:
-            raise LaunchpadScriptFailure(err)
+        series = self.location.distribution.getSeriesByStatus(
+            SeriesStatus.CURRENT)
+        if not series:
+            raise LaunchpadScriptFailure("No CURRENT series.")
 
-        return series.name
+        return series[0].name
 
     @property
     def development(self):
@@ -1090,17 +1073,14 @@ class LpQueryDistro(LaunchpadScript):
         wanted_status = (SeriesStatus.DEVELOPMENT,
                          SeriesStatus.FROZEN)
         for status in wanted_status:
-            try:
-                series = self.getSeriesByStatus(status)
-            except NotFoundError:
-                pass
-
-        if series is None:
+            series = self.location.distribution.getSeriesByStatus(status)
+            if series.count() > 0:
+                break
+        else:
             raise LaunchpadScriptFailure(
                 'There is no DEVELOPMENT distroseries for %s' %
                 self.location.distribution.name)
-
-        return series.name
+        return series[0].name
 
     @property
     def supported(self):

@@ -284,3 +284,8 @@ def schedule_translation_templates_build(tip_changed):
 
 def schedule_diff_updates(tip_changed):
     tip_changed.db_branch.scheduleDiffUpdates()
+
+
+def update_recipes(tip_changed):
+    for recipe in tip_changed.db_branch.getRecipes():
+        recipe.is_stale = True

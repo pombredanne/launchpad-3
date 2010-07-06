@@ -11,6 +11,7 @@
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
   <include package=".browser"/>
+  <authorizations module="lp.code.security" />
 
   <!-- Branch Merge Queue -->
 
@@ -466,6 +467,7 @@
                     revision_count
                     bug_branches
                     linked_bugs
+                    getLinkedBugsAndTasks
                     linkBug
                     unlinkBug
                     spec_links
@@ -586,6 +588,9 @@
   <subscriber
       for="lp.codehosting.scanner.events.ITipChanged"
       handler="lp.codehosting.scanner.bzrsync.schedule_translation_upload"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.bzrsync.update_recipes"/>
   <subscriber
       for="lp.codehosting.scanner.events.IRevisionsRemoved"
       handler="lp.codehosting.scanner.email.send_removed_revision_emails"/>
@@ -1023,7 +1028,6 @@
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob">
     <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
-    <allow interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobDerived"/>
   </class>
 
   <securedutility
@@ -1051,12 +1055,14 @@
        set_attributes="
            build_daily
            builder_recipe
+           daily_build_archive
            date_last_modified
            description
            distroseries
            name
            owner
-           sourcepackagename"/>
+           sourcepackagename
+           is_stale"/>
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">

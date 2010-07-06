@@ -137,6 +137,7 @@ setup(
             'twistd = twisted.scripts.twistd:run',
             'start_librarian '
                 '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
+            'ec2 = devscripts.ec2test.entrypoint:main',
         ]
     ),
 )

@@ -281,14 +281,6 @@
       class="canonical.launchpad.browser.OAuthAccessTokenView"
       permission="zope.Public" />
 
-  <!-- Declare robots.txt file for the root -->
-  <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadRoot"
-      name="robots.txt"
-      template="../templates/robotstxt.pt"
-      permission="zope.Public"
-      />
-
   <!-- Common menus -->
   <browser:menus
       module="canonical.launchpad.browser.launchpad"

@@ -756,6 +756,11 @@
         <td>To be used when a branch is being upgraded.</td>
       </tr>
       <tr>
+        <td>source-package-recipe</td>
+        <td><img src="/@@/source-package-recipe" /></td>
+        <td>Represents a source package recipe.</td>
+      </tr>
+      <tr>
         <td colspan="3">
           <h2>Packages</h2>
         </td>

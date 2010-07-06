@@ -35,7 +35,7 @@ attribute:
     >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(bq)
     >>> build.id
     8
-    >>> build.buildstate.name
+    >>> build.status.name
     'BUILDING'
 
 The static timestamps, representing when the record was initialised
@@ -125,7 +125,7 @@ builder.
     >>> print job.logtail
     Dummy sampledata entry, not processing
     >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
-    >>> print build.buildstate.name
+    >>> print build.status.name
     BUILDING
     >>> print job.lastscore
     1
@@ -144,7 +144,7 @@ to another build. The score value of the job is preserved.
     None
     >>> print job.logtail
     None
-    >>> print build.buildstate.name
+    >>> print build.status.name
     NEEDSBUILD
     >>> print job.lastscore
     1
@@ -161,7 +161,7 @@ the specified builder.
     bob
     >>> job.date_started is not None
     True
-    >>> print build.buildstate.name
+    >>> print build.status.name
     BUILDING
 
 

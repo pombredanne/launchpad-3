@@ -11,10 +11,11 @@ from lazr.uri import URI
 
 from contrib import apachelog
 
-from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
+from canonical.config import config
 from canonical.launchpad.interfaces.geoip import IGeoIP
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 
 
 parser = apachelog.parser(apachelog.formats['extended'])
@@ -84,20 +85,37 @@ def parse_file(fd, start_position, logger, get_download_key):
     """
     # Seek file to given position, read all lines.
     fd.seek(start_position)
-    lines = fd.readlines()
-    # Always skip the last line as it may be truncated since we're rsyncing
-    # live logs.
-    last_line = lines.pop(-1)
+    next_line = fd.readline()
+
     parsed_bytes = start_position
-    if len(lines) == 0:
-        # This probably means we're dealing with a logfile that has been
-        # rotated already, so it should be safe to parse its last line.
-        lines = [last_line]
 
     geoip = getUtility(IGeoIP)
     downloads = {}
-    for line in lines:
+    parsed_lines = 0
+
+    # Check for an optional max_parsed_lines config option.
+    max_parsed_lines = getattr(
+        config.launchpad, 'logparser_max_parsed_lines', None)
+
+    while next_line:
+        if max_parsed_lines is not None and parsed_lines >= max_parsed_lines:
+            break
+
+        line = next_line
+
+        # Always skip the last line as it may be truncated since we're
+        # rsyncing live logs, unless there is only one line for us to
+        # parse, in which case This probably means we're dealing with a
+        # logfile that has been rotated already, so it should be safe to
+        # parse its last line.
         try:
+            next_line = fd.next()
+        except StopIteration:
+            if parsed_lines > 0:
+                break
+
+        try:
+            parsed_lines += 1
             parsed_bytes += len(line)
             host, date, status, request = get_host_date_status_and_request(
                 line)
@@ -143,6 +161,12 @@ def parse_file(fd, start_position, logger, get_download_key):
             parsed_bytes -= len(line)
             logger.error('Error (%s) while parsing "%s"' % (e, line))
             break
+
+
+    if parsed_lines > 0:
+        logger.info('Parsed %d lines resulting in %d download stats.' % (
+            parsed_lines, len(downloads)))
+
     return downloads, parsed_bytes
 
 
