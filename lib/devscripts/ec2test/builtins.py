@@ -408,7 +408,6 @@ class cmd_land(EC2Command):
                 "message on the merge proposal.")
         try:
             commit_message = mp.get_commit_message(commit_text, testfix,
-
                 no_qa, incr)
         except MissingReviewError:
             raise BzrCommandError(
