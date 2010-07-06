@@ -45,19 +45,9 @@ class TestLibraryFileAliasForBugAttachment(TestCaseWithFactory):
         # If a user cannot change properties of a bug attachment...
         other_person = self.factory.makePerson()
         login_person(other_person)
-        try:
-            self.bug_attachment.title = 'whatever'
-        except Unauthorized:
-            pass
-        else:
-            self.fail('User should not be able to edit this bug attachment.')
-
+        self.assertRaises(
+            Unauthorized, setattr, self.bug_attachment, 'title', 'whatever')
         # ...he also can't change the LibraryFileAlias for this bug.
-        try:
-            self.lfa_with_parent.restricted = True
-        except Unauthorized:
-            pass
-        else:
-            self.fail(
-                'User should not be able to edit this LibraryFileAlias.')
+        self.assertRaises(
+            Unauthorized, setattr, self.lfa_with_parent, 'restricted', True)
 
