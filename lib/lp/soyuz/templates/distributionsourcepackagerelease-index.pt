@@ -140,7 +140,7 @@
 
   <div id="source-files" class="portlet">
    <h2>Downloads</h2>
-   <table class="summary">
+   <table class="narrow listing">
     <thead>
      <tr>
       <th>File</th>
