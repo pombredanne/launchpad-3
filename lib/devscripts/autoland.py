@@ -162,24 +162,30 @@ class MergeProposal:
         reviews = self.get_reviews()
         bugs = self.get_bugs()
         bugs_clause = get_bugs_clause(bugs)
+        no_qa = check_qa_clause(no_qa, bugs)
+
         if testfix:
             testfix = '[testfix]'
         else:
             testfix = ''
 
-        if no_qa:
-            no_qa = '[no-qa]'
-        else:
-            no_qa = ''
-
-        if bugs_clause == "" and not no_qa:
-            raise MissingBugsError("Need bugs linked or --no-qa option.")
         return '%s%s%s%s %s' % (
             testfix,
             get_reviewer_clause(reviews),
             get_bugs_clause(bugs),
             no_qa,
             commit_text)
+
+
+def check_qa_clause(bugs, no_qa=False):
+    """Check if the commit should be a no-qa or not."""
+    if bugs is None and not no_qa:
+        raise MissingBugsError("Need bugs linked or --no-qa option.")
+    if no_qa:
+        no_qa = '[no-qa]'
+    else:
+        no_qa = ''
+    return no_qa
 
 
 def get_email(person):
