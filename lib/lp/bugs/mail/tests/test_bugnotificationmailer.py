@@ -7,18 +7,30 @@ __metaclass__ = type
 
 import unittest
 
+from canonical.testing import DatabaseFunctionalLayer
+
+from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.mail.bugnotificationmailer import BugNotificationMailer
 from lp.testing import TestCaseWithFactory
 
 
-class BugNotificationMailerTestCase(TestCaseWithFactory):
-    """Tests for the BugNotificationMailer class."""
+class TestBugNotificationMailerHeaders(TestCaseWithFactory):
+    """Tests for headers produced by the BugNotificationMailer class."""
+
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(BugNotificationMailer, self).setup()
+        super(TestBugNotificationMailerHeaders, self).setUp(
+            user='test@canonical.com')
 
         self.notification_recipient = self.factory.makePerson()
-        self.bug = self.factory.makeBug()
+        self.person = self.factory.makePerson()
+
+    def test_bug_creation(self):
+        bug = self.factory.makeBug(owner=self.person)
+        notification = BugNotification.selectFirst(orderBy='-id')
+        mailer = BugNotificationMailer(notification, 'bug-notification.txt')
+        headers = mailer._getHeaders()
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
