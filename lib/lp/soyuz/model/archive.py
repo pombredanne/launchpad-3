@@ -948,7 +948,6 @@ class Archive(SQLBase):
 
     def checkArchivePermission(self, user, component_or_package=None):
         """See `IArchive`."""
-        assert not self.is_copy, "Uploads to copy archives are not allowed."
         # PPA access is immediately granted if the user is in the PPA
         # team.
         if self.is_ppa:
@@ -963,6 +962,10 @@ class Archive(SQLBase):
                 # then relax the database constraint on
                 # ArchivePermission.
                 component_or_package = getUtility(IComponentSet)['main']
+
+        # Flatly refuse uploads to copy archives, at least for now.
+        if self.is_copy:
+            return False
 
         # Otherwise any archive, including PPAs, uses the standard
         # ArchivePermission entries.
