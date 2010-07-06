@@ -979,7 +979,6 @@ class Person(
         """See `IPerson`."""
         if voucher_proxy is None:
             voucher_proxy = getUtility(ISalesforceVoucherProxy)
-        voucher_proxy = getUtility(ISalesforceVoucherProxy)
         vouchers = voucher_proxy.getUnredeemedVouchers(self)
         for voucher in vouchers:
             assert voucher.status in REDEEMABLE_VOUCHER_STATUSES, (
