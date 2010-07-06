@@ -49,7 +49,6 @@ class Voucher:
         self.status = 'Reserved'
         self.project_id = None
         self.project_name = None
-        product = self.voucher_id.split('-')[0]
         self.term_months = self._getTermMonths()
 
     def _getTermMonths(self):
