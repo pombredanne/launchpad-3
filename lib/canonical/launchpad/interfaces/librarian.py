@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'ILibraryFileAlias',
+    'ILibraryFileAliasWithParent',
     'ILibraryFileAliasSet',
     'ILibraryFileContent',
     'ILibraryFileDownloadCount',
@@ -114,6 +115,10 @@ class ILibraryFileAlias(Interface):
         given day/country, we create one with the given count.  Otherwise we
         just increase the count of the existing one by the given count.
         """
+
+
+class ILibraryFileAliasWithParent(ILibraryFileAlias):
+    """A ILibraryFileAlias that knows about its parent."""
 
 
 class ILibraryFileContent(Interface):
