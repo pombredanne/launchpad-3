@@ -11,8 +11,8 @@ from launchpadlib.launchpad import EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT
 
 from devscripts.autoland import (
     get_bazaar_host, get_bugs_clause, get_reviewer_clause,
-    get_reviewer_handle, check_qa_clause, MissingReviewError,
-    MissingBugsError)
+    get_reviewer_handle, check_qa_clauses, MissingReviewError,
+    MissingBugsError, MissingBugsIncrError)
 
 
 class FakeBug:
@@ -69,23 +69,48 @@ class TestBugsClaused(unittest.TestCase):
         self.assertEqual('[bug=20,45]', bugs_clause)
 
 
-class TestCheckQaClause(unittest.TestCase):
-    """Tests for `check_qa_clause`"""
+class TestCheckQaClauses(unittest.TestCase):
+    """Tests for `check_qa_clauses`"""
 
     def test_no_bugs_no_option_given(self):
         bugs = None
         no_qa = False
-        self.assertRaises(MissingBugsError, check_qa_clause, bugs, no_qa)
+        incr = False
+        self.assertRaises(MissingBugsError, check_qa_clauses, bugs, no_qa,
+            incr)
 
-    def test_bugs_option_given(self):
+    def test_bugs_noqa_option_given(self):
         bug1 = FakeBug(20)
         no_qa = True
-        self.assertEqual('[no-qa]', check_qa_clause([bug1], no_qa))
+        incr = False
+        self.assertEqual(('[no-qa]', ''),
+            check_qa_clauses([bug1], no_qa, incr))
+
+    def test_no_bugs_noqa_option_given(self):
+        bugs = None
+        no_qa = True
+        incr = False
+        self.assertEqual(('[no-qa]', ''),
+            check_qa_clauses(bugs, no_qa, incr))
 
     def test_bugs_no_option_given(self):
         bug1 = FakeBug(20)
         no_qa = False
-        self.assertEqual('', check_qa_clause([bug1], no_qa))
+        incr = False
+        self.assertEqual(('', ''), check_qa_clauses([bug1], no_qa, incr))
+
+    def test_bugs_incr_option_given(self):
+        bug1 = FakeBug(20)
+        no_qa = False
+        incr = True
+        self.assertEqual(('', '[incr]'), check_qa_clauses([bug1], no_qa, incr))
+
+    def test_no_bugs_incr_option_given(self):
+        bugs = None
+        no_qa = False
+        incr = True
+        self.assertRaises(MissingBugsIncrError, check_qa_clauses, bugs,
+            no_qa, incr)
 
 
 class TestGetReviewerHandle(unittest.TestCase):
