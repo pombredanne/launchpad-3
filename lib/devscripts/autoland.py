@@ -17,6 +17,11 @@ class MissingBugsError(Exception):
     bugs."""
 
 
+class MissingBugsIncrError(Exception):
+    """Raised when we try to land a mp with the 'incr' tag and no linked
+    bugs."""
+
+
 class LaunchpadBranchLander:
 
     name = 'launchpad-branch-lander'
@@ -157,34 +162,47 @@ class MergeProposal:
         # URL. Do it ourselves.
         return URI(scheme='bzr+ssh', host=host, path='/' + branch.unique_name)
 
-    def get_commit_message(self, commit_text, testfix=False, no_qa=False):
+    def get_commit_message(self, commit_text, testfix=False, no_qa=False,
+            incr=False):
         """Get the Launchpad-style commit message for a merge proposal."""
         reviews = self.get_reviews()
         bugs = self.get_bugs()
-        no_qa = check_qa_clause(no_qa, bugs)
+        no_qa, incr = check_qa_clauses(bugs, no_qa, incr)
 
         if testfix:
             testfix = '[testfix]'
         else:
             testfix = ''
 
-        return '%s%s%s%s %s' % (
+        return '%s%s%s%s%s %s' % (
             testfix,
             get_reviewer_clause(reviews),
             get_bugs_clause(bugs),
             no_qa,
+            incr,
             commit_text)
 
 
-def check_qa_clause(bugs, no_qa=False):
-    """Check if the commit should be a no-qa or not."""
-    if bugs is None and not no_qa:
+def check_qa_clauses(bugs, no_qa=False, incr=False):
+    """Check the no-qa and incr clauses."""
+
+    if not bugs and not no_qa and not incr:
         raise MissingBugsError("Need bugs linked or --no-qa option.")
+
+    if incr and not bugs:
+        raise MissingBugsIncrError("--incr option requires bugs linked to the "
+            "branch.")
+
+    if incr:
+        incr = '[incr]'
+    else:
+        incr = ''
     if no_qa:
         no_qa = '[no-qa]'
     else:
         no_qa = ''
-    return no_qa
+
+    return no_qa, incr
 
 
 def get_email(person):
