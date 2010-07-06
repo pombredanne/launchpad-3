@@ -146,7 +146,7 @@ class SalesforceVoucherProxy:
         status = self.server.redeemVoucher(voucher_id,
                                            identifier,
                                            project.id,
-                                           project.name)
+                                           project.displayname)
         return status
 
     @fault_mapper

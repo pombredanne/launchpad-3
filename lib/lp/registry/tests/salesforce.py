@@ -191,16 +191,14 @@ class SalesforceXMLRPCTestTransport(Transport):
         return voucher
 
     @force_fault
-    def redeemVoucher(self, voucher_id, lp_openid,
-                      lp_project_id, lp_project_name):
+    def redeemVoucher(self, voucher_id, lp_openid, lp_project_id,
+                      lp_project_name):
         """Redeem the voucher.
 
         :param voucher_id: string representing the unique voucher id.
         :param lp_openid: string representing the Launchpad user's OpenID.
-        :param lp_project_id: integer representing the id for the project
-           being subscribed by the use of this voucher.
-        :param lp_project_name: string representing the name of the project in
-            Launchpad.
+        :param lp_project_id: Launchpad project id
+        :param lp_project_name: Launchpad project name
         :return: Boolean representing the success or failure of the operation.
         """
         voucher = self._findVoucher(voucher_id)
@@ -219,11 +217,10 @@ class SalesforceXMLRPCTestTransport(Transport):
         voucher.status = 'Redeemed'
         voucher.project_id = lp_project_id
         voucher.project_name = lp_project_name
-        product = voucher.voucher_id.split('-')[0]
         return [True]
 
     @force_fault
-    def updateProjectName(self, lp_project_id, lp_project_name):
+    def updateProjectName(self, lp_project_id, new_name):
         """Set the project name for the given project id.
 
         Returns the number of vouchers that were updated.
@@ -231,7 +228,7 @@ class SalesforceXMLRPCTestTransport(Transport):
         num_updated = 0
         for voucher in self.vouchers:
             if voucher.project_id == lp_project_id:
-                voucher.project_name = lp_project_name
+                voucher.project_name = new_name
                 num_updated += 1
         if num_updated == 0:
             raise Fault('NotFound',

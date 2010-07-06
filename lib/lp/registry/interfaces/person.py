@@ -970,7 +970,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         :param match_name: string optional project name to screen the results.
         """
 
-    def getAllCommercialSubscriptionVouchers():
+    def getAllCommercialSubscriptionVouchers(voucher_proxy=None):
         """Return all commercial subscription vouchers.
 
         All of a `Person`s vouchers are returned, regardless of redemption
@@ -980,7 +980,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         :return: dict
         """
 
-    def getRedeemableCommercialSubscriptionVouchers():
+    def getRedeemableCommercialSubscriptionVouchers(voucher_proxy=None):
         """Return the set of redeemable vouchers.
 
         The `Person`s vouchers are returned if they are unredeemed and active.

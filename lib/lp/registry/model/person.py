@@ -960,9 +960,10 @@ class Person(
                                  orderBy=['displayname'])
         return results
 
-    def getAllCommercialSubscriptionVouchers(self):
+    def getAllCommercialSubscriptionVouchers(self, voucher_proxy=None):
         """See `IPerson`."""
-        voucher_proxy = getUtility(ISalesforceVoucherProxy)
+        if voucher_proxy is None:
+            voucher_proxy = getUtility(ISalesforceVoucherProxy)
         commercial_vouchers = voucher_proxy.getAllVouchers(self)
         vouchers = {}
         for status in VOUCHER_STATUSES:
@@ -974,8 +975,10 @@ class Person(
             vouchers[voucher.status].append(voucher)
         return vouchers
 
-    def getRedeemableCommercialSubscriptionVouchers(self):
+    def getRedeemableCommercialSubscriptionVouchers(self, voucher_proxy=None):
         """See `IPerson`."""
+        if voucher_proxy is None:
+            voucher_proxy = getUtility(ISalesforceVoucherProxy)
         voucher_proxy = getUtility(ISalesforceVoucherProxy)
         vouchers = voucher_proxy.getUnredeemedVouchers(self)
         for voucher in vouchers:
