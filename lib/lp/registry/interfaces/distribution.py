@@ -385,6 +385,13 @@ class IDistributionPublic(
         """Return a (distroseries,pocket) tuple which is the given textual
         distroseriesname in this distribution."""
 
+    def getSeriesByStatus(status):
+        """Query context distribution for distroseries with a given status.
+
+        :param status: Series status to look for
+        :return: list of `IDistroSeries`
+        """
+
     def getSourcePackageCaches(archive=None):
         """The set of all source package info caches for this distribution.
 

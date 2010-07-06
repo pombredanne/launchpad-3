@@ -157,8 +157,10 @@
         </tal:block>
       </p>
 
-        <tal:person condition="not: view/context_is_probably_a_team">
-          <ul tal:condition="context/preferredemail">
+      <tal:person condition="not: view/context_is_probably_a_team">
+        <tal:admin tal:condition="context/required:launchpad.Admin">
+          <ul id="email-addresses"
+            tal:condition="context/preferredemail">
             <li>
               <img src="/@@/private" alt=""
                    tal:condition="view/email_address_visibility/are_allowed"/>
@@ -169,19 +171,18 @@
               <a tal:replace="structure overview_menu/editemailaddresses/fmt:icon" />
             </li>
           </ul>
-          <tal:editable tal:condition="context/required:launchpad.Edit">
-            <p tal:condition="not: context/preferredemail">
-              <tal:editemailaddresses
-                replace="structure overview_menu/editemailaddresses/fmt:link-icon" />
-            </p>
-          </tal:editable>
+        </tal:admin>
+
+        <p>
           <a tal:attributes="
             href string:/people/+requestmerge?field.dupe_person=${context/name}"
-          >Are you <span tal:replace="context/displayname" />?</a>
-        </tal:person>
-        <tal:team condition="view/context_is_probably_a_team">
-          <a href="+claimteam">Is this a team you run?</a>
-        </tal:team>
+            >Are you <span tal:replace="context/displayname" />?</a>
+        </p>
+      </tal:person>
+
+      <tal:team condition="view/context_is_probably_a_team">
+        <a href="+claimteam">Is this a team you run?</a>
+      </tal:team>
     </tal:noaccount>
 
     <tal:deactivated-account

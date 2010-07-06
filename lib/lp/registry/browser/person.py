@@ -557,9 +557,7 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context.person)
 
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
+    cancel_url = next_url
 
     @action(_("Renew"), name="renew")
     def renew_action(self, action, data):
@@ -1365,14 +1363,25 @@ class PeopleSearchView(LaunchpadView):
     def number_of_teams(self):
         return self.context.teamsCount()
 
+    @property
+    def is_teams_only(self):
+        """Is the search restricted to teams."""
+        searchfor = self.request.get("searchfor", None)
+        return searchfor == 'teamsonly'
+
+    @property
+    def is_people_only(self):
+        """Is the search restricted to people."""
+        searchfor = self.request.get("searchfor", None)
+        return searchfor == 'peopleonly'
+
     def searchPeopleBatchNavigator(self):
         name = self.request.get("name")
         if not name:
             return None
-        searchfor = self.request.get("searchfor")
-        if searchfor == "peopleonly":
+        if self.is_people_only:
             results = self.context.findPerson(name)
-        elif searchfor == "teamsonly":
+        elif self.is_teams_only:
             results = self.context.findTeam(name)
         else:
             results = self.context.find(name)
@@ -3038,14 +3047,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname
 
-    @property
-    def public_private_css(self):
-        """The CSS classes that represent the public or private state."""
-        if self.context.private:
-            return 'aside private'
-        else:
-            return 'aside public'
-
     @cachedproperty
     def should_show_ppa_section(self):
         """Return True if "Personal package archives" is to be shown.
@@ -3102,9 +3103,11 @@ class PersonParticipationView(LaunchpadView):
         """Return the participation information for active memberships."""
         participations = [self._asParticipation(membership)
                 for membership in self.context.myactivememberships
-                if check_permission('launchpad.View', membership)]
+                if check_permission('launchpad.View', membership.team)]
         membership_set = getUtility(ITeamMembershipSet)
         for team in self.context.teams_indirectly_participated_in:
+            if not check_permission('launchpad.View', team):
+                continue
             # The key points of the path for presentation are:
             # [-?] indirect memberships, [-2] direct membership, [-1] team.
             team_path = self.context.findPathToTeam(team)
@@ -4197,8 +4200,16 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         """Make the selected teams join this team."""
         context = self.context
         is_admin = check_permission('launchpad.Admin', context)
+        membership_set = getUtility(ITeamMembershipSet)
         for team in data['teams']:
-            if is_admin:
+            membership = membership_set.getByPersonAndTeam(team, context)
+            if (membership is not None
+                and membership.status == TeamMembershipStatus.INVITED):
+                team.acceptInvitationToBeMemberOf(
+                    context,
+                    'Accepted an already pending invitation while trying to '
+                    'propose the team for membership.')
+            elif is_admin:
                 context.addMember(team, reviewer=self.user)
             else:
                 team.join(context, requester=self.user)

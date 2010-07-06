@@ -34,12 +34,14 @@ from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough)
+    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.errors import ForbiddenInstruction
+from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -50,6 +52,13 @@ from lp.soyuz.interfaces.archive import (
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
+
+RECIPE_BETA_MESSAGE = structured(
+    'We\'re still working on source package recipes. '
+    'We would love for you to try them out, and if you have '
+    'any issues, please '
+    '<a href="http://bugs.edge.launchpad.net/launchpad-code">'
+    'file a bug</a>.  We\'ll be happy to fix any problems you encounter.')
 
 
 class IRecipesForPerson(Interface):
@@ -141,6 +150,12 @@ class SourcePackageRecipeContextMenu(ContextMenu):
 class SourcePackageRecipeView(LaunchpadView):
     """Default view of a SourcePackageRecipe."""
 
+    def initialize(self):
+        # XXX: rockstar: This should be removed when source package recipes are
+        # put into production. spec=sourcepackagerecipes
+        super(SourcePackageRecipeView, self).initialize()
+        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+
     @property
     def page_title(self):
         return "%(name)s\'s %(recipe_name)s recipe" % {
@@ -170,9 +185,12 @@ def buildable_distroseries_vocabulary(context):
     ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
     supported_distros = [ppa.distribution for ppa in ppas]
     dsset = getUtility(IDistroSeriesSet).search()
-    terms = [SimpleTerm(distro, distro.id, distro.displayname)
-             for distro in dsset if (
-                 distro.active and distro.distribution in supported_distros)]
+    terms = sorted_dotted_numbers(
+        [SimpleTerm(distro, distro.id, distro.displayname)
+         for distro in dsset if (
+         distro.active and distro.distribution in supported_distros)],
+        key=lambda term: term.value.version)
+    terms.reverse()
     return SimpleVocabulary(terms)
 
 def target_ppas_vocabulary(context):
@@ -339,6 +357,12 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     schema = ISourcePackageAddEditSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
 
+    def initialize(self):
+        # XXX: rockstar: This should be removed when source package recipes are
+        # put into production. spec=sourcepackagerecipes
+        super(SourcePackageRecipeAddView, self).initialize()
+        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+
     @property
     def initial_values(self):
         return {
@@ -363,6 +387,10 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
             self.setFieldError(
                 'recipe_text',
                 'The bzr-builder instruction "run" is not permitted here.')
+            return
+        except NoSuchBranch, e:
+            self.setFieldError(
+                'recipe_text', '%s is not a branch on Launchpad.' % e.name)
             return
 
         self.next_url = canonical_url(source_package_recipe)
