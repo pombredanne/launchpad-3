@@ -11,7 +11,8 @@ from launchpadlib.launchpad import EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT
 
 from devscripts.autoland import (
     get_bazaar_host, get_bugs_clause, get_reviewer_clause,
-    get_reviewer_handle, MissingReviewError)
+    get_reviewer_handle, check_qa_clause, MissingReviewError,
+    MissingBugsError)
 
 
 class FakeBug:
@@ -66,6 +67,25 @@ class TestBugsClaused(unittest.TestCase):
         bug2 = FakeBug(45)
         bugs_clause = get_bugs_clause([bug1, bug2])
         self.assertEqual('[bug=20,45]', bugs_clause)
+
+
+class TestCheckQaClause(unittest.TestCase):
+    """Tests for `check_qa_clause`"""
+
+    def test_no_bugs_no_option_given(self):
+        bugs = None
+        no_qa = False
+        self.assertRaises(MissingBugsError, check_qa_clause, bugs, no_qa)
+
+    def test_bugs_option_given(self):
+        bug1 = FakeBug(20)
+        no_qa = True
+        self.assertEqual('[no-qa]', check_qa_clause([bug1], no_qa))
+
+    def test_bugs_no_option_given(self):
+        bug1 = FakeBug(20)
+        no_qa = False
+        self.assertEqual('', check_qa_clause([bug1], no_qa))
 
 
 class TestGetReviewerHandle(unittest.TestCase):
