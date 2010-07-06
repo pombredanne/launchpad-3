@@ -1126,11 +1126,11 @@ class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
     def setUp(self):
         super(TestSetCurrentTranslation_Ubuntu, self).setUp()
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        sharing_series = self.factory.makeDistroRelease(distribution=ubuntu)
         sourcepackagename = self.factory.makeSourcePackageName()
         potemplate = self.factory.makePOTemplate(
             distroseries=ubuntu.currentseries,
             sourcepackagename=sourcepackagename)
+        sharing_series = self.factory.makeDistroRelease(distribution=ubuntu)
         sharing_potemplate = self.factory.makePOTemplate(
             distroseries=sharing_series,
             sourcepackagename=sourcepackagename,
