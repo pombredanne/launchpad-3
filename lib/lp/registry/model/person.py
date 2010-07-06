@@ -2278,7 +2278,6 @@ class Person(
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         builder_recipe = RecipeParser(recipe_text).parse()
-        spnset = getUtility(ISourcePackageNameSet)
         return SourcePackageRecipe.new(
             registrant, self, name, builder_recipe, description, distroseries)
 

@@ -13,7 +13,6 @@ commerical-use subscription.
 
     >>> from lp.registry.tests.salesforce import (
     ...     SalesforceXMLRPCTestTransport, TestSalesforceVoucherProxy)
-    >>> import xmlrpclib
     >>> test_transport = SalesforceXMLRPCTestTransport()
     >>> voucher_proxy = TestSalesforceVoucherProxy()
 
