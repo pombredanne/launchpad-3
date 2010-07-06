@@ -10,6 +10,7 @@ import unittest
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.mail.bugnotificationbuilder import get_bugmail_replyto_address
 from lp.bugs.mail.bugnotificationmailer import BugNotificationMailer
 from lp.testing import TestCaseWithFactory
 
@@ -31,6 +32,22 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
         notification = BugNotification.selectFirst(orderBy='-id')
         mailer = BugNotificationMailer(notification, 'bug-notification.txt')
         headers = mailer._getHeaders()
+
+        expected_headers = {
+            'Sender': 'bounces@canonical.com',
+            'X-Launchpad-Bug-Commenters': u'%s' % self.person.name,
+            'X-Launchpad-Bug-Private': 'no',
+            'X-Launchpad-Bug-Reporter':
+                u'%s (%s)' % (self.person.displayname, self.person.name),
+            'X-Launchpad-Bug': [
+                u'product=%s; status=New; '
+                u'importance=Undecided; assignee=None;' % (
+                    bug.bugtasks[0].product.name),
+                ],
+            'Reply-To': get_bugmail_replyto_address(bug),
+            'X-Launchpad-Bug-Security-Vulnerability': 'no',
+            }
+        self.assertEqual(expected_headers, headers)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
