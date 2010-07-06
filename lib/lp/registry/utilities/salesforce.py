@@ -110,6 +110,9 @@ class SalesforceVoucherProxy:
         """See `ISalesforceVoucherProxy`."""
         identifier = self._getUserIdentitifier(user)
         vouchers = self.server.getUnredeemedVouchers(identifier)
+        # Force the return value to be a list of dicts.
+        if isinstance(vouchers, dict):
+            vouchers = [vouchers]
         return [Voucher(voucher) for voucher in vouchers]
 
     @fault_mapper
@@ -117,6 +120,9 @@ class SalesforceVoucherProxy:
         """See `ISalesforceVoucherProxy`."""
         identifier = self._getUserIdentitifier(user)
         vouchers = self.server.getAllVouchers(identifier)
+        # Force the return value to be a list of dicts.
+        if isinstance(vouchers, dict):
+            vouchers = [vouchers]
         return [Voucher(voucher) for voucher in vouchers]
 
     @fault_mapper
