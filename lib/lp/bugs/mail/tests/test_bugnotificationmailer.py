@@ -31,7 +31,10 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
         bug = self.factory.makeBug(owner=self.person)
         notification = BugNotification.selectFirst(orderBy='-id')
         mailer = BugNotificationMailer(notification, 'bug-notification.txt')
-        headers = mailer._getHeaders()
+
+        mailer.message_id = '<foobar-example-com>'
+        generated_mail = mailer.generateEmail(
+            bug.owner.preferredemail.email, bug.owner)
 
         expected_headers = {
             'Sender': 'bounces@canonical.com',
@@ -47,7 +50,7 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
             'Reply-To': get_bugmail_replyto_address(bug),
             'X-Launchpad-Bug-Security-Vulnerability': 'no',
             }
-        self.assertEqual(expected_headers, headers)
+        self.assertEqual(expected_headers, generated_mail.headers)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

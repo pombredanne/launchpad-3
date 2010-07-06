@@ -24,25 +24,25 @@ class BugNotificationMailer(BaseMailer):
             bug_notification.message.owner,
             bug_notification.bug)
 
-        recipients = bug_notification.bug.getBugNotificationRecipients()
-        actual_recipients = {}
-        for recipient in recipients:
-            subscription, rationale = recipients.getReason(recipient)
-
         super(BugNotificationMailer, self).__init__(
             bug_notification.message.subject, template_name,
-            actual_recipients, from_address, delta=None,
+            recipients={}, from_address=from_address, delta=None,
             message_id=message_id, notification_type=notification_type)
 
         self.bug_notification = bug_notification
         self.bug = bug_notification.bug
 
-    def _getHeaders(self):
+        # We clobber the super()'d version of _recipients and replace it
+        # with that which comes from the notififcation.
+        self._recipients = self.bug.getBugNotificationRecipients()
+
+    def _getHeaders(self, email):
         """See `BaseMailer`."""
-        headers = {
-            'Reply-To': get_bugmail_replyto_address(self.bug),
-            'Sender': config.canonical.bounce_address,
-            }
+        reason_text, reason_header = self._recipients.getReason(email)
+        headers = {'X-Launchpad-Message-Rationale': reason_header}
+
+        headers['Reply-To'] = get_bugmail_replyto_address(self.bug)
+        headers['Sender'] = config.canonical.bounce_address
 
         # X-Launchpad-Bug
         headers['X-Launchpad-Bug'] = [

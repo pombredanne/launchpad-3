@@ -12,8 +12,41 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import INotificationRecipientSet
 
+from lp.services.mail.basemailer import RecipientReason
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
+
+
+class BugNotificationRecipientReason(RecipientReason):
+    """A `RecipientReason` subsclass specifically for `BugNotification`s."""
+
+    @classmethod
+    def forDupeSubscriber(self, person):
+        """..."""
+
+    @classmethod
+    def forDirectSubscriber(self, person):
+        """..."""
+
+    @classmethod
+    def forAssignee(self, person):
+        """..."""
+
+    @classmethod
+    def forDistroBugSupervisor(self, person, distro):
+        """..."""
+
+    @classmethod
+    def forStructuralSubscriber(self, person, target):
+        """..."""
+
+    @classmethod
+    def forUpstreamBugSupervisor(self, person, upstream):
+        """..."""
+
+    @classmethod
+    def forRegistrant(self, person, upstream)
+        """..."""
 
 
 class BugNotificationRecipients(NotificationRecipientSet):
