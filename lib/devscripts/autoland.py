@@ -190,8 +190,8 @@ def check_qa_clauses(bugs, no_qa=False, incr=False):
         raise MissingBugsError("Need bugs linked or --no-qa option.")
 
     if incr and not bugs:
-        raise MissingBugsIncrError("--incr option requires bugs linked to the "
-            "branch.")
+        raise MissingBugsIncrError("--incr option requires bugs linked to "
+            "the branch.")
 
     if incr:
         incr = '[incr]'

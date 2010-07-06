@@ -97,20 +97,22 @@ class TestCheckQaClauses(unittest.TestCase):
         bug1 = FakeBug(20)
         no_qa = False
         incr = False
-        self.assertEqual(('', ''), check_qa_clauses([bug1], no_qa, incr))
+        self.assertEqual(('', ''),
+            check_qa_clauses([bug1], no_qa, incr))
 
     def test_bugs_incr_option_given(self):
         bug1 = FakeBug(20)
         no_qa = False
         incr = True
-        self.assertEqual(('', '[incr]'), check_qa_clauses([bug1], no_qa, incr))
+        self.assertEqual(('', '[incr]'),
+            check_qa_clauses([bug1], no_qa, incr))
 
     def test_no_bugs_incr_option_given(self):
         bugs = None
         no_qa = False
         incr = True
-        self.assertRaises(MissingBugsIncrError, check_qa_clauses, bugs,
-            no_qa, incr)
+        self.assertRaises(MissingBugsIncrError,
+            check_qa_clauses, bugs, no_qa, incr)
 
 
 class TestGetReviewerHandle(unittest.TestCase):
