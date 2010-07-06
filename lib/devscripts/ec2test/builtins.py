@@ -399,7 +399,8 @@ class cmd_land(EC2Command):
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
         try:
-            commit_message = mp.get_commit_message(commit_text, testfix, no_qa)
+            commit_message = mp.get_commit_message(commit_text, testfix,
+                no_qa)
         except MissingReviewError:
             raise BzrCommandError(
                 "Cannot land branches that haven't got approved code "

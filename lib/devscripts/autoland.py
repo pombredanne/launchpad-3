@@ -161,7 +161,6 @@ class MergeProposal:
         """Get the Launchpad-style commit message for a merge proposal."""
         reviews = self.get_reviews()
         bugs = self.get_bugs()
-        bugs_clause = get_bugs_clause(bugs)
         no_qa = check_qa_clause(no_qa, bugs)
 
         if testfix:
