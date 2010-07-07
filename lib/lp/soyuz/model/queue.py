@@ -1757,12 +1757,8 @@ class PackageUploadCustom(SQLBase):
         archive = self.packageupload.archive
         # See the XXX near the import for getPubConfig.
         archive_config = getPubConfig(archive)
-        meta_root = os.path.join(
-            archive_config.distroroot, archive.owner.name)
-        dest_dir = os.path.join(
-            meta_root, "meta", archive.name)
         dest_file = os.path.join(
-            dest_dir, self.libraryfilealias.filename)
+            archive_config.metaroot, self.libraryfilealias.filename)
         if not os.path.isdir(dest_dir):
             os.makedirs(dest_dir, 0755)
 

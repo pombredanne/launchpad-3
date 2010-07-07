@@ -95,6 +95,7 @@ class TestPublisher(TestPublisherBase):
 
     def testDeletingPPA(self):
         """Test deleting a PPA"""
+        # XXX: Add test
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
             distribution=self.ubuntutest, owner=ubuntu_team,
@@ -106,12 +107,16 @@ class TestPublisher(TestPublisherBase):
         # Create a file inside archiveroot to ensure we're recursive.
         open(os.path.join(
             publisher._config.archiveroot, 'test_file'), 'w').close()
+        # And a meta file
+        os.makedirs(publisher._config.metaroot)
+        open(os.path.join(publisher._config.metaroot, 'test'), 'w').close()
 
         publisher.deleteArchive()
         root_dir = os.path.join(
             publisher._config.distroroot, test_archive.owner.name,
             test_archive.name)
         self.assertFalse(os.path.exists(root_dir))
+        self.assertFalse(os.path.exists(publisher._config.metaroot))
         self.assertEqual(test_archive.status, ArchiveStatus.DELETED)
         self.assertEqual(test_archive.publish, False)
 
