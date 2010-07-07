@@ -95,7 +95,6 @@ class TestPublisher(TestPublisherBase):
 
     def testDeletingPPA(self):
         """Test deleting a PPA"""
-        # XXX: Add test
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
             distribution=self.ubuntutest, owner=ubuntu_team,
@@ -123,6 +122,25 @@ class TestPublisher(TestPublisherBase):
         # Trying to delete it again won't fail, in the corner case where
         # some admin manually deleted the repo.
         publisher.deleteArchive()
+
+    def testDeletingPPAWithoutMetaData(self):
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        test_archive = getUtility(IArchiveSet).new(
+            distribution=self.ubuntutest, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA)
+        publisher = getPublisher(test_archive, None, self.logger)
+
+        self.assertTrue(os.path.exists(publisher._config.archiveroot))
+
+        # Create a file inside archiveroot to ensure we're recursive.
+        open(os.path.join(
+            publisher._config.archiveroot, 'test_file'), 'w').close()
+
+        publisher.deleteArchive()
+        root_dir = os.path.join(
+            publisher._config.distroroot, test_archive.owner.name,
+            test_archive.name)
+        self.assertFalse(os.path.exists(root_dir))
 
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""
