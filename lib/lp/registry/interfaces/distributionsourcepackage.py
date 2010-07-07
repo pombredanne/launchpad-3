@@ -81,9 +81,25 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         "no such package -- this occurs when there is no current series for "
         "the distribution.")
 
+    total_bug_heat = Attribute(
+        "Sum of the bug heat for all the bugs matching the distribution "
+        "and sourcepackagename of the IDistributionSourcePackage.")
+
+    max_bug_heat = Attribute(
+        "Maximum bug heat for a single bug matching the distribution "
+        "and sourcepackagename of the IDistributionSourcePackage.")
+
+    bug_count = Attribute(
+        "Number of bugs matching the distribution and sourcepackagename "
+        "of the IDistributionSourcePackage.")
+
+    po_message_count = Attribute(
+        "Number of translations matching the distribution and "
+        "sourcepackagename of the IDistributionSourcePackage.")
+
     def getReleasesAndPublishingHistory():
         """Return a list of all releases of this source package in this
-        distribution and their correspodning publishing history.
+        distribution and their corresponding publishing history.
 
         Items in the list are tuples comprised of a
         DistributionSourcePackage and a list of
