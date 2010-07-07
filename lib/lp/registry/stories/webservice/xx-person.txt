@@ -618,6 +618,9 @@ indicating what was wrong is returned.
 The 'getArchiveSubscriptionURLs' named operation will return a list of
 all the URLs to the private archives that the person can access.
 
+    >>> login('admin@canonical.com')
+    >>> agent = factory.makePerson(name='software-center-agent')
+    >>> logout()
     >>> login("mark@example.com")
     >>> mark_person = getUtility(IPersonSet).getByName("mark")
     >>> mark_private_ppa = factory.makeArchive(
