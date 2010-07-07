@@ -123,7 +123,7 @@ temp directory.
     ...     'launchpadlib test', 'salgado', 'WRITE_PUBLIC')
 
     >>> launchpad._browser._connection.cache.cache
-    '/tmp/launchpadlib-cache-...'
+    '/.../launchpadlib-cache-...'
 
 If we create another Launchpad object, it'll get its own cache directory.
 
@@ -135,3 +135,11 @@ If we create another Launchpad object, it'll get its own cache directory.
 
     >>> cache_dir_2 != cache_dir_1
     True
+
+We use zope.testing.cleanup to manage cleaning up of the cache directories,
+therefore we can peek inside its registry of clean-up actions and see the
+clean-up functions biding their time.
+
+    >>> import zope.testing.cleanup
+    >>> zope.testing.cleanup._cleanups
+    [...(<function _clean_up_cache...>, ('/.../launchpadlib-cache-...'...)...]
