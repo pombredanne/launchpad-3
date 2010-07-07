@@ -376,7 +376,7 @@ def parse(tracefiles, categories, pageid_times, options):
                     raise MalformedLine('Unknown record type %s', record_type)
             except MalformedLine, x:
                 log.error(
-                    "Malformed line %s %s (%s)" % (repr(line), repr(args), x))
+                    "Malformed line %s (%s)" % (repr(line), x))
 
 
 def parse_extension_record(request, args):
