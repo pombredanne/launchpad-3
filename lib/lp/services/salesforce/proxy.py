@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for accessing the external Salesforce proxy."""
@@ -20,7 +20,7 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.salesforce import (
+from lp.services.salesforce.interfaces import (
     ISalesforceVoucher, ISalesforceVoucherProxy, SFDCError,
     SVPAlreadyRedeemedException, SVPNotAllowedException, SVPNotFoundException,
     SalesforceVoucherProxyException)

@@ -18,8 +18,8 @@ import re
 from xmlrpclib import Fault, loads, Transport
 from zope.interface import implements
 
-from lp.registry.utilities.salesforce import SalesforceVoucherProxy
-from lp.registry.interfaces.salesforce import ISalesforceVoucherProxy
+from lp.services.salesforce.proxy import SalesforceVoucherProxy
+from lp.services.salesforce.interfaces import ISalesforceVoucherProxy
 
 
 TERM_RE = re.compile("^LPCBS(\d{2})-.*")

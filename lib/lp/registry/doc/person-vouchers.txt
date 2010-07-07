@@ -11,7 +11,7 @@ commerical-use subscription.
     >>> person_set = getUtility(IPersonSet)
     >>> cprov = person_set.getByName('cprov')
 
-    >>> from lp.registry.tests.salesforce import (
+    >>> from lp.services.salesforce.tests.proxy import (
     ...     SalesforceXMLRPCTestTransport, TestSalesforceVoucherProxy)
     >>> test_transport = SalesforceXMLRPCTestTransport()
     >>> voucher_proxy = TestSalesforceVoucherProxy()

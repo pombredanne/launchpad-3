@@ -185,7 +185,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
-from lp.registry.interfaces.salesforce import (
+from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
