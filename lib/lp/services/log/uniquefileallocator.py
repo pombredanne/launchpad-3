@@ -4,7 +4,7 @@
 """Create uniquely named log files on disk."""
 
 
-__all__ = ['LogNamer']
+__all__ = ['UniqueFileAllocator']
 
 __metaclass__ = type
 
@@ -18,21 +18,21 @@ import time
 import pytz
 UTC = pytz.utc
 
-# the section of the Log ID before the instance identifier is the
+# the section of the ID before the instance identifier is the
 # days since the epoch, which is defined as the start of 2006.
 epoch = datetime.datetime(2006, 01, 01, 00, 00, 00, tzinfo=UTC)
 
 
-class LogNamer:
+class UniqueFileAllocator:
     """Assign unique file names to logs being written from an app/script.
     
-    LogNamer causes logs written from one process to be uniquely named. It is not
-    safe for use in multiple processes with the same output root - each process
-    must have a unique output root.
+    UniqueFileAllocator causes logs written from one process to be uniquely
+    named. It is not safe for use in multiple processes with the same output
+    root - each process must have a unique output root.
     """
 
     def __init__(self, output_root, log_type, log_subtype):
-        """Create a LogNamer.
+        """Create a UniqueFileAllocator.
 
         :param output_root: The root directory that logs should be placed in.
         :param log_type: A string to use as a prefix in the ID assigned to new
@@ -66,7 +66,7 @@ class LogNamer:
         """
         if directory is None:
             directory = self.output_dir(time)
-        prefix = self._log_infix()
+        prefix = self.get_log_infix()
         lastid = 0
         lastfilename = None
         for filename in os.listdir(directory):
@@ -74,7 +74,7 @@ class LogNamer:
             if not logid.startswith(prefix):
                 continue
             logid = logid[len(prefix):]
-            if logid.isdigit() and lastid is None or int(logid) > lastid:
+            if logid.isdigit() and (lastid is None or int(logid) > lastid):
                 lastid = int(logid)
                 lastfilename = filename
         if lastfilename is not None:
@@ -95,13 +95,17 @@ class LogNamer:
 
     def getFilename(self, log_serial, time):
         """Get the filename for a given log serial and time."""
-        log_subtype = self._log_infix()
-        output_dir = self.output_dir(time) #XXX locks and scans, bad.
+        log_subtype = self.get_log_infix()
+        # TODO: Calling output_dir causes a global lock to be taken and a
+        # directory scan, which is bad for performance. It would be better
+        # to have a split out 'directory name for time' function which the
+        # 'want to use this directory now' function can call.
+        output_dir = self.output_dir(time)
         second_in_day = time.hour * 3600 + time.minute * 60 + time.second
         return os.path.join(
             output_dir, '%05d.%s%s' % (second_in_day, log_subtype, log_serial))
 
-    def _log_infix(self):
+    def get_log_infix(self):
         """Return the current log infix to use in ids and file names."""
         return self._log_subtype + self._log_token
 
@@ -129,7 +133,7 @@ class LogNamer:
             newid = self._last_serial
         finally:
             self._lock.release()
-        subtype = self._log_infix()
+        subtype = self.get_log_infix()
         day_number = (now - epoch).days + 1
         log_id = '%s-%d%s%d' % (self._log_type, day_number, subtype, newid)
         filename = self.getFilename(newid, now)
@@ -157,10 +161,12 @@ class LogNamer:
                 except OSError, e:
                     if e.errno != errno.EEXIST:
                         raise
-                # XXX: Note that only one process can do this safely: its not
+                # TODO: Note that only one process can do this safely: its not
                 # cross-process safe, and also not entirely threadsafe: another
                 # thread that has a new log and hasn't written it could then
-                # use that serial number.
+                # use that serial number. We should either make it really safe,
+                # or remove the contention entirely and log uniquely per thread
+                # of execution.
                 self._last_serial = self._findHighestSerial(result)
             finally:
                 self._lock.release()
