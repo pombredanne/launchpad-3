@@ -122,6 +122,8 @@ class Times:
         if request.ticks is not None:
             self.ticks.append(request.ticks)
 
+    _stats = None
+
     def stats(self):
         """Generate statistics about our request times.
 
@@ -135,6 +137,10 @@ class Times:
         """
         if not self.request_times:
             return empty_stats
+
+        if self._stats is not None:
+            return self._stats
+
         stats = Stats()
 
         # Time stats
@@ -166,6 +172,8 @@ class Times:
         stats.std_sqlstatements = numpy.std(array)
         stats.var_sqlstatements = numpy.var(array)
 
+        # Cache for next invocation.
+        self._stats = stats
         return stats
 
     def __str__(self):
@@ -178,6 +186,7 @@ class Times:
 
 def main():
     parser = LPOptionParser("%prog [args] tracelog [...]")
+
     parser.add_option(
         "-c", "--config", dest="config",
         default=os.path.join(
@@ -203,7 +212,16 @@ def main():
         "--no-pageids", dest="pageids",
         action="store_false", default=True,
         help="Do not produce pageids report")
+    parser.add_option(
+        "--directory", dest="directory",
+        default=os.getcwd(), metavar="DIR",
+        help="Output reports in DIR directory")
+
     options, args = parser.parse_args()
+
+    if not os.path.isdir(options.directory):
+        parser.error("Directory %s does not exist" % options.directory)
+
     if len(args) == 0:
         parser.error("At least one zserver tracelog file must be provided")
 
@@ -242,7 +260,22 @@ def main():
 
     parse(args, categories, pageid_times, options)
 
-    print_html_report(options, categories, pageid_times)
+    # Category only report.
+    if options.categories:
+        report_filename = os.path.join(options.directory,'categories.html')
+        log.info("Generating %s", report_filename)
+        html_report(open(report_filename, 'w'), categories, None)
+
+    # Pageid only report.
+    if options.pageids:
+        report_filename = os.path.join(options.directory,'pageids.html')
+        log.info("Generating %s", report_filename)
+        html_report(open(report_filename, 'w'), None, pageid_times)
+
+    # Combined report.
+    if options.categories and options.pageids:
+        report_filename = os.path.join(options.directory,'combined.html')
+        html_report(open(report_filename, 'w'), categories, pageid_times)
 
     return 0
 
@@ -398,9 +431,9 @@ def parse_extension_record(request, args):
             "Unknown extension prefix %s" % prefix)
 
 
-def print_html_report(options, categories, pageid_times):
+def html_report(outf, categories, pageid_times):
 
-    print dedent('''\
+    print >> outf, dedent('''\
         <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
                 "http://www.w3.org/TR/html4/loose.dtd">
         <html>
@@ -488,7 +521,7 @@ def print_html_report(options, categories, pageid_times):
     def handle_times(html_title, times):
         stats = times.stats()
         histograms.append(stats.histogram)
-        print dedent("""\
+        print >> outf, dedent("""\
             <tr>
             <th class="category-title">%s</th>
             <td class="numeric total_hits">%d</td>
@@ -516,7 +549,7 @@ def print_html_report(options, categories, pageid_times):
                 html_title,
                 stats.total_hits, stats.total_time,
                 stats.mean, stats.std, stats.var, stats.median,
-                len(histograms)-1,
+                len(histograms) - 1,
                 stats.total_sqltime, stats.mean_sqltime,
                 stats.std_sqltime, stats.var_sqltime, stats.median_sqltime,
                 stats.total_sqlstatements, stats.mean_sqlstatements,
@@ -524,32 +557,33 @@ def print_html_report(options, categories, pageid_times):
                 stats.median_sqlstatements))
 
     # Table of contents
-    print '<ol>'
-    if options.categories:
-        print '<li><a href="#catrep">Category Report</a></li>'
-    if options.pageids:
-        print '<li><a href="#pageidrep">Pageid Report</a></li>'
-    print '</ol>'
+    if categories and pageid_times:
+        print >> outf, dedent('''\
+            <ol>
+            <li><a href="#catrep">Category Report</a></li>
+            <li><a href="#pageidrep">Pageid Report</a></li>
+            </ol>
+            ''')
 
-    if options.categories:
-        print '<h2 id="catrep">Category Report</h2>'
-        print table_header
+    if categories:
+        print >> outf, '<h2 id="catrep">Category Report</h2>'
+        print >> outf, table_header
         for category in categories:
             html_title = '%s<br/><span class="regexp">%s</span>' % (
                 html_quote(category.title), html_quote(category.regexp))
             handle_times(html_title, category.times)
-        print table_footer
+        print >> outf, table_footer
 
-    if options.pageids:
-        print '<h2 id="pageidrep">Pageid Report</h2>'
-        print table_header
+    if pageid_times:
+        print >> outf, '<h2 id="pageidrep">Pageid Report</h2>'
+        print >> outf, table_header
         for pageid, times in sorted(pageid_times.items()):
             handle_times(html_quote(pageid), times)
-        print table_footer
+        print >> outf, table_footer
 
     # Ourput the javascript to render our histograms nicely, replacing
     # the placeholder <div> tags output earlier.
-    print dedent("""\
+    print >> outf, dedent("""\
         <script language="javascript" type="text/javascript">
         $(function () {
             var options = {
@@ -587,7 +621,7 @@ def print_html_report(options, categories, pageid_times):
     for i, histogram in enumerate(histograms):
         if histogram is None:
             continue
-        print dedent("""\
+        print >> outf, dedent("""\
             var d = %s;
 
             $.plot(
@@ -596,7 +630,7 @@ def print_html_report(options, categories, pageid_times):
 
             """ % (json.dumps(histogram), i))
 
-    print dedent("""\
+    print >> outf, dedent("""\
             });
         </script>
         </body>
