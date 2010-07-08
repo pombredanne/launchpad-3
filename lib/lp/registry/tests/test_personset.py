@@ -181,8 +181,8 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
         person, db_updated = self.callGetOrCreate(openid_ident)
 
         self.assertEqual(account, person.account)
-        # The person is created with the correct rationale, creation
-        # comment, registrant, appropriate display name.
+        # The person is created with the correct rationale and creation
+        # comment.
         self.assertEqual(
             "when purchasing an application via Software Center.",
             person.creation_comment)

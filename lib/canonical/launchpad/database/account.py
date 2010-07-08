@@ -190,8 +190,7 @@ class Account(SQLBase):
             return False
         return self.preferredemail is not None
 
-    def createPerson(self, rationale, name=None, comment=None,
-                     registrant=None):
+    def createPerson(self, rationale, name=None, comment=None):
         """See `IAccount`."""
         # Need a local import because of circular dependencies.
         from lp.registry.model.person import (
@@ -205,8 +204,7 @@ class Account(SQLBase):
             name = generate_nick(self.preferredemail.email)
         person = PersonSet()._newPerson(
             name, self.displayname, hide_email_addresses=True,
-            rationale=rationale, account=self, comment=comment,
-            registrant=registrant)
+            rationale=rationale, account=self, comment=comment)
 
         # Update all associated email addresses to point at the new person.
         result = IMasterStore(EmailAddress).find(
