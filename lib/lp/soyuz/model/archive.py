@@ -219,7 +219,7 @@ class Archive(SQLBase):
     def _get_arm_builds_enabled(self):
         """Check whether ARM builds are allowed for this archive."""
         archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
         arm = getUtility(IProcessorFamilySet).getByName('arm')
         for (family, archive_arch) in restricted_families:
             if family == arm:
@@ -231,7 +231,7 @@ class Archive(SQLBase):
     def _set_arm_builds_enabled(self, value):
         """Set whether ARM builds are enabled for this archive."""
         archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
         arm = getUtility(IProcessorFamilySet).getByName('arm')
         for (family, archive_arch) in restricted_families:
             if family == arm:
@@ -1603,7 +1603,7 @@ class Archive(SQLBase):
         if self.is_main:
             return getUtility(IProcessorFamilySet).getRestricted()
         archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
         return [family for (family, archive_arch) in restricted_families
                 if archive_arch is not None]
 
@@ -1618,7 +1618,7 @@ class Archive(SQLBase):
                 raise CannotRestrictArchitectures("Main archives can not "
                         "be restricted to certain architectures")
         archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
         for (family, archive_arch) in restricted_families:
             if family in value and archive_arch is None:
                 archive_arch_set.new(self, family)
