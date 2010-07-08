@@ -284,14 +284,6 @@ class EditAccountBySelfOrAdmin(AuthorizationBase):
 class ViewAccount(EditAccountBySelfOrAdmin):
     permission = 'launchpad.View'
 
-    def checkAuthenticated(self, roles):
-        """Extend view permission to software-center-agent."""
-        if super(ViewAccount, self).checkAuthenticated(roles):
-            return True
-        else:
-            agent = getUtility(ILaunchpadCelebrities).software_center_agent
-            return agent == roles.person
-
 
 class SpecialAccount(EditAccountBySelfOrAdmin):
     permission = 'launchpad.Special'
@@ -596,18 +588,6 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
 class ModeratePersonSetByExpertsOrAdmins(ReviewByRegistryExpertsOrAdmins):
     permission = 'launchpad.Moderate'
     usedfor = IPersonSet
-
-
-class EditPersonSet(AdminByAdminsTeam):
-    permission = 'launchpad.Edit'
-    usedfor = IPersonSet
-
-    def checkAuthenticated(self, user):
-        if super(EditPersonSet, self).checkAuthenticated(user):
-            return True
-        else:
-            agent = getUtility(ILaunchpadCelebrities).software_center_agent
-            return user.person == agent
 
 
 class EditTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
