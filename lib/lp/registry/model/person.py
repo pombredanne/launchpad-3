@@ -61,6 +61,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
 from canonical.launchpad.database.account import Account, AccountPassword
+from canonical.launchpad.interfaces.account import AccountSuspendedError
 from lp.bugs.model.bugtarget import HasBugsBase
 from canonical.launchpad.database.stormsugar import StartsWith
 from lp.registry.model.karma import KarmaCategory
@@ -152,6 +153,7 @@ from lp.registry.model.teammembership import (
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -2428,6 +2430,59 @@ class PersonSet:
             top_people,
             key=lambda obj: (obj.karma, obj.displayname, obj.id),
             reverse=True)
+
+    def getOrCreateByOpenIDIdentifier(
+        self, openid_identifier, email_address, full_name,
+        creation_rationale, comment):
+        """See `IPersonSet`."""
+        assert email_address is not None and full_name is not None, (
+                "Both email address and full name are required to "
+                "create an account.")
+        db_updated = False
+        with MasterDatabasePolicy():
+            account_set = getUtility(IAccountSet)
+            email_set = getUtility(IEmailAddressSet)
+            email = email_set.getByEmail(email_address)
+            try:
+                account = account_set.getByOpenIDIdentifier(
+                    openid_identifier)
+            except LookupError:
+                if email is None:
+                    # There is no account associated with the identifier
+                    # nor an email associated with the email address.
+                    # We'll create one.
+                    account, email = account_set.createAccountAndEmail(
+                            email_address, creation_rationale, full_name,
+                            password=None,
+                            openid_identifier=openid_identifier)
+                else:
+                    account = email.account
+                    assert account is not None, (
+                        "This email address should have an associated "
+                        "account.")
+                    removeSecurityProxy(account).openid_identifier = (
+                        openid_identifier)
+                db_updated = True
+
+            if account.status == AccountStatus.SUSPENDED:
+                raise AccountSuspendedError(
+                    "The account matching the identifier is suspended.")
+            elif account.status in [AccountStatus.DEACTIVATED,
+                                    AccountStatus.NOACCOUNT]:
+                password = '' # Needed just to please reactivate() below.
+                if email is None:
+                    email = email_set.new(email_address, account=account)
+                removeSecurityProxy(account).reactivate(
+                    comment, password, removeSecurityProxy(email))
+            else:
+                # Account is active, so nothing to do.
+                pass
+            if IPerson(account, None) is None:
+                removeSecurityProxy(account).createPerson(
+                    creation_rationale, comment=comment)
+                db_updated = True
+
+        return IPerson(account), db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
