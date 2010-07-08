@@ -226,6 +226,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/translations/importqueue.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/translations/importqueueentry.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/translations/languages.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/translations/pofile.js"></script>

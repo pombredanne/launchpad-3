@@ -95,6 +95,8 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.scripts.packagecopier import do_copy
+
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
@@ -210,6 +212,42 @@ class Archive(SQLBase):
     # is still relevant.
     external_dependencies = StringCol(
         dbName='external_dependencies', notNull=False, default=None)
+
+    commercial = BoolCol(
+        dbName='commercial', notNull=True, default=False)
+
+    def _get_arm_builds_enabled(self):
+        """Check whether ARM builds are allowed for this archive."""
+        archive_arch_set = getUtility(IArchiveArchSet)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
+        arm = getUtility(IProcessorFamilySet).getByName('arm')
+        for (family, archive_arch) in restricted_families:
+            if family == arm:
+                return (archive_arch is not None)
+        # ARM doesn't exist or isn't restricted. Either way, there is no
+        # need for an explicit association.
+        return False
+
+    def _set_arm_builds_enabled(self, value):
+        """Set whether ARM builds are enabled for this archive."""
+        archive_arch_set = getUtility(IArchiveArchSet)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
+        arm = getUtility(IProcessorFamilySet).getByName('arm')
+        for (family, archive_arch) in restricted_families:
+            if family == arm:
+                if value:
+                    if archive_arch is not None:
+                        # ARM builds are already enabled
+                        return
+                    else:
+                        archive_arch_set.new(self, family)
+                else:
+                    if archive_arch is not None:
+                        Store.of(self).remove(archive_arch)
+                    else:
+                        pass # ARM builds are already disabled
+    arm_builds_allowed = property(_get_arm_builds_enabled,
+        _set_arm_builds_enabled)
 
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
@@ -948,7 +986,6 @@ class Archive(SQLBase):
 
     def checkArchivePermission(self, user, component_or_package=None):
         """See `IArchive`."""
-        assert not self.is_copy, "Uploads to copy archives are not allowed."
         # PPA access is immediately granted if the user is in the PPA
         # team.
         if self.is_ppa:
@@ -963,6 +1000,10 @@ class Archive(SQLBase):
                 # then relax the database constraint on
                 # ArchivePermission.
                 component_or_package = getUtility(IComponentSet)['main']
+
+        # Flatly refuse uploads to copy archives, at least for now.
+        if self.is_copy:
+            return False
 
         # Otherwise any archive, including PPAs, uses the standard
         # ArchivePermission entries.
@@ -1562,8 +1603,8 @@ class Archive(SQLBase):
         if self.is_main:
             return getUtility(IProcessorFamilySet).getRestricted()
         archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
-        return [family for (family, archive_arch) in restricted_families 
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
+        return [family for (family, archive_arch) in restricted_families
                 if archive_arch is not None]
 
     def _setEnabledRestrictedFamilies(self, value):
@@ -1577,7 +1618,7 @@ class Archive(SQLBase):
                 raise CannotRestrictArchitectures("Main archives can not "
                         "be restricted to certain architectures")
         archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
         for (family, archive_arch) in restricted_families:
             if family in value and archive_arch is None:
                 archive_arch_set.new(self, family)
@@ -1922,6 +1963,14 @@ class ArchiveSet:
         return store.find(
             Archive,
             Archive.private == True,
+            Archive.purpose == ArchivePurpose.PPA)
+
+    def getCommercialPPAs(self):
+        """See `IArchiveSet`."""
+        store = IStore(Archive)
+        return store.find(
+            Archive,
+            Archive.commercial == True,
             Archive.purpose == ArchivePurpose.PPA)
 
     def getArchivesForDistribution(self, distribution, name=None,

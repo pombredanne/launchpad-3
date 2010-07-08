@@ -38,15 +38,12 @@ from canonical.launchpad.webapp.adapter import (
     soft_timeout_expired)
 from canonical.launchpad.webapp.interfaces import (
     IErrorReport, IErrorReportEvent, IErrorReportRequest)
+from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from canonical.launchpad.webapp.opstats import OpStats
 
 UTC = pytz.utc
 
 LAZR_OOPS_USER_REQUESTED_KEY = 'lazr.oops.user_requested'
-
-# the section of the OOPS ID before the instance identifier is the
-# days since the epoch, which is defined as the start of 2006.
-epoch = datetime.datetime(2006, 01, 01, 00, 00, 00, tzinfo=UTC)
 
 # Restrict the rate at which errors are sent to the Zope event Log
 # (this does not affect generation of error reports).
@@ -242,75 +239,50 @@ class ErrorReportingUtility:
     _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
     _default_config_section = 'error_reports'
 
-    lasterrordir = None
-    lastid = 0
-
     def __init__(self):
-        self.lastid_lock = threading.Lock()
         self.configure()
         self._oops_messages = {}
         self._oops_message_key_iter = (
             index for index, _ignored in enumerate(repeat(None)))
 
     def configure(self, section_name=None):
-        """Configure the utility using the named section form the config.
+        """Configure the utility using the named section from the config.
 
         The 'error_reports' section is used if section_name is None.
         """
         if section_name is None:
             section_name = self._default_config_section
-        self.oops_prefix = config[section_name].oops_prefix
-        self.error_dir = config[section_name].error_dir
         self.copy_to_zlog = config[section_name].copy_to_zlog
-        self.prefix = self.oops_prefix
+        # Start a new UniqueFileAllocator to activate the new configuration.
+        self.log_namer = UniqueFileAllocator(
+            output_root=config[section_name].error_dir,
+            log_type="OOPS",
+            log_subtype=config[section_name].oops_prefix,
+            )
 
     def setOopsToken(self, token):
-        """Append a string to the oops prefix.
+        return self.log_namer.setToken(token)
 
-        :param token: a string to append to a oops_prefix.
-            Scripts that run multiple processes can append a string to
-            the oops_prefix to create a unique identifier for each
-            process.
+    @property
+    def oops_prefix(self):
+        """Get the current effective oops prefix.
+
+        This is the log subtype + anything set via setOopsToken.
         """
-        self.prefix = self.oops_prefix + token
-
-    def _findLastOopsIdFilename(self, directory):
-        """Find details of the last OOPS reported in the given directory.
-
-        This function only considers OOPSes with the currently
-        configured oops_prefix.
-
-        :return: a tuple (oops_id, oops_filename), which will be (0,
-            None) if no OOPS is found.
-        """
-        prefix = self.prefix
-        lastid = 0
-        lastfilename = None
-        for filename in os.listdir(directory):
-            oopsid = filename.rsplit('.', 1)[1]
-            if not oopsid.startswith(prefix):
-                continue
-            oopsid = oopsid[len(prefix):]
-            if oopsid.isdigit() and int(oopsid) > lastid:
-                lastid = int(oopsid)
-                lastfilename = filename
-        return lastid, lastfilename
-
-    def _findLastOopsId(self, directory):
-        """Find the last error number used by this Launchpad instance.
-
-        The purpose of this function is to not repeat sequence numbers
-        if the Launchpad instance is restarted.
-
-        This method is not thread safe, and only intended to be called
-        from the constructor.
-        """
-        return self._findLastOopsIdFilename(directory)[0]
+        return self.log_namer.get_log_infix()
 
     def getOopsReport(self, time):
         """Return the contents of the OOPS report logged at 'time'."""
-        oops_filename = self.getOopsFilename(
-            self._findLastOopsId(self.errordir(time)), time)
+        # How this works - get a serial that was logging in the dir
+        # that logs for time are logged in.
+        serial_from_time = self.log_namer._findHighestSerial(
+            self.log_namer.output_dir(time))
+        # Calculate a filename which combines this most recent serial,
+        # the current log_namer naming rules and the exact timestamp.
+        oops_filename = self.log_namer.getFilename(serial_from_time, time)
+        # Note that if there were no logs written, or if there were two
+        # oops that matched the time window of directory on disk, this 
+        # call can raise an IOError.
         oops_report = open(oops_filename, 'r')
         try:
             return ErrorReport.read(oops_report)
@@ -330,84 +302,20 @@ class ErrorReportingUtility:
         Returns None if no OOPS is found.
         """
         now = datetime.datetime.now(UTC)
-        directory = self.errordir(now)
-        oopsid, filename = self._findLastOopsIdFilename(directory)
+        # Check today
+        oopsid, filename = self.log_namer._findHighestSerialFilename(time=now)
         if filename is None:
-            directory = self.errordir(now - datetime.timedelta(days=1))
-            oopsid, filename = self._findLastOopsIdFilename(directory)
+            # Check yesterday
+            yesterday = now - datetime.timedelta(days=1)
+            oopsid, filename = self.log_namer._findHighestSerialFilename(
+                time=yesterday)
             if filename is None:
                 return None
-        oops_report = open(os.path.join(directory, filename), 'r')
+        oops_report = open(filename, 'r')
         try:
             return ErrorReport.read(oops_report)
         finally:
             oops_report.close()
-
-    def errordir(self, now=None):
-        """Find the directory to write error reports to.
-
-        Error reports are written to subdirectories containing the
-        date of the error.
-        """
-        if now is not None:
-            now = now.astimezone(UTC)
-        else:
-            now = datetime.datetime.now(UTC)
-        date = now.strftime('%Y-%m-%d')
-        errordir = os.path.join(self.error_dir, date)
-        if errordir != self.lasterrordir:
-            self.lastid_lock.acquire()
-            try:
-                self.lasterrordir = errordir
-                # make sure the directory exists
-                try:
-                    os.makedirs(errordir)
-                except OSError, e:
-                    if e.errno != errno.EEXIST:
-                        raise
-                self.lastid = self._findLastOopsId(errordir)
-            finally:
-                self.lastid_lock.release()
-        return errordir
-
-    def getOopsFilename(self, oops_id, time):
-        """Get the filename for a given OOPS id and time."""
-        oops_prefix = self.prefix
-        error_dir = self.errordir(time)
-        second_in_day = time.hour * 3600 + time.minute * 60 + time.second
-        return os.path.join(
-            error_dir, '%05d.%s%s' % (second_in_day, oops_prefix, oops_id))
-
-    def newOopsId(self, now=None):
-        """Returns an (oopsid, filename) pair for the next Oops ID
-
-        The Oops ID is composed of a short string to identify the
-        Launchpad instance followed by an ID that is unique for the
-        day.
-
-        The filename is composed of the zero padded second in the day
-        followed by the Oops ID.  This ensures that error reports are
-        in date order when sorted lexically.
-        """
-        if now is not None:
-            now = now.astimezone(UTC)
-        else:
-            now = datetime.datetime.now(UTC)
-        # We look up the error directory before allocating a new ID,
-        # because if the day has changed, errordir() will reset the ID
-        # counter to zero.
-        self.errordir(now)
-        self.lastid_lock.acquire()
-        try:
-            self.lastid += 1
-            newid = self.lastid
-        finally:
-            self.lastid_lock.release()
-        oops_prefix = self.prefix
-        day_number = (now - epoch).days + 1
-        oops = 'OOPS-%d%s%d' % (day_number, oops_prefix, newid)
-        filename = self.getOopsFilename(newid, now)
-        return oops, filename
 
     def raising(self, info, request=None, now=None):
         """See IErrorReportingUtility.raising()
@@ -423,8 +331,7 @@ class ErrorReportingUtility:
         entry = self._makeErrorReport(info, request, now, informational)
         if entry is None:
             return
-        # As a side-effect, _makeErrorReport updates self.lastid.
-        filename = self.getOopsFilename(self.lastid, entry.time)
+        filename = entry._filename
         entry.write(open(filename, 'wb'))
         if request:
             request.oopsid = entry.id
@@ -439,7 +346,6 @@ class ErrorReportingUtility:
                          informational=False):
         """Return an ErrorReport for the supplied data.
 
-        As a side-effect, self.lastid is updated to the integer oops id.
         :param info: Output of sys.exc_info()
         :param request: The IErrorReportRequest which provides context to the
             info.
@@ -534,11 +440,14 @@ class ErrorReportingUtility:
             for (start, end, database_id, statement)
                 in get_request_statements())
 
-        oopsid, filename = self.newOopsId(now)
-        return ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
+        oopsid, filename = self.log_namer.newId(now)
+
+        result = ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
                            username, strurl, duration,
                            req_vars, statements,
                            informational)
+        result._filename = filename
+        return result
 
     def handling(self, info, request=None, now=None):
         """Flag ErrorReport as informational only.
