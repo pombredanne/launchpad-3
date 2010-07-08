@@ -4239,7 +4239,7 @@ class TeamAddMyTeamsView(LaunchpadFormView):
                 continue
             elif len(team_names) == 1:
                 verb = 'has been'
-                [team_string] = team_names
+                team_string = team_names[0]
             elif len(team_names) > 1:
                 verb = 'have been'
                 team_string= (
