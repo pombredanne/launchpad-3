@@ -155,6 +155,19 @@ class SourcePackageRecipeData(Storm):
             ))
         )
 
+    @classmethod
+    def createManifestFromText(cls, text, sourcepackage_recipe_build):
+        """Create a manifest for the specified build.
+
+        :param text: The text of the recipe to create a manifest for.
+        :param sourcepackage_recipe_build: The build to associate the manifest
+            with.
+        :return: an instance of SourcePackageRecipeData.
+        """
+        from bzrlib.plugins.builder.recipe import RecipeParser
+        parser = RecipeParser(text)
+        return cls(parser.parse(),
+                   sourcepackage_recipe_build=sourcepackage_recipe_build)
 
     def getRecipe(self):
         """The BaseRecipeBranch version of the recipe."""
@@ -242,12 +255,14 @@ class SourcePackageRecipeData(Storm):
         self.deb_version_template = unicode(builder_recipe.deb_version)
         self.recipe_format = unicode(builder_recipe.format)
 
-    def __init__(self, recipe, sourcepackage_recipe):
+    def __init__(self, recipe, sourcepackage_recipe=None,
+                 sourcepackage_recipe_build=None):
         """Initialize from the bzr-builder recipe and link it to a db recipe.
         """
         super(SourcePackageRecipeData, self).__init__()
         self.setRecipe(recipe)
         self.sourcepackage_recipe = sourcepackage_recipe
+        self.sourcepackage_recipe_build = sourcepackage_recipe_build
 
     def getReferencedBranches(self):
         """Return an iterator of the Branch objects referenced by this recipe.

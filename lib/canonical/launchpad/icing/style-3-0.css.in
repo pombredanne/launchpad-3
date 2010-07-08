@@ -1989,6 +1989,10 @@ body.tab-bugs #portlet-subscribers .sprite {
     background-image: url(/@@/maybe.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+.maybe {
+    background-image: url(/@@/maybe.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
 .error-icon {
     background-image: url(/@@/error.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;

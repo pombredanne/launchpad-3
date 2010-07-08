@@ -59,11 +59,11 @@ When a person visits his or her own page, they'll see their OpenID login URL.
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'openid-info'))
     OpenID login:
-    http://launchpad.dev/~no-priv
+    http://launchpad.dev/~no-priv...
 
 The URL is followed by a helpful link.
 
-    >>> print user_browser.getLink('openid help').url
+    >>> print user_browser.getLink('OpenID help').url
     http://launchpad.dev/+help/openid.html
 
 However, when the user visits someone else's page, they see no such URL.
