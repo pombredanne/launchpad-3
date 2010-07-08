@@ -41,13 +41,33 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
             product=self.product, name='hotter')
         self.packaging_util = getUtility(IPackagingUtil)
 
+    def test_no_error_when_trying_to_readd_same_package(self):
+        # There is no reason to display an error when the user isn't
+        # asking for any state change.
+        form = {
+            'field.distroseries': 'hoary',
+            'field.sourcepackagename': 'hot',
+            'field.actions.continue': 'Continue',
+            }
+        view = create_initialized_view(
+            self.productseries, '+ubuntupkg', form=form)
+        self.assertEqual([], view.errors)
+
+        form = {
+            'field.distroseries': 'hoary',
+            'field.sourcepackagename': 'hot',
+            'field.actions.continue': 'Continue',
+            }
+        view = create_initialized_view(
+            self.productseries, '+ubuntupkg', form=form)
+        self.assertEqual([], view.errors)
+
     def test_cannot_link_to_linked_package(self):
         # Once a distro series sourcepackage is linked to a product series,
         # no other product series can link to it.
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'hot',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
@@ -58,7 +78,6 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'hot',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
@@ -73,7 +92,6 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': '',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
@@ -89,7 +107,6 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'vapor',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
@@ -105,7 +122,6 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         form = {
             'field.distroseries': 'warty',
             'field.sourcepackagename': 'hot',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
