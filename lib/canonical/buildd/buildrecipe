@@ -78,7 +78,7 @@ class RecipeBuilder:
         print 'Building recipe:'
         print recipe
         retcode = self.chroot([
-            'sudo', '-u', self.username, 'DEBEMAIL=%s' % self.author_email,
+            'sudo', '-iu', self.username, 'DEBEMAIL=%s' % self.author_email,
             'DEBFULLNAME=%s' % self.author_name.encode('utf-8'), 'bzr',
             'dailydeb', '--no-build', recipe_path_relative,
             self.tree_path_relative, '--manifest', manifest_path_relative,
