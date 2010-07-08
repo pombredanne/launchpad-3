@@ -4201,6 +4201,10 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         context = self.context
         is_admin = check_permission('launchpad.Admin', context)
         membership_set = getUtility(ITeamMembershipSet)
+        proposed_team_names = []
+        added_team_names = []
+        accepted_invite_team_names = []
+        membership_set = getUtility(ITeamMembershipSet)
         for team in data['teams']:
             membership = membership_set.getByPersonAndTeam(team, context)
             if (membership is not None
@@ -4209,21 +4213,39 @@ class TeamAddMyTeamsView(LaunchpadFormView):
                     context,
                     'Accepted an already pending invitation while trying to '
                     'propose the team for membership.')
+                accepted_invite_team_names.append(team.displayname)
             elif is_admin:
                 context.addMember(team, reviewer=self.user)
+                added_team_names.append(team.displayname)
             else:
                 team.join(context, requester=self.user)
-        if (context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED
-            and not is_admin):
-            msg = 'proposed to this team.'
-        else:
-            msg = 'added to this team.'
-        if len(data['teams']) > 1:
-            msg = "have been %s" % msg
-        else:
-            msg = "has been %s" % msg
-        team_names = ', '.join(team.displayname for team in data['teams'])
-        self.request.response.addInfoNotification("%s %s" % (team_names, msg))
+                membership = membership_set.getByPersonAndTeam(team, context)
+                if membership.status == TeamMembershipStatus.PROPOSED:
+                    proposed_team_names.append(team.displayname)
+                elif membership.status == TeamMembershipStatus.APPROVED:
+                    added_team_names.append(team.displayname)
+                else:
+                    raise AssertionError(
+                        'Unexpected membership status (%s) for %s.'
+                        % (membership.status.name, team.name))
+        full_message = ''
+        for team_names, message in (
+            (proposed_team_names, 'proposed to this team.'),
+            (added_team_names, 'added to this team.'),
+            (accepted_invite_team_names,
+             'added to this team because of an existing invite.'),
+            ):
+            if len(team_names) == 0:
+                continue
+            elif len(team_names) == 1:
+                verb = 'has been'
+                team_string = team_names[0]
+            elif len(team_names) > 1:
+                verb = 'have been'
+                team_string= (
+                    ', '.join(team_names[:-1]) + ' and ' + team_names[-1])
+            full_message += '%s %s %s ' % (team_string, verb, message)
+        self.request.response.addInfoNotification(full_message)
 
 
 class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
