@@ -13,6 +13,7 @@ from datetime import datetime
 import gzip
 import re
 import sre_constants
+from tempfile import TemporaryFile
 import os.path
 from textwrap import dedent
 import time
@@ -29,6 +30,9 @@ from lp.scripts.helpers import LPOptionParser
 class Request(zc.zservertracelog.tracereport.Request):
     url = None
     pageid = None
+    ticks = None
+    sql_statements = None
+    sql_seconds = None
 
     # Override the broken version in our superclass that always
     # returns an integer.
@@ -73,20 +77,36 @@ class Stats:
 
     All times are in seconds.
     """
-    total_time = 0 # Total time spent rendering.
     total_hits = 0 # Total hits.
+
+    total_time = 0 # Total time spent rendering.
     mean = 0 # Mean time per hit.
     median = 0 # Median time per hit.
-    standard_deviation = 0 # Standard deviation per hit.
+    std = 0 # Standard deviation per hit.
+    var = 0 # Variance per hit.
     histogram = None # # Request times histogram.
 
-empty_stats = Stats() # Singleton.
+    total_sqltime = 0 # Total time spent waiting for SQL to process.
+    mean_sqltime = 0 # Mean time spend waiting for SQL to process.
+    median_sqltime = 0 # Median time spend waiting for SQL to process.
+    std_sqltime = 0 # Standard deviation of SQL time.
+    var_sqltime = 0 # Variance of SQL time
+
+    total_sqlstatements = 0 # Total number of SQL statements issued.
+    mean_sqlstatements = 0
+    median_sqlstatements = 0
+    std_sqlstatements = 0
+    var_sqlstatements = 0
 
 
 class Times:
     """Collection of request times."""
     def __init__(self, timeout):
+        self.spool = TemporaryFile()
         self.request_times = []
+        self.sql_statements = []
+        self.sql_times = []
+        self.ticks = []
         self.timeout = timeout
 
     def add(self, request):
@@ -94,7 +114,13 @@ class Times:
 
         The application time is capped to our timeout.
         """
-        self.request_times.append(min(request.app_seconds, self.timeout))
+        print >> self.spool, "%s,%s,%s,%s" % (
+            min(request.app_seconds, self.timeout),
+            request.sql_statements or '',
+            request.sql_seconds or '',
+            request.ticks or '')
+
+    _stats = None
 
     def stats(self):
         """Generate statistics about our request times.
@@ -107,31 +133,71 @@ class Times:
         1 and 2 seconds etc. histogram is None if there are no requests in
         this Category.
         """
-        if not self.request_times:
-            return empty_stats
+        if self._stats is not None:
+            return self._stats
+
+        def iter_spool(index, cast):
+            """Generator returning one column from our spool file.
+
+            Skips None values.
+            """
+            self.spool.flush()
+            self.spool.seek(0)
+            for line in self.spool:
+                value = line.split(',')[index]
+                if value != '':
+                    yield cast(value)
+
         stats = Stats()
-        array = numpy.asarray(self.request_times, numpy.float32)
+
+        # Time stats
+        array = numpy.fromiter(iter_spool(0, numpy.float32), numpy.float32)
         stats.total_time = numpy.sum(array)
         stats.total_hits = len(array)
         stats.mean = numpy.mean(array)
         stats.median = numpy.median(array)
-        stats.standard_deviation = numpy.std(array)
+        stats.std = numpy.std(array)
+        stats.var = numpy.var(array)
         histogram = numpy.histogram(
             array, normed=True,
             range=(0, self.timeout), bins=self.timeout)
         stats.histogram = zip(histogram[1], histogram[0])
+
+        # SQL query count.
+        array = numpy.fromiter(iter_spool(1, numpy.int), numpy.int)
+        stats.total_sqlstatements = numpy.sum(array)
+        stats.mean_sqlstatements = numpy.mean(array)
+        stats.median_sqlstatements = numpy.median(array)
+        stats.std_sqlstatements = numpy.std(array)
+        stats.var_sqlstatements = numpy.var(array)
+
+        # SQL time stats.
+        array = numpy.fromiter(iter_spool(2, numpy.float32), numpy.float32)
+        stats.total_sqltime = numpy.sum(array)
+        stats.mean_sqltime = numpy.mean(array)
+        stats.median_sqltime = numpy.median(array)
+        stats.std_sqltime = numpy.std(array)
+        stats.var_sqltime = numpy.var(array)
+
+        # Cache for next invocation.
+        self._stats = stats
+
+        # Clean up the spool file
+        self.spool = None
+
         return stats
 
     def __str__(self):
         results = self.stats()
-        total, mean, median, standard_deviation, histogram = results
+        total, mean, median, std, histogram = results
         hstr = " ".join("%2d" % v for v in histogram)
         return "%2.2f %2.2f %2.2f %s" % (
-            total, mean, median, standard_deviation, hstr)
+            total, mean, median, std, hstr)
 
 
 def main():
     parser = LPOptionParser("%prog [args] tracelog [...]")
+
     parser.add_option(
         "-c", "--config", dest="config",
         default=os.path.join(
@@ -157,7 +223,16 @@ def main():
         "--no-pageids", dest="pageids",
         action="store_false", default=True,
         help="Do not produce pageids report")
+    parser.add_option(
+        "--directory", dest="directory",
+        default=os.getcwd(), metavar="DIR",
+        help="Output reports in DIR directory")
+
     options, args = parser.parse_args()
+
+    if not os.path.isdir(options.directory):
+        parser.error("Directory %s does not exist" % options.directory)
+
     if len(args) == 0:
         parser.error("At least one zserver tracelog file must be provided")
 
@@ -196,7 +271,22 @@ def main():
 
     parse(args, categories, pageid_times, options)
 
-    print_html_report(options, categories, pageid_times)
+    # Category only report.
+    if options.categories:
+        report_filename = os.path.join(options.directory,'categories.html')
+        log.info("Generating %s", report_filename)
+        html_report(open(report_filename, 'w'), categories, None)
+
+    # Pageid only report.
+    if options.pageids:
+        report_filename = os.path.join(options.directory,'pageids.html')
+        log.info("Generating %s", report_filename)
+        html_report(open(report_filename, 'w'), None, pageid_times)
+
+    # Combined report.
+    if options.categories and options.pageids:
+        report_filename = os.path.join(options.directory,'combined.html')
+        html_report(open(report_filename, 'w'), categories, pageid_times)
 
     return 0
 
@@ -330,30 +420,31 @@ def parse(tracefiles, categories, pageid_times, options):
                     raise MalformedLine('Unknown record type %s', record_type)
             except MalformedLine, x:
                 log.error(
-                    "Malformed line %s %s (%s)" % (repr(line), repr(args), x))
+                    "Malformed line %s (%s)" % (repr(line), x))
 
 
 def parse_extension_record(request, args):
     """Decode a ZServer extension records and annotate request."""
     prefix = args[0]
 
-    if len(args) > 1:
-        args = ' '.join(args[1:])
-    else:
-        args = None
-
     if prefix == 'u':
-        request.url = args
+        request.url = ' '.join(args[1:]) or None
     elif prefix == 'p':
-        request.pageid = args
+        request.pageid = ' '.join(args[1:]) or None
+    elif prefix == 't':
+        if len(args) != 4:
+            raise MalformedLine("Wrong number of arguments %s" % (args,))
+        request.ticks = int(args[1])
+        request.sql_statements = int(args[2])
+        request.sql_seconds = float(args[3]) / 1000
     else:
         raise MalformedLine(
             "Unknown extension prefix %s" % prefix)
 
 
-def print_html_report(options, categories, pageid_times):
+def html_report(outf, categories, pageid_times):
 
-    print dedent('''\
+    print >> outf, dedent('''\
         <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
                 "http://www.w3.org/TR/html4/loose.dtd">
         <html>
@@ -391,6 +482,8 @@ def print_html_report(options, categories, pageid_times):
                 padding: 1em;
                 }
             .clickable { cursor: hand; }
+            .total_hits, .histogram, .median_sqltime,
+            .median_sqlstatements { border-right: 1px dashed #000000; }
         </style>
         </head>
         <body>
@@ -404,12 +497,29 @@ def print_html_report(options, categories, pageid_times):
         <thead>
             <tr>
             <th class="clickable">Name</th>
-            <th class="clickable">Total Time (secs)</th>
+
             <th class="clickable">Total Hits</th>
+
+            <th class="clickable">Total Time (secs)</th>
+
             <th class="clickable">Mean Time (secs)</th>
+            <th class="clickable">Time Standard Deviation</th>
+            <th class="clickable">Time Variance</th>
             <th class="clickable">Median Time (secs)</th>
-            <th class="clickable">Time Standard<br/>Deviation</th>
-            <th class="sorttable_nosort">Distribution</th>
+            <th class="sorttable_nosort">Time Distribution</th>
+
+            <th class="clickable">Total SQL Time (secs)</th>
+            <th class="clickable">Mean SQL Time (secs)</th>
+            <th class="clickable">SQL Time Standard Deviation</th>
+            <th class="clickable">SQL Time Variance</th>
+            <th class="clickable">Median SQL Time (secs)</th>
+
+            <th class="clickable">Total SQL Statements</th>
+            <th class="clickable">Mean SQL Statements</th>
+            <th class="clickable">SQL Statement Standard Deviation</th>
+            <th class="clickable">SQL Statement Variance</th>
+            <th class="clickable">Median SQL Statements</th>
+
             </tr>
         </thead>
         <tbody>
@@ -422,51 +532,69 @@ def print_html_report(options, categories, pageid_times):
     def handle_times(html_title, times):
         stats = times.stats()
         histograms.append(stats.histogram)
-        print dedent("""\
+        print >> outf, dedent("""\
             <tr>
             <th class="category-title">%s</th>
-            <td class="numeric total_time">%.2f</td>
             <td class="numeric total_hits">%d</td>
-            <td class="numeric mean">%.2f</td>
-            <td class="numeric median">%.2f</td>
-            <td class="numeric standard-deviation">%.2f</td>
+            <td class="numeric total_time">%.2f</td>
+            <td class="numeric mean_time">%.2f</td>
+            <td class="numeric std_time">%.2f</td>
+            <td class="numeric var_time">%.2f</td>
+            <td class="numeric median_time">%.2f</td>
             <td>
                 <div class="histogram" id="histogram%d"></div>
             </td>
+            <td class="numeric total_sqltime">%.2f</td>
+            <td class="numeric mean_sqltime">%.2f</td>
+            <td class="numeric std_sqltime">%.2f</td>
+            <td class="numeric var_sqltime">%.2f</td>
+            <td class="numeric median_sqltime">%.2f</td>
+
+            <td class="numeric total_sqlstatements">%d</td>
+            <td class="numeric mean_sqlstatements">%.2f</td>
+            <td class="numeric std_sqlstatements">%.2f</td>
+            <td class="numeric var_sqlstatements">%.2f</td>
+            <td class="numeric median_sqlstatements">%.2f</td>
             </tr>
             """ % (
                 html_title,
-                stats.total_time, stats.total_hits,
-                stats.mean, stats.median, stats.standard_deviation,
-                len(histograms)-1))
+                stats.total_hits, stats.total_time,
+                stats.mean, stats.std, stats.var, stats.median,
+                len(histograms) - 1,
+                stats.total_sqltime, stats.mean_sqltime,
+                stats.std_sqltime, stats.var_sqltime, stats.median_sqltime,
+                stats.total_sqlstatements, stats.mean_sqlstatements,
+                stats.std_sqlstatements, stats.var_sqlstatements,
+                stats.median_sqlstatements))
 
     # Table of contents
-    print '<ol>'
-    if options.categories:
-        print '<li><a href="#catrep">Category Report</a></li>'
-    if options.pageids:
-        print '<li><a href="#pageidrep">Pageid Report</a></li>'
-    print '</ol>'
+    if categories and pageid_times:
+        print >> outf, dedent('''\
+            <ol>
+            <li><a href="#catrep">Category Report</a></li>
+            <li><a href="#pageidrep">Pageid Report</a></li>
+            </ol>
+            ''')
 
-    if options.categories:
-        print '<h2 id="catrep">Category Report</h2>'
-        print table_header
+    if categories:
+        print >> outf, '<h2 id="catrep">Category Report</h2>'
+        print >> outf, table_header
         for category in categories:
             html_title = '%s<br/><span class="regexp">%s</span>' % (
                 html_quote(category.title), html_quote(category.regexp))
             handle_times(html_title, category.times)
-        print table_footer
+        print >> outf, table_footer
 
-    if options.pageids:
-        print '<h2 id="pageidrep">Pageid Report</h2>'
-        print table_header
+    if pageid_times:
+        print >> outf, '<h2 id="pageidrep">Pageid Report</h2>'
+        print >> outf, table_header
         for pageid, times in sorted(pageid_times.items()):
             handle_times(html_quote(pageid), times)
-        print table_footer
+        print >> outf, table_footer
 
     # Ourput the javascript to render our histograms nicely, replacing
     # the placeholder <div> tags output earlier.
-    print dedent("""\
+    print >> outf, dedent("""\
         <script language="javascript" type="text/javascript">
         $(function () {
             var options = {
@@ -504,7 +632,7 @@ def print_html_report(options, categories, pageid_times):
     for i, histogram in enumerate(histograms):
         if histogram is None:
             continue
-        print dedent("""\
+        print >> outf, dedent("""\
             var d = %s;
 
             $.plot(
@@ -513,7 +641,7 @@ def print_html_report(options, categories, pageid_times):
 
             """ % (json.dumps(histogram), i))
 
-    print dedent("""\
+    print >> outf, dedent("""\
             });
         </script>
         </body>
