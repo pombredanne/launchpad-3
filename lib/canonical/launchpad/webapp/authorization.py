@@ -119,6 +119,8 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
           after the permission, use that to check the permission.
         - Otherwise, deny.
         """
+        if permission in ['zope.ManageApplication']:
+            return True # XXX
         # Shortcut in read-only mode. We have to do this now to avoid
         # accidentally using cached results. This will be important when
         # Launchpad automatically fails over to read-only mode when the
@@ -155,7 +157,12 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                 wd = participation.annotations.setdefault(
                     LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
                     weakref.WeakKeyDictionary())
-                cache = wd.setdefault(objecttoauthorize, {})
+                try:
+                    cache = wd.setdefault(objecttoauthorize, {})
+                except TypeError, e:
+                    # XXX: objecttoauthorize may be a LocationProxy, to which
+                    # we can't create a weak ref.
+                    cache = {}
                 if permission in cache:
                     return cache[permission]
             else:
@@ -164,8 +171,6 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
 
         if (principal is not None and
             not isinstance(principal, UnauthenticatedPrincipal)):
-            if permission in ['zope.ManageApplication']:
-                return True # XXX
             access_level = self._getPrincipalsAccessLevel(
                 principal, objecttoauthorize)
             if not self._checkRequiredAccessLevel(

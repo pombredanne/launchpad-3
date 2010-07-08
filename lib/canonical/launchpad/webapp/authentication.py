@@ -19,9 +19,11 @@ import random
 
 from contrib.oauth import OAuthRequest
 
+from zope.annotation.interfaces import IAnnotations
 from zope.interface import implements
-from zope.component import getUtility
+from zope.component import adapts, getUtility
 from zope.event import notify
+from zope.preference.interfaces import IPreferenceGroup
 
 from zope.security.proxy import removeSecurityProxy
 
@@ -318,6 +320,32 @@ class LaunchpadPrincipal:
         pw1 = (pw or '').strip()
         pw2 = (self.__pwd or '').strip()
         return encryptor.validate(pw1, pw2)
+
+
+# XXX:
+# u'context/++preferences++apidoc/InterfaceDetails/showSpecificRequiredAdapters'
+# in apidoc/ifacemodule/index.pt expects our principals to be adaptable
+# into IAnnotations, so I've hacked this thing here just to make that code not
+# OOPS.
+class LaunchpadPrincipalAnnotations:
+    implements(IAnnotations)
+    adapts(ILaunchpadPrincipal, IPreferenceGroup)
+
+    def __init__(self, principal, pref_group):
+        self.d = {}
+        pass
+
+    def __nonzero__(self):
+        return bool(self.d)
+
+    def __getitem__(self, key):
+        return self.d[key]
+
+    def get(self, key):
+        return self.d.get(key)
+
+    def __setitem__(self, key, value):
+        self.d[key] = value
 
 
 def get_oauth_authorization(request):

@@ -2,3 +2,28 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+Few places marked with XXX need to be dealt with. 
+
+ - IAbsoluteURL adapter (i.e. canonical_url, which doesn't work for apidoc)
+    this one is disabled for now, so apidoc works but Launchpad doesn't
+
+ - The "resource unnamed view" (i.e. the icing/ directory and the thing
+   that serves it).  Just disabling that doesn't make apidoc css/js
+   accessible, so I don't know what to do.
+
+
+And this one which I haven't identified the cause yet.
+
+ - The code browser shows up empty.
+
+ - Utilities browser shows list of utilities but all links OOPS:
+
+     https://launchpad.dev/launchpad/++apidoc++/Interface/lp.code.interfaces.codeimportjob.ICodeImportJobSet/index.html
+        TypeError: There isn't enough context to get URL information. This is probably due to a bug in setting up location information.<br />
+
+ - The links on the tree view of the ZCML Reference are all broken because they try to access /Launchpad/++apidoc++
+
+ - The interface view can't be rendered for some interfaces:
+     https://launchpad.dev/Launchpad/++apidoc++/Interface/lp.bugs.interfaces.bugsupervisor.IHasBugSupervisor/index.html
+      TypeError: There isn't enough context to get URL information. This is probably due to a bug in setting up location information.<br />
