@@ -503,22 +503,6 @@
             interface="lp.registry.interfaces.jabber.IJabberIDSet"/>
     </securedutility>
     <class
-        class="lp.registry.utilities.salesforce.SalesforceVoucherProxy">
-        <allow
-            interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy"/>
-    </class>
-    <class
-        class="lp.registry.utilities.salesforce.Voucher">
-        <allow
-            interface="lp.registry.interfaces.salesforce.ISalesforceVoucher"/>
-    </class>
-    <securedutility
-        class="lp.registry.utilities.salesforce.SalesforceVoucherProxy"
-        provides="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy">
-        <allow
-            interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy"/>
-    </securedutility>
-    <class
         class="lp.registry.model.pillar.PillarName">
         <allow
             interface="lp.registry.interfaces.pillar.IPillarName"/>

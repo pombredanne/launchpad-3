@@ -64,6 +64,9 @@ from canonical.launchpad.database.account import Account, AccountPassword
 from lp.bugs.model.bugtarget import HasBugsBase
 from canonical.launchpad.database.stormsugar import StartsWith
 from lp.registry.model.karma import KarmaCategory
+from lp.services.salesforce.interfaces import (
+    ISalesforceVoucherProxy, REDEEMABLE_VOUCHER_STATUSES,
+    VOUCHER_STATUSES)
 from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
@@ -116,14 +119,10 @@ from lp.registry.interfaces.personnotification import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.salesforce import (
-    ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
 from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
@@ -959,22 +958,31 @@ class Person(
                                  orderBy=['displayname'])
         return results
 
-    def getCommercialSubscriptionVouchers(self):
+    def getAllCommercialSubscriptionVouchers(self, voucher_proxy=None):
         """See `IPerson`."""
-        voucher_proxy = getUtility(ISalesforceVoucherProxy)
+        if voucher_proxy is None:
+            voucher_proxy = getUtility(ISalesforceVoucherProxy)
         commercial_vouchers = voucher_proxy.getAllVouchers(self)
-        unredeemed_commercial_vouchers = []
-        redeemed_commercial_vouchers = []
+        vouchers = {}
+        for status in VOUCHER_STATUSES:
+            vouchers[status] = []
         for voucher in commercial_vouchers:
             assert voucher.status in VOUCHER_STATUSES, (
                 "Voucher %s has unrecognized status %s" %
                 (voucher.voucher_id, voucher.status))
-            if voucher.status == 'Redeemed':
-                redeemed_commercial_vouchers.append(voucher)
-            else:
-                unredeemed_commercial_vouchers.append(voucher)
-        return (unredeemed_commercial_vouchers,
-                redeemed_commercial_vouchers)
+            vouchers[voucher.status].append(voucher)
+        return vouchers
+
+    def getRedeemableCommercialSubscriptionVouchers(self, voucher_proxy=None):
+        """See `IPerson`."""
+        if voucher_proxy is None:
+            voucher_proxy = getUtility(ISalesforceVoucherProxy)
+        vouchers = voucher_proxy.getUnredeemedVouchers(self)
+        for voucher in vouchers:
+            assert voucher.status in REDEEMABLE_VOUCHER_STATUSES, (
+                "Voucher %s has invalid status %s" %
+                (voucher.voucher_id, voucher.status))
+        return vouchers
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
@@ -2268,7 +2276,6 @@ class Person(
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         builder_recipe = RecipeParser(recipe_text).parse()
-        spnset = getUtility(ISourcePackageNameSet)
         return SourcePackageRecipe.new(
             registrant, self, name, builder_recipe, description, distroseries,
             daily_build_archive, build_daily)

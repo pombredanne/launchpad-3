@@ -16,6 +16,7 @@ __all__ = [
     'SVPNotAllowedException',
     'SVPNotFoundException',
     'VOUCHER_STATUSES',
+    'REDEEMABLE_VOUCHER_STATUSES',
     ]
 
 from zope.interface import Interface
@@ -24,11 +25,12 @@ from zope.schema import Choice, Int, TextLine
 from canonical.launchpad import _
 
 
-VOUCHER_STATUSES = [
+REDEEMABLE_VOUCHER_STATUSES = [
     'Unredeemed',
-    'Redeemed',
     'Reserved',
     ]
+
+VOUCHER_STATUSES = REDEEMABLE_VOUCHER_STATUSES + ['Redeemed']
 
 
 class SalesforceVoucherProxyException(Exception):
