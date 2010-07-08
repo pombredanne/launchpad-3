@@ -83,7 +83,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
-from lp.bugs.scripts.bugheat import BugHeatConstants
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
@@ -888,7 +887,7 @@ class Bug(SQLBase):
 
         # When a new task is added the bug's heat becomes relevant to the
         # target's max_bug_heat.
-        target.recalculateMaxBugHeat()
+        target.recalculateBugHeatCache()
 
         return new_task
 
@@ -1570,7 +1569,7 @@ class Bug(SQLBase):
         self.heat = heat
         self.heat_last_updated = timestamp
         for task in self.bugtasks:
-            task.target.recalculateMaxBugHeat()
+            task.target.recalculateBugHeatCache()
 
     def updateHeat(self):
         """See `IBug`."""
