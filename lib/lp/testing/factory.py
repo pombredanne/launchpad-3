@@ -147,12 +147,16 @@ from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.testing import run_with_login, time_counter, login, logout, temp_dir
 
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.translationimportqueue import (
+    RosettaImportStatus)
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
-from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
+from lp.translations.interfaces.translator import ITranslatorSet
+from lp.translations.model.translationimportqueue import (
+    TranslationImportQueueEntry)
 
 
 SPACE = ' '
@@ -1763,13 +1767,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             processor, url, name, title, description, owner, active,
             virtualized, vm_host, manual=manual)
 
-    def makeRecipe(self, *branches):
-        """Make a builder recipe that references `branches`.
-
-        If no branches are passed, return a recipe text that references an
-        arbitrary branch.
-        """
-        from bzrlib.plugins.builder.recipe import RecipeParser
+    def makeRecipeText(self, *branches):
         if len(branches) == 0:
             branches = (self.makeAnyBranch(),)
         base_branch = branches[0]
@@ -1777,13 +1775,23 @@ class LaunchpadObjectFactory(ObjectFactory):
         text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
         for i, branch in enumerate(other_branches):
             text += 'merge dummy-%s %s\n' % (i, branch.bzr_identity)
-        parser = RecipeParser(text)
+        return text
+
+    def makeRecipe(self, *branches):
+        """Make a builder recipe that references `branches`.
+
+        If no branches are passed, return a recipe text that references an
+        arbitrary branch.
+        """
+        from bzrlib.plugins.builder.recipe import RecipeParser
+        parser = RecipeParser(self.makeRecipeText(*branches))
         return parser.parse()
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, name=None,
                                 description=None, branches=(),
-                                build_daily=False, daily_build_archive=None):
+                                build_daily=False, daily_build_archive=None,
+                                is_stale=None):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -1806,6 +1814,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant, owner, name, recipe, description, [distroseries],
             daily_build_archive, build_daily)
+        if is_stale is not None:
+            removeSecurityProxy(source_package_recipe).is_stale = is_stale
         IStore(source_package_recipe).flush()
         return source_package_recipe
 
@@ -2032,6 +2042,42 @@ class LaunchpadObjectFactory(ObjectFactory):
                 translations=[translated]))
         translation.is_imported = is_imported
         translation.is_current = True
+
+    def makeTranslationImportQueueEntry(self, path=None, status=None,
+                                        sourcepackagename=None,
+                                        distroseries=None,
+                                        productseries=None, content=None,
+                                        uploader=None, is_published=False):
+        """Create a `TranslationImportQueueEntry`."""
+        if path is None:
+            path = self.getUniqueString() + '.pot'
+        if status is None:
+            status = RosettaImportStatus.NEEDS_REVIEW
+
+        if (sourcepackagename is None and distroseries is None):
+            if productseries is None:
+                productseries = self.makeProductSeries()
+        else:
+            if sourcepackagename is None:
+                sourcepackagename = self.makeSourcePackageName()
+            if distroseries is None:
+                distroseries = self.makeDistroSeries()
+
+        if uploader is None:
+            uploader = self.makePerson()
+
+        if content is None:
+            content = self.getUniqueString()
+
+        content_reference = getUtility(ILibraryFileAliasSet).create(
+            name=os.path.basename(path), size=len(content),
+            file=StringIO(content), contentType='text/plain')
+
+        return TranslationImportQueueEntry(
+            path=path, status=status, sourcepackagename=sourcepackagename,
+            distroseries=distroseries, productseries=productseries,
+            importer=uploader, content=content_reference,
+            is_published=is_published)
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""
