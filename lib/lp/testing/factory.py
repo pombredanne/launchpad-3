@@ -147,12 +147,16 @@ from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.testing import run_with_login, time_counter, login, logout, temp_dir
 
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.translationimportqueue import (
+    RosettaImportStatus)
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
-from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
+from lp.translations.interfaces.translator import ITranslatorSet
+from lp.translations.model.translationimportqueue import (
+    TranslationImportQueueEntry)
 
 
 SPACE = ' '
@@ -2038,6 +2042,42 @@ class LaunchpadObjectFactory(ObjectFactory):
                 translations=[translated]))
         translation.is_imported = is_imported
         translation.is_current = True
+
+    def makeTranslationImportQueueEntry(self, path=None, status=None,
+                                        sourcepackagename=None,
+                                        distroseries=None,
+                                        productseries=None, content=None,
+                                        uploader=None, is_published=False):
+        """Create a `TranslationImportQueueEntry`."""
+        if path is None:
+            path = self.getUniqueString() + '.pot'
+        if status is None:
+            status = RosettaImportStatus.NEEDS_REVIEW
+
+        if (sourcepackagename is None and distroseries is None):
+            if productseries is None:
+                productseries = self.makeProductSeries()
+        else:
+            if sourcepackagename is None:
+                sourcepackagename = self.makeSourcePackageName()
+            if distroseries is None:
+                distroseries = self.makeDistroSeries()
+
+        if uploader is None:
+            uploader = self.makePerson()
+
+        if content is None:
+            content = self.getUniqueString()
+
+        content_reference = getUtility(ILibraryFileAliasSet).create(
+            name=os.path.basename(path), size=len(content),
+            file=StringIO(content), contentType='text/plain')
+
+        return TranslationImportQueueEntry(
+            path=path, status=status, sourcepackagename=sourcepackagename,
+            distroseries=distroseries, productseries=productseries,
+            importer=uploader, content=content_reference,
+            is_published=is_published)
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""
