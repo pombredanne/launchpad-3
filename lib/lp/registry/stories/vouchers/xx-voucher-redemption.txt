@@ -150,7 +150,7 @@ error message instead.
 
 Set the canned fault.
 
-    >>> from lp.registry.tests.salesforce import (
+    >>> from lp.services.salesforce.tests.proxy import (
     ...     SalesforceXMLRPCTestTransport)
     >>> SalesforceXMLRPCTestTransport.forced_fault = (
     ...     'redeemVoucher', 'NotFound','Something was not found.')
