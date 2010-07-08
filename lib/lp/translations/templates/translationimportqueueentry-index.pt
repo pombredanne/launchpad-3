@@ -13,6 +13,11 @@
         display: none;
     }
     </style>
+
+    <script type="text/javascript"
+            tal:content="view/js_domain_mapping">
+      var template_domains = {'name1': 'domain1', 'name2': 'domain2'};
+    </script>
     <script type="text/javascript">
       LPS.use('node', 'lp.translations.importqueueentry',
       function (Y) {

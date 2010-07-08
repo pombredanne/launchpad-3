@@ -149,10 +149,16 @@ from lp.testing import run_with_login, time_counter, login, logout, temp_dir
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
+from lp.translations.interfaces.translationimportqueue import (
+    RosettaImportStatus)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
+from lp.translations.model.translationimportqueue import (
+    TranslationImportQueueEntry)
 
 
 SPACE = ' '
@@ -2032,6 +2038,52 @@ class LaunchpadObjectFactory(ObjectFactory):
                 translations=[translated]))
         translation.is_imported = is_imported
         translation.is_current = True
+
+    def makeTranslationImportQueueEntry(self, path, productseries=None,
+                                        distroseries=None,
+                                        sourcepackagename=None,
+                                        potemplate=None, content=None,
+                                        uploader=None, pofile=None,
+                                        format=None, status=None):
+        """Create a `TranslationImportQueueEntry`."""
+        for_distro = not (distroseries is None and sourcepackagename is None)
+        for_project = productseries is not None
+
+        if not for_distro and not for_project and potemplate is not None:
+            # Copy target from template.
+            distroseries = potemplate.distroseries
+            sourcepackagename = potemplate.sourcepackagename
+            productseries = potemplate.productseries
+
+        if sourcepackagename is None and distroseries is None:
+            if productseries is None:
+                productseries = self.makeProductSeries()
+        else:
+            if sourcepackagename is None:
+                sourcepackagename = self.makeSourcePackageName()
+            if distroseries is None:
+                distroseries = self.makeDistroSeries()
+
+        if uploader is None:
+            uploader = self.makePerson()
+
+        if content is None:
+            content = self.getUniqueString()
+        content_reference = getUtility(ILibraryFileAliasSet).create(
+            name=os.path.basename(path), size=len(content),
+            file=StringIO(content), contentType='text/plain')
+
+        if format is None:
+            format = TranslationFileFormat.PO
+
+        if status is None:
+            status = RosettaImportStatus.NEEDS_REVIEW
+
+        return TranslationImportQueueEntry(
+            path=path, productseries=productseries, distroseries=distroseries,
+            sourcepackagename=sourcepackagename, importer=uploader,
+            content=content_reference, status=status, format=format,
+            is_published=False)
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""

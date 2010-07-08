@@ -232,8 +232,8 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
     def initialize(self):
         """Remove some fields based on the entry handled."""
         self.field_names = ['file_type', 'path', 'sourcepackagename',
-                            'name', 'translation_domain', 'languagepack',
                             'potemplate', 'potemplate_name',
+                            'name', 'translation_domain', 'languagepack',
                             'language', 'variant']
 
         if self.context.productseries is not None:
@@ -507,6 +507,20 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         self.context.setStatus(RosettaImportStatus.APPROVED, self.user)
         self.context.date_status_changed = UTC_NOW
+
+    @property
+    def js_domain_mapping(self):
+        """Return JS code mapping templates' names to translation domains."""
+        target = self.import_target
+        if target is None:
+            contents = ""
+        else:
+# XXX: Even with weird characters disallowed, we should escape these.
+            contents = ", \n".join([
+                "'%s': '%s'" % (template.name, template.translation_domain)
+                for template in target.getCurrentTranslationTemplates()
+                ])
+        return "var template_domains = {%s};" % contents
 
 
 class TranslationImportQueueNavigation(GetitemNavigation):
