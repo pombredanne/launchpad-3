@@ -13,6 +13,7 @@ from datetime import datetime
 import gzip
 import re
 import sre_constants
+from tempfile import TemporaryFile
 import os.path
 from textwrap import dedent
 import time
@@ -97,12 +98,11 @@ class Stats:
     std_sqlstatements = 0
     var_sqlstatements = 0
 
-empty_stats = Stats() # Singleton.
-
 
 class Times:
     """Collection of request times."""
     def __init__(self, timeout):
+        self.spool = TemporaryFile()
         self.request_times = []
         self.sql_statements = []
         self.sql_times = []
@@ -114,13 +114,11 @@ class Times:
 
         The application time is capped to our timeout.
         """
-        self.request_times.append(min(request.app_seconds, self.timeout))
-        if request.sql_statements is not None:
-            self.sql_statements.append(request.sql_statements)
-        if request.sql_seconds is not None:
-            self.sql_times.append(request.sql_seconds)
-        if request.ticks is not None:
-            self.ticks.append(request.ticks)
+        print >> self.spool, "%s,%s,%s,%s" % (
+            min(request.app_seconds, self.timeout),
+            request.sql_statements or '',
+            request.sql_seconds or '',
+            request.ticks or '')
 
     _stats = None
 
@@ -135,16 +133,25 @@ class Times:
         1 and 2 seconds etc. histogram is None if there are no requests in
         this Category.
         """
-        if not self.request_times:
-            return empty_stats
-
         if self._stats is not None:
             return self._stats
+
+        def iter_spool(index, cast):
+            """Generator returning one column from our spool file.
+
+            Skips None values.
+            """
+            self.spool.flush()
+            self.spool.seek(0)
+            for line in self.spool:
+                value = line.split(',')[index]
+                if value != '':
+                    yield cast(value)
 
         stats = Stats()
 
         # Time stats
-        array = numpy.asarray(self.request_times, numpy.float32)
+        array = numpy.fromiter(iter_spool(0, numpy.float32), numpy.float32)
         stats.total_time = numpy.sum(array)
         stats.total_hits = len(array)
         stats.mean = numpy.mean(array)
@@ -156,24 +163,28 @@ class Times:
             range=(0, self.timeout), bins=self.timeout)
         stats.histogram = zip(histogram[1], histogram[0])
 
-        # SQL time stats.
-        array = numpy.asarray(self.sql_times, numpy.float32)
-        stats.total_sqltime = numpy.sum(array)
-        stats.mean_sqltime = numpy.mean(array)
-        stats.median_sqltime = numpy.median(array)
-        stats.std_sqltime = numpy.std(array)
-        stats.var_sqltime = numpy.var(array)
-
         # SQL query count.
-        array = numpy.asarray(self.sql_statements, numpy.int)
+        array = numpy.fromiter(iter_spool(1, numpy.int), numpy.int)
         stats.total_sqlstatements = numpy.sum(array)
         stats.mean_sqlstatements = numpy.mean(array)
         stats.median_sqlstatements = numpy.median(array)
         stats.std_sqlstatements = numpy.std(array)
         stats.var_sqlstatements = numpy.var(array)
 
+        # SQL time stats.
+        array = numpy.fromiter(iter_spool(2, numpy.float32), numpy.float32)
+        stats.total_sqltime = numpy.sum(array)
+        stats.mean_sqltime = numpy.mean(array)
+        stats.median_sqltime = numpy.median(array)
+        stats.std_sqltime = numpy.std(array)
+        stats.var_sqltime = numpy.var(array)
+
         # Cache for next invocation.
         self._stats = stats
+
+        # Clean up the spool file
+        self.spool = None
+
         return stats
 
     def __str__(self):
@@ -423,8 +434,8 @@ def parse_extension_record(request, args):
     elif prefix == 't':
         if len(args) != 4:
             raise MalformedLine("Wrong number of arguments %s" % (args,))
-        request.ticks = args[1]
-        request.sql_statements = args[2]
+        request.ticks = int(args[1])
+        request.sql_statements = int(args[2])
         request.sql_seconds = float(args[3]) / 1000
     else:
         raise MalformedLine(
