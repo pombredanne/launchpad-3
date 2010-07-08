@@ -557,9 +557,7 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context.person)
 
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
+    cancel_url = next_url
 
     @action(_("Renew"), name="renew")
     def renew_action(self, action, data):
@@ -3049,14 +3047,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname
 
-    @property
-    def public_private_css(self):
-        """The CSS classes that represent the public or private state."""
-        if self.context.private:
-            return 'aside private'
-        else:
-            return 'aside public'
-
     @cachedproperty
     def should_show_ppa_section(self):
         """Return True if "Personal package archives" is to be shown.
@@ -4210,8 +4200,16 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         """Make the selected teams join this team."""
         context = self.context
         is_admin = check_permission('launchpad.Admin', context)
+        membership_set = getUtility(ITeamMembershipSet)
         for team in data['teams']:
-            if is_admin:
+            membership = membership_set.getByPersonAndTeam(team, context)
+            if (membership is not None
+                and membership.status == TeamMembershipStatus.INVITED):
+                team.acceptInvitationToBeMemberOf(
+                    context,
+                    'Accepted an already pending invitation while trying to '
+                    'propose the team for membership.')
+            elif is_admin:
                 context.addMember(team, reviewer=self.user)
             else:
                 team.join(context, requester=self.user)

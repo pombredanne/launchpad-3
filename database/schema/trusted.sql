@@ -144,6 +144,12 @@ $$
         LIMIT 1
         """, 1).nrows() > 0
     if stats_reset:
+        # The database stats have been reset. We cannot calculate
+        # deltas because we do not know when this happened. So we trash
+        # our records as they are now useless to us. We could be more
+        # sophisticated about this, but this should only happen
+        # when an admin explicitly resets the statistics or if the
+        # database is rebuilt.
         plpy.notice("Stats wraparound. Purging DatabaseTableStats")
         plpy.execute("DELETE FROM DatabaseTableStats")
     else:
@@ -158,7 +164,8 @@ $$
             SELECT
                 CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
                 schemaname, relname, seq_scan, seq_tup_read,
-                idx_scan, idx_tup_fetch, n_tup_ins, n_tup_upd, n_tup_del,
+                coalesce(idx_scan, 0), coalesce(idx_tup_fetch, 0),
+                n_tup_ins, n_tup_upd, n_tup_del,
                 n_tup_hot_upd, n_live_tup, n_dead_tup, last_vacuum,
                 last_autovacuum, last_analyze, last_autoanalyze
             FROM pg_catalog.pg_stat_user_tables;

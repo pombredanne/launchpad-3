@@ -34,7 +34,7 @@ from pprint import pprint
 ${python-relative-path-setup}
 
 # The test script for this branch.
-TEST = ${buildout:directory/bin/test|path-repr}
+TEST = ${buildout:directory/bin/test}
 
 # Regular expression to match numbered stories.
 STORY_RE = re.compile("(.*)/\d{2}-.*")

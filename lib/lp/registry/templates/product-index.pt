@@ -91,8 +91,8 @@
                   <a tal:replace="structure overview_menu/reassign/fmt:icon" />
                   </tal:driver_unset>
 
-                  <a target="help" href="/+help/driver.html" class="icon">
-                    <img src="/@@/maybe" alt="help" /></a>
+                  <a target="help" href="/+help/driver.html"
+                     class="sprite maybe">&nbsp;<span class="invisible-link">Driver help</span></a>
                 </dd>
               </dl>
 
