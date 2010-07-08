@@ -160,7 +160,8 @@
                       id="edit-tags-cancel" style="display: none"
                       type="button">Cancel</button>
            </form>
-           <a href="/+help/tag-help.html" target="help" class="icon"><img src="/@@/maybe" alt="help" /></a>
+           <a href="/+help/tag-help.html" target="help" class="sprite maybe">&nbsp;
+             <span class="invisible-link">Tag help</span></a>
           </div>
           <div id="add-bug-tags"
                tal:attributes="class python: ('tags-container ' +
@@ -169,7 +170,8 @@
             <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
               Add tags
             </a>
-            <a href="/+help/tag-help.html" target="help" class="icon"><img src="/@@/maybe" alt="help" /></a>
+            <a href="/+help/tag-help.html" target="help" class="sprite maybe">&nbsp;
+             <span class="invisible-link">Tag help</span></a>
           </div>
 
         <div class="clearfix"></div>

@@ -31,6 +31,7 @@
         </ul>
       </div>
 
+      <tal:cache content="cache:public, 30 minute">
       <div class="narrow"
         tal:define="summaries view/cached_unlinked_packages;"
         tal:condition="summaries/batch">
@@ -53,7 +54,7 @@
                   tal:attributes="href summary/package/fmt:url"
                   tal:content="summary/package/name">evolution</a>
               </td>
-              <td tal:define="count summary/total_bugs;
+              <td tal:define="count summary/bug_count;
                               singular string:bug;
                               plural string:bugs;">
                 <tal:no-bugs condition="not: count">
@@ -86,6 +87,7 @@
         <div class="results"
           tal:content="structure summaries/@@+navigation-links-lower" />
       </div>
+      </tal:cache>
     </div>
   </body>
 </html>

@@ -297,6 +297,18 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             self.sourcepackagename.name, self.distroseries.displayname)
 
     @property
+    def summary(self):
+        """See `ISourcePackage`."""
+        releases = self.releases
+        if len(releases) == 0:
+            return None
+        current = releases[0]
+        name_summaries = [
+            '%s: %s' % (binary.name, binary.summary)
+            for binary in current.sample_binary_packages]
+        return '\n'.join(name_summaries)
+
+    @property
     def distribution(self):
         return self.distroseries.distribution
 

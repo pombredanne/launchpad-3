@@ -37,7 +37,7 @@ from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadRadioWidget)
-from canonical.widgets.popup import  VocabularyPickerWidget
+from canonical.widgets.popup import BugTrackerPickerWidget
 from canonical.widgets.textwidgets import (
     LowerCaseTextWidget, StrippedTextWidget)
 from lp.registry.interfaces.product import IProduct
@@ -57,7 +57,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         self.bugtracker = Choice(
             vocabulary="WebBugTracker",
             __name__='bugtracker')
-        self.bugtracker_widget = CustomWidgetFactory(VocabularyPickerWidget)
+        self.bugtracker_widget = CustomWidgetFactory(BugTrackerPickerWidget)
         setUpWidget(
             self, 'bugtracker', self.bugtracker, IInputWidget,
             prefix=self.name, value=field.context.bugtracker,
@@ -82,7 +82,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         if self.upstream_email_address_widget.extra is None:
             self.upstream_email_address_widget.extra = ''
         self.upstream_email_address_widget.extra += (
-            ' onkeypress="selectWidget(\'%s.3\', event);"' % self.name)
+            ''' onkeypress="selectWidget('%s.3', event);"\n''' % self.name)
 
     def _renderItem(self, index, text, value, name, cssClass, checked=False):
         # This form has a custom need to render their labels separately,
@@ -192,7 +192,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             self.upstream_email_address_widget.setRenderedValue(
                 value.baseurl.lstrip('mailto:'))
         external_bugtracker_email_text = "%s %s" % (
-            self._renderLabel("By emailing an upstream bug contact:", 3),
+            self._renderLabel("By emailing an upstream bug contact:\n", 3),
             self.upstream_email_address_widget())
         external_bugtracker_email_arguments = dict(
             index=3, text=external_bugtracker_email_text,
