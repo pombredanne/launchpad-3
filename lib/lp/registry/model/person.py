@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from __future__ import with_statement
 
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,W0612,C0322
