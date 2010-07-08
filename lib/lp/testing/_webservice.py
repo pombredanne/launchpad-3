@@ -103,8 +103,11 @@ def launchpadlib_credentials_for(
     return Credentials(consumer_name=consumer_name,
                        access_token=launchpadlib_token)
 
+
 def _clean_up_cache(cache):
+    """"Clean up a temporary launchpadlib cache directory."""
     shutil.rmtree(cache, ignore_errors=True)
+
 
 def launchpadlib_for(
     consumer_name, person, permission=OAuthPermission.WRITE_PRIVATE,
