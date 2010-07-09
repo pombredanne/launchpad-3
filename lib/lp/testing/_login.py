@@ -15,8 +15,6 @@ __all__ = [
     'is_logged_in',
     ]
 
-import random
-
 from zope.component import getUtility
 from zope.security.management import endInteraction
 
@@ -80,7 +78,7 @@ def get_arbitrary_team_member(team):
 
     :param team: An `ITeam`.
     """
-    return random.choice(team.allmembers)
+    return team.teamowner
 
 
 def login_team(team, participation=None):
