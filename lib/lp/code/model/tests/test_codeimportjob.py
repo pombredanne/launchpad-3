@@ -44,7 +44,8 @@ from canonical.launchpad.testing.codeimporthelpers import (
 from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 def login_for_code_imports():
@@ -57,25 +58,22 @@ def login_for_code_imports():
     login('david.allouche@canonical.com')
 
 
-class TestCodeImportJobSet(unittest.TestCase):
+class TestCodeImportJobSet(TestCaseWithFactory):
     """Unit tests for the CodeImportJobSet utility."""
 
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        login_for_code_imports()
+    layer = DatabaseFunctionalLayer
 
     def test_getByIdExisting(self):
         # CodeImportJobSet.getById retrieves a CodeImportJob by database id.
-        job = getUtility(ICodeImportJobSet).getById(1)
-        self.assertNotEqual(job, None)
-        self.assertEqual(job.id, 1)
+        made_job = self.factory.makeCodeImportJob()
+        found_job = getUtility(ICodeImportJobSet).getById(made_job.id)
+        self.assertEqual(made_job, found_job)
 
     def test_getByIdNotExisting(self):
         # CodeImportJobSet.getById returns None if there is not CodeImportJob
         # with the specified id.
         no_job = getUtility(ICodeImportJobSet).getById(-1)
-        self.assertEqual(no_job, None)
+        self.assertIs(None, no_job)
 
 
 class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
