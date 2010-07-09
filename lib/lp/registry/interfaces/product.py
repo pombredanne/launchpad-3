@@ -685,9 +685,6 @@ class IProductPublic(
         :return: None
         """
 
-    def getLatestBranches(quantity=5):
-        """Latest <quantity> branches registered for this product."""
-
     def getPackage(distroseries):
         """Return a package in that distroseries for this product."""
 
