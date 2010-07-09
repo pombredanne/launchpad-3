@@ -198,7 +198,10 @@ class OpenIDMixin:
         else:
             response = self.openid_request.answer(True)
 
-        sreg_fields = dict(nickname=IPerson(self.account).name)
+        sreg_fields = dict(
+            nickname=IPerson(self.account).name,
+            email=self.account.preferredemail.email,
+            fullname=self.account.displayname)
         sreg_request = SRegRequest.fromOpenIDRequest(self.openid_request)
         sreg_response = SRegResponse.extractResponse(
             sreg_request, sreg_fields)
@@ -224,7 +227,7 @@ class TestOpenIDView(OpenIDMixin, LaunchpadView):
     This class implements an OpenID endpoint using the python-openid
     library.  In addition to the normal modes of operation, it also
     implements the OpenID 2.0 identifier select mode.
-    
+
     Note that the checkid_immediate mode is not supported.
     """
 

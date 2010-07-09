@@ -30,14 +30,23 @@ ANONYMOUS = 'launchpad.anonymous'
 
 
 def get_current_principal():
-    """Get the principal from the current interaction."""
+    """Get the principal from the current interaction.
+
+    :return: The current principal if there is an interaction, None otherwise.
+    """
     interaction = queryInteraction()
+    if interaction is None:
+        return None
     principals = [
         participation.principal
-        for participation in interaction.participations]
-    assert len(principals) == 1, (
-        "There should be only one principal in the current interaction.")
-    return principals[0]
+        for participation in interaction.participations
+        if participation.principal is not None]
+    if not principals:
+        return None
+    elif len(principals) > 1:
+        raise ValueError('Too many principals')
+    else:
+        return principals[0]
 
 
 def setupInteraction(principal, login=None, participation=None):
