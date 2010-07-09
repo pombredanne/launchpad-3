@@ -966,9 +966,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         """
 
     def getOwnedOrDrivenPillars():
-        """Return Distribution, Project Groups and Projects that this person
-        owns or drives.
-        """
+        """Return the pillars that this person directly owns or drives."""
 
     def getOwnedProjects(match_name=None):
         """Projects owned by this person or teams to which she belongs.

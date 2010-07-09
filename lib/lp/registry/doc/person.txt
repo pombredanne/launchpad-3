@@ -1136,14 +1136,11 @@ project groups and projects.
 
     >>> for pillarname in mark.getOwnedOrDrivenPillars():
     ...     print_pillar(pillarname)
-    distribution: Ubuntu Linux (ubuntu)
     distribution: Redhat Advanced Server (redhat)
     distribution: Debian GNU/Linux (debian)
     distribution: The Gentoo Linux (gentoo)
     distribution: Kubuntu - Free KDE-based Linux (kubuntu)
-    distribution: Ubuntu Test (ubuntutest)
     project group: Apache (apache)
-    project: Tomcat (tomcat)
     project: ALSA utilities (alsa-utils)
     project: Derby - Java Database (derby)
 

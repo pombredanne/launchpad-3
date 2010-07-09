@@ -896,26 +896,22 @@ class Person(
         """See `IPerson`."""
         query = """
             SELECT name
-            FROM product, teamparticipation
-            WHERE teamparticipation.person = %(person)s
-                AND (driver = teamparticipation.team
-                     OR owner = teamparticipation.team)
-
+            FROM product
+            WHERE
+                driver = %(person)s
+                OR owner = %(person)s
             UNION
-
             SELECT name
-            FROM project, teamparticipation
-            WHERE teamparticipation.person = %(person)s
-                AND (driver = teamparticipation.team
-                     OR owner = teamparticipation.team)
-
+            FROM project
+            WHERE
+                driver = %(person)s
+                OR owner = %(person)s
             UNION
-
             SELECT name
-            FROM distribution, teamparticipation
-            WHERE teamparticipation.person = %(person)s
-                AND (driver = teamparticipation.team
-                     OR owner = teamparticipation.team)
+            FROM distribution
+            WHERE
+                driver = %(person)s
+                OR owner = %(person)s
             """ % sqlvalues(person=self)
         cur = cursor()
         cur.execute(query)
