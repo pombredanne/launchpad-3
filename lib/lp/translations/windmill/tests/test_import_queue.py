@@ -184,7 +184,9 @@ class ImportQueueEntryTest(WindmillTestCase):
         # A new template upload for that entry has a path that doesn't
         # match either of the existing templates.
         entry = self.factory.makeTranslationImportQueueEntry(
-            template.path, potemplate=template)
+            template.path, productseries=template.productseries,
+            distroseries=template.distroseries,
+            sourcepackagename=template.sourcepackagename)
         url = canonical_url(entry, rootsite='translations')
 
         transaction.commit()

@@ -72,12 +72,22 @@ def get_table_stats(cur, options):
 
 
 def get_cpu_stats(cur, options):
+    # This query calculates the averate cpu utilization from the
+    # samples. It assumes samples are taken at regular intervals over
+    # the period.
     query = """
-        SELECT avg(cpu), username FROM DatabaseCpuStats
+        SELECT (
+            CAST(SUM(cpu) AS float) / (
+                SELECT COUNT(DISTINCT date_created) FROM DatabaseCpuStats
+                WHERE
+                    date_created >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+                    - CAST (%s AS interval))
+            ) AS avg_cpu, username
+        FROM DatabaseCpuStats
         WHERE date_created >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             - CAST(%s AS interval))
         GROUP BY username
-        """ % sqlvalues(options.since_interval)
+        """ % sqlvalues(options.since_interval, options.since_interval)
 
     cur.execute(query)
 
@@ -107,16 +117,20 @@ def main():
     tables = get_table_stats(cur, options)
     arbitrary_table = list(tables)[0]
     interval = arbitrary_table.date_end - arbitrary_table.date_start
-    per_minute = interval.days * 24 * 60 + interval.seconds / 60.0
+    per_second = float(interval.days * 24 * 60 * 60 + interval.seconds)
 
     print "== Most Read Tables =="
     print
+    # These match the pg_user_table_stats view. schemaname is the
+    # namespace (normally 'public'), relname is the table (relation)
+    # name. total_tup_red is the total number of rows read.
+    # idx_tup_fetch is the number of rows looked up using an index.
     tables_sort = ['total_tup_read', 'idx_tup_fetch', 'schemaname', 'relname']
     most_read_tables = sorted(
         tables, key=attrgetter(*tables_sort), reverse=True)
     for table in most_read_tables[:options.limit]:
-        print "%40s || %10.2f tuples/min" % (
-            table.relname, table.total_tup_read / per_minute)
+        print "%40s || %10.2f tuples/sec" % (
+            table.relname, table.total_tup_read / per_second)
     print
 
     print "== Most Written Tables =="
@@ -126,15 +140,15 @@ def main():
     most_written_tables = sorted(
         tables, key=attrgetter(*tables_sort), reverse=True)
     for table in most_written_tables[:options.limit]:
-        print "%40s || %10.2f tuples/min" % (
-            table.relname, table.total_tup_written / per_minute)
+        print "%40s || %10.2f tuples/sec" % (
+            table.relname, table.total_tup_written / per_second)
     print
 
     user_cpu = get_cpu_stats(cur, options)
     print "== Most Active Users =="
     print
     for cpu, username in sorted(user_cpu, reverse=True)[:options.limit]:
-        print "%40s || %6.2f%% CPU" % (username, float(cpu) / 100)
+        print "%40s || %10.2f%% CPU" % (username, float(cpu) / 10)
 
 
 if __name__ == '__main__':

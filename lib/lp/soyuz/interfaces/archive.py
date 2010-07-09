@@ -380,6 +380,15 @@ class IArchivePublic(IHasOwner, IPrivacy):
             value_type=Reference(schema=IProcessorFamily),
             readonly=False)
 
+    commercial = exported(
+        Bool(
+            title=_("Commercial Archive"),
+            required=True,
+            description=_(
+                "Set if this archive is used for commercial purposes and "
+                "should appear in the Software Center listings.  The archive "
+                "must also be private if this is set.")))
+
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
@@ -1556,6 +1565,14 @@ class IArchiveSet(Interface):
 
     def getPrivatePPAs():
         """Return a result set containing all private PPAs."""
+
+    def getCommercialPPAs():
+        """Return a result set containing all commercial PPAs.
+
+        Commercial PPAs are private, but explicitly flagged up as commercial
+        so that they are discoverable by people who wish to buy items
+        from them.
+        """
 
     def getPublicationsInArchives(source_package_name, archive_list,
                                   distribution):

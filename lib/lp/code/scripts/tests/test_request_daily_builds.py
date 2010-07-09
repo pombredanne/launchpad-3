@@ -22,11 +22,11 @@ class TestRequestDailyBuilds(TestCaseWithFactory):
     def test_request_daily_builds(self):
         """Ensure the request_daily_builds script requests daily builds."""
         prod_branch = self.factory.makeProductBranch()
-        prod_recipe = self.factory.makeSourcePackageRecipe(build_daily=True,
-            branches=[prod_branch])
+        prod_recipe = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True, branches=[prod_branch])
         pack_branch = self.factory.makePackageBranch()
-        pack_recipe = self.factory.makeSourcePackageRecipe(build_daily=True,
-            branches=[pack_branch])
+        pack_recipe = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True, branches=[pack_branch])
         self.assertEqual(0, prod_recipe.getBuilds(True).count())
         self.assertEqual(0, pack_recipe.getBuilds(True).count())
         transaction.commit()
@@ -35,6 +35,8 @@ class TestRequestDailyBuilds(TestCaseWithFactory):
         self.assertIn('Requested 2 daily builds.', stderr)
         self.assertEqual(1, prod_recipe.getBuilds(True).count())
         self.assertEqual(1, pack_recipe.getBuilds(True).count())
+        self.assertFalse(prod_recipe.is_stale)
+        self.assertFalse(pack_recipe.is_stale)
 
     def test_request_daily_builds_oops(self):
         """Ensure errors are handled cleanly."""

@@ -34,7 +34,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPersonRoles)
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, ISlaveStore
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.series import SeriesStatus
@@ -1204,32 +1204,84 @@ class TranslationImportQueue:
 
         return there_are_entries_approved
 
+    def _getSlaveStore(self):
+        """Return the slave store for the import queue.
+
+        Tests can override this to avoid unnecessary synchronization
+        issues.
+        """
+        return ISlaveStore(TranslationImportQueueEntry)
+
+    def _getBlockableDirectories(self):
+        """Describe all directories where uploads are to be blocked.
+
+        Returns a set of tuples, each containing:
+         * `DistroSeries` id
+         * `SourcePackageName` id
+         * `ProductSeries` id
+         * Directory path.
+
+        A `TranslationImportQueueEntry` should be blocked if the tuple
+        of its distroseries.id, sourcepackagename.id, productseries.id,
+        and the directory component of its path is found in the result
+        set.
+
+        See `_isBlockable`, which matches a queue entry against the set
+        returned by this method.
+        """
+        importer = getUtility(ITranslationImporter)
+        template_patterns = "(%s)" % ' OR '.join([
+            "path LIKE ('%%' || %s)" % quote_like(suffix)
+            for suffix in importer.template_suffixes
+            ])
+
+        store = self._getSlaveStore()
+        result = store.execute("""
+            SELECT
+                distroseries,
+                sourcepackagename,
+                productseries,
+                regexp_replace(
+                    regexp_replace(path, '^[^/]*$', ''),
+                    '/[^/]*$',
+                    '') AS directory
+            FROM TranslationImportQueueEntry
+            WHERE %(is_template)s
+            GROUP BY distroseries, sourcepackagename, productseries, directory
+            HAVING bool_and(status = %(blocked)s)
+            ORDER BY distroseries, sourcepackagename, productseries, directory
+            """ % {
+                'blocked': quote(RosettaImportStatus.BLOCKED),
+                'is_template': template_patterns,
+            })
+
+        return set(result)
+
+    def _isBlockable(self, entry, blocklist):
+        """Is `entry` one that should be blocked according to `blocklist`?
+
+        :param entry: A `TranslationImportQueueEntry` that may be a
+            candidate for blocking.
+        :param blocklist: A description of blockable directories as
+            returned by `_getBlockableDirectories`.
+        """
+        description = (
+            entry.distroseries_id,
+            entry.sourcepackagename_id,
+            entry.productseries_id,
+            os.path.dirname(entry.path),
+            )
+        return description in blocklist
+
     def executeOptimisticBlock(self, txn=None):
         """See ITranslationImportQueue."""
-        importer = getUtility(ITranslationImporter)
+        # Find entries where all template entries for the same
+        # translation target that are in the same directory are in the
+        # Blocked state.  Set those entries to Blocked as well.
+        blocklist = self._getBlockableDirectories()
         num_blocked = 0
         for entry in self._iterNeedsReview():
-            if importer.isTemplateName(entry.path):
-                # Templates cannot be managed automatically.  Ignore them and
-                # wait for an admin to do it.
-                continue
-            # As kiko would say... this method is crack, I know it, but we
-            # need it to save time to our poor Rosetta Experts while handling
-            # the translation import queue...
-            # We need to look for all templates that we have on the same
-            # directory for the entry we are processing, and check that all of
-            # them are blocked. If there is at least one that's not blocked,
-            # we cannot block the entry.
-            templates = entry.getTemplatesOnSameDirectory()
-            has_templates = False
-            has_templates_unblocked = False
-            for template in templates:
-                has_templates = True
-                if template.status != RosettaImportStatus.BLOCKED:
-                    # This template is not set as blocked, so we note it.
-                    has_templates_unblocked = True
-
-            if has_templates and not has_templates_unblocked:
+            if self._isBlockable(entry, blocklist):
                 # All templates on the same directory as this entry are
                 # blocked, so we can block it too.
                 entry.setStatus(
