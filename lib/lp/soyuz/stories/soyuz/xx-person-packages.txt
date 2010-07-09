@@ -6,7 +6,7 @@ person's home page.
 
     >>> browser.open("http://launchpad.dev/~mark/+related-software")
     >>> print browser.title
-    Software related to Mark Shuttleworth...
+    Related software : Mark Shuttleworth
 
 This page is just a summary of the user's packages and will only
 display up to the most recent 30 items in each category.  However, it
