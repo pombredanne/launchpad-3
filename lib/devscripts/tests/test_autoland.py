@@ -9,10 +9,13 @@ import unittest
 
 from launchpadlib.launchpad import EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT
 
+from lp.testing.fakemethod import FakeMethod
+
 from devscripts.autoland import (
     get_bazaar_host, get_bugs_clause, get_reviewer_clause,
-    get_reviewer_handle, check_qa_clauses, MissingReviewError,
-    MissingBugsError, MissingBugsIncrError)
+    get_reviewer_handle, get_qa_clause, get_testfix_clause,
+    MissingReviewError, MissingBugsError, MissingBugsIncrError,
+    MergeProposal)
 
 
 class FakeBug:
@@ -47,6 +50,16 @@ class FakeIRC:
         self.network = network
 
 
+class FakeLPMergeProposal:
+    """Fake launchpadlib MergeProposal object.
+
+    Only used for the purposes of testing.
+    """
+
+    def __init__(self, root=None):
+        self._root = root
+
+
 class TestBugsClaused(unittest.TestCase):
     """Tests for `get_bugs_clause`."""
 
@@ -69,50 +82,153 @@ class TestBugsClaused(unittest.TestCase):
         self.assertEqual('[bug=20,45]', bugs_clause)
 
 
-class TestCheckQaClauses(unittest.TestCase):
-    """Tests for `check_qa_clauses`"""
+class TestGetCommitMessage(unittest.TestCase):
+
+    def makePerson(self, name):
+        return FakePerson(name, [])
+
+    def test_commit_with_bugs(self):
+        incr = False
+        no_qa = False
+        testfix = False
+
+        bug1 = FakeBug(20)
+        mp = MergeProposal(FakeLPMergeProposal())
+        mp.get_bugs = FakeMethod([bug1])
+        mp.get_reviews = FakeMethod({None : [self.makePerson('foo')]})
+
+        self.assertEqual("[r=foo][ui=none][bug=20] Foobaring the sbrubble.",
+            mp.get_commit_message("Foobaring the sbrubble.", testfix, no_qa,
+                incr))
+
+    def test_commit_no_bugs_no_noqa(self):
+        incr = False
+        no_qa = False
+        testfix = False
+
+        mp = MergeProposal(FakeLPMergeProposal())
+        mp.get_bugs = FakeMethod([])
+        mp.get_reviews = FakeMethod({None : [self.makePerson('foo')]})
+
+        self.assertRaises(MissingBugsError, mp.get_commit_message,
+            testfix, no_qa, incr)
+
+    def test_commit_no_bugs_with_noqa(self):
+        incr = False
+        no_qa = True
+        testfix = False
+
+        mp = MergeProposal(FakeLPMergeProposal())
+        mp.get_bugs = FakeMethod([])
+        mp.get_reviews = FakeMethod({None : [self.makePerson('foo')]})
+
+        self.assertEqual("[r=foo][ui=none][no-qa] Foobaring the sbrubble.",
+            mp.get_commit_message("Foobaring the sbrubble.", testfix, no_qa,
+                incr))
+
+    def test_commit_bugs_with_noqa(self):
+        incr = False
+        no_qa = True
+        testfix = False
+
+        bug1 = FakeBug(20)
+        mp = MergeProposal(FakeLPMergeProposal())
+        mp.get_bugs = FakeMethod([bug1])
+        mp.get_reviews = FakeMethod({None : [self.makePerson('foo')]})
+
+        self.assertEqual(
+            "[r=foo][ui=none][bug=20][no-qa] Foobaring the sbrubble.",
+            mp.get_commit_message("Foobaring the sbrubble.", testfix, no_qa,
+                incr))
+
+    def test_commit_bugs_with_incr(self):
+        incr = True
+        no_qa = False
+        testfix = False
+
+        bug1 = FakeBug(20)
+        mp = MergeProposal(FakeLPMergeProposal())
+        mp.get_bugs = FakeMethod([bug1])
+        mp.get_reviews = FakeMethod({None : [self.makePerson('foo')]})
+
+        self.assertEqual(
+            "[r=foo][ui=none][bug=20][incr] Foobaring the sbrubble.",
+            mp.get_commit_message("Foobaring the sbrubble.", testfix, no_qa,
+                incr))
+
+    def test_commit_no_bugs_with_incr(self):
+        incr = True
+        no_qa = False
+        testfix = False
+
+        bug1 = FakeBug(20)
+        mp = MergeProposal(FakeLPMergeProposal())
+        mp.get_bugs = FakeMethod([bug1])
+        mp.get_reviews = FakeMethod({None : [self.makePerson('foo')]})
+
+        self.assertEqual(
+            "[r=foo][ui=none][bug=20][incr] Foobaring the sbrubble.",
+            mp.get_commit_message("Foobaring the sbrubble.", testfix, no_qa,
+                incr))
+
+
+
+class TestGetTestfixClause(unittest.TestCase):
+    """Tests for `get_testfix_clause`"""
+
+    def test_no_testfix(self):
+        testfix = False
+        self.assertEqual('', get_testfix_clause(testfix))
+
+    def test_is_testfix(self):
+        testfix = True
+        self.assertEqual('[testfix]', get_testfix_clause(testfix))
+
+
+class TestGetQaClause(unittest.TestCase):
+    """Tests for `get_qa_clause`"""
 
     def test_no_bugs_no_option_given(self):
         bugs = None
         no_qa = False
         incr = False
-        self.assertRaises(MissingBugsError, check_qa_clauses, bugs, no_qa,
+        self.assertRaises(MissingBugsError, get_qa_clause, bugs, no_qa,
             incr)
 
     def test_bugs_noqa_option_given(self):
         bug1 = FakeBug(20)
         no_qa = True
         incr = False
-        self.assertEqual(('[no-qa]', ''),
-            check_qa_clauses([bug1], no_qa, incr))
+        self.assertEqual('[no-qa]',
+            get_qa_clause([bug1], no_qa, incr))
 
     def test_no_bugs_noqa_option_given(self):
         bugs = None
         no_qa = True
         incr = False
-        self.assertEqual(('[no-qa]', ''),
-            check_qa_clauses(bugs, no_qa, incr))
+        self.assertEqual('[no-qa]',
+            get_qa_clause(bugs, no_qa, incr))
 
     def test_bugs_no_option_given(self):
         bug1 = FakeBug(20)
         no_qa = False
         incr = False
-        self.assertEqual(('', ''),
-            check_qa_clauses([bug1], no_qa, incr))
+        self.assertEqual('',
+            get_qa_clause([bug1], no_qa, incr))
 
     def test_bugs_incr_option_given(self):
         bug1 = FakeBug(20)
         no_qa = False
         incr = True
-        self.assertEqual(('', '[incr]'),
-            check_qa_clauses([bug1], no_qa, incr))
+        self.assertEqual('[incr]',
+            get_qa_clause([bug1], no_qa, incr))
 
     def test_no_bugs_incr_option_given(self):
         bugs = None
         no_qa = False
         incr = True
         self.assertRaises(MissingBugsIncrError,
-            check_qa_clauses, bugs, no_qa, incr)
+            get_qa_clause, bugs, no_qa, incr)
 
 
 class TestGetReviewerHandle(unittest.TestCase):
