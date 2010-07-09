@@ -20,7 +20,7 @@ from zope.security.management import endInteraction
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import (
-    setupInteractionByEmail, setupInteractionForPerson)
+    ANONYMOUS, setupInteractionByEmail, setupInteractionForPerson)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 
@@ -88,12 +88,21 @@ def login_team(team, participation=None):
 
 
 def login_as(person_or_team, participation=None):
-    """Login as a person or a team."""
-    if person_or_team.is_team:
-        login = login_team
+    """Login as a person or a team.
+
+    :param person_or_team: A person, a team, ANONYMOUS or None. None and
+        ANONYMOUS are equivalent, and will log the person is as the anonymous
+        user.
+    """
+    if person_or_team == ANONYMOUS:
+        login_method = login
+    elif person_or_team is None:
+        login_method = login_person
+    elif person_or_team.is_team:
+        login_method = login_team
     else:
-        login = login_person
-    return login(person_or_team, participation=participation)
+        login_method = login_person
+    return login_method(person_or_team, participation=participation)
 
 
 def login_celebrity(celebrity_name, participation=None):

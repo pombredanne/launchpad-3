@@ -7,12 +7,15 @@ __metaclass__ = type
 
 import unittest
 
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import is_logged_in, login_person, logout
+from lp.testing import (
+    ANONYMOUS, is_logged_in, login, login_as, login_person, login_team,
+    logout)
 from lp.testing import TestCaseWithFactory
 
 
@@ -20,13 +23,35 @@ class TestLoginHelpers(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def getLoggedInPerson(self):
+        """Return the currently logged-in person.
+
+        If no one is logged in, return None. If there is an anonymous user
+        logged in, then return ANONYMOUS. Otherwise, return the logged-in
+        `IPerson`.
+        """
+        # XXX: JonathanLange 2010-07-09: I don't really know the canonical way
+        # of asking for "the logged-in person", so instead I'm using all the
+        # ways I can find and making sure they match each other.
+        by_launchbag = getUtility(IOpenLaunchBag).user
+        principal = get_current_principal()
+        if principal is None:
+            return None
+        elif IUnauthenticatedPrincipal.providedBy(principal):
+            if by_launchbag is None:
+                return ANONYMOUS
+            else:
+                raise ValueError(
+                    "Unauthenticated principal, but launchbag thinks "
+                    "%r is logged in." % (by_launchbag,))
+        else:
+            by_principal = principal.person
+            self.assertEqual(by_launchbag, by_principal)
+            return by_principal
+
     def assertLoggedIn(self, person):
         """Assert that 'person' is logged in."""
-        # XXX: JonathanLange 2010-07-09: I don't really know the canonical way
-        # of asking for "the logged-in person", so instead I'm testing all the
-        # ways that I can tell.
-        self.assertEqual(person, get_current_principal().person)
-        self.assertEqual(person, getUtility(IOpenLaunchBag).user)
+        self.assertEqual(person, self.getLoggedInPerson())
 
     def assertLoggedOut(self):
         """Assert that no one is currently logged in."""
@@ -66,9 +91,47 @@ class TestLoginHelpers(TestCaseWithFactory):
         login_person(b)
         self.assertLoggedIn(b)
 
-    # tests for login()
-    # tests for login_team()
-    # tests for anonymous logins: login, login_person, login_as
+    def test_login_with_email(self):
+        # login() logs a person in by email.
+        person = self.factory.makePerson()
+        login(person.preferredemail.email)
+        self.assertLoggedIn(person)
+
+    def test_login_anonymous(self):
+        # login as 'ANONYMOUS' logs in as the anonymous user.
+        login(ANONYMOUS)
+        self.assertLoggedIn(ANONYMOUS)
+
+    def test_login_team(self):
+        # login_team() logs in as a member of the given team.
+        team = self.factory.makeTeam()
+        login_team(team)
+        person = self.getLoggedInPerson()
+        self.assertTrue(person.inTeam(team))
+
+    def test_login_as_person(self):
+        # login_as() logs in as a person if it's given a person.
+        person = self.factory.makePerson()
+        login_as(person)
+        self.assertLoggedIn(person)
+
+    def test_login_as_team(self):
+        # login_as() logs in as a member of a team if it's given a team.
+        team = self.factory.makeTeam()
+        login_as(team)
+        person = self.getLoggedInPerson()
+        self.assertTrue(person.inTeam(team))
+
+    def test_login_as_anonymous(self):
+        # login_as(ANONYMOUS) logs in as the anonymous user.
+        login_as(ANONYMOUS)
+        self.assertLoggedIn(ANONYMOUS)
+
+    def test_login_as_None(self):
+        # login_as(None) logs in as the anonymous user.
+        login_as(None)
+        self.assertLoggedIn(ANONYMOUS)
+
     # tests for login_celebrity
     # tests for participation -- although not sure what it does
 
