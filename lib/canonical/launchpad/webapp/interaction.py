@@ -32,7 +32,7 @@ ANONYMOUS = 'launchpad.anonymous'
 def get_current_principal():
     """Get the principal from the current interaction.
 
-    :return: The current principle if there is an interaction, None otherwise.
+    :return: The current principal if there is an interaction, None otherwise.
     """
     interaction = queryInteraction()
     if interaction is None:
