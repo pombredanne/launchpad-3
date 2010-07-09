@@ -13,13 +13,11 @@ class MissingReviewError(Exception):
 
 
 class MissingBugsError(Exception):
-    """Raised when we try to land a mp without 'no-qa' tag and no linked
-    bugs."""
+    """Merge proposal has no linked bugs and no 'no-qa' tag."""
 
 
 class MissingBugsIncrError(Exception):
-    """Raised when we try to land a mp with the 'incr' tag and no linked
-    bugs."""
+    """Merge proposal has the 'incr' tag but no linked bugs."""
 
 
 class LaunchpadBranchLander:
@@ -163,28 +161,35 @@ class MergeProposal:
         return URI(scheme='bzr+ssh', host=host, path='/' + branch.unique_name)
 
     def get_commit_message(self, commit_text, testfix=False, no_qa=False,
-            incr=False):
+                           incr=False):
         """Get the Launchpad-style commit message for a merge proposal."""
+        clauses = []
+
         reviews = self.get_reviews()
         bugs = self.get_bugs()
-        no_qa, incr = check_qa_clauses(bugs, no_qa, incr)
 
-        if testfix:
-            testfix = '[testfix]'
-        else:
-            testfix = ''
+        clauses.append(get_reviewer_clause(reviews))
+        clauses.append(get_bugs_clause(bugs))
+        clauses.append(get_qa_clause(bugs, no_qa, incr))
+        clauses.append(get_testfix_clause(testfix))
 
-        return '%s%s%s%s%s %s' % (
-            testfix,
-            get_reviewer_clause(reviews),
-            get_bugs_clause(bugs),
-            no_qa,
-            incr,
-            commit_text)
+        return '%s %s' % (''.join(clauses), commit_text)
 
 
-def check_qa_clauses(bugs, no_qa=False, incr=False):
-    """Check the no-qa and incr clauses."""
+def get_testfix_clause(testfix=False):
+    """Get the testfix clause."""
+    testfix_clause = ''
+    if testfix: testfix_clause = '[testfix]'
+    return testfix_clause
+
+
+def get_qa_clause(bugs, no_qa=False, incr=False):
+    """Check the no-qa and incr options, getting the qa clause.
+
+    The qa clause will always be or no-qa, or incr or no tags, never both at
+    the same time.
+    """
+    qa_clause = ""
 
     if not bugs and not no_qa and not incr:
         raise MissingBugsError("Need bugs linked or --no-qa option.")
@@ -193,16 +198,10 @@ def check_qa_clauses(bugs, no_qa=False, incr=False):
         raise MissingBugsIncrError("--incr option requires bugs linked to "
             "the branch.")
 
-    if incr:
-        incr = '[incr]'
-    else:
-        incr = ''
-    if no_qa:
-        no_qa = '[no-qa]'
-    else:
-        no_qa = ''
+    if incr: qa_clause = '[incr]'
+    if no_qa: qa_clause = '[no-qa]'
 
-    return no_qa, incr
+    return qa_clause
 
 
 def get_email(person):
