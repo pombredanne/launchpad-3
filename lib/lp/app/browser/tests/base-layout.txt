@@ -72,9 +72,6 @@ Body preamble.
           main_side
           public
           yui-skin-sam">
-             <script type="text/javascript">
-             ...google-analytics.com...
-             </script>
         <div class="yui-d0">
     <BLANKLINE>
           <div id="locationbar">
@@ -265,9 +262,6 @@ Body class.
           searchless
           public
           yui-skin-sam">
-             <script type="text/javascript">
-             ...google-analytics.com...
-             </script>
         <div class="yui-d0">
     ...
 
@@ -370,9 +364,6 @@ Body.
           locationless
           public
           yui-skin-sam">
-             <script type="text/javascript">
-             ...google-analytics.com...
-             </script>
         <div class="yui-d0">
     ...
 
