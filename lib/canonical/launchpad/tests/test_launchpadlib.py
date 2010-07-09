@@ -16,15 +16,11 @@ class TestLaunchpadLib(TestCaseWithFactory):
     """Tests for the launchpadlib client for the REST API."""
 
     layer = AppServerLayer
-    launchpad = None
-    project = None
 
     def setUp(self):
         super(TestLaunchpadLib, self).setUp()
-        if self.launchpad is None:
-            self.launchpad = salgado_with_full_permissions.login()
-        if self.project is None:
-            self.project = self.launchpad.projects['firefox']
+        self.launchpad = salgado_with_full_permissions.login()
+        self.project = self.launchpad.projects['firefox']
 
     def verifyAttributes(self, element):
         """Verify that launchpadlib can parse the element's attributes."""
