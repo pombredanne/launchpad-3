@@ -135,7 +135,10 @@ class TestBranchView(TestCaseWithFactory):
 
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
-        branch = getUtility(IBranchLookup).get(28)
+        branch = self.factory.makeBranch()
+        branch.mirrorFailed(
+            "on quick brown fox the dog jumps to" *
+            BranchMirrorStatusView.MAXIMUM_STATUS_MESSAGE_LENGTH)
         branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertEqual(
             truncate_text(branch.mirror_status_message,
@@ -144,7 +147,7 @@ class TestBranchView(TestCaseWithFactory):
 
     def testMirrorStatusMessage(self):
         """mirror_status_message on the view is the same as on the branch."""
-        branch = getUtility(IBranchLookup).get(5)
+        branch = self.factory.makeBranch()
         branch.mirrorFailed("This is a short error message.")
         branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertTrue(
@@ -195,7 +198,7 @@ class TestBranchView(TestCaseWithFactory):
         # The merge links are shown on projects that have multiple branches.
         product = self.factory.makeProduct(name='super-awesome-project')
         branch1 = self.factory.makeAnyBranch(product=product)
-        branch2 = self.factory.makeAnyBranch(product=product)
+        self.factory.makeAnyBranch(product=product)
         view = BranchView(branch1, self.request)
         view.initialize()
         self.assertTrue(view.show_merge_links)
