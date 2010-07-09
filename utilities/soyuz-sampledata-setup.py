@@ -273,7 +273,7 @@ def create_sample_series(original_series, log):
         ('Jaunty Jackalope', SeriesStatus.SUPPORTED, '9.04'),
         ('Karmic Koala', SeriesStatus.SUPPORTED, '9.10'),
         ('Lucid Lynx', SeriesStatus.CURRENT, '10.04'),
-        ('Maverick Meercat', SeriesStatus.DEVELOPMENT, '10.10'),
+        ('Maverick Meerkat', SeriesStatus.DEVELOPMENT, '10.10'),
         ]
 
     parent = original_series

@@ -7,7 +7,7 @@
 
 country_code = 'us'
 apt_cacher_ng_host = 'stumpy'
-distroseries_name = 'lucid'
+distroseries_name = 'maverick'
 recipe_text = """# bzr-builder format 0.2 deb-version 0+{revno}
 http://bazaar.launchpad.dev/~ppa-user/+junk/wakeonlan"""
 
@@ -29,7 +29,7 @@ if status[0] != 'BuilderStatus.IDLE':
     print "Aborting due to non-IDLE builder."
     sys.exit(1)
 print proxy.build(
-    '1-2', 'sourcepackagerecipe', '1ef177161c3cb073e66bf1550931c6fbaa0a94b0',
+    '1-2', 'sourcepackagerecipe', 'foo',
     {}, {'author_name': u'Steve\u1234',
          'author_email': 'stevea@example.org',
          'suite': distroseries_name,
