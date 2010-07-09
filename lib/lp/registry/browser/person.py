@@ -2511,7 +2511,7 @@ class PersonKarmaView(LaunchpadView):
         if self.user == self.context:
             return 'Your Launchpad Karma'
         else:
-            return 'Launchpad Karma for %s' % self.context.displayname
+            return 'Launchpad Karma'
 
     @cachedproperty
     def has_karma(self):
