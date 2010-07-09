@@ -204,4 +204,7 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
+  <class class="canonical.launchpad.xmlrpc.faults.AccountSuspended">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
 </configure>
