@@ -25,18 +25,24 @@ class BugNotificationRecipientReason(RecipientReason):
         """Return a `BugNotificationRecipientReason` for a dupe subscriber.
         """
         header = "%s via Bug %s" % (
-            cls.makeRationale('Subscriber of Duplicate', person),
+            cls.makeRationale('Subscriber to Duplicate', person),
             duplicate_bug.id)
 
         reason = "%s %s" % (
             "You received this bug notification because "
             "%(lc_entity_is)s a direct subscriber",
-            "of duplicate bug %s." %  duplicate_bug.id)
+            "to duplicate bug %s." %  duplicate_bug.id)
         return cls(person, person, header, reason)
 
     @classmethod
     def forDirectSubscriber(cls, person):
-        """..."""
+        """Return a `BugNotificationRecipientReason` for a direct subscriber.
+        """
+        header = "Subscriber"
+        reason = (
+            "You received this bug notification because %(lc_entity_is)s "
+            "a direct subscriber to the bug.")
+        return cls(person, person, header, reason)
 
     @classmethod
     def forAssignee(cls, person):
