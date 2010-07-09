@@ -1,3 +1,10 @@
+launchpad-buildd (65) hardy-cat; urgency=low
+
+  * Drop preinst check, since human time does not scale across a large
+    rollout.  soyuz just needs to deal with upgrades mid-build better.
+
+ -- LaMont Jones <lamont@canonical.com>  Thu, 08 Jul 2010 05:04:02 -0600
+
 launchpad-buildd (64) hardy-cat; urgency=low
 
   * Pottery now strips quotes from variables.
