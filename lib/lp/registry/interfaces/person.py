@@ -976,12 +976,23 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         :param match_name: string optional project name to screen the results.
         """
 
-    def getCommercialSubscriptionVouchers():
+    def getAllCommercialSubscriptionVouchers(voucher_proxy=None):
         """Return all commercial subscription vouchers.
 
-        The vouchers are separated into two lists, unredeemed vouchers and
-        redeemed vouchers.
-        :return: tuple (unredeemed_vouchers, redeemed_vouchers)
+        All of a `Person`s vouchers are returned, regardless of redemption
+        status.  Even vouchers marked inactive are returned.
+        The result is a dictionary, indexed by the three
+        voucher statuses.
+        :return: dict
+        """
+
+    def getRedeemableCommercialSubscriptionVouchers(voucher_proxy=None):
+        """Return the set of redeemable vouchers.
+
+        The `Person`s vouchers are returned if they are unredeemed and active.
+
+        The result is a list of vouchers.
+        :return: list
         """
 
     def assignKarma(action_name, product=None, distribution=None,

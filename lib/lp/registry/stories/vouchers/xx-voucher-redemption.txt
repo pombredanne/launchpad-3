@@ -61,7 +61,7 @@ Foo Bar has no vouchers.  Accessing the +vouchers page results in a message.
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
     Redeem Vouchers for Commercial Subscriptions
-    ...Sample Person does not have any unredeemed vouchers available.
+    ...Sample Person does not have any redeemable vouchers available.
     Here are the steps to obtain a commercial subscription:...
 
 
@@ -150,7 +150,7 @@ error message instead.
 
 Set the canned fault.
 
-    >>> from lp.registry.tests.salesforce import (
+    >>> from lp.services.salesforce.tests.proxy import (
     ...     SalesforceXMLRPCTestTransport)
     >>> SalesforceXMLRPCTestTransport.forced_fault = (
     ...     'redeemVoucher', 'NotFound','Something was not found.')
