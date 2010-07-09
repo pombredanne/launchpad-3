@@ -5,17 +5,27 @@
 # pylint: disable-msg=W0602,W0603
 __metaclass__ = type
 
+__all__ = [
+    'login',
+    'login_as',
+    'login_celebrity',
+    'login_person',
+    'login_team',
+    'logout',
+    'is_logged_in',
+    ]
+
+import random
+
+from zope.component import getUtility
 from zope.security.management import endInteraction
+
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import (
     setupInteractionByEmail, setupInteractionForPerson)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 
-__all__ = [
-    'login',
-    'login_person',
-    'logout',
-    'is_logged_in']
 
 
 _logged_in = False
@@ -63,6 +73,36 @@ def login_person(person, participation=None):
     """Login the person with their preferred email."""
     participation = _test_login_impl(participation)
     setupInteractionForPerson(person, participation)
+
+
+def get_arbitrary_team_member(team):
+    """Get an arbitrary member of 'team'.
+
+    :param team: An `ITeam`.
+    """
+    return random.choice(team.allmembers)
+
+
+def login_team(team, participation=None):
+    """Login as a member of 'team'."""
+    person = get_arbitrary_team_member(team)
+    return login_person(person, participation=participation)
+
+
+def login_as(person_or_team, participation=None):
+    """Login as a person or a team."""
+    if person_or_team.is_team:
+        login = login_team
+    else:
+        login = login_person
+    return login(person_or_team, participation=participation)
+
+
+def login_celebrity(celebrity_name, participation=None):
+    """Login as a celebrity."""
+    celebs = getUtility(ILaunchpadCelebrities)
+    celeb = getattr(celebs, celebrity_name)
+    return login_as(celeb, participation=participation)
 
 
 def logout():
