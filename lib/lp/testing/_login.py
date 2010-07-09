@@ -76,6 +76,7 @@ def login_person(person, participation=None):
             raise ValueError("Got team, expected person: %r" % (person,))
     participation = _test_login_impl(participation)
     setupInteractionForPerson(person, participation)
+    return person
 
 
 def _get_arbitrary_team_member(team):
@@ -118,7 +119,9 @@ def login_as(person_or_team, participation=None):
 def login_celebrity(celebrity_name, participation=None):
     """Login as a celebrity."""
     celebs = getUtility(ILaunchpadCelebrities)
-    celeb = getattr(celebs, celebrity_name)
+    celeb = getattr(celebs, celebrity_name, None)
+    if celeb is None:
+        raise ValueError("No such celebrity: %r" % (celebrity_name,))
     return login_as(celeb, participation=participation)
 
 

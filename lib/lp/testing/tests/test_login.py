@@ -10,12 +10,13 @@ import unittest
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
-    ANONYMOUS, is_logged_in, login, login_as, login_person, login_team,
-    logout)
+    ANONYMOUS, is_logged_in, login, login_as, login_celebrity, login_person,
+    login_team, logout)
 from lp.testing import TestCaseWithFactory
 
 
@@ -122,6 +123,12 @@ class TestLoginHelpers(TestCaseWithFactory):
         e = self.assertRaises(ValueError, login_team, person)
         self.assertEqual(str(e), "Got person, expected team: %r" % (person,))
 
+    def test_login_team_returns_logged_in_person(self):
+        # login_team returns the logged-in person.
+        team = self.factory.makeTeam()
+        person = login_team(team)
+        self.assertLoggedIn(person)
+
     def test_login_as_person(self):
         # login_as() logs in as a person if it's given a person.
         person = self.factory.makePerson()
@@ -145,8 +152,17 @@ class TestLoginHelpers(TestCaseWithFactory):
         login_as(None)
         self.assertLoggedIn(ANONYMOUS)
 
-    # tests for login_celebrity
-    # tests for participation -- although not sure what it does
+    def test_login_celebrity(self):
+        # login_celebrity logs in a celebrity.
+        login_celebrity('vcs_imports')
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        person = self.getLoggedInPerson()
+        self.assertTrue(person.inTeam, vcs_imports)
+
+    def test_login_nonexistent_celebrity(self):
+        # login_celebrity ... with a non-existent celebrity
+        e = self.assertRaises(ValueError, login_celebrity, 'nonexistent')
+        self.assertEqual(str(e), "No such celebrity: 'nonexistent'")
 
 
 def test_suite():

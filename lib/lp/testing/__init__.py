@@ -20,6 +20,7 @@ __all__ = [
     'launchpadlib_credentials_for',
     'login',
     'login_as',
+    'login_celebrity',
     'login_person',
     'login_team',
     'logout',
@@ -94,7 +95,8 @@ from lp.registry.interfaces.packaging import IPackagingUtil
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
-    is_logged_in, login, login_as, login_person, login_team, logout)
+    is_logged_in, login, login_as, login_celebrity, login_person, login_team,
+    logout)
 # canonical.launchpad.ftests expects test_tales to be imported from here.
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
