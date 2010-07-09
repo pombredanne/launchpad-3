@@ -391,6 +391,7 @@ class TestPersonRelatedSoftware(TestCaseWithFactory):
     def test_view_helper_attributes(self):
         # Verify view helper attributes.
         self.assertEqual('Related software', self.view.page_title)
+        self.assertEqual('summary_list_size', self.view._max_results_key)
         self.assertEqual(
             config.launchpad.summary_list_size,
             self.view.max_results_to_display)

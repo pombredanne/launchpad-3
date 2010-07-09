@@ -5106,8 +5106,11 @@ class SourcePackageReleaseWithStats:
 class PersonRelatedSoftwareView(LaunchpadView):
     """View for +related-software."""
     implements(IPersonRelatedSoftwareMenu)
+    _max_results_key = 'summary_list_size'
 
-    max_results_to_display = config.launchpad.summary_list_size
+    @property
+    def max_results_to_display(self):
+        return config.launchpad[self._max_results_key]
 
     @property
     def page_title(self):
@@ -5330,7 +5333,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
 class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
     """View for +maintained-packages."""
-    max_results_to_display = config.launchpad.default_batch_size
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5344,7 +5347,7 @@ class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
 
 class PersonUploadedPackagesView(PersonRelatedSoftwareView):
     """View for +uploaded-packages."""
-    max_results_to_display = config.launchpad.default_batch_size
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5358,7 +5361,7 @@ class PersonUploadedPackagesView(PersonRelatedSoftwareView):
 
 class PersonPPAPackagesView(PersonRelatedSoftwareView):
     """View for +ppa-packages."""
-    max_results_to_display = config.launchpad.default_batch_size
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5379,7 +5382,7 @@ class PersonPPAPackagesView(PersonRelatedSoftwareView):
 
 class PersonRelatedProjectsView(PersonRelatedSoftwareView):
     """View for +related-projects."""
-    max_results_to_display = config.launchpad.default_batch_size
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
