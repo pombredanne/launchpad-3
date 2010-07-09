@@ -5342,7 +5342,7 @@ class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "Software maintained by " + self.context.displayname
+        return "Maintained Packages"
 
 
 class PersonUploadedPackagesView(PersonRelatedSoftwareView):
@@ -5356,7 +5356,7 @@ class PersonUploadedPackagesView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "Software uploaded by " + self.context.displayname
+        return "Uploaded packages"
 
 
 class PersonPPAPackagesView(PersonRelatedSoftwareView):
@@ -5377,7 +5377,7 @@ class PersonPPAPackagesView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "PPA packages related to " + self.context.displayname
+        return "PPA packages"
 
 
 class PersonRelatedProjectsView(PersonRelatedSoftwareView):
@@ -5392,7 +5392,7 @@ class PersonRelatedProjectsView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "Projects related to " + self.context.displayname
+        return "Related projects"
 
 
 class PersonOAuthTokensView(LaunchpadView):

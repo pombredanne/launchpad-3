@@ -360,13 +360,13 @@ class TestPersonParticipationView(TestCaseWithFactory):
         self.assertEqual(True, self.view.has_participations)
 
 
-class TestPersonRelatedSoftware(TestCaseWithFactory):
+class TestPersonRelatedSoftwareView(TestCaseWithFactory):
     """Test the related software view."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestPersonRelatedSoftware, self).setUp()
+        super(TestPersonRelatedSoftwareView, self).setUp()
         self.user = self.factory.makePerson()
         self.factory.makeGPGKey(self.user)
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -425,6 +425,82 @@ class TestPersonRelatedSoftware(TestCaseWithFactory):
         count = len(
             self.view.latest_uploaded_but_not_maintained_packages_with_stats)
         self.assertEqual(self.view.max_results_to_display, count)
+
+
+class TestPersonMaintainedPackagesView(TestCaseWithFactory):
+    """Test the maintained packages view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonMaintainedPackagesView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.view = create_initialized_view(self.user, '+maintained-packages')
+
+    def test_view_helper_attributes(self):
+        # Verify view helper attributes.
+        self.assertEqual('Maintained Packages', self.view.page_title)
+        self.assertEqual('default_batch_size', self.view._max_results_key)
+        self.assertEqual(
+            config.launchpad.default_batch_size,
+            self.view.max_results_to_display)
+
+
+class TestPersonUploadedPackagesView(TestCaseWithFactory):
+    """Test the maintained packages view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonUploadedPackagesView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.view = create_initialized_view(self.user, '+uploaded-packages')
+
+    def test_view_helper_attributes(self):
+        # Verify view helper attributes.
+        self.assertEqual('Uploaded packages', self.view.page_title)
+        self.assertEqual('default_batch_size', self.view._max_results_key)
+        self.assertEqual(
+            config.launchpad.default_batch_size,
+            self.view.max_results_to_display)
+
+
+class TestPersonPPAPackagesView(TestCaseWithFactory):
+    """Test the maintained packages view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonPPAPackagesView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.view = create_initialized_view(self.user, '+ppa-packages')
+
+    def test_view_helper_attributes(self):
+        # Verify view helper attributes.
+        self.assertEqual('PPA packages', self.view.page_title)
+        self.assertEqual('default_batch_size', self.view._max_results_key)
+        self.assertEqual(
+            config.launchpad.default_batch_size,
+            self.view.max_results_to_display)
+
+
+class TestPersonRelatedProjectsView(TestCaseWithFactory):
+    """Test the maintained packages view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonRelatedProjectsView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.view = create_initialized_view(self.user, '+related-projects')
+
+    def test_view_helper_attributes(self):
+        # Verify view helper attributes.
+        self.assertEqual('Related projects', self.view.page_title)
+        self.assertEqual('default_batch_size', self.view._max_results_key)
+        self.assertEqual(
+            config.launchpad.default_batch_size,
+            self.view.max_results_to_display)
 
 
 class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
