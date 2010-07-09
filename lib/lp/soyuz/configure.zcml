@@ -405,7 +405,8 @@
             set_attributes="description displayname publish status"/>
         <require
             permission="launchpad.Commercial"
-            set_attributes="authorized_size buildd_secret arm_builds_allowed
+            set_attributes="authorized_size buildd_secret
+                            enabled_restricted_families
                             commercial external_dependencies private
                             require_virtualized relative_build_score "/>
         <require

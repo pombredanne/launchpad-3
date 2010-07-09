@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough)
+    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
@@ -52,6 +52,13 @@ from lp.soyuz.interfaces.archive import (
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
+
+RECIPE_BETA_MESSAGE = structured(
+    'We\'re still working on source package recipes. '
+    'We would love for you to try them out, and if you have '
+    'any issues, please '
+    '<a href="http://bugs.edge.launchpad.net/launchpad-code">'
+    'file a bug</a>.  We\'ll be happy to fix any problems you encounter.')
 
 
 class IRecipesForPerson(Interface):
@@ -142,6 +149,12 @@ class SourcePackageRecipeContextMenu(ContextMenu):
 
 class SourcePackageRecipeView(LaunchpadView):
     """Default view of a SourcePackageRecipe."""
+
+    def initialize(self):
+        # XXX: rockstar: This should be removed when source package recipes are
+        # put into production. spec=sourcepackagerecipes
+        super(SourcePackageRecipeView, self).initialize()
+        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
 
     @property
     def page_title(self):
@@ -359,6 +372,12 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
 
     schema = ISourcePackageAddEditSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
+
+    def initialize(self):
+        # XXX: rockstar: This should be removed when source package recipes are
+        # put into production. spec=sourcepackagerecipes
+        super(SourcePackageRecipeAddView, self).initialize()
+        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
 
     @property
     def initial_values(self):

@@ -22,8 +22,8 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import (IArchiveSet, ArchivePurpose,
-    ArchiveStatus, CannotSwitchPrivacy, InvalidPocketForPartnerArchive,
-    InvalidPocketForPPA)
+    ArchiveStatus, CannotRestrictArchitectures, CannotSwitchPrivacy,
+    InvalidPocketForPartnerArchive, InvalidPocketForPPA)
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -739,56 +739,76 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.assertCount(3, self.archive, self.bpr_2, day, self.australia)
 
 
-class TestARMBuildsAllowed(TestCaseWithFactory):
-    """Ensure that ARM builds can be allowed and disallowed correctly."""
+class TestEnabledRestrictedBuilds(TestCaseWithFactory):
+    """Ensure that restricted architecture family builds can be allowed and
+    disallowed correctly."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Setup an archive with relevant publications."""
-        super(TestARMBuildsAllowed, self).setUp()
+        super(TestEnabledRestrictedBuilds, self).setUp()
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
         self.archive = self.factory.makeArchive()
         self.archive_arch_set = getUtility(IArchiveArchSet)
         self.arm = getUtility(IProcessorFamilySet).getByName('arm')
 
+    def test_main_archive_can_use_restricted(self):
+        # Main archives for distributions can always use restricted 
+        # architectures.
+        distro = self.factory.makeDistribution()
+        self.assertContentEqual([self.arm],
+            distro.main_archive.enabled_restricted_families)
+
+    def test_main_archive_can_not_be_restricted(self):
+        # A main archive can not be restricted to certain architectures.
+        distro = self.factory.makeDistribution()
+        # Restricting to all restricted architectures is fine
+        distro.main_archive.enabled_restricted_families = [self.arm]
+        def restrict():
+            distro.main_archive.enabled_restricted_families = []
+        self.assertRaises(CannotRestrictArchitectures, restrict)
+
     def test_default(self):
-        """By default, ARM builds are not allowed."""
+        """By default, ARM builds are not allowed as ARM is restricted."""
         self.assertEquals(0,
             self.archive_arch_set.getByArchive(
                 self.archive, self.arm).count())
-        self.assertFalse(self.archive.arm_builds_allowed)
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
 
     def test_get_uses_archivearch(self):
         """Adding an entry to ArchiveArch for ARM and an archive will
-        enable arm_builds_allowed for that archive."""
-        self.assertFalse(self.archive.arm_builds_allowed)
+        enable enabled_restricted_families for arm for that archive."""
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
         self.archive_arch_set.new(self.archive, self.arm)
-        self.assertTrue(self.archive.arm_builds_allowed)
+        self.assertEquals([self.arm],
+                list(self.archive.enabled_restricted_families))
 
-    def test_get_uses_arm_only(self):
-        """Adding an entry to ArchiveArch for something other than ARM
-        does not enable arm_builds_allowed for that archive."""
-        self.assertFalse(self.archive.arm_builds_allowed)
+    def test_get_returns_restricted_only(self):
+        """Adding an entry to ArchiveArch for something that is not
+        restricted does not make it show up in enabled_restricted_families.
+        """
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
         self.archive_arch_set.new(self.archive,
             getUtility(IProcessorFamilySet).getByName('amd64'))
-        self.assertFalse(self.archive.arm_builds_allowed)
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
 
     def test_set(self):
         """The property remembers its value correctly and sets ArchiveArch."""
-        self.archive.arm_builds_allowed = True
+        self.archive.enabled_restricted_families = [self.arm]
         allowed_restricted_families = self.archive_arch_set.getByArchive(
             self.archive, self.arm)
         self.assertEquals(1, allowed_restricted_families.count())
         self.assertEquals(self.arm,
             allowed_restricted_families[0].processorfamily)
-        self.assertTrue(self.archive.arm_builds_allowed)
-        self.archive.arm_builds_allowed = False
+        self.assertEquals([self.arm], self.archive.enabled_restricted_families)
+        self.archive.enabled_restricted_families = []
         self.assertEquals(0,
             self.archive_arch_set.getByArchive(
                 self.archive, self.arm).count())
-        self.assertFalse(self.archive.arm_builds_allowed)
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
+
 
 class TestArchiveTokens(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer

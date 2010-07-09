@@ -18,6 +18,7 @@ __all__ = [
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',
+    'CannotRestrictArchitectures',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
     'DistroSeriesNotFound',
@@ -56,6 +57,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.processor import IProcessorFamily
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
@@ -139,6 +141,10 @@ class NoSuchPPA(NameLookupFailed):
 class VersionRequiresName(Exception):
     """Raised on some queries when version is specified but name is not."""
     webservice_error(400) # Bad request.
+
+
+class CannotRestrictArchitectures(Exception):
+    """The architectures for this archive can not be restricted."""
 
 
 class CannotUploadToArchive(Exception):
@@ -368,8 +374,11 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!"))
 
-    arm_builds_allowed = Bool(
-        title=_("Allow ARM builds for this archive"))
+    enabled_restricted_families = CollectionField(
+            title=_("Restricted architecture families this archive can build "
+                    "on"),
+            value_type=Reference(schema=IProcessorFamily),
+            readonly=False)
 
     commercial = exported(
         Bool(
@@ -1556,6 +1565,14 @@ class IArchiveSet(Interface):
 
     def getPrivatePPAs():
         """Return a result set containing all private PPAs."""
+
+    def getCommercialPPAs():
+        """Return a result set containing all commercial PPAs.
+
+        Commercial PPAs are private, but explicitly flagged up as commercial
+        so that they are discoverable by people who wish to buy items
+        from them.
+        """
 
     def getPublicationsInArchives(source_package_name, archive_list,
                                   distribution):
