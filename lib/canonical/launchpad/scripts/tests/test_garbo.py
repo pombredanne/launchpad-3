@@ -169,18 +169,24 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnless(earliest >= now - 24*60*60, 'Still have old nonces')
 
     def test_CodeImportResultPruner(self):
-        self.fail("This assumes that there is a code import in the database")
         now = datetime.utcnow().replace(tzinfo=UTC)
         store = IMasterStore(CodeImportResult)
 
         results_to_keep_count = (
             config.codeimport.consecutive_failure_limit - 1)
 
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        code_import_id = self.factory.makeCodeImport().id
+        machine_id = self.factory.makeCodeImportMachine().id
+        requester_id = self.factory.makePerson().id
+        transaction.commit()
+
         def new_code_import_result(timestamp):
             LaunchpadZopelessLayer.switchDbUser('testadmin')
             CodeImportResult(
                 date_created=timestamp,
-                code_importID=1, machineID=1, requesting_userID=1,
+                code_importID=code_import_id, machineID=machine_id,
+                requesting_userID=requester_id,
                 status=CodeImportResultStatus.FAILURE,
                 date_job_started=timestamp)
             transaction.commit()
