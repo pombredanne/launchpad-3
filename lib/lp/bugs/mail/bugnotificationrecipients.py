@@ -21,6 +21,13 @@ class BugNotificationRecipientReason(RecipientReason):
     """A `RecipientReason` subsclass specifically for `BugNotification`s."""
 
     @classmethod
+    def _getReasonTemplate(cls, reason_string):
+        """Return a reason template to pass to __init__()."""
+        reason_base = (
+            "You received this bug notification because %(lc_entity_is)s")
+        return "%s %s." % (reason_base, reason_string)
+
+    @classmethod
     def forDupeSubscriber(cls, person, duplicate_bug):
         """Return a `BugNotificationRecipientReason` for a dupe subscriber.
         """
@@ -28,25 +35,24 @@ class BugNotificationRecipientReason(RecipientReason):
             cls.makeRationale('Subscriber to Duplicate', person),
             duplicate_bug.id)
 
-        reason = "%s %s" % (
-            "You received this bug notification because "
-            "%(lc_entity_is)s a direct subscriber",
-            "to duplicate bug %s." %  duplicate_bug.id)
+        reason = cls._getReasonTemplate(
+            "a direct subscriber to duplicate bug %s" %  duplicate_bug.id)
         return cls(person, person, header, reason)
 
     @classmethod
     def forDirectSubscriber(cls, person):
         """Return a `BugNotificationRecipientReason` for a direct subscriber.
         """
-        header = "Subscriber"
-        reason = (
-            "You received this bug notification because %(lc_entity_is)s "
-            "a direct subscriber to the bug.")
+        header = cls.makeRationale("Subscriber", person)
+        reason = cls._getReasonTemplate("a direct subscriber to the bug")
         return cls(person, person, header, reason)
 
     @classmethod
     def forAssignee(cls, person):
-        """..."""
+        """Return a `BugNotificationRecipientReason` for a bug assignee."""
+        header = cls.makeRationale("Assignee", person)
+        reason = cls._getReasonTemplate("a bug assignee")
+        return cls(person, person, header, reason)
 
     @classmethod
     def forDistroBugSupervisor(cls, person, distro):

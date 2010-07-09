@@ -30,9 +30,6 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
         self.assertEqual(expected_reason, recipient_reason.getReason())
 
     def test_forDupeSubscriber(self):
-        # BugNotificationRecipientReason.forDupeSubscriber() will return
-        # a BugNotificationRecipientReason with headers appropriate for
-        # a subscriber via a duplicate bug.
         duplicate_bug = self.factory.makeBug()
         reason = BugNotificationRecipientReason.forDupeSubscriber(
             self.person, duplicate_bug)
@@ -46,9 +43,6 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
             reason, expected_reason, expected_header)
 
     def test_forDupeSubscriber_for_team(self):
-        # BugNotificationRecipientReason.forDupeSubscriber() will return
-        # a BugNotificationRecipientReason with headers appropriate for
-        # a subscriber via a duplicate bug.
         duplicate_bug = self.factory.makeBug()
         reason = BugNotificationRecipientReason.forDupeSubscriber(
             self.team, duplicate_bug)
@@ -63,9 +57,6 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
             reason, expected_reason, expected_header)
 
     def test_forDirectSubscriber(self):
-        # BugNotificationRecipientReason.forDupeSubscriber() will return
-        # a BugNotificationRecipientReason with a header and rason
-        # appropriate for a direct bug subscriber.
         reason = BugNotificationRecipientReason.forDirectSubscriber(
             self.person)
 
@@ -77,18 +68,38 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
             reason, expected_reason, expected_header)
 
     def test_forDirectSubscriber_for_team(self):
-        # BugNotificationRecipientReason.forDupeSubscriber() will return
-        # a BugNotificationRecipientReason with a header and rason
-        # appropriate for a direct bug subscriber.
         reason = BugNotificationRecipientReason.forDirectSubscriber(
             self.team)
 
-        expected_header = "Subscriber"
+        expected_header = "Subscriber @%s" % self.team.name
         expected_reason = (
             "You received this bug notification because your team %s is "
             "a direct subscriber to the bug." % self.team.displayname)
         self._assertReasonAndHeaderAreCorrect(
             reason, expected_reason, expected_header)
+
+    def test_forAssignee(self):
+        reason = BugNotificationRecipientReason.forAssignee(self.person)
+
+        expected_header = "Assignee"
+        expected_reason = (
+            "You received this bug notification because you are a bug "
+            "assignee.")
+
+        self._assertReasonAndHeaderAreCorrect(
+            reason, expected_reason, expected_header)
+
+    def test_forAssignee_for_team(self):
+        reason = BugNotificationRecipientReason.forAssignee(self.team)
+
+        expected_header = "Assignee @%s" % self.team.name
+        expected_reason = (
+            "You received this bug notification because your team %s is "
+            "a bug assignee." % self.team.displayname)
+
+        self._assertReasonAndHeaderAreCorrect(
+            reason, expected_reason, expected_header)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
