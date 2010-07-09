@@ -894,36 +894,33 @@ class Person(
 
     def getOwnedOrDrivenPillars(self):
         """See `IPerson`."""
-        query = """
-            SELECT name
-            FROM product
-            WHERE
-                driver = %(person)s
-                OR owner = %(person)s
-            UNION
-            SELECT name
-            FROM project
-            WHERE
-                driver = %(person)s
-                OR owner = %(person)s
-            UNION
-            SELECT name
-            FROM distribution
-            WHERE
-                driver = %(person)s
-                OR owner = %(person)s
-            """ % sqlvalues(person=self)
-        cur = cursor()
-        cur.execute(query)
-        names = [sqlvalues(str(name)) for [name] in cur.fetchall()]
-        if not names:
-            return PillarName.select("1=2")
-        quoted_names = ','.join([name for [name] in names])
-        return PillarName.select(
-            "PillarName.name IN (%s) AND PillarName.active IS TRUE" %
-            quoted_names, prejoins=['distribution', 'project', 'product'],
-            orderBy=['PillarName.distribution', 'PillarName.project',
-                     'PillarName.product'])
+        find_spec = (PillarName, SQL('kind'), SQL('displayname'))
+        origin = SQL("""
+            PillarName
+            JOIN (
+                SELECT name, 3 as kind, displayname
+                FROM product
+                WHERE
+                    driver = %(person)s
+                    OR owner = %(person)s
+                UNION
+                SELECT name, 2 as kind, displayname
+                FROM project
+                WHERE
+                    driver = %(person)s
+                    OR owner = %(person)s
+                UNION
+                SELECT name, 1 as kind, displayname
+                FROM distribution
+                WHERE
+                    driver = %(person)s
+                    OR owner = %(person)s
+                ) _pillar
+                ON PillarName.name = _pillar.name
+            """ % sqlvalues(person=self))
+        results = IStore(self).using(origin).find(find_spec)
+        results = results.order_by('kind', 'displayname')
+        return [pillar_name for pillar_name, kind, displayname in results]
 
     def getOwnedProjects(self, match_name=None):
         """See `IPerson`."""

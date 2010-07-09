@@ -61,8 +61,8 @@ the config.launchpad.default_batch_size threshold.
     ...     anon_browser.contents, 'related-projects')
     >>> print extract_text(related_projects)
     Name                            Bugs    Blueprints  Questions
-    Redhat Advanced Server          0       0           0
     Debian GNU/Linux                3       0           0
     The Gentoo Linux                0       0           0
     Kubuntu - Free KDE-based Linux  0       4           0
+    Redhat Advanced Server          0       0           0
     Apache                          1       0           0
