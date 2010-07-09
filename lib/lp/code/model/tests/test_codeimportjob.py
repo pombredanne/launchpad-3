@@ -63,6 +63,10 @@ class TestCodeImportJobSet(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestCodeImportJobSet, self).setUp()
+        login_for_code_imports()
+
     def test_getByIdExisting(self):
         # CodeImportJobSet.getById retrieves a CodeImportJob by database id.
         made_job = self.factory.makeCodeImportJob()
