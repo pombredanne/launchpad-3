@@ -5107,11 +5107,11 @@ class PersonRelatedSoftwareView(LaunchpadView):
     """View for +related-software."""
     implements(IPersonRelatedSoftwareMenu)
 
-    max_results_to_display = config.launchpad.default_batch_size
+    max_results_to_display = config.launchpad.summary_list_size
 
     @property
     def page_title(self):
-        return "Software related to " + self.context.displayname
+        return 'Related software'
 
     @cachedproperty
     def related_projects(self):
@@ -5128,8 +5128,6 @@ class PersonRelatedSoftwareView(LaunchpadView):
         products = [pillarname.pillar for pillarname in pillarnames
                     if IProduct.providedBy(pillarname.pillar)]
         bugtask_set = getUtility(IBugTaskSet)
-        # XXX sinzui 2010-07-09: this is 1367.0 ms. Do we really need this?
-        # Can this be an ajax query?
         product_bugtask_counts = bugtask_set.getOpenBugTasksPerProduct(
             user, products)
         for pillarname in pillarnames:
@@ -5228,7 +5226,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return results, header_message
 
     @property
-    def get_latest_uploaded_ppa_packages_with_stats(self):
+    def latest_uploaded_ppa_packages_with_stats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
 
         Results are filtered according to the permission of the requesting
@@ -5240,7 +5238,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return self.filterPPAPackageList(results)
 
     @property
-    def get_latest_maintained_packages_with_stats(self):
+    def latest_maintained_packages_with_stats(self):
         """Return the latest maintained packages, including stats."""
         packages = self.context.getLatestMaintainedPackages()
         results, header_message = self._getDecoratedPackagesSummary(packages)
@@ -5248,7 +5246,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return results
 
     @property
-    def get_latest_uploaded_but_not_maintained_packages_with_stats(self):
+    def latest_uploaded_but_not_maintained_packages_with_stats(self):
         """Return the latest uploaded packages, including stats.
 
         Don't include packages that are maintained by the user.
@@ -5280,8 +5278,6 @@ class PersonRelatedSoftwareView(LaunchpadView):
         for package in package_releases:
             builds_by_package[package] = []
             needs_build_by_package[package] = False
-        # XXX sinzui 2010-07-09: this causes 607 times repeat queries for
-        # PackageBuild and BuildFarmJob.builder each.
         for build in all_builds:
             if build.status == BuildStatus.FAILEDTOBUILD:
                 builds_by_package[build.source_package_release].append(build)
@@ -5299,8 +5295,6 @@ class PersonRelatedSoftwareView(LaunchpadView):
         distro_packages = [
             package_release.distrosourcepackage
             for package_release in package_releases]
-        # XXX sinzui 2010-07-09: dsp.bug_count has the daily number and it
-        # may be faster than calculatinging everytime.
         package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
             self.user, distro_packages)
         open_bugs = {}
@@ -5336,6 +5330,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
 class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
     """View for +maintained-packages."""
+    max_results_to_display = config.launchpad.default_batch_size
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5349,6 +5344,7 @@ class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
 
 class PersonUploadedPackagesView(PersonRelatedSoftwareView):
     """View for +uploaded-packages."""
+    max_results_to_display = config.launchpad.default_batch_size
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5362,6 +5358,7 @@ class PersonUploadedPackagesView(PersonRelatedSoftwareView):
 
 class PersonPPAPackagesView(PersonRelatedSoftwareView):
     """View for +ppa-packages."""
+    max_results_to_display = config.launchpad.default_batch_size
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5382,6 +5379,7 @@ class PersonPPAPackagesView(PersonRelatedSoftwareView):
 
 class PersonRelatedProjectsView(PersonRelatedSoftwareView):
     """View for +related-projects."""
+    max_results_to_display = config.launchpad.default_batch_size
 
     def initialize(self):
         """Set up the batch navigation."""
