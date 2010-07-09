@@ -661,7 +661,8 @@
                     users_affected_with_dupes
                     bug_messages
                     isUserAffected
-                    getHWSubmissions"/>
+                    getHWSubmissions
+                    isExpirable"/>
             <require
                 permission="launchpad.Edit"
                 attributes="

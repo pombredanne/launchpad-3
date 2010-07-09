@@ -72,7 +72,7 @@
 
       <p
          id="can-expire"
-         tal:condition="context/bug/can_expire"
+         tal:condition="python: context.bug.isExpirable(days_old=0)"
          >
         <tal:expiration_message replace="view/expiration_message" />
         (<a href="https://help.launchpad.net/BugExpiry">find out why</a>)
