@@ -36,9 +36,6 @@ __all__ = [
     'test_tales',
     'time_counter',
     'unlink_source_packages',
-    # XXX: This really shouldn't be exported from here. People should import
-    # it from Zope.
-    'verifyObject',
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
