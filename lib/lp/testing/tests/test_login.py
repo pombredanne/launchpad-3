@@ -91,6 +91,12 @@ class TestLoginHelpers(TestCaseWithFactory):
         login_person(b)
         self.assertLoggedIn(b)
 
+    def test_login_person_with_team(self):
+        # Calling login_person with a team raises a nice error.
+        team = self.factory.makeTeam()
+        e = self.assertRaises(ValueError, login_person, team)
+        self.assertEqual(str(e), "Got team, expected person: %r" % (team,))
+
     def test_login_with_email(self):
         # login() logs a person in by email.
         person = self.factory.makePerson()
@@ -108,6 +114,13 @@ class TestLoginHelpers(TestCaseWithFactory):
         login_team(team)
         person = self.getLoggedInPerson()
         self.assertTrue(person.inTeam(team))
+
+    def test_login_team_with_person(self):
+        # Calling login_team() with a person instead of a team raises a nice
+        # error.
+        person = self.factory.makePerson()
+        e = self.assertRaises(ValueError, login_team, person)
+        self.assertEqual(str(e), "Got person, expected team: %r" % (person,))
 
     def test_login_as_person(self):
         # login_as() logs in as a person if it's given a person.

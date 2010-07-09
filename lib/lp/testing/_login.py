@@ -69,6 +69,11 @@ def login(email, participation=None):
 
 def login_person(person, participation=None):
     """Login the person with their preferred email."""
+    if person is not None:
+        # The login will fail even without this check, but this gives us a
+        # nice error message, which can save time when debugging.
+        if person.is_team:
+            raise ValueError("Got team, expected person: %r" % (person,))
     participation = _test_login_impl(participation)
     setupInteractionForPerson(person, participation)
 
@@ -83,6 +88,11 @@ def _get_arbitrary_team_member(team):
 
 def login_team(team, participation=None):
     """Login as a member of 'team'."""
+    # This check isn't strictly necessary (it depends on the implementation of
+    # _get_arbitrary_team_member), but this gives us a nice error message,
+    # which can save time when debugging.
+    if not team.is_team:
+        raise ValueError("Got person, expected team: %r" % (team,))
     person = _get_arbitrary_team_member(team)
     return login_person(person, participation=participation)
 
