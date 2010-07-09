@@ -26,14 +26,21 @@
       <allow attributes="browserDefault __call__" />
     </class>
 
-    <!-- XXX: Must also not use this for ++apidoc++
     <adapter
         for="zope.interface.Interface
              zope.publisher.interfaces.http.IHTTPRequest"
         provides="zope.traversing.browser.interfaces.IAbsoluteURL"
         factory="canonical.launchpad.webapp.publisher.CanonicalAbsoluteURL"
         />
-    -->
+
+    <!-- Use the default IAbsoluteURL adapter for requests on the apidoc
+         vhost. -->
+    <adapter
+        for="zope.interface.Interface
+             canonical.launchpad.webapp.servers.APIDocBrowserRequest"
+        provides="zope.traversing.browser.interfaces.IAbsoluteURL"
+        factory="zope.traversing.browser.AbsoluteURL"
+        />
 
     <adapter
         for="zope.publisher.interfaces.http.IHTTPRequest"
@@ -671,14 +678,13 @@
         permission="zope.Public"
         class="canonical.launchpad.webapp.launchbag.LaunchBagView"
         />
+ 
+    <utility
+        component="canonical.launchpad.systemhomes.apidocroot"
+        provides="canonical.launchpad.webapp.interfaces.IAPIDocRoot" />
 
     <!-- Resource unnamed view, allowing Z3 preferred spelling
         /@@/launchpad-icon-small to access the images directory -->
-    <!-- XXX: Must somehow disable this for the apidoc to work because
-         otherwise zope will try to find all apidoc resources (e.g.
-         @@apidoc.css) within Launchpad's icing folder. Just disabling this
-         doesn't seem to work, though, as zope will try to get the resources
-         from RootObject -->
     <browser:page
         name=""
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"

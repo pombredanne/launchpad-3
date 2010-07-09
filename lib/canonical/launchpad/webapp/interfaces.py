@@ -65,6 +65,10 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
     """
 
 
+class IAPIDocRoot(IContainmentRoot):
+    """Marker interface for the root object of the apidoc vhost."""
+
+
 class ILaunchpadContainer(Interface):
     """Marker interface for objects used as the context of something."""
 

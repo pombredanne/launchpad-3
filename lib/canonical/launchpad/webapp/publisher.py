@@ -553,9 +553,6 @@ def nearest(obj, *interfaces):
 
 class RootObject:
     implements(ILaunchpadApplication, ILaunchpadRoot)
-    # These next two are needed by the Z3 API browser.
-    __parent__ = None
-    __name__ = None
 
 
 rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))

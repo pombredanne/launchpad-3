@@ -5,6 +5,9 @@
     generally useful, move them to zopeapp.zcml
     -->
     <!--
+    XXX: This can be ressurrected; just need to move the changes I did to
+    site.zcml here.
+
     How frustrating.  This is needed for just one page registration
     in introspector.zcml.
     -->
