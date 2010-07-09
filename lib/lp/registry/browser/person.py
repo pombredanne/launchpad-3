@@ -5128,6 +5128,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
         products = [pillarname.pillar for pillarname in pillarnames
                     if IProduct.providedBy(pillarname.pillar)]
         bugtask_set = getUtility(IBugTaskSet)
+        # XXX sinzui 2010-07-09: this is 1367.0 ms. Do we really need this?
+        # Can this be an ajax query?
         product_bugtask_counts = bugtask_set.getOpenBugTasksPerProduct(
             user, products)
         for pillarname in pillarnames:
@@ -5148,12 +5150,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
     @cachedproperty
     def first_five_related_projects(self):
         """Return first five projects owned or driven by this person."""
-        return list(self._related_projects()[:5])
+        return self._related_projects()[:5]
 
     @cachedproperty
     def related_projects_count(self):
         """The number of project owned or driven by this person."""
-        return self._related_projects().count()
+        return len(self._related_projects())
 
     @cachedproperty
     def has_more_related_projects(self):
@@ -5278,6 +5280,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
         for package in package_releases:
             builds_by_package[package] = []
             needs_build_by_package[package] = False
+        # XXX sinzui 2010-07-09: this causes 607 times repeat queries for
+        # PackageBuild and BuildFarmJob.builder each.
         for build in all_builds:
             if build.status == BuildStatus.FAILEDTOBUILD:
                 builds_by_package[build.source_package_release].append(build)
@@ -5295,6 +5299,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
         distro_packages = [
             package_release.distrosourcepackage
             for package_release in package_releases]
+        # XXX sinzui 2010-07-09: dsp.bug_count has the daily number and it
+        # may be faster than calculatinging everytime.
         package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
             self.user, distro_packages)
         open_bugs = {}
