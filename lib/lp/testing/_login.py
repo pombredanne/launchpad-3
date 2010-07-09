@@ -73,7 +73,7 @@ def login_person(person, participation=None):
     setupInteractionForPerson(person, participation)
 
 
-def get_arbitrary_team_member(team):
+def _get_arbitrary_team_member(team):
     """Get an arbitrary member of 'team'.
 
     :param team: An `ITeam`.
@@ -83,7 +83,7 @@ def get_arbitrary_team_member(team):
 
 def login_team(team, participation=None):
     """Login as a member of 'team'."""
-    person = get_arbitrary_team_member(team)
+    person = _get_arbitrary_team_member(team)
     return login_person(person, participation=participation)
 
 
