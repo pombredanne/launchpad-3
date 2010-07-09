@@ -5,7 +5,9 @@
 
 __metaclass__ = type
 
-__all__ = ['NewEvents', 'test_suite']
+__all__ = [
+    'NewEvents',
+    ]
 
 from datetime import datetime
 from pytz import UTC
@@ -42,8 +44,7 @@ from canonical.launchpad.testing.codeimporthelpers import (
 from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 def login_for_code_imports():
