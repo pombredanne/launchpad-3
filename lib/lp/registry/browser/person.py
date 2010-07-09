@@ -4780,8 +4780,34 @@ class TeamReassignmentView(ObjectReassignmentView):
     schema = ITeamReassignment
 
     def __init__(self, context, request):
-        ObjectReassignmentView.__init__(self, context, request)
+        super(TeamReassignmentView, self).__init__(context, request)
         self.callback = self._addOwnerAsMember
+
+    def validateOwner(self, new_owner):
+        """Display error if the owner is not valid.
+
+        Called by ObjectReassignmentView.validate().
+        """
+        if self.context.inTeam(new_owner):
+            path = self.context.findPathToTeam(new_owner)
+            if len(path) == 1:
+                relationship = 'a direct member'
+                path_string = ''
+            else:
+                relationship = 'an indirect member'
+                full_path = [self.context] + path
+                path_string = '(%s)' % '&rArr;'.join(
+                    team.displayname for team in full_path)
+            error = structured(
+                'Circular team memberships are not allowed. '
+                '%(new)s cannot be the new team owner, since %(context)s '
+                'is %(relationship)s of %(new)s. '
+                '<span style="white-space: nowrap">%(path)s</span>'
+                % dict(new=new_owner.displayname,
+                        context=self.context.displayname,
+                        relationship=relationship,
+                        path=path_string))
+            self.setFieldError(self.ownerOrMaintainerName, error)
 
     @property
     def contextName(self):
