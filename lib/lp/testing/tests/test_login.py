@@ -80,6 +80,7 @@ class TestLoginHelpers(TestCaseWithFactory):
     def test_login_person_actually_logs_in(self):
         # login_person changes the currently logged in person.
         person = self.factory.makePerson()
+        logout()
         login_person(person)
         self.assertLoggedIn(person)
 
@@ -88,6 +89,7 @@ class TestLoginHelpers(TestCaseWithFactory):
         # the currently logged in user.
         a = self.factory.makePerson()
         b = self.factory.makePerson()
+        logout()
         login_person(a)
         login_person(b)
         self.assertLoggedIn(b)
@@ -101,17 +103,21 @@ class TestLoginHelpers(TestCaseWithFactory):
     def test_login_with_email(self):
         # login() logs a person in by email.
         person = self.factory.makePerson()
-        login(person.preferredemail.email)
+        email = person.preferredemail.email
+        logout()
+        login(email)
         self.assertLoggedIn(person)
 
     def test_login_anonymous(self):
         # login as 'ANONYMOUS' logs in as the anonymous user.
+        logout()
         login(ANONYMOUS)
         self.assertLoggedIn(ANONYMOUS)
 
     def test_login_team(self):
         # login_team() logs in as a member of the given team.
         team = self.factory.makeTeam()
+        logout()
         login_team(team)
         person = self.getLoggedInPerson()
         self.assertTrue(person.inTeam(team))
@@ -120,47 +126,56 @@ class TestLoginHelpers(TestCaseWithFactory):
         # Calling login_team() with a person instead of a team raises a nice
         # error.
         person = self.factory.makePerson()
+        logout()
         e = self.assertRaises(ValueError, login_team, person)
         self.assertEqual(str(e), "Got person, expected team: %r" % (person,))
 
     def test_login_team_returns_logged_in_person(self):
         # login_team returns the logged-in person.
         team = self.factory.makeTeam()
+        logout()
         person = login_team(team)
         self.assertLoggedIn(person)
 
     def test_login_as_person(self):
         # login_as() logs in as a person if it's given a person.
         person = self.factory.makePerson()
+        logout()
         login_as(person)
         self.assertLoggedIn(person)
 
     def test_login_as_team(self):
         # login_as() logs in as a member of a team if it's given a team.
         team = self.factory.makeTeam()
+        logout()
         login_as(team)
         person = self.getLoggedInPerson()
         self.assertTrue(person.inTeam(team))
 
     def test_login_as_anonymous(self):
         # login_as(ANONYMOUS) logs in as the anonymous user.
+        logout()
         login_as(ANONYMOUS)
         self.assertLoggedIn(ANONYMOUS)
 
     def test_login_as_None(self):
         # login_as(None) logs in as the anonymous user.
+        logout()
         login_as(None)
         self.assertLoggedIn(ANONYMOUS)
 
     def test_login_celebrity(self):
         # login_celebrity logs in a celebrity.
+        logout()
         login_celebrity('vcs_imports')
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         person = self.getLoggedInPerson()
         self.assertTrue(person.inTeam, vcs_imports)
 
     def test_login_nonexistent_celebrity(self):
-        # login_celebrity ... with a non-existent celebrity
+        # login_celebrity raises ValueError when called with a non-existent
+        # celebrity.
+        logout()
         e = self.assertRaises(ValueError, login_celebrity, 'nonexistent')
         self.assertEqual(str(e), "No such celebrity: 'nonexistent'")
 

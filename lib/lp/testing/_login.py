@@ -118,6 +118,7 @@ def login_as(person_or_team, participation=None):
 
 def login_celebrity(celebrity_name, participation=None):
     """Login as a celebrity."""
+    login(ANONYMOUS)
     celebs = getUtility(ILaunchpadCelebrities)
     celeb = getattr(celebs, celebrity_name, None)
     if celeb is None:
