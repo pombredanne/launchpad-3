@@ -34,7 +34,7 @@ from pprint import pprint
 ${python-relative-path-setup}
 
 # The test script for this branch.
-TEST = ${buildout:directory/bin/test}
+TEST = "${buildout:directory/bin/test}"
 
 # Regular expression to match numbered stories.
 STORY_RE = re.compile("(.*)/\d{2}-.*")
@@ -50,7 +50,9 @@ def get_test_name(test):
     match = STORY_RE.match(test)
     if match:
         return match.group(1)
-    return test
+    # Otherwise split the test and return the first portion.  The split will
+    # chop off windmill descriptions.
+    return test.split()[0]
 
 
 def gen_test_lines(lines):

@@ -12,7 +12,7 @@ The thing you are most likely to want to do from this page is search,
 so the search field is focused by default.
 
     >>> from BeautifulSoup import BeautifulSoup
-    >>> print BeautifulSoup(browser.contents).body('script')[1]
+    >>> print BeautifulSoup(browser.contents).body('script')[0]
     <script...$('field.searchtext').focus();...
 
 But once you're on the search results page, you're quite likely to want
