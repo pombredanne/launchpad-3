@@ -21,31 +21,41 @@ class BugNotificationRecipientReason(RecipientReason):
     """A `RecipientReason` subsclass specifically for `BugNotification`s."""
 
     @classmethod
-    def forDupeSubscriber(self, person):
+    def forDupeSubscriber(cls, person, duplicate_bug):
+        """Return a `BugNotificationRecipientReason` for a dupe subscriber.
+        """
+        header = "%s via Bug %s" % (
+            cls.makeRationale('Subscriber of Duplicate', person),
+            duplicate_bug.id)
+
+        reason = "%s %s" % (
+            "You received this bug notification because "
+            "%(lc_entity_is)s a direct subscriber",
+            "of duplicate bug %s." %  duplicate_bug.id)
+        return cls(person, person, header, reason)
+
+    @classmethod
+    def forDirectSubscriber(cls, person):
         """..."""
 
     @classmethod
-    def forDirectSubscriber(self, person):
+    def forAssignee(cls, person):
         """..."""
 
     @classmethod
-    def forAssignee(self, person):
+    def forDistroBugSupervisor(cls, person, distro):
         """..."""
 
     @classmethod
-    def forDistroBugSupervisor(self, person, distro):
+    def forStructuralSubscriber(cls, person, target):
         """..."""
 
     @classmethod
-    def forStructuralSubscriber(self, person, target):
+    def forUpstreamBugSupervisor(cls, person, upstream):
         """..."""
 
     @classmethod
-    def forUpstreamBugSupervisor(self, person, upstream):
-        """..."""
-
-    @classmethod
-    def forRegistrant(self, person, upstream)
+    def forRegistrant(cls, person, upstream):
         """..."""
 
 
