@@ -16,7 +16,6 @@ import pytz
 import simplejson
 
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -32,9 +31,6 @@ from lp.code.browser.branchlisting import PersonOwnedBranchesView
 from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.helpers import truncate_text
 from lp.code.enums import BranchLifecycleStatus, BranchType
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
-from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.testing import (
     login, login_person, logout, person_logged_in, ANONYMOUS,
     TestCaseWithFactory)
@@ -163,8 +159,8 @@ class TestBranchView(TestCaseWithFactory):
 
     def testBranchAddRequestsMirror(self):
         """Registering a mirrored branch requests a mirror."""
-        arbitrary_person = getUtility(IPersonSet).get(1)
-        arbitrary_product = getUtility(IProductSet).get(1)
+        arbitrary_person = self.factory.makePerson()
+        arbitrary_product = self.factory.makeProduct()
         login(arbitrary_person.preferredemail.email)
         try:
             add_view = BranchAddView(arbitrary_person, self.request)
