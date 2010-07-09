@@ -134,17 +134,6 @@ page that lists PPA packages in batches.
     Name      Uploaded to           Version  When        Failures
     iceweasel PPA for Mark...Warty  1.0      2006-04-11  None
 
-And finally the Related projects navigation link takes the user to the
-page that lists related projects in batches.
-
-    >>> browser.getLink("Related projects").click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'projects'))
-    1...5 of 5 results
-    ...
-    Name           Bugs  Blueprints  Questions
-    Ubuntu Linux   4     1           8
-    ...
-
 
 == Private PPA packages ==
 
