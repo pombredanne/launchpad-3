@@ -6,7 +6,6 @@
 from __future__ import with_statement
 
 __metaclass__ = type
-__all__ = ['TestBranchView', 'test_suite']
 
 from datetime import datetime, timedelta
 from textwrap import dedent
@@ -118,16 +117,11 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
 
 class TestBranchView(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBranchView, self).setUp()
-        login(ANONYMOUS)
         self.request = LaunchpadTestRequest()
-
-    def tearDown(self):
-        logout()
-        super(TestBranchView, self).tearDown()
 
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
