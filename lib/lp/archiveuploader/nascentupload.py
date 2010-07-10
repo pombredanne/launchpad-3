@@ -162,10 +162,13 @@ class NascentUpload:
         unmatched_ddebs = {}
         for uploaded_file in self.changes.files:
             if isinstance(uploaded_file, DdebBinaryUploadFile):
-                ddeb_key = (uploaded_file.package, uploaded_file.architecture)
-                assert ddeb_key not in unmatched_ddebs, \
-                    "Duplicate DDEB: %s %s" % ddeb_key
-                unmatched_ddebs[ddeb_key] = uploaded_file
+                ddeb_key = (uploaded_file.package, uploaded_file.version,
+                            uploaded_file.architecture)
+                if ddeb_key in unmatched_ddebs:
+                    self.reject("Duplicated debug packages: %s %s (%s)" %
+                        ddeb_key)
+                else:
+                    unmatched_ddebs[ddeb_key] = uploaded_file
 
         for uploaded_file in self.changes.files:
             # We need exactly a DEB, not a DDEB.
@@ -174,6 +177,7 @@ class NascentUpload:
                 try:
                     matching_ddeb = unmatched_ddebs.pop(
                         (uploaded_file.package + '-dbgsym',
+                         uploaded_file.version,
                          uploaded_file.architecture))
                 except KeyError:
                     continue
@@ -181,7 +185,8 @@ class NascentUpload:
                 matching_ddeb.deb_file = uploaded_file
 
         if len(unmatched_ddebs) > 0:
-            self.reject("Orphaned DDEBs: %s" % unmatched_ddebs)
+            self.reject("Orphaned debug packages: %s" % ', '.join('%s %s (%s)' % d
+                for d in unmatched_ddebs))
 
         if (len(self.changes.files) == 1 and
             isinstance(self.changes.files[0], CustomUploadFile)):
@@ -586,7 +591,11 @@ class NascentUpload:
         uploaded file targeted to an architecture not present in the
         distroseries in context. So callsites needs to be aware.
         """
-        if isinstance(uploaded_file, DdebBinaryUploadFile):
+        # If we are dealing with a DDEB, use the DEB's overrides.
+        # If there's no deb_file set, don't worry about it. Rejection is
+        # already guaranteed.
+        if (isinstance(uploaded_file, DdebBinaryUploadFile)
+            and uploaded_file.deb_file):
             ancestry_name = uploaded_file.deb_file.package
         else:
             ancestry_name = uploaded_file.package

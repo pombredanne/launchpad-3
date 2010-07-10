@@ -1,4 +1,5 @@
-== Uploading DDEBs ==
+Uploading DDEBs
+===============
 
 DDEBs ('.ddeb' extension) are essentially a Debian binary packages,
 they only use a different extension as a convenience to identify their
@@ -136,7 +137,9 @@ And its corresponding file is also stored as DDEB filetype.
     ...     print bin_file.libraryfile.filename, bin_file.filetype.name
     debug-bin-dbgsym_1.0-1_i386.ddeb DDEB
 
-== DDEBs in other archives ==
+
+DDEBs in other archives
+-----------------------
 
 DDEBs can be produced in other contexts than the primary archive. For
 instance, a COPY (test-rebuild) archive. In this case, they will be
@@ -197,3 +200,20 @@ the ones in the primary archive.
     debug-bin 1.0-1 in hoary i386 PENDING main devel COPY
     debug-bin-dbgsym 1.0-1 in hoary i386 PENDING main devel COPY
 
+
+Mismatched DDEBs
+----------------
+
+Each uploaded DDEB must be associated with a normal DEB. Any duplicated
+DDEBs or DDEBs without matching DEBs will cause the upload to be
+rejected.
+
+    >>> bin = getUploadForBinary(
+    ...     'suite/debug_1.0-1_broken/debug_1.0-1_i386.changes')
+    >>> bin.process()
+    >>> bin.is_rejected
+    True
+    >>> print bin.rejection_message
+    Duplicated debug packages: debug-bin-dbgsym 1.0-1 (i386)
+    Orphaned debug packages: not-debug-bin-dbgsym 1.0-1 (i386)
+    
