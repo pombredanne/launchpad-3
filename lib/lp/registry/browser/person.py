@@ -5807,10 +5807,7 @@ class EmailToPersonView(LaunchpadFormView):
         # Subject and then Message fields.
         self.form_fields = FormFields(*chain((field, ), self.form_fields))
 
-    @property
-    def label(self):
-        """The form label."""
-        return 'Contact ' + self.context.displayname
+    label = 'Contact user'
 
     @cachedproperty
     def recipients(self):

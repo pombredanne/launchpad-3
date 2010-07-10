@@ -29,7 +29,7 @@ For example, let's say No Privileges Person wants to contact Salgado...
 This contact is allowed.
 
     >>> print view.label
-    Contact Guilherme Salgado
+    Contact user
     >>> view.contact_is_allowed
     True
 
