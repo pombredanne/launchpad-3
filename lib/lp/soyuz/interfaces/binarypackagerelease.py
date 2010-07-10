@@ -53,8 +53,8 @@ class IBinaryPackageRelease(Interface):
     architecturespecific = Bool(required=True)
     datecreated = Datetime(required=True, readonly=True)
     debug_package = Object(
-        title=_("DDEB package"), schema=Interface, required=False,
-        description=_("The corresponding DDEB containing debug symbols "
+        title=_("Debug package"), schema=Interface, required=False,
+        description=_("The corresponding package containing debug symbols "
                       "for this binary."))
 
     files = Attribute("Related list of IBinaryPackageFile entries")
