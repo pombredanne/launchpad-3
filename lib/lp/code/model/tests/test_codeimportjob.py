@@ -55,7 +55,7 @@ def login_for_code_imports():
     CodeImports are currently hidden from regular users currently. Members of
     the vcs-imports team and can access the objects freely.
     """
-    login_celebrity('vcs_imports')
+    return login_celebrity('vcs_imports')
 
 
 class TestCodeImportJobSet(TestCaseWithFactory):
@@ -482,71 +482,59 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
         self.assertSqlAttributeEqualsDate(job, 'date_due', UTC_NOW)
 
 
-class TestCodeImportJobWorkflowDeletePendingJob(unittest.TestCase,
+class TestCodeImportJobWorkflowDeletePendingJob(TestCaseWithFactory,
         AssertFailureMixin):
     """Unit tests for CodeImportJobWorkflow.deletePendingJob."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestCodeImportJobWorkflowDeletePendingJob, self).setUp()
-        login_for_code_imports()
+        self.import_admin = login_for_code_imports()
 
     def test_wrongReviewStatus(self):
         # CodeImportJobWorkflow.deletePendingJob fails if the
         # CodeImport review_status is equal to REVIEWED.
-        reviewed_import = getUtility(ICodeImportSet).get(1)
-        # Checking sampledata expectations.
-        self.assertEqual(reviewed_import.branch.unique_name,
-                         '~vcs-imports/gnome-terminal/import')
-        REVIEWED = CodeImportReviewStatus.REVIEWED
-        self.assertEqual(reviewed_import.review_status, REVIEWED)
+        reviewed_import = self.factory.makeCodeImport()
+        reviewed_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            self.import_admin)
+        branch_name = reviewed_import.branch.unique_name
         # Testing deletePendingJob failure.
         self.assertFailure(
-            "The review status of ~vcs-imports/gnome-terminal/import "
-            "is REVIEWED.",
+            "The review status of %s is REVIEWED." % (branch_name,),
             getUtility(ICodeImportJobWorkflow).deletePendingJob,
             reviewed_import)
 
     def test_noJob(self):
         # CodeImportJobWorkflow.deletePendingJob fails if the
         # CodeImport is not associated to a CodeImportJob.
-        new_import = getUtility(ICodeImportSet).get(2)
-        # Checking sampledata expectations.
-        self.assertEqual(new_import.branch.unique_name,
-                         '~vcs-imports/evolution/import')
-        NEW = CodeImportReviewStatus.NEW
-        self.assertEqual(new_import.review_status, NEW)
-        self.assertEqual(new_import.import_job, None)
+        new_import = self.factory.makeCodeImport()
+        branch_name = new_import.branch.unique_name
         # Testing deletePendingJob failure.
         self.assertFailure(
-            "Not associated to a CodeImportJob: "
-            "~vcs-imports/evolution/import",
+            "Not associated to a CodeImportJob: %s" % (branch_name,),
             getUtility(ICodeImportJobWorkflow).deletePendingJob,
             new_import)
 
     def test_wrongJobState(self):
         # CodeImportJobWorkflow.deletePendingJob fails if the state of
         # the CodeImportJob is different from PENDING.
-        reviewed_import = getUtility(ICodeImportSet).get(1)
-        # Checking sampledata expectations.
-        self.assertEqual(reviewed_import.branch.unique_name,
-                         '~vcs-imports/gnome-terminal/import')
-        # ICodeImport does not allow setting any attribute, so we need to use
-        # removeSecurityProxy to set the review_status attribute.
+        job = self.factory.makeCodeImportJob()
+        code_import = job.code_import
+        branch_name = job.code_import.branch.unique_name
+        # ICodeImport does not allow setting 'review_status', so we must use
+        # removeSecurityProxy.
         INVALID = CodeImportReviewStatus.INVALID
-        removeSecurityProxy(reviewed_import).review_status = INVALID
-        self.assertNotEqual(reviewed_import.import_job, None)
+        removeSecurityProxy(code_import).review_status = INVALID
         # ICodeImportJob does not allow setting 'state', so we must
         # use removeSecurityProxy.
         RUNNING = CodeImportJobState.RUNNING
-        removeSecurityProxy(reviewed_import.import_job).state = RUNNING
+        removeSecurityProxy(code_import.import_job).state = RUNNING
         # Testing deletePendingJob failure.
         self.assertFailure(
-            "The CodeImportJob associated to "
-            "~vcs-imports/gnome-terminal/import is RUNNING.",
-            getUtility(ICodeImportJobWorkflow).deletePendingJob,
-            reviewed_import)
+            "The CodeImportJob associated to %s is RUNNING." % (branch_name,),
+            getUtility(ICodeImportJobWorkflow).deletePendingJob, code_import)
 
 
 class TestCodeImportJobWorkflowRequestJob(TestCaseWithFactory,
