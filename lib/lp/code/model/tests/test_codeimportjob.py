@@ -377,50 +377,31 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
     def test_wrongReviewStatus(self):
         # CodeImportJobWorkflow.newJob fails if the CodeImport review_status
         # is different from REVIEWED.
-        new_import = getUtility(ICodeImportSet).get(2)
-        # Checking sampledata expectations.
-        self.assertEqual(new_import.branch.unique_name,
-                         '~vcs-imports/evolution/import')
-        NEW = CodeImportReviewStatus.NEW
-        self.assertEqual(new_import.review_status, NEW)
+        new_import = self.factory.makeCodeImport()
+        branch_name = new_import.branch.unique_name
         # Testing newJob failure.
         self.assertFailure(
-            "Review status of ~vcs-imports/evolution/import "
-            "is not REVIEWED: NEW",
+            "Review status of %s is not REVIEWED: NEW" % (branch_name,),
             getUtility(ICodeImportJobWorkflow).newJob, new_import)
 
     def test_existingJob(self):
         # CodeImportJobWorkflow.newJob fails if the CodeImport is already
         # associated to a CodeImportJob.
-        reviewed_import = getUtility(ICodeImportSet).get(1)
-        # Checking sampledata expectations.
-        self.assertEqual(reviewed_import.branch.unique_name,
-                         '~vcs-imports/gnome-terminal/import')
-        REVIEWED = CodeImportReviewStatus.REVIEWED
-        self.assertEqual(reviewed_import.review_status, REVIEWED)
-        self.assertNotEqual(reviewed_import.import_job, None)
-        # Testing newJob failure.
+        job = self.factory.makeCodeImportJob()
+        reviewed_import = job.code_import
+        branch_name = reviewed_import.branch.unique_name
         self.assertFailure(
-            "Already associated to a CodeImportJob: "
-            "~vcs-imports/gnome-terminal/import",
+            "Already associated to a CodeImportJob: %s" % (branch_name,),
             getUtility(ICodeImportJobWorkflow).newJob, reviewed_import)
 
     def getCodeImportForDateDueTest(self):
         """Return a `CodeImport` object for testing how date_due is set.
 
-        We check that it is not associated to any `CodeImportJob` or
-        `CodeImportResult`, and we ensure its review_status is REVIEWED.
+        It is not associated to any `CodeImportJob` or `CodeImportResult`, and
+        its review_status is REVIEWED.
         """
-        new_import = getUtility(ICodeImportSet).get(2)
-        # Checking sampledata expectations.
-        self.assertEqual(new_import.import_job, None)
-        self.assertEqual(
-            CodeImportResult.selectBy(code_importID=new_import.id).count(), 0)
-        # We need to set review_status to REVIEWED before calling newJob, and
-        # the interface marks review_status as read-only.
-        REVIEWED = CodeImportReviewStatus.REVIEWED
-        removeSecurityProxy(new_import).review_status = REVIEWED
-        return new_import
+        return self.factory.makeCodeImport(
+            review_status=CodeImportReviewStatus.REVIEWED)
 
     def test_dateDueNoPreviousResult(self):
         # If there is no CodeImportResult for the CodeImport, then the new
