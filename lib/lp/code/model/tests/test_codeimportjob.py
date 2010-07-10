@@ -39,6 +39,7 @@ from lp.code.interfaces.codeimportresult import ICodeImportResult
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     ANONYMOUS, login, login_celebrity, logout, TestCaseWithFactory)
+from lp.testing.sampledata import NO_PRIVILEGE_EMAIL, VCS_IMPORTS_MEMBER_EMAIL
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import, make_running_import)
 from canonical.launchpad.testing.pages import get_feedback_messages
@@ -118,7 +119,7 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
     def assertJobIsSelected(self, desired_job):
         """Assert that the expected job is chosen by getJobForMachine."""
         observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
-            self.machine.hostname, 10)
+            self.machine.hostname, worker_limit=10)
         self.assert_(observed_job is not None, "No job was selected.")
         self.assertEqual(desired_job, observed_job,
                          "Expected job not selected.")
@@ -126,7 +127,7 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
     def assertNoJobSelected(self):
         """Assert that no job is selected."""
         observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
-            'machine', 10)
+            'machine', worker_limit=10)
         self.assert_(observed_job is None, "Job unexpectedly selected.")
 
     def test_nothingSelectedIfNothingCreated(self):
@@ -278,7 +279,7 @@ class TestCodeImportJobSetGetJobForMachineGardening(ReclaimableJobTests):
         machine = self.factory.makeCodeImportMachine(set_online=True)
         login(ANONYMOUS)
         getUtility(ICodeImportJobSet).getJobForMachine(
-            machine.hostname, 10)
+            machine.hostname, worker_limit=10)
         login_for_code_imports()
         # Now there are no reclaimable jobs.
         self.assertReclaimableJobs([])
@@ -677,7 +678,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
 
     def setUp(self):
         super(TestCodeImportJobWorkflowFinishJob, self).setUp()
-        login_for_code_imports()
+        self.vcs_imports = login_for_code_imports()
         self.machine = self.factory.makeCodeImportMachine(set_online=True)
 
     def makeRunningJob(self, code_import=None):
@@ -776,10 +777,9 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         # unless the CodeImport has been suspended or marked invalid.
         running_job = self.makeRunningJob()
         code_import = running_job.code_import
-        ddaa = getUtility(IPersonSet).getByEmail(
-            'david.allouche@canonical.com')
         code_import.updateFromData(
-            {'review_status': CodeImportReviewStatus.SUSPENDED}, ddaa)
+            {'review_status': CodeImportReviewStatus.SUSPENDED},
+            self.vcs_imports)
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS, None)
         self.assertTrue(code_import.import_job is None)
@@ -976,7 +976,7 @@ def logged_in_as(email):
 
 # This is a dependence on the sample data: David Allouche is a member of the
 # ~vcs-imports celebrity team.
-logged_in_for_code_imports = logged_in_as('david.allouche@canonical.com')
+logged_in_for_code_imports = logged_in_as(VCS_IMPORTS_MEMBER_EMAIL)
 
 
 class TestRequestJobUIRaces(TestCaseWithFactory):
@@ -998,7 +998,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         code_import_id = code_import.id
         return code_import_id, branch_url
 
-    @logged_in_as('no-priv@canonical.com')
+    @logged_in_as(NO_PRIVILEGE_EMAIL)
     def requestJobByUserWithDisplayName(self, code_import_id, displayname):
         """Record a request for the job by a user with the given name."""
         getUtility(ICodeImportJobWorkflow).requestJob(
