@@ -92,7 +92,7 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
     method makeJob() creates actual CodeImportJob objects from these specs.
     """
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Login so we can access the code import system, delete all jobs in
@@ -235,7 +235,7 @@ class ReclaimableJobTests(TestCaseWithFactory):
 class TestCodeImportJobSetGetReclaimableJobs(ReclaimableJobTests):
     """Tests for the CodeImportJobSet.getReclaimableJobs method."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_upToDateJob(self):
         # A job that was updated recently is not considered reclaimable.
@@ -268,7 +268,7 @@ class TestCodeImportJobSetGetReclaimableJobs(ReclaimableJobTests):
 class TestCodeImportJobSetGetJobForMachineGardening(ReclaimableJobTests):
     """Test that getJobForMachine gardens stale code import jobs."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_getJobForMachineGardens(self):
         # getJobForMachine reclaims all reclaimable jobs each time it is
@@ -368,7 +368,7 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
     AssertFailureMixin):
     """Unit tests for the CodeImportJobWorkflow.newJob method."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestCodeImportJobWorkflowNewJob, self).setUp()
@@ -522,7 +522,7 @@ class TestCodeImportJobWorkflowRequestJob(TestCaseWithFactory,
         AssertFailureMixin, AssertEventMixin):
     """Unit tests for CodeImportJobWorkflow.requestJob."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestCodeImportJobWorkflowRequestJob, self).setUp()
@@ -614,7 +614,7 @@ class TestCodeImportJobWorkflowStartJob(TestCaseWithFactory,
         AssertFailureMixin, AssertEventMixin):
     """Unit tests for CodeImportJobWorkflow.startJob."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestCodeImportJobWorkflowStartJob, self).setUp()
@@ -652,7 +652,7 @@ class TestCodeImportJobWorkflowUpdateHeartbeat(TestCaseWithFactory,
         AssertFailureMixin, AssertEventMixin):
     """Unit tests for CodeImportJobWorkflow.updateHeartbeat."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestCodeImportJobWorkflowUpdateHeartbeat, self).setUp()
@@ -893,8 +893,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         log_alias = getUtility(ILibraryFileAliasSet)[log_alias_id]
         result = self.getResultForJob(job, log_alias=log_alias)
 
-        self.assertEqual(
-            result.log_file.read(), log_data)
+        self.assertEqual(result.log_file.read(), log_data)
 
     def test_createsFinishCodeImportEvent(self):
         # finishJob() creates a FINISH CodeImportEvent.
@@ -989,7 +988,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
     the button and check that appropriate notifications are displayed.
     """
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     @logged_in_for_code_imports
     def getNewCodeImportIDAndBranchURL(self):
