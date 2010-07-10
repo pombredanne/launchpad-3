@@ -194,6 +194,6 @@ the ones in the primary archive.
     ...         bin_pub.displayname, bin_pub.status.name,
     ...         bin_pub.component.name, bin_pub.section.name,
     ...         bin_pub.archive.purpose.name)
-    debug-bin 1.0-1 in hoary i386 PENDING main base COPY
-    debug-bin-dbgsym 1.0-1 in hoary i386 PENDING main base COPY
+    debug-bin 1.0-1 in hoary i386 PENDING main devel COPY
+    debug-bin-dbgsym 1.0-1 in hoary i386 PENDING main devel COPY
 
