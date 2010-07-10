@@ -4,12 +4,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'TeamMembershipBreadcrumb',
     'TeamInvitationsView',
     'TeamMembershipEditView',
     ]
 
 
-import cgi
 import pytz
 from datetime import datetime
 
@@ -22,12 +22,20 @@ from zope.schema import Date
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import LaunchpadView, canonical_url
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)
-from canonical.lazr.utils import smartquote
 from canonical.widgets import DateWidget
 
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+
+
+class TeamMembershipBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `ITeamMembership`."""
+
+    @property
+    def text(self):
+        return "%s's membership" % self.context.person.displayname
 
 
 class TeamMembershipEditView:
@@ -87,14 +95,6 @@ class TeamMembershipEditView:
         else:
             raise AssertionError('status unknown')
         return '%s member %s' % (prefix, self.context.person.displayname)
-
-    # XXX BarryWarsaw 2009-09-14 bug 429729.  This should really go away, but
-    # since there is no +hierarchy adapter for this view, there is no
-    # breadcrumbs, and thus no default reverse-breadcrumb page title.
-    @property
-    def page_title(self):
-        return smartquote("%s's membership status in %s") % (
-            self.context.person.displayname, self.context.team.displayname)
 
     # Boolean helpers
     def userIsTeamOwnerOrLPAdmin(self):
@@ -301,9 +301,12 @@ class TeamMembershipEditView:
         else:
             expires = self.context.dateexpires
 
+        silent = self.request.form.get('silent', False)
+
         self.context.setExpirationDate(expires, self.user)
         self.context.setStatus(
-            status, self.user, self.request.form_ng.getOne('comment'))
+            status, self.user, self.request.form_ng.getOne('comment'),
+            silent)
         return True
 
     def _getExpirationDate(self):

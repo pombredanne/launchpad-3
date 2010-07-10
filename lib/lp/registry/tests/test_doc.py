@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -16,7 +16,7 @@ from canonical.testing import (
     LaunchpadZopelessLayer)
 
 from lp.registry.tests import mailinglists_helper
-from lp.services.testing import build_test_suite
+from lp.services.testing import build_doctest_suite, build_test_suite
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -27,6 +27,7 @@ def peopleKarmaTearDown(test):
     # We can't detect db changes made by the subprocess (yet).
     DatabaseLayer.force_dirty_database()
     tearDown(test)
+
 
 def mailingListXMLRPCInternalSetUp(test):
     setUp(test)
@@ -162,10 +163,6 @@ special = {
         layer=LaunchpadZopelessLayer,
         setUp=setUp, tearDown=tearDown,
         ),
-    'sourceforge-remote-products.txt': LayeredDocFileSuite(
-        '../doc/sourceforge-remote-products.txt',
-        layer=LaunchpadZopelessLayer,
-        ),
     'karmacache.txt': LayeredDocFileSuite(
         '../doc/karmacache.txt',
         layer=LaunchpadZopelessLayer,
@@ -182,4 +179,9 @@ special = {
 
 
 def test_suite():
-    return build_test_suite(here, special, layer=DatabaseFunctionalLayer)
+    suite = build_test_suite(here, special, layer=DatabaseFunctionalLayer)
+    launchpadlib_path = os.path.join(os.path.pardir,  'doc', 'launchpadlib')
+    lplib_suite = build_doctest_suite(here, launchpadlib_path,
+                                      layer=DatabaseFunctionalLayer)
+    suite.addTest(lplib_suite)
+    return suite

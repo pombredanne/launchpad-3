@@ -60,10 +60,9 @@ class InlineEditorWidgetTest:
         * reloads and verifies that the new value sticked.
         """
         client = WindmillTestClient(self.suite)
-
         self.user.ensure_login(client)
-
         client.open(url=self.url)
+
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         widget_base = u"//%s[@id='%s']" % (self.widget_tag, self.widget_id)
         client.waits.forElement(
@@ -86,8 +85,9 @@ class InlineEditorWidgetTest:
         # And make sure it's actually saved on the server.
         client.open(url=self.url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.asserts.assertNode(
-            xpath=widget_base + '/span[1]')
+        client.waits.forElement(
+            xpath=widget_base + '/span[1]',
+            timeout=constants.FOR_ELEMENT)
         client.asserts.assertText(
             xpath=widget_base + '/span[1]', validator=self.new_value)
 
@@ -99,7 +99,7 @@ def search_picker_widget(client, search_text):
                          "//input[@class='yui-picker-search']")
     client.waits.forElement(
         xpath=search_box_xpath,
-        timeout=constants.FOR_ELEMENT)
+        timeout=constants.PAGE_LOAD)
     client.type(text=search_text, xpath=search_box_xpath)
     client.click(
         xpath=u"//table[contains(@class, 'yui-picker') "
@@ -301,9 +301,10 @@ class FormPickerWidgetTest:
 
         # Load page.
         client.open(url=self.url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Click on "Choose" link to show picker for the given field.
+        client.waits.forElement(
+            id=self.choose_link_id, timeout=constants.PAGE_LOAD)
         client.click(id=self.choose_link_id)
 
         # Search picker.

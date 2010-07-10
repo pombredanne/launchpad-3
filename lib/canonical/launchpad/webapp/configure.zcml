@@ -20,8 +20,6 @@
           canonical.launchpad.webapp.interfaces.ILaunchpadBrowserApplicationRequest"
         attributes="response locale __str__"
         />
-      <allow
-        interface="zope.component.interfaces.IPresentationRequest" />
     </class>
 
     <class class="canonical.launchpad.webapp.publisher.RedirectionView">
@@ -48,7 +46,7 @@
     <adapter
         for="canonical.launchpad.layers.WebServiceLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.MasterDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.WebServiceDatabasePolicyFactory"
         />
     <adapter
         for="canonical.launchpad.layers.FeedsLayer"
@@ -64,7 +62,7 @@
     <!-- lazr.batchnavigator hook -->
     <adapter
         factory='.batching.FiniteSequenceAdapter' />
-    
+
     <adapter
         factory='.batching.FiniteSequenceAdapter'
         for='storm.zope.interfaces.ISQLObjectResultSet' />
@@ -218,7 +216,7 @@
         />
 
     <adapter
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
         name="image"
@@ -288,13 +286,6 @@
         />
 
     <adapter
-        for="basestring"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.FormattersAPI"
-        name="fmt"
-        />
-
-    <adapter
         for="int"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"
@@ -351,7 +342,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IProject"
+        for="canonical.launchpad.interfaces.IProjectGroup"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
         name="fmt"
@@ -421,16 +412,16 @@
         />
 
     <adapter
-        for="lp.code.interfaces.diff.IPreviewDiff"
+        for="lp.code.interfaces.codeimport.ICodeImport"
         provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
+        factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="lp.code.interfaces.codeimport.ICodeImport"
+        for="lp.buildmaster.interfaces.packagebuild.IPackageBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
+        factory="canonical.launchpad.webapp.tales.PackageBuildFormatterAPI"
         name="fmt"
         />
 
@@ -472,6 +463,18 @@
         name="fmt"
         />
     <adapter
+        for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageRecipeFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageRecipeBuildFormatterAPI"
+        name="fmt"
+        />
+    <adapter
         for="canonical.launchpad.interfaces.ISpecification"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SpecificationFormatterAPI"
@@ -493,6 +496,12 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SourcePackageFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageReleaseFormatterAPI"
         name="fmt"
         />
     <adapter
@@ -529,6 +538,12 @@
         for="lp.translations.interfaces.pofile.IPOFile"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.POFileFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.soyuz.interfaces.packagediff.IPackageDiff"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PackageDiffFormatterAPI"
         name="fmt"
         />
     <adapter
@@ -616,9 +631,12 @@
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_slave_store"
         />
+    <!-- Universal adapter needed here per Bug #591841.
+         We have no way of specifying that all subclasses of
+         storm.locals.Storm implement an Interface. -->
     <adapter
         provides="canonical.launchpad.interfaces.IMasterObject"
-        for="canonical.launchpad.interfaces.IDBObject"
+        for="zope.interface.Interface"
         trusted="yes"
         factory="canonical.launchpad.webapp.adapter.get_object_from_master_store"
         />
@@ -687,6 +705,12 @@
         />
 
     <adapter
+        for="canonical.launchpad.webapp.servers.LaunchpadTestRequest"
+        provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
+        factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
+        />
+
+    <adapter
         factory="canonical.launchpad.webapp.snapshot.snapshot_sql_result" />
     <!-- It also works for the legacy SQLObject interface. -->
     <adapter
@@ -736,6 +760,11 @@
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.sigusr2.setup_sigusr2"
         />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sigdumpmem.setup_sigdumpmem"
+        />
+
 
     <!-- Confirm the database is the correct revision level -->
     <subscriber
@@ -747,12 +776,6 @@
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.adapter.break_main_thread_db_access"
-        />
-
-    <!-- Make sure that the config is sane for references debugging. -->
-    <subscriber
-        for="zope.app.appsetup.IProcessStartingEvent"
-        handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
         />
 
     <!-- Set the default timeout function. -->

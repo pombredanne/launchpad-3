@@ -7,13 +7,14 @@ __metaclass__ = type
 
 
 __all__ = [
-    'ImportProcess',
+    'TranslationsImport',
     ]
 
 from datetime import datetime, timedelta
 import sys
 
-from pytz import UTC
+import pytz
+
 from zope.component import getUtility
 
 from canonical.config import config
@@ -65,32 +66,34 @@ class TranslationsImport(LaunchpadCronScript):
             exc_info = sys.exc_info()
         description = [
             ('Reason', reason),
-            ('Queue entries', entries),
+            ('Entries', str(entries)),
             ]
         errorlog.globalErrorUtility.raising(
             exc_info, errorlog.ScriptRequest(description))
 
     def _registerFailure(self, entry, reason, traceback=False, abort=False):
         """Note that a queue entry is unusable in some way."""
-        entry.setStatus(RosettaImportStatus.FAILED)
-        entry.setErrorOutput(reason)
+        reason_text = unicode(reason)
+        entry.setStatus(RosettaImportStatus.FAILED,
+                        getUtility(ILaunchpadCelebrities).rosetta_experts)
+        entry.setErrorOutput(reason_text)
 
         if abort:
             traceback = True
 
         description = self._describeEntry(entry)
-        message = "%s -- %s" % (reason, description)
+        message = "%s -- %s" % (reason_text, description)
         self.logger.error(message, exc_info=traceback)
 
         if abort:
             # Serious enough to stop the script.  Register as an
             # individual oops.
-            self._reportOops(self, reason, [description])
+            self._reportOops(reason, [description])
         else:
             # Register problem for bulk reporting later.
-            if not self.failures.get(reason):
-                self.failures[reason] = []
-            self.failures[reason].append(description)
+            if not self.failures.get(reason_text):
+                self.failures[reason_text] = []
+            self.failures[reason_text].append(description)
 
     def _checkEntry(self, entry):
         """Sanity-check `entry` before importing."""
@@ -133,12 +136,15 @@ class TranslationsImport(LaunchpadCronScript):
                 text = MailWrapper().format(mail_body)
                 simple_sendmail(from_email, to_email, mail_subject, text)
 
+    def run(self, *args, **kwargs):
+        errorlog.globalErrorUtility.configure('poimport')
+        LaunchpadCronScript.run(self, *args, **kwargs)
+
     def main(self):
         """Import entries from the queue."""
         self.logger.debug("Starting the import process.")
 
-        errorlog.globalErrorUtility.configure('poimport')
-        self.deadline = datetime.now(UTC) + self.time_to_run
+        self.deadline = datetime.now(pytz.UTC) + self.time_to_run
         translation_import_queue = getUtility(ITranslationImportQueue)
 
         # Get the list of each product or distroseries with pending imports.
@@ -153,7 +159,7 @@ class TranslationsImport(LaunchpadCronScript):
 
         have_work = True
 
-        while have_work and datetime.now(UTC) < self.deadline:
+        while have_work and datetime.now(pytz.UTC) < self.deadline:
             have_work = False
 
             # For fairness, service all queues at least once; don't

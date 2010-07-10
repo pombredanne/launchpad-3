@@ -118,15 +118,11 @@ archive_admin = ContextDisplayName('Administer %s')
 
 archive_activate = 'Activate Personal Package Archive'
 
-archive_builds = ContextDisplayName('Builds for %s')
-
 archive_copy_packages = ContextDisplayName('Copy packages from %s')
 
 archive_delete_packages = ContextDisplayName('Delete packages from %s')
 
 archive_edit = ContextDisplayName('Edit %s')
-
-archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
@@ -332,8 +328,6 @@ distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 
 distribution_index = ContextTitle('%s in Launchpad')
 
-distribution_builds = ContextTitle('%s builds')
-
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
@@ -342,8 +336,6 @@ distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
 distroarchseries_index = ContextTitle('%s in Launchpad')
-
-distroarchseries_builds = ContextTitle('%s builds')
 
 distroarchseries_search = ContextTitle(
     smartquote("Search %s's binary packages"))
@@ -395,8 +387,6 @@ hassprints_sprints = ContextTitle("Events related to %s")
 launchpad_feedback = 'Help improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
-
-launchpad_forgottenpassword = 'Need a new Launchpad password?'
 
 # launchpad_css is a css file
 
@@ -518,13 +508,6 @@ def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
     return 'Invalid OpenID identity %s' % view.openid_request.identity
 
-openidrpconfig_add = 'Add an OpenID Relying Party Configuration'
-
-openidrpconfig_edit = ContextDisplayName(
-    'Edit Relying Party Configuration for %s')
-
-openidrpconfigset_index = 'OpenID Relying Party Configurations'
-
 def package_bugs(context, view):
     """Return the page title bug in a package."""
     return 'Bugs in %s' % context.name
@@ -536,10 +519,6 @@ def people_list(context, view):
     return view.header
 
 people_mergerequest_sent = 'Merge request sent'
-
-people_requestmerge = 'Merge Launchpad accounts'
-
-people_requestmerge_multiple = 'Merge Launchpad accounts'
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
@@ -694,15 +673,15 @@ shipit_login = 'ShipIt'
 
 shipit_login_error = 'ShipIt - Unsuccessful login'
 
-shipit_myrequest = "Your ShipIt order"
+shipit_myrequest = "Your Ubuntu CD order"
 
 shipit_oops = 'Error: Oops'
 
 shipit_reports = 'ShipIt reports'
 
-shipit_requestcds = 'Your ShipIt Request'
+shipit_requestcds = 'Your Ubuntu CD Request'
 
-shipit_survey = 'ShipIt Survey'
+shipit_survey = 'Ubuntu Server Edition survey'
 
 shipitrequests_index = 'ShipIt requests'
 
@@ -723,8 +702,6 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
-
-sourcepackage_builds = ContextTitle('Builds for %s')
 
 sourcepackage_changelog = 'Source package changelog'
 
@@ -801,8 +778,6 @@ specificationtarget_workload = ContextTitle('Blueprint workload in %s')
 sprint_attend = ContextTitle('Register your attendance at %s')
 
 sprint_edit = ContextTitle(smartquote('Edit "%s" details'))
-
-sprint_index = ContextTitle('%s (sprint or meeting)')
 
 sprint_new = 'Register a meeting or sprint in Launchpad'
 

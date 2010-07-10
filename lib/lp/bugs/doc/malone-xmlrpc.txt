@@ -245,14 +245,14 @@ for authentication with external bug trackers.
 The API provides a single method, newBugTrackerToken(), which returns
 the ID of the new LoginToken.
 
-    >>> from zope.publisher.xmlrpc import TestRequest
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.interfaces import (
     ...     IExternalBugTrackerTokenAPI, ILoginTokenSet)
     >>> from lp.bugs.xmlrpc.bug import (
     ...     ExternalBugTrackerTokenAPI)
 
     >>> bugtracker_token_api = ExternalBugTrackerTokenAPI(
-    ...     private_root.bugs, TestRequest())
+    ...     private_root.bugs, LaunchpadTestRequest())
 
     >>> verifyObject(IExternalBugTrackerTokenAPI, bugtracker_token_api)
     True

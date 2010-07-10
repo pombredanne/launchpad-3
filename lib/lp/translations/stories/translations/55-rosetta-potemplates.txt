@@ -47,7 +47,8 @@ headers will not be shown.
 
     # To check this, we need to state that this project uses Launchpad for
     # translations.
-    >>> admin_browser.open('http://launchpad.dev/netapplet/+edit')
+    >>> admin_browser.open(
+    ...   'http://launchpad.dev/netapplet/+configure-translations')
     >>> admin_browser.getControl(
     ...     'Translations for this project are done in Launchpad'
     ...     ).selected = True
@@ -90,7 +91,7 @@ shouldn't see eg. Japanese.
 Next, if he chooses to view all the languages, he should see Japanese
 among the languages on the page.
 
-    >>> browser.getLink('View Template & All Languages...').click()
+    >>> browser.getLink('View template & all languages...').click()
     >>> 'Japanese' in browser.contents
     True
 

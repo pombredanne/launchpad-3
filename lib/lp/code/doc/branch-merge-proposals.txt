@@ -257,12 +257,11 @@ Proposals that are `Approved` can be moved back into the
     >>> print proposal.queue_status.title
     Needs review
 
-Branches that had been approved that have subsequently been
-set back into the needs review state still retain their old reviewed
-revision id.
+Branches that had been approved that have subsequently been set back into the
+needs review state have their reviewed revision cleared.
 
-    >>> proposal.reviewed_revision_id == tip.revision_id
-    True
+    >>> print proposal.reviewed_revision_id
+    None
 
 If the target branch has specified a specific reviewer, then either the owner
 of the target branch or the reviewer is able to approve or reject the
@@ -349,7 +348,7 @@ queueing the branch is not a reviewer, an exception is raised.
 Anyone that has rights to edit the merge proposal can say that the
 merge failed.
 
-    >>> proposal.mergeFailed(merger=sample_person)
+    >>> proposal.setStatus(BranchMergeProposalStatus.MERGE_FAILED)
     >>> print proposal.queue_status.title
     Code failed to merge
 

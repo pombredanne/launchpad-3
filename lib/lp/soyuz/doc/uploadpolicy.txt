@@ -78,7 +78,7 @@ approve an upload automatically (I.E. move it straight to ACCEPTED
 instead of UNAPPROVED)
 
   >>> from canonical.launchpad.interfaces import (
-  ...     DistroSeriesStatus, IDistributionSet)
+  ...     SeriesStatus, IDistributionSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
 
@@ -102,7 +102,7 @@ by the insecure policy:
 When the distroseries is FROZEN the uploads should wait in UNAPPROVED queue:
 
   >>> login('foo.bar@canonical.com')
-  >>> hoary.status = DistroSeriesStatus.FROZEN
+  >>> hoary.status = SeriesStatus.FROZEN
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
 

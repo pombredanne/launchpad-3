@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E1002
 
@@ -24,6 +24,7 @@ from bzrlib.revision import NULL_REVISION
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_tar_filename
 from canonical.launchpad.webapp import (
@@ -36,15 +37,14 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     Link,
     NavigationMenu)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription)
 
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
 from lp.translations.interfaces.translations import (
@@ -58,6 +58,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 
 class ProductSeriesTranslationsMenuMixIn:
     """Translation menu for `IProductSeries`."""
+
     def overview(self):
         """Return a link to the overview page."""
         return Link('', 'Overview')
@@ -133,7 +134,8 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
     @property
     def has_imports_enabled(self):
         """Is imports enabled for the series?"""
-        return (self.context.translations_autoimport_mode !=
+        return (self.context.branch is not None and
+                self.context.translations_autoimport_mode !=
                 TranslationsBranchImportMode.NO_IMPORT)
 
     @property
@@ -153,12 +155,6 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
         """URL to change the translations for the series."""
         return canonical_url(self.context,
                              view_name="+translations-settings")
-
-    @property
-    def product_edit_url(self):
-        """URL to edit the `IProduct`."""
-        return canonical_url(self.context.product, rootsite="mainsite",
-                             view_name="+edit")
 
 
 class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
@@ -281,7 +277,7 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                         warning = (
                             "A file could not be uploaded because its "
                             "name matched multiple existing uploads, for "
-                            "different templates." )
+                            "different templates.")
                         ul_conflicts = (
                             "The conflicting file name was:<br /> "
                             "<ul><li>%s</li></ul>" % cgi.escape(conflicts[0]))
@@ -384,6 +380,14 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         return sorted(productserieslangs,
                       key=lambda a: a.language.englishname)
 
+    def isPreferredLanguage(self, language):
+        # if there are no preferred languages, mark all
+        # languages as preferred
+        if (len(self.translatable_languages) == 0):
+            return True
+        else:
+            return language in self.translatable_languages
+
     @property
     def has_translation_documentation(self):
         """Are there translation instructions for this product."""
@@ -391,7 +395,7 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         return (translation_group is not None and
                 translation_group.translation_guide_url is not None)
 
-    @property
+    @cachedproperty
     def single_potemplate(self):
         """Does this ProductSeries have exactly one POTemplate."""
         return self.context.potemplate_count == 1
@@ -427,8 +431,7 @@ class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView,
     def change_settings_action(self, action, data):
         """Change the translation settings."""
         if (self.context.translations_autoimport_mode !=
-            data['translations_autoimport_mode']
-            ):
+            data['translations_autoimport_mode']):
             self.updateContextFromData(data)
             # Request an initial upload of translation files.
             getUtility(IRosettaUploadJobSource).create(
@@ -477,21 +480,12 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
                 _("The import has been requested."))
 
 
-class ProductSeriesTemplatesView(LaunchpadView):
+class ProductSeriesTemplatesView(BaseSeriesTemplatesView):
     """Show a list of all templates for the ProductSeries."""
 
-    is_distroseries = False
-    label = "Translation templates"
-    page_title = "All templates"
-
-    def iter_templates(self):
-        """Return an iterator of all `IPOTemplates` for the series."""
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(productseries=self.context)
-
-    def can_administer(self, template):
-        """Can the user administer the template?"""
-        return check_permission('launchpad.Admin', template)
+    def initialize(self):
+        super(ProductSeriesTemplatesView, self).initialize(
+            series=self.context, is_distroseries=False)
 
 
 class LinkTranslationsBranchView(LaunchpadEditFormView):

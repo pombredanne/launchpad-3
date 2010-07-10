@@ -1,4 +1,6 @@
-= Mailing list moderation =
+=======================
+Mailing list moderation
+=======================
 
 When a non-member posts a message to a team's mailing list, that message
 will be held for moderator review, if the sender is not a Launchpad
@@ -7,11 +9,7 @@ member in good standing (as is the default).
     >>> admin_browser.open('http://launchpad.dev/~guadamen')
     >>> admin_browser.getLink(url='+mailinglist').click()
     >>> admin_browser.getControl('Apply for Mailing List').click()
-    >>> admin_browser.open('http://launchpad.dev/+mailinglists')
-    >>> admin_browser.getControl(name='field.guadamen').value = ['approve']
-    >>> admin_browser.getControl('Submit').click()
 
-    >>> import transaction
     >>> from lp.registry.tests import mailinglists_helper
     >>> login('foo.bar@canonical.com')
     >>> mailinglists_helper.mailman.act()

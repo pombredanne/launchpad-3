@@ -34,15 +34,13 @@ to the product series.
 
 Now we request that the queue be processed.
 
-    >>> class MockTransactionManager:
-    ...     def commit(self):
-    ...         pass
-
     >>> import logging
+    >>> import transaction
     >>> from lp.translations.scripts.po_export_queue import process_queue
     >>> logger = MockLogger()
     >>> logger.setLevel(logging.DEBUG)
-    >>> process_queue(MockTransactionManager(), logger)
+    >>> transaction.commit()
+    >>> process_queue(transaction, logger)
     log> Exporting objects for ..., related to template evolution-2.2 in
     Evolution trunk
     log> Exporting objects for ..., related to template evolution-2.2-test in
@@ -92,10 +90,12 @@ Let's download it and make sure the contents look ok.
     >>> from canonical.launchpad.helpers import string_to_tarfile
     >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
     >>> for name in sorted(tarball.getnames()):
-    ...   print name
-    evolution-2.2/
+    ...     # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to
+    ...     # make this pass on python2.5 and 2.6.
+    ...     print name.rstrip('/')
+    evolution-2.2
     evolution-2.2/evolution-2.2-es.po
-    po/
+    po
     po/evolution-2.2-test-pt_BR.po
     po/evolution-2.2-test.pot
     po/evolution-2.2.pot

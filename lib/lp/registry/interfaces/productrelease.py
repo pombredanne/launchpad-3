@@ -397,8 +397,8 @@ class IProductReleaseSet(Interface):
         If no release is found, default will be returned.
         """
 
-    def getReleasesForSerieses(serieses):
-        """Get all releases for the serieses."""
+    def getReleasesForSeries(series):
+        """Get all releases for the series."""
 
     def getFilesForReleases(releases):
         """Get all files for the releases."""

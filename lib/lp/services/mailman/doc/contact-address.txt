@@ -46,7 +46,7 @@ will be delivered to the mailing list.
     >>> browser.getControl('Summary').value = 'A new question'
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Description').value = 'More detail.'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Post Question').click()
 
 There are now three messages in the mailbox.  One message goes to
 no-priv@canonical.com because he added the question, one goes to the mailing
@@ -246,7 +246,7 @@ Notifications will no longer be sent to the mailing list.
     >>> browser.getControl('Summary').value = 'Another question'
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Description').value = 'More detail.'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Post Question').click()
 
     >>> smtpd_watcher.expecting_timeout = True
     >>> smtpd_watcher.wait_for_list_traffic('itest-one')

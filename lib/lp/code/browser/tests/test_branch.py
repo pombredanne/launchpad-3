@@ -3,6 +3,8 @@
 
 """Unit tests for BranchView."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 __all__ = ['TestBranchView', 'test_suite']
 
@@ -21,17 +23,22 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
 from lp.app.interfaces.headings import IRootContext
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from lp.code.browser.branch import (
     BranchAddView, BranchMirrorStatusView, BranchReviewerEditView,
     BranchSparkView, BranchView)
 from lp.code.browser.branchlisting import PersonOwnedBranchesView
+from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.helpers import truncate_text
 from lp.code.enums import BranchLifecycleStatus, BranchType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.testing import (
-    login, login_person, logout, ANONYMOUS, TestCaseWithFactory)
+    login, login_person, logout, person_logged_in, ANONYMOUS,
+    TestCaseWithFactory)
+from lp.testing.views import create_initialized_view
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
@@ -118,12 +125,13 @@ class TestBranchView(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestBranchView, self).setUp()
         login(ANONYMOUS)
         self.request = LaunchpadTestRequest()
 
     def tearDown(self):
         logout()
+        super(TestBranchView, self).tearDown()
 
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
@@ -229,6 +237,106 @@ class TestBranchView(TestCaseWithFactory):
         view = BranchView(branch, self.request)
         view.initialize()
         self.assertEqual(list(view.translations_sources()), [trunk])
+
+    def test_user_can_upload(self):
+        # A user can upload if they have edit permissions.
+        branch = self.factory.makeAnyBranch()
+        view = create_initialized_view(branch, '+index')
+        login_person(branch.owner)
+        self.assertTrue(view.user_can_upload)
+
+    def test_user_can_upload_admins_can(self):
+        # Admins can upload to any hosted branch.
+        branch = self.factory.makeAnyBranch()
+        view = create_initialized_view(branch, '+index')
+        login('admin@canonical.com')
+        self.assertTrue(view.user_can_upload)
+
+    def test_user_can_upload_non_owner(self):
+        # Someone not associated with the branch cannot upload
+        branch = self.factory.makeAnyBranch()
+        view = create_initialized_view(branch, '+index')
+        login_person(self.factory.makePerson())
+        self.assertFalse(view.user_can_upload)
+
+    def test_user_can_upload_mirrored(self):
+        # Even the owner of a mirrored branch can't upload.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
+        view = create_initialized_view(branch, '+index')
+        login_person(branch.owner)
+        self.assertFalse(view.user_can_upload)
+
+    def _addBugLinks(self, branch):
+        for status in BugTaskStatus.items:
+            bug = self.factory.makeBug(status=status)
+            branch.linkBug(bug, branch.owner)
+
+    def test_linked_bugs(self):
+        # The linked bugs for a non series branch shows all linked bugs.
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(branch.owner):
+            self._addBugLinks(branch)
+        view = create_initialized_view(branch, '+index')
+        self.assertEqual(len(BugTaskStatus), len(view.linked_bugs))
+        self.assertFalse(view.context.is_series_branch)
+
+    def test_linked_bugs_privacy(self):
+        # If a linked bug is private, it is not in the linked bugs if the user
+        # can't see it.
+        branch = self.factory.makeAnyBranch()
+        reporter = self.factory.makePerson()
+        bug = self.factory.makeBug(private=True, owner=reporter)
+        with person_logged_in(reporter):
+            branch.linkBug(bug, reporter)
+            view = create_initialized_view(branch, '+index')
+            # Comparing bug ids as the linked bugs are decorated bugs.
+            self.assertEqual([bug.id], [bug.id for bug in view.linked_bugs])
+        with person_logged_in(branch.owner):
+            view = create_initialized_view(branch, '+index')
+            self.assertEqual([], view.linked_bugs)
+
+    def test_linked_bugs_series_branch(self):
+        # The linked bugs for a series branch shows only unresolved bugs.
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product)
+        with person_logged_in(product.owner):
+            product.development_focus.branch = branch
+        with person_logged_in(branch.owner):
+            self._addBugLinks(branch)
+        view = create_initialized_view(branch, '+index')
+        for bug in view.linked_bugs:
+            self.assertTrue(
+                bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES)
+
+
+class TestBranchAddView(TestCaseWithFactory):
+    """Test the BranchAddView view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBranchAddView, self).setUp()
+        self.person = self.factory.makePerson()
+        login_person(self.person)
+        self.request = LaunchpadTestRequest()
+
+    def tearDown(self):
+        logout()
+        super(TestBranchAddView, self).tearDown()
+
+    def get_view(self, context):
+        view = BranchAddView(context, self.request)
+        view.initialize()
+        return view
+
+    def test_target_person(self):
+        add_view = self.get_view(self.person)
+        self.assertTrue(IBranchTarget.providedBy(add_view.target))
+
+    def test_target_product(self):
+        product = self.factory.makeProduct()
+        add_view = self.get_view(product)
+        self.assertTrue(IBranchTarget.providedBy(add_view.target))
 
 
 class TestBranchReviewerEditView(TestCaseWithFactory):

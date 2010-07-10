@@ -24,7 +24,7 @@ count:len gives you a number which is len(thing).
     >>> test_tales('foo/count:len', foo=object())
     Traceback (most recent call last):
     ...
-    TypeError: len() of unsized object
+    TypeError: object of type 'object' has no len()
 
 
 The image: namespace to get image elements
@@ -38,7 +38,7 @@ To display the icon for a milestone, use image:icon:
     '<img ... src="/@@/milestone" />'
 
 The same image:icon, as well as a image:logo and a image:logo is also
-available for Person, Product, Project, Sprint and Distributions, since
+available for Person, Product, ProjectGroup, Sprint and Distributions, since
 they all implement IHasLogo, IHasMugshot and IHasIcon.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -123,47 +123,67 @@ And finally Copy archives.
     <img ... src="/@@/distribution" />
 
 PPAs have a 'link' formatter, which returns the appropriate HTML used
-for referring to them in other pages.
+for referring to them in other pages and a 'reference' formatter which
+displays the unique ppa reference.
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
-    <a href="/~mark/+archive/ppa"
-       class="sprite ppa-icon">PPA for Mark Shuttleworth</a>
+    >>> login('admin@canonical.com')
+    >>> owner = factory.makePerson(name="joe", displayname="Joe Smith")
+    >>> public_ppa = factory.makeArchive(
+    ...     name='ppa', private=False, owner=owner)
+    >>> login(ANONYMOUS)
+    >>> print test_tales("ppa/fmt:link", ppa=public_ppa)
+    <a href="/~joe/+archive/ppa"
+       class="sprite ppa-icon">PPA for Joe Smith</a>
+    >>> print test_tales("ppa/fmt:reference", ppa=public_ppa)
+    ppa:joe/ppa
 
 Disabled PPAs links use a different icon and are only linkified for
 users with launchpad.View on them.
 
-    >>> login('foo.bar@canonical.com')
-    >>> mark.archive.enabled = False
+    >>> login('admin@canonical.com')
+    >>> public_ppa.disable()
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
-    <a href="/~mark/+archive/ppa" class="sprite ppa-icon-inactive">PPA
-    for Mark Shuttleworth</a>
+    >>> print test_tales("ppa/fmt:link", ppa=public_ppa)
+    <a href="/~joe/+archive/ppa" class="sprite ppa-icon-inactive">PPA
+    for Joe Smith</a>
 
     >>> login(ANONYMOUS)
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
-    <span class="sprite ppa-icon-inactive">PPA for Mark Shuttleworth</span>
+    >>> print test_tales("ppa/fmt:link", ppa=public_ppa)
+    <span class="sprite ppa-icon-inactive">PPA for Joe Smith</span>
 
 Private PPAs links are not rendered for users without launchpad.View on
 them.
 
-    >>> login('foo.bar@canonical.com')
-    >>> mark.archive.enabled = True
-    >>> mark.archive.buildd_secret = 'x'
-    >>> mark.archive.private = True
+    >>> login('admin@canonical.com')
+    >>> private_ppa = factory.makeArchive(
+    ...     name='pppa', private=True, owner=owner)
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
-    <a href="/~mark/+archive/ppa" class="sprite ppa-icon">PPA
-    for Mark Shuttleworth</a>
+    >>> print test_tales("ppa/fmt:link", ppa=private_ppa)
+    <a href="/~joe/+archive/pppa" class="sprite ppa-icon">PPA named pppa
+    for Joe Smith</a>
 
     >>> login(ANONYMOUS)
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
+    >>> print test_tales("ppa/fmt:link", ppa=private_ppa)
+
+Similarly, references to private PPAs are not rendered unless the user has
+a subscription to the PPA.
+
+    >>> ppa_user = factory.makePerson(name="jake", displayname="Jake Smith")
+    >>> login_person(ppa_user)
+    >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
+
+    >>> login_person(owner)
+    >>> ignore = private_ppa.newSubscription(ppa_user, owner)
+    >>> login_person(ppa_user)
+    >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
+    ppa:joe/pppa
 
 We also have icons for builds which may have different dimensions.
 
+    >>> login('admin@canonical.com')
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> login('foo.bar@canonical.com')
     >>> stp = SoyuzTestPublisher()
     >>> stp.prepareBreezyAutotest()
     >>> source = stp.getPubSource()
@@ -177,16 +197,35 @@ The 'Needs building' build is 14x14:
 
 The 'building' build is 14x14:
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
-    >>> build.buildstate = BuildStatus.BUILDING
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(build).status = BuildStatus.BUILDING
     >>> print test_tales("build/image:icon", build=build)
     <img width="14" height="14"...src="/@@/processing" />
 
 But the 'failed to build' build is 16x14:
 
-    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> removeSecurityProxy(build).status = BuildStatus.FAILEDTOBUILD
     >>> print test_tales("build/image:icon", build=build)
     <img width="16" height="14"...src="/@@/build-failed" />
+
+All objects can be represented as a boolean icon.
+
+    >>> print test_tales("context/image:boolean", context=None)
+    <span class="sprite no">&nbsp;<span
+      class="invisible-link">no</span></span>
+
+    >>> print test_tales("context/image:boolean", context=False)
+    <span class="sprite no">&nbsp;<span
+      class="invisible-link">no</span></span>
+
+    >>> print test_tales("context/image:boolean", context=object())
+    <span class="sprite yes">&nbsp;<span
+      class="invisible-link">yes</span></span>
+
+    >>> print test_tales("context/image:boolean", context=True)
+    <span class="sprite yes">&nbsp;<span
+      class="invisible-link">yes</span></span>
 
 
 The fmt: namespace to get strings
@@ -224,8 +263,8 @@ length.
 The string is not ellipsized if it is less than the max length.
 
     >>> print test_tales('foo/fmt:ellipsize/25',
-    ...     foo='firefox-0.9.2.orig.tar.gz')
-    firefox-0.9.2.orig.tar.gz
+    ...     foo='firefox_0.9.2.orig.tar.gz')
+    firefox_0.9.2.orig.tar.gz
 
 To preserve newlines in text when displaying as HTML, use fmt:nl_to_br:
 
@@ -319,9 +358,14 @@ This path is everything after the web service version number.
     >>> print test_tales("product/fmt:api_url", product=freewidget)
     /freewidget
 
-    >>> debuntu = factory.makeProduct(name='debuntu')
+    >>> debuntu = factory.makeDistribution(name='debuntu')
     >>> print test_tales("distro/fmt:api_url", distro=debuntu)
     /debuntu
+
+    >>> branch = factory.makeProductBranch(
+    ...     owner=bob, product=freewidget, name='fix-bug')
+    >>> print test_tales("branch/fmt:api_url", branch=branch)
+    /~bob/freewidget/fix-bug
 
     >>> login(ANONYMOUS)
 
@@ -602,6 +646,16 @@ The url for the release file can be retrieved using fmt:url.
 
     >>> print test_tales("release_file/fmt:url", release_file=release_file)
     http://launchpad.dev/.../+download/test.txt
+
+HTML in the file description is escaped in the fmt:link.
+
+    >>> release_file.description = (
+    ...     '><script>XSS failed</script>')
+    >>> print test_tales("release_file/fmt:link", release_file=release_file)
+    <img ...
+    <a title="&gt;&lt;script&gt;XSS failed&lt;/script&gt; (4 bytes)"
+    href="http://launchpad.dev/.../+download/test.txt">test.txt</a> ...
+
 
 
 Product series
@@ -1084,29 +1138,29 @@ emphasise the linkage.
     >>> test_tales('foo/fmt:linkify-email',
     ...    foo='I am the mighty foo.bar@canonical.com hear me roar.')
     u'...<a href="http://launchpad.dev/~name16"
-      class="sprite person">&nbsp;foo.bar@canonical.com</a>...'
+      class="sprite person">foo.bar@canonical.com</a>...'
 
 Multiple addresses may be linkified at once:
 
     >>> test_tales('foo/fmt:linkify-email',
     ...     foo='foo.bar@canonical.com and cprov@ubuntu.com')
     u'<a href="http://launchpad.dev/~name16"
-      class="sprite person">&nbsp;foo.bar@canonical.com</a>
+      class="sprite person">foo.bar@canonical.com</a>
       and <a href="http://launchpad.dev/~cprov"
-        class="sprite person">&nbsp;cprov@ubuntu.com</a>'
+        class="sprite person">cprov@ubuntu.com</a>'
 
 Team addresses are linkified with a team icon:
 
     >>> test_tales('foo/fmt:linkify-email', foo='support@ubuntu.com')
     u'<a href="http://launchpad.dev/~ubuntu-team"
-      class="sprite team">&nbsp;support@ubuntu.com</a>'
+      class="sprite team">support@ubuntu.com</a>'
 
 Unknown email addresses are not altered in any way:
 
     >>> test_tales('foo/fmt:linkify-email', foo='nobody@example.com')
     'nobody@example.com'
 
-Users who specifiy that their email adresses must be hidden also do not
+Users who specify that their email addresses must be hidden also do not
 get linkified.  test@canonical.com is hidden:
 
     >>> person_set = getUtility(IPersonSet)
@@ -1200,7 +1254,7 @@ with 'None/fmt:foo'.
     >>> test_tales('foo/fmt:shorten', foo=None)
     Traceback (most recent call last):
     ...
-    TraversalError: 'you need to traverse a number after fmt:shorten'
+    LocationError: 'you need to traverse a number after fmt:shorten'
 
     >>> test_tales('foo/fmt:shorten/8', foo=None)
     ''
@@ -1303,7 +1357,7 @@ DBSchema the item comes from.
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=udeb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The enumerated type BinaryPackageFormat does not have a
+    LocationError: 'The enumerated type BinaryPackageFormat does not have a
                      value CHEESEFISH.'
 
 It is possible for dbschemas to have a 'None' value.  This is a bit
@@ -1325,7 +1379,7 @@ dbschema items too:
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=wrapped_deb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The enumerated type BinaryPackageFormat does not have a
+    LocationError: 'The enumerated type BinaryPackageFormat does not have a
                      value CHEESEFISH.'
 
 
@@ -1578,4 +1632,3 @@ The anonymous user is not allowed to see private team details.
 
     >>> test_tales("team/fmt:unique_displayname", team=myteam)
     u'<hidden>'
-

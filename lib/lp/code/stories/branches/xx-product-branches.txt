@@ -29,7 +29,7 @@ overview page.
 
     >>> browser.open('http://code.launchpad.dev/applets')
     >>> print browser.title
-    Branches : Gnome Applets
+    Code : Gnome Applets
 
 If there are not any branches, a helpful message is shown.
 
@@ -43,15 +43,15 @@ If there are not any branches, a helpful message is shown.
       by registering a Mirrored branch. Read more.
     Launchpad can also act as a primary location for Bazaar branches of
       Gnome Applets. Read more.
-    Launchpad can import code from CVS or Subversion into Bazaar branches.
-      Read more.
+    Launchpad can import code from CVS, Subversion, Mercurial or Git
+      into Bazaar branches. Read more.
 
 The 'Read more' links go to the help wiki.
 
     >>> for anchor in summary.fetch('a'):
     ...     print anchor['href']
-    https://help.launchpad.net/CreatingAMirroredBranch
-    https://help.launchpad.net/CreatingAHostedBranch
+    https://help.launchpad.net/Code/MirroredBranches
+    https://help.launchpad.net/Code/UploadingABranch
     https://help.launchpad.net/VcsImports
 
 
@@ -158,10 +158,18 @@ Floating buttons
 There are two buttons that show on the right hand side of the screen
 for project branch listings.  'Register a branch' and 'Import your project'.
 
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> login('admin@canonical.com')
+    >>> product = getUtility(IProductSet).getByName('firefox')
+    >>> old_branch = product.development_focus.branch
+    >>> product.development_focus.branch = None
+    >>> logout()
     >>> def print_links(browser):
     ...     links = find_tag_by_id(browser.contents, 'floating-links')
     ...     for link in links.findAll('a'):
     ...         print extract_text(link)
+    >>> browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(browser)
     Register a branch
     Import your project
@@ -169,14 +177,10 @@ for project branch listings.  'Register a branch' and 'Import your project'.
 If the product specifies that it officially uses Launchpad code, then
 the 'Import your project' button is not shown.
 
-    >>> admin_browser.open('http://launchpad.dev/gnome-terminal')
-    >>> admin_browser.getLink('Change details').click()
-    >>> admin_browser.getControl(
-    ...     'Code for this project is published in Bazaar branches '
-    ...     'on Launchpad').click()
-    >>> admin_browser.getControl('Change').click()
-
-    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> login('admin@canonical.com')
+    >>> product.development_focus.branch = old_branch
+    >>> logout()
+    >>> browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(browser)
     Register a branch
 

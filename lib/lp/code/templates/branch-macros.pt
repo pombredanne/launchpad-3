@@ -49,10 +49,6 @@
            tal:content="structure mergeproposal/commit_message/fmt:text-to-html">
         The commit message.
       </div>
-      <div tal:condition="mergeproposal/show_registrant|nothing">
-        Merge proposed by
-        <tal:registrant replace="structure mergeproposal/registrant/fmt:link"/>
-      </div>
       <tal:show-prerequisite condition="prerequisite_branch|nothing">
         <div tal:condition="prerequisite_branch/required:launchpad.View">
           Prerequisite
@@ -104,33 +100,35 @@
       show_edit - show the edit form
   </tal:comment>
 
-  <tal:bug-tasks repeat="bug view/linked_bugs">
-    <div tal:condition="bug/required:launchpad.View"
-         tal:define="bugtask bug/bugtask;
-                     show_edit show_edit|nothing;"
-         tal:attributes="id string:buglink-${bug/id}">
-      <div class="bug-branch-summary">
-      <tal:link replace="structure bugtask/fmt:link" />
-      (<span tal:content="bugtask/importance/title"
-             tal:attributes="class string:importance${bugtask/importance/name}">
-         Critical
-       </span>
-       &ndash;
-       <span tal:content="bugtask/status/title"
-             tal:attributes="class string:status${bugtask/status/name}">
-         Confirmed
-       </span>)
-       <tal:show-edit condition="show_edit|nothing">
-         <a title="Remove link"
-            class="delete-buglink"
-            tal:attributes="href string:+bug/${bug/id}/+delete;
-                            id string:delete-buglink-${bug/id}">
-           <img src="/@@/remove"/>
-         </a>
-       </tal:show-edit>
-       </div>
-    </div>
-  </tal:bug-tasks>
+  <table>
+    <tal:bug-tasks repeat="bug view/linked_bugs">
+      <tr tal:condition="bug/required:launchpad.View"
+           tal:define="bugtask bug/bugtask;
+                       show_edit show_edit|nothing;"
+           tal:attributes="id string:buglink-${bug/id}"
+           class="bug-branch-summary">
+        <td tal:content="structure bugtask/fmt:link" class="first"/>
+        <td>
+          <span tal:content="bugtask/importance/title"
+                tal:attributes="class string:importance${bugtask/importance/name}"
+                >Critical</span>
+        </td>
+        <td>
+          <span tal:content="bugtask/status/title"
+                tal:attributes="class string:status${bugtask/status/name}"
+                >Triaged</span>
+        </td>
+        <td tal:condition="show_edit|nothing">
+          <a title="Remove link"
+             class="delete-buglink"
+             tal:attributes="href string:+bug/${bug/id}/+delete;
+                             id string:delete-buglink-${bug/id}">
+            <img src="/@@/remove"/>
+          </a>
+        </td>
+      </tr>
+    </tal:bug-tasks>
+  </table>
 
 </metal:branch-bug-links>
 

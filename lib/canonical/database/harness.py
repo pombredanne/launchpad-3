@@ -48,8 +48,7 @@ import rlcompleter
 from storm.locals import *
 from storm.expr import *
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, AUTH_STORE, MASTER_FLAVOR,
-        SLAVE_FLAVOR, DEFAULT_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR, DEFAULT_FLAVOR)
 
 
 def switch_db_user(dbuser, commit_first=True):
@@ -69,8 +68,6 @@ def _get_locals():
         dbuser = None
     print 'execute_zcml_for_scripts()...'
     execute_zcml_for_scripts()
-    print 'xmlconfig.file()...'
-    xmlconfig.file('script.zcml', execute=True)
     readline.parse_and_bind('tab: complete')
     # Mimic the real interactive interpreter's loading of any $PYTHONSTARTUP file.
     print 'Reading $PYTHONSTARTUP...'
@@ -88,7 +85,7 @@ def _get_locals():
         p = Person.get(1)
         ds = DistroSeries.get(1)
         prod = Product.get(1)
-        proj = Project.get(1)
+        proj = ProjectGroup.get(1)
         b2 = Bug.get(2)
         b1 = Bug.get(1)
         s = Specification.get(1)

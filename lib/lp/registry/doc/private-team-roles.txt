@@ -3,7 +3,7 @@ Private team participation
 
 During the transitional period between having only public and private
 membership team visibility until the end goal of having only public
-and private team visibilty, there will be a time when teams can have a
+and private team visibility, there will be a time when teams can have a
 visibility set to one of the three: public, private membership, and
 private.
 
@@ -130,7 +130,7 @@ Private teams can subscribe to branches.
     ...     priv_team,
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
-    ...     CodeReviewNotificationLevel.STATUS)
+    ...     CodeReviewNotificationLevel.STATUS, team_owner)
     >>> print subscription.person.name
     private-team
 
@@ -141,7 +141,7 @@ Private membership teams cannot subscribe to branches.
     ...     pm_team,
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
-    ...     CodeReviewNotificationLevel.STATUS)
+    ...     CodeReviewNotificationLevel.STATUS, team_owner)
     Traceback (most recent call last):
     ...
     PrivatePersonLinkageError: Cannot link person
@@ -230,6 +230,7 @@ Private teams can be subscribed to private PPAs.
     >>> subscription = private_archive.newSubscription(
     ...     subscriber=another_priv_team,
     ...     registrant=team_owner)
+    >>> transaction.commit()
 
 Private Membership Teams cannot subscribe to private PPAs.
 
@@ -240,8 +241,8 @@ Private Membership Teams cannot subscribe to private PPAs.
     PrivatePersonLinkageError: Cannot link person
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <...ArchiveSubscriber object at...
-    >>> import transaction
     >>> transaction.abort()
+
 
 Structural Subscriptions
 ========================
@@ -279,7 +280,7 @@ Private teams can have structural subscriptions to distros.
     >>> sub = ubuntu.addSubscription(
     ...     subscriber=priv_team, subscribed_by=team_owner)
     >>> sub.target
-    <Distribution at ...>
+    <Distribution 'Ubuntu' (ubuntu)>
     >>> sub.bug_notification_level
     <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
 

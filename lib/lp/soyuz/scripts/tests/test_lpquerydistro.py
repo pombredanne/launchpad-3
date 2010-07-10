@@ -15,7 +15,7 @@ from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.testing import LaunchpadLayer
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.scripts.ftpmaster import LpQueryDistro
 from canonical.testing import LaunchpadZopelessLayer
@@ -156,7 +156,7 @@ class TestLpQueryDistro(unittest.TestCase):
         self.assertEqual(helper.location.distribution.name, u'ubuntu')
         self.assertEqual(self.test_output, u'hoary')
 
-        hoary.status = DistroSeriesStatus.FROZEN
+        hoary.status = SeriesStatus.FROZEN
         flush_database_updates()
 
         helper = self.getLpQueryDistro(test_args=['development'])

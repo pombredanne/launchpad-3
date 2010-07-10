@@ -12,11 +12,14 @@ from BeautifulSoup import BeautifulSoup
 from simplejson import dumps
 
 from zope.component import getMultiAdapter
+from lazr.lifecycle.interfaces import IDoNotSnapshot
 
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
-from canonical.launchpad.ftests import login
+from lp.bugs.interfaces.bug import IBug
+from canonical.launchpad.ftests import login, logout
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
+from canonical.launchpad.webapp import snapshot
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -54,7 +57,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
         self.assertEqual(
             self.findBugDescription(response),
             u'<p>Useless bugs are useless. '
-            'See <a href="/bugs/%d" title="generic">Bug %d</a>.</p>' % (
+            'See <a href="/bugs/%d">Bug %d</a>.</p>' % (
             self.bug_one.id, self.bug_one.id))
 
     def test_PATCH_xhtml_representation(self):
@@ -73,7 +76,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
 
         self.assertEqual(
             self.findBugDescription(response),
-            u'<p>See <a href="/bugs/%d" title="generic">bug %d</a></p>' % (
+            u'<p>See <a href="/bugs/%d">bug %d</a></p>' % (
             self.bug_one.id, self.bug_one.id))
 
 
@@ -120,18 +123,84 @@ class TestBugCommentRepresentation(TestCaseWithFactory):
         self.assertEqual(response.status, 200)
 
         rendered_comment = response.body
-        # XXX Bjorn Tillenius 2009-05-15 bug=377003
-        # The current request is a web service request when rendering
-        # the HTML, causing canonical_url to produce links pointing to the
-        # web service. Adjust the test to compensate for this, and accept
-        # that the links will be incorrect for now. We should fix this
-        # before using it for anything useful.
-        rendered_comment = rendered_comment.replace(
-            'http://api.launchpad.dev/beta/',
-            'http://launchpad.dev/')
-
         self.assertRenderedCommentsEqual(
             rendered_comment, self.expected_comment_html)
+
+
+class TestBugMessages(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugMessages, self).setUp('test@canonical.com')
+        self.bug = self.factory.makeBug()
+        self.message1 = self.factory.makeMessage()
+        self.message2 = self.factory.makeMessage(parent=self.message1)
+        # Only link message2 to the bug.
+        self.bug.linkMessage(self.message2)
+        self.webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+
+    def test_messages(self):
+        # When one of the messages on a bug is linked to a parent that
+        # isn't linked to the bug, the webservice should still return
+        # the correct collection link for the bug's messages.
+        response = self.webservice.get('/bugs/%d/messages' % self.bug.id)
+        self.failUnlessEqual(response.status, 200)
+        # The parent_link for the latest message should be None
+        # because the parent is not a member of this bug's messages
+        # collection itself.
+        latest_message = response.jsonBody()['entries'][-1]
+        self.failUnlessEqual(self.message2.subject, latest_message['subject'])
+        self.failUnlessEqual(None, latest_message['parent_link'])
+
+
+class TestPostBugWithLargeCollections(TestCaseWithFactory):
+    """Ensure that large IBug collections cause OOPSes on POSTs for IBug.
+
+    When a POST request on a bug is processed, a snapshot of the bug
+    is created. This can lead to OOPSes as described in bugs 507642,
+    505999, 534339: A snapshot of a database collection field is a
+    shortlist() copy of the data and the creation of the snapshot fails
+    if a collection contains more elements than the hard limit of the
+    sortlist().
+
+    Hence we do not include properties in the snapshot that may have
+    a large number of elements: messages, bug subscriptions and
+    (un)affected users.
+    """
+    layer = DatabaseFunctionalLayer
+
+    def test_no_snapshots_for_large_collections(self):
+        # Ensure that no snapshots are made of the properties comments,
+        # bug subscriptions and (un)affected users.
+        for field_name in (
+            'subscriptions', 'users_affected', 'users_unaffected',
+            'users_affected_with_dupes', 'messages'):
+            self.failUnless(
+                IDoNotSnapshot.providedBy(IBug[field_name]),
+                'IBug.%s should not be included in snapshots, see bug 507642.'
+                % field_name)
+
+    def test_many_subscribers(self):
+        # Many subscriptions do not cause an OOPS for IBug POSTs.
+        bug = self.factory.makeBug()
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+        real_hard_limit_for_snapshot = snapshot.HARD_LIMIT_FOR_SNAPSHOT
+        snapshot.HARD_LIMIT_FOR_SNAPSHOT = 3
+        try:
+            login('foo.bar@canonical.com')
+            for count in range(snapshot.HARD_LIMIT_FOR_SNAPSHOT + 1):
+                person = self.factory.makePerson()
+                bug.subscribe(person, person)
+            logout()
+            response = webservice.named_post(
+                '/bugs/%d' % bug.id, 'subscribe',
+                person='http://api.launchpad.dev/beta/~name12')
+            self.failUnlessEqual(200, response.status)
+        finally:
+            snapshot.HARD_LIMIT_FOR_SNAPSHOT = real_hard_limit_for_snapshot
 
 
 def test_suite():

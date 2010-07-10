@@ -34,7 +34,7 @@ class TestParseConfigFile(unittest.TestCase):
     def test_single_value(self):
         # Parsing a file containing a single key=value pair returns a sequence
         # containing the (key, value) as a list.
-        config_file = self.makeFile("key=value")
+        config_file = self.makeFile("key value")
         self.assertEqual(
             [['key', 'value']], list(parse_config_file(config_file)))
 
@@ -45,7 +45,7 @@ class TestParseConfigFile(unittest.TestCase):
 
     def test_optional_value(self):
         # Lines in the config file can have a third optional entry.
-        config_file = self.makeFile('key=value=optional')
+        config_file = self.makeFile('key value optional')
         self.assertEqual(
             [['key', 'value', 'optional']],
             list(parse_config_file(config_file)))
@@ -53,7 +53,7 @@ class TestParseConfigFile(unittest.TestCase):
     def test_whitespace_stripped(self):
         # Any whitespace around any of the tokens in the config file are
         # stripped out.
-        config_file = self.makeFile('  key = value =  optional   ')
+        config_file = self.makeFile('  key   value    optional   ')
         self.assertEqual(
             [['key', 'value', 'optional']],
             list(parse_config_file(config_file)))
@@ -70,22 +70,22 @@ class TestInterpretConfiguration(unittest.TestCase):
     def test_key_value(self):
         # A (key, value) pair without a third optional value is returned in
         # the configuration as a dictionary entry under 'key' with '(value,
-        # False)' as its value.
+        # None, False)' as its value.
         config = interpret_config([['key', 'value']], False)
-        self.assertEqual({'key': ('value', False)}, config)
+        self.assertEqual({'key': ('value', None, False)}, config)
 
     def test_key_value_public_only(self):
         # A (key, value) pair without a third optional value is returned in
         # the configuration as a dictionary entry under 'key' with '(value,
-        # False)' as its value when public_only is true.
+        # None, False)' as its value when public_only is true.
         config = interpret_config([['key', 'value']], True)
-        self.assertEqual({'key': ('value', False)}, config)
+        self.assertEqual({'key': ('value', None, False)}, config)
 
     def test_key_value_optional(self):
         # A (key, value, optional) entry is returned in the configuration as a
         # dictionary entry under 'key' with '(value, True)' as its value.
         config = interpret_config([['key', 'value', 'optional']], False)
-        self.assertEqual({'key': ('value', True)}, config)
+        self.assertEqual({'key': ('value', None, True)}, config)
 
     def test_key_value_optional_public_only(self):
         # A (key, value, optional) entry is not returned in the configuration
@@ -93,7 +93,33 @@ class TestInterpretConfiguration(unittest.TestCase):
         config = interpret_config([['key', 'value', 'optional']], True)
         self.assertEqual({}, config)
 
+    def test_key_value_revision(self):
+        # A (key, value) pair without a third optional value when the
+        # value has a suffix of ``;revno=[REVISION]`` is returned in the
+        # configuration as a dictionary entry under 'key' with '(value,
+        # None, False)' as its value.
+        config = interpret_config([['key', 'value;revno=45']], False)
+        self.assertEqual({'key': ('value', '45', False)}, config)
 
+    def test_key_value_revision(self):
+        # A (key, value) pair without a third optional value when the
+        # value has multiple suffixes of ``;revno=[REVISION]`` raises an
+        # error.
+        self.assertRaises(
+            AssertionError,
+            interpret_config, [['key', 'value;revno=45;revno=47']], False)
+
+    def test_too_many_values(self):
+        # A line with too many values raises an error.
+        self.assertRaises(
+            AssertionError,
+            interpret_config, [['key', 'value', 'optional', 'extra']], False)
+
+    def test_bad_optional_value(self):
+        # A third value that is not the "optional" string raises an error.
+        self.assertRaises(
+            AssertionError,
+            interpret_config, [['key', 'value', 'extra']], False)
 
 class TestPlanUpdate(unittest.TestCase):
     """Tests for how to plan the update."""
@@ -146,6 +172,10 @@ class TestPlanUpdate(unittest.TestCase):
 
 class TestFindBranches(TestCase):
     """Tests the way that we find branches."""
+
+    def setUp(self):
+        TestCase.setUp(self)
+        self.disable_directory_isolation()
 
     def makeBranch(self, path):
         transport = get_transport(path)

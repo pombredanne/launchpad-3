@@ -42,5 +42,5 @@ class ITranslationsOverview(Interface):
         """
 
 
-class IProjectTranslationsOverview(Interface):
+class IProjectGroupTranslationsOverview(Interface):
     """Overview of translations for a project."""

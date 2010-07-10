@@ -6,14 +6,15 @@
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
 
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.interfaces.publishing import (IPublishingSet,
     PackagePublishingStatus)
-from lp.soyuz.tests.test_build import BaseTestCaseWithThreeBuilds
+from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 
 
 class TestPublishingSet(BaseTestCaseWithThreeBuilds):
@@ -27,7 +28,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
         # Ensure all the builds have been built.
         for build in self.builds:
-            build.buildstate = BuildStatus.FULLYBUILT
+            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
         self.publishing_set = getUtility(IPublishingSet)
 
     def _getBuildsForResults(self, results):
@@ -66,7 +67,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
             bpr, self.sources[0].archive,
             status=PackagePublishingStatus.SUPERSEDED)
         for bpph in bpphs:
-            bpph.secure_record.datepublished = UTC_NOW
+            bpph.datepublished = UTC_NOW
 
         results = self.publishing_set.getUnpublishedBuildsForSources(
             self.sources)
@@ -75,6 +76,19 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
         # The original gedit build should not be included in the results as,
         # even though it is no longer published.
         self.assertContentEqual(self.builds[1:3], unpublished_builds)
+
+    def test_getChangesFileLFA(self):
+        # The getChangesFileLFA() method finds the right LFAs.
+        lfas = (
+            self.publishing_set.getChangesFileLFA(hist.sourcepackagerelease)
+            for hist in self.sources)
+        urls = [lfa.http_url for lfa in lfas]
+        self.assertEqual(urls, [
+            'http://localhost:58000/94/gedit_666_source.changes',
+            'http://localhost:58000/96/firefox_666_source.changes',
+            'http://localhost:58000/98/getting-things-gnome_666_source.changes'
+            ])
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

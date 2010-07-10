@@ -35,23 +35,23 @@ Retrieve hoary/i386 and hoary/hppa `DistroArchSeries.
     >>> pocket_release = PackagePublishingPocket.RELEASE
 
 The base method createBuild() is able to create a build to a given
-distroarchseries, pocket and archive.
+distro_arch_series, pocket and archive.
 
-Build.buildstate, by default is set to NEEDSBUILD, but you can
+Build.status, by default is set to NEEDSBUILD, but you can
 optionally provide another status.
 
     >>> hoary_evo_source = hoary.getSourcePackage('evolution')
     >>> evo_release = hoary_evo_source['1.0'].sourcepackagerelease
 
-    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> evo_build_i386 = evo_release.createBuild(
     ...     hoary_i386, pocket_release, ubuntu.main_archive,
     ...     status=BuildStatus.FULLYBUILT)
 
-    >>> print evo_build_i386.buildstate.name
+    >>> print evo_build_i386.status.name
     FULLYBUILT
 
-    >>> evo_build_i386.distroarchseries.architecturetag
+    >>> evo_build_i386.distro_arch_series.architecturetag
     u'i386'
 
     >>> print evo_build_i386.archive.displayname
@@ -191,7 +191,7 @@ contents at the time it was built.
     >>> evo_build_i386_ppa = copy.sourcepackagerelease.createBuild(
     ...     hoary_i386, pocket_release, cprov.archive)
 
-    >>> evo_build_i386_ppa.buildstate.name
+    >>> evo_build_i386_ppa.status.name
     'NEEDSBUILD'
 
     >>> print evo_build_i386_ppa.archive.displayname
@@ -264,8 +264,8 @@ Then we can copy source and binary from PRIMARY archive to Celso's PPA:
     ...    hoary, pocket_release, cprov.archive)
     >>> [cprov_bin] = foo_pub_binaries[0].copyTo(
     ...    hoary, pocket_release, cprov.archive)
-    >>> cprov_src.secure_record.status = PackagePublishingStatus.PUBLISHED
-    >>> cprov_bin.secure_record.status = PackagePublishingStatus.PUBLISHED
+    >>> cprov_src.status = PackagePublishingStatus.PUBLISHED
+    >>> cprov_bin.status = PackagePublishingStatus.PUBLISHED
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
@@ -293,7 +293,7 @@ breezy-autotest in his PPA.
     >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
     >>> copy = cprov_foo_src.copyTo(
     ...    breezy_autotest, pocket_release, cprov.archive)
-    >>> copy.secure_record.status = PackagePublishingStatus.PUBLISHED
+    >>> copy.status = PackagePublishingStatus.PUBLISHED
     >>> flush_database_updates()
 
 When only the source is copied we do want to rebuild, so it's correct
@@ -318,8 +318,8 @@ suite in Celso's PPA.
     ...    warty, pocket_release, cprov.archive)
     >>> [copied_binary] = cprov_foo_bin.copyTo(
     ...    warty, pocket_release, cprov.archive)
-    >>> copied_source.secure_record.status = PackagePublishingStatus.PUBLISHED
-    >>> copied_binary.secure_record.status = PackagePublishingStatus.PUBLISHED
+    >>> copied_source.status = PackagePublishingStatus.PUBLISHED
+    >>> copied_binary.status = PackagePublishingStatus.PUBLISHED
     >>> flush_database_updates()
 
 In this case the system is also able to locate the original build by
@@ -348,8 +348,8 @@ to Mark Shuttleworth's PPA.
     ...    hoary, pocket_release, mark.archive)
     >>> [mark_bin] = cprov_foo_bin.copyTo(
     ...    hoary, pocket_release, mark.archive)
-    >>> mark_src.secure_record.status = PackagePublishingStatus.PUBLISHED
-    >>> mark_bin.secure_record.status = PackagePublishingStatus.PUBLISHED
+    >>> mark_src.status = PackagePublishingStatus.PUBLISHED
+    >>> mark_bin.status = PackagePublishingStatus.PUBLISHED
     >>> flush_database_updates()
 
 The published binaries build path is followed again to find the

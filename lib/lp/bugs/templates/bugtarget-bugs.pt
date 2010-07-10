@@ -10,15 +10,14 @@
   i18n:domain="malone"
 >
   <metal:block fill-slot="head_epilogue">
-    <script type="text/javascript" src="/+icing/FormatAndColor.js"></script>
-    <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
+    <style type="text/css">
+      p#more-hot-bugs {float:right; margin-top:7px;}
+    </style>
   </metal:block>
-  <metal:portlets fill-slot="portlets">
-  </metal:portlets>
   <body>
-    <tal:side metal:fill-slot="side">
-      <div id="involvement" class="portlet involvement">
-        <ul>
+    <tal:side metal:fill-slot="side" condition="view/uses_launchpad_bugtracker">
+      <div id="involvement" class="portlet">
+        <ul class="involvement">
           <li style="border: none">
             <a href="+filebug" class="menu-link-filebug sprite bugs">
               Report a bug
@@ -33,115 +32,22 @@
             </a>
           </li>
         </ul>
+        <tal:bugtracker
+           define="link context/menu:bugs/configure_bugtracker|nothing"
+           condition="link">
+          <ul tal:condition="link/enabled"
+              style="padding-top: 1em">
+            <li>
+              <a tal:replace="structure link/fmt:link" />
+            </li>
+          </ul>
+        </tal:bugtracker>
       </div>
       <div class="portlet">
-        <table class="bug-links">
-          <tr tal:define="open_bugs_info view/open_bugs_info">
-            <td class="bugs-count" tal:content="open_bugs_info/count" />
-            <td class="bugs-link">
-              <a tal:attributes="href open_bugs_info/url">Open bugs</a>
-            </td>
-          </tr>
-          <tr tal:condition="view/user"
-              tal:define="my_bugs_info view/my_bugs_info">
-            <td class="bugs-count" tal:content="my_bugs_info/count" />
-            <td class="bugs-link">
-              <a tal:attributes="href my_bugs_info/url">Bugs assigned to me</a>
-            </td>
-          </tr>
-          <tr tal:define="critical_bugs_info view/critical_bugs_info">
-            <td class="bugs-count" tal:content="critical_bugs_info/count" />
-            <td class="bugs-link">
-              <a tal:attributes="href critical_bugs_info/url">Critical bugs</a>
-            </td>
-          </tr>
-          <tr tal:define="fixed_elsewhere view/bugs_fixed_elsewhere_info">
-            <td class="bugs-count" tal:content="fixed_elsewhere/count" />
-            <td class="bugs-link">
-              <a tal:attributes="href fixed_elsewhere/url">
-                Bugs fixed elsewhere
-              </a>
-            </td>
-          </tr>
-          <tr tal:define="new_bugs_info view/new_bugs_info">
-            <td class="bugs-count" tal:content="new_bugs_info/count" />
-            <td class="bugs-link">
-              <a tal:attributes="href new_bugs_info/url">New bugs</a>
-            </td>
-          </tr>
-          <tr tal:define="cve_bugs_info view/open_cve_bugs_info">
-            <td class="bugs-count" tal:content="cve_bugs_info/count" />
-            <td class="bugs-link">
-              <a tal:attributes="href cve_bugs_info/url">Open CVE bugs</a>
-              -
-              <a href="+cve">CVE reports</a>
-            </td>
-          </tr>
-          <tr tal:define="expirable_bugs_info view/expirable_bugs_info"
-              tal:condition="expirable_bugs_info">
-            <td class="bugs-count" tal:content="expirable_bugs_info/count" />
-            <td class="bugs-link">
-              <a tal:attributes="href expirable_bugs_info/url">
-                Incomplete bugs
-              </a>
-              (can expire)
-            </td>
-          </tr>
-          <tr tal:define="pending_bugwatches view/pending_bugwatches_info"
-              tal:condition="pending_bugwatches">
-            <td class="bugs-count" tal:content="pending_bugwatches/count" />
-            <td class="bugs-link">
-              <a tal:attributes="href pending_bugwatches/url">
-                Bugs need forwarding upstream
-              </a>
-            </td>
-          </tr>
-          <tr tal:define="subscribe_link context/menu:bugs/subscribe">
-            <td class="bugs-count" style="padding-top: 1em">
-              <a tal:attributes="href subscribe_link/url">
-                <img tal:attributes="src subscribe_link/icon_url" />
-              </a>
-            </td>
-            <td class="bugs-link">
-              <a tal:attributes="href subscribe_link/url"
-                 tal:content="subscribe_link/escapedtext" />
-            </td>
-          </tr>
-          <tr tal:define="
-                review_nominations_link context/menu:bugs/nominations|nothing"
-              tal:condition="review_nominations_link">
-            <td class="bugs-count" style="padding-top: 1em">
-              <a tal:attributes="href review_nominations_link/url">
-                <img tal:attributes="src review_nominations_link/icon_url" />
-              </a>
-            </td>
-            <td class="bugs-link">
-              <a tal:attributes="href review_nominations_link/url"
-                 tal:content="review_nominations_link/escapedtext" />
-            </td>
-          </tr>
-        </table>
-      </div>
-      <div tal:replace="structure context/@@+portlet-bugtags" />
-      <tal:releasecriticalbugs
-          tal:condition="view/shouldShowReleaseCriticalPortlet"
-          tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
-      <tal:milestonecriticalbugs
-          tal:condition="view/shouldShowReleaseCriticalPortlet"
-          tal:content="structure context/@@+portlet-bugtasklist-milestonebugs" />
-    </tal:side>
-    <div metal:fill-slot="main" class="tab-bugs"
-         tal:define="search_url string:+bugs;
-                     advanced_search_url string:+bugs?advanced=1">
-
-      <div class="portlet" style="float: right; border: none">
-        <ul>
-          <li id="bugtracker">
-            <strong>Bug tracker:</strong>
-            <tal:bugtracker replace="structure view/bugtracker" />
-          </li>
-          <li tal:define="bug_supervisor context/bug_supervisor">
-            Bug supervisor:
+        <dl tal:define="bug_supervisor context/bug_supervisor"
+            id="bug-supervisor">
+          <dt>Bug supervisor:</dt>
+          <dd>
             <tal:none condition="not:bug_supervisor">None set</tal:none>
             <a tal:condition="bug_supervisor"
                tal:replace="structure bug_supervisor/fmt:link">Bob Johnson</a>
@@ -153,9 +59,11 @@
                 <img tal:attributes="alt link/text" src="/@@/edit" />
               </a>
             </tal:edit-bug-supervisor>
-          </li>
-          <li tal:define="securitycontact context/security_contact">
-            Security contact:
+          </dd>
+        </dl>
+        <dl tal:define="securitycontact context/security_contact">
+          <dt id="bug-security">Security contact:</dt>
+          <dd>
             <tal:none condition="not:securitycontact">None set</tal:none>
             <a tal:condition="securitycontact"
                tal:replace="structure securitycontact/fmt:link">
@@ -169,53 +77,114 @@
                 <img tal:attributes="alt link/text" src="/@@/edit" />
               </a>
             </tal:edit-securitycontact>
-          </li>
-          <li>
-          </li>
-        </ul>
+          </dd>
+        </dl>
       </div>
+      <div tal:replace="structure context/@@+portlet-bugfilters" />
+      <div tal:replace="structure context/@@+portlet-bugtags" />
+      <tal:releasecriticalbugs
+          tal:condition="view/shouldShowReleaseCriticalPortlet"
+          tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+      <tal:milestonecriticalbugs
+          tal:condition="view/shouldShowReleaseCriticalPortlet"
+          tal:content="structure context/@@+portlet-bugtasklist-milestonebugs" />
+    </tal:side>
+    <div metal:fill-slot="main" class="tab-bugs"
+         tal:define="search_url string:+bugs;
+                     advanced_search_url string:+bugs?advanced=1">
 
-      <div class="search-box">
-        <metal:search
-          use-macro="context/@@+bugtarget-macros-search/simple-search-form"
-        />
-      </div>
-      <script type="text/javascript"><!--
-           $('field.searchtext').focus();
-      --></script>
 
-      <h2 style="margin-top: 1em">Hot bugs</h2>
 
-      <table class="listing" id="hot-bugs">
-        <thead>
-          <tr>
-            <th colspan="3">Summary</th>
-            <th>Status</th>
-            <th>Importance</th>
-            <th>Last changed</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="bugtask view/hot_bugtasks">
-            <td class="icon left">
-              <img alt="" src="/@@/bug" />
-            </td>
-            <td style="text-align: right">
-              #<span tal:replace="bugtask/bug/id" />
-            </td>
-            <td>
-              <a tal:attributes="href bugtask/fmt:url"
-                 tal:content="bugtask/bug/title" />
-            </td>
-            <td tal:attributes="class string:status${bugtask/status/name}"
-                tal:content="bugtask/status/title" />
-            <td tal:attributes="
-                  class string:importance${bugtask/importance/name}"
-                tal:content="bugtask/importance/title" />
-            <td tal:content="bugtask/bug/date_last_updated/fmt:displaydate" />
-          </tr>
-        </tbody>
-      </table>
+      <tal:uses_malone condition="view/uses_launchpad_bugtracker">
+      <tal:has_bugtasks condition="context/has_bugtasks">
+        <div class="search-box" style="margin-bottom:2em">
+          <metal:search
+            use-macro="context/@@+bugtarget-macros-search/simple-search-form"
+          />
+        </div>
+        <script type="text/javascript"><!--
+             $('field.searchtext').focus();
+        --></script>
+      </tal:has_bugtasks>
+
+      <tal:has_hot_bugs condition="view/hot_bugs_info/bugtasks"
+        content="cache:private, 10 minute">
+        <!-- hot_bugs_info/bugtasks cache:private 10 minute -->
+        <h2>Hot bugs</h2>
+
+        <table class="listing" id="hot-bugs"
+          tal:define="show_package python: 'packagename' in view.columns_to_show
+          ">
+          <thead>
+            <tr>
+              <th colspan="3">Summary</th>
+              <th
+                tal:condition="show_package">
+                Package
+              </th>
+              <th>Status</th>
+              <th>Importance</th>
+              <th>Last changed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="bugtask view/hot_bugs_info/bugtasks">
+              <td class="icon left">
+                <span tal:replace="structure bugtask/image:icon" />
+              </td>
+              <td style="text-align: right">
+                #<span tal:replace="bugtask/bug/id" />
+              </td>
+              <td>
+                <a tal:attributes="href bugtask/fmt:url"
+                   tal:content="bugtask/bug/title" />
+              </td>
+              <td tal:content="structure bugtask/sourcepackagename/name|default"
+                tal:condition="show_package"
+              >&mdash;</td>
+              <td tal:attributes="class string:status${bugtask/status/name}"
+                  tal:content="bugtask/status/title" />
+              <td tal:attributes="
+                    class string:importance${bugtask/importance/name}"
+                  tal:content="bugtask/importance/title" />
+              <td tal:content="bugtask/bug/date_last_updated/fmt:displaydate" />
+            </tr>
+          </tbody>
+        </table>
+        <p id="more-hot-bugs"
+           tal:condition="view/hot_bugs_info/has_more_bugs">
+          <a tal:attributes="href string:${context/fmt:url/+bugs}?orderby=-heat&field.status%3Alist=NEW&field.status%3Alist=INCOMPLETE_WITH_RESPONSE&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE&field.status%3Alist=CONFIRMED&field.status%3Alist=TRIAGED&field.status%3Alist=INPROGRESS&field.status%3Alist=FIXCOMMITTED&field.omit_dupes=on">See all hot bugs</a>
+        </p>
+      </tal:has_hot_bugs>
+
+      <tal:no_hot_bugs condition="not: view/hot_bugs_info/bugtasks">
+        <p id="no-bugs-filed"><strong>There are currently no
+          <span tal:condition="context/has_bugtasks">open</span> bugs filed
+          against <tal:project_title replace="context/title" />.</strong></p>
+
+        <p id="no-bugs-report"><a href="+filebug">Report a bug.</a></p>
+      </tal:no_hot_bugs>
+    </tal:uses_malone>
+
+    <tal:not_uses_malone condition="not: view/uses_launchpad_bugtracker"
+     tal:define ="configure_bugtracker context/menu:overview/configure_bugtracker | nothing">
+      <p id="no-malone"><strong><tal:project_title replace="context/title" /> does not use Launchpad for
+        bug tracking.</strong></p>
+          <p tal:condition="view/external_bugtracker"
+             id="bugtracker"><strong>Bugs are tracked in
+            <tal:bugtracker replace="structure view/bugtracker" />.</strong>
+          </p>
+
+        <p tal:condition="context/required:launchpad.Edit"
+           id="no-malone-edit"
+           >
+          <a tal:condition="configure_bugtracker"
+             tal:replace="structure configure_bugtracker/fmt:link"/>
+          <a tal:condition="not: configure_bugtracker"
+             tal:attributes="href string:${context/fmt:url/+edit}">
+            Enable bug tracking.</a>
+        </p>
+    </tal:not_uses_malone>
 
     </div><!-- main -->
   </body>

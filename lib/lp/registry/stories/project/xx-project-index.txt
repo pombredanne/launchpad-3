@@ -30,24 +30,15 @@ its development focus.
     Projects
     Gnome Applets ...
     Evolution ...
-    trunk series: 2.1.6,
     GNOME Terminal ...
     gnomebaker ...
-    trunk series: 2.1.7, 2.1.7
     NetApplet ...
-    trunk series: 1.0,
     ...
 
-And the projects, milestone, and releases are linked.
+The projects are linked.
 
     >>> print anon_browser.getLink('gnomebaker').url
     http://launchpad.dev/gnomebaker
-
-    >>> print anon_browser.getLink('1.0').url
-    http://launchpad.dev/netapplet/trunk/1.0
-
-    >>> print anon_browser.getLink('2.1.7').url
-    http://launchpad.dev/gnomebaker/trunk/2.1.7
 
 The project overview page contains a link to register new products with the
 project. It is only available to users which have 'Admin' privileges on the
@@ -159,6 +150,12 @@ Inactive products are not included in that list, though.
     # (i.e. login()) and bypass the security proxy.
     >>> from lp.registry.model.product import Product
     >>> firefox = Product.byName('firefox')
+
+    # Unlink the source packages so the project can be deactivated.
+    >>> from lp.testing import unlink_source_packages
+    >>> login('admin@canonical.com')
+    >>> unlink_source_packages(firefox)
+    >>> logout()
     >>> firefox.active = False
     >>> firefox.syncUpdate()
 
@@ -172,9 +169,9 @@ Inactive products are not included in that list, though.
     >>> firefox.syncUpdate()
 
 
-== Project bug subscriptions ==
+== Project Group bug subscriptions ==
 
-To receive email notifications about bugs pertaining to a project, we
+To receive email notifications about bugs pertaining to a project group, we
 can create structural bug subscriptions.
 
     >>> user_browser.open('http://launchpad.dev/mozilla')

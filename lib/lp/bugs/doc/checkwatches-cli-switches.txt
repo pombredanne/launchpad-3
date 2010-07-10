@@ -1,28 +1,27 @@
 = Updating selected bug trackers =
 
-The BugWatchUpdater class can be instructed to update only a subset of
+The CheckwatchesMaster class can be instructed to update only a subset of
 bugtrackers. This is acheived by passing a list of bug tracker names to
 the updateBugTrackers() method.
+
+    >>> import transaction
+    >>> from canonical.database.sqlbase import (
+    ...     cursor, sqlvalues, ZopelessTransactionManager)
+    >>> from canonical.database.constants import UTC_NOW
+    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
 
 We'll update all bugtrackers so that the test doesn't try to make any
 external connections.
 
-    >>> from canonical.database.sqlbase import cursor, sqlvalues
-    >>> from canonical.database.constants import UTC_NOW
     >>> cur = cursor()
     >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" %
     ...     sqlvalues(UTC_NOW))
-    >>> import transaction
     >>> transaction.commit()
 
-    >>> from canonical.database.sqlbase import (
-    ...     ZopelessTransactionManager)
-    >>> from canonical.launchpad.scripts import FakeLogger
-    >>> from lp.bugs.scripts.checkwatches import (
-    ...     BugWatchUpdater)
     >>> transactionmgr = ZopelessTransactionManager._installed
-    >>> updater = BugWatchUpdater(transactionmgr, log=FakeLogger())
-    >>> updater._login()
+    >>> updater = CheckwatchesMaster(transactionmgr, logger=FakeLogger())
+
     >>> updater.updateBugTrackers(['debbugs', 'gnome-bugzilla'])
     DEBUG...No watches to update on http://bugs.debian.org
     DEBUG...No watches to update on http://bugzilla.gnome.org/bugs
@@ -31,17 +30,16 @@ If a bug tracker is disabled checkwatches won't try to update it.
 
     >>> from canonical.config import config
     >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> from lp.testing.factory import LaunchpadObjectFactory
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-   >>> login('foo.bar@canonical.com')
-    >>> bug_tracker = LaunchpadObjectFactory().makeBugTracker(
-    ...     'http://example.com')
+    >>> login('foo.bar@canonical.com')
+    >>> bug_tracker = factory.makeBugTracker('http://example.com')
     >>> bug_tracker.active = False
+    >>> bug_tracker_name = bug_tracker.name
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
-    >>> updater.updateBugTrackers([bug_tracker.name])
+    >>> updater.updateBugTrackers([bug_tracker_name])
     DEBUG...Updates are disabled for bug tracker at http://example.com
 
 This functionality can also be used with the checkwatches cronscript,
@@ -55,7 +53,7 @@ line.
     ...         super(TestCheckWatchesCronScript, self).__init__(
     ...             name, dbuser, test_args)
     ...         self.logger = FakeLogger()
-    ...         self.txn = transaction
+    ...         self.txn = ZopelessTransactionManager
 
     >>> def run_cronscript_with_args(args):
     ...     # It may seem a bit weird to do ths rather than letting the
@@ -63,6 +61,7 @@ line.
     ...     # LayerIsolationErrors get raised as it leaves threads lying
     ...     # around.
     ...     login('bugwatch@bugs.launchpad.net')
+    ...     transaction.commit()
     ...     checkwatches_cronscript = TestCheckWatchesCronScript(
     ...         "checkwatches", config.checkwatches.dbuser,
     ...         test_args=args)
@@ -105,6 +104,7 @@ demonstrate this.
     INFO Resetting 5 bug watches for bug tracker 'savannah'
     INFO Updating 5 watches on bug tracker 'savannah'
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
+    (OOPS-...)
     INFO 0 watches left to check on bug tracker 'savannah'
     INFO    Time for this run...
 
@@ -122,9 +122,9 @@ tracker option fully.
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> print out
-    usage: checkwatches.py [options]
+    Usage: checkwatches.py [options]
     <BLANKLINE>
-    options:
+    Options:
       ...
       -t BUG_TRACKER, --bug-tracker=BUG_TRACKER
                             Only check a given bug tracker. Specifying
@@ -138,3 +138,6 @@ tracker option fully.
       --reset               Update all the watches on the bug tracker,
                             regardless of whether or not they need
                             checking.
+      --jobs=JOBS           The number of simulataneous jobs to run, 1
+                            by default.
+    <BLANKLINE>

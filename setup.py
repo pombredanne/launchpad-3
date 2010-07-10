@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import ez_setup
@@ -24,9 +24,11 @@ setup(
     # this list should only contain direct dependencies--things imported or
     # used in zcml.
     install_requires=[
+        'ampoule',
         'bzr',
         'chameleon.core',
         'chameleon.zpt',
+        'cssutils',
         'feedvalidator',
         'funkload',
         'launchpadlib',
@@ -37,18 +39,29 @@ setup(
         'lazr.lifecycle',
         'lazr.restful',
         'lazr.smtptest',
+        'lazr.testing',
         'lazr.uri',
+        'lazr-js',
         'mechanize',
+        'meliae',
+        'mercurial',
         'mocker',
+        'numpy',
         'oauth',
+        'paramiko',
+        'python-memcached',
+        'pyasn1',
         'python-openid',
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:
         'RestrictedPython',
+        'setproctitle',
         'setuptools',
         'sourcecodegen',
         'storm',
+        'testtools',
         'transaction',
+        'Twisted',
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',
@@ -61,7 +74,6 @@ setup(
         'zope.app.file',
         'zope.app.form',
         'zope.app.pagetemplate',
-        'zope.app.pluggableauth',
         'zope.app.publication',
         'zope.app.publisher',
         'zope.app.security',
@@ -69,6 +81,7 @@ setup(
         'zope.app.server',
         'zope.app.session',
         'zope.app.testing',
+        'zope.app.zcmlfiles',
         'zope.app.wsgi',
         'zope.app.zapi',
         'zope.contenttype',
@@ -125,6 +138,7 @@ setup(
             'twistd = twisted.scripts.twistd:run',
             'start_librarian '
                 '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
+            'ec2 = devscripts.ec2test.entrypoint:main',
         ]
     ),
 )

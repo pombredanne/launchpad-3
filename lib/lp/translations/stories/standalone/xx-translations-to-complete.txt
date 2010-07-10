@@ -62,3 +62,28 @@ Pierre is not a translator.  Pierre does not get such a listing either.
     ...     pierre_browser.contents, 'translations-to-complete-table')
     >>> print tag
     None
+
+
+Teams
+-----
+
+The Rosetta administrators, as a special case, can act as a translator
+for automatically generated messages.  Nevertheless, its Translations
+page does not show any translations to complete--even to a member of the team.
+
+    >>> login('carlos@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> pofile = factory.makePOFile('ru')
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+    >>> message = factory.makeTranslationMessage(
+    ...     pofile=pofile, translator=rosetta_experts, translations=['x'])
+    >>> logout()
+
+    >>> carlos_browser = setupBrowser('Basic carlos@canonical.com:test')
+    >>> experts_home = 'http://translations.launchpad.dev/~rosetta-admins'
+    >>> carlos_browser.open(experts_home)
+
+    >>> print extract_text(find_tag_by_id(
+    ...     jean_browser.contents, 'translations-to-complete-table'))

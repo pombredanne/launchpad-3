@@ -19,18 +19,9 @@
 <div metal:fill-slot="main">
 
   <div class="top-portlet">
-    <p
-       class="not-translated-in-launchpad"
-       tal:condition="not: context/product/official_rosetta">
-      <strong>
-        This project is not configured to use Launchpad for translations.
-      </strong>
-      <tal:admin_or_owner condition="context/product/required:launchpad.Edit">
-        You can change this in the
-        <a tal:attributes="href view/product_edit_url">
-          project settings</a>.
-      </tal:admin_or_owner>
-    </p>
+    <tal:official_use replace="
+        structure
+        context/product/@@+portlet-not-using-launchpad"/>
   </div>
 
   <div class="yui-g">
@@ -38,16 +29,41 @@
       <div metal:use-macro="context/@@launchpad_form/form" class="portlet">
         <div metal:fill-slot="extra_info">
 
-          <tal:rosetta condition="context/product/official_rosetta">
+          <tal:rosetta>
             <h2>Import translations from branch</h2>
             <p>
-              You can ask Launchpad to continuously import any translation
-              files (templates and translations) that it finds in
-              <strong><tal:series replace="structure view/series_title">
-                  Evolution Series:trunk</tal:series>'s</strong> official Bazaar branch.
-              After the initial import, Launchpad will continue to scan your Bazaar
-              branch for updates to template and translation files.
+              Launchpad can continuously import translation files (templates and
+              translations) from <strong><tal:series replace="structure view/series_title">
+              Evolution Series:trunk</tal:series>'s</strong> official Bazaar branch.
             </p>
+
+            <p>
+              Launchpad will make an initial import and then update its data
+              every time you push a new revision to the branch. There is a
+              short delay between a push and the files appearing in the import
+              queue.
+              (<a tal:attributes="href context/menu:navigation/imports/url">See
+              the import queue</a>)
+            </p>
+
+            <p>
+              When preparing the translation files in your Bazaar branch, you must
+              follow our <a href="https://help.launchpad.net/Translations/YourProject/ImportPolicy"
+              >translations import policy</a>. At a minimum, your branch must:
+            </p>
+
+            <ul class="bulleted">
+              <li>
+                contain at least one <code>.pot</code> file with English strings,
+                rather than message IDs or another language
+              </li>
+              <li>
+                give each template its own directory (<a
+                href="/+help/directory-example.html" target="help">see
+                an example directory layout</a>).
+              </li>
+            </ul>
+
             <p id="bzr-request-display"  class="info sprite">
               If you only need a one-time import, please request it
               <a tal:attributes="href view/request_bzr_import_url">here</a>.
@@ -63,7 +79,7 @@
             </p>
             <p tal:condition="not:view/context/branch"
                id="no-branch-display">
-              This series does not have an official Bazaar branch. 
+              This series does not have an official Bazaar branch.
               <a tal:attributes="href view/link_branch_url">Set it now!</a>
             </p>
           </tal:rosetta>

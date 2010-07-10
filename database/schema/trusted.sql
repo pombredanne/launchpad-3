@@ -47,7 +47,8 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION null_count(anyarray) IS 'Return the number of NULLs in the first row of the given array.';
+COMMENT ON FUNCTION null_count(anyarray) IS
+'Return the number of NULLs in the first row of the given array.';
 
 
 CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
@@ -92,6 +93,116 @@ $$;
 
 COMMENT ON FUNCTION replication_lag(integer) IS
 'Returns the lag time of the lpmain replication set to the given node, or NULL if not a replicated installation. The node id parameter can be obtained by calling getlocalnodeid() on the relevant database. This function only returns meaningful results on the lpmain replication set master.';
+
+
+CREATE OR REPLACE FUNCTION update_replication_lag_cache() RETURNS boolean
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+$$
+    BEGIN
+        DELETE FROM DatabaseReplicationLag;
+        INSERT INTO DatabaseReplicationLag (node, lag)
+            SELECT st_received, st_lag_time FROM _sl.sl_status
+            WHERE st_origin = _sl.getlocalnodeid('_sl');
+        RETURN TRUE;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN FALSE;
+        WHEN undefined_table THEN
+            RETURN FALSE;
+    END;
+$$;
+
+COMMENT ON FUNCTION update_replication_lag_cache() IS
+'Updates the DatabaseReplicationLag materialized view.';
+
+CREATE OR REPLACE FUNCTION update_database_stats() RETURNS void
+LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS
+$$
+    import re
+    import subprocess
+
+    # Prune DatabaseTableStats and insert current data.
+    # First, detect if the statistics have been reset.
+    stats_reset = plpy.execute("""
+        SELECT *
+        FROM
+            pg_catalog.pg_stat_user_tables AS NowStat,
+            DatabaseTableStats AS LastStat
+        WHERE
+            LastStat.date_created = (
+                SELECT max(date_created) FROM DatabaseTableStats)
+            AND NowStat.schemaname = LastStat.schemaname
+            AND NowStat.relname = LastStat.relname
+            AND (
+                NowStat.seq_scan < LastStat.seq_scan
+                OR NowStat.idx_scan < LastStat.idx_scan
+                OR NowStat.n_tup_ins < LastStat.n_tup_ins
+                OR NowStat.n_tup_upd < LastStat.n_tup_upd
+                OR NowStat.n_tup_del < LastStat.n_tup_del
+                OR NowStat.n_tup_hot_upd < LastStat.n_tup_hot_upd)
+        LIMIT 1
+        """, 1).nrows() > 0
+    if stats_reset:
+        # The database stats have been reset. We cannot calculate
+        # deltas because we do not know when this happened. So we trash
+        # our records as they are now useless to us. We could be more
+        # sophisticated about this, but this should only happen
+        # when an admin explicitly resets the statistics or if the
+        # database is rebuilt.
+        plpy.notice("Stats wraparound. Purging DatabaseTableStats")
+        plpy.execute("DELETE FROM DatabaseTableStats")
+    else:
+        plpy.execute("""
+            DELETE FROM DatabaseTableStats
+            WHERE date_created < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('21 days' AS interval));
+            """)
+    # Insert current data.
+    plpy.execute("""
+        INSERT INTO DatabaseTableStats
+            SELECT
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+                schemaname, relname, seq_scan, seq_tup_read,
+                coalesce(idx_scan, 0), coalesce(idx_tup_fetch, 0),
+                n_tup_ins, n_tup_upd, n_tup_del,
+                n_tup_hot_upd, n_live_tup, n_dead_tup, last_vacuum,
+                last_autovacuum, last_analyze, last_autoanalyze
+            FROM pg_catalog.pg_stat_user_tables;
+        """)
+
+    # Prune DatabaseCpuStats. Calculate CPU utilization information
+    # and insert current data.
+    plpy.execute("""
+        DELETE FROM DatabaseCpuStats
+        WHERE date_created < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            - CAST('21 days' AS interval));
+        """)
+    dbname = plpy.execute(
+        "SELECT current_database() AS dbname", 1)[0]['dbname']
+    ps = subprocess.Popen(
+        ["ps", "-C", "postgres", "--no-headers", "-o", "cp,args"],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+    stdout, stderr = ps.communicate()
+    cpus = {}
+    # We make the username match non-greedy so the trailing \d eats
+    # trailing digits from the database username. This collapses
+    # lpnet1, lpnet2 etc. into just lpnet.
+    ps_re = re.compile(
+        r"(?m)^\s*(\d+)\spostgres:\s(\w+?)\d*\s%s\s" % dbname)
+    for ps_match in ps_re.finditer(stdout):
+        cpu, username = ps_match.groups()
+        cpus[username] = int(cpu) + cpus.setdefault(username, 0)
+    cpu_ins = plpy.prepare(
+        "INSERT INTO DatabaseCpuStats (username, cpu) VALUES ($1, $2)",
+        ["text", "integer"])
+    for cpu_tuple in cpus.items():
+        plpy.execute(cpu_ins, cpu_tuple)
+$$;
+
+COMMENT ON FUNCTION update_database_stats() IS
+'Copies rows from pg_stat_user_tables into DatabaseTableStats. We use a stored procedure because it is problematic for us to grant permissions on objects in the pg_catalog schema.';
 
 
 CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
@@ -252,15 +363,17 @@ COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number a
 CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
-    from urlparse import urlparse
+    from urlparse import urlparse, uses_netloc
+    # Extend list of schemes that specify netloc. We can drop sftp
+    # with Python 2.5 in the DB.
+    if 'git' not in uses_netloc:
+        uses_netloc.insert(0, 'sftp')
+        uses_netloc.insert(0, 'bzr')
+        uses_netloc.insert(0, 'bzr+ssh')
+        uses_netloc.insert(0, 'ssh') # Mercurial
+        uses_netloc.insert(0, 'git')
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
-    # urlparse in the stdlib does not correctly parse the netloc from
-    # sftp and bzr+ssh schemes, so we have to manually check those
-    if scheme in ("sftp", "bzr+ssh"):
-        return 1
-    if not (scheme and netloc):
-        return 0
-    return 1
+    return bool(scheme and netloc)
 $$;
 
 COMMENT ON FUNCTION valid_absolute_url(text) IS 'Ensure the given test is a valid absolute URL, containing both protocol and network location';
@@ -1029,7 +1142,22 @@ BEGIN
     DECLARE
         parent_name text;
         child_name text;
+        parent_distroseries text;
+        child_distroseries text;
     BEGIN
+        -- Make sure that the package sets being associated here belong
+        -- to the same distro series.
+        IF (SELECT parent.distroseries != child.distroseries
+            FROM packageset parent, packageset child
+            WHERE parent.id = NEW.parent AND child.id = NEW.child)
+        THEN
+            SELECT name INTO parent_name FROM packageset WHERE id = NEW.parent;
+            SELECT name INTO child_name FROM packageset WHERE id = NEW.child;
+            SELECT ds.name INTO parent_distroseries FROM packageset ps, distroseries ds WHERE ps.id = NEW.parent AND ps.distroseries = ds.id;
+            SELECT ds.name INTO child_distroseries FROM packageset ps, distroseries ds WHERE ps.id = NEW.child AND ps.distroseries = ds.id;
+            RAISE EXCEPTION 'Package sets % and % belong to different distro series (to % and % respectively) and thus cannot be associated.', child_name, parent_name, child_distroseries, parent_distroseries;
+        END IF;
+
         IF EXISTS(
             SELECT * FROM flatpackagesetinclusion
             WHERE parent = NEW.child AND child = NEW.parent LIMIT 1)
@@ -1281,3 +1409,302 @@ $$;
 COMMENT ON FUNCTION mv_branch_distribution_update() IS
 'Maintain Branch name cache when Distribution is modified.';
 
+
+-- Mirror tables for the login service.
+-- We maintain a duplicate of a few tables which are replicated
+-- in a seperate replication set.
+-- Insert triggers
+CREATE OR REPLACE FUNCTION lp_mirror_teamparticipation_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_TeamParticipation SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_personlocation_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_PersonLocation SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_person_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_Person SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_account_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_Account (id, openid_identifier)
+    VALUES (NEW.id, NEW.openid_identifier);
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+-- UPDATE triggers
+CREATE  OR REPLACE FUNCTION lp_mirror_teamparticipation_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE lp_TeamParticipation
+    SET id = NEW.id,
+        team = NEW.team,
+        person = NEW.person
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE  OR REPLACE FUNCTION lp_mirror_personlocation_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE lp_PersonLocation
+    SET id = NEW.id,
+        date_created = NEW.date_created,
+        person = NEW.person,
+        latitude = NEW.latitude,
+        longitude = NEW.longitude,
+        time_zone = NEW.time_zone,
+        last_modified_by = NEW.last_modified_by,
+        date_last_modified = NEW.date_last_modified,
+        visible = NEW.visible,
+        locked = NEW.locked
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE  OR REPLACE FUNCTION lp_mirror_person_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE lp_Person
+    SET id = NEW.id,
+        displayname = NEW.displayname,
+        teamowner = NEW.teamowner,
+        teamdescription = NEW.teamdescription,
+        name = NEW.name,
+        language = NEW.language,
+        fti = NEW.fti,
+        defaultmembershipperiod = NEW.defaultmembershipperiod,
+        defaultrenewalperiod = NEW.defaultrenewalperiod,
+        subscriptionpolicy = NEW.subscriptionpolicy,
+        merged = NEW.merged,
+        datecreated = NEW.datecreated,
+        addressline1 = NEW.addressline1,
+        addressline2 = NEW.addressline2,
+        organization = NEW.organization,
+        city = NEW.city,
+        province = NEW.province,
+        country = NEW.country,
+        postcode = NEW.postcode,
+        phone = NEW.phone,
+        homepage_content = NEW.homepage_content,
+        icon = NEW.icon,
+        mugshot = NEW.mugshot,
+        hide_email_addresses = NEW.hide_email_addresses,
+        creation_rationale = NEW.creation_rationale,
+        creation_comment = NEW.creation_comment,
+        registrant = NEW.registrant,
+        logo = NEW.logo,
+        renewal_policy = NEW.renewal_policy,
+        personal_standing = NEW.personal_standing,
+        personal_standing_reason = NEW.personal_standing_reason,
+        mail_resumption_date = NEW.mail_resumption_date,
+        mailing_list_auto_subscribe_policy 
+            = NEW.mailing_list_auto_subscribe_policy,
+        mailing_list_receive_duplicates = NEW.mailing_list_receive_duplicates,
+        visibility = NEW.visibility,
+        verbose_bugnotifications = NEW.verbose_bugnotifications,
+        account = NEW.account
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_account_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF OLD.id <> NEW.id OR OLD.openid_identifier <> NEW.openid_identifier THEN
+        UPDATE lp_Account
+        SET id = NEW.id, openid_identifier = NEW.openid_identifier
+        WHERE id = OLD.id;
+    END IF;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+-- Delete triggers
+CREATE OR REPLACE FUNCTION lp_mirror_del() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    EXECUTE 'DELETE FROM lp_' || TG_TABLE_NAME || ' WHERE id=' || OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+
+-- Update the (redundant) column bug.latest_patch_uploaded when a
+-- a bug attachment is added or removed or if its type is changed.
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded(integer)
+RETURNS VOID SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE bug SET latest_patch_uploaded =
+        (SELECT max(message.datecreated)
+            FROM message, bugattachment
+            WHERE bugattachment.message=message.id AND
+                bugattachment.bug=$1 AND
+                bugattachment.type=1)
+        WHERE bug.id=$1;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_insert_update()
+RETURNS trigger SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    PERFORM bug_update_latest_patch_uploaded(NEW.bug);
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_delete()
+RETURNS trigger SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    PERFORM bug_update_latest_patch_uploaded(OLD.bug);
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION calculate_bug_heat(bug_id integer) RETURNS integer
+LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS $$
+    from datetime import datetime
+
+    class BugHeatConstants:
+        PRIVACY = 150
+        SECURITY = 250
+        DUPLICATE = 6
+        AFFECTED_USER = 4
+        SUBSCRIBER = 2
+
+
+    def get_max_heat_for_bug(bug_id):
+        results = plpy.execute("""
+            SELECT MAX(
+                GREATEST(Product.max_bug_heat, Distribution.max_bug_heat))
+                    AS max_heat
+            FROM BugTask
+            LEFT OUTER JOIN ProductSeries ON
+                BugTask.productseries = ProductSeries.id
+            LEFT OUTER JOIN Product ON (
+                BugTask.product = Product.id
+                OR ProductSeries.product = Product.id)
+            LEFT OUTER JOIN DistroSeries ON
+                BugTask.distroseries = DistroSeries.id
+            LEFT OUTER JOIN Distribution ON (
+                BugTask.distribution = Distribution.id
+                OR DistroSeries.distribution = Distribution.id)
+            WHERE
+                BugTask.bug = %s""" % bug_id)
+
+        return results[0]['max_heat']
+
+    # It would be nice to be able to just SELECT * here, but we need the
+    # timestamps to be in a format that datetime.fromtimestamp() will
+    # understand.
+    bug_data = plpy.execute("""
+        SELECT
+            duplicateof,
+            private,
+            security_related,
+            number_of_duplicates,
+            users_affected_count,
+            EXTRACT(epoch from datecreated)
+                AS timestamp_date_created,
+            EXTRACT(epoch from date_last_updated)
+                AS timestamp_date_last_updated,
+            EXTRACT(epoch from date_last_message)
+                AS timestamp_date_last_message
+        FROM Bug WHERE id = %s""" % bug_id)
+
+    if bug_data.nrows() == 0:
+        raise Exception("Bug %s doesn't exist." % bug_id)
+
+    bug = bug_data[0]
+    if bug['duplicateof'] is not None:
+        return None
+
+    heat = {}
+    heat['dupes'] = (
+        BugHeatConstants.DUPLICATE * bug['number_of_duplicates'])
+    heat['affected_users'] = (
+        BugHeatConstants.AFFECTED_USER *
+        bug['users_affected_count'])
+
+    if bug['private']:
+        heat['privacy'] = BugHeatConstants.PRIVACY
+    if bug['security_related']:
+        heat['security'] = BugHeatConstants.SECURITY
+
+    # Get the heat from subscribers, both direct and via duplicates.
+    subs_from_dupes = plpy.execute("""
+        SELECT COUNT(DISTINCT BugSubscription.person) AS sub_count
+        FROM BugSubscription, Bug
+        WHERE Bug.id = BugSubscription.bug
+            AND (Bug.id = %s OR Bug.duplicateof = %s)"""
+        % (bug_id, bug_id))
+
+    heat['subcribers'] = (
+        BugHeatConstants.SUBSCRIBER
+        * subs_from_dupes[0]['sub_count'])
+
+    total_heat = sum(heat.values())
+
+    # Bugs decay over time. Every day the bug isn't touched its heat
+    # decreases by 1%.
+    date_last_updated = datetime.fromtimestamp(
+        bug['timestamp_date_last_updated'])
+    days_since_last_update = (datetime.utcnow() - date_last_updated).days
+    total_heat = int(total_heat * (0.99 ** days_since_last_update))
+
+    if days_since_last_update > 0:
+        # Bug heat increases by a quarter of the maximum bug heat
+        # divided by the number of days since the bug's creation date.
+        date_created = datetime.fromtimestamp(
+            bug['timestamp_date_created'])
+
+        if bug['timestamp_date_last_message'] is not None:
+            date_last_message = datetime.fromtimestamp(
+                bug['timestamp_date_last_message'])
+            oldest_date = max(date_last_updated, date_last_message)
+        else:
+            date_last_message = None
+            oldest_date = date_last_updated
+
+        days_since_last_activity = (datetime.utcnow() - oldest_date).days
+        days_since_created = (datetime.utcnow() - date_created).days
+        max_heat = get_max_heat_for_bug(bug_id)
+        if max_heat is not None and days_since_created > 0:
+            total_heat = (
+                total_heat + (max_heat * 0.25 / days_since_created))
+
+    return int(total_heat)
+$$;

@@ -9,17 +9,6 @@
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
   i18n_domain="canonical.launchpad">
 
-  <!--  XXX: Steve Alexander 2004-11-24:
-        yuck... registering a main template as a view for everything.
-        This should be a non-published resource.
-    -->
-  <browser:page
-      name="main_template"
-      for="*"
-      permission="zope.Public"
-      template="../templates/main-template.pt"
-      />
-
   <!-- Error pages -->
   <!-- System Errors -->
   <browser:page
@@ -46,6 +35,15 @@
       permission="zope.Public"
       template="../templates/launchpad-notfound.pt"
       class="canonical.launchpad.webapp.error.NotFoundView"
+      />
+
+  <!-- Gone -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.GoneError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-gone.pt"
+      class="canonical.launchpad.webapp.error.GoneView"
       />
 
   <!-- RequestExpired -->
@@ -82,6 +80,15 @@
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
       class="canonical.launchpad.webapp.error.SystemErrorView"
+      />
+
+  <!-- NoReferrerError -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.NoReferrerError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-noreferrer.pt"
+      class="canonical.launchpad.webapp.error.NoReferrerErrorView"
       />
 
   <!-- UnsafeFormGetSubmissionError -->
@@ -168,13 +175,6 @@
       permission="zope.Public"
       />
 
-  <browser:page
-      for="*"
-      name="+main-template-macros"
-      template="../templates/main-template-macros.pt"
-      permission="zope.Public"
-      />
-
   <!-- Macros for the forbidden pages; used by launchpad-forbidden.pt and
   shipit-forbidden.pt, initially. -->
   <browser:page
@@ -184,30 +184,40 @@
       permission="zope.Public"
       />
 
-  <!-- Login and logout pages, and login status. -->
+
+  <!-- The +basiclogin view is registered using Python code so that we can do
+       it only for development and tests. Below is what its declaration would
+       look like, and it's here so that someone grepping zcml files for its
+       name will find it.
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       class="canonical.launchpad.webapp.login.BasicLoginPage"
       name="+basiclogin"
-      permission="zope.Public"
-      attribute="login"
-      layer="canonical.launchpad.layers.DebugLayer"
+      permission="zope.Public" />
+  -->
+
+  <class class="canonical.launchpad.webapp.login.BasicLoginPage">
+    <allow attributes="__call__" />
+    <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+  </class>
+
+  <subscriber
+      for="zope.processlifetime.ProcessStarting"
+      handler="canonical.launchpad.webapp.login.register_basiclogin"
       />
 
+  <!-- OpenID RP views -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      template="../templates/launchpad-login.pt"
-      class="canonical.launchpad.webapp.login.LoginOrRegister"
+      class="canonical.launchpad.webapp.login.OpenIDLogin"
       permission="zope.Public"
       name="+login"
       />
-
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      template="../templates/launchpad-forgottenpassword.pt"
-      class="canonical.launchpad.webapp.login.ForgottenPasswordPage"
+      class="canonical.launchpad.webapp.login.OpenIDCallbackView"
       permission="zope.Public"
-      name="+forgottenpassword"
+      name="+openid-callback"
       />
 
   <browser:page
@@ -224,23 +234,6 @@
       template="../templates/launchpad-loginstatus.pt"
       class="canonical.launchpad.browser.LoginStatus"
       permission="zope.Public"
-      />
-
-  <!-- Special login and information pages for a site restricted so that just
-       one team given in launchpad.conf may access it.  -->
-  <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadRoot"
-      name="+restricted-login"
-      template="../templates/launchpad-restrictedlogin.pt"
-      permission="zope.Public"
-      class="canonical.launchpad.webapp.login.LoginOrRegister"
-      />
-  <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadRoot"
-      name="+restricted-info"
-      template="../templates/launchpad-restrictedinfo.pt"
-      permission="zope.Public"
-      class="canonical.launchpad.webapp.login.RestrictedLoginInfo"
       />
 
   <!-- Other non-application-specific pages. -->
@@ -288,56 +281,10 @@
       class="canonical.launchpad.browser.OAuthAccessTokenView"
       permission="zope.Public" />
 
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-      name="+search"
-      class="lp.registry.browser.root.LaunchpadSearchView"
-      template="../templates/launchpad-search.pt"
-      permission="zope.Public" />
-
-  <browser:page
-      for="*"
-      name="+search-form"
-      class="lp.registry.browser.root.LaunchpadSearchFormView"
-      template="../templates/launchpad-search-form.pt"
-      permission="zope.Public" />
-
-  <browser:page
-      for="*"
-      name="+primary-search-form"
-      class="lp.registry.browser.root.LaunchpadPrimarySearchFormView"
-      template="../templates/launchpad-search-form.pt"
-      permission="zope.Public" />
-
-  <!-- Declare robots.txt file for the root -->
-  <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadRoot"
-      name="robots.txt"
-      template="../templates/robotstxt.pt"
-      permission="zope.Public"
-      />
-
   <!-- Common menus -->
   <browser:menus
       module="canonical.launchpad.browser.launchpad"
       classes="LaunchpadRootFacets"
-      />
-
-  <!-- This is a view on TALES CONTEXTS rather than all dicts. -->
-  <browser:page
-      for="*"
-      name="+menubox"
-      class="canonical.launchpad.browser.launchpad.MenuBox"
-      template="../templates/launchpad-menubox.pt"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="*"
-      name="+navigationmenutabs"
-      class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
-      template="../templates/launchpad-navigation-menutabs.pt"
-      permission="zope.Public"
       />
 
   <browser:defaultView
@@ -381,6 +328,16 @@
       />
 
 </facet>
+
+<class
+    class="canonical.launchpad.utilities.personroles.PersonRoles">
+    <allow
+        interface="canonical.launchpad.interfaces.IPersonRoles"/>
+</class>
+<adapter
+    for="lp.registry.interfaces.person.IPerson"
+    provides="canonical.launchpad.interfaces.IPersonRoles"
+    factory="canonical.launchpad.utilities.personroles.PersonRoles" />
 
 
 <adapter
@@ -451,14 +408,6 @@ these URLs in Apache.
   name="+applicationbuttons"
   permission="zope.Public"
   class="canonical.launchpad.browser.ApplicationButtons"
-  attribute="__call__"
-  />
-
-<browser:page
-  for="canonical.launchpad.interfaces.ILaunchpadRoot"
-  name="+dims"
-  permission="zope.Public"
-  class="canonical.launchpad.browser.BrowserWindowDimensions"
   attribute="__call__"
   />
 

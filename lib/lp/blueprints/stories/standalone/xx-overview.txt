@@ -114,7 +114,7 @@ It's possible to navigate to the milestone directly:
 
     >>> user_browser.getLink('1.0.9').click()
     >>> print user_browser.title
-    Mozilla Firefox 1.0.9
+    1.0.9 : Mozilla Firefox
 
 
 Viewing blueprints targeted to a distribution
@@ -214,4 +214,4 @@ It's possible to navigate to the milestone directly:
 
     >>> user_browser.getLink('drift-1').click()
     >>> print user_browser.title
-    Ubuntu drift-1
+    drift-1 : Ubuntu

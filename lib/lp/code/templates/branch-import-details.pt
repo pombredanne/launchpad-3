@@ -2,7 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  tal:define="context_menu context/menu:context">
+  tal:define="context_menu view/context/menu:context">
 
   <tal:imported-branch tal:condition="context/branch_type/enumvalue:IMPORTED">
     <div id="import-details" tal:define="branch context;
@@ -32,28 +32,37 @@
                 Try again
               </a>
               <script type="text/javascript">
-                  YUI().use('event', 'node', function(Y) {
-                    Y.on("domready", function () { Y.get('#tryagainlink').setStyle('display', 'inline') });
+                  LPS.use('event', 'node', function(Y) {
+                    Y.on("domready", function () { Y.one('#tryagainlink').setStyle('display', 'inline') });
                   });
               </script>
             </form>
         </div>
 
         <tal:git-import condition="code_import/rcs_type/enumvalue:GIT">
-          <p>This branch is an import of the MASTER branch from the Git repo at
-            <span tal:replace="code_import/git_repo_url" />.
+          <p>This branch is an import of the HEAD branch of the Git repository at
+            <span tal:replace="code_import/url" />.
           </p>
         </tal:git-import>
 
-        <tal:svn-import condition="code_import/rcs_type/enumvalue:SVN">
-          <p>This branch is an import of the Subversion branch from
-          <tal:is-web-url condition="view/svn_url_is_web">
-            <a tal:attributes="href code_import/svn_branch_url"
-                    tal:content="code_import/svn_branch_url" />.
-          </tal:is-web-url>
-          <tal:not-web-url condition="not: view/svn_url_is_web">
-              <span tal:replace="code_import/svn_branch_url" />.
-          </tal:not-web-url>
+        <tal:hg-import condition="code_import/rcs_type/enumvalue:HG">
+          <p>This branch is an import of the tip branch of the Mercurial repository at
+            <span tal:replace="code_import/url" />.
+          </p>
+        </tal:hg-import>
+
+        <tal:svn-import condition="view/is_svn_import">
+          <p id="svn-import-details">
+            This branch is an import of the
+            <span tal:attributes="title code_import/rcs_type/title">Subversion</span>
+            branch from
+            <tal:is-web-url condition="view/svn_url_is_web">
+              <a tal:attributes="href code_import/url"
+                 tal:content="code_import/url" />.
+            </tal:is-web-url>
+            <tal:not-web-url condition="not: view/svn_url_is_web">
+              <span tal:replace="code_import/url" />.
+            </tal:not-web-url>
           </p>
         </tal:svn-import>
 
@@ -127,6 +136,17 @@
           </tal:result>
         </div>
 
+        <div class="actions">
+          <div
+            tal:define="link context_menu/edit_import"
+            tal:condition="link/enabled"
+            >
+            <a id="linkbug"
+               class="sprite add"
+               tal:attributes="href link/url"
+               tal:content="link/text" />
+          </div>
+        </div>
       </tal:has-codeimport>
     </div>
   </tal:imported-branch>

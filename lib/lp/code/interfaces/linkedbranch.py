@@ -19,11 +19,13 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
+from zope.security.proxy import isinstance as zope_isinstance
 
 
 class ICanHasLinkedBranch(Interface):
     """Something that has a linked branch."""
 
+    context = Attribute("The object that can have a linked branch.")
     branch = Attribute("The linked branch.")
     bzr_path = Attribute(
         'The Bazaar branch path for the linked branch. '
@@ -67,6 +69,10 @@ def get_linked_branch(provided):
     """
     has_linked_branch = ICanHasLinkedBranch(provided, None)
     if has_linked_branch is None:
+        if zope_isinstance(provided, tuple):
+            # Distroseries are returned as tuples containing distroseries and
+            # pocket.
+            provided = provided[0]
         raise CannotHaveLinkedBranch(provided)
     branch = has_linked_branch.branch
     if branch is None:

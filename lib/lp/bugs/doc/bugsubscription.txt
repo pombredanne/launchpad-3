@@ -254,7 +254,7 @@ subscription is currently set to COMMENTS.
 With this subscription level, No Privileges Person is returned for all
 parameter values of level.
 
-    >>> from canonical.launchpad.interfaces.structuralsubscription import (
+    >>> from lp.registry.interfaces.structuralsubscription import (
     ...     BugNotificationLevel)
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.COMMENTS))
@@ -878,36 +878,3 @@ subscriptions themselves, rather than the subscribers.
     ...         subscription.display_subscribed_by)
     Foo Bar (Subscribed by Robert Collins)
     Scott James Remnant (Subscribed themselves)
-
-
-== Email notification ==
-
-When a user is subscribed to a bug by someone other than themselves,
-they receive an email notification. The notification is sent only when
-an ObjectCreatedEvent is issued, since subscribe() is used in places
-where no notification should be sent.
-
-    >>> from lazr.lifecycle.event import ObjectCreatedEvent
-    >>> transaction.commit()
-    >>> stub.test_emails = []
-    >>> bug_subscription = bug_six.subscribe(mark, lifeless)
-    >>> notify(ObjectCreatedEvent(bug_subscription))
-    >>> transaction.commit()
-    >>> len(stub.test_emails)
-    1
-    >>> print stub.test_emails[-1][2]
-    MIME-Version: 1.0
-    ...
-    From: Launchpad Bug Tracker <...@bugs.launchpad.net>
-    To: mark@example.com
-    Reply-To: Bug ... <...@bugs.launchpad.net>
-    ...
-    X-Launchpad-Message-Rationale: Subscriber
-    ...
-    You have been subscribed to a public bug by Robert Collins (lifeless):
-    ...
-    If a Save As dialog for a nonexistent window exists,
-    ...
-    ** Affects: firefox
-    ...
-    http://bugs.launchpad.dev/bugs/...

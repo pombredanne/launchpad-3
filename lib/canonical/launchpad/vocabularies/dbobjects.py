@@ -10,10 +10,11 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
-    'HostedBranchRestrictedOnOwnerVocabulary',
     'BranchRestrictedOnProductVocabulary',
     'BranchVocabulary',
-    'BugNominatableSeriesesVocabulary',
+    'BugNominatableDistroSeriesVocabulary',
+    'BugNominatableProductSeriesVocabulary',
+    'BugNominatableSeriesVocabulary',
     'BugTrackerVocabulary',
     'BugVocabulary',
     'BugWatchVocabulary',
@@ -25,11 +26,13 @@ __all__ = [
     'FilteredFullLanguagePackVocabulary',
     'FilteredLanguagePackVocabulary',
     'FutureSprintVocabulary',
+    'HostedBranchRestrictedOnOwnerVocabulary',
     'LanguageVocabulary',
-    'PPAVocabulary',
     'PackageReleaseVocabulary',
+    'PPAVocabulary',
     'ProcessorFamilyVocabulary',
     'ProcessorVocabulary',
+    'project_products_using_malone_vocabulary_factory',
     'SpecificationDepCandidatesVocabulary',
     'SpecificationDependenciesVocabulary',
     'SpecificationVocabulary',
@@ -39,19 +42,21 @@ __all__ = [
     'TranslationMessageVocabulary',
     'TranslationTemplateVocabulary',
     'WebBugTrackerVocabulary',
-    'project_products_using_malone_vocabulary_factory',
     ]
 
 import cgi
 from operator import attrgetter
 
-from sqlobject import AND, SQLObjectNotFound
+from sqlobject import AND, CONTAINSSTRING, SQLObjectNotFound
 from storm.expr import SQL
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
+from storm.expr import And, Or
+
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.model.branch import Branch
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtracker import BugTracker
@@ -81,21 +86,21 @@ from lp.services.worlddata.interfaces.language import ILanguage
 from lp.translations.interfaces.languagepack import LanguagePackType
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries    
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 class ComponentVocabulary(SQLObjectVocabularyBase):
 
@@ -224,15 +229,52 @@ class BugVocabulary(SQLObjectVocabularyBase):
 
 
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
-
+    """All web and email based external bug trackers."""
+    displayname = 'Select a bug tracker'
+    implements(IHugeVocabulary)
     _table = BugTracker
+    _filter = True
     _orderBy = 'title'
+    _order_by = [BugTracker.title]
+
+    def toTerm(self, obj):
+        """See `IVocabulary`."""
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        result = IStore(self._table).find(
+            self._table,
+            self._filter,
+            BugTracker.name == token).one()
+        if result is None:
+            raise LookupError(token)
+        return self.toTerm(result)
+
+    def search(self, query):
+        """Search for web bug trackers."""
+        query = query.lower()
+        results = IStore(self._table).find(
+            self._table, And(
+            self._filter,
+            BugTracker.active == True,
+            Or(
+                CONTAINSSTRING(BugTracker.name, query),
+                CONTAINSSTRING(BugTracker.title, query),
+                CONTAINSSTRING(BugTracker.summary, query),
+                CONTAINSSTRING(BugTracker.baseurl, query))))
+        results = results.order_by(self._order_by)
+        return results
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.search(query)
+        return CountableIterator(results.count(), results, self.toTerm)
 
 
 class WebBugTrackerVocabulary(BugTrackerVocabulary):
     """All web-based bug tracker types."""
-
-    _filter = BugTracker.q.bugtrackertype != BugTrackerType.EMAILADDRESS
+    _filter = BugTracker.bugtrackertype != BugTrackerType.EMAILADDRESS
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
@@ -311,7 +353,7 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
 
 def project_products_using_malone_vocabulary_factory(context):
     """Return a vocabulary containing a project's products using Malone."""
-    project = IProject(context)
+    project = IProjectGroup(context)
     return SimpleVocabulary([
         SimpleTerm(product, product.name, title=product.displayname)
         for product in project.products
@@ -705,9 +747,8 @@ class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
     _orderBy = 'name'
 
 
-def BugNominatableSeriesesVocabulary(context=None):
-    """Return a nominatable serieses vocabulary."""
-
+def BugNominatableSeriesVocabulary(context=None):
+    """Return a nominatable series vocabulary."""
     if getUtility(ILaunchBag).distribution:
         return BugNominatableDistroSeriesVocabulary(
             context, getUtility(ILaunchBag).distribution)
@@ -723,9 +764,9 @@ class BugNominatableSeriesVocabularyBase(NamedSQLObjectVocabulary):
     def __iter__(self):
         bug = self.context.bug
 
-        serieses = self._getNominatableObjects()
+        all_series = self._getNominatableObjects()
 
-        for series in sorted(serieses, key=attrgetter("displayname")):
+        for series in sorted(all_series, key=attrgetter("displayname")):
             if bug.canBeNominatedFor(series):
                 yield self.toTerm(series)
 
@@ -760,7 +801,7 @@ class BugNominatableProductSeriesVocabulary(
 
     def _getNominatableObjects(self):
         """See BugNominatableSeriesVocabularyBase."""
-        return shortlist(self.product.serieses)
+        return shortlist(self.product.series)
 
     def _queryNominatableObjectByName(self, name):
         """See BugNominatableSeriesVocabularyBase."""
@@ -778,10 +819,10 @@ class BugNominatableDistroSeriesVocabulary(
         self.distribution = distribution
 
     def _getNominatableObjects(self):
-        """Return all non-obsolete distribution serieses"""
+        """Return all non-obsolete distribution series"""
         return [
-            series for series in shortlist(self.distribution.serieses)
-            if series.status != DistroSeriesStatus.OBSOLETE]
+            series for series in shortlist(self.distribution.series)
+            if series.status != SeriesStatus.OBSOLETE]
 
     def _queryNominatableObjectByName(self, name):
         """See BugNominatableSeriesVocabularyBase."""

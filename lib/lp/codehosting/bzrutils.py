@@ -11,23 +11,27 @@ __metaclass__ = type
 __all__ = [
     'add_exception_logging_hook',
     'DenyingServer',
-    'ensure_base',
     'get_branch_stacked_on_url',
+    'get_stacked_on_url',
     'get_vfs_format_classes',
     'HttpAsLocalTransport',
     'identical_formats',
     'install_oops_handler',
     'is_branch_stackable',
     'remove_exception_logging_hook',
+    'safe_open',
+    'UnsafeUrlSeen',
     ]
 
 import os
 import sys
+import threading
 
 from bzrlib import config, trace
+from bzrlib.branch import Branch
+from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
-    NoSuchFile, NotStacked, UnstackableBranchFormat,
-    UnstackableRepositoryFormat)
+    NotStacked, UnstackableBranchFormat, UnstackableRepositoryFormat)
 from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import register_transport, unregister_transport
 from bzrlib.transport.local import LocalTransport
@@ -103,30 +107,6 @@ def get_branch_stacked_on_url(a_bzrdir):
     if not stacked_on_url:
         raise NotStacked(a_bzrdir.root_transport.base)
     return stacked_on_url
-
-
-# XXX: JonathanLange 2007-06-13 bugs=120135:
-# This should probably be part of bzrlib.
-def ensure_base(transport):
-    """Make sure that the base directory of `transport` exists.
-
-    If the base directory does not exist, try to make it. If the parent of the
-    base directory doesn't exist, try to make that, and so on.
-    """
-    try:
-        transport.ensure_base()
-    except NoSuchFile:
-        # transport.create_prefix was added in Bazaar 1.15, and _create_prefix
-        # was removed. Check to see if transport has a create_prefix method
-        # and use the old _create_prefix if it's not there.
-        #
-        # This can be removed once Bazaar 1.15 has landed on Launchpad.
-        create_prefix = getattr(transport, 'create_prefix', None)
-        if create_prefix is not None:
-            create_prefix()
-        else:
-            from bzrlib.builtins import _create_prefix
-            _create_prefix(transport)
 
 
 _exception_logging_hooks = []
@@ -243,13 +223,13 @@ class DenyingServer:
         """
         self.schemes = schemes
 
-    def setUp(self):
+    def start_server(self):
         """Prevent transports being created for specified schemes."""
         for scheme in self.schemes:
             register_transport(scheme, self._deny)
         self._is_set_up = True
 
-    def tearDown(self):
+    def stop_server(self):
         """Re-enable creation of transports for specified schemes."""
         if not self._is_set_up:
             return
@@ -292,3 +272,80 @@ def identical_formats(branch_one, branch_two):
     """
     return (get_vfs_format_classes(branch_one) ==
             get_vfs_format_classes(branch_two))
+
+
+checked_open_data = threading.local()
+
+
+def _install_checked_open_hook():
+    """Install `_checked_open_pre_open_hook` as a ``pre_open`` hook.
+
+    This is done at module import time, but _checked_open_pre_open_hook
+    doesn't do anything unless the `checked_open_data` threading.Local object
+    has a 'checked_opener' attribute in this thread.
+
+    This is in a module-level function rather than performed at module level
+    so that it can be called in setUp for testing `checked_open` as
+    bzrlib.tests.TestCase.setUp clears hooks.
+    """
+    BzrDir.hooks.install_named_hook(
+        'pre_open', _checked_open_pre_open_hook, 'safe open')
+
+
+def _checked_open_pre_open_hook(transport):
+    """If a checked_open validate function is present in this thread, call it.
+    """
+    if not getattr(checked_open_data, 'validate', False):
+        return
+    checked_open_data.validate(transport.base)
+
+
+_install_checked_open_hook()
+
+
+def checked_open(validation_function, url, possible_transports=None):
+    """Open a branch, calling `validation_function` with any URL thus found.
+
+    This is intended to be used to open a branch ensuring that it's not
+    stacked or a reference to something unexpected.
+    """
+    if hasattr(checked_open_data, 'validate'):
+        raise AssertionError("checked_open called recursively")
+    checked_open_data.validate = validation_function
+    try:
+        return Branch.open(url, possible_transports=possible_transports)
+    finally:
+        del checked_open_data.validate
+
+
+class UnsafeUrlSeen(Exception):
+    """`safe_open` found a URL that was not on the configured scheme."""
+
+
+def makeURLChecker(allowed_scheme):
+    """Make a callable that rejects URLs not on the given scheme."""
+    def checkURL(url):
+        """Check that `url` is safe to open."""
+        if URI(url).scheme != allowed_scheme:
+            raise UnsafeUrlSeen(
+                "Attempt to open %r which is not a %s URL" % (
+                    url, allowed_scheme))
+    return checkURL
+
+
+def safe_open(allowed_scheme, url, possible_transports=None):
+    """Open the branch at `url`, only accessing URLs on `allowed_scheme`.
+
+    :raises UnsafeUrlSeen: An attempt was made to open a URL that was not on
+        `allowed_scheme`.
+    """
+    return checked_open(
+        makeURLChecker(allowed_scheme), url, possible_transports)
+
+
+def get_stacked_on_url(branch):
+    """Get the stacked-on URL for 'branch', or `None` if not stacked."""
+    try:
+        return branch.get_stacked_on_url()
+    except (NotStacked, UnstackableBranchFormat):
+        return None

@@ -9,8 +9,10 @@ import datetime
 
 import pytz
 
-from canonical.launchpad.interfaces._schema_circular_imports import IBug
+from lp.bugs.interfaces.bug import IBug
 from canonical.launchpad.interfaces.launchpad import IHasBug
+
+
 def update_bug_date_last_updated(object, event):
     """Update IBug.date_last_updated to the current date."""
     if IBug.providedBy(object):

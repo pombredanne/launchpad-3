@@ -9,6 +9,17 @@
     <div metal:fill-slot="main"
         tal:define="current context/currentrelease">
       <div class="top-portlet">
+        <div id="summary"
+          tal:content="structure context/summary/fmt:text-to-html" />
+
+        <ul class="horizontal">
+          <li>
+            <a tal:replace="structure context/menu:overview/distribution_source_package/fmt:link" />
+          </li>
+        </ul>
+      </div>
+
+      <div class="portlet">
         <h2>Versions published</h2>
 
         <p class="warning message" tal:condition="not:current">
@@ -41,6 +52,9 @@
           <li>
             <a tal:replace="structure context/menu:overview/changelog/fmt:link" />
           </li>
+          <li>
+            <a tal:replace="structure context/menu:overview/copyright/fmt:link" />
+          </li>
         </ul>
       </div>
 
@@ -50,55 +64,7 @@
         </div>
 
         <div class="yui-u">
-          <div class="portlet">
-            <h2>Upstream associations</h2>
-
-            <div id="upstreams" class="two-column-list"
-              tal:define="series context/productseries">
-              <tal:has_series condition="series">
-                <dl
-                  tal:define="project series/product/project"
-                  tal:condition="project">
-                  <dt>Project Group:</dt>
-                  <dd>
-                    <a tal:replace="structure project/fmt:link" />
-                  </dd>
-                </dl>
-
-                <dl>
-                  <dt>Project:</dt>
-                  <dd>
-                    <a tal:replace="structure series/product/fmt:link" />
-                  </dd>
-                </dl>
-
-                <dl>
-                  <dt>Series:</dt>
-                  <dd>
-                    <a
-                      tal:content="series/name"
-                      tal:attributes="href series/fmt:url">Series</a>
-                    <a tal:replace="structure context/menu:overview/edit_packaging/fmt:icon" />
-                  </dd>
-                </dl>
-              </tal:has_series>
-
-              <tal:has_no_series condition="not: context/productseries">
-                 <dl>
-                   <dt>Related project:</dt>
-                   <dd>
-                     <em>No project associated with this sourcepackage</em>
-                   </dd>
-                 </dl>
-              </tal:has_no_series>
-            </div>
-
-            <ul class="horizontal">
-              <li>
-                <a tal:replace="structure context/menu:overview/packaging/fmt:link" />
-              </li>
-            </ul>
-          </div>
+          <div class="portlet" tal:content="structure context/@@+portlet-associations" />
         </div>
       </div>
 
@@ -114,9 +80,7 @@
         </div>
 
         <div class="yui-u">
-          <div tal:replace="structure context/@@+portlet-upstream" />
-
-          <div tal:condition="current">
+          <div class="portlet" tal:condition="current">
             <h2>Binary packages</h2>
 
             <div id="binaries" tal:define="binaries view/binaries">

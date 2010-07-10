@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BinaryPackageFile',
     'BinaryPackageFileSet',
+    'SourceFileMixin',
     'SourcePackageReleaseFile',
     ]
 
@@ -49,18 +50,29 @@ class BinaryPackageFileSet:
         return BinaryPackageFile.select("""
             PackageUploadBuild.packageupload = PackageUpload.id AND
             PackageUpload.id IN %s AND
-            Build.id = PackageUploadBuild.build AND
-            BinaryPackageRelease.build = Build.id AND
+            BinaryPackageBuild.id = PackageUploadBuild.build AND
+            BinaryPackageRelease.build = BinaryPackageBuild.id AND
             BinaryPackageFile.binarypackagerelease = BinaryPackageRelease.id
             """ % sqlvalues(package_upload_ids),
-            clauseTables=["PackageUpload", "PackageUploadBuild", "Build",
-                          "BinaryPackageRelease"],
+            clauseTables=["PackageUpload", "PackageUploadBuild",
+                          "BinaryPackageBuild", "BinaryPackageRelease"],
             prejoins=["binarypackagerelease", "binarypackagerelease.build",
                       "libraryfile", "libraryfile.content",
                       "binarypackagerelease.binarypackagename"])
 
 
-class SourcePackageReleaseFile(SQLBase):
+class SourceFileMixin:
+    """Mix-in class for common functionality between source file classes."""
+
+    @property
+    def is_orig(self):
+        return self.filetype in (
+            SourcePackageFileType.ORIG_TARBALL,
+            SourcePackageFileType.COMPONENT_ORIG_TARBALL
+            )
+
+
+class SourcePackageReleaseFile(SourceFileMixin, SQLBase):
     """See ISourcePackageFile"""
 
     implements(ISourcePackageReleaseFile)
@@ -90,4 +102,3 @@ class SourcePackageReleaseFileSet:
             prejoins=["libraryfile", "libraryfile.content",
                       "sourcepackagerelease",
                       "sourcepackagerelease.sourcepackagename"])
-

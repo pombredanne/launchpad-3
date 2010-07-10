@@ -20,6 +20,7 @@ class SanitizeDbScriptTestCase(TestCase):
     layer = DatabaseLayer
 
     def setUp(self):
+        super(SanitizeDbScriptTestCase, self).setUp()
         self.script_path = os.path.join(
             config.root, 'utilities', 'sanitize-db.py')
         DatabaseLayer.force_dirty_database()

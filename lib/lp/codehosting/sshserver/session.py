@@ -6,104 +6,41 @@
 __metaclass__ = type
 __all__ = [
     'launch_smart_server',
-    'PatchedSSHSession',
     ]
 
 import os
 import urlparse
 
 from zope.event import notify
-from zope.interface import implements
 
-from twisted.conch.interfaces import ISession
-from twisted.conch.ssh import channel, session
 from twisted.internet.process import ProcessExitedAlready
 from twisted.python import log
 
 from canonical.config import config
 from lp.codehosting import get_bzr_path
-from lp.codehosting.sshserver import accesslog
+from lp.services.sshserver.events import AvatarEvent
+from lp.services.sshserver.session import DoNothingSession
 
 
-class PatchedSSHSession(session.SSHSession, object):
-    """Session adapter that corrects bugs in Conch.
+class BazaarSSHStarted(AvatarEvent):
 
-    This object provides no custom logic for Launchpad, it just addresses some
-    simple bugs in the base `session.SSHSession` class that are not yet fixed
-    upstream.
-    """
+    template = '[%(session_id)s] %(username)s started bzr+ssh session.'
 
-    def closeReceived(self):
-        # Without this, the client hangs when it's finished transferring.
-        # XXX: JonathanLange 2009-01-05: This does not appear to have a
-        # corresponding bug in Twisted. We should test that the above comment
-        # is indeed correct and then file a bug upstream.
-        self.loseConnection()
 
-    def loseConnection(self):
-        # XXX: JonathanLange 2008-03-31: This deliberately replaces the
-        # implementation of session.SSHSession.loseConnection. The default
-        # implementation will try to call loseConnection on the client
-        # transport even if it's None. I don't know *why* it is None, so this
-        # doesn't necessarily address the root cause.
-        # See http://twistedmatrix.com/trac/ticket/2754.
-        transport = getattr(self.client, 'transport', None)
-        if transport is not None:
-            transport.loseConnection()
-        # This is called by session.SSHSession.loseConnection. SSHChannel is
-        # the base class of SSHSession.
-        channel.SSHChannel.loseConnection(self)
+class BazaarSSHClosed(AvatarEvent):
 
-    def stopWriting(self):
-        """See `session.SSHSession.stopWriting`.
-
-        When the client can't keep up with us, we ask the child process to
-        stop giving us data.
-        """
-        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
-        # self.client.transport is entirely paranoia inspired by the comment
-        # in `loseConnection` above. It would be good to know if and why it is
-        # necessary. See http://twistedmatrix.com/trac/ticket/2754.
-        transport = getattr(self.client, 'transport', None)
-        if transport is not None:
-            # For SFTP connections, 'transport' is actually a _DummyTransport
-            # instance. Neither _DummyTransport nor the protocol it wraps
-            # (filetransfer.FileTransferServer) support pausing.
-            pauseProducing = getattr(transport, 'pauseProducing', None)
-            if pauseProducing is not None:
-                pauseProducing()
-
-    def startWriting(self):
-        """See `session.SSHSession.startWriting`.
-
-        The client is ready for data again, so ask the child to start
-        producing data again.
-        """
-        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
-        # self.client.transport is entirely paranoia inspired by the comment
-        # in `loseConnection` above. It would be good to know if and why it is
-        # necessary. See http://twistedmatrix.com/trac/ticket/2754.
-        transport = getattr(self.client, 'transport', None)
-        if transport is not None:
-            # For SFTP connections, 'transport' is actually a _DummyTransport
-            # instance. Neither _DummyTransport nor the protocol it wraps
-            # (filetransfer.FileTransferServer) support pausing.
-            resumeProducing = getattr(transport, 'resumeProducing', None)
-            if resumeProducing is not None:
-                resumeProducing()
+    template = '[%(session_id)s] %(username)s closed bzr+ssh session.'
 
 
 class ForbiddenCommand(Exception):
     """Raised when a session is asked to execute a forbidden command."""
 
 
-class ExecOnlySession:
+class ExecOnlySession(DoNothingSession):
     """Conch session that only allows executing commands."""
 
-    implements(ISession)
-
     def __init__(self, avatar, reactor, environment=None):
-        self.avatar = avatar
+        super(ExecOnlySession, self).__init__(avatar)
         self.reactor = reactor
         self.environment = environment
         self._transport = None
@@ -116,7 +53,10 @@ class ExecOnlySession:
     def closed(self):
         """See ISession."""
         if self._transport is not None:
-            notify(accesslog.BazaarSSHClosed(self.avatar))
+            # XXX: JonathanLange 2010-04-15: This is something of an
+            # abstraction violation. Apart from this line and its twin, this
+            # class knows nothing about Bazaar.
+            notify(BazaarSSHClosed(self.avatar))
             try:
                 self._transport.signalProcess('HUP')
             except (OSError, ProcessExitedAlready):
@@ -140,8 +80,7 @@ class ExecOnlySession:
         try:
             executable, arguments = self.getCommandToRun(command)
         except ForbiddenCommand, e:
-            protocol.write(str(e) + '\r\n')
-            protocol.loseConnection()
+            self.errorWithMessage(protocol, str(e) + '\r\n')
             return
         log.msg('Running: %r, %r, %r'
                 % (executable, arguments, self.environment))
@@ -150,9 +89,9 @@ class ExecOnlySession:
                 "ERROR: %r already running a command on transport %r"
                 % (self, self._transport))
         # XXX: JonathanLange 2008-12-23: This is something of an abstraction
-        # violation. Apart from this line, this class knows nothing about
-        # Bazaar.
-        notify(accesslog.BazaarSSHStarted(self.avatar))
+        # violation. Apart from this line and its twin, this class knows
+        # nothing about Bazaar.
+        notify(BazaarSSHStarted(self.avatar))
         self._transport = self.reactor.spawnProcess(
             protocol, executable, arguments, env=self.environment)
 
@@ -166,20 +105,6 @@ class ExecOnlySession:
         """
         args = command.split()
         return args[0], args
-
-    def getPty(self, term, windowSize, modes):
-        """See ISession."""
-        # Do nothing, as we don't provide shell access. openShell will get
-        # called and handle this error message and disconnect.
-
-    def openShell(self, protocol):
-        """See ISession."""
-        protocol.write("No shells on this server.\r\n")
-        protocol.loseConnection()
-
-    def windowChanged(self, newWindowSize):
-        """See ISession."""
-        raise NotImplementedError()
 
 
 class RestrictedExecOnlySession(ExecOnlySession):

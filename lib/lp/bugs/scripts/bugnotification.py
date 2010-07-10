@@ -16,8 +16,9 @@ from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.mailnotification import (
-    generate_bug_add_email, MailWrapper, BugNotificationBuilder,
-    get_bugmail_from_address)
+    generate_bug_add_email, MailWrapper)
+from lp.bugs.mail.bugnotificationbuilder import (
+    BugNotificationBuilder, get_bugmail_from_address)
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
 
@@ -118,10 +119,22 @@ def construct_email_notifications(bug_notifications):
         reason = recipient.reason_body
         rationale = recipient.reason_header
 
+        # XXX deryck 2009-11-17 Bug #484319
+        # This should be refactored to add a link inside the
+        # code where we build `reason`.  However, this will
+        # require some extra work, and this small change now
+        # will ease pain for a lot of unhappy users.
+        if 'direct subscriber' in reason and 'member of' not in reason:
+            unsubscribe_notice = ('To unsubscribe from this bug, go to:\n'
+                '%s/+subscribe' % canonical_url(bug.bugtasks[0]))
+        else:
+            unsubscribe_notice = ''
+
         body_data = {
             'content': mail_wrapper.format(content),
             'bug_title': bug.title,
             'bug_url': canonical_url(bug),
+            'unsubscribe_notice': unsubscribe_notice,
             'notification_rationale': mail_wrapper.format(reason)}
 
         # If the person we're sending to receives verbose notifications

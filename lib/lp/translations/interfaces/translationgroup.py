@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -8,7 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'IHasTranslationGroup',
+    'ITranslationPolicy',
     'ITranslationGroup',
     'ITranslationGroupSet',
     'TranslationPermission',
@@ -28,12 +28,12 @@ from lazr.enum import DBEnumeratedType, DBItem
 class TranslationPermission(DBEnumeratedType):
     """Translation Permission System
 
-    Projects, products and distributions can all have content that needs to
-    be translated. In this case, Launchpad Translations allows them to decide
-    how open they want that translation process to be. At one extreme, anybody
-    can add or edit any translation, without review. At the other, only the
-    designated translator for that group in that language can add or edit its
-    translation files. This schema enumerates the options.
+    Projects groups, products and distributions can all have content that
+    needs to be translated. In this case, Launchpad Translations allows them
+    to decide how open they want that translation process to be. At one
+    extreme, anybody can add or edit any translation, without review. At the
+    other, only the designated translator for that group in that language can
+    add or edit its translation files. This schema enumerates the options.
     """
 
     OPEN = DBItem(1, """
@@ -74,7 +74,7 @@ class TranslationPermission(DBEnumeratedType):
         to add suggestions.""")
 
 
-class IHasTranslationGroup(Interface):
+class ITranslationPolicy(Interface):
     translationgroup = Choice(
         title = _("Translation group"),
         description = _("The translation group that helps review "
@@ -148,9 +148,6 @@ class ITranslationGroup(IHasOwner):
     def query_translator(language):
         """Retrieve a translator, or None, based on a Language"""
 
-    def __getitem__(languagecode):
-        """Retrieve the translator for the given language in this group."""
-
     # adding and removing translators
     def remove_translator(language):
         """Remove the translator for this language from the group."""
@@ -164,6 +161,19 @@ class ITranslationGroup(IHasOwner):
 
     number_of_remaining_projects = Attribute(
         "Count of remaining projects not listed in the `top_projects`.")
+
+    def __getitem__(language_code):
+        """Retrieve the translator for the given language in this group.
+
+        This is used for navigation through the group.
+        """
+
+    def fetchTranslatorData():
+        """Fetch translators and related data.
+
+        :return: A tuple (`Translator`, `Language`, `Person`), ordered
+            by language name in English.
+        """
 
 
 class ITranslationGroupSet(Interface):

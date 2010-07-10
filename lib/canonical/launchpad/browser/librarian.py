@@ -32,6 +32,7 @@ from canonical.launchpad.webapp.interfaces import (
     IWebBrowserOriginatingRequest)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lazr.utils import get_current_browser_request
+from canonical.librarian.interfaces import LibrarianServerError
 from canonical.librarian.utils import filechunks, guess_librarian_encoding
 
 from lazr.delegates import delegates
@@ -82,18 +83,7 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
 
     __used_for__ = ILibraryFileAlias
 
-    def __call__(self):
-        """Streams the contents of the context `ILibraryFileAlias`.
-
-        The file content is downloaded in chunks directly to a
-        `tempfile.TemporaryFile` avoiding using large amount of memory.
-
-        The temporary file is returned to the zope publishing machinery as
-        documented in lib/zope/publisher/httpresults.txt, after adjusting
-        the response 'Content-Type' appropriately.
-
-        This method explicit ignores the local 'http_proxy' settings.
-        """
+    def getFileContents(self):
         # Reset system proxy setting if it exists. The urllib2 default
         # opener is cached that's why it has to be re-installed after
         # the shell environment changes. Download the library file
@@ -113,6 +103,27 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
             if original_proxy is not None:
                 os.environ['http_proxy'] = original_proxy
                 urllib2.install_opener(urllib2.build_opener())
+        return tmp_file
+
+    def __call__(self):
+        """Streams the contents of the context `ILibraryFileAlias`.
+
+        The file content is downloaded in chunks directly to a
+        `tempfile.TemporaryFile` avoiding using large amount of memory.
+
+        The temporary file is returned to the zope publishing machinery as
+        documented in lib/zope/publisher/httpresults.txt, after adjusting
+        the response 'Content-Type' appropriately.
+
+        This method explicit ignores the local 'http_proxy' settings.
+        """
+        try:
+            tmp_file = self.getFileContents()
+        except LibrarianServerError:
+            self.request.response.setHeader('Content-Type', 'text/plain')
+            self.request.response.setStatus(503)
+            return (u'There was a problem fetching the contents of this '
+                     'file. Please try again in a few minutes.')
 
         # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
         # stored as part of a file's metadata this logic will be replaced.
@@ -130,7 +141,7 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         chain with this view. If the context file is public return the
         appropriate `RedirectionView` for its HTTP url.
         """
-        assert not self.context.content.deleted, (
+        assert not self.context.deleted, (
             "StreamOrRedirectLibraryFileAliasView can not operate on "
             "deleted librarian files, since their URL is undefined.")
 
@@ -170,7 +181,7 @@ class FileNavigationMixin:
         library_file  = self.context.getFileByName(filename)
 
         # Deleted library files result in NotFound-like error.
-        if library_file.content.deleted:
+        if library_file.deleted:
             raise DeletedProxiedLibraryFileAlias(filename, self.context)
 
         return StreamOrRedirectLibraryFileAliasView(
@@ -199,7 +210,7 @@ class ProxiedLibraryFileAlias:
         Mask webservice requests if it's the case, so the returned URL will
         be always relative to the parent webapp URL.
         """
-        if self.context.content.deleted:
+        if self.context.deleted:
             return None
 
         request = get_current_browser_request()

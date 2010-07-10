@@ -1,16 +1,11 @@
 """Land an approved merge proposal."""
 
-import os
-
-from launchpadlib.launchpad import (
-    Launchpad, EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT)
+from launchpadlib.launchpad import Launchpad
+from launchpadlib.uris import (
+    DEV_SERVICE_ROOT, EDGE_SERVICE_ROOT, LPNET_SERVICE_ROOT,
+    STAGING_SERVICE_ROOT)
 from lazr.uri import URI
-
-# XXX: JonathanLange 2009-09-24: Both of these are available in more recent
-# versions of launchpadlib. When we start using such versions, we should
-# instead import these from launchpadlib.
-DEV_SERVICE_ROOT = 'https://api.launchpad.dev/beta/'
-LPNET_SERVICE_ROOT = 'https://api.launchpad.net/beta/'
+from bzrlib.errors import BzrCommandError
 
 
 class MissingReviewError(Exception):
@@ -20,18 +15,16 @@ class MissingReviewError(Exception):
 class LaunchpadBranchLander:
 
     name = 'launchpad-branch-lander'
-    cache_dir = '~/.launchpadlib/cache'
 
     def __init__(self, launchpad):
         self._launchpad = launchpad
 
     @classmethod
-    def load(cls, service_root=EDGE_SERVICE_ROOT):
+    def load(cls, service_root='edge'):
         # XXX: JonathanLange 2009-09-24: No unit tests.
-        cache_dir = os.path.expanduser(cls.cache_dir)
         # XXX: JonathanLange 2009-09-24 bug=435813: If cached data invalid,
         # there's no easy way to delete it and try again.
-        launchpad = Launchpad.login_with(cls.name, service_root, cache_dir)
+        launchpad = Launchpad.login_with(cls.name, service_root)
         return cls(launchpad)
 
     def load_merge_proposal(self, mp_url):
@@ -41,6 +34,42 @@ class LaunchpadBranchLander:
         api_mp_uri = self._launchpad._root_uri.append(
             web_mp_uri.path.lstrip('/'))
         return MergeProposal(self._launchpad.load(str(api_mp_uri)))
+
+    def get_lp_branch(self, branch):
+        """Get the launchpadlib branch based on a bzr branch."""
+        # First try the public branch.
+        branch_url = branch.get_public_branch()
+        if branch_url:
+            lp_branch = self._launchpad.branches.getByUrl(
+                url=branch_url)
+            if lp_branch is not None:
+                return lp_branch
+        # If that didn't work try the push location.
+        branch_url = branch.get_push_location()
+        if branch_url:
+            lp_branch = self._launchpad.branches.getByUrl(
+                url=branch_url)
+            if lp_branch is not None:
+                return lp_branch
+        raise BzrCommandError(
+            "No public branch could be found.  Please re-run and specify "
+            "the URL for the merge proposal.")
+
+    def get_merge_proposal_from_branch(self, branch):
+        """Get the merge proposal from the branch."""
+
+        lp_branch = self.get_lp_branch(branch)
+        proposals = lp_branch.landing_targets
+        if len(proposals) == 0:
+            raise BzrCommandError(
+                "The public branch has no source merge proposals.  "
+                "You must have a merge proposal before attempting to "
+                "land the branch.")
+        elif len(proposals) > 1:
+            raise BzrCommandError(
+                "The public branch has multiple source merge proposals.  "
+                "You must provide the URL to the one you wish to use.")
+        return MergeProposal(proposals[0])
 
 
 class MergeProposal:
@@ -83,7 +112,8 @@ class MergeProposal:
         """
         # XXX: JonathanLange 2009-09-24: No unit tests.
         return set(
-            map(get_email, [self._mp.source_branch.owner, self._launchpad.me]))
+            map(get_email,
+                [self._mp.source_branch.owner, self._launchpad.me]))
 
     def get_reviews(self):
         """Return a dictionary of all Approved reviews.
@@ -177,8 +207,11 @@ def get_reviewer_handle(reviewer):
 
 
 def _comma_separated_names(things):
-    """Return a string of comma-separated names of 'things'."""
-    return ','.join(thing.name for thing in things)
+    """Return a string of comma-separated names of 'things'.
+
+    The list is sorted before being joined.
+    """
+    return ','.join(sorted(thing.name for thing in things))
 
 
 def get_reviewer_clause(reviewers):
@@ -188,17 +221,27 @@ def get_reviewer_clause(reviewers):
         returned by 'get_reviews'.
     :return: A string like u'[r=foo,bar][ui=plop]'.
     """
+    # If no review type is specified it is assumed to be a code review.
     code_reviewers = reviewers.get(None, [])
-    code_reviewers.extend(reviewers.get('code', []))
-    code_reviewers.extend(reviewers.get('db', []))
+    ui_reviewers = []
+    rc_reviewers = []
+    for review_type, reviewer in reviewers.items():
+        if review_type is None:
+            continue
+        if review_type == '':
+            code_reviewers.extend(reviewer)
+        if 'code' in review_type or 'db' in review_type:
+            code_reviewers.extend(reviewer)
+        if 'ui' in review_type:
+            ui_reviewers.extend(reviewer)
+        if 'release-critical' in review_type:
+            rc_reviewers.extend(reviewer)
     if not code_reviewers:
         raise MissingReviewError("Need approved votes in order to land.")
-    ui_reviewers = reviewers.get('ui', [])
     if ui_reviewers:
         ui_clause = _comma_separated_names(ui_reviewers)
     else:
         ui_clause = 'none'
-    rc_reviewers = reviewers.get('release-critical', [])
     if rc_reviewers:
         rc_clause = (
             '[release-critical=%s]' % _comma_separated_names(rc_reviewers))
@@ -212,13 +255,13 @@ def get_bazaar_host(api_root):
     """Get the Bazaar service for the given API root."""
     # XXX: JonathanLange 2009-09-24 bug=435803: This is only needed because
     # Launchpad doesn't expose the push URL for branches.
-    if api_root == EDGE_SERVICE_ROOT:
+    if api_root.startswith(EDGE_SERVICE_ROOT):
         return 'bazaar.launchpad.net'
-    elif api_root == DEV_SERVICE_ROOT:
+    elif api_root.startswith(DEV_SERVICE_ROOT):
         return 'bazaar.launchpad.dev'
-    elif api_root == STAGING_SERVICE_ROOT:
+    elif api_root.startswith(STAGING_SERVICE_ROOT):
         return 'bazaar.staging.launchpad.net'
-    elif api_root == LPNET_SERVICE_ROOT:
+    elif api_root.startswith(LPNET_SERVICE_ROOT):
         return 'bazaar.launchpad.net'
     else:
         raise ValueError(

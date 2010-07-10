@@ -10,6 +10,7 @@ import os
 import pdb
 import subprocess
 
+from bzrlib.bzrdir import BzrDir
 from bzrlib.commands import Command
 from bzrlib.errors import BzrCommandError
 from bzrlib.help import help_commands
@@ -22,6 +23,7 @@ from devscripts import get_launchpad_root
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
     AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
+from devscripts.ec2test.session import EC2SessionName
 from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
 
 
@@ -107,6 +109,12 @@ postmortem_option = Option(
           'and/or of this script.'))
 
 
+attached_option = Option(
+    'attached',
+    help=("Remain attached, i.e. do not go headless. Implied by --postmortem "
+          "and --file."))
+
+
 def filename_type(filename):
     """An option validator for filenames.
 
@@ -180,6 +188,10 @@ def _get_branches_and_test_branch(trunk, branch, test_branch):
     return branches, test_branch
 
 
+
+DEFAULT_TEST_OPTIONS = '--subunit -vvv'
+
+
 class cmd_test(EC2Command):
     """Run the test suite in ec2."""
 
@@ -195,8 +207,8 @@ class cmd_test(EC2Command):
             'email', short_name='e', argname='EMAIL', type=str,
             help=('Email address to which results should be mailed.  '
                   'Defaults to the email address from `bzr whoami`. May be '
-                  'supplied multiple times. The first supplied email address '
-                  'will be used as the From: address.')),
+                  'supplied multiple times. `bzr whoami` will be used as '
+                  'the From: address.')),
         Option(
             'noemail', short_name='n',
             help=('Do not try to email results.')),
@@ -238,11 +250,7 @@ class cmd_test(EC2Command):
                 'consulted; for remote branches "Launchpad PQM '
                 '<launchpad@pqm.canonical.com>" is used by default.')),
         postmortem_option,
-        Option(
-            'headless',
-            help=('After building the instance and test, run the remote tests '
-                  'headless.  Cannot be used with postmortem '
-                  'or file.')),
+        attached_option,
         debug_option,
         Option(
             'open-browser',
@@ -252,21 +260,21 @@ class cmd_test(EC2Command):
 
     takes_args = ['test_branch?']
 
-    def run(self, test_branch=None, branch=[], trunk=False, machine=None,
+    def run(self, test_branch=None, branch=None, trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE,
-            file=None, email=None, test_options='-vv', noemail=False,
-            submit_pqm_message=None, pqm_public_location=None,
+            file=None, email=None, test_options=DEFAULT_TEST_OPTIONS,
+            noemail=False, submit_pqm_message=None, pqm_public_location=None,
             pqm_submit_location=None, pqm_email=None, postmortem=False,
-            headless=False, debug=False, open_browser=False,
+            attached=False, debug=False, open_browser=False,
             include_download_cache_changes=False):
         if debug:
             pdb.set_trace()
+        if branch is None:
+            branch = []
         branches, test_branch = _get_branches_and_test_branch(
             trunk, branch, test_branch)
-        if ((postmortem or file) and headless):
-            raise BzrCommandError(
-                'Headless mode currently does not support postmortem or file '
-                ' options.')
+        if (postmortem or file):
+            attached = True
         if noemail:
             if email:
                 raise BzrCommandError(
@@ -275,30 +283,33 @@ class cmd_test(EC2Command):
             if email == []:
                 email = True
 
-        if headless and not (email or submit_pqm_message):
+        if not attached and not (email or submit_pqm_message):
             raise BzrCommandError(
                 'You have specified no way to get the results '
                 'of your headless test run.')
 
-        if test_options != '-vv' and submit_pqm_message is not None:
+        if (test_options != DEFAULT_TEST_OPTIONS
+            and submit_pqm_message is not None):
             raise BzrCommandError(
                 "Submitting to PQM with non-default test options isn't "
                 "supported")
 
+        session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
-            EC2TestRunner.name, instance_type, machine)
+            session_name, instance_type, machine)
 
         runner = EC2TestRunner(
             test_branch, email=email, file=file,
-            test_options=test_options, headless=headless,
+            test_options=test_options, headless=(not attached),
             branches=branches, pqm_message=submit_pqm_message,
             pqm_public_location=pqm_public_location,
             pqm_submit_location=pqm_submit_location,
             open_browser=open_browser, pqm_email=pqm_email,
             include_download_cache_changes=include_download_cache_changes,
-            instance=instance, launchpad_login=instance._launchpad_login)
+            instance=instance, launchpad_login=instance._launchpad_login,
+            timeout=480)
 
-        instance.set_up_and_run(postmortem, not headless, runner.run_tests)
+        instance.set_up_and_run(postmortem, attached, runner.run_tests)
 
 
 class cmd_land(EC2Command):
@@ -319,15 +330,18 @@ class cmd_land(EC2Command):
         Option(
             'force',
             help="Land the branch even if the proposal is not approved."),
+        attached_option,
         ]
 
-    takes_args = ['merge_proposal']
+    takes_args = ['merge_proposal?']
 
     def _get_landing_command(self, source_url, target_url, commit_message,
-                             emails):
+                             emails, attached):
         """Return the command that would need to be run to submit with ec2."""
         ec2_path = os.path.join(get_launchpad_root(), 'utilities', 'ec2')
-        command = [ec2_path, 'test', '--headless']
+        command = [ec2_path, 'test']
+        if attached:
+            command.extend(['--attached'])
         command.extend(['--email=%s' % email for email in emails])
         # 'ec2 test' has a bug where you cannot pass full URLs to branches to
         # the -b option. It has special logic for 'launchpad' branches, so we
@@ -338,10 +352,10 @@ class cmd_land(EC2Command):
              commit_message, str(source_url)])
         return command
 
-    def run(self, merge_proposal, machine=None,
+    def run(self, merge_proposal=None, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
-            print_commit=False, force=False):
+            print_commit=False, force=False, attached=False):
         try:
             from devscripts.autoland import (
                 LaunchpadBranchLander, MissingReviewError)
@@ -361,7 +375,13 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "Cannot specify --print-commit and --dry-run.")
         lander = LaunchpadBranchLander.load()
-        mp = lander.load_merge_proposal(merge_proposal)
+
+        if merge_proposal is None:
+            (tree, bzrbranch, relpath) = (
+                BzrDir.open_containing_tree_or_branch('.'))
+            mp = lander.get_merge_proposal_from_branch(bzrbranch)
+        else:
+            mp = lander.load_merge_proposal(merge_proposal)
         if not mp.is_approved:
             if force:
                 print "Merge proposal is not approved, landing anyway."
@@ -388,7 +408,7 @@ class cmd_land(EC2Command):
 
         landing_command = self._get_landing_command(
             mp.source_branch, mp.target_branch, commit_message,
-            mp.get_stakeholder_emails())
+            mp.get_stakeholder_emails(), attached)
         if dry_run:
             print landing_command
         else:
@@ -418,21 +438,24 @@ class cmd_demo(EC2Command):
 
     takes_args = ['test_branch?']
 
-    def run(self, test_branch=None, branch=[], trunk=False, machine=None,
+    def run(self, test_branch=None, branch=None, trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, debug=False,
             include_download_cache_changes=False, demo=None):
         if debug:
             pdb.set_trace()
+        if branch is None:
+            branch = []
         branches, test_branch = _get_branches_and_test_branch(
             trunk, branch, test_branch)
 
+        session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
-            EC2TestRunner.name, instance_type, machine, demo)
+            session_name, instance_type, machine, demo)
 
         runner = EC2TestRunner(
             test_branch, branches=branches,
             include_download_cache_changes=include_download_cache_changes,
-            instance=instance)
+            instance=instance, launchpad_login=instance._launchpad_login)
 
         demo_network_string = '\n'.join(
             '  ' + network for network in demo)
@@ -480,8 +503,9 @@ class cmd_update_image(EC2Command):
         ListOption(
             'extra-update-image-command', type=str,
             help=('Run this command (with an ssh agent) on the image before '
-                  'running the default update steps.  Can be passed more than '
-                  'once, the commands will be run in the order specified.')),
+                  'running the default update steps.  Can be passed more '
+                  'than once, the commands will be run in the order '
+                  'specified.')),
         Option(
             'public',
             help=('Remove proprietary code from the sourcecode directory '
@@ -491,15 +515,19 @@ class cmd_update_image(EC2Command):
     takes_args = ['ami_name']
 
     def run(self, ami_name, machine=None, instance_type='m1.large',
-            debug=False, postmortem=False, extra_update_image_command=[],
+            debug=False, postmortem=False, extra_update_image_command=None,
             public=False):
         if debug:
             pdb.set_trace()
 
+        if extra_update_image_command is None:
+            extra_update_image_command = []
+
         credentials = EC2Credentials.load_from_file()
 
+        session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
-            EC2TestRunner.name, instance_type, machine,
+            session_name, instance_type, machine,
             credentials=credentials)
         instance.check_bundling_prerequisites()
 
@@ -538,7 +566,7 @@ class cmd_update_image(EC2Command):
             'bzr pull -d /var/launchpad/download-cache '
             'lp:lp-source-dependencies')
         if public:
-            update_sourcecode_options = '--public-only'
+            update_sourcecode_options = ' --public-only'
         else:
             update_sourcecode_options = ''
         user_connection.run_with_ssh_agent(

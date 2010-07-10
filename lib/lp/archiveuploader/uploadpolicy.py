@@ -5,50 +5,24 @@
 
 __metaclass__ = type
 
-__all__ = ["findPolicyByName", "findPolicyByOptions", "UploadPolicyError"]
+__all__ = [
+    "findPolicyByName",
+    "findPolicyByOptions",
+    "UploadPolicyError",
+    ]
 
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource)
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.archive import ArchivePurpose
 
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
-
-
-def policy_options(optparser):
-    """Add to the optparser all the options which can be used by the policy
-    objects herein.
-    """
-
-    optparser.add_option(
-        "-C", "--context", action="store", dest="context",
-        metavar="CONTEXT", default="insecure",
-        help="The context in which to consider the upload.")
-
-    optparser.add_option(
-        "-d", "--distro", action="store",
-        dest="distro", metavar="DISTRO", default="ubuntu",
-        help="Distribution to give back from")
-
-    optparser.add_option(
-        "-s", "--series", action="store", default=None,
-        dest="distroseries", metavar="DISTROSERIES",
-        help="Distro series to give back from.")
-
-    optparser.add_option(
-        "-b", "--buildid", action="store", type="int",
-        dest="buildid", metavar="BUILD",
-        help="The build ID to which to attach this upload.")
-
-    optparser.add_option(
-        "-a", "--announce", action="store",
-        dest="announcelist", metavar="ANNOUNCELIST",
-        help="Override the announcement list")
 
 
 class UploadPolicyError(Exception):
@@ -85,6 +59,10 @@ class AbstractUploadPolicy:
         self.future_time_grace = 8 * HOURS
         # The earliest year we accept in a deb's file's mtime
         self.earliest_year = 1984
+
+    def getUploader(self, changes):
+        """Get the person who is doing the uploading."""
+        return changes.signer
 
     def setOptions(self, options):
         """Store the options for later."""
@@ -130,29 +108,6 @@ class AbstractUploadPolicy:
                 # Buildd binary uploads (resulting from successful builds)
                 # to copy archives may go into *any* pocket.
                 return
-        if upload.is_ppa:
-            if self.pocket != PackagePublishingPocket.RELEASE:
-                upload.reject(
-                    "PPA uploads must be for the RELEASE pocket.")
-        elif (self.archive.purpose == ArchivePurpose.PARTNER and
-              self.pocket != PackagePublishingPocket.RELEASE and
-              self.pocket != PackagePublishingPocket.PROPOSED):
-            # Partner uploads can only go to the release or proposed
-            # pockets.
-            upload.reject(
-                "Partner uploads must be for the RELEASE or PROPOSED pocket.")
-        else:
-            # Uploads to the partner archive are allowed in any distroseries
-            # state.
-            # XXX julian 2005-05-29 bug=117557:
-            # This is a greasy hack until bug #117557 is fixed.
-            if (self.distroseries and
-                self.archive.purpose != ArchivePurpose.PARTNER and
-                not self.distroseries.canUploadToPocket(self.pocket)):
-                upload.reject(
-                    "Not permitted to upload to the %s pocket in a "
-                    "series in the '%s' state." % (
-                    self.pocket.name, self.distroseries.status.name))
 
         # reject PPA uploads by default
         self.rejectPPAUploads(upload)
@@ -191,6 +146,8 @@ class AbstractUploadPolicy:
     @classmethod
     def _registerPolicy(cls, policy_type):
         """Register the given policy type as belonging to its given name."""
+        # XXX: JonathanLange 2010-01-15 bug=510892: This shouldn't instantiate
+        # policy types. They should instead have names as class variables.
         policy_name = policy_type().name
         cls.policies[policy_name] = policy_type
 
@@ -211,6 +168,7 @@ class AbstractUploadPolicy:
 # Nice shiny top-level policy finder
 findPolicyByName = AbstractUploadPolicy.findPolicyByName
 findPolicyByOptions = AbstractUploadPolicy.findPolicyByOptions
+
 
 class InsecureUploadPolicy(AbstractUploadPolicy):
     """The insecure upload policy is used by the poppy interface."""
@@ -318,7 +276,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
 
         if self.pocket == PackagePublishingPocket.RELEASE:
             if (self.distroseries.status !=
-                DistroSeriesStatus.FROZEN):
+                SeriesStatus.FROZEN):
                 return True
         return False
 
@@ -330,7 +288,7 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     """The build daemon upload policy is invoked by the slave scanner."""
 
     def __init__(self):
-        AbstractUploadPolicy.__init__(self)
+        super(BuildDaemonUploadPolicy, self).__init__()
         self.name = 'buildd'
         # We permit unsigned uploads because we trust our build daemons
         self.unsigned_changes_ok = True
@@ -356,6 +314,28 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
 
 
 AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
+
+
+class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
+    """Policy for uploading the results of a source package recipe build."""
+
+    def __init__(self):
+        super(SourcePackageRecipeUploadPolicy, self).__init__()
+        # XXX: JonathanLange 2010-01-15 bug=510894: This has to be exactly the
+        # same string as the one in SourcePackageRecipeBuild.policy_name.
+        # Factor out a shared constant.
+        self.name = 'recipe'
+        self.can_upload_source = True
+        self.can_upload_binaries = False
+
+    def getUploader(self, changes):
+        """Return the person doing the upload."""
+        build_id = int(getattr(self.options, 'buildid'))
+        sprb = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
+        return sprb.requester
+
+
+AbstractUploadPolicy._registerPolicy(SourcePackageRecipeUploadPolicy)
 
 
 class SyncUploadPolicy(AbstractUploadPolicy):
@@ -395,6 +375,10 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """Nothing, let it go."""
         pass
+
+    def rejectPPAUploads(self, upload):
+        """We allow PPA uploads."""
+        return False
 
 AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
 

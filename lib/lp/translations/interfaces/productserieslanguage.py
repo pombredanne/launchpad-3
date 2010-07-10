@@ -7,7 +7,7 @@ from lazr.restful.fields import Reference
 
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Choice, TextLine)
+    Choice, Datetime, TextLine)
 
 from canonical.launchpad import _
 from lp.translations.interfaces.pofile import IPOFile
@@ -45,6 +45,11 @@ class IProductSeriesLanguage(IRosettaStats):
         "language. This includes only the real pofiles where translations "
         "exist.")
 
+
+    last_changed_date = Datetime(
+        title=_('When this file was last changed.'))
+
+
     def getPOFilesFor(potemplates):
         """Return `POFiles` for each of `potemplates`, in the same order.
 
@@ -52,7 +57,7 @@ class IProductSeriesLanguage(IRosettaStats):
         required language, a `DummyPOFile` is provided.
         """
 
-    def setCounts(total, imported, changed, new, unreviewed):
+    def setCounts(total, imported, changed, new, unreviewed, last_changed):
         """Set aggregated message counts for ProductSeriesLanguage."""
 
     def recalculateCounts(total, imported, changed, new, unreviewed):

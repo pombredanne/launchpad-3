@@ -7,14 +7,15 @@ if [ -n "$1" ]; then
     USER=$1
     echo "Creating Launchpad database for $USER"
 else
-    echo "THIS SCRIPT WILL DESTROY ALL OF YOUR POSTGRESQL DATA"
-    echo "If you really want that, run it with a username as "
-    echo "an argument"
+    echo "usage: launchpad-database-setup DEVELOPER_USER"
+    echo "THIS SCRIPT WILL DESTROY ALL POSTGRESQL DATA for the given user"
+    echo "If you really want that, run it with the username of your "
+    echo "local developer account."
     exit 1
 fi
 
 # This attempts to automate instructions provided on
-# https://launchpad.canonical.com/DatabaseSetup which are intended for
+# https://dev.launchpad.net/DatabaseSetup which are intended for
 # initial Launchpad setup on an otherwise unconfigured postgresql instance
 
 for pgversion in 8.4 8.3 8.2
@@ -83,7 +84,7 @@ sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
 search_path='$user,public,ts2'
 add_missing_from=false
 #enable_seqscan=false
-log_statement='all'
+log_statement='none'
 log_line_prefix='[%t] %q%u@%d '
 fsync = off
 

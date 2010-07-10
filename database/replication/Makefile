@@ -18,6 +18,11 @@
 #  $ make stagingsetup STAGING_CONFIG=dev-staging STAGING_DUMP=launchpad.dump
 #  $ make stagingswitch STAGING_CONFIG=dev-staging
 #
+# To restore a dogfood database:
+#
+#  $ cd database/replication
+#  $ make dogfood DOGFOOD_DBNAME=launchpad_dogfood DOGFOOD_DUMP=launchpad.dump
+#
 
 # This used to be 10 seconds, so we always ran staging lagged to detect
 # replication glitches more easily. However, this does not play well
@@ -31,11 +36,23 @@ NEW_STAGING_CONFIG=staging-setup # For building the db with a different name.
 STAGING_CONFIG=staging # For swapping fresh db into place.
 STAGING_DUMP=launchpad.dump # Dumpfile to build new staging from.
 STAGING_TABLESPACE=pg_default # 'pg_default' for default
+DOGFOOD_DBNAME=launchpad_dogfood
+DOGFOOD_DUMP=launchpad.dump
 
 _CONFIG=overridden-on-command-line
 _SLAVE_TABLESPACE=pg_default
 
 PGMASSACRE=../../utilities/pgmassacre.py
+
+CREATEDB_83=createdb --encoding=UTF8
+CREATEDB_84=createdb --encoding=UTF8 --locale=C --template=template0
+CREATEDB=${CREATEDB_83}
+
+# Turn off output silencing so we can see details of staging deployments.
+# Without the timestamps, we are unable to estimate production deployment
+# times.
+#SHHH=../../utilities/shhh.py
+SHHH=
 
 default:
 	echo Usage: make [start|stop|restart]
@@ -61,7 +78,7 @@ devsetup:
 	
 	# Replicate it again, so we can test with multiple slaves.
 	-${PGMASSACRE} launchpad_dev_slave2
-	createdb --encoding=UTF8 launchpad_dev_slave2
+	${CREATEDB} launchpad_dev_slave2
 	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py start \
 		 node3_node 'dbname=launchpad_dev_slave2 user=slony'
 	LPCONFIG=${DEV_CONFIG} ./new-slave.py 3 launchpad_dev_slave2
@@ -81,13 +98,12 @@ stagingsetup:
 	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
 	    LAG="0 seconds"
 	# Create the DB with the desired default tablespace.
-	createdb --encoding UTF8 --tablespace ${STAGING_TABLESPACE} \
-	    lpmain_staging_new
-	# Restore the DB schema. Don't restore permissions - it will blow
-	# up when roles don't exist in this cluster, and we rebuild it later
-	# with security.py anyway.
+	${CREATEDB} --tablespace ${STAGING_TABLESPACE} lpmain_staging_new
+	# Restore the database. We need to restore permissions, despite
+	# later running security.py, to pull in permissions granted on
+	# production to users not maintained by security.py.
 	pg_restore --dbname=lpmain_staging_new \
-	    --no-acl --exit-on-error ${STAGING_DUMP}
+	    --no-owner --exit-on-error ${STAGING_DUMP}
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
@@ -118,6 +134,15 @@ stagingswitch:
 	# Start the slon daemons, with requested lag.
 	LPCONFIG=${STAGING_CONFIG} ./slon_ctl.py --lag="${LAG}" start
 
+dogfood:
+	${CREATEDB} ${DOGFOOD_DBNAME}
+	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
+	    --exit-on-error ${DOGFOOD_DUMP}
+	./repair-restored-db.py -d ${DOGFOOD_DBNAME}
+	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
+	../schema/fti.py -d ${DOGFOOD_DBNAME}
+	../schema/security.py -d ${DOGFOOD_DBNAME}
+
 _prelim:
 	@echo LPCONFIG currently ${LPCONFIG}
 	# Create the slony PostgreSQL superuser if necessary.
@@ -132,25 +157,26 @@ _prelim:
 _replicate:
 	@echo LPCONFIG currently ${LPCONFIG}
 	# Start the slon daemon for the master.
-	./slon_ctl.py start \
+	./slon_ctl.py --lag="0 seconds" start \
 		 node1_node "dbname=${_MASTER} user=slony"
 	# Initialize the cluster and create replication sets.
 	./initialize.py
 	# Create the soon-to-be-slave database, empty at this point.
-	createdb --encoding=UTF8 --tablespace=${_SLAVE_TABLESPACE} ${_SLAVE}
+	${CREATEDB} --tablespace=${_SLAVE_TABLESPACE} ${_SLAVE}
 	# Start the slon daemon for the slave
-	./slon_ctl.py start node2_node "dbname=${_SLAVE} user=slony"
+	./slon_ctl.py --lag="0 seconds" start \
+	    node2_node "dbname=${_SLAVE} user=slony"
 	# Setup the slave
 	./new-slave.py 2 "dbname=${_SLAVE}"
 	# Upgrade all databases in the cluster and reset security.
-	../schema/upgrade.py
-	../schema/fti.py
-	../schema/security.py --cluster -U slony
-	# Migrate tables to the authdb replication set, creating the set
-	# and subscribing nodes to it as necessary.
-	./populate_auth_replication_set.py -U slony
+	@echo Running upgrade.py `date`
+	${SHHH} ../schema/upgrade.py
+	@echo Running fti.py `date`
+	${SHHH} ../schema/fti.py
+	@echo Running security.py `date`
+	./slon_ctl.py stop # security.py can deadlock with slony
+	${SHHH} ../schema/security.py --cluster -U slony
 	# Restart slon daemons with default lag setting.
-	./slon_ctl.py stop
 	./slon_ctl.py --lag="${LAG}" start
 	# Generate a preamble for manual slonik(1) usage.
 	./preamble.py > preamble.sk

@@ -14,9 +14,9 @@ The major pillars, product, distribution and project, have some properties
 which give us the sprints relevant to them.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, IProjectSet, IDistributionSet)
+    ...     IProductSet, IProjectGroupSet, IDistributionSet)
     >>> productset = getUtility(IProductSet)
-    >>> projectset = getUtility(IProjectSet)
+    >>> projectset = getUtility(IProjectGroupSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> firefox = productset.getByName('firefox')
     >>> ubuntu = distroset.getByName('ubuntu')
@@ -151,14 +151,18 @@ And if we ask just for specs, we get them all
 
 Inactive products are excluded from the listings.
 
- >>> from canonical.launchpad.interfaces import IProductSet
- >>> from canonical.launchpad.ftests import login
- >>> firefox = getUtility(IProductSet).getByName('firefox')
- >>> login("foo.bar@canonical.com")
- >>> firefox.active = False
- >>> flush_database_updates()
- >>> ubz.specifications().count()
- 0
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.ftests import login
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> login("foo.bar@canonical.com")
+
+    # Unlink the source packages so the project can be deactivated.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(firefox)
+    >>> firefox.active = False
+    >>> flush_database_updates()
+    >>> ubz.specifications().count()
+    0
 
 Reset firefox so we don't mess up later tests.
 
@@ -198,3 +202,51 @@ Administrators are always considered drivers for any sprint.
 
     >>> paris.isDriver(admin_person)
     True
+
+
+Sprint attendance
+-----------------
+
+The sprint attend() method adds a user's attendance to a sprint.
+
+    >>> import datetime
+    >>> import pytz
+
+    >>> person = factory.makePerson(name='mustard')
+    >>> UTC = pytz.timezone('UTC')
+    >>> time_starts = datetime.datetime(2005, 10, 7, 9, 0, 0, 0, UTC)
+    >>> time_ends = datetime.datetime(2005, 10, 17, 19, 5, 0, 0, UTC)
+    >>> sprint_attendance = ubz.attend(person, time_starts, time_ends, True)
+
+The attend() method can update a user's attendance if there is already a
+ISprintAttendance for the user.
+
+    >>> print sprint_attendance.attendee.name
+    mustard
+    >>> print sprint_attendance.time_starts
+    2005-10-07 09:00:00+00:00
+    >>> print sprint_attendance.time_ends
+    2005-10-17 19:05:00+00:00
+    >>> print sprint_attendance.is_physical
+    True
+
+    >>> time_starts = datetime.datetime(2005, 10, 8, 9, 0, 0, 0, UTC)
+    >>> time_ends = datetime.datetime(2005, 10, 16, 19, 5, 0, 0, UTC)
+    >>> new_attendance = ubz.attend(person, time_starts, time_ends, False)
+    >>> print new_attendance.attendee.name
+    mustard
+    >>> print new_attendance.time_starts
+    2005-10-08 09:00:00+00:00
+    >>> print new_attendance.time_ends
+    2005-10-16 19:05:00+00:00
+    >>> print new_attendance.is_physical
+    False
+
+The sprint attendances property returns a list of SprintAttendance objects.
+
+    >>> ubz.attendances
+    [<SprintAttendance ...>]
+
+    >>> for attendance in ubz.attendances:
+    ...     print attendance.attendee.name
+    mustard

@@ -47,6 +47,12 @@ class TestRequestParsing(TestCase):
         request = 'GET //8196569//foo HTTP/1.1'
         self.assertMethodAndFileIDAreCorrect(request)
 
+    def test_multiple_consecutive_white_spaces(self):
+        # Some request strings might have multiple consecutive white spaces,
+        # but they're parsed just like if they didn't have the extra spaces.
+        request = 'GET /8196569/mediumubuntulogo.png  HTTP/1.1'
+        self.assertMethodAndFileIDAreCorrect(request)
+
     def test_return_value_for_https_path(self):
         request = ('GET https://launchpadlibrarian.net/8196569/'
                    'mediumubuntulogo.png HTTP/1.1')
@@ -89,10 +95,12 @@ class TestLibrarianLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_library_file_id)
-        self.assertEqual(self.logger.buffer.getvalue(), '')
+        self.assertEqual(
+            self.logger.buffer.getvalue().strip(),
+            'INFO: Parsed 1 lines resulting in 1 download stats.')
 
         date = datetime(2008, 6, 13)
-        self.assertEqual(downloads, 
+        self.assertEqual(downloads,
             {'15018215': {datetime(2008, 6, 13): {'US': 1}}})
 
         self.assertEqual(parsed_bytes, fd.tell())
@@ -106,7 +114,9 @@ class TestLibrarianLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_library_file_id)
-        self.assertEqual(self.logger.buffer.getvalue(), '')
+        self.assertEqual(
+            self.logger.buffer.getvalue().strip(),
+            'INFO: Parsed 1 lines resulting in 0 download stats.')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
 

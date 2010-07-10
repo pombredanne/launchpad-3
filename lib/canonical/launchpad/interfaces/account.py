@@ -8,6 +8,7 @@ __metaclass__ = type
 
 __all__ = [
     'AccountStatus',
+    'AccountSuspendedError',
     'AccountCreationRationale',
     'IAccount',
     'IAccountPrivate',
@@ -25,6 +26,10 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
 from lazr.restful.fields import CollectionField, Reference
+
+
+class AccountSuspendedError(Exception):
+    """The account being accessed has been suspended."""
 
 
 class AccountStatus(DBEnumeratedType):
@@ -179,6 +184,13 @@ class AccountCreationRationale(DBEnumeratedType):
         commented on.
         """)
 
+    SOFTWARE_CENTER_PURCHASE = DBItem(16, """
+        Created by purchasing commercial software through Software Center.
+
+        A purchase of commercial software (ie. subscriptions to a private
+        and commercial archive) was made via Software Center.
+        """)
+
 
 class IAccountPublic(Interface):
     """Public information on an `IAccount`."""
@@ -254,14 +266,6 @@ class IAccountPrivate(Interface):
         title=_("Rationale for this account's creation."), required=True,
         readonly=True, values=AccountCreationRationale.items)
 
-    date_status_set = Datetime(
-        title=_('Date status last modified.'),
-        required=True, readonly=False)
-
-    status_comment = Text(
-        title=_("Why are you deactivating your account?"),
-        required=False, readonly=False)
-
     openid_identifier = TextLine(
         title=_("Key used to generate opaque OpenID identities."),
         readonly=True, required=True)
@@ -269,7 +273,7 @@ class IAccountPrivate(Interface):
     password = PasswordField(
         title=_("Password."), readonly=False, required=True)
 
-    def createPerson(self, rationale, name=None, comment=None):
+    def createPerson(rationale, name=None, comment=None):
         """Create and return a new `IPerson` associated with this account.
 
         :param rationale: A member of `AccountCreationRationale`.
@@ -282,6 +286,14 @@ class IAccountPrivate(Interface):
 
 class IAccountSpecialRestricted(Interface):
     """Attributes of `IAccount` protected with launchpad.Special."""
+
+    date_status_set = Datetime(
+        title=_('Date status last modified.'),
+        required=True, readonly=False)
+
+    status_comment = Text(
+        title=_("Why are you deactivating your account?"),
+        required=False, readonly=False)
 
     # XXX sinzui 2008-07-14 bug=248518:
     # This method would assert the password is not None, but

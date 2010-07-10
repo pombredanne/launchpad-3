@@ -32,6 +32,9 @@ class ILoginToken(IAuthToken):
         required=False,
         )
 
+    validation_phrase = Text(
+        title=_("The phrase used to validate sign-only GPG keys"))
+
     def destroySelf():
         """Remove this LoginToken from the database.
 
@@ -73,6 +76,24 @@ class ILoginToken(IAuthToken):
 
     def sendClaimTeamEmail():
         """E-mail instructions for claiming a team to self.email."""
+
+    def activateGPGKey(key, can_encrypt):
+        """Activate a GPG key.
+
+        :return: A Launchpad key, whether it's new, email addresses that were
+            created, email addresses owned by someone else.
+        """
+
+    def createEmailAddresses(uids):
+        """Create EmailAddresses for the GPG UIDs that do not exist yet.
+
+        For each of the given UIDs, check if it is already registered and, if
+        not, register it.
+
+        Return a tuple containing the list of newly created emails (as
+        strings) and the emails that exist and are already assigned to another
+        person (also as strings).
+        """
 
 
 class ILoginTokenSet(Interface):

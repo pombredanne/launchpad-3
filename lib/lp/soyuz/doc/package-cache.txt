@@ -163,10 +163,11 @@ We can invoke the cache updater directly on IDistroSeries:
 
   >>> updates = ubuntu.updateCompleteSourcePackageCache(
   ...    archive=ubuntu.main_archive, ztm=transaction, log=TestLog())
-  DEBUG: Considering source 'mozilla-firefox'
-  ...
+  DEBUG: ...
   DEBUG: Considering source 'cdrkit'
   DEBUG: Creating new source cache entry.
+  ...
+  DEBUG: Considering source 'mozilla-firefox'
   ...
 
   >>> print updates
@@ -261,10 +262,12 @@ We can invoke the cache updater directly on IDistroSeries:
 
   >>> updates = warty.updateCompletePackageCache(
   ...    archive=ubuntu.main_archive, ztm=transaction, log=TestLog())
-  DEBUG: Considering binary 'mozilla-firefox'
+  DEBUG: Considering binary 'at'
   ...
   DEBUG: Considering binary 'cdrkit'
   DEBUG: Creating new binary cache entry.
+  ...
+  DEBUG: Considering binary 'mozilla-firefox'
   ...
 
   >>> print updates
@@ -355,6 +358,7 @@ same queries work, pointing to Celso's PPA.
 
   >>> source_updates = ubuntu.updateCompleteSourcePackageCache(
   ...    archive=cprov.archive, ztm=transaction, log=TestLog())
+  DEBUG: ...
   DEBUG: Considering source 'pmount'
   ...
 
@@ -701,7 +705,7 @@ First, we rebuild and examinate the caches for Celso's PPA.
     ...     ubuntu.removeOldCacheItems(archive=archive, log=logger)
     ...     ubuntu.updateCompleteSourcePackageCache(
     ...         archive=archive, ztm=transaction, log=logger)
-    ...     for series in ubuntu.serieses:
+    ...     for series in ubuntu.series:
     ...         series.removeOldCacheItems(archive=archive, log=logger)
     ...         series.updateCompletePackageCache(
     ...             archive=archive, ztm=transaction, log=logger)
@@ -721,6 +725,18 @@ First, we rebuild and examinate the caches for Celso's PPA.
     ...     for ppa in ubuntu.searchPPAs(text, user=user):
     ...         print ppa.displayname
     ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> def enable_archive(archive):
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...     archive.enable()
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> def disable_archive(archive):
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...     archive.disable()
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
     >>> rebuild_caches(cprov.archive)
 
@@ -733,7 +749,7 @@ First, we rebuild and examinate the caches for Celso's PPA.
 
 When Celso's PPA gets disabled, the indexes remain in the DB.
 
-    >>> cprov.archive.enabled = False
+    >>> disable_archive(cprov.archive)
 
     >>> print_caches(cprov.archive)
     3 sources cached [3]
@@ -769,7 +785,7 @@ If by any chance, the disabled PPA gets re-enabled, the cache records
 will be re-created when the indexes are rebuilt and the ppa becomes
 publicly searchable again.
 
-    >>> cprov.archive.enabled = True
+    >>> enable_archive(cprov.archive)
 
     >>> rebuild_caches(cprov.archive)
 
