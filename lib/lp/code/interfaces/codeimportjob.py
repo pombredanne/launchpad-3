@@ -16,8 +16,6 @@ __all__ = [
     'ICodeImportJobWorkflow',
     ]
 
-import datetime
-
 from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, Object, Text
 

@@ -6,7 +6,6 @@
 from __future__ import with_statement
 
 __metaclass__ = type
-__all__ = ['TestBranchView', 'test_suite']
 
 from datetime import datetime, timedelta
 from textwrap import dedent
@@ -16,7 +15,6 @@ import pytz
 import simplejson
 
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -32,9 +30,6 @@ from lp.code.browser.branchlisting import PersonOwnedBranchesView
 from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.helpers import truncate_text
 from lp.code.enums import BranchLifecycleStatus, BranchType
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
-from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.testing import (
     login, login_person, logout, person_logged_in, ANONYMOUS,
     TestCaseWithFactory)
@@ -122,20 +117,18 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
 
 class TestBranchView(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBranchView, self).setUp()
-        login(ANONYMOUS)
         self.request = LaunchpadTestRequest()
-
-    def tearDown(self):
-        logout()
-        super(TestBranchView, self).tearDown()
 
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
-        branch = getUtility(IBranchLookup).get(28)
+        branch = self.factory.makeBranch()
+        branch.mirrorFailed(
+            "on quick brown fox the dog jumps to" *
+            BranchMirrorStatusView.MAXIMUM_STATUS_MESSAGE_LENGTH)
         branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertEqual(
             truncate_text(branch.mirror_status_message,
@@ -144,7 +137,7 @@ class TestBranchView(TestCaseWithFactory):
 
     def testMirrorStatusMessage(self):
         """mirror_status_message on the view is the same as on the branch."""
-        branch = getUtility(IBranchLookup).get(5)
+        branch = self.factory.makeBranch()
         branch.mirrorFailed("This is a short error message.")
         branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertTrue(
@@ -160,8 +153,8 @@ class TestBranchView(TestCaseWithFactory):
 
     def testBranchAddRequestsMirror(self):
         """Registering a mirrored branch requests a mirror."""
-        arbitrary_person = getUtility(IPersonSet).get(1)
-        arbitrary_product = getUtility(IProductSet).get(1)
+        arbitrary_person = self.factory.makePerson()
+        arbitrary_product = self.factory.makeProduct()
         login(arbitrary_person.preferredemail.email)
         try:
             add_view = BranchAddView(arbitrary_person, self.request)
@@ -195,7 +188,7 @@ class TestBranchView(TestCaseWithFactory):
         # The merge links are shown on projects that have multiple branches.
         product = self.factory.makeProduct(name='super-awesome-project')
         branch1 = self.factory.makeAnyBranch(product=product)
-        branch2 = self.factory.makeAnyBranch(product=product)
+        self.factory.makeAnyBranch(product=product)
         view = BranchView(branch1, self.request)
         view.initialize()
         self.assertTrue(view.show_merge_links)
