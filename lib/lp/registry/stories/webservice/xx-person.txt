@@ -656,6 +656,7 @@ Subscribed packages can be listed with getBugSubscriberPackages:
     start: 0
     total_size: 1
     ---
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     display_name: u'...'
     distribution_link: u'...'
