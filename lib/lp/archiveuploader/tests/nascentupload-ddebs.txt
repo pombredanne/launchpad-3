@@ -72,9 +72,9 @@ DDEB.
     DEB
     >>> print build.binarypackages[1].binpackageformat.name
     DDEB
-    >>> build.binarypackages[0].ddeb_package == build.binarypackages[1]
+    >>> build.binarypackages[0].debug_package == build.binarypackages[1]
     True
-    >>> build.binarypackages[1].ddeb_package is None
+    >>> build.binarypackages[1].debug_package is None
     True
 
 We override the binary to main/devel, and accept it into the archive.

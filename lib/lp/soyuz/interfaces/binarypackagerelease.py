@@ -52,7 +52,7 @@ class IBinaryPackageRelease(Interface):
     installedsize = Int(required=False)
     architecturespecific = Bool(required=True)
     datecreated = Datetime(required=True, readonly=True)
-    ddeb_package = Object(
+    debug_package = Object(
         title=_("DDEB package"), schema=Interface, required=False,
         description=_("The corresponding DDEB containing debug symbols "
                       "for this binary."))

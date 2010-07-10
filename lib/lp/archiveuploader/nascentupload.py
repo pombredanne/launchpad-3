@@ -990,7 +990,7 @@ class NascentUpload:
 
             for (bpf, bpr) in file_to_bpr.items():
                 if bpf.ddeb_file is not None:
-                    removeSecurityProxy(bpr).ddeb_package = file_to_bpr[bpf.ddeb_file]
+                    removeSecurityProxy(bpr).debug_package = file_to_bpr[bpf.ddeb_file]
 
             # Store the related builds after verifying they were built
             # from the same source.

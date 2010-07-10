@@ -62,7 +62,7 @@ class BinaryPackageRelease(SQLBase):
     architecturespecific = BoolCol(dbName='architecturespecific',
                                    notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    ddeb_package = ForeignKey(dbName='ddeb_package',
+    debug_package = ForeignKey(dbName='debug_package',
                               foreignKey='BinaryPackageRelease')
 
     files = SQLMultipleJoin('BinaryPackageFile',
