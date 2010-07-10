@@ -28,7 +28,7 @@ class BrandingChangeView(LaunchpadEditFormView):
         return ('Change the images used to represent %s in Launchpad'
                 % self.context.displayname)
 
-    page_title = label
+    page_title = "Change branding"
 
     custom_widget('icon', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
