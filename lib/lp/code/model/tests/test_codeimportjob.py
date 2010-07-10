@@ -38,7 +38,8 @@ from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
 from lp.code.interfaces.codeimportresult import ICodeImportResult
 from lp.registry.interfaces.person import IPersonSet
-from lp.testing import ANONYMOUS, login, logout, TestCaseWithFactory
+from lp.testing import (
+    ANONYMOUS, login, login_celebrity, logout, TestCaseWithFactory)
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import, make_running_import)
 from canonical.launchpad.testing.pages import get_feedback_messages
@@ -54,8 +55,7 @@ def login_for_code_imports():
     CodeImports are currently hidden from regular users currently. Members of
     the vcs-imports team and can access the objects freely.
     """
-    # David Allouche is a member of the vcs-imports team.
-    login('david.allouche@canonical.com')
+    login_celebrity('vcs_imports')
 
 
 class TestCodeImportJobSet(TestCaseWithFactory):
