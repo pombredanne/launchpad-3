@@ -26,7 +26,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from lp.code.model.codeimportjob import CodeImportJob
-from lp.code.model.codeimportmachine import CodeImportMachine
 from lp.code.model.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.code.enums import (
@@ -417,7 +416,7 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
         code_import = self.getCodeImportForDateDueTest()
         # Create a CodeImportResult that started a long time ago. This one
         # must be superseded by the more recent one created below.
-        machine = CodeImportMachine.get(1)
+        machine = self.factory.makeCodeImportMachine()
         FAILURE = CodeImportResultStatus.FAILURE
         CodeImportResult(
             code_import=code_import, machine=machine, status=FAILURE,
@@ -452,7 +451,7 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
         # set to UTC_NOW.
         code_import = self.getCodeImportForDateDueTest()
         # Create a CodeImportResult that started a long time ago.
-        machine = CodeImportMachine.get(1)
+        machine = self.factory.makeCodeImportMachine()
         FAILURE = CodeImportResultStatus.FAILURE
         CodeImportResult(
             code_import=code_import, machine=machine, status=FAILURE,
