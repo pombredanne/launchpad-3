@@ -986,9 +986,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # they are dominated automatically once the first publication is
         # processed.
         if self.status not in [PUBLISHED, PENDING]:
-            arch_independent = (
-                self.binarypackagerelease.architecturespecific == False)
-            assert arch_independent, (
+            assert not self.binarypackagerelease.architecturespecific, (
                 "Should not dominate unpublished architecture specific "
                 "binary %s (%s)" % (
                 self.binarypackagerelease.title,
