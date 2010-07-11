@@ -2,8 +2,11 @@
 Temporary TODO
 ==============
 
+  [DONE]
     * Should do work to move js code and fix namespaces
       before taking on this new work
+
+  [TODO]
     * Extend JavaScript widget
         > Must warn if moving dupe of dupes
         > Must update the UI if moving dupe of dupes
