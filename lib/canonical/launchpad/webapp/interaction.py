@@ -1,7 +1,36 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Methods dealing with interactions."""
+"""Methods dealing with interactions.
+
+Almost everything in Launchpad relies on a security policy, in particular
+retrieving utilities and accessing attributes.
+
+Zope obtains the security policy by looking at the 'interaction', which is a
+thread-local variable. If there is no interaction, one is likely to encounter
+an error like:
+
+  AttributeError("'thread._local' object has no attribute 'interaction'")
+
+In Launchpad, we frequently refer to the state of having no interaction as
+being "logged out".
+
+Because one needs an interaction to do practically anything, and because
+Launchpad allows anonymous access, it is possible to create an interaction
+(informally, "log in") for a mythical anonymous user.
+
+The object representing the logged-in user is called the "principal", and the
+relationship between the principal and the interaction is called the
+"participation".
+
+In Launchpad and in standard usage, the participation is the request and the
+principal is the requesting user. Although Zope has support for more than one
+of these, we only ever allow one.
+
+There are test helpers in `lp.testing._login`.
+
+See also lib/canonical/launchpad/doc/webapp-authorization.txt.
+"""
 
 __metaclass__ = type
 
