@@ -405,8 +405,9 @@
             set_attributes="description displayname publish status"/>
         <require
             permission="launchpad.Commercial"
-            set_attributes="authorized_size buildd_secret arm_builds_allowed
-                            external_dependencies private
+            set_attributes="authorized_size buildd_secret
+                            enabled_restricted_families
+                            commercial external_dependencies private
                             require_virtualized relative_build_score "/>
         <require
             permission="launchpad.Admin"
@@ -514,6 +515,12 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         factory="lp.soyuz.browser.build.BuildBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJob"
+        for="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
+        factory="lp.soyuz.model.binarypackagebuild.get_binary_build_for_build_farm_job"
+        name="PACKAGEBUILD"
         permission="zope.Public"/>
 
     <!-- BinaryPackageBuildSet -->

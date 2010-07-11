@@ -10,14 +10,19 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.karma import IKarmaCacheManager
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.browser.person import PersonEditView, PersonView
+from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.karma import KarmaCategory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.soyuz.interfaces.archive import ArchiveStatus
 from lp.testing import TestCaseWithFactory, login_person
+from lp.testing.views import create_view
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -112,7 +117,7 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
 
     def test_viewing_self(self):
         # If the current user has edit access to the context person then
-        # the section should always display 
+        # the section should always display.
         login_person(self.owner)
         person_view = PersonView(self.owner, LaunchpadTestRequest())
         self.failUnless(person_view.should_show_ppa_section)
@@ -224,6 +229,177 @@ class TestPersonEditView(TestCaseWithFactory):
         self.ppa.status = ArchiveStatus.DELETED
         self.view.initialize()
         self.assertFalse(self.view.form_fields['name'].for_display)
+
+
+class TestPersonParticipationView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonParticipationView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.view = create_view(self.user, name='+participation')
+
+    def test__asParticpation_owner(self):
+        # Team owners have the role of 'Owner'.
+        self.factory.makeTeam(owner=self.user)
+        [participation] = self.view.active_participations
+        self.assertEqual('Owner', participation['role'])
+
+    def test__asParticpation_admin(self):
+        # Team admins have the role of 'Admin'.
+        team = self.factory.makeTeam()
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        for membership in self.user.myactivememberships:
+            membership.setStatus(
+                TeamMembershipStatus.ADMIN, team.teamowner)
+        [participation] = self.view.active_participations
+        self.assertEqual('Admin', participation['role'])
+
+    def test__asParticpation_member(self):
+        # The default team role is 'Member'.
+        team = self.factory.makeTeam()
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        [participation] = self.view.active_participations
+        self.assertEqual('Member', participation['role'])
+
+    def test__asParticpation_without_mailing_list(self):
+        # The default team role is 'Member'.
+        team = self.factory.makeTeam()
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        [participation] = self.view.active_participations
+        self.assertEqual(None, participation['subscribed'])
+
+    def test__asParticpation_unsubscribed_to_mailing_list(self):
+        # The default team role is 'Member'.
+        team = self.factory.makeTeam()
+        self.factory.makeMailingList(team, team.teamowner)
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        [participation] = self.view.active_participations
+        self.assertEqual('Not subscribed', participation['subscribed'])
+
+    def test__asParticpation_subscribed_to_mailing_list(self):
+        # The default team role is 'Member'.
+        team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(team, team.teamowner)
+        mailing_list.subscribe(self.user)
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        [participation] = self.view.active_participations
+        self.assertEqual('Subscribed', participation['subscribed'])
+
+    def test_active_participations_with_direct_private_team(self):
+        # Users cannot see private teams that they are not members of.
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        # The team is included in active_participations.
+        login_person(self.user)
+        view = create_view(
+            self.user, name='+participation', principal=self.user)
+        self.assertEqual(1, len(view.active_participations))
+        # The team is not included in active_participations.
+        observer = self.factory.makePerson()
+        login_person(observer)
+        view = create_view(
+            self.user, name='+participation', principal=observer)
+        self.assertEqual(0, len(view.active_participations))
+
+    def test_active_participations_with_indirect_private_team(self):
+        # Users cannot see private teams that they are not members of.
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        direct_team = self.factory.makeTeam(owner=team.teamowner)
+        login_person(team.teamowner)
+        direct_team.addMember(self.user, team.teamowner)
+        team.addMember(direct_team, team.teamowner)
+        # The team is included in active_participations.
+        login_person(self.user)
+        view = create_view(
+            self.user, name='+participation', principal=self.user)
+        self.assertEqual(2, len(view.active_participations))
+        # The team is not included in active_participations.
+        observer = self.factory.makePerson()
+        login_person(observer)
+        view = create_view(
+            self.user, name='+participation', principal=observer)
+        self.assertEqual(1, len(view.active_participations))
+
+    def test_active_participations_indirect_membership(self):
+        # Verify the path of indirect membership.
+        a_team = self.factory.makeTeam(name='a')
+        b_team = self.factory.makeTeam(name='b', owner=a_team)
+        c_team = self.factory.makeTeam(name='c', owner=b_team)
+        login_person(a_team.teamowner)
+        a_team.addMember(self.user, a_team.teamowner)
+        transaction.commit()
+        participations = self.view.active_participations
+        self.assertEqual(3, len(participations))
+        display_names = [
+            participation['displayname'] for participation in participations]
+        self.assertEqual(['A', 'B', 'C'], display_names)
+        self.assertEqual(None, participations[0]['via'])
+        self.assertEqual('A', participations[1]['via'])
+        self.assertEqual('A, B', participations[2]['via'])
+
+    def test_has_participations_false(self):
+        participations = self.view.active_participations
+        self.assertEqual(0, len(participations))
+        self.assertEqual(False, self.view.has_participations)
+
+    def test_has_participations_true(self):
+        self.factory.makeTeam(owner=self.user)
+        participations = self.view.active_participations
+        self.assertEqual(1, len(participations))
+        self.assertEqual(True, self.view.has_participations)
+
+
+class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
+    """The related software views display links to failed builds."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonRelatedSoftwareFailedBuild, self).setUp()
+        self.user = self.factory.makePerson()
+
+        # First we need to publish some PPA packages with failed builds
+        # for this person.
+        # XXX michaeln 2010-06-10 bug=592050.
+        # Strangely, the builds need to be built in the context of a
+        # main archive to reproduce bug 591010 for which this test was
+        # written to demonstrate.
+        login('foo.bar@canonical.com')
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        ppa = self.factory.makeArchive(owner=self.user)
+        src_pub = publisher.getPubSource(
+            creator=self.user, maintainer=self.user, archive=ppa)
+        binaries = publisher.getPubBinaries(
+            pub_source=src_pub)
+        self.build = binaries[0].binarypackagerelease.build
+        self.build.status = BuildStatus.FAILEDTOBUILD
+        self.build.archive = publisher.distroseries.main_archive
+        login(ANONYMOUS)
+
+    def test_related_software_with_failed_build(self):
+        # The link to the failed build is displayed.
+        self.view = create_view(self.user, name='+related-software')
+        html = self.view()
+        self.assertTrue(
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
+
+    def test_related_ppa_packages_with_failed_build(self):
+        # The link to the failed build is displayed.
+        self.view = create_view(self.user, name='+ppa-packages')
+        html = self.view()
+        self.assertTrue(
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
 
 
 def test_suite():

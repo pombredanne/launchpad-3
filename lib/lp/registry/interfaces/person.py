@@ -850,15 +850,21 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         distroseries=List(value_type=Reference(schema=Interface)),
         name=TextLine(),
         recipe_text=Text(),
+        daily_build_archive=Reference(schema=Interface),
+        build_daily=Bool(),
         )
     @export_factory_operation(Interface, [])
-    def createRecipe(name, description, recipe_text, distroseries, registrant):
+    def createRecipe(name, description, recipe_text, distroseries,
+                     registrant, daily_build_archive=None, build_daily=False):
         """Create a SourcePackageRecipe owned by this person.
 
         :param name: the name to use for referring to the recipe.
         :param description: A description of the recipe.
         :param recipe_text: The text of the recipe.
         :param distroseries: The distroseries to use.
+        :param registrant: The person who created this recipe.
+        :param daily_build_archive: The archive to use for daily builds.
+        :param build_daily: If True, build this recipe daily (if changed).
         :return: a SourcePackageRecipe.
         """
 
@@ -970,12 +976,23 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         :param match_name: string optional project name to screen the results.
         """
 
-    def getCommercialSubscriptionVouchers():
+    def getAllCommercialSubscriptionVouchers(voucher_proxy=None):
         """Return all commercial subscription vouchers.
 
-        The vouchers are separated into two lists, unredeemed vouchers and
-        redeemed vouchers.
-        :return: tuple (unredeemed_vouchers, redeemed_vouchers)
+        All of a `Person`s vouchers are returned, regardless of redemption
+        status.  Even vouchers marked inactive are returned.
+        The result is a dictionary, indexed by the three
+        voucher statuses.
+        :return: dict
+        """
+
+    def getRedeemableCommercialSubscriptionVouchers(voucher_proxy=None):
+        """Return the set of redeemable vouchers.
+
+        The `Person`s vouchers are returned if they are unredeemed and active.
+
+        The result is a list of vouchers.
+        :return: list
         """
 
     def assignKarma(action_name, product=None, distribution=None,

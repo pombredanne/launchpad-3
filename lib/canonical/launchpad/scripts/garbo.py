@@ -33,7 +33,6 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
-from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.scripts.checkwatches.scheduler import (
@@ -498,28 +497,29 @@ class BranchJobPruner(TunableLoop):
     should be pruned from the database after a month.
     """
 
-    maximum_chunk_size = 1000
+    maximum_chunk_size = 10000
+    minimum_chunk_size = 500
 
-    def __init__(self, log, abort_time=None):
-        super(BranchJobPruner, self).__init__(log, abort_time)
-        self.job_store = IMasterStore(BranchJob)
+    _is_done = False
 
     def isDone(self):
-        return self._ids_to_remove().any() is None
-
-    def _ids_to_remove(self):
-        jobs = self.job_store.find(
-            BranchJob.id,
-            BranchJob.job == Job.id,
-            Job.date_finished < THIRTY_DAYS_AGO)
-        return jobs
+        return self._is_done
 
     def __call__(self, chunk_size):
         chunk_size = int(chunk_size)
-        ids_to_remove = list(self._ids_to_remove()[:chunk_size])
-        self.job_store.find(
-            BranchJob,
-            In(BranchJob.id, ids_to_remove)).remove()
+        store = IMasterStore(BranchJob)
+        ids_to_remove = list(store.find(
+            Job.id,
+            BranchJob.job == Job.id,
+            Job.date_finished < THIRTY_DAYS_AGO)[:chunk_size])
+        if len(ids_to_remove) > 0:
+            # BranchJob is removed too, as the BranchJob.job foreign key
+            # constraint is ON DELETE CASCADE.
+            IMasterStore(Job).find(
+                Job,
+                In(Job.id, ids_to_remove)).remove()
+        else:
+            self._is_done = True
         transaction.commit()
 
 

@@ -1,8 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON_VERSION=2.5
-PYTHON=python${PYTHON_VERSION}
+PYTHON=python
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
@@ -62,8 +61,7 @@ hosted_branches: $(PY)
 $(API_INDEX): $(BZR_VERSION_INFO)
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
-	mv $(APIDOC_DIR).tmp/* $(APIDOC_DIR)
-	rmdir $(APIDOC_DIR).tmp
+	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
 
@@ -88,18 +86,6 @@ check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
-
-# A version of 'make check' that applies modifications specifically for the
-# ec2 environment.
-ec2_check: clean build
-        # XXX mars 2010-05-17 bug=570380
-        # Disable the windmill test suite to prevent the whole system from
-        # hanging.  See bug 570380.
-        #
-        # Yes, this is code duplication.  If you conceive of a better
-        # solution in a less heated moment, then please replace this!
-	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
-		--layer='!\(MailmanLayer\|WindmillLayer\)'
 
 jscheck: build
 	# Run all JavaScript integration tests.  The test runner takes care of
@@ -166,7 +152,7 @@ jsbuild: jsbuild_lazr bin/jsbuild bin/jssize
 		-s lib/canonical/launchpad/javascript \
 		-b $(LP_BUILT_JS_ROOT) \
 		$(shell $(HERE)/utilities/yui-deps.py) \
-		$(shell $(HERE)/utilities/lp-deps.py) \
+		$(shell $(PY) $(HERE)/utilities/lp-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
 	${SHHH} bin/jssize
 
@@ -215,7 +201,7 @@ $(BUILDOUT_BIN): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
 
 compile: $(PY) $(BZR_VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
-	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
+	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
 
 test_build: build
@@ -263,7 +249,7 @@ run_codehosting: check_schema inplace stop hosted_branches
 	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
 
 
-start_librarian: build
+start_librarian: compile
 	bin/start_librarian
 
 stop_librarian:
@@ -353,7 +339,7 @@ clean: clean_js clean_buildout
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
-	$(RM) $(APIDOC_DIR)/wadl*.xml $(APIDOC_DIR)/*.html
+	$(RM) -rf $(APIDOC_DIR)
 	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) +config-overrides.zcml
@@ -470,7 +456,7 @@ pydoctor:
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
-	check check_merge ec2_check \
+	check check_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
 	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs build_eggs\

@@ -297,6 +297,18 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             self.sourcepackagename.name, self.distroseries.displayname)
 
     @property
+    def summary(self):
+        """See `ISourcePackage`."""
+        releases = self.releases
+        if len(releases) == 0:
+            return None
+        current = releases[0]
+        name_summaries = [
+            '%s: %s' % (binary.name, binary.summary)
+            for binary in current.sample_binary_packages]
+        return '\n'.join(name_summaries)
+
+    @property
     def distribution(self):
         return self.distroseries.distribution
 
@@ -425,6 +437,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
 
+    @property
+    def bug_reported_acknowledgement(self):
+        """See `IBugTarget`."""
+        return self.distribution.bug_reported_acknowledgement
+
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this source package."""
         search_params.setSourcePackage(self)
@@ -503,15 +520,17 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return not self.__eq__(other)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
+        """See `IHasBuildRecords`"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now and this method only returns records for SPRs in a
         # distribution).
         # We also ignore the name parameter (required as part of the
-        # IHasBuildRecords interface) and use our own name.
+        # IHasBuildRecords interface) and use our own name and the
+        # binary_only parameter as a source package can only have
+        # binary builds.
 
-        """See `IHasBuildRecords`"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
 

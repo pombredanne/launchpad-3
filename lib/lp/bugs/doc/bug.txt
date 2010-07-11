@@ -1066,7 +1066,7 @@ Bug Expiration
 --------------
 
 Incomplete bug reports may expire when they become inactive. Expiration
-is only available to projects that use Launchpad to track bugs. There
+is only available to projects that use Launchpad to track bugs. There are
 two properties related to expiration. IBug.permits_expiration tests
 that the state of the bug permits expiration, and returns True or False.
 IBug.can_expire property returns True or False as to whether the bug
@@ -1101,10 +1101,10 @@ Incomplete, unattended bug reports cannot ever expire for this project.
     False
 
 Ubuntu has enabled bug expiration. Incomplete, unattended bugs can
-expired.
+expire.
 
     >>> expirable_bugtask = create_old_bug(
-    ...     'bug c', 1, ubuntu, with_message=False)
+    ...     'bug c', 61, ubuntu, with_message=False)
     >>> sync_bugtasks(expirable_bugtask)
 
     >>> expirable_bugtask.status.name
@@ -1116,9 +1116,9 @@ expired.
     >>> expirable_bugtask.bug.can_expire
     True
 
-When the expirable_bugtask assigned, the bugtask is no longer in
-an expirable state, thus the bug cannot expire even though
-bug permits expiration.
+When the expirable_bugtask is assigned, the bugtask is no longer in an
+expirable state, thus the bug cannot expire even though bug permits
+expiration.
 
     >>> expirable_bugtask.transitionToAssignee(sample_person)
     >>> sync_bugtasks(expirable_bugtask)

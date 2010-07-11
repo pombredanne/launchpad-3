@@ -483,7 +483,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             "Verifying uploaded source package by unpacking it.")
 
         # Get a temporary dir together.
-        tmpdir = tempfile.mkdtemp(dir=self.dirname)
+        tmpdir = tempfile.mkdtemp()
 
         # chdir into it
         cwd = os.getcwd()
