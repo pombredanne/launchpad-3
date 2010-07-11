@@ -279,7 +279,7 @@ class ArchivePublisherBase:
         return fields.makeOutput()
 
     def supersede(self):
-        """See `IBinaryPackagePublishingHistory`."""
+        """See `IPublishing`."""
         self.status = PackagePublishingStatus.SUPERSEDED
         self.datesuperseded = UTC_NOW
 
@@ -983,6 +983,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 priority=self.priority)
 
     def supersede(self, dominant=None, logger=None):
+        """See `IBinaryPackagePublishingHistory`."""
         # At this point only PUBLISHED (ancient versions) or PENDING (
         # multiple overrides/copies) publications should be given. We
         # tolerate SUPERSEDED architecture-independent binaries, because
