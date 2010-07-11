@@ -187,38 +187,7 @@ class Dominator:
 
     def _dominateBinary(self, dominated, dominant):
         """Dominate the given binarypackagerelease publication."""
-        # At this point only PUBLISHED (ancient versions) or PENDING (
-        # multiple overrides/copies) publications should be given. We
-        # tolerate SUPERSEDED architecture-independent binaries, because
-        # they are dominated automatically once the first publication is
-        # processed.
-        if dominated.status not in [PUBLISHED, PENDING]:
-            arch_independent = (
-                dominated.binarypackagerelease.architecturespecific == False)
-            assert arch_independent, (
-                "Should not dominate unpublished architecture specific "
-                "binary %s (%s)" % (
-                dominated.binarypackagerelease.title,
-                dominated.distroarchseries.architecturetag))
-            return
-
-        dominant_build = dominant.binarypackagerelease.build
-        distroarchseries = dominant_build.distro_arch_series
-        self.debug(
-            "The %s build of %s has been judged as superseded by the build "
-            "of %s.  Arch-specific == %s" % (
-            distroarchseries.architecturetag,
-            dominated.binarypackagerelease.title,
-            dominant.binarypackagerelease.build.source_package_release.title,
-            dominated.binarypackagerelease.architecturespecific))
-        dominated.status = SUPERSEDED
-        dominated.datesuperseded = UTC_NOW
-        # Binary package releases are superseded by the new build,
-        # not the new binary package release. This is because
-        # there may not *be* a new matching binary package -
-        # source packages can change the binaries they build
-        # between releases.
-        dominated.supersededby = dominant_build
+        dominated.supersede(dominant, self)
 
     def _dominateBinaries(self, binaryinput):
         """Perform dominations for binaries."""

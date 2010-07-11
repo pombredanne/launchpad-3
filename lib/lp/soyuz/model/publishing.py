@@ -70,6 +70,10 @@ from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
 
+PENDING = PackagePublishingStatus.PENDING
+PUBLISHED = PackagePublishingStatus.PUBLISHED
+
+
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
 def makePoolPath(source_name, component_name):
     """Return the pool path for a given source name and component name."""
@@ -932,6 +936,43 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # When we have the information this will be the place to fill them.
 
         return fields
+
+    def supersede(self, dominant=None, logger=None):
+        # At this point only PUBLISHED (ancient versions) or PENDING (
+        # multiple overrides/copies) publications should be given. We
+        # tolerate SUPERSEDED architecture-independent binaries, because
+        # they are dominated automatically once the first publication is
+        # processed.
+        if self.status not in [PUBLISHED, PENDING]:
+            arch_independent = (
+                self.binarypackagerelease.architecturespecific == False)
+            assert arch_independent, (
+                "Should not dominate unpublished architecture specific "
+                "binary %s (%s)" % (
+                self.binarypackagerelease.title,
+                self.distroarchseries.architecturetag))
+            return
+
+        super(BinaryPackagePublishingHistory, self).supersede()
+
+        if dominant is not None:
+            dominant_build = dominant.binarypackagerelease.build
+            distroarchseries = dominant_build.distro_arch_series
+            logger.debug(
+                "The %s build of %s has been judged as superseded by the "
+                "build of %s.  Arch-specific == %s" % (
+                distroarchseries.architecturetag,
+                self.binarypackagerelease.title,
+                dominant_build.source_package_release.title,
+                self.binarypackagerelease.architecturespecific))
+            # Binary package releases are superseded by the new build,
+            # not the new binary package release. This is because
+            # there may not *be* a new matching binary package -
+            # source packages can change the binaries they build
+            # between releases.
+            self.supersededby = dominant_build
+
+        return self
 
     def changeOverride(self, new_component=None, new_section=None,
                        new_priority=None):
