@@ -118,13 +118,15 @@ class Dominator:
             publication must be PUBLISHED or PENDING, and the first in each
             list will be treated as dominant (so should be the latest).
         """
+        self.debug("Dominating packages...")
+
         for name in pubs.keys():
             assert pubs[name], (
                 "Empty list of publications for %s" % name)
             for pubrec in pubs[name][1:]:
                 pubrec.supersede(pubs[name][0], self)
 
-    def _sortPackages(self, pkglist, isSource=True):
+    def _sortPackages(self, pkglist, is_source=True):
         # pkglist is a list of packages with the following
         #  * sourcepackagename or packagename as appropriate
         #  * version
@@ -132,33 +134,22 @@ class Dominator:
         # Don't care about any other attributes
         outpkgs = {}
 
-        if isSource:
-            self.debug("Sorting sources...")
-        else:
-            self.debug("Sorting binaries...")
+        self.debug("Sorting packages...")
+
+        attr_prefix = 'source' if is_source else 'binary'
+        get_release = operator.attrgetter(attr_prefix + 'packagerelease')
+        get_name = operator.attrgetter(attr_prefix + 'packagename')
 
         for inpkg in pkglist:
-            if isSource:
-                L = outpkgs.setdefault(
-                    inpkg.sourcepackagerelease.sourcepackagename.name.encode(
-                    'utf-8'), [])
-            else:
-                L = outpkgs.setdefault(
-                    inpkg.binarypackagerelease.binarypackagename.name.encode(
-                    'utf-8'), [])
-
+            L = outpkgs.setdefault(
+                get_name(get_release(inpkg)).name.encode('utf-8'), [])
             L.append(inpkg)
 
         for pkgname in outpkgs:
             if len(outpkgs[pkgname]) > 1:
-                if isSource:
-                    attrname = 'sourcepackagerelease'
-                else:
-                    attrname = 'binarypackagerelease'
                 outpkgs[pkgname].sort(
                     functools.partial(
-                        _compare_packages_by_version_and_date,
-                        operator.attrgetter(attrname)))
+                        _compare_packages_by_version_and_date, get_release))
                 outpkgs[pkgname].reverse()
 
         return outpkgs
