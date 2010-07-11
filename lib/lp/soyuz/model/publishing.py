@@ -278,10 +278,9 @@ class ArchivePublisherBase:
         return fields.makeOutput()
 
     def supersede(self):
-        """See `IPublishing`."""
+        """See `IBinaryPackagePublishingHistory`."""
         self.status = PackagePublishingStatus.SUPERSEDED
         self.datesuperseded = UTC_NOW
-        return self
 
     def requestDeletion(self, removed_by, removal_comment=None):
         """See `IPublishing`."""
@@ -973,21 +972,20 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if dominant is not None:
             dominant_build = dominant.binarypackagerelease.build
             distroarchseries = dominant_build.distro_arch_series
-            logger.debug(
-                "The %s build of %s has been judged as superseded by the "
-                "build of %s.  Arch-specific == %s" % (
-                distroarchseries.architecturetag,
-                self.binarypackagerelease.title,
-                dominant_build.source_package_release.title,
-                self.binarypackagerelease.architecturespecific))
+            if logger is not None:
+                logger.debug(
+                    "The %s build of %s has been judged as superseded by the "
+                    "build of %s.  Arch-specific == %s" % (
+                    distroarchseries.architecturetag,
+                    self.binarypackagerelease.title,
+                    dominant_build.source_package_release.title,
+                    self.binarypackagerelease.architecturespecific))
             # Binary package releases are superseded by the new build,
             # not the new binary package release. This is because
             # there may not *be* a new matching binary package -
             # source packages can change the binaries they build
             # between releases.
             self.supersededby = dominant_build
-
-        return self
 
     def changeOverride(self, new_component=None, new_section=None,
                        new_priority=None):
