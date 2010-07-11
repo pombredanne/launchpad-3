@@ -685,6 +685,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def supersede(self, dominant=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
+        assert self.status in [PUBLISHED, PENDING], (
+            "Should not dominate unpublished source %s" %
+            self.sourcepackagerelease.title)
+
         super(SourcePackagePublishingHistory, self).supersede()
 
         if dominant is not None:

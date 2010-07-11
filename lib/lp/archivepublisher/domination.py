@@ -137,8 +137,7 @@ class Dominator:
             assert sourceinput[sourcename], (
                 "Empty list of publications for %s" % sourcename)
             for pubrec in sourceinput[sourcename][1:]:
-                if pubrec.status == PUBLISHED or pubrec.status == PENDING:
-                    pubrec.supersede(sourceinput[sourcename][0], self)
+                pubrec.supersede(sourceinput[sourcename][0], self)
 
     def _dominateBinaries(self, binaryinput):
         """Perform dominations for binaries."""
