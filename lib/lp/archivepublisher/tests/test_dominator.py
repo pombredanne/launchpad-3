@@ -198,14 +198,12 @@ class TestDominator(TestNativePublishingBase):
     def testOtherBinaryPublications(self):
         """Check the basis of architecture independent binary domination.
 
-        We use _getOtherBinaryPublications to identify other publications of
-        the same binarypackagerelease in other architectures (architecture
+        We use _getOtherPublications to identify other publications of the
+        same binarypackagerelease in other architectures (architecture
         independent binaries), they will be dominated during a single step.
 
         See overall details in `testDominationOfOldArchIndepBinaries`.
         """
-        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
-
         # Create architecture independent publications for foo-bin_1.0
         # in i386 & hppa.
         pub_source_archindep = self.getPubSource(
@@ -233,7 +231,7 @@ class TestDominator(TestNativePublishingBase):
 
         # Check if we can reach the i386 publication using
         # _getOtherBinaryPublications over the hppa binary.
-        [found] = list(dominator._getOtherBinaryPublications(hppa_pub))
+        [found] = list(hppa_pub._getOtherPublications())
         self.assertEqual(i386_pub, found)
 
         # Create architecture specific publications for foo-bin_1.1 in
@@ -252,7 +250,7 @@ class TestDominator(TestNativePublishingBase):
         # Check if there is no other publication of the hppa binary package
         # release.
         self.assertEqual(
-            dominator._getOtherBinaryPublications(hppa_pub).count(),
+            hppa_pub._getOtherPublications().count(),
             0)
 
     def testDominationOfOldArchIndepBinaries(self):

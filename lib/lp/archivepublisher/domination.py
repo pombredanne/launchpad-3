@@ -140,39 +140,6 @@ class Dominator:
                 if pubrec.status == PUBLISHED or pubrec.status == PENDING:
                     pubrec.supersede(sourceinput[sourcename][0], self)
 
-    def _getOtherBinaryPublications(self, dominated):
-        """Return remaining publications of the same binarypackagerelease.
-
-        It only considers binary publications in the same distroseries,
-        pocket and archive context, which is the limit where the domination
-        should happen.
-
-        Return only binaries published or pending in the same component,
-        section and priority, this way the just-made override will be
-        preserved.
-        """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import (
-             BinaryPackagePublishingHistory)
-
-        dominated_series = dominated.distroarchseries.distroseries
-        available_architectures = [
-            das.id for das in dominated_series.architectures]
-        query = """
-            BinaryPackagePublishingHistory.status IN %s AND
-            BinaryPackagePublishingHistory.distroarchseries IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease = %s AND
-            BinaryPackagePublishingHistory.pocket = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
-            BinaryPackagePublishingHistory.component = %s AND
-            BinaryPackagePublishingHistory.section = %s AND
-            BinaryPackagePublishingHistory.priority = %s
-        """ % sqlvalues([PUBLISHED, PENDING], available_architectures,
-                        dominated.binarypackagerelease, dominated.pocket,
-                        dominated.archive, dominated.component,
-                        dominated.section, dominated.priority)
-        return BinaryPackagePublishingHistory.select(query)
-
     def _dominateBinary(self, dominated, dominant):
         """Dominate the given binarypackagerelease publication."""
         dominated.supersede(dominant, self)
@@ -193,15 +160,7 @@ class Dominator:
             # Currently this is done in archive cruft check.
             dominant = binaryinput[binaryname][0]
             for dominated in binaryinput[binaryname][1:]:
-                # Dominate all publications of architecture independent
-                # binaries altogether in this distroseries and pocket.
-                if not dominated.binarypackagerelease.architecturespecific:
-                    other_publications = self._getOtherBinaryPublications(
-                        dominated)
-                    for dominated in other_publications:
-                        self._dominateBinary(dominated, dominant)
-                else:
-                    self._dominateBinary(dominated, dominant)
+                self._dominateBinary(dominated, dominant)
 
 
     def _sortPackages(self, pkglist, isSource=True):

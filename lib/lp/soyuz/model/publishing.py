@@ -951,6 +951,34 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return fields
 
+    def _getOtherPublications(self):
+        """Return remaining publications with the same overrides.
+
+        Only considers binary publications in the same archive, distroseries,
+        pocket, component, section and priority context. These publications
+        are candidates for domination if this is an architecture-independent
+        package.
+
+        The override match is critical -- it prevents a publication created
+        by new overrides from superseding itself.
+        """
+        available_architectures = [
+            das.id for das in self.distroarchseries.distroseries.architectures]
+        query = """
+            BinaryPackagePublishingHistory.status IN %s AND
+            BinaryPackagePublishingHistory.distroarchseries IN %s AND
+            BinaryPackagePublishingHistory.binarypackagerelease = %s AND
+            BinaryPackagePublishingHistory.pocket = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.component = %s AND
+            BinaryPackagePublishingHistory.section = %s AND
+            BinaryPackagePublishingHistory.priority = %s
+        """ % sqlvalues([PUBLISHED, PENDING], available_architectures,
+                        self.binarypackagerelease, self.pocket,
+                        self.archive, self.component,
+                        self.section, self.priority)
+        return BinaryPackagePublishingHistory.select(query)
+
     def supersede(self, dominant=None, logger=None):
         # At this point only PUBLISHED (ancient versions) or PENDING (
         # multiple overrides/copies) publications should be given. We
@@ -986,6 +1014,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             # source packages can change the binaries they build
             # between releases.
             self.supersededby = dominant_build
+
+        # If this is architecture-independet, all publications with the same
+        # context and overrides should be dominated simultaneously.
+        if not self.binarypackagerelease.architecturespecific:
+            for dominated in self._getOtherPublications():
+                dominated.supersede(dominant, logger)
 
     def changeOverride(self, new_component=None, new_section=None,
                        new_priority=None):
