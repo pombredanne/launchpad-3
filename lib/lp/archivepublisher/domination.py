@@ -140,17 +140,7 @@ class Dominator:
             super_release_name = super_release.sourcepackagename.name
             for pubrec in sourceinput[sourcename][1:]:
                 if pubrec.status == PUBLISHED or pubrec.status == PENDING:
-                    this_release = pubrec.sourcepackagerelease
-
-                    this_release_name = this_release.sourcepackagename.name
-                    self.debug(
-                        "%s/%s has been judged as superseded by %s/%s" %
-                        (this_release_name, this_release.version,
-                         super_release_name, super_release.version))
-
-                    pubrec.status = SUPERSEDED
-                    pubrec.datesuperseded = UTC_NOW
-                    pubrec.supersededby = super_release
+                    pubrec.supersede(super_release, self)
 
     def _getOtherBinaryPublications(self, dominated):
         """Return remaining publications of the same binarypackagerelease.
