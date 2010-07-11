@@ -37,6 +37,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -964,20 +965,18 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """
         available_architectures = [
             das.id for das in self.distroarchseries.distroseries.architectures]
-        query = """
-            BinaryPackagePublishingHistory.status IN %s AND
-            BinaryPackagePublishingHistory.distroarchseries IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease = %s AND
-            BinaryPackagePublishingHistory.pocket = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
-            BinaryPackagePublishingHistory.component = %s AND
-            BinaryPackagePublishingHistory.section = %s AND
-            BinaryPackagePublishingHistory.priority = %s
-        """ % sqlvalues([PUBLISHED, PENDING], available_architectures,
-                        self.binarypackagerelease, self.pocket,
-                        self.archive, self.component,
-                        self.section, self.priority)
-        return BinaryPackagePublishingHistory.select(query)
+        return IMasterStore(BinaryPackagePublishingHistory).find(
+                BinaryPackagePublishingHistory,
+                BinaryPackagePublishingHistory.status.is_in(
+                    [PUBLISHED, PENDING]),
+                BinaryPackagePublishingHistory.distroarchseries in (
+                    available_architectures),
+                binarypackagerelease=self.binarypackagerelease,
+                archive=self.archive,
+                pocket=self.pocket,
+                component=self.component,
+                section=self.section,
+                priority=self.priority)
 
     def supersede(self, dominant=None, logger=None):
         # At this point only PUBLISHED (ancient versions) or PENDING (
