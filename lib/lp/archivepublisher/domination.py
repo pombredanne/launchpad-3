@@ -140,10 +140,6 @@ class Dominator:
                 if pubrec.status == PUBLISHED or pubrec.status == PENDING:
                     pubrec.supersede(sourceinput[sourcename][0], self)
 
-    def _dominateBinary(self, dominated, dominant):
-        """Dominate the given binarypackagerelease publication."""
-        dominated.supersede(dominant, self)
-
     def _dominateBinaries(self, binaryinput):
         """Perform dominations for binaries."""
         self.debug("Dominating binaries...")
@@ -160,8 +156,7 @@ class Dominator:
             # Currently this is done in archive cruft check.
             dominant = binaryinput[binaryname][0]
             for dominated in binaryinput[binaryname][1:]:
-                self._dominateBinary(dominated, dominant)
-
+                dominated.supersede(dominant, self)
 
     def _sortPackages(self, pkglist, isSource=True):
         # pkglist is a list of packages with the following
