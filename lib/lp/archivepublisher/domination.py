@@ -73,14 +73,10 @@ def clear_cache():
     clear_current_connection_cache()
     gc.collect()
 
-PENDING = PackagePublishingStatus.PENDING
-PUBLISHED = PackagePublishingStatus.PUBLISHED
-SUPERSEDED = PackagePublishingStatus.SUPERSEDED
-DELETED = PackagePublishingStatus.DELETED
-OBSOLETE = PackagePublishingStatus.OBSOLETE
 
 # Ugly, but works
 apt_pkg.InitSystem()
+
 
 def _compare_source_packages_by_version_and_date(p1, p2):
     """Compare packages p1 and p2 by their version; using Debian rules.
@@ -94,6 +90,7 @@ def _compare_source_packages_by_version_and_date(p1, p2):
     return apt_pkg.VersionCompare(p1.sourcepackagerelease.version,
                                   p2.sourcepackagerelease.version)
 
+
 def _compare_binary_packages_by_version_and_date(p1, p2):
     """Compare packages p1 and p2 by their version; using Debian rules
 
@@ -105,6 +102,7 @@ def _compare_binary_packages_by_version_and_date(p1, p2):
 
     return apt_pkg.VersionCompare(p1.binarypackagerelease.version,
                                   p2.binarypackagerelease.version)
+
 
 class Dominator:
     """ Manage the process of marking packages as superseded.
@@ -332,8 +330,8 @@ class Dominator:
                     binarypackagerelease.id
                 AND binarypackagerelease.binarypackagename IN (
                     SELECT name FROM PubDomHelper WHERE count > 1)"""
-                % sqlvalues (distroarchseries, self.archive,
-                             pocket, PackagePublishingStatus.PUBLISHED),
+                % sqlvalues(distroarchseries, self.archive,
+                            pocket, PackagePublishingStatus.PUBLISHED),
                 clauseTables=['BinaryPackageRelease'])
 
             self.debug("Dominating binaries...")
@@ -383,4 +381,3 @@ class Dominator:
 
         self.debug("Domination for %s/%s finished" %
                    (dr.name, pocket.title))
-
