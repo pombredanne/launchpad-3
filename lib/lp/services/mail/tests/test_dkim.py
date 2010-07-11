@@ -15,7 +15,10 @@ import dns.resolver
 
 from zope.component import getUtility
 
-from canonical.launchpad.mail import signed_message_from_string
+from canonical.launchpad.mail import (
+    incoming,
+    signed_message_from_string,
+    )
 from canonical.launchpad.mail.incoming import (
     authenticateEmail, )
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
@@ -149,6 +152,22 @@ class TestDKIM(TestCaseWithFactory):
         principal = authenticateEmail(signed_message_from_string(signed_message),
             signed_message)
         self.assertStronglyAuthenticated(principal, signed_message)
+        self.assertEqual(principal.person.preferredemail.email,
+            'foo.bar@canonical.com')
+
+    def test_dkim_untrusted_signer(self):
+        # Valid signature from an untrusted domain -> untrusted
+        signed_message = self.fake_signing(plain_content)
+        self._dns_responses['example._domainkey.canonical.com.'] = \
+            sample_dns
+        saved_domains = incoming._trusted_dkim_domains[:]
+        def restore():
+            incoming._trusted_dkim_domains = saved_domains
+        self.addCleanup(restore)
+        incoming._trusted_dkim_domains = []
+        principal = authenticateEmail(signed_message_from_string(signed_message),
+            signed_message)
+        self.assertWeaklyAuthenticated(principal, signed_message)
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
 

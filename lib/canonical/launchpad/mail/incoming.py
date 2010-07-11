@@ -72,6 +72,19 @@ def extract_address_domain(address):
     return email_address.split('@')[1]
 
 
+_trusted_dkim_domains = [
+    'gmail.com', 'google.com', 'mail.google.com', 'canonical.com']
+
+
+def _isDkimDomainTrusted(domain):
+    # XXX: really this should come from a dynamically-modifiable
+    # configuration, but we don't have such a thing yet.
+    #
+    # Being listed here means that we trust the domain not to be an open relay
+    # or to allow arbitrary intra-domain spoofing.
+    return domain in _trusted_dkim_domains
+
+
 def _authenticateDkim(signed_message, raw_mail):
     """"Attempt DKIM authentication of email; return True if known authentic
     
@@ -117,6 +130,10 @@ def _authenticateDkim(signed_message, raw_mail):
         log.warning("DKIM signing domain %s doesn't match From address %s; "
             "disregarding signature"
             % (signing_domain, from_domain))
+        return False
+    if not _isDkimDomainTrusted(signing_domain):
+        log.warning("valid DKIM signature from untrusted domain %s" 
+            % (signing_domain,))
         return False
     return True
 
