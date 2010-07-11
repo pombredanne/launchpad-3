@@ -136,11 +136,9 @@ class Dominator:
             # removal
             assert sourceinput[sourcename], (
                 "Empty list of publications for %s" % sourcename)
-            super_release = sourceinput[sourcename][0].sourcepackagerelease
-            super_release_name = super_release.sourcepackagename.name
             for pubrec in sourceinput[sourcename][1:]:
                 if pubrec.status == PUBLISHED or pubrec.status == PENDING:
-                    pubrec.supersede(super_release, self)
+                    pubrec.supersede(sourceinput[sourcename][0], self)
 
     def _getOtherBinaryPublications(self, dominated):
         """Return remaining publications of the same binarypackagerelease.

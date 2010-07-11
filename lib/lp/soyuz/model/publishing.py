@@ -692,10 +692,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                     "%s/%s has been judged as superseded by %s/%s" %
                     (self.sourcepackagerelease.sourcepackagename.name,
                      self.sourcepackagerelease.version,
-                     dominant.sourcepackagename.name,
-                     dominant.version))
+                     dominant.sourcepackagerelease.sourcepackagename.name,
+                     dominant.sourcepackagerelease.version))
 
-            self.supersededby = dominant
+            self.supersededby = dominant.sourcepackagerelease
 
     def changeOverride(self, new_component=None, new_section=None):
         """See `ISourcePackagePublishingHistory`."""

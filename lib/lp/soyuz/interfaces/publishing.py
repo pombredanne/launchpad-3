@@ -630,8 +630,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
     def supersede(dominant=None, logger=None):
         """Supersede this publication.
 
-        :param dominant: optional `ISourcePackageRelease` which is triggering
-            the domination.
+        :param dominant: optional `ISourcePackagePublishingHistory` which is
+            triggering the domination.
         :param logger: optional object to which debug information will be
             logged.
         """
