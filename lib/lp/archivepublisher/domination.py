@@ -123,39 +123,18 @@ class Dominator:
         self.archive = archive
         self.debug = self._logger.debug
 
-    def _dominateSource(self, sourceinput):
-        """
-        Perform dominations for source.
-        """
-        self.debug("Dominating sources...")
-        for sourcename in sourceinput.keys():
-            # source is a list of versions ordered most-recent-first
-            # basically skip the first entry because that is
-            # never dominated by us, then just set subsequent entries
-            # to SUPERSEDED unless they're already there or pending
-            # removal
-            assert sourceinput[sourcename], (
-                "Empty list of publications for %s" % sourcename)
-            for pubrec in sourceinput[sourcename][1:]:
-                pubrec.supersede(sourceinput[sourcename][0], self)
+    def _dominatePublications(self, pubs):
+        """Perform dominations for the given publications.
 
-    def _dominateBinaries(self, binaryinput):
-        """Perform dominations for binaries."""
-        self.debug("Dominating binaries...")
-        for binaryname in binaryinput.keys():
-            # binary is a list of versions ordered most-recent-first
-            # basically skip the first entry because that is
-            # never dominated by us, then just set subsequent entries
-            # to SUPERSEDED unless they're already there or pending
-            # removal
-            assert binaryinput[binaryname], (
-                "Empty list of publications for %s" % binaryname)
-            # At some future point, this code might automatically locate
-            # binaries which are no longer built from source (NBS).
-            # Currently this is done in archive cruft check.
-            dominant = binaryinput[binaryname][0]
-            for dominated in binaryinput[binaryname][1:]:
-                dominated.supersede(dominant, self)
+        :param pubs: A dict mapping names to a list of publications. Every
+            publication must be PUBLISHED or PENDING, and the first in each
+            list will be treated as dominant (so should be the latest).
+        """
+        for name in pubs.keys():
+            assert pubs[name], (
+                "Empty list of publications for %s" % name)
+            for pubrec in pubs[name][1:]:
+                pubrec.supersede(pubs[name][0], self)
 
     def _sortPackages(self, pkglist, isSource=True):
         # pkglist is a list of packages with the following
@@ -357,7 +336,8 @@ class Dominator:
                              pocket, PackagePublishingStatus.PUBLISHED),
                 clauseTables=['BinaryPackageRelease'])
 
-            self._dominateBinaries(self._sortPackages(binaries, False))
+            self.debug("Dominating binaries...")
+            self._dominatePublications(self._sortPackages(binaries, False))
             if do_clear_cache:
                 self.debug("Flushing SQLObject cache.")
                 clear_cache()
@@ -374,7 +354,8 @@ class Dominator:
         sources = SourcePackagePublishingHistory.selectBy(
             distroseries=dr, archive=self.archive, pocket=pocket,
             status=PackagePublishingStatus.PUBLISHED)
-        self._dominateSource(self._sortPackages(sources))
+        self.debug("Dominating sources...")
+        self._dominatePublications(self._sortPackages(sources))
         flush_database_updates()
 
         sources = SourcePackagePublishingHistory.select("""

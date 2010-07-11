@@ -76,7 +76,7 @@ class TestDominator(TestNativePublishingBase):
         # and dominated, the subsequents.
         source_input = {'foo': [dominant_source, dominated_source]}
 
-        dominator._dominateSource(source_input)
+        dominator._dominatePublications(source_input)
         flush_database_updates()
 
         # The dominant version remains correctly published.
@@ -97,7 +97,7 @@ class TestDominator(TestNativePublishingBase):
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
         source_input = {'foo': []}
         self.assertRaises(
-            AssertionError, dominator._dominateSource, source_input)
+            AssertionError, dominator._dominatePublications, source_input)
 
     def testBinariesDomination(self):
         """Test overall binary domination procedure."""
@@ -109,7 +109,7 @@ class TestDominator(TestNativePublishingBase):
         # See comment about domination input format and ordering above.
         binary_input = {'foo-bin': [dominant, dominated]}
 
-        dominator._dominateBinaries(binary_input)
+        dominator._dominatePublications(binary_input)
         flush_database_updates()
 
         # Dominant version remains correctly published.
@@ -130,7 +130,7 @@ class TestDominator(TestNativePublishingBase):
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
         binary_input = {'foo-bin': []}
         self.assertRaises(
-            AssertionError, dominator._dominateBinaries, binary_input)
+            AssertionError, dominator._dominatePublications, binary_input)
 
     def testBinaryDomination(self):
         """Test binary domination unit procedure."""
