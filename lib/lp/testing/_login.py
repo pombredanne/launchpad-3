@@ -102,7 +102,7 @@ def login_as(person_or_team, participation=None):
     """Login as a person or a team.
 
     :param person_or_team: A person, a team, ANONYMOUS or None. None and
-        ANONYMOUS are equivalent, and will log the person is as the anonymous
+        ANONYMOUS are equivalent, and will log the person in as the anonymous
         user.
     """
     if person_or_team == ANONYMOUS:

@@ -31,9 +31,9 @@ class TestLoginHelpers(TestCaseWithFactory):
         logged in, then return ANONYMOUS. Otherwise, return the logged-in
         `IPerson`.
         """
-        # XXX: JonathanLange 2010-07-09: I don't really know the canonical way
-        # of asking for "the logged-in person", so instead I'm using all the
-        # ways I can find and making sure they match each other.
+        # I don't really know the canonical way of asking for "the logged-in
+        # person", so instead I'm using all the ways I can find and making
+        # sure they match each other. -- jml
         by_launchbag = getUtility(IOpenLaunchBag).user
         principal = get_current_principal()
         if principal is None:
