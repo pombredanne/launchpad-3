@@ -6,6 +6,7 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
+import cgi
 import urllib
 
 from datetime import datetime, timedelta
@@ -247,8 +248,10 @@ class OpenIDCallbackView(OpenIDLogin):
         '../templates/login-suspended-account.pt')
 
     def initialize(self):
-        self.openid_response = self._getConsumer().complete(
-            self.request.form, self.request.getURL())
+        whole_url = self.request.getURL()+'?'+self.request['QUERY_STRING']
+        params = dict(cgi.parse_qsl(self.request['QUERY_STRING']))
+        params.update(self.request.form)
+        self.openid_response = self._getConsumer().complete(params, whole_url)
 
     def login(self, account):
         loginsource = getUtility(IPlacelessLoginSource)
@@ -393,7 +396,11 @@ class OpenIDCallbackView(OpenIDLogin):
     def _redirect(self):
         target = self.request.form.get('starting_url')
         if target is None:
-            target = self.getApplicationURL()
+            # If this was a POST, then the starting_url won't be in the form
+            # values, but in the query parameters instead.
+            target = self.request.query_string_params.get('starting_url')
+            if target is None:
+                target = self.request.getApplicationURL()
         self.request.response.redirect(target, temporary_if_possible=True)
 
 

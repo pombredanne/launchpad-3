@@ -170,6 +170,9 @@ class OpenIDMixin:
         webresponse = self.openid_server.encodeResponse(openid_response)
         response = self.request.response
         response.setStatus(webresponse.code)
+        # encodeResponse doesn't generate a content-type, help it out
+        if webresponse.code == 200 and webresponse.body:
+            response.setHeader('content-type', 'text/html')
         for header, value in webresponse.headers.items():
             response.setHeader(header, value)
         return webresponse.body
