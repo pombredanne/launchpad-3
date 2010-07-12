@@ -10,9 +10,7 @@ See also archiveauthtoken.txt.
 
 First, create a person 'joesmith' and a team 'team_cprov':
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> login('foo.bar@canonical.com')
-    >>> agent = getUtility(ILaunchpadCelebrities).software_center_agent
     >>> joesmith = factory.makePerson(name="joesmith",
     ...                               displayname="Joe Smith",
     ...                               password="test",

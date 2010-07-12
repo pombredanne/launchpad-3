@@ -618,9 +618,7 @@ indicating what was wrong is returned.
 The 'getArchiveSubscriptionURLs' named operation will return a list of
 all the URLs to the private archives that the person can access.
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> login("mark@example.com")
-    >>> agent = getUtility(ILaunchpadCelebrities).software_center_agent
     >>> mark_person = getUtility(IPersonSet).getByName("mark")
     >>> mark_private_ppa = factory.makeArchive(
     ...     owner=mark_person, distribution=mark_person.archive.distribution,
