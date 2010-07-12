@@ -67,6 +67,24 @@ class InactiveAccount(Exception):
     """The account for the person sending this email is inactive."""
 
 
+def extract_address_domain(address):
+    realname, email_address = email.utils.parseaddr(address)
+    return email_address.split('@')[1]
+
+
+_trusted_dkim_domains = [
+    'gmail.com', 'google.com', 'mail.google.com', 'canonical.com']
+
+
+def _isDkimDomainTrusted(domain):
+    # XXX: really this should come from a dynamically-modifiable
+    # configuration, but we don't have such a thing yet.
+    #
+    # Being listed here means that we trust the domain not to be an open relay
+    # or to allow arbitrary intra-domain spoofing.
+    return domain in _trusted_dkim_domains
+
+
 def _authenticateDkim(signed_message, raw_mail):
     """"Attempt DKIM authentication of email; return True if known authentic
     
@@ -78,13 +96,17 @@ def _authenticateDkim(signed_message, raw_mail):
 
     log = logging.getLogger('mail-authenticate-dkim')
     log.setLevel(logging.DEBUG)
+    # uncomment this for easier test debugging
     # log.addHandler(logging.FileHandler('/tmp/dkim.log'))
 
     dkim_log = cStringIO()
     log.info('Attempting DKIM authentication of message %s from %s'
         % (signed_message['Message-ID'], signed_message['From']))
+    signing_details = []
     try:
-        dkim_result = dkim.verify(raw_mail, dkim_log)
+        # NB: if this fails with a keyword argument error, you need the
+        # python-dkim 0.3-3.2 that adds it
+        dkim_result = dkim.verify(raw_mail, dkim_log, details=signing_details)
     except dkim.DKIMException, e:
         log.warning('DKIM error: %r' % (e,))
         dkim_result = False
@@ -95,7 +117,25 @@ def _authenticateDkim(signed_message, raw_mail):
     else:
         log.info('DKIM verification result=%s' % (dkim_result,))
     log.debug('DKIM debug log: %s' % (dkim_log.getvalue(),))
-    return dkim_result
+    if not dkim_result:
+        return False
+    # in addition to the dkim signature being valid, we have to check that it
+    # was actually signed by the user's domain.
+    if len(signing_details) != 1:
+        log.errors('expected exactly one DKIM details record: %r' % (signing_details,))
+        return False
+    signing_domain = signing_details[0]['d']
+    from_domain = extract_address_domain(signed_message['From'])
+    if signing_domain != from_domain:
+        log.warning("DKIM signing domain %s doesn't match From address %s; "
+            "disregarding signature"
+            % (signing_domain, from_domain))
+        return False
+    if not _isDkimDomainTrusted(signing_domain):
+        log.warning("valid DKIM signature from untrusted domain %s" 
+            % (signing_domain,))
+        return False
+    return True
 
 
 def authenticateEmail(mail, raw_mail):
