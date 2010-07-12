@@ -1494,6 +1494,11 @@ class IAddBugTaskForm(Interface):
     bug_url = StrippedTextLine(
         title=_('URL'), required=False, constraint=valid_remote_bug_url,
         description=_("The URL of this bug in the remote bug tracker."))
+    add_packaging = Bool(
+        title=_('Link the package to the upstream project?'),
+        description=_('Always suggest this project when adding an '
+                       'upstream bug for this'),
+        required=True, default=False)
 
 
 class IAddBugTaskWithProductCreationForm(Interface):

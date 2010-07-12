@@ -80,7 +80,7 @@ class ChooseProductStep(AlsoAffectsStep):
         '../templates/bugtask-choose-affected-product.pt')
 
     custom_widget('product', SearchForUpstreamPopupWidget)
-    _field_names = ['product']
+    _field_names = ['product', 'add_packaging']
     label = u"Record as affecting another project"
     step_name = "choose_product"
 
