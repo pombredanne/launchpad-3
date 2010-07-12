@@ -982,30 +982,69 @@ class TestBinaryDomination(TestNativePublishingBase):
 
     def setUp(self):
         super(TestBinaryDomination, self).setUp()
-        self.binaries = self.getPubBinaries()
+
+    def checkSuperseded(self, binaries, supersededby=None):
+        self.checkBinaryPublications(
+            binaries, PackagePublishingStatus.SUPERSEDED)
+        for binary in binaries:
+            self.checkPastDate(binary.datesuperseded)
+            if supersededby is not None:
+                self.assertEquals(
+                    supersededby.binarypackagerelease.build,
+                    binary.supersededby)
+            else:
+                self.assertIs(None, binary.supersededby)
 
     def testSupersede(self):
         """Check that supersede() without arguments works."""
-        bin = self.binaries[0]
-        bin.supersede()
-        self.checkBinaryPublication(bin, PackagePublishingStatus.SUPERSEDED)
-        self.checkPastDate(bin.datesuperseded)
-        self.assertIs(None, bin.supersededby)
+        bins = self.getPubBinaries(architecturespecific=True)
+        super_bins = self.getPubBinaries(architecturespecific=True)
+        bins[0].supersede()
+        self.checkSuperseded([bins[0]])
+        self.checkBinaryPublication(bins[1], PackagePublishingStatus.PENDING)
 
     def testSupersedeWithDominant(self):
         """Check that supersede() with a dominant publication works."""
-        bin = self.binaries[0]
-        super_bin = self.getPubBinaries()[0]
-        bin.supersede(super_bin)
-        self.checkBinaryPublication(bin, PackagePublishingStatus.SUPERSEDED)
-        self.checkPastDate(bin.datesuperseded)
-        self.assertIs(super_bin.binarypackagerelease.build, bin.supersededby)
+        bins = self.getPubBinaries(architecturespecific=True)
+        super_bins = self.getPubBinaries(architecturespecific=True)
+        bins[0].supersede(super_bins[0])
+        self.checkSuperseded([bins[0]], super_bins[0])
+        self.checkBinaryPublication(bins[1], PackagePublishingStatus.PENDING)
+
+    def testSupersedesArchIndepBinariesAtomically(self):
+        """Check that supersede() supersedes arch-indep binaries atomically.
+
+        Architecture-independent binaries should be removed from all
+        architectures when they are superseded on at least one (bug #48760).
+        """
+        bins = self.getPubBinaries(architecturespecific=False)
+        super_bins = self.getPubBinaries(architecturespecific=False)
+        bins[0].supersede(super_bins[0])
+        self.checkSuperseded(bins, super_bins[0])
+
+    def testAtomicDominationRespectsOverrides(self):
+        """Check that atomic domination only covers identical overrides.
+
+        This is important, as otherwise newly-overridden arch-indep binaries
+        will supersede themselves, and vanish entirely (bug #178102).
+        """
+        bins = self.getPubBinaries(architecturespecific=False)
+
+        universe = getUtility(IComponentSet)['universe']
+        super_bins = []
+        for bin in bins:
+            super_bins.append(bin.changeOverride(new_component=universe))
+
+        bins[0].supersede(super_bins[0])
+        self.checkSuperseded(bins, super_bins[0])
+        self.checkBinaryPublications(
+            super_bins, PackagePublishingStatus.PENDING)
 
     def testSupersedingSupersededArchSpecificBinaryFails(self):
         """Check that supersede() fails with a superseded arch-dep binary.
 
-        Architecture-specific binaries should not normally be superseded twice.
-        If a second attempt is made, the Dominator's lookups are buggy.
+        Architecture-specific binaries should not normally be superseded
+        twice. If a second attempt is made, the Dominator's lookups are buggy.
         """
         bin = self.getPubBinaries(architecturespecific=True)[0]
         super_bin = self.getPubBinaries(architecturespecific=True)[0]
@@ -1018,10 +1057,10 @@ class TestBinaryDomination(TestNativePublishingBase):
         super_date = bin.datesuperseded
 
         self.assertRaises(AssertionError, bin.supersede, super_bin)
-        self.checkBinaryPublication(bin, PackagePublishingStatus.SUPERSEDED)
+        self.checkSuperseded([bin], super_bin)
         self.assertEquals(super_date, bin.datesuperseded)
 
-    def testSupersedingSupersededArchIndependentBinarySkips(self):
+    def testSkipsSupersededArchIndependentBinary(self):
         """Check that supersede() skips a superseded arch-indep binary.
 
         Since all publications of an architecture-independent binary are
@@ -1031,7 +1070,7 @@ class TestBinaryDomination(TestNativePublishingBase):
         bin = self.getPubBinaries(architecturespecific=False)[0]
         super_bin = self.getPubBinaries(architecturespecific=False)[0]
         bin.supersede(super_bin)
-        self.checkBinaryPublication(bin, PackagePublishingStatus.SUPERSEDED)
+        self.checkSuperseded([bin], super_bin)
 
         # Manually set a date in the past, so we can confirm that
         # the second supersede() skips properly.
@@ -1040,8 +1079,9 @@ class TestBinaryDomination(TestNativePublishingBase):
         super_date = bin.datesuperseded
 
         bin.supersede(super_bin)
-        self.checkBinaryPublication(bin, PackagePublishingStatus.SUPERSEDED)
+        self.checkSuperseded([bin], super_bin)
         self.assertEquals(super_date, bin.datesuperseded)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

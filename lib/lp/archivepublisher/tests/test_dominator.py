@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import datetime
-import pytz
 import unittest
 
 from zope.component import getUtility
@@ -15,7 +14,6 @@ from lp.archivepublisher.domination import Dominator
 from lp.archivepublisher.publishing import Publisher
 from canonical.database.sqlbase import flush_database_updates
 from lp.registry.interfaces.series import SeriesStatus
-from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -183,96 +181,6 @@ class TestDominator(TestNativePublishingBase):
             hppa_pub._getOtherPublications().count(),
             0)
 
-    def testDominationOfOldArchIndepBinaries(self):
-        """Check domination of architecture independent binaries.
-
-        When a architecture independent binary is dominated it should also
-        'carry' the same publications in other architectures independently
-        of whether or not the new binary was successfully built to a specific
-        architecture.
-
-        See bug #48760 for further information about this aspect.
-        """
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-
-        # Create published archindep context.
-        pub_source_archindep = self.getPubSource(
-            version='1.0', status=PackagePublishingStatus.PUBLISHED,
-            architecturehintlist='all')
-        pub_binaries_archindep = self.getPubBinaries(
-            pub_source=pub_source_archindep,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        # Emulated new publication of a archdep binary only on i386.
-        pub_source_archdep = self.getPubSource(
-            version='1.1', architecturehintlist='i386')
-        pub_binaries_archdep = self.getPubBinaries(
-            pub_source=pub_source_archdep)
-
-        publisher.A_publish(False)
-        publisher.B_dominate(False)
-
-        # The latest architecture specific source and binary pair is
-        # PUBLISHED.
-        self.checkPublications(
-            pub_source_archdep, pub_binaries_archdep,
-            PackagePublishingStatus.PUBLISHED)
-
-        # The oldest architecture independent source & binaries should
-        # be SUPERSEDED, i.e., the fact that new source version wasn't
-        # built for hppa should not hold the condemned architecture
-        # independent binary.
-        self.checkPublications(
-            pub_source_archindep, pub_binaries_archindep,
-            PackagePublishingStatus.SUPERSEDED)
-
-    def testDominationOnArchIndependentBinaryOverrides(self):
-        """Check domination of architecture-independent overridden binaries.
-
-        Due to the mechanism for performing atomic domination of arch-indep
-        binaries (bug #48760) we were erroneously dominating binary override
-        attempts (new pending publications of the same binary in different
-        component/section). See bug #178102 for further information.
-        """
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-
-        # Create published archindep context.
-        pub_source = self.getPubSource(
-            version='1.0', status=PackagePublishingStatus.PUBLISHED,
-            architecturehintlist='all')
-        overridden_binaries = self.getPubBinaries(
-            pub_source=pub_source, status=PackagePublishingStatus.PUBLISHED)
-
-        # Committing the transaction here is required to guarantee sane
-        # order in publisher queries.
-        self.layer.commit()
-
-        # Perform the binary override.
-        universe = getUtility(IComponentSet)['universe']
-        pub_binaries = []
-        for pub in overridden_binaries:
-            pub_binaries.append(pub.changeOverride(new_component=universe))
-
-        # Overrides are in DB.
-        self.checkBinaryPublications(
-            pub_binaries, PackagePublishingStatus.PENDING)
-
-        # Publish and dominate them.
-        publisher.A_publish(False)
-        publisher.B_dominate(False)
-
-        # The original binary publications are marked as SUPERSEDED and
-        # the just-create overrides as preserved as PUBLISHED.
-        self.checkBinaryPublications(
-            overridden_binaries, PackagePublishingStatus.SUPERSEDED)
-
-        self.checkBinaryPublications(
-            pub_binaries, PackagePublishingStatus.PUBLISHED)
-
 
 class TestDomination(TestNativePublishingBase):
     """Test overall domination procedure."""
@@ -322,6 +230,7 @@ class TestDomination(TestNativePublishingBase):
             superseded_source.scheduleddeletiondate,
             lag=datetime.timedelta(days=publisher._config.stayofexecution))
 
+
 class TestDominationOfObsoletedSeries(TestDomination):
     """Replay domination tests upon a OBSOLETED distroseries."""
 
@@ -333,4 +242,3 @@ class TestDominationOfObsoletedSeries(TestDomination):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
