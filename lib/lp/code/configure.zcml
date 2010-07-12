@@ -460,6 +460,7 @@
                     last_mirrored_id
                     last_mirror_attempt
                     mirror_failures
+                    merge_control_status
                     pull_disabled
                     next_mirror_time
                     last_scanned

@@ -27,14 +27,10 @@ ancestry of revisions, at least in Branch5 and older branches.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.code.enums import BranchType
-    >>> from lp.code.interfaces.branch import IBranch, IBranchSet
+    >>> from lp.code.interfaces.branch import IBranchSet
     >>> from lp.code.interfaces.branchsubscription import IBranchSubscription
     >>> from lp.code.model.branch import Branch, BranchSet
     >>> from lp.code.model.branchsubscription import BranchSubscription
-    >>> verifyObject(IBranchSet, BranchSet())
-    True
-    >>> verifyObject(IBranch, Branch.get(1))
-    True
     >>> verifyObject(IBranchSubscription, BranchSubscription.get(1))
     True
 

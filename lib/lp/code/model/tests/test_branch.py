@@ -48,7 +48,8 @@ from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchTargetError, CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
+    BranchTargetError, CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING,
+    IBranch)
 from lp.code.interfaces.branchjob import (
     IBranchUpgradeJobSource, IBranchScanJobSource)
 from lp.code.interfaces.branchlookup import IBranchLookup
@@ -422,6 +423,13 @@ class TestBranch(TestCaseWithFactory):
         self.assertEqual(
             SourcePackage(branch.sourcepackagename, branch.distroseries),
             branch.sourcepackage)
+
+    def test_implements_IBranch(self):
+        # Instances of Branch provide IBranch.
+        branch = self.factory.makeBranch()
+        # We don't care about security, we just want to check that it
+        # implements the interface.
+        self.assertProvides(removeSecurityProxy(branch), IBranch)
 
 
 class TestBranchUpgrade(TestCaseWithFactory):
