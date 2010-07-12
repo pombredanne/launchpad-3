@@ -86,13 +86,6 @@ class TestDominator(TestNativePublishingBase):
             dominated.supersededby, dominant.sourcepackagerelease)
         self.checkPastDate(dominated.datesuperseded)
 
-    def testEmptyDomination(self):
-        """Domination asserts for not empty input list."""
-        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
-        pubs = {'foo': []}
-        self.assertRaises(
-            AssertionError, dominator._dominatePublications, pubs)
-
     def testBinariesDomination(self):
         """Test overall binary domination procedure."""
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
@@ -118,6 +111,13 @@ class TestDominator(TestNativePublishingBase):
         self.assertEqual(
             dominated.supersededby, dominant.binarypackagerelease.build)
         self.checkPastDate(dominated.datesuperseded)
+
+    def testEmptyDomination(self):
+        """Domination asserts for not empty input list."""
+        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
+        pubs = {'foo': []}
+        self.assertRaises(
+            AssertionError, dominator._dominatePublications, pubs)
 
 
 class TestDomination(TestNativePublishingBase):
