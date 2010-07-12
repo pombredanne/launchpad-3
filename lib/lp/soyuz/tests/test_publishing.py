@@ -506,21 +506,13 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
             pub.status, status, "%s is not %s (%s)" % (
             pub.displayname, status.name, pub.status.name))
 
-    def checkBinaryPublications(self, binaries, status):
-        """Assert the binary publications have the given status.
+    def checkPublications(self, pubs, status):
+        """Assert the given publications have the given status.
 
-        See `checkBinaryPublication`.
+        See `checkPublication`.
         """
-        for bin in binaries:
-            bin = self.checkPublication(bin, status)
-
-    def checkPublications(self, source, binaries, status):
-        """Assert source and binary publications have in the given status.
-
-        See `checkPublication` and `checkBinaryPublications`.
-        """
-        self.checkPublication(source, status)
-        self.checkBinaryPublications(binaries, status)
+        for pub in pubs:
+            self.checkPublication(pub, status)
 
     def checkPastDate(self, date, lag=None):
         """Assert given date is older than 'now'.
@@ -959,8 +951,7 @@ class TestBinaryDomination(TestNativePublishingBase):
     """Test BinaryPackagePublishingHistory.supersede() operates correctly."""
 
     def checkSuperseded(self, binaries, supersededby=None):
-        self.checkBinaryPublications(
-            binaries, PackagePublishingStatus.SUPERSEDED)
+        self.checkPublications(binaries, PackagePublishingStatus.SUPERSEDED)
         for binary in binaries:
             self.checkPastDate(binary.datesuperseded)
             if supersededby is not None:
@@ -1012,8 +1003,7 @@ class TestBinaryDomination(TestNativePublishingBase):
 
         bins[0].supersede(super_bins[0])
         self.checkSuperseded(bins, super_bins[0])
-        self.checkBinaryPublications(
-            super_bins, PackagePublishingStatus.PENDING)
+        self.checkPublications(super_bins, PackagePublishingStatus.PENDING)
 
     def testSupersedingSupersededArchSpecificBinaryFails(self):
         """Check that supersede() fails with a superseded arch-dep binary.
