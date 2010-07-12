@@ -15,5 +15,7 @@ Temporary TODO
         > 502882  After marking duplicate, bug link doesn't have title tooltip
         > 502881  Clicking "Mark as duplicate" doesn't focus field
         > 355164  ajax duplicate marker not working on internet explorer 7
+        > 604419  changing the master bug of a duplicate bug will make a
+                  second 'edit' button appear
     * Need to correctly handle bug activity/notify calls for
       dupes of dupe.
