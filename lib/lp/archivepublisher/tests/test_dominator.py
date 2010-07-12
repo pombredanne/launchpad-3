@@ -8,14 +8,10 @@ __metaclass__ = type
 import datetime
 import unittest
 
-from zope.component import getUtility
-
 from lp.archivepublisher.domination import Dominator
 from lp.archivepublisher.publishing import Publisher
 from canonical.database.sqlbase import flush_database_updates
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
