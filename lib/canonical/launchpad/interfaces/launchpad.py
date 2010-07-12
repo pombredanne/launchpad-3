@@ -100,6 +100,7 @@ class ILaunchpadCelebrities(Interface):
     """
     admin = Attribute("The 'admins' team.")
     bazaar_experts = Attribute("The Bazaar Experts team.")
+    software_center_agent = Attribute("The Software Center Agent.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
     buildd_admin = Attribute("The Build Daemon administrator.")
