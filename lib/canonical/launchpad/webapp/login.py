@@ -248,10 +248,16 @@ class OpenIDCallbackView(OpenIDLogin):
         '../templates/login-suspended-account.pt')
 
     def initialize(self):
-        whole_url = self.request.getURL()+'?'+self.request['QUERY_STRING']
-        params = dict(cgi.parse_qsl(self.request['QUERY_STRING']))
-        params.update(self.request.form)
-        self.openid_response = self._getConsumer().complete(params, whole_url)
+        requested_url = self.request.getURL()
+        params = dict(self.request.form)
+
+        query_string = self.request.get('QUERY_STRING')
+        if query_string is not None:
+            requested_url += '?' + query_string
+            params.update(cgi.parse_qsl(query_string))
+
+        consumer = self._getConsumer()
+        self.openid_response = consumer.complete(params, requested_url)
 
     def login(self, account):
         loginsource = getUtility(IPlacelessLoginSource)
