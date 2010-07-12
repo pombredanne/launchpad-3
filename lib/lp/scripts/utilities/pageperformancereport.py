@@ -6,14 +6,13 @@
 __metaclass__ = type
 __all__ = ['main']
 
-import bz2
 from cgi import escape as html_quote
 from ConfigParser import RawConfigParser
 from datetime import datetime
-import gzip
 import re
 import sre_constants
 import os.path
+import subprocess
 from textwrap import dedent
 import time
 
@@ -316,9 +315,17 @@ def smart_open(filename, mode='r'):
     """
     ext = os.path.splitext(filename)[1]
     if ext == '.bz2':
-        return bz2.BZ2File(filename, mode)
+        p = subprocess.Popen(
+            ['bunzip2', '-c', filename],
+            stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        p.stdin.close()
+        return p.stdout
     elif ext == '.gz':
-        return gzip.open(filename, mode)
+        p = subprocess.Popen(
+            ['gunzip', '-c', filename],
+            stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        p.stdin.close()
+        return p.stdout
     else:
         return open(filename, mode)
 
