@@ -29,7 +29,8 @@ setup(
         'chameleon.core',
         'chameleon.zpt',
         'cssutils',
-        # 'dkim',
+        # Required for pydkim
+        'dnspython',
         'feedvalidator',
         'funkload',
         'launchpadlib',
@@ -51,6 +52,7 @@ setup(
         'paramiko',
         'python-memcached',
         'pyasn1',
+        'pydkim',
         'python-openid',
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:
