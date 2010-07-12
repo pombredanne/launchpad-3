@@ -126,6 +126,19 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
         self._assertReasonAndHeaderAreCorrect(
             reason, expected_reason, expected_header)
 
+    def test_forStructuralSubscriber(self):
+        target = self.factory.makeProduct()
+        reason = BugNotificationRecipientReason.forStructuralSubscriber(
+            self.person, target)
+
+        expected_header = "Subscriber (%s)" % target.displayname
+        expected_reason = (
+            "You received this bug notification because you are subscribed "
+            "to %s." % target.displayname)
+
+        self._assertReasonAndHeaderAreCorrect(
+            reason, expected_reason, expected_header)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
