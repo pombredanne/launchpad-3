@@ -31,7 +31,7 @@ category_report() {
     ln -sf ${dir}/categories.html ${root}/latest-${type}-categories.html
     ln -sf ${dir}/pageids.html    ${root}/latest-${type}-pageids.html
     ln -sf ${dir}/combined.html   ${root}/latest-${type}-combined.html
-    ln -sf ${dir}/combined.html   ${root}/latest-${type}-top200.html
+    ln -sf ${dir}/top200.html   ${root}/latest-${type}-top200.html
 
     return 0
     }
