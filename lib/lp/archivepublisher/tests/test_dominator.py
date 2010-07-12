@@ -127,8 +127,6 @@ class TestDominator(TestNativePublishingBase):
 
     def testBinaryDomination(self):
         """Test binary domination unit procedure."""
-        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
-
         [dominant_source, dominant, dominated_source,
          dominated] = self.createSimpleDominationContext()
 
@@ -153,8 +151,6 @@ class TestDominator(TestNativePublishingBase):
         (remembering the architecture independent binaries get superseded
         atomically)
         """
-        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
-
         [dominant_source, dominant, dominated_source,
          dominated] = self.createSimpleDominationContext()
 
