@@ -19,6 +19,16 @@ from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 class TestDominator(TestNativePublishingBase):
     """Test Dominator class."""
 
+    def createSourceAndBinaries(self, version):
+        """Create a source and binaries with the given version."""
+        source = self.getPubSource(
+            version=version,
+            status=PackagePublishingStatus.PUBLISHED)
+        binaries = self.getPubBinaries(
+            pub_source=source,
+            status=PackagePublishingStatus.PUBLISHED)
+        return (source, binaries)
+
     def createSimpleDominationContext(self):
         """Create simple domination context.
 
@@ -34,19 +44,8 @@ class TestDominator(TestNativePublishingBase):
 
         Note that as an optimization the binaries list is already unpacked.
         """
-        foo_10_source = self.getPubSource(
-            version='1.0', architecturehintlist='i386',
-            status=PackagePublishingStatus.PUBLISHED)
-        foo_10_binaries = self.getPubBinaries(
-            pub_source=foo_10_source,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        foo_11_source = self.getPubSource(
-            version='1.1', architecturehintlist='i386',
-            status=PackagePublishingStatus.PUBLISHED)
-        foo_11_binaries = self.getPubBinaries(
-            pub_source=foo_11_source,
-            status=PackagePublishingStatus.PUBLISHED)
+        foo_10_source, foo_10_binaries = self.createSourceAndBinaries('1.0')
+        foo_11_source, foo_11_binaries = self.createSourceAndBinaries('1.1')
 
         dominant_source = foo_11_source
         dominant_binaries = [pub for pub in foo_11_binaries]
@@ -57,7 +56,7 @@ class TestDominator(TestNativePublishingBase):
         return (dominant_source, dominant_binaries[0],
                 dominated_source, dominated_binaries[0])
 
-    def testSourceDomination(self):
+    def testManualSourceDomination(self):
         """Test source domination procedure."""
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
 
@@ -86,8 +85,8 @@ class TestDominator(TestNativePublishingBase):
             dominated.supersededby, dominant.sourcepackagerelease)
         self.checkPastDate(dominated.datesuperseded)
 
-    def testBinariesDomination(self):
-        """Test overall binary domination procedure."""
+    def testManualBinaryDomination(self):
+        """Test binary domination procedure."""
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
 
         [dominant_source, dominant, dominated_source,
@@ -111,6 +110,23 @@ class TestDominator(TestNativePublishingBase):
         self.assertEqual(
             dominated.supersededby, dominant.binarypackagerelease.build)
         self.checkPastDate(dominated.datesuperseded)
+
+    def testJudgeAndDominate(self):
+        """Verify that judgeAndDominate correctly dominates everything."""
+        foo_10_source, foo_10_binaries = self.createSourceAndBinaries('1.0')
+        foo_11_source, foo_11_binaries = self.createSourceAndBinaries('1.1')
+        foo_12_source, foo_12_binaries = self.createSourceAndBinaries('1.2')
+
+        dominator = Dominator(self.logger, foo_10_source.archive)
+        dominator.judgeAndDominate(
+            foo_10_source.distroseries, foo_10_source.pocket, self.config)
+
+        self.checkPublications(
+            foo_12_source, foo_12_binaries, PackagePublishingStatus.PUBLISHED)
+        self.checkPublications(
+            foo_11_source, foo_11_binaries, PackagePublishingStatus.SUPERSEDED)
+        self.checkPublications(
+            foo_10_source, foo_10_binaries, PackagePublishingStatus.SUPERSEDED)
 
     def testEmptyDomination(self):
         """Domination asserts for not empty input list."""
