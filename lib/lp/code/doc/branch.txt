@@ -29,10 +29,7 @@ ancestry of revisions, at least in Branch5 and older branches.
     >>> from lp.code.enums import BranchType
     >>> from lp.code.interfaces.branch import IBranchSet
     >>> from lp.code.interfaces.branchsubscription import IBranchSubscription
-    >>> from lp.code.model.branch import Branch, BranchSet
-    >>> from lp.code.model.branchsubscription import BranchSubscription
-    >>> verifyObject(IBranchSubscription, BranchSubscription.get(1))
-    True
+    >>> from lp.code.model.branch import Branch
 
 
 == Branch types ==
@@ -270,19 +267,6 @@ Branches have a display name that is the bzr_identity.
 
 
 == Branch subscriptions ==
-
-Branches can be subscribed to and unsubscribed from by a Person.  An
-implicit subscription to the branch is created when the branch is created
-so that the branch owner can be informed of merge proposals or code review
-messages relating to their branches.
-
-    >>> owner = factory.makePerson()
-    >>> branch = factory.makeAnyBranch(owner=owner)
-    >>> subscriptions = list(branch.subscriptions)
-    >>> print len(subscriptions)
-    1
-    >>> subscriptions[0].person == owner
-    True
 
 Branch subscriptions have attributes associated with them.
 The notification_level is used to control what email is sent to the
