@@ -104,6 +104,7 @@ class Times:
     """Collection of request times."""
     def __init__(self, timeout):
         self.total_hits = 0
+        self.total_time = 0
         self.request_times = []
         self.sql_statements = []
         self.sql_times = []
@@ -116,7 +117,9 @@ class Times:
         The application time is capped to our timeout.
         """
         self.total_hits += 1
-        self.request_times.append(min(request.app_seconds, self.timeout))
+        total_time = min(request.app_seconds, self.timeout)
+        self.total_time += total_time
+        self.request_times.append(total_time)
         if request.sql_statements is not None:
             self.sql_statements.append(request.sql_statements)
         if request.sql_seconds is not None:
@@ -187,7 +190,7 @@ class Times:
             total, mean, median, std, hstr)
 
     def __cmp__(self, b):
-        return cmp(self.total_hits, b.total_hits)
+        return cmp(self.total_time, b.total_time)
 
 
 def main():
