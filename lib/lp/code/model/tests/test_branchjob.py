@@ -26,6 +26,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from lp.translations.interfaces.translations import (
@@ -454,7 +455,9 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             except bzr_errors.NoSuchRevision:
                 revno = None
             if existing is not None:
-                BranchRevision.delete(existing.id)
+                branchrevision = IMasterStore(branch).find(
+                    BranchRevision, BranchRevision.id == existing.id)
+                branchrevision.remove()
             branch.createBranchRevision(revno, revision)
 
     def create3CommitsBranch(self):

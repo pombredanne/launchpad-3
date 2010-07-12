@@ -111,8 +111,8 @@ class Revision(SQLBase):
         store = Store.of(self)
 
         query = And(
-            self.id == BranchRevision.revisionID,
-            BranchRevision.branchID == Branch.id)
+            self.id == BranchRevision.revision_id,
+            BranchRevision.branch_id == Branch.id)
         if not allow_private:
             query = And(query, Not(Branch.private))
         if not allow_junk:
@@ -123,7 +123,7 @@ class Revision(SQLBase):
                 Or(
                     (Branch.product != None),
                     And(
-                        Branch.sourcepackagename != None, 
+                        Branch.sourcepackagename != None,
                         Branch.distroseries != None)))
         result_set = store.find(Branch, query)
         if self.revision_author.person is None:
@@ -374,7 +374,7 @@ class RevisionSet:
             BranchRevision.branch == Branch.id,
             Branch.product == product,
             Branch.lifecycle_status.is_in(DEFAULT_BRANCH_STATUS_IN_LISTING),
-            BranchRevision.revisionID >= revision_subselect)
+            BranchRevision.revision_id >= revision_subselect)
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
 

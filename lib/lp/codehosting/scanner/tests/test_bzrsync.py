@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0141
@@ -21,6 +21,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
@@ -94,10 +95,12 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         :return: (num_revisions, num_branch_revisions, num_revision_parents,
             num_revision_authors)
         """
-        return (Revision.select().count(),
-                BranchRevision.select().count(),
-                RevisionParent.select().count(),
-                RevisionAuthor.select().count())
+        store = IStore(Revision)
+        return (
+            store.find(Revision).count(),
+            store.find(BranchRevision).count(),
+            store.find(RevisionParent).count(),
+            store.find(RevisionAuthor).count())
 
     def assertCounts(self, counts, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
@@ -228,10 +231,11 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         :return: A set of tuples (sequence, revision-id) for all the
             BranchRevisions rows belonging to self.db_branch.
         """
+        branchrevisions = IStore(BranchRevision).find(
+            BranchRevision, BranchRevision.branch == db_branch)
         return set(
             (branch_revision.sequence, branch_revision.revision.revision_id)
-            for branch_revision
-            in BranchRevision.selectBy(branch=db_branch))
+            for branch_revision in branchrevisions)
 
     def writeToFile(self, filename="file", contents=None):
         """Set the contents of the specified file.
@@ -459,8 +463,9 @@ class TestBzrSync(BzrSyncTestCase):
         # retrieveDatabaseAncestry.
         branch = getUtility(IBranchLookup).getByUniqueName(
             '~name12/+junk/junk.contrib')
-        sampledata = list(
-            BranchRevision.selectBy(branch=branch).orderBy('sequence'))
+        branchrevisions = IStore(BranchRevision).find(
+            BranchRevision, BranchRevision.branch == branch)
+        sampledata = list(branchrevisions.order_by(BranchRevision.sequence))
         expected_ancestry = set(branch_revision.revision.revision_id
             for branch_revision in sampledata)
         expected_history = [branch_revision.revision.revision_id

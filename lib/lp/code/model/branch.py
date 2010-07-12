@@ -226,11 +226,12 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     @property
     def revision_history(self):
-        return BranchRevision.select('''
-            BranchRevision.branch = %s AND
-            BranchRevision.sequence IS NOT NULL
-            ''' % sqlvalues(self),
-            prejoins=['revision'], orderBy='-sequence')
+        # XXX JeroenVermeulen 2010-07-12: Prejoin revision.
+        result = Store.of(self).find(
+            BranchRevision,
+            BranchRevision.branch_id == self.id,
+            BranchRevision.sequence != None)
+        return result.order_by(Desc(BranchRevision.sequence))
 
     subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
@@ -509,7 +510,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def latest_revisions(self, quantity=10):
         """See `IBranch`."""
-        return self.revision_history.limit(quantity)
+        return self.revision_history.config(limit=quantity)
 
     def getMainlineBranchRevisions(self, start_date, end_date=None,
                                    oldest_first=False):
@@ -532,14 +533,13 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
-        return BranchRevision.select(
-            'Revision.id=BranchRevision.revision AND '
-            'BranchRevision.branch = %d AND '
-            'BranchRevision.sequence IS NOT NULL AND '
-            'Revision.revision_date > %s' %
-            (self.id, quote(timestamp)),
-            orderBy='-sequence',
-            clauseTables=['Revision'])
+        result = Store.of(self).using(Revision).find(
+            BranchRevision,
+            Revision == BranchRevision.revision,
+            BranchRevision.branch == self,
+            BranchRevision.sequence != None,
+            Revision.revision_date > timestamp)
+        return result.order_by(Desc(BranchRevision.sequence))
 
     def canBeDeleted(self):
         """See `IBranch`."""
@@ -860,8 +860,8 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getScannerData(self):
         """See `IBranch`."""
-        cur = cursor()
-        cur.execute("""
+# XXX JeroenVermeulen 2010-07-12: We're dropping BranchRevision.id.
+        rows = Store.of(self).execute("""
             SELECT BranchRevision.id, BranchRevision.sequence,
                 Revision.revision_id
             FROM Revision, BranchRevision
@@ -872,10 +872,12 @@ class Branch(SQLBase, BzrIdentityMixin):
         ancestry = set()
         history = []
         branch_revision_map = {}
-        for branch_revision_id, sequence, revision_id in cur.fetchall():
+        for branch_revision_id, sequence, revision_id in rows:
             ancestry.add(revision_id)
             branch_revision_map[revision_id] = branch_revision_id
             if sequence is not None:
+                assert sequence == len(history) + 1, (
+                    "Broken revision sequence number.")
                 history.append(revision_id)
         return ancestry, history, branch_revision_map
 
@@ -1001,7 +1003,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             name = "date_trunc"
         results = Store.of(self).find(
             (DateTrunc('day', Revision.revision_date), Count(Revision.id)),
-            Revision.id == BranchRevision.revisionID,
+            Revision.id == BranchRevision.revision_id,
             Revision.revision_date > since,
             BranchRevision.branch == self)
         results = results.group_by(

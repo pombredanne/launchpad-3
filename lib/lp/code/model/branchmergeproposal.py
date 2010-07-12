@@ -486,8 +486,10 @@ class BranchMergeProposal(SQLBase):
         self.queue_position = None
 
         if merged_revno is not None:
-            branch_revision = BranchRevision.selectOneBy(
-                branch=self.target_branch, sequence=merged_revno)
+            branch_revision = Store.of(self).find(
+                BranchRevision,
+                BranchRevision.branch == self.target_branch,
+                BranchRevision.sequence == merged_revno).get_one()
             if branch_revision is not None:
                 date_merged = branch_revision.revision.revision_date
 
