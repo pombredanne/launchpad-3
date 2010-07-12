@@ -55,12 +55,12 @@ class BugNotificationRecipientReason(RecipientReason):
         return cls(person, person, header, reason)
 
     @classmethod
-    def forDistroBugSupervisor(cls, person, distro):
+    def forBugSupervisor(cls, person, target):
         """Return a `BugNotificationRecipientReason` for a bug supervisor."""
         header = cls.makeRationale(
-            "Bug Supervisor (%s)" % distro.displayname, person)
+            "Bug Supervisor (%s)" % target.displayname, person)
         reason = cls._getReasonTemplate(
-            "the bug supervisor for %s" % distro.displayname)
+            "the bug supervisor for %s" % target.displayname)
         return cls(person, person, header, reason)
 
     @classmethod
@@ -71,10 +71,6 @@ class BugNotificationRecipientReason(RecipientReason):
         reason = cls._getReasonTemplate(
             "subscribed to %s" % target.displayname)
         return cls(person, person, header, reason)
-
-    @classmethod
-    def forUpstreamBugSupervisor(cls, person, upstream):
-        """..."""
 
     @classmethod
     def forRegistrant(cls, person, upstream):

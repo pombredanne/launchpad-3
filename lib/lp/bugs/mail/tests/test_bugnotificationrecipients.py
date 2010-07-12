@@ -100,9 +100,9 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
         self._assertReasonAndHeaderAreCorrect(
             reason, expected_reason, expected_header)
 
-    def test_forDistroBugSupervisor(self):
+    def test_forBugSupervisor(self):
         distro = self.factory.makeDistribution()
-        reason = BugNotificationRecipientReason.forDistroBugSupervisor(
+        reason = BugNotificationRecipientReason.forBugSupervisor(
             self.person, distro)
 
         expected_header = "Bug Supervisor (%s)" % distro.displayname
@@ -112,9 +112,9 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
         self._assertReasonAndHeaderAreCorrect(
             reason, expected_reason, expected_header)
 
-    def test_forDistroBugSupervisor_for_team(self):
+    def test_forBugSupervisor_for_team(self):
         distro = self.factory.makeDistribution()
-        reason = BugNotificationRecipientReason.forDistroBugSupervisor(
+        reason = BugNotificationRecipientReason.forBugSupervisor(
             self.team, distro)
 
         expected_header = "Bug Supervisor (%s) @%s" % (
