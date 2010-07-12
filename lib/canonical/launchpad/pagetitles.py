@@ -46,19 +46,12 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMaloneApplication, IPerson, IStructuralObjectPresentation)
+    ILaunchBag, IMaloneApplication, IPerson)
 from canonical.lazr.utils import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 # Helpers.
-
-class BugTaskPageTitle:
-    """Return the page title for a BugTask."""
-    def __call__(self, context, view):
-        return smartquote('%s: "%s"') % (
-            IStructuralObjectPresentation(context).getMainHeading(),
-            context.bug.title)
 
 
 class SubstitutionHelper:
@@ -235,14 +228,10 @@ bugtask_choose_affected_product = bugtask_affects_new_product
 bugtask_confirm_bugtracker_creation = LaunchbagBugID(
     'Bug #%d - Record as affecting another software')
 
-bugtask_edit = BugTaskPageTitle()
-
 bugtask_requestfix = LaunchbagBugID(
     'Bug #%d - Record as affecting another distribution/package')
 
 bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
-
-bugtask_view = BugTaskPageTitle()
 
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
