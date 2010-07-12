@@ -46,15 +46,8 @@ class TestDominator(TestNativePublishingBase):
         """
         foo_10_source, foo_10_binaries = self.createSourceAndBinaries('1.0')
         foo_11_source, foo_11_binaries = self.createSourceAndBinaries('1.1')
-
-        dominant_source = foo_11_source
-        dominant_binaries = [pub for pub in foo_11_binaries]
-
-        dominated_source = foo_10_source
-        dominated_binaries = [pub for pub in foo_10_binaries]
-
-        return (dominant_source, dominant_binaries[0],
-                dominated_source, dominated_binaries[0])
+        return (foo_11_source, foo_11_binaries[0],
+                foo_10_source, foo_10_binaries[0])
 
     def testManualSourceDomination(self):
         """Test source domination procedure."""
@@ -73,17 +66,18 @@ class TestDominator(TestNativePublishingBase):
         flush_database_updates()
 
         # The dominant version remains correctly published.
-        dominant  = self.checkSourcePublication(
+        self.checkPublication(
             dominant_source, PackagePublishingStatus.PUBLISHED)
-        self.assertTrue(dominant.supersededby is None)
-        self.assertTrue(dominant.datesuperseded is None)
+        self.assertTrue(dominant_source.supersededby is None)
+        self.assertTrue(dominant_source.datesuperseded is None)
 
         # The dominated version is correctly dominated.
-        dominated  = self.checkSourcePublication(
+        self.checkPublication(
             dominated_source, PackagePublishingStatus.SUPERSEDED)
         self.assertEqual(
-            dominated.supersededby, dominant.sourcepackagerelease)
-        self.checkPastDate(dominated.datesuperseded)
+            dominated_source.supersededby,
+            dominant_source.sourcepackagerelease)
+        self.checkPastDate(dominated_source.datesuperseded)
 
     def testManualBinaryDomination(self):
         """Test binary domination procedure."""
@@ -99,13 +93,13 @@ class TestDominator(TestNativePublishingBase):
         flush_database_updates()
 
         # Dominant version remains correctly published.
-        dominant  = self.checkBinaryPublication(
+        self.checkPublication(
             dominant, PackagePublishingStatus.PUBLISHED)
         self.assertTrue(dominant.supersededby is None)
         self.assertTrue(dominant.datesuperseded is None)
 
         # Dominated version is correctly dominated.
-        dominated  = self.checkBinaryPublication(
+        self.checkPublication(
             dominated, PackagePublishingStatus.SUPERSEDED)
         self.assertEqual(
             dominated.supersededby, dominant.binarypackagerelease.build)
@@ -170,15 +164,15 @@ class TestDomination(TestNativePublishingBase):
         # DELETED and OBSOLETED publications are set to be deleted
         # immediately, whereas SUPERSEDED ones get a stay of execution
         # according to the configuration.
-        deleted_source = self.checkSourcePublication(
+        self.checkPublication(
             deleted_source, PackagePublishingStatus.DELETED)
         self.checkPastDate(deleted_source.scheduleddeletiondate)
 
-        obsoleted_source = self.checkSourcePublication(
+        self.checkPublication(
             obsoleted_source, PackagePublishingStatus.OBSOLETE)
         self.checkPastDate(deleted_source.scheduleddeletiondate)
 
-        superseded_source = self.checkSourcePublication(
+        self.checkPublication(
             superseded_source, PackagePublishingStatus.SUPERSEDED)
         self.checkPastDate(
             superseded_source.scheduleddeletiondate,

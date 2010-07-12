@@ -500,47 +500,26 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
         self.layer.commit()
         return binaries
 
-    def checkSourcePublication(self, source, status):
-        """Assert the source publications has the given status.
-
-        Retrieve an up-to-date record corresponding to the given publication,
-        check and return it.
-        """
-        fresh_source = SourcePackagePublishingHistory.get(source.id)
+    def checkPublication(self, pub, status):
+        """Assert the publication has the given status."""
         self.assertEqual(
-            fresh_source.status, status, "%s is not %s (%s)" % (
-            fresh_source.displayname, status.name, source.status.name))
-        return fresh_source
-
-    def checkBinaryPublication(self, binary, status):
-        """Assert the binary publication has the given status.
-
-        Retrieve an up-to-date record corresponding to the given publication,
-        check and return it.
-        """
-        fresh_binary = BinaryPackagePublishingHistory.get(binary.id)
-        self.assertEqual(
-            fresh_binary.status, status, "%s is not %s (%s)" % (
-            fresh_binary.displayname, status.name, fresh_binary.status.name))
-        return fresh_binary
+            pub.status, status, "%s is not %s (%s)" % (
+            pub.displayname, status.name, pub.status.name))
 
     def checkBinaryPublications(self, binaries, status):
         """Assert the binary publications have the given status.
 
         See `checkBinaryPublication`.
         """
-        fresh_binaries = []
         for bin in binaries:
-            bin = self.checkBinaryPublication(bin, status)
-            fresh_binaries.append(bin)
-        return fresh_binaries
+            bin = self.checkPublication(bin, status)
 
     def checkPublications(self, source, binaries, status):
         """Assert source and binary publications have in the given status.
 
-        See `checkSourcePublication` and `checkBinaryPublications`.
+        See `checkPublication` and `checkBinaryPublications`.
         """
-        self.checkSourcePublication(source, status)
+        self.checkPublication(source, status)
         self.checkBinaryPublications(binaries, status)
 
     def checkPastDate(self, date, lag=None):
@@ -997,7 +976,7 @@ class TestBinaryDomination(TestNativePublishingBase):
         super_bins = self.getPubBinaries(architecturespecific=True)
         bins[0].supersede()
         self.checkSuperseded([bins[0]])
-        self.checkBinaryPublication(bins[1], PackagePublishingStatus.PENDING)
+        self.checkPublication(bins[1], PackagePublishingStatus.PENDING)
 
     def testSupersedeWithDominant(self):
         """Check that supersede() with a dominant publication works."""
@@ -1005,7 +984,7 @@ class TestBinaryDomination(TestNativePublishingBase):
         super_bins = self.getPubBinaries(architecturespecific=True)
         bins[0].supersede(super_bins[0])
         self.checkSuperseded([bins[0]], super_bins[0])
-        self.checkBinaryPublication(bins[1], PackagePublishingStatus.PENDING)
+        self.checkPublication(bins[1], PackagePublishingStatus.PENDING)
 
     def testSupersedesArchIndepBinariesAtomically(self):
         """Check that supersede() supersedes arch-indep binaries atomically.
