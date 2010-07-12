@@ -25,11 +25,11 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from canonical.launchpad.fields import StrippedTextLine
-from canonical.launchpad.interfaces._schema_circular_imports import IBug
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_new_distrotask)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IAddBugTaskForm,
     IAddBugTaskWithProductCreationForm, valid_remote_bug_url)
@@ -53,12 +53,16 @@ from canonical.widgets.popup import SearchForUpstreamPopupWidget
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):
+    page_title = 'Record as affecting another project'
+
     @property
     def first_step(self):
         return ChooseProductStep
 
 
 class BugAlsoAffectsDistroMetaView(MultiStepView):
+    page_title = 'Record as affecting another distribution/package'
+
     @property
     def first_step(self):
         return DistroBugTaskCreationStep
@@ -99,26 +103,6 @@ class ChooseProductStep(AlsoAffectsStep):
         bugtask = self.context
         upstream = bugtask.target.upstream_product
         if upstream is not None:
-            if not upstream.active:
-                # XXX: Guilherme Salgado 2007-09-18 bug=140526: This is only
-                # possible because of bug 140526, which allows packages to
-                # be linked to inactive products.
-                series = bugtask.distribution.currentseries
-                assert series is not None, (
-                    "This package is linked to a product series so this "
-                    "package's distribution must have at least one distro "
-                    "series.")
-                sourcepackage = series.getSourcePackage(
-                    bugtask.sourcepackagename)
-                self.request.response.addWarningNotification(
-                    structured(
-                    _("""
-                    This package is linked to an inactive upstream.  You
-                    can <a href="%(package_url)s/+edit-packaging">fix it</a>
-                    to avoid this step in the future."""),
-                    package_url=canonical_url(sourcepackage)))
-                return
-
             try:
                 valid_upstreamtask(bugtask.bug, upstream)
             except WidgetsError:
@@ -609,7 +593,7 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         elif link_upstream_how == LinkUpstreamHowOptions.EMAIL_UPSTREAM_DONE:
             # Ensure there's a bug tracker for this email address.
             bug_url = 'mailto:' + data['upstream_email_address_done']
-            bug_tracker = getUtility(IBugTrackerSet).ensureBugTracker(
+            getUtility(IBugTrackerSet).ensureBugTracker(
                 bug_url, self.user, BugTrackerType.EMAILADDRESS)
             data['bug_url'] = bug_url
 

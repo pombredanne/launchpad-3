@@ -9,12 +9,12 @@
 
 __metaclass__ = type
 
+from email import message_from_string
 import os
 import shutil
 import unittest
 
-from email import message_from_string
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -32,6 +32,8 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet, SourcePackageFormat)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet, NotFoundError)
 from canonical.launchpad.testing.fakepackager import FakePackager
@@ -48,7 +50,7 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
         Additionally to the TestUploadProcessorBase.setUp, set 'breezy'
         distroseries and an new uploadprocessor instance.
         """
-        TestUploadProcessorBase.setUp(self)
+        super(TestPPAUploadProcessorBase, self).setUp()
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         # Let's make 'name16' person member of 'launchpad-beta-tester'
         # team only in the context of this test.
@@ -212,7 +214,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         [build] = builds
         self.assertEqual(
             build.title, 'i386 build of bar 1.0-1 in ubuntu breezy RELEASE')
-        self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(build.status.name, 'NEEDSBUILD')
         self.assertTrue(build.buildqueue_record.lastscore is not 0)
 
         #
@@ -239,7 +241,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         [build, build_old] = builds
         self.assertEqual(
             build.title, 'i386 build of bar 1.0-10 in ubuntu breezy RELEASE')
-        self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(build.status.name, 'NEEDSBUILD')
         self.assertTrue(build.buildqueue_record.lastscore is not 0)
 
         #
@@ -389,7 +391,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         [build] = builds
         self.assertEqual(
             build.title, 'i386 build of bar 1.0-1 in ubuntu breezy RELEASE')
-        self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(build.status.name, 'NEEDSBUILD')
         self.assertTrue(build.buildqueue_record.lastscore is not 0)
 
         # Binary upload to the just-created build record.
@@ -486,6 +488,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         email = "contact@example.com"
         name = "Team"
         team = self.factory.makeTeam(email=email, displayname=name)
+        transaction.commit()
         name12 = getUtility(IPersonSet).getByName("name12")
         cprov.archive.newComponentUploader(name12, "main")
         cprov.archive.newComponentUploader(team, "main")
@@ -507,7 +510,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEmail(ppa_header="cprov", recipients=expected_recipients)
 
     def testPPADistroSeriesOverrides(self):
-        """It's possible to override target distroserieses of PPA uploads.
+        """It's possible to override target distroseries of PPA uploads.
 
         Similar to usual PPA uploads:
 
@@ -572,7 +575,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         [build] = builds
         self.assertEqual(
             build.title, 'i386 build of bar 1.0-1 in ubuntu breezy RELEASE')
-        self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(build.status.name, 'NEEDSBUILD')
         self.assertTrue(build.buildqueue_record.lastscore is not 0)
 
     def testNotMemberUploadToTeamPPA(self):
@@ -679,31 +682,14 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             'https://help.launchpad.net/Packaging/PPA for more information.')
 
     def testPGPSignatureNotPreserved(self):
-        """PGP signatures should be removed from PPA changesfiles.
+        """PGP signatures should be removed from PPA .changes files.
 
-        Email notifications and the librarian file for the changesfile should
+        Email notifications and the librarian file for .changes file should
         both have the PGP signature removed.
         """
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-
-        # Check the email.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        msg = message_from_string(raw_msg)
-
-        # This is now a MIMEMultipart message.
-        body = msg.get_payload(0)
-        body = body.get_payload(decode=True)
-
-        self.assertTrue(
-            "-----BEGIN PGP SIGNED MESSAGE-----" not in body,
-            "Unexpected PGP header found")
-        self.assertTrue(
-            "-----BEGIN PGP SIGNATURE-----" not in body,
-            "Unexpected start of PGP signature found")
-        self.assertTrue(
-            "-----END PGP SIGNATURE-----" not in body,
-            "Unexpected end of PGP signature found")
+        self.PGPSignatureNotPreserved(archive=self.name16.archive)
 
     def doCustomUploadToPPA(self):
         """Helper method to do a custom upload to a PPA.
@@ -946,6 +932,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         except NotFoundError:
             self.fail('bar_1.0.orig.tar.gz is not yet published.')
 
+        # Please note: this upload goes to the Ubuntu main archive.
         upload_dir = self.queueUpload("bar_1.0-10")
         self.processUpload(self.uploadprocessor, upload_dir)
         # Discard the announcement email and check the acceptance message
@@ -961,6 +948,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Make the official bar orig.tar.gz available in the system.
         self.uploadNewBarToUbuntu()
 
+        # Please note: the upload goes to the PPA.
         # Upload a higher version of 'bar' to a PPA that relies on the
         # availability of orig.tar.gz published in ubuntu.
         upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
@@ -1032,6 +1020,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Make the official bar orig.tar.gz available in the system.
         self.uploadNewBarToUbuntu()
 
+        # Please note: the upload goes to the PPA.
         # Upload a higher version of 'bar' to a PPA that relies on the
         # availability of orig.tar.gz published in the PPA itself.
         upload_dir = self.queueUpload("bar_1.0-10-ppa-orig", "~name16/ubuntu")
@@ -1158,6 +1147,51 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
 
+    def test30QuiltMultipleReusedOrigs(self):
+        """Official orig*.tar.* can be reused for PPA uploads.
+
+        The 3.0 (quilt) format supports multiple original tarballs. In a
+        PPA upload, any number of these can be reused from the primary
+        archive.
+        """
+        # We need to accept unsigned .changes and .dscs, and 3.0 (quilt)
+        # sources.
+        self.options.context = 'absolutely-anything'
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            self.breezy, SourcePackageFormat.FORMAT_3_0_QUILT)
+
+        # First upload a complete 3.0 (quilt) source to the primary
+        # archive.
+        upload_dir = self.queueUpload("bar_1.0-1_3.0-quilt")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.NEW)
+
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name="bar",
+            version="1.0-1", exact_match=True)
+        queue_item.setAccepted()
+        queue_item.realiseUpload()
+        self.layer.commit()
+        unused = stub.test_emails.pop()
+
+        # Now upload a 3.0 (quilt) source with missing orig*.tar.* to a
+        # PPA. All of the missing files will be retrieved from the
+        # primary archive.
+        upload_dir = self.queueUpload(
+            "bar_1.0-2_3.0-quilt_without_orig", "~name16/ubuntu")
+        self.assertEquals(
+            self.processUpload(self.uploadprocessor, upload_dir),
+            ['accepted'])
+
+        queue_item = self.uploadprocessor.last_processed_upload.queue_root
+
+        self.assertEqual(queue_item.status, PackageUploadStatus.DONE)
+        self.assertEqual(
+            queue_item.sources[0].sourcepackagerelease.files.count(), 5)
+
 
 class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
     """Functional test for uploadprocessor.py quota checks in PPA."""
@@ -1201,9 +1235,9 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         the size of the upload plus the current PPA size must be smaller
         than the PPA.authorized_size, otherwise the upload will be rejected.
         """
-        # Stuff 1024 MiB in name16 PPA, so anything will be above the
-        # default quota limit, 1024 MiB.
-        self._fillArchive(self.name16.archive, 1024 * (2 ** 20))
+        # Stuff 2048 MiB in name16 PPA, so anything will be above the
+        # default quota limit, 2048 MiB.
+        self._fillArchive(self.name16.archive, 2048 * (2 ** 20))
 
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         upload_results = self.processUpload(self.uploadprocessor, upload_dir)
@@ -1216,7 +1250,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
             "Rejected:",
-            "PPA exceeded its size limit (1024.00 of 1024.00 MiB). "
+            "PPA exceeded its size limit (2048.00 of 2048.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
             "if you need more space."]
         self.assertEmail(contents)
@@ -1227,9 +1261,9 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         The system start warning users for uploads exceeding 95 % of
         the current size limit.
         """
-        # Stuff 973 MiB into name16 PPA, approximately 95 % of
-        # the default quota limit, 1024 MiB.
-        self._fillArchive(self.name16.archive, 973 * (2 ** 20))
+        # Stuff 1945 MiB into name16 PPA, approximately 95 % of
+        # the default quota limit, 2048 MiB.
+        self._fillArchive(self.name16.archive, 2000 * (2 ** 20))
 
         # Ensure the warning is sent in the acceptance notification.
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
@@ -1237,7 +1271,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         contents = [
             "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)",
             "Upload Warnings:",
-            "PPA exceeded 95 % of its size limit (973.00 of 1024.00 MiB). "
+            "PPA exceeded 95 % of its size limit (2000.00 of 2048.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
             "if you need more space."]
         self.assertEmail(contents)

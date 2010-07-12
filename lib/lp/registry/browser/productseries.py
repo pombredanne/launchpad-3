@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -13,6 +13,8 @@ __all__ = [
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
+    'ProductSeriesInvolvedMenu',
+    'ProductSeriesInvolvementView',
     'ProductSeriesLinkBranchView',
     'ProductSeriesLinkBranchFromCodeView',
     'ProductSeriesNavigation',
@@ -20,7 +22,7 @@ __all__ = [
     'ProductSeriesOverviewNavigationMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
-    'ProductSeriesSourceListView',
+    'ProductSeriesSetBranchView',
     'ProductSeriesSpecificationsMenu',
     'ProductSeriesUbuntuPackagingView',
     'ProductSeriesView',
@@ -33,51 +35,73 @@ from bzrlib.revision import NULL_REVISION
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
+from zope.formlib import form
+from zope.interface import implements, Interface
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.code.browser.branchref import BranchRef
+from canonical.launchpad.fields import URIField
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationImplementationStatus)
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.helpers import browserLanguages
+from lp.code.browser.branch import BranchNameValidationMixin
+from lp.code.browser.branchref import BranchRef
+from lp.code.enums import BranchType, RevisionControlSystems
+from lp.code.interfaces.branch import (
+    BranchCreationForbidden, BranchExists, IBranch)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import (
-    ICodeImportSet)
+    ICodeImport, ICodeImportSet)
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.browser import StatusCount
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
+from lp.registry.interfaces.packaging import (
+    IPackaging, IPackagingUtil)
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView,
-    LaunchpadView, Link, Navigation, NavigationMenu, StandardLaunchpadFacets,
-    stepthrough, stepto)
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link, Navigation, NavigationMenu, StandardLaunchpadFacets, stepthrough,
+    stepto)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.interfaces import (
+    NotFoundError, UnexpectedFormData)
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
+    ReturnToReferrerMixin)
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.tales import MenuAPI
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 from lp.registry.browser import (
     MilestoneOverlayMixin, RegistryDeleteViewMixin)
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.browser.pillar import InvolvedMenu, PillarView
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
+
+from lazr.enum import DBItem
+from lazr.restful.interface import copy_field, use_template
+
 
 def quote(text):
-    """Escape and quite text."""
+    """Escape and quote text."""
     return cgi.escape(text, quote=True)
 
 
@@ -126,6 +150,7 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin,
 
 class ProductSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProductSeries`."""
+
     @property
     def text(self):
         """See `IBreadcrumb`."""
@@ -147,14 +172,62 @@ class ProductSeriesFacets(StandardLaunchpadFacets):
         return Link(link, text, summary=summary)
 
 
-class ProductSeriesOverviewMenu(ApplicationMenu):
+class IProductSeriesInvolved(Interface):
+    """A marker interface for getting involved."""
+
+
+class ProductSeriesInvolvedMenu(InvolvedMenu):
+    """The get involved menu."""
+    usedfor = IProductSeriesInvolved
+    links = [
+        'report_bug', 'help_translate', 'submit_code', 'register_blueprint']
+
+    @property
+    def view(self):
+        return self.context
+
+    @property
+    def pillar(self):
+        return self.view.context.product
+
+    def submit_code(self):
+        target = canonical_url(
+            self.pillar, view_name='+addbranch', rootsite='code')
+        enabled = self.view.official_codehosting
+        return Link(
+            target, 'Submit code', icon='code', enabled=enabled)
+
+
+class ProductSeriesInvolvementView(PillarView):
+    """Encourage configuration of involvement links for project series."""
+
+    implements(IProductSeriesInvolved)
+    has_involvement = True
+    visible_disabled_link_names = ['submit_code']
+
+    def __init__(self, context, request):
+        super(ProductSeriesInvolvementView, self).__init__(context, request)
+        self.official_codehosting = self.context.branch is not None
+        self.official_answers = False
+
+    @property
+    def configuration_links(self):
+        """The enabled involvement links."""
+        series_menu = MenuAPI(self.context).overview
+        set_branch = series_menu['set_branch']
+        set_branch.text = 'Configure series branch'
+        return [set_branch]
+
+
+class ProductSeriesOverviewMenu(
+    ApplicationMenu, StructuralSubscriptionMenuMixin):
     """The overview menu."""
     usedfor = IProductSeries
     facet = 'overview'
     links = [
         'edit', 'delete', 'driver', 'link_branch', 'ubuntupkg',
-        'add_package', 'create_milestone', 'create_release',
-        'rdf', 'subscribe'
+        'create_milestone', 'create_release', 'rdf', 'subscribe',
+        'set_branch',
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -184,21 +257,33 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         if self.context.branch is None:
             text = 'Link to branch'
             icon = 'add'
+            summary = 'Set the branch for this series'
         else:
             text = "Change branch"
             icon = 'edit'
-        summary = 'The code branch that for this series.'
+            summary = 'Change the branch for this series'
         return Link('+linkbranch', text, summary, icon=icon)
 
+    @enabled_with_permission('launchpad.Edit')
+    def set_branch(self):
+        """Return a link to set the bazaar branch for this series."""
+        # Once +setbranch has been beta tested thoroughly, it should
+        # replace the +linkbranch page.
+        if self.context.branch is None:
+            text = 'Link to branch'
+            icon = 'add'
+            summary = 'Set the branch for this series'
+        else:
+            text = "Change branch"
+            icon = 'edit'
+            summary = 'Change the branch for this series'
+        return Link('+setbranch', text, summary, icon=icon)
+
+    @enabled_with_permission('launchpad.AnyPerson')
     def ubuntupkg(self):
         """Return a link to link this series to an ubuntu sourcepackage."""
         text = 'Link to Ubuntu package'
         return Link('+ubuntupkg', text, icon='add')
-
-    def add_package(self):
-        """Return a link to link this series to a sourcepackage."""
-        text = 'Link to other package'
-        return Link('+addpackage', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def create_milestone(self):
@@ -218,13 +303,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
-    def subscribe(self):
-        """Return a link to subscribe to bug mail."""
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
-
-class ProductSeriesBugsMenu(ApplicationMenu):
+class ProductSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     """The bugs menu."""
     usedfor = IProductSeries
     facet = 'bugs'
@@ -242,12 +322,9 @@ class ProductSeriesBugsMenu(ApplicationMenu):
         """Return a link to review bugs nominated for this series."""
         return Link('+nominations', 'Review nominations', icon='bug')
 
-    def subscribe(self):
-        """Return a link to subscribe to bug mail."""
-        return Link('+subscribe', 'Subscribe to bug mail')
 
-
-class ProductSeriesSpecificationsMenu(ApplicationMenu):
+class ProductSeriesSpecificationsMenu(NavigationMenu,
+                                      HasSpecificationsMenuMixin):
     """Specs menu for ProductSeries.
 
     This menu needs to keep track of whether we are showing all the
@@ -258,46 +335,9 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
-
-    def listall(self):
-        """Return a link to show all blueprints."""
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def listaccepted(self):
-        """Return a link to show the approved goals."""
-        text = 'List approved blueprints'
-        return Link('+specs?acceptance=accepted', text, icon='info')
-
-    def listproposed(self):
-        """Return a link to show the proposed goals."""
-        text = 'List proposed blueprints'
-        return Link('+specs?acceptance=proposed', text, icon='info')
-
-    def listdeclined(self):
-        """Return a link to show the declined goals."""
-        text = 'List declined blueprints'
-        summary = 'Show the goals which have been declined'
-        return Link('+specs?acceptance=declined', text, summary, icon='info')
-
-    def setgoals(self):
-        """Return a link to set the series goals."""
-        text = 'Set series goals'
-        summary = 'Approve or decline feature goals that have been proposed'
-        return Link('+setgoals', text, summary, icon='edit')
-
-    def table(self):
-        """Return a link to show the people assigned to the blueprint."""
-        text = 'Assignments'
-        summary = 'Show the assignee, drafter and approver of these specs'
-        return Link('+assignments', text, summary, icon='info')
-
-    def new(self):
-        """Return a link to register a blueprint."""
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
+    links = [
+        'listall', 'assignments', 'setgoals', 'listdeclined',
+        'new', 'register_sprint']
 
 
 class ProductSeriesOverviewNavigationMenu(NavigationMenu):
@@ -324,87 +364,13 @@ def get_series_branch_error(product, branch):
     return None
 
 
-# A View Class for ProductSeries
-#
-# XXX: StuartBishop 2005-05-02:
-# We should be using autogenerated add forms and edit forms so that
-# this becomes maintainable and form validation handled for us.
-# Currently, the pages just return 'System Error' as they trigger database
-# constraints.
 class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     """A view to show a series with translations."""
-    def initialize(self):
-        """See `LaunchpadFormView`."""
-        self.form = self.request.form
-        self.has_errors = False
-
-        # Let's find out what source package is associated with this
-        # productseries in the current release of ubuntu.
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.curr_ubuntu_series = ubuntu.currentseries
-        self.setUpPackaging()
-
-        # Check the form submission.
-        self.processForm()
 
     @property
     def page_title(self):
         """Return the HTML page title."""
         return self.context.title
-
-    def processForm(self):
-        """Process a form if it was submitted."""
-        if not self.request.method == "POST":
-            # The form was not posted, we don't do anything.
-            return
-        assert 'set_ubuntu_pkg' in self.form, (
-            "This can handle POST requests only for 'set_ubuntu_pkg' form.")
-        self.setCurrentUbuntuPackage()
-
-    def setUpPackaging(self):
-        """Ensure that the View class correctly reflects the packaging of
-        its product series context."""
-        self.curr_ubuntu_package = None
-        self.curr_ubuntu_pkgname = ''
-        try:
-            cr = self.curr_ubuntu_series
-            self.curr_ubuntu_package = self.context.getPackage(cr)
-            cp = self.curr_ubuntu_package
-            self.curr_ubuntu_pkgname = cp.sourcepackagename.name
-        except NotFoundError:
-            pass
-        ubuntu = self.curr_ubuntu_series.distribution
-        self.ubuntu_history = self.context.getPackagingInDistribution(ubuntu)
-
-    def setCurrentUbuntuPackage(self):
-        """Set the Packaging record for this product series in the current
-        Ubuntu distroseries to be for the source package name that is given
-        in the form.
-        """
-        ubuntupkg = self.form.get('ubuntupkg', '')
-        if ubuntupkg == '':
-            # No package was selected.
-            self.request.response.addWarningNotification(
-                'Request ignored. You need to select a source package.')
-            return
-        # make sure we have a person to work with
-        if self.user is None:
-            self.request.response.addErrorNotification('Please log in first!')
-            self.has_errors = True
-            return
-        # see if the name that is given is a real source package name
-        spns = getUtility(ISourcePackageNameSet)
-        try:
-            spn = spns[ubuntupkg]
-        except NotFoundError:
-            self.request.response.addErrorNotification(
-                'Invalid source package name %s' % ubuntupkg)
-            self.has_errors = True
-            return
-        # set the packaging record for this productseries in the current
-        # ubuntu series. if none exists, one will be created
-        self.context.setPackaging(self.curr_ubuntu_series, spn, self.user)
-        self.setUpPackaging()
 
     def requestCountry(self):
         """The country associated with the IP of the request."""
@@ -417,7 +383,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     @property
     def request_import_link(self):
         """A link to the page for requesting a new code import."""
-        return canonical_url(getUtility(ICodeImportSet), view_name='+new')
+        return canonical_url(self.context.product, view_name='+new-import')
 
     @property
     def user_branch_visible(self):
@@ -428,14 +394,14 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
 
     @property
     def is_obsolete(self):
-        """Return True if the series is OBSOLETE"
+        """Return True if the series is OBSOLETE.
 
         Obsolete series do not need to display as much information as other
         series. Accessing private bugs is an expensive operation and showing
         them for obsolete series can be a problem if many series are being
         displayed.
         """
-        return self.context.status == DistroSeriesStatus.OBSOLETE
+        return self.context.status == SeriesStatus.OBSOLETE
 
     @cachedproperty
     def bugtask_status_counts(self):
@@ -462,7 +428,6 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
                 for status in sorted(status_counts,
                                      key=attrgetter('sortkey'))]
 
-
     @property
     def latest_release_with_download_files(self):
         for release in self.context.releases:
@@ -471,13 +436,125 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         return None
 
 
-class ProductSeriesUbuntuPackagingView(ProductSeriesView):
-    """A view to show series package in Ubuntu."""
+class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
+
+    schema = IPackaging
+    field_names = ['sourcepackagename', 'distroseries']
+    page_title = 'Ubuntu source packaging'
+    label = page_title
+
+    def __init__(self, context, request):
+        """Set the static packaging information for this series."""
+        super(ProductSeriesUbuntuPackagingView, self).__init__(
+            context, request)
+        self._ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self._ubuntu_series = self._ubuntu.currentseries
+        try:
+            package = self.context.getPackage(self._ubuntu_series)
+            self.default_sourcepackagename = package.sourcepackagename
+        except NotFoundError:
+            # The package has never been set.
+            self.default_sourcepackagename = None
 
     @property
-    def page_title(self):
-        """The HTML page title."""
-        return 'Ubuntu source packaging'
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
+
+        The packaging is restricted to ubuntu series and the default value
+        is the current development series.
+        """
+        super(ProductSeriesUbuntuPackagingView, self).setUpFields()
+        series_vocabulary = SimpleVocabulary(
+            [SimpleTerm(series, series.name, series.named_version)
+             for series in self._ubuntu.series])
+        choice = Choice(__name__='distroseries',
+            title=_('Series'),
+            default=self._ubuntu_series,
+            vocabulary=series_vocabulary,
+            description=_(
+                "Series where this package is published. The current series "
+                "is most important to the Ubuntu community."),
+            required=True)
+        field = form.Fields(choice, render_context=self.render_context)
+        self.form_fields = self.form_fields.omit(choice.__name__) + field
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView`."""
+        if self.default_sourcepackagename is not None:
+            return {'sourcepackagename': self.default_sourcepackagename}
+        else:
+            return {}
+
+    @property
+    def default_distroseries(self):
+        """The current Ubuntu distroseries"""
+        return self._ubuntu_series
+
+    @property
+    def ubuntu_history(self):
+        return self.context.getPackagingInDistribution(
+            self.default_distroseries.distribution)
+
+    def _getSubmittedSeries(self, data):
+        """Return the submitted or default series."""
+        return data.get('distroseries', self.default_distroseries)
+
+    def validate(self, data):
+        productseries = self.context
+        sourcepackagename = data.get('sourcepackagename', None)
+        distroseries = self._getSubmittedSeries(data)
+
+        packaging_util = getUtility(IPackagingUtil)
+        if packaging_util.packagingEntryExists(
+            productseries=productseries,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries):
+            # The package already exists. Don't display an error. The
+            # action method will let this go by.
+            return
+
+        # Do not allow users to create links to unpublished Ubuntu packages.
+        if (sourcepackagename is not None
+            and distroseries.distribution.full_functionality):
+            source_package = distroseries.getSourcePackage(sourcepackagename)
+            if source_package.currentrelease is None:
+                message = ("The source package is not published in %s." %
+                    distroseries.displayname)
+                self.setFieldError('sourcepackagename', message)
+
+        if packaging_util.packagingEntryExists(
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries):
+            # The series package conflicts with another series.
+            sourcepackage = distroseries.getSourcePackage(
+                sourcepackagename.name)
+            message = structured(
+                'The <a href="%s">%s</a> package in %s is already linked to '
+                'another series.' %
+                (canonical_url(sourcepackage),
+                 sourcepackagename.name,
+                 distroseries.displayname))
+            self.setFieldError('sourcepackagename', message)
+
+    @action('Update', name='continue')
+    def continue_action(self, action, data):
+        # set the packaging record for this productseries in the current
+        # ubuntu series. if none exists, one will be created
+        distroseries = self._getSubmittedSeries(data)
+        sourcepackagename = data['sourcepackagename']
+        if getUtility(IPackagingUtil).packagingEntryExists(
+            sourcepackagename, distroseries, productseries=self.context):
+            # There is no change.
+            return
+        self.context.setPackaging(
+            distroseries, sourcepackagename, self.user)
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
@@ -547,7 +624,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @cachedproperty
     def bugtasks(self):
         """A list of all `IBugTask`s targeted to this series."""
-        all_bugtasks = []
+        all_bugtasks = self._getBugtasks(self.context)
         for milestone in self.milestones:
             all_bugtasks.extend(self._getBugtasks(milestone))
         return all_bugtasks
@@ -555,7 +632,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @cachedproperty
     def specifications(self):
         """A list of all `ISpecification`s targeted to this series."""
-        all_specifications = []
+        all_specifications = self._getSpecifications(self.context)
         for milestone in self.milestones:
             all_specifications.extend(self._getSpecifications(milestone))
         return all_specifications
@@ -564,6 +641,11 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     def has_bugtasks_and_specifications(self):
         """Does the series have any targeted bugtasks or specifications."""
         return len(self.bugtasks) > 0 or len(self.specifications) > 0
+
+    @property
+    def has_linked_branch(self):
+        """Is the series linked to a branch."""
+        return self.context.branch is not None
 
     @cachedproperty
     def product_release_files(self):
@@ -574,17 +656,46 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         return all_files
 
     @cachedproperty
+    def has_linked_packages(self):
+        """Is the series linked to source packages."""
+        return self.context.packagings.count() > 0
+
+    @cachedproperty
+    def linked_packages_message(self):
+        url = canonical_url(self.context.product, view_name="+packages")
+        return (
+            "You cannot delete a series that is linked to packages in "
+            "distributions. You can remove the links from the "
+            '<a href="%s">project packaging</a> page.' % url)
+
+    development_focus_message = _(
+        "You cannot delete a series that is the focus of "
+        "development. Make another series the focus of development "
+        "before deleting this one.")
+
+    @cachedproperty
+    def has_translations(self):
+        """Does the series have translations?"""
+        return self.context.potemplate_count > 0
+
+    translations_message = (
+        "This series cannot be deleted because it has translations.")
+
+    @cachedproperty
     def can_delete(self):
         """Can this series be delete."""
-        return not self.context.is_development_focus
+        return not (
+            self.context.is_development_focus
+            or self.has_linked_packages or self.has_translations)
 
     def canDeleteAction(self, action):
         """Is the delete action available."""
-        if not self.can_delete:
-            self.addError(
-                "You cannot delete a series that is the focus of "
-                "development. Make another series the focus of development "
-                "before deleting this one.")
+        if self.context.is_development_focus:
+            self.addError(self.development_focus_message)
+        if self.has_linked_packages:
+            self.addError(structured(self.linked_packages_message))
+        if self.has_translations:
+            self.addError(self.translations_message)
         return self.can_delete
 
     @action('Delete this Series', name='delete', condition=canDeleteAction)
@@ -598,7 +709,396 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         self.next_url = canonical_url(product)
 
 
-class ProductSeriesLinkBranchView(LaunchpadEditFormView):
+LINK_LP_BZR = 'link-lp-bzr'
+CREATE_NEW = 'create-new'
+IMPORT_EXTERNAL = 'import-external'
+
+
+BRANCH_TYPE_VOCABULARY = SimpleVocabulary((
+    SimpleTerm(LINK_LP_BZR, LINK_LP_BZR,
+               _("Link to a Bazaar branch already on Launchpad")),
+    SimpleTerm(CREATE_NEW, CREATE_NEW,
+               _("Create a new, empty branch in Launchpad and "
+                 "link to this series")),
+    SimpleTerm(IMPORT_EXTERNAL, IMPORT_EXTERNAL,
+               _("Import a branch hosted somewhere else")),
+    ))
+
+
+class RevisionControlSystemsExtended(RevisionControlSystems):
+    """External RCS plus Bazaar."""
+    BZR = DBItem(99, """
+        Bazaar
+
+        External Bazaar branch.
+        """)
+
+
+class SetBranchForm(Interface):
+    """The fields presented on the form for setting a branch."""
+
+    use_template(
+        ICodeImport,
+        ['cvs_module'])
+
+    rcs_type = Choice(title=_("Type of RCS"),
+        required=False, vocabulary=RevisionControlSystemsExtended,
+        description=_(
+            "The version control system to import from. "))
+
+    repo_url = URIField(
+        title=_("Branch URL"), required=True,
+        description=_("The URL of the branch."),
+        allowed_schemes=["http", "https"],
+        allow_userinfo=False,
+        allow_port=True,
+        allow_query=False,
+        allow_fragment=False,
+        trailing_slash=False)
+
+    branch_location = copy_field(
+        IProductSeries['branch'],
+        __name__='branch_location',
+        title=_('Branch'),
+        description=_(
+            "The Bazaar branch for this series in Launchpad, "
+            "if one exists."),
+        )
+
+    branch_type = Choice(
+        title=_('Import type'),
+        vocabulary=BRANCH_TYPE_VOCABULARY,
+        description=_("The type of import"),
+        required=True)
+
+    branch_name = copy_field(
+        IBranch['name'],
+        __name__='branch_name',
+        title=_('Branch name'),
+        description=_(''),
+        required=True,
+        )
+
+    branch_owner = copy_field(
+        IBranch['owner'],
+        __name__='branch_owner',
+        title=_('Branch owner'),
+        description=_(''),
+        required=True,
+        )
+
+
+class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
+                                 ProductSeriesView,
+                                 BranchNameValidationMixin):
+    """The view to set a branch for the ProductSeries."""
+
+    schema = SetBranchForm
+    # Set for_input to True to ensure fields marked read-only will be editable
+    # upon creation.
+    for_input = True
+
+    custom_widget('rcs_type', LaunchpadRadioWidget)
+    custom_widget('branch_type', LaunchpadRadioWidget)
+
+    errors_in_action = False
+
+    @property
+    def initial_values(self):
+        return dict(
+            rcs_type=RevisionControlSystemsExtended.BZR,
+            branch_type=LINK_LP_BZR,
+            branch_location=self.context.branch)
+
+    @property
+    def next_url(self):
+        """Return the next_url.
+
+        Use the value from `ReturnToReferrerMixin` or None if there
+        are errors.
+        """
+        if self.errors_in_action:
+            return None
+        return super(ProductSeriesSetBranchView, self).next_url
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`."""
+        super(ProductSeriesSetBranchView, self).setUpWidgets()
+
+        def render(widget, term_value, current_value, label=None):
+            term = widget.vocabulary.getTerm(term_value)
+            if term.value == current_value:
+                render = widget.renderSelectedItem
+            else:
+                render = widget.renderItem
+            if label is None:
+                label = term.title
+            value = term.token
+            return render(index=term.value,
+                          text=label,
+                          value=value,
+                          name=widget.name,
+                          cssClass='')
+
+        widget = self.widgets['rcs_type']
+        vocab = widget.vocabulary
+        current_value = widget._getFormValue()
+        self.rcs_type_cvs = render(widget, vocab.CVS, current_value, 'CVS')
+        self.rcs_type_svn = render(widget, vocab.BZR_SVN, current_value,
+                                   'SVN')
+        self.rcs_type_git = render(widget, vocab.GIT, current_value)
+        self.rcs_type_hg = render(widget, vocab.HG, current_value)
+        self.rcs_type_bzr = render(widget, vocab.BZR, current_value)
+        self.rcs_type_emptymarker = widget._emptyMarker()
+
+        widget = self.widgets['branch_type']
+        current_value = widget._getFormValue()
+        vocab = widget.vocabulary
+
+        (self.branch_type_link,
+         self.branch_type_create,
+         self.branch_type_import) = [
+            render(widget, value, current_value)
+            for value in (LINK_LP_BZR, CREATE_NEW, IMPORT_EXTERNAL)]
+
+    def _validateLinkLpBzr(self, data):
+        """Validate data for link-lp-bzr case."""
+        if 'branch_location' not in data:
+            self.setFieldError(
+                'branch_location',
+                'The branch location must be set.')
+
+    def _validateCreateNew(self, data):
+        """Validate data for create new case."""
+        self._validateBranch(data)
+
+    def _validateImportExternal(self, data):
+        """Validate data for import external case."""
+        rcs_type = data.get('rcs_type')
+        repo_url = data.get('repo_url')
+
+        if repo_url is None:
+            self.setFieldError('repo_url',
+                               'You must set the external repository URL.')
+        else:
+            # Ensure this URL has not been imported before.
+            code_import = getUtility(ICodeImportSet).getByURL(repo_url)
+            if code_import is not None:
+                self.setFieldError(
+                    'repo_url',
+                    structured("""
+                    This foreign branch URL is already specified for
+                    the imported branch <a href="%s">%s</a>.""",
+                               canonical_url(code_import.branch),
+                               code_import.branch.unique_name))
+
+        # RCS type is mandatory.
+        # This condition should never happen since an initial value is set.
+        if rcs_type is None:
+            # The error shows but does not identify the widget.
+            self.setFieldError(
+                'rcs_type',
+                'You must specify the type of RCS for the remote host.')
+        elif rcs_type == RevisionControlSystemsExtended.CVS:
+            if 'cvs_module' not in data:
+                self.setFieldError(
+                    'cvs_module',
+                    'The CVS module must be set.')
+        self._validateBranch(data)
+
+    def _validateBranch(self, data):
+        """Validate that branch name and owner are set."""
+        if 'branch_name' not in data:
+            self.setFieldError(
+                'branch_name',
+                'The branch name must be set.')
+        if 'branch_owner' not in data:
+            self.setFieldError(
+                'branch_owner',
+                'The branch owner must be set.')
+
+    def _setRequired(self, names, value):
+        """Mark the widget field as optional."""
+        for name in names:
+            widget = self.widgets[name]
+            # The 'required' property on the widget context is set to False.
+            # The widget also has a 'required' property but it isn't used
+            # during validation.
+            widget.context.required = value
+
+    def _validSchemes(self, rcs_type):
+        """Return the valid schemes for the repository URL."""
+        schemes = set(['http', 'https'])
+        # Extend the allowed schemes for the repository URL based on
+        # rcs_type.
+        extra_schemes = {
+            RevisionControlSystemsExtended.BZR_SVN: ['svn'],
+            RevisionControlSystemsExtended.GIT: ['git'],
+            }
+        schemes.update(extra_schemes.get(rcs_type, []))
+        return schemes
+
+    def validate_widgets(self, data, names=None):
+        """See `LaunchpadFormView`."""
+        names = ['branch_type', 'rcs_type']
+        super(ProductSeriesSetBranchView, self).validate_widgets(data, names)
+        branch_type = data.get('branch_type')
+        if branch_type == LINK_LP_BZR:
+            # Mark other widgets as non-required.
+            self._setRequired(['rcs_type', 'repo_url', 'cvs_module',
+                               'branch_name', 'branch_owner'], False)
+        elif branch_type == CREATE_NEW:
+            self._setRequired(
+                ['branch_location', 'repo_url', 'rcs_type', 'cvs_module'],
+                False)
+        elif branch_type == IMPORT_EXTERNAL:
+            rcs_type = data.get('rcs_type')
+
+            # Set the valid schemes based on rcs_type.
+            self.widgets['repo_url'].field.allowed_schemes = (
+                self._validSchemes(rcs_type))
+            # The branch location is not required for validation.
+            self._setRequired(['branch_location'], False)
+            # The cvs_module is required if it is a CVS import.
+            if rcs_type == RevisionControlSystemsExtended.CVS:
+                self._setRequired(['cvs_module'], True)
+        else:
+            raise AssertionError("Unknown branch type %s" % branch_type)
+        # Perform full validation now.
+        super(ProductSeriesSetBranchView, self).validate_widgets(data)
+
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        # If widget validation returned errors then there is no need to
+        # continue as we'd likely just override the errors reported there.
+        if len(self.errors) > 0:
+            return
+        branch_type = data['branch_type']
+        if branch_type == IMPORT_EXTERNAL:
+            self._validateImportExternal(data)
+        elif branch_type == LINK_LP_BZR:
+            self._validateLinkLpBzr(data)
+        elif branch_type == CREATE_NEW:
+            self._validateCreateNew(data)
+        else:
+            raise AssertionError("Unknown branch type %s" % branch_type)
+
+    @property
+    def target(self):
+        """The branch target for the context."""
+        return IBranchTarget(self.context.product)
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        branch_type = data.get('branch_type')
+        if branch_type == LINK_LP_BZR:
+            branch_location = data.get('branch_location')
+            if branch_location != self.context.branch:
+                self.context.branch = branch_location
+                # Request an initial upload of translation files.
+                getUtility(IRosettaUploadJobSource).create(
+                    self.context.branch, NULL_REVISION)
+            else:
+                self.context.branch = branch_location
+            self.request.response.addInfoNotification(
+                'Series code location updated.')
+        else:
+            branch_name = data.get('branch_name')
+            branch_owner = data.get('branch_owner')
+
+            # Create a new branch.
+            if branch_type == CREATE_NEW:
+                branch = self._createBzrBranch(
+                    BranchType.HOSTED, branch_name, branch_owner)
+                if branch is not None:
+                    self.context.branch = branch
+                    self.request.response.addInfoNotification(
+                        'New branch created and linked to the series.')
+
+            # Import or mirror an external branch.
+            elif branch_type == IMPORT_EXTERNAL:
+                # Either create an externally hosted bzr branch
+                # (a.k.a. 'mirrored') or create a new code import.
+                rcs_type = data.get('rcs_type')
+                if rcs_type == RevisionControlSystemsExtended.BZR:
+                    branch = self._createBzrBranch(
+                        BranchType.MIRRORED, branch_name, branch_owner,
+                        data['repo_url'])
+                    if branch is None:
+                        return
+
+                    self.context.branch = branch
+                    self.request.response.addInfoNotification(
+                        'Mirrored branch created and linked to '
+                        'the series.')
+                else:
+                    # We need to create an import request.
+                    if rcs_type == RevisionControlSystemsExtended.CVS:
+                        cvs_root = data.get('repo_url')
+                        cvs_module = data.get('cvs_module')
+                        url = None
+                    else:
+                        cvs_root = None
+                        cvs_module = None
+                        url = data.get('repo_url')
+                    rcs_item = RevisionControlSystems.items[rcs_type.name]
+                    try:
+                        code_import = getUtility(ICodeImportSet).new(
+                            registrant=branch_owner,
+                            target=IBranchTarget(self.context.product),
+                            branch_name=branch_name,
+                            rcs_type=rcs_item,
+                            url=url,
+                            cvs_root=cvs_root,
+                            cvs_module=cvs_module)
+                    except BranchExists, e:
+                        self._setBranchExists(e.existing_branch,
+                                              'branch_name')
+                        self.errors_in_action = True
+                        # Abort transaction. This is normally handled
+                        # by LaunchpadFormView, but we are already in
+                        # the success handler.
+                        self._abort()
+                        return
+                    self.context.branch = code_import.branch
+                    self.request.response.addInfoNotification(
+                        'Code import created and branch linked to the '
+                        'series.')
+            else:
+                raise UnexpectedFormData(branch_type)
+
+    def _createBzrBranch(self, branch_type, branch_name,
+                         branch_owner, repo_url=None):
+        """Create a new Bazaar branch.  It may be hosted or mirrored.
+
+        Return the branch on success or None.
+        """
+        branch = None
+        try:
+            namespace = self.target.getNamespace(branch_owner)
+            branch = namespace.createBranch(branch_type=branch_type,
+                                            name=branch_name,
+                                            registrant=self.user,
+                                            url=repo_url)
+            if branch_type == BranchType.MIRRORED:
+                branch.requestMirror()
+        except BranchCreationForbidden:
+            self.addError(
+                "You are not allowed to create branches in %s." %
+                self.context.displayname)
+        except BranchExists, e:
+            self._setBranchExists(e.existing_branch, 'branch_name')
+        if branch is None:
+            self.errors_in_action = True
+            # Abort transaction. This is normally handled by
+            # LaunchpadFormView, but we are already in the success handler.
+            self._abort()
+        return branch
+
+
+class ProductSeriesLinkBranchView(ReturnToReferrerMixin,
+                                  ProductSeriesView,
+                                  LaunchpadEditFormView):
     """View to set the bazaar branch for a product series."""
 
     schema = IProductSeries
@@ -615,11 +1115,6 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
         """The page title."""
         return self.label
 
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
-
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         """Update the branch attribute."""
@@ -632,11 +1127,6 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
             self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Series code location updated.')
-
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
 
 
 class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
@@ -705,20 +1195,6 @@ class ProductSeriesRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
-
-
-class ProductSeriesSourceListView(LaunchpadView):
-    """A listing of all the running imports.
-
-    See `ICodeImportSet.getActiveImports` for our definition of running.
-    """
-
-    def initialize(self):
-        """See `LaunchpadFormView`."""
-        self.text = self.request.get('text')
-        results = getUtility(ICodeImportSet).getActiveImports(text=self.text)
-
-        self.batchnav = BatchNavigator(results, self.request)
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):

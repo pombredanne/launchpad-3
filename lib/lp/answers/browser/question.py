@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'SearchAllQuestionsView',
     'QuestionAddView',
+    'QuestionBreadcrumb',
     'QuestionChangeStatusView',
     'QuestionConfirmAnswerView',
     'QuestionCreateFAQView',
@@ -45,6 +46,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interface import copy_field
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -54,7 +56,7 @@ from canonical.launchpad.helpers import (
 
 from canonical.launchpad.interfaces import (
     IAnswersFrontPageSearchForm, IFAQ, IFAQTarget,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, IProject, IQuestion,
+    ILaunchpadCelebrities, ILaunchpadStatisticSet, IProjectGroup, IQuestion,
     IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
     IQuestionSet, IQuestionTarget, QuestionAction, QuestionStatus,
     QuestionSort, NotFoundError, UnexpectedFormData)
@@ -65,6 +67,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadEditFormView, custom_widget, redirection,
     safe_action, NavigationMenu)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LaunchpadRadioWidget, TokensTextWidget
@@ -87,6 +90,11 @@ class QuestionLinksMixin:
             icon = 'mail'
         return Link('+subscribe', text, icon=icon)
 
+    def edit(self):
+        """Return a Link to the edit view."""
+        text = 'Edit question'
+        return Link('+edit', text, icon='edit')
+
 
 class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
     """A menu for different aspects of editing a object."""
@@ -94,17 +102,7 @@ class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
     usedfor = IQuestion
     facet = 'answers'
     title = 'Edit question'
-    links = ['edit', 'changestatus', 'reject', 'subscription']
-
-    def edit(self):
-        """Return a Link to the edit view."""
-        text = 'Edit question'
-        return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def changestatus(self):
-        """Return a Link to the change status view."""
-        return Link('+change-status', _('Change status'), icon='edit')
+    links = ['edit', 'reject', 'subscription']
 
     def reject(self):
         """Return a Link to the reject view."""
@@ -117,12 +115,18 @@ class QuestionExtrasMenu(ApplicationMenu, QuestionLinksMixin):
     """Context menu of actions that can be performed upon a Question."""
     usedfor = IQuestion
     facet = 'answers'
-    links = ['history', 'linkbug', 'unlinkbug', 'makebug', 'linkfaq',
-        'createfaq']
+    links = [
+        'history', 'linkbug', 'unlinkbug', 'makebug', 'linkfaq',
+        'createfaq', 'edit', 'changestatus']
 
     def initialize(self):
         """Initialize the menu from the Question's state."""
         self.has_bugs = bool(self.context.bugs)
+
+    @enabled_with_permission('launchpad.Admin')
+    def changestatus(self):
+        """Return a Link to the change status view."""
+        return Link('+change-status', _('Change status'), icon='edit')
 
     def history(self):
         """Return a Link to the history view."""
@@ -151,7 +155,11 @@ class QuestionExtrasMenu(ApplicationMenu, QuestionLinksMixin):
         """Link for linking to a FAQ."""
         text = 'Link to a FAQ'
         summary = 'Link this question to a FAQ.'
-        return Link('+linkfaq', text, summary, icon='add')
+        if self.context.faq is None:
+            icon = 'add'
+        else:
+            icon = 'edit'
+        return Link('+linkfaq', text, summary, icon=icon)
 
     def createfaq(self):
         """LInk for creating a FAQ."""
@@ -191,11 +199,22 @@ class QuestionSetNavigation(Navigation):
         return redirection(canonical_url(question), status=301)
 
 
+class QuestionBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `IQuestion`."""
+
+    @property
+    def text(self):
+        return 'Question #%d' % self.context.id
+
+
 class QuestionSetView(LaunchpadFormView):
     """View for the Answer Tracker index page."""
 
     schema = IAnswersFrontPageSearchForm
     custom_widget('scope', ProjectScopeWidget)
+
+    page_title = 'Launchpad Answers'
+    label = 'Questions and Answers'
 
     @property
     def scope_css_class(self):
@@ -303,7 +322,7 @@ class QuestionSubscriptionView(LaunchpadView):
 
     @property
     def page_title(self):
-        return 'Subscription to question #%s' % self.context.id
+        return 'Subscription'
 
     @property
     def label(self):
@@ -338,7 +357,8 @@ class QuestionLanguageVocabularyFactory:
 
         :param view: The view that provides the request used to determine the
         user languages. The view contains the Product widget selected by the
-        user in the case where a question is asked in the context of a Project.
+        user in the case where a question is asked in the context of a
+        ProjectGroup.
         """
         self.view = view
 
@@ -358,12 +378,12 @@ class QuestionLanguageVocabularyFactory:
         languages.insert(0, english)
 
         # The vocabulary indicates which languages are supported.
-        if context is not None and not IProject.providedBy(context):
+        if context is not None and not IProjectGroup.providedBy(context):
             question_target = IQuestionTarget(context)
             supported_languages = question_target.getSupportedLanguages()
-        elif (IProject.providedBy(context) and
+        elif (IProjectGroup.providedBy(context) and
                 self.view.question_target is not None):
-            # Projects do not implement IQuestionTarget--the user must
+            # ProjectGroups do not implement IQuestionTarget--the user must
             # choose a product while asking a question.
             question_target = IQuestionTarget(self.view.question_target)
             supported_languages = question_target.getSupportedLanguages()
@@ -434,8 +454,7 @@ class QuestionSupportLanguageMixin:
                         "The language in which this question is written. "
                         "The languages marked with a star (*) are the "
                         "languages spoken by at least one answer contact in "
-                        "the community."
-                        )),
+                        "the community.")),
                 render_context=self.render_context)
 
     def shouldWarnAboutUnsupportedLanguage(self):
@@ -589,10 +608,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
             return self.search_template()
         return self.continue_action.success(data)
 
-    # XXX flacoste 2006-07-26: We use the method here instead of
-    # using the method name 'handleAddError' because of Zope issue 573
-    # which is fixed in 3.3.0b1 and 3.2.1
-    @action(_('Add'), failure=handleAddError)
+    @action(_('Post Question'), name='add', failure='handleAddError')
     def add_action(self, action, data):
         """Add a Question to an `IQuestionTarget`."""
         if self.shouldWarnAboutUnsupportedLanguage():
@@ -636,14 +652,21 @@ class QuestionChangeStatusView(LaunchpadFormView):
         self.context.setStatus(self.user, data['status'], data['message'])
         self.request.response.addNotification(
             _('Question status updated.'))
-        self.request.response.redirect(canonical_url(self.context))
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
-class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
+class QuestionEditView(LaunchpadEditFormView):
     """View for editing a Question."""
     schema = IQuestion
     label = 'Edit question'
-    field_names = ["title", "description", "target", "assignee", "whiteboard"]
+    field_names = [
+        "language", "title", "description", "target", "assignee",
+        "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)
@@ -665,21 +688,22 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
         self.form_fields = self.form_fields.omit("distribution",
             "sourcepackagename", "product")
 
-        # Add the language field with a vocabulary specialized for display
-        # purpose.
-        self.form_fields = self.createLanguageField() + self.form_fields
-
         editable_fields = []
         for field in self.form_fields:
             if zope.security.canWrite(self.context, field.__name__):
                 editable_fields.append(field.__name__)
         self.form_fields = self.form_fields.select(*editable_fields)
 
-    @action(u"Continue", name="change")
+    @action(_("Save Changes"), name="change")
     def change_action(self, action, data):
         """Update the Question from the request form data."""
         self.updateContextFromData(data)
-        self.request.response.redirect(canonical_url(self.context))
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class QuestionRejectView(LaunchpadFormView):
@@ -698,15 +722,12 @@ class QuestionRejectView(LaunchpadFormView):
             self.setFieldError(
                 'message', _('You must provide an explanation message.'))
 
-    @action(_('Reject'))
+    @action(_('Reject Question'), name="reject")
     def reject_action(self, action, data):
         """Reject the Question."""
         self.context.reject(self.user, data['message'])
         self.request.response.addNotification(
             _('You have rejected this question.'))
-        self.request.response.redirect(canonical_url(self.context))
-        return ''
-
 
     def initialize(self):
         """See `LaunchpadFormView`.
@@ -720,6 +741,12 @@ class QuestionRejectView(LaunchpadFormView):
             return
 
         LaunchpadFormView.initialize(self)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class LinkFAQMixin:
@@ -736,7 +763,6 @@ class LinkFAQMixin:
         return '%s suggests this article as an answer to your question:' % (
             self.user.displayname)
 
-
     def getFAQMessageReference(self, faq):
         """Return the reference for the FAQ to use in the linking message."""
         return smartquote('FAQ #%s: "%s".' % (faq.id, faq.title))
@@ -750,6 +776,10 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
 
     # Do not autofocus the message widget.
     initial_focus_widget = None
+
+    @property
+    def label(self):
+        return self.context.title
 
     @property
     def page_title(self):
@@ -807,14 +837,12 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
     def canAddComment(self, action):
         """Return whether the comment action should be displayed.
 
-        Comments (message without a status change) can be added when the
-        question is solved or invalid
+        Comments (message without a status change) can be added at any
+        time by any logged-in user.
         """
-        return (self.user is not None and
-                self.context.status in [
-                    QuestionStatus.SOLVED, QuestionStatus.INVALID])
+        return self.user is not None
 
-    @action(_('Add Comment'), name='comment', condition=canAddComment)
+    @action(_('Just Add a Comment'), name='comment', condition=canAddComment)
     def comment_action(self, action, data):
         """Add a comment to a resolved question."""
         self.context.addComment(self.user, data['message'])
@@ -961,7 +989,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
     def original_bug(self):
         """Return the bug that the question was created from or None."""
         for buglink in self.context.bug_links:
-            if (check_permission('launchpad.View',  buglink.bug)
+            if (check_permission('launchpad.View', buglink.bug)
                 and buglink.bug.owner == self.context.owner
                 and buglink.bug.datecreated == self.context.datecreated):
                 return buglink.bug
@@ -1083,9 +1111,7 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
     """View to create a new FAQ."""
 
     schema = IFAQ
-
-    page_title = _('Create a new FAQ')
-    label = page_title
+    label = _('Create a new FAQ')
 
     @property
     def page_title(self):
@@ -1112,7 +1138,10 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
         Adds a message field to the form.
         """
         super(QuestionCreateFAQView, self).setUpFields()
-        self.form_fields += form.Fields(IQuestionLinkFAQForm['message'])
+        self.form_fields += form.Fields(
+            copy_field(IQuestionLinkFAQForm['message']))
+        self.form_fields['message'].field.title = _(
+            'Additional comment for question #%s' % self.context.id)
         self.form_fields['message'].custom_widget = (
             self.custom_widgets['message'])
 
@@ -1296,10 +1325,15 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
         if self.context.faq == data.get('faq'):
             self.setFieldError('faq', _("You didn't modify the linked FAQ."))
 
-    @action(_('Link FAQ'), name="link")
+    @action(_('Link to FAQ'), name="link")
     def link_action(self, action, data):
         """Link the selected FAQ to the question."""
         if data['faq'] is not None:
             data['message'] += '\n' + self.getFAQMessageReference(data['faq'])
         self.context.linkFAQ(self.user, data['faq'], data['message'])
-        self.next_url = canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url

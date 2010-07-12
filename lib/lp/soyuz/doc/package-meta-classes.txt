@@ -52,9 +52,11 @@ Combining DistroSeries and SourcePackageRelease:
  >>> verifyObject(IDistroSeriesSourcePackageRelease, drspr)
  True
 
- >>> drspr.displayname
- u'pmount 0.1-1'
+ >>> print drspr.displayname
+ pmount 0.1-1
 
+ >>> print drspr.title
+ "pmount" 0.1-1 source package in The Hoary Hedgehog Release
 
 == Querying builds for DistributionSPR and DistroSeriesSPR ==
 
@@ -106,7 +108,7 @@ Create a helper for printing builds:
 
     >>> def print_builds(builds):
     ...     for build in builds:
-    ...         print "%s in %s" % (build.sourcepackagerelease.name,
+    ...         print "%s in %s" % (build.source_package_release.name,
     ...                             build.archive.displayname)
 
 Now we can query the builds:

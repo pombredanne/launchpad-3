@@ -23,6 +23,19 @@ with other tests)
   ...                                 'The Foobuntu', 'yeck', 'doom',
   ...                                 '888', hoary, hoary.owner)
 
+
+The script will check that there are no NEEDSBUILD builds in the parent
+distroseries' release pocket, so we need to tweak the status of the NEEDSBUILD
+builds that exist in Ubuntu Hoary in the sampledata:
+
+  >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+
+  >>> pending_builds = hoary.getBuildRecords(BuildStatus.NEEDSBUILD,
+  ...     pocket=PackagePublishingPocket.RELEASE)
+  >>> for build in pending_builds:
+  ...     build.status = BuildStatus.FAILEDTOBUILD
+
   >>> import transaction
   >>> transaction.commit()
 
@@ -49,7 +62,7 @@ Check if it fails for an already released distroseries:
   DEBUG   Initialising connection.
   DEBUG   Check empty mutable queues in parentseries
   DEBUG   Check for no pending builds in parentseries
-  DEBUG   Copying distroarchserieses from parent and setting nominatedarchindep.
+  DEBUG   Copying distroarchseries from parent and setting nominatedarchindep.
   Traceback (most recent call last):
   ...
   AssertionError: Can not copy distroarchseries from parent, there are already distroarchseries(s) initialised for this series.
@@ -70,7 +83,7 @@ Let's initialise the just created distroseries:
   DEBUG   Initialising connection.
   DEBUG   Check empty mutable queues in parentseries
   DEBUG   Check for no pending builds in parentseries
-  DEBUG   Copying distroarchserieses from parent and setting nominatedarchindep.
+  DEBUG   Copying distroarchseries from parent and setting nominatedarchindep.
   DEBUG   initialising from parent, copying publishing records.
   DEBUG   Committing transaction.
   DEBUG   Releasing lock
@@ -109,7 +122,7 @@ Follow BPR.build and discover it was built in the parent series:
 
 Now we obtain the sourcepackagerelease from the build:
 
-  >>> pmount_srcrel = pmount_binrel.build.sourcepackagerelease
+  >>> pmount_srcrel = pmount_binrel.build.source_package_release
   >>> pmount_srcrel.title
   u'pmount - 0.1-1'
 
@@ -139,12 +152,12 @@ was superseded in hoary and won't be inherited by the initialised
 distroseries.
 
   >>> pmount_source = hoary.getSourcePackage('pmount').currentrelease
-  >>> pmount_source.title
-  u'pmount 0.1-2 (source) in ubuntu hoary'
+  >>> print pmount_source.title
+  "pmount" 0.1-2 source package in The Hoary Hedgehog Release
 
   >>> pmount_source = foobuntu.getSourcePackage('pmount').currentrelease
-  >>> pmount_source.title
-  u'pmount 0.1-2 (source) in ubuntutest foobuntu'
+  >>> print pmount_source.title
+  "pmount" 0.1-2 source package in The Foobuntu
 
 
 Since pmount_0.1-2 source is published we can safely look up for the
@@ -171,4 +184,11 @@ this test, see more details in buildd-queuebuilder)
 
   >>> pmount_source.sourcepackagerelease.getBuildByArch(
   ...    foobuntu['hppa'], ubuntu.main_archive) is None
+  True
+
+initialiseFromParent also copies the permitted source formats from the
+parent series.
+
+  >>> from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
+  >>> foobuntu.isSourcePackageFormatPermitted(SourcePackageFormat.FORMAT_1_0)
   True

@@ -34,10 +34,14 @@ Some distributions have listings of major versions, for example Debian:
 If we add another milestone the list is well formatted using English grammar
 rules.
 
+    >>> from canonical.testing.layers import MemcachedLayer
+
     >>> admin_browser.open("http://launchpad.dev/debian/woody/+addmilestone")
     >>> admin_browser.getControl("Name:").value = "testmilestone"
     >>> admin_browser.getControl("Register Milestone").click()
 
+    # When the cache regenerated, all users will see the change.
+    >>> MemcachedLayer.purge()
     >>> anon_browser.open('http://launchpad.dev/debian')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'sandm'))
     Series and milestones
@@ -74,6 +78,25 @@ Others do not have any series so the portlet is not shown.
     >>> anon_browser.open('http://launchpad.dev/gentoo')
     >>> print find_tag_by_id(anon_browser.contents, 'sandm')
     None
+
+
+== Registration information ==
+
+The distroseries pages presents the registeration information besides
+its main 'heading'.
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu')
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'registration'))
+    registered by Ubuntu Team on 2006-10-16
+
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Ubuntu Linux
+    ...
+
+    >>> print anon_browser.getLink('Ubuntu Team').url
+    http://launchpad.dev/~ubuntu-team
 
 
 == Redirection for webservice URLs ==

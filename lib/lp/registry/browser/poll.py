@@ -14,6 +14,7 @@ __all__ = [
     'PollOverviewMenu',
     'PollView',
     'PollVoteView',
+    'PollBreadcrumb',
     ]
 
 from zope.event import notify
@@ -27,6 +28,7 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView, Link,
     Navigation, NavigationMenu, stepthrough)
 from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
 from lp.registry.interfaces.poll import (
     IPoll, IPollOption, IPollOptionSet, IPollSubset, IVoteSet, PollAlgorithm,
     PollSecrecy)
@@ -184,6 +186,10 @@ class BasePollView(LaunchpadView):
     def isSecret(self):
         """Return True if this is a secret poll."""
         return self.context.secrecy == PollSecrecy.SECRET
+
+
+class PollBreadcrumb(TitleBreadcrumb):
+    """Breadcrumb for polls."""
 
 
 class PollView(BasePollView):

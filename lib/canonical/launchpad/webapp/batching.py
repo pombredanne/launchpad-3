@@ -35,6 +35,8 @@ class FiniteSequenceAdapter:
 class UpperBatchNavigationView(LaunchpadView):
     """Only render navigation links if there is a batch."""
 
+    css_class = "upper-batch-nav"
+
     def render(self):
         if self.context.currentBatch():
             return LaunchpadView.render(self)
@@ -43,6 +45,8 @@ class UpperBatchNavigationView(LaunchpadView):
 
 class LowerBatchNavigationView(UpperBatchNavigationView):
     """Only render bottom navigation links if there are multiple batches."""
+
+    css_class = "lower-batch-nav"
 
     def render(self):
         if (self.context.currentBatch() and

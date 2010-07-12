@@ -66,7 +66,7 @@ interface.
     >>> access = AccessBranch(branch)
     >>> access.checkUnauthenticated()
     True
-    >>> access.checkAuthenticated(no_priv_person)
+    >>> access.checkAccountAuthenticated(no_priv_person.account)
     True
 
 Branches that are private are accessible by the owner and subscribers.
@@ -74,7 +74,7 @@ Branches that are private are accessible by the owner and subscribers.
 
 == Visibility due to ownership ==
 
-The owners of the branch always have visiblity of their own branches.
+The owners of the branch always have visibility of their own branches.
 
     >>> branch.private = True
     >>> from canonical.launchpad.webapp.authorization import clear_cache
@@ -83,7 +83,7 @@ The owners of the branch always have visiblity of their own branches.
     False
     >>> branch.owner == no_priv_person
     True
-    >>> access.checkAuthenticated(no_priv_person)
+    >>> access.checkAccountAuthenticated(no_priv_person.account)
     True
 
 Check the configuration of the AccessBranch authorization.
@@ -108,7 +108,7 @@ Launchpad things in order to fix up fubars by users.
     >>> lp_admins = getUtility(ILaunchpadCelebrities).admin
     >>> mark.inTeam(lp_admins)
     True
-    >>> access.checkAuthenticated(mark)
+    >>> access.checkAccountAuthenticated(mark.account)
     True
 
 
@@ -125,7 +125,7 @@ The Jeff Waugh is a member of the Ubuntu team, but not a Luanchpad admin.
     True
     >>> jdub.inTeam(lp_admins)
     False
-    >>> access.checkAuthenticated(jdub)
+    >>> access.checkAccountAuthenticated(jdub.account)
     False
 
 Subscribing the Ubuntu team to the branch will allow Jeff to have access
@@ -138,10 +138,10 @@ to the branch.
     >>> branch.subscribe(ubuntu_team,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
+    ...     CodeReviewNotificationLevel.NOEMAIL, ubuntu_team.teamowner)
     <BranchSubscription ...>
 
-    >>> access.checkAuthenticated(jdub)
+    >>> access.checkAccountAuthenticated(jdub.account)
     True
 
 
@@ -153,7 +153,7 @@ branch.
     >>> ddaa = person_set.getByName('ddaa')
     >>> ddaa.inTeam(lp_admins)
     False
-    >>> access.checkAuthenticated(ddaa)
+    >>> access.checkAccountAuthenticated(ddaa.account)
     False
 
 

@@ -8,14 +8,15 @@ import unittest
 
 from zope.component import getUtility
 
-from lp.translations.browser.distroserieslanguage import (
+from lazr.restful.utils import get_current_browser_request
+
+from lp.translations.browser.serieslanguage import (
     DistroSeriesLanguageView)
 from lp.translations.interfaces.translator import ITranslatorSet
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadZopelessLayer
-from lp.translations.browser.distroseries import DistroSeriesView
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory, login_person
+from lp.testing import TestCaseWithFactory
 
 
 class TestDistroSeriesLanguage(TestCaseWithFactory):
@@ -39,6 +40,11 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         self.view = DistroSeriesLanguageView(
             self.dsl, LaunchpadTestRequest())
 
+    def _simulateReadOnlyMode(self):
+        """Pretend to be in read-only mode for this test."""
+        request = get_current_browser_request()
+        request.annotations['launchpad.read_only_mode'] = True
+
     def test_empty_view(self):
         self.assertEquals(self.view.translation_group, None)
         self.assertEquals(self.view.translation_team, None)
@@ -48,6 +54,9 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         group = self.factory.makeTranslationGroup(
             self.distroseries.distribution.owner, url=None)
         self.distroseries.distribution.translationgroup = group
+        self.view = DistroSeriesLanguageView(
+            self.dsl, LaunchpadTestRequest())
+        self.view.initialize()
         self.assertEquals(self.view.translation_group, group)
 
     def test_translation_team(self):
@@ -66,7 +75,16 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         # Recreate the view because we are using a cached property.
         self.view = DistroSeriesLanguageView(
             self.dsl, LaunchpadTestRequest())
+        self.view.initialize()
         self.assertEquals(self.view.translation_team, translator)
+
+    def test_access_level_description_handles_readonly(self):
+        self._simulateReadOnlyMode()
+        notice = (
+            "No work can be done on these translations while Launchpad "
+            "is in read-only mode.")
+        self.assertEqual(notice, self.view.access_level_description)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -9,9 +9,6 @@
 <body>
 
 
-<h1 metal:fill-slot="heading"
-    tal:content="view/heading">Bazaar branches</h1>
-
 <div metal:fill-slot="main"
      tal:define="branches view/branches">
 

@@ -9,6 +9,7 @@ from datetime import timedelta, datetime
 from pytz import timezone
 from unittest import TestLoader
 
+import transaction
 from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
@@ -62,6 +63,7 @@ class ReviewTestMixin:
             self.distribution.translation_focus = self.distroseries
             self.sourcepackagename = self.factory.makeSourcePackageName()
             self.supercontext = self.distribution
+        transaction.commit()
 
         self.supercontext.translationgroup = self.translationgroup
         self.supercontext.official_rosetta = True
@@ -78,7 +80,7 @@ class ReviewTestMixin:
             translator=self.person, translations=['bi'],
             date_updated=self.base_time)
 
-        later_time = self.base_time + timedelta(0, 0, 1)
+        later_time = self.base_time + timedelta(0, 3600)
         self.suggestion = removeSecurityProxy(
             self.factory.makeTranslationMessage(
                 potmsgset=self.potmsgset, pofile=self.pofile,

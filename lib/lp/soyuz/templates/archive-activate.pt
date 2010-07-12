@@ -8,10 +8,6 @@
   >
 <body>
 
-<div metal:fill-slot="heading">
-  <h1>Personal Package Archive Activation</h1>
-</div>
-
 <div metal:fill-slot="main">
   <div class="top-portlet">
     A PPA is a place where you can build and publish your own packages.
@@ -45,10 +41,11 @@
     </div>
 
     <div class="actions" metal:fill-slot="buttons">
-      <p tal:condition="not: context/ppas">
+      <p>
         <img src="/@@/warning" />
-        Activating this PPA <b>will block</b> future renaming of
-        <tal:context replace="structure context/fmt:link" />
+        If you have any PPAs with published packages, you will not be able to
+        rename <tal:context replace="structure context/fmt:link" /> until
+        those PPAs are deleted.
       </p>
       <input tal:replace="structure view/actions/field.actions.activate/render" />
       or <a tal:attributes="href context/fmt:url">Cancel</a>

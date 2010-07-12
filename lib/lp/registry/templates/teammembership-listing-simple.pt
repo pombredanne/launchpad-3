@@ -9,7 +9,7 @@
     <div>
       <a tal:replace="structure context/team/fmt:link">Team name</a>
     </div>
-    <div>
+    <div class="registered">
       Joined
       <span
         tal:attributes="title context/datejoined/fmt:datetime"

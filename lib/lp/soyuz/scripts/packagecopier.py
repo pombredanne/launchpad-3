@@ -20,27 +20,23 @@ import apt_pkg
 import os
 import tempfile
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
-from lazr.delegates import delegates
-from lp.soyuz.adapters.packagelocation import (
-    build_package_location)
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, CannotCopy)
-from lp.soyuz.interfaces.build import (
-    BuildStatus, BuildSetStatus)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.adapters.packagelocation import build_package_location
+from lp.soyuz.interfaces.archive import ArchivePurpose, CannotCopy
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    active_publishing_status)
+    IBinaryPackagePublishingHistory, IPublishingSet,
+    ISourcePackagePublishingHistory, active_publishing_status)
 from lp.soyuz.interfaces.queue import (
-    IPackageUpload, IPackageUploadSet)
-from lp.soyuz.scripts.ftpmasterbase import (
-    SoyuzScript, SoyuzScriptError)
-from lp.soyuz.scripts.processaccepted import (
-    close_bugs_for_sourcepublication)
+    IPackageUpload, IPackageUploadCustom, IPackageUploadSet)
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
+from lp.soyuz.scripts.ftpmasterbase import SoyuzScript, SoyuzScriptError
+from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
 
 
 # XXX cprov 2009-06-12: This function could be incorporated in ILFA,
@@ -79,7 +75,7 @@ def re_upload_file(libraryfile, restricted=False):
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
 def update_files_privacy(pub_record):
-    """Update file privacy according the publishing detination
+    """Update file privacy according the publishing destination
 
     :param pub_record: One of a SourcePackagePublishingHistory or
         BinaryPackagePublishingHistory record.
@@ -87,7 +83,9 @@ def update_files_privacy(pub_record):
     :return: a list of re-uploaded `LibraryFileAlias` objects.
     """
     package_files = []
+    archive = None
     if ISourcePackagePublishingHistory.providedBy(pub_record):
+        archive = pub_record.archive
         # Re-upload the package files files if necessary.
         sourcepackagerelease = pub_record.sourcepackagerelease
         package_files.extend(
@@ -101,6 +99,7 @@ def update_files_privacy(pub_record):
         package_upload = sourcepackagerelease.package_upload
         package_files.append((package_upload, 'changesfile'))
     elif IBinaryPackagePublishingHistory.providedBy(pub_record):
+        archive = pub_record.archive
         # Re-upload the binary files if necessary.
         binarypackagerelease = pub_record.binarypackagerelease
         package_files.extend(
@@ -111,11 +110,16 @@ def update_files_privacy(pub_record):
         package_upload = build.package_upload
         package_files.append((package_upload, 'changesfile'))
         # Re-upload the buildlog file as necessary.
-        package_files.append((build, 'buildlog'))
+        package_files.append((build, 'log'))
+    elif IPackageUploadCustom.providedBy(pub_record):
+        # Re-upload the custom files included
+        package_files.append((pub_record, 'libraryfilealias'))
+        # And set archive to the right attribute for PUCs
+        archive = pub_record.packageupload.archive
     else:
         raise AssertionError(
-            "pub_record is not one of SourcePackagePublishingHistory "
-            "or BinaryPackagePublishingHistory.")
+            "pub_record is not one of SourcePackagePublishingHistory, "
+            "BinaryPackagePublishingHistory or PackageUploadCustom.")
 
     re_uploaded_files = []
     for obj, attr_name in package_files:
@@ -124,11 +128,11 @@ def update_files_privacy(pub_record):
         # not the opposite. We don't have a use-case for privatizing
         # files yet.
         if (old_lfa is None or
-            old_lfa.restricted == pub_record.archive.private or
+            old_lfa.restricted == archive.private or
             old_lfa.restricted == False):
             continue
         new_lfa = re_upload_file(
-            old_lfa, restricted=pub_record.archive.private)
+            old_lfa, restricted=archive.private)
         setattr(obj, attr_name, new_lfa)
         re_uploaded_files.append(new_lfa)
 
@@ -247,8 +251,11 @@ class CopyChecker:
 
         inventory_conflicts = self.getConflicts(source)
 
+        # If there are no conflicts with the same version, we can skip the
+        # rest of the checks, but we still want to check conflicting files
         if (destination_archive_conflicts.count() == 0 and
             len(inventory_conflicts) == 0):
+            self._checkConflictingFiles(source)
             return
 
         # Cache the conflicting publications because they will be iterated
@@ -334,6 +341,25 @@ class CopyChecker:
             if not copied_binaries.issuperset(published_binaries):
                 raise CannotCopy(
                     "binaries conflicting with the existing ones")
+        self._checkConflictingFiles(source)
+
+    def _checkConflictingFiles(self, source):
+        # If both the source and destination archive are the same, we don't
+        # need to perform this test, since that guarantees the filenames
+        # do not conflict.
+        if source.archive.id == self.archive.id:
+            return None
+        source_files = [
+            sprf.libraryfile.filename for sprf in
+            source.sourcepackagerelease.files]
+        destination_sha1s = self.archive.getFilesAndSha1s(source_files)
+        for lf in source.sourcepackagerelease.files:
+            if lf.libraryfile.filename in destination_sha1s:
+                sha1 = lf.libraryfile.content.sha1
+                if sha1 != destination_sha1s[lf.libraryfile.filename]:
+                    raise CannotCopy(
+                        "%s already exists in destination archive with "
+                        "different contents." % lf.libraryfile.filename)
 
     def checkCopy(self, source, series, pocket):
         """Check if the source can be copied to the given location.
@@ -352,10 +378,24 @@ class CopyChecker:
         :raise CannotCopy when a copy is not allowed to be performed
             containing the reason of the error.
         """
-        if source.distroseries.distribution != self.archive.distribution:
+        if series not in self.archive.distribution.series:
             raise CannotCopy(
-                "Cannot copy to an unsupported distribution: %s." %
-                source.distroseries.distribution.name)
+                "No such distro series %s in distribution %s." %
+                (series.name, source.distroseries.distribution.name))
+
+        format = SourcePackageFormat.getTermByToken(
+            source.sourcepackagerelease.dsc_format).value
+
+        if not series.isSourcePackageFormatPermitted(format):
+            raise CannotCopy(
+                "Source format '%s' not supported by target series %s." %
+                (source.sourcepackagerelease.dsc_format, series.name))
+
+        # Deny copies of source publications containing files with an
+        # expiration date set.
+        for source_file in source.sourcepackagerelease.files:
+            if source_file.libraryfile.expires is not None:
+                raise CannotCopy('source contains expired files')
 
         if self.include_binaries:
             built_binaries = source.getBuiltBinaries()
@@ -520,28 +560,10 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
     # unique publication per binary package releases (i.e. excludes
     # irrelevant arch-indep publications) and IBPPH.copy is prepared
     # to expand arch-indep publications.
-    # For safety, we use the architecture the binary was built, and
-    # not the one it is published, coping with single arch-indep
-    # publications for architectures that do not exist in the
-    # destination series. See #387589 for more information.
-    for binary in source.getBuiltBinaries():
-        binarypackagerelease = binary.binarypackagerelease
-        try:
-            target_distroarchseries = series[
-                binarypackagerelease.build.arch_tag]
-        except NotFoundError:
-            # It is not an error if the destination series doesn't
-            # support all the architectures originally built. We
-            # simply do not copy the binary and life goes on.
-            continue
-        binary_in_destination = archive.getAllPublishedBinaries(
-            name=binarypackagerelease.name, exact_match=True,
-            version=binarypackagerelease.version,
-            status=active_publishing_status, pocket=pocket,
-            distroarchseries=target_distroarchseries)
-        if binary_in_destination.count() == 0:
-            binary_copy = binary.copyTo(series, pocket, archive)
-            copies.extend(binary_copy)
+    binary_copies = getUtility(IPublishingSet).copyBinariesTo(
+        source.getBuiltBinaries(), series, pocket, archive)
+
+    copies.extend(binary_copies)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.
@@ -602,7 +624,7 @@ def _do_delayed_copy(source, archive, series, pocket, include_binaries):
     # If binaries are included in the copy we include binary custom files.
     if include_binaries:
         for build in source.getBuilds():
-            if build.buildstate != BuildStatus.FULLYBUILT:
+            if build.status != BuildStatus.FULLYBUILT:
                 continue
             delayed_copy.addBuild(build)
             original_build_upload = build.package_upload

@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'get_status_count',
+    'get_status_counts',
     'MilestoneOverlayMixin',
     'RegistryEditFormView',
     'RegistryDeleteViewMixin',
@@ -18,8 +18,11 @@ from operator import attrgetter
 
 from zope.component import getUtility
 
+from storm.store import Store
+
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadEditFormView)
@@ -99,7 +102,8 @@ class MilestoneOverlayMixin:
             }
         return """
             YUI().use(
-                'node', 'lp.milestoneoverlay', 'lp.milestonetable',
+                'node', 'lp.registry.milestoneoverlay',
+                'lp.registry.milestonetable',
                 function (Y) {
 
                 var series_uri = '%(series_api_uri)s';
@@ -114,15 +118,15 @@ class MilestoneOverlayMixin:
                     var config = {
                         milestone_form_uri: milestone_form_uri,
                         series_uri: series_uri,
-                        next_step: Y.lp.milestonetable.get_milestone_row,
+                        next_step: Y.lp.registry.milestonetable.get_milestone_row,
                         activate_node: create_milestone_link
                         };
-                    Y.lp.milestoneoverlay.attach_widget(config);
+                    Y.lp.registry.milestoneoverlay.attach_widget(config);
                     var table_config = {
                         milestone_row_uri_template: milestone_row_uri,
                         milestone_rows_id: milestone_rows_id
                         }
-                    Y.lp.milestonetable.setup(table_config);
+                    Y.lp.registry.milestonetable.setup(table_config);
                 });
             });
             """ % uris
@@ -136,15 +140,22 @@ class RegistryDeleteViewMixin:
         """The context's URL."""
         return canonical_url(self.context)
 
-    def _getBugtasks(self, milestone):
-        """Return the list `IBugTask`s targeted to the milestone."""
-        params = BugTaskSearchParams(milestone=milestone, user=None)
+    def _getBugtasks(self, target):
+        """Return the list `IBugTask`s associated with the target."""
+        if IProductSeries.providedBy(target):
+            params = BugTaskSearchParams(user=self.user)
+            params.setProductSeries(target)
+        else:
+            params = BugTaskSearchParams(milestone=target, user=self.user)
         bugtasks = getUtility(IBugTaskSet).search(params)
         return list(bugtasks)
 
-    def _getSpecifications(self, milestone):
-        """Return the list `ISpecification`s targeted to the milestone."""
-        return list(milestone.specifications)
+    def _getSpecifications(self, target):
+        """Return the list `ISpecification`s associated to the target."""
+        if IProductSeries.providedBy(target):
+            return list(target.all_specifications)
+        else:
+            return list(target.specifications)
 
     def _getProductRelease(self, milestone):
         """The `IProductRelease` associated with the milestone."""
@@ -158,10 +169,37 @@ class RegistryDeleteViewMixin:
         else:
             return []
 
+    def _unsubscribe_structure(self, structure):
+        """Removed the subscriptions from structure."""
+        for subscription in structure.getSubscriptions():
+            # The owner of the subscription or an admin are the only users
+            # that can destroy a subscription, but this rule cannot prevent
+            # the owner from removing the structure.
+            Store.of(subscription).remove(subscription)
+
+    def _remove_series_bugs_and_specifications(self, series):
+        """Untarget the associated bugs and subscriptions."""
+        for spec in self._getSpecifications(series):
+            spec.proposeGoal(None, self.user)
+        for bugtask in self._getBugtasks(series):
+            # Bugtasks cannot be deleted directly. In this case, the bugtask
+            # is already reported on the product, so the series bugtask has
+            # no purpose without a series.
+            Store.of(bugtask).remove(bugtask)
+
     def _deleteProductSeries(self, series):
-        """Remove the series and delete/unlink related objects."""
-        # Delete all milestones, releases, and files.
-        # Any associated bugtasks and specifications are untargeted.
+        """Remove the series and delete/unlink related objects.
+
+        All subordinate milestones, releases, and files will be deleted.
+        Milestone bugs and blueprints will be untargeted.
+        Series bugs and blueprints will be untargeted.
+        Series and milestone structural subscriptions are unsubscribed.
+        Series branches are unlinked.
+        """
+        self._unsubscribe_structure(series)
+        self._remove_series_bugs_and_specifications(series)
+        series.branch = None
+
         for milestone in series.all_milestones:
             self._deleteMilestone(milestone)
         # Series are not deleted because some objects like translations are
@@ -170,10 +208,13 @@ class RegistryDeleteViewMixin:
         date_time = series.datecreated.strftime('%Y%m%d-%H%M%S')
         series.name = '%s-%s-%s' % (
             series.product.name, series.name, date_time)
+        series.status = SeriesStatus.OBSOLETE
+        series.releasefileglob = None
         series.product = getUtility(ILaunchpadCelebrities).obsolete_junk
 
     def _deleteMilestone(self, milestone):
         """Delete a milestone and unlink related objects."""
+        self._unsubscribe_structure(milestone)
         for bugtask in self._getBugtasks(milestone):
             bugtask.milestone = None
         for spec in self._getSpecifications(milestone):
@@ -191,6 +232,7 @@ class RegistryDeleteViewMixin:
 
 class RegistryEditFormView(LaunchpadEditFormView):
     """A base class that provides consistent edit form behaviour."""
+
     @property
     def page_title(self):
         """The page title."""

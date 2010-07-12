@@ -11,11 +11,10 @@ __all__ = [
     'TranslationGroupNavigation',
     'TranslationGroupReassignmentView',
     'TranslationGroupSetBreadcrumb',
+    'TranslationGroupSetView',
     'TranslationGroupSetNavigation',
     'TranslationGroupView',
     ]
-
-import operator
 
 from zope.component import getUtility
 
@@ -23,13 +22,12 @@ from lp.translations.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from lp.translations.interfaces.translator import (
     ITranslator, ITranslatorSet)
-from canonical.launchpad.browser.objectreassignment import (
+from lp.registry.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView
-    )
+    LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 
@@ -48,27 +46,50 @@ class TranslationGroupSetBreadcrumb(Breadcrumb):
     text = u"Translation groups"
 
 
-class TranslationGroupView:
+class TranslationGroupSetView:
+    """Translation groups overview."""
+    page_title = "Translation groups"
+    label = page_title
+
+
+class TranslationGroupView(LaunchpadView):
 
     def __init__(self, context, request):
+        super(TranslationGroupView, self).__init__(context, request)
         self.context = context
         self.request = request
         self.translation_groups = getUtility(ITranslationGroupSet)
 
     @property
+    def label(self):
+        return "%s translation group" % self.context.title
+
+    @property
+    def page_title(self):
+        return self.context.title
+
+    def _makeTranslatorDict(self, translator, language, person):
+        """Compose dict describing a `Translator` for UI use.
+
+        Parameters are the ones found in each item in the sequence
+        returned by `TranslationGroup.fetchTranslatorData`.
+        """
+        return {
+                'person': person,
+                'code': language.code,
+                'language': language,
+                'datecreated': translator.datecreated,
+                'style_guide_url': translator.style_guide_url,
+                'context': translator,
+            }
+
+    @property
     def translator_list(self):
-        result = []
-        for item in self.context.translators:
-            result.append({'lang': item.language.englishname,
-                           'person': item.translator,
-                           'code': item.language.code,
-                           'language' : item.language,
-                           'datecreated': item.datecreated,
-                           'style_guide_url': item.style_guide_url,
-                           'context' : item,
-                           })
-        result.sort(key=operator.itemgetter('lang'))
-        return result
+        """List of dicts describing the translation teams."""
+        return [
+            self._makeTranslatorDict(*data)
+            for data in self.context.fetchTranslatorData()
+            ]
 
 
 class TranslationGroupAddTranslatorView(LaunchpadFormView):
@@ -111,7 +132,7 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return 'Apoint a translation team in "%s"' % (self.context.title)
+        return self.label
 
 
 class TranslationGroupEditView(LaunchpadEditFormView):
@@ -119,6 +140,8 @@ class TranslationGroupEditView(LaunchpadEditFormView):
 
     schema = ITranslationGroup
     field_names = ['name', 'title', 'summary', 'translation_guide_url']
+
+    page_title = "Change details"
 
     @action("Change")
     def change_action(self, action, data):
@@ -150,11 +173,7 @@ class TranslationGroupEditView(LaunchpadEditFormView):
 
     @property
     def label(self):
-        return "Change %s details" % (self.context.title)
-
-    @property
-    def page_title(self):
-        return 'Change "%s" translation group details' % (self.context.title)
+        return "Change %s details" % self.context.title
 
 
 class TranslationGroupAddView(LaunchpadFormView):
@@ -163,7 +182,7 @@ class TranslationGroupAddView(LaunchpadFormView):
     schema = ITranslationGroup
     field_names = ['name', 'title', 'summary', 'translation_guide_url']
     label = "Create a new translation group"
-    page_title = "Create a new Launchpad translation group"
+    page_title = label
 
     @action("Create", name="create")
     def create_action(self, action, data):
@@ -198,6 +217,12 @@ class TranslationGroupAddView(LaunchpadFormView):
 
 class TranslationGroupReassignmentView(ObjectReassignmentView):
     """View class for changing translation group owner."""
+
+    page_title = "Change owner"
+
+    @property
+    def label(self):
+        return "Change the owner of %s" % self.contextName
 
     @property
     def contextName(self):

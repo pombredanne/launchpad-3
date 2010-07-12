@@ -16,8 +16,6 @@
 
     <div id="ppa_search" class="top-portlet">
 
-      <h2>Personal Package Archives</h2>
-
       <p>Personal Package Archives (PPA) allow you to upload
          Ubuntu source packages to be built and published as an
          apt repository by Launchpad. You can find out more about

@@ -28,30 +28,32 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad import helpers
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.build import BuildRecordsView
-from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
-from lp.soyuz.browser.queue import QueueItemsView
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
-from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguageSet)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.translations.browser.distroseries import (
+    check_distroseries_translations_viewable)
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, Link, enabled_with_permission)
+    ApplicationMenu, Link, NavigationMenu, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, stepthrough, stepto)
+    canonical_url, LaunchpadView, stepthrough, stepto)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.registry.browser import MilestoneOverlayMixin
@@ -76,19 +78,13 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
         except IndexError:
             # Unknown language code.
             raise NotFoundError
-        distroserieslang = self.context.getDistroSeriesLanguage(lang)
 
-        if distroserieslang is None:
-            # There is no IDistroSeriesLanguage yet for this IDistroSeries,
-            # but we still need to list it as an available language, so we
-            # generate a dummy one so users have a chance to get to it in the
-            # navigation and start adding translations for it.
-            distroserieslangset = getUtility(IDistroSeriesLanguageSet)
-            distroserieslang = distroserieslangset.getDummy(
-                self.context, lang)
+        distroserieslang = self.context.getDistroSeriesLanguageOrDummy(lang)
 
-        if not check_permission('launchpad.Admin', distroserieslang):
-            self.context.checkTranslationsViewable()
+        # Check if user is able to view the translations for
+        # this distribution series language.
+        # If not, raise TranslationUnavailable.
+        check_distroseries_translations_viewable(self.context)
 
         return distroserieslang
 
@@ -128,9 +124,10 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
 
 class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
+
     @property
     def text(self):
-        return self.context.version
+        return self.context.named_version
 
 
 class DistroSeriesFacets(StandardLaunchpadFacets):
@@ -140,13 +137,14 @@ class DistroSeriesFacets(StandardLaunchpadFacets):
                    'translations']
 
 
-class DistroSeriesOverviewMenu(ApplicationMenu):
+class DistroSeriesOverviewMenu(
+    ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
-             'add_port', 'create_milestone', 'admin', 'builds', 'queue',
-             'subscribe']
+    links = ['edit', 'reassign', 'driver', 'answers',
+             'packaging', 'needs_packaging', 'builds', 'queue',
+             'add_port', 'create_milestone', 'subscribe', 'admin']
 
     @enabled_with_permission('launchpad.Admin')
     def edit(self):
@@ -171,8 +169,14 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
         return Link('+addmilestone', text, summary, icon='add')
 
     def packaging(self):
-        text = 'Upstream links'
-        return Link('+packaging', text, icon='info')
+        text = 'All upstream links'
+        summary = 'A listing of source packages and their upstream projects'
+        return Link('+packaging', text, summary=summary, icon='info')
+
+    def needs_packaging(self):
+        text = 'Needs upstream links'
+        summary = 'A listing of source packages without upstream projects'
+        return Link('+needs-packaging', text, summary=summary, icon='info')
 
     # A search link isn't needed because the distro series overview
     # has a search form.
@@ -200,12 +204,8 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
         text = 'Show uploads'
         return Link('+queue', text, icon='info')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
-
-class DistroSeriesBugsMenu(ApplicationMenu):
+class DistroSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'bugs'
@@ -221,47 +221,15 @@ class DistroSeriesBugsMenu(ApplicationMenu):
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
 
-    def subscribe(self):
-        return Link('+subscribe', 'Subscribe to bug mail')
 
-
-class DistroSeriesSpecificationsMenu(ApplicationMenu):
+class DistroSeriesSpecificationsMenu(NavigationMenu,
+                                     HasSpecificationsMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'specifications'
-    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
-
-    def listall(self):
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def listapproved(self):
-        text = 'List approved blueprints'
-        return Link('+specs?acceptance=accepted', text, icon='info')
-
-    def listproposed(self):
-        text = 'List proposed blueprints'
-        return Link('+specs?acceptance=proposed', text, icon='info')
-
-    def listdeclined(self):
-        text = 'List declined blueprints'
-        summary = 'Show the goals which have been declined'
-        return Link('+specs?acceptance=declined', text, icon='info')
-
-    def setgoals(self):
-        text = 'Set series goals'
-        summary = 'Approve or decline feature goals that have been proposed'
-        return Link('+setgoals', text, icon='info')
-
-    def table(self):
-        text = 'Assignments'
-        summary = 'Show the assignee, drafter and approver of these specs'
-        return Link('+assignments', text, icon='info')
-
-    def new(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
+    links = [
+        'listall', 'listdeclined', 'assignments', 'setgoals',
+        'new', 'register_sprint']
 
 
 class DistroSeriesPackageSearchView(PackageSearchViewBase):
@@ -274,7 +242,7 @@ class DistroSeriesPackageSearchView(PackageSearchViewBase):
     label = 'Search packages'
 
 
-class DistroSeriesStatusMixin:
+class SeriesStatusMixin:
     """A mixin that provides status field support."""
 
     def createStatusField(self):
@@ -286,15 +254,15 @@ class DistroSeriesStatusMixin:
          * unstable -> EXPERIMENTAL, DEVELOPMENT, FROZEN, FUTURE, CURRENT
         """
         stable_status = (
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED,
-            DistroSeriesStatus.OBSOLETE,
+            SeriesStatus.CURRENT,
+            SeriesStatus.SUPPORTED,
+            SeriesStatus.OBSOLETE,
             )
 
         if self.context.status not in stable_status:
-            terms = [status for status in DistroSeriesStatus.items
+            terms = [status for status in SeriesStatus.items
                      if status not in stable_status]
-            terms.append(DistroSeriesStatus.CURRENT)
+            terms.append(SeriesStatus.CURRENT)
         else:
             terms = stable_status
 
@@ -304,6 +272,7 @@ class DistroSeriesStatusMixin:
         return form.Fields(
             Choice(__name__='status',
                    title=_('Status'),
+                   default=self.context.status,
                    vocabulary=status_vocabulary,
                    description=_("Select the distroseries status."),
                    required=True))
@@ -311,12 +280,11 @@ class DistroSeriesStatusMixin:
     def updateDateReleased(self, status):
         """Update the datereleased field if the status is set to CURRENT."""
         if (self.context.datereleased is None and
-            status == DistroSeriesStatus.CURRENT):
+            status == SeriesStatus.CURRENT):
             self.context.datereleased = UTC_NOW
 
 
-class DistroSeriesView(BuildRecordsView, QueueItemsView,
-                       MilestoneOverlayMixin):
+class DistroSeriesView(MilestoneOverlayMixin):
 
     def initialize(self):
         self.displayname = '%s %s' % (
@@ -329,22 +297,11 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
         return '%s %s in Launchpad' % (
         self.context.distribution.title, self.context.version)
 
-    @cachedproperty
-    def cached_packagings(self):
-        # +packaging hits this many times, so avoid redoing the query
-        # multiple times, in particular because it's gnarly.
-        return list(self.context.packagings)
-
     def requestCountry(self):
         return ICountry(self.request, None)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
-
-    @cachedproperty
-    def unlinked_translatables(self):
-        """Return the sourcepackages that lack a link to a productseries."""
-        return self.context.getUnlinkedTranslatableSourcePackages()
 
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.
@@ -352,20 +309,38 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
         Filing a bug on a distribution series is not directly
         permitted; we redirect to the distribution's file
         """
-        distro_url = canonical_url(self.context.distribution)
-        return self.request.response.redirect(distro_url + "/+filebug")
+        distro_url = canonical_url(
+            self.context.distribution, view_name='+filebug')
+        if self.request.form.get('no-redirect') is not None:
+            distro_url += '?no-redirect'
+        return self.request.response.redirect(distro_url)
+
+    @cachedproperty
+    def num_linked_packages(self):
+        """The number of linked packagings for this distroseries."""
+        return len(self.context.packagings)
 
     @property
-    def show_arch_selector(self):
-        """Display the architecture selector.
+    def num_unlinked_packages(self):
+        """The number of unlinked packagings for this distroseries."""
+        return self.context.sourcecount - self.num_linked_packages
 
-        See `BuildRecordsView` for further details."""
-        return True
+    @cachedproperty
+    def recently_linked(self):
+        """Return the packages that were most recently linked upstream."""
+        return self.context.getMostRecentlyLinkedPackagings()
+
+    @cachedproperty
+    def needs_linking(self):
+        """Return a list of 10 packages most in need of upstream linking.""" 
+        # XXX sinzui 2010-02-26 bug=528648: This method causes a timeout.
+        # return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
+        return None
 
     milestone_can_release = False
 
 
-class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
+class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
     """View class that lets you edit a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
@@ -396,8 +371,10 @@ class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
         'status' field. See `createStatusField` method.
         """
         LaunchpadEditFormView.setUpFields(self)
-        if not self.context.distribution.full_functionality:
-            # This is an IDerivativeDistribution which may set its status.
+        is_derivitive = not self.context.distribution.full_functionality
+        has_admin = check_permission('launchpad.Admin', self.context)
+        if has_admin or is_derivitive:
+            # The user is an admin or this is an IDerivativeDistribution.
             self.form_fields = (
                 self.form_fields + self.createStatusField())
 
@@ -412,7 +389,7 @@ class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
         self.next_url = canonical_url(self.context)
 
 
-class DistroSeriesAdminView(LaunchpadEditFormView, DistroSeriesStatusMixin):
+class DistroSeriesAdminView(LaunchpadEditFormView, SeriesStatusMixin):
     """View class for administering a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
@@ -468,15 +445,8 @@ class DistroSeriesAddView(LaunchpadFormView):
         'name', 'displayname', 'title', 'summary', 'description', 'version',
         'parent_series']
 
-    @property
-    def label(self):
-        """See `LaunchpadFormView`."""
-        return 'Register a series in %s' % self.context.displayname
-
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
+    label = 'Register a series'
+    page_title = label
 
     @action(_('Create Series'), name='create')
     def createAndAdd(self, action, data):
@@ -485,15 +455,14 @@ class DistroSeriesAddView(LaunchpadFormView):
 
         assert owner is not None
         distroseries = self.context.newSeries(
-            name = data['name'],
-            displayname = data['displayname'],
-            title = data['title'],
-            summary = data['summary'],
-            description = data['description'],
-            version = data['version'],
-            parent_series = data['parent_series'],
-            owner = owner
-            )
+            name=data['name'],
+            displayname=data['displayname'],
+            title=data['title'],
+            summary=data['summary'],
+            description=data['description'],
+            version=data['version'],
+            parent_series=data['parent_series'],
+            owner=owner)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
         return distroseries
@@ -503,7 +472,31 @@ class DistroSeriesAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class DistroSeriesPackagesView(DistroSeriesView):
+class DistroSeriesPackagesView(LaunchpadView):
     """A View to show series package to upstream package relationships."""
 
-    label = 'Mapping series packages to upstream project series'
+    label = 'All series packages linked to upstream project series'
+    page_title = 'All upstream links'
+
+    @cachedproperty
+    def cached_packagings(self):
+        """The batched upstream packaging links."""
+        packagings = self.context.getPrioritizedlPackagings()
+        navigator = BatchNavigator(packagings, self.request, size=20)
+        navigator.setHeadings('packaging', 'packagings')
+        return navigator
+
+
+class DistroSeriesNeedsPackagesView(LaunchpadView):
+    """A View to show series package to upstream package relationships."""
+
+    label = 'Packages that need upstream packaging links'
+    page_title = 'Needs upstream links'
+
+    @cachedproperty
+    def cached_unlinked_packages(self):
+        """The batched `ISourcePackage`s that needs packaging links."""
+        packages = self.context.getPrioritizedUnlinkedSourcePackages()
+        navigator = BatchNavigator(packages, self.request, size=20)
+        navigator.setHeadings('package', 'packages')
+        return navigator

@@ -9,9 +9,6 @@
 <body>
 
 <div metal:fill-slot="main">
-
-  <h1>Download translations</h1>
-
   <div tal:condition="view/uses_translations"
        class="main-portlet">
     <p>
@@ -39,6 +36,11 @@
         When these translations have been exported, a message will be sent to
         <code tal:content="view/user/preferredemail/email">user@domain</code>.
         This message will tell you where you can download your file.
+      </p>
+
+      <p tal:content="view/export_queue_status">
+        There are 201 file reequests on the export queue.  The backlog is
+        approximately 25 minutes.
       </p>
 
       <div class="actions">

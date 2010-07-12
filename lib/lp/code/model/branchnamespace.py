@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'BranchNamespaceSet',
-    'get_namespace',
     'PackageNamespace',
     'PersonalNamespace',
     'ProductNamespace',
@@ -42,14 +41,14 @@ from lp.registry.interfaces.distroseries import (
     IDistroSeriesSet, NoSuchDistroSeries)
 from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, NoSuchProduct)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet, NoSuchSourcePackageName)
+from lp.services.utils import iter_split
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from lp.code.xmlrpc.codehosting import iter_split
 
 
 class _BaseNamespace:
@@ -107,7 +106,8 @@ class _BaseNamespace:
                 implicit_subscription,
                 BranchSubscriptionNotificationLevel.NOEMAIL,
                 BranchSubscriptionDiffSize.NODIFF,
-                CodeReviewNotificationLevel.NOEMAIL)
+                CodeReviewNotificationLevel.NOEMAIL,
+                registrant)
 
         # The registrant of the branch should also be automatically subscribed
         # in order for them to get code review notifications.  The implicit
@@ -117,7 +117,8 @@ class _BaseNamespace:
             registrant,
             BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL,
+            registrant)
 
         notify(ObjectCreatedEvent(branch))
         return branch
@@ -139,7 +140,7 @@ class _BaseNamespace:
 
         if not self.checkCreationPolicy(registrant):
             raise BranchCreationForbidden(
-                "You cannot create branches in %r" % self.name)
+                'You cannot create branches in "%s"' % self.name)
 
     def validateBranchName(self, name):
         """See `IBranchNamespace`."""
@@ -566,7 +567,7 @@ class BranchNamespaceSet:
             return None
         pillar = self._findOrRaise(
             NoSuchProduct, pillar_name, getUtility(IPillarNameSet).getByName)
-        if IProject.providedBy(pillar):
+        if IProjectGroup.providedBy(pillar):
             raise NoSuchProduct(pillar_name)
         return pillar
 

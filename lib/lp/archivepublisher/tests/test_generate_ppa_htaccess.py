@@ -24,23 +24,26 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator)
+from lp.soyuz.interfaces.archive import ArchiveStatus
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus)
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 from lp.services.mail import stub
 
 
-class TestPPAHtaccessTokenGeneration(unittest.TestCase):
+class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
     """Test the generate_ppa_htaccess.py script."""
 
     layer = LaunchpadZopelessLayer
     dbuser = config.generateppahtaccess.dbuser
 
     def setUp(self):
-        self.ppa = getUtility(IPersonSet).getByName('cprov').archive
-        self.ppa.private = True
-        self.ppa.buildd_secret = "secret"
+        super(TestPPAHtaccessTokenGeneration, self).setUp()
+        self.owner = self.factory.makePerson(
+            name="joe", displayname="Joe Smith")
+        self.ppa = self.factory.makeArchive(
+            owner=self.owner, name="myppa", private=True)
 
         # "Ubuntu" doesn't have a proper publisher config but Ubuntutest
         # does, so override the PPA's distro here.
@@ -60,7 +63,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
 
     def runScript(self):
         """Run the expiry script.
-        
+
         :return: a tuple of return code, stdout and stderr.
         """
         script = os.path.join(
@@ -148,7 +151,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         # Generate the passwd file.
         script = self.getScript()
         filename = script.generateHtpasswd(self.ppa, tokens)
-        
+
         # It should be a temp file in the same directory as the intended
         # target file when it's renamed, so that os.rename() won't
         # complain about renaming across file systems.
@@ -159,7 +162,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         # Read it back in.
         file = open(filename, "r")
         file_contents = file.read().splitlines()
-        
+
         # The first line should be the buildd_secret.
         [user, password] = file_contents[0].split(":", 1)
         self.assertEqual(user, "buildd")
@@ -179,7 +182,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         # For the names to appear in the order above, the dabatase IDs
         # for the tokens have to be in that order.  (To ensure a
         # consistent ordering)
-        self.assertTrue(tokens[0].id < tokens[1].id) 
+        self.assertTrue(tokens[0].id < tokens[1].id)
 
         os.remove(filename)
 
@@ -199,7 +202,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         file.close()
 
         # Write the same contents in a temp file.
-        fd, temp_filename = tempfile.mkstemp()
+        fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
         file = os.fdopen(fd, "w")
         file.write(FILE_CONTENT)
         file.close()
@@ -237,32 +240,31 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         # - All members of a team lose their tokens when a team of a
         #   subscribed team leaves it.
 
-        factory = LaunchpadObjectFactory()
         persons1 = []
         persons2 = []
         name12 = getUtility(IPersonSet).getByName("name12")
-        team1 = factory.makeTeam(owner=name12)
-        team2 = factory.makeTeam(owner=name12)
+        team1 = self.factory.makeTeam(owner=name12)
+        team2 = self.factory.makeTeam(owner=name12)
         for count in range(5):
-            person = factory.makePerson()
+            person = self.factory.makePerson()
             team1.addMember(person, name12)
             persons1.append(person)
-            person = factory.makePerson()
+            person = self.factory.makePerson()
             team2.addMember(person, name12)
             persons2.append(person)
 
         all_persons = persons1 + persons2
 
-        parent_team = factory.makeTeam(owner=name12)
+        parent_team = self.factory.makeTeam(owner=name12)
         # This needs to be forced or TeamParticipation is not updated.
         parent_team.addMember(team2, name12, force_team_add=True)
 
-        promiscuous_person = factory.makePerson()
+        promiscuous_person = self.factory.makePerson()
         team1.addMember(promiscuous_person, name12)
         team2.addMember(promiscuous_person, name12)
         all_persons.append(promiscuous_person)
 
-        lonely_person = factory.makePerson()
+        lonely_person = self.factory.makePerson()
         all_persons.append(lonely_person)
 
         # At this point we have team1, with 5 people in it, team2 with 5
@@ -411,7 +413,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         # .htpasswd.
         return_code, stdout, stderr = self.runScript()
         self.assertEqual(
-            return_code, 0, "Got a bad return code of %s\nOutput:\n%s" % 
+            return_code, 0, "Got a bad return code of %s\nOutput:\n%s" %
                 (return_code, stderr))
         self.assertTrue(os.path.isfile(htaccess))
         self.assertTrue(os.path.isfile(htpasswd))
@@ -464,7 +466,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         self.assertEqual(subs[0].status, ArchiveSubscriberStatus.CURRENT)
 
         script = self.getScript()
-        script.blacklist = {'cprov': ['my_other_ppa', 'ppa', 'and_another']}
+        script.blacklist = {'joe': ['my_other_ppa', 'myppa', 'and_another']}
         script.main()
 
         # The tokens will still be deactivated, and subscriptions expired.
@@ -475,9 +477,50 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         self.assertFalse(os.path.isfile(htaccess))
         self.assertFalse(os.path.isfile(htpasswd))
 
+    def testSkippingOfDisabledPPAs(self):
+        """Test that the htaccess for disabled PPAs are not touched."""
+        subs, tokens = self.setupDummyTokens()
+        htaccess, htpasswd = self.ensureNoFiles()
+
+        # Setup subscription so that htaccess/htpasswd is pending generation.
+        now = datetime.now(pytz.UTC)
+        subs[0].date_expires = now + timedelta(minutes=3)
+        self.assertEqual(subs[0].status, ArchiveSubscriberStatus.CURRENT)
+
+        # Set the PPA as disabled.
+        self.ppa.disable()
+        self.assertFalse(self.ppa.enabled)
+
+        script = self.getScript()
+        script.main()
+
+        # The htaccess and htpasswd files should not be generated.
+        self.assertFalse(os.path.isfile(htaccess))
+        self.assertFalse(os.path.isfile(htpasswd))
+
+    def testSkippingOfDeletedPPAs(self):
+        """Test that the htaccess for deleted PPAs are not touched."""
+        subs, tokens = self.setupDummyTokens()
+        htaccess, htpasswd = self.ensureNoFiles()
+
+        # Setup subscription so that htaccess/htpasswd is pending generation.
+        now = datetime.now(pytz.UTC)
+        subs[0].date_expires = now + timedelta(minutes=3)
+        self.assertEqual(subs[0].status, ArchiveSubscriberStatus.CURRENT)
+
+        # Set the PPA as deleted.
+        self.ppa.status = ArchiveStatus.DELETED
+
+        script = self.getScript()
+        script.main()
+
+        # The htaccess and htpasswd files should not be generated.
+        self.assertFalse(os.path.isfile(htaccess))
+        self.assertFalse(os.path.isfile(htpasswd))
+
     def testSendingCancellationEmail(self):
         """Test that when a token is deactivated, its user gets an email.
-        
+
         The email must contain the right headers and text.
         """
         subs, tokens = self.setupDummyTokens()
@@ -495,10 +538,11 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         [email] = pop_notifications()
         self.assertEqual(
             email['Subject'],
-            "PPA access cancelled for PPA for Celso Providelo")
+            "PPA access cancelled for PPA named myppa for Joe Smith")
         self.assertEqual(email['To'], "test@canonical.com")
         self.assertEqual(
-            email['From'], "PPA for Celso Providelo <noreply@launchpad.net>")
+            email['From'],
+            "PPA named myppa for Joe Smith <noreply@launchpad.net>")
         self.assertEqual(email['Sender'], "bounces@canonical.com")
 
         body = email.get_payload()
@@ -508,7 +552,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
             "Launchpad: cancellation of archive access\n"
             "-----------------------------------------\n\n"
             "Your access to the private software archive "
-                "\"PPA for Celso Providelo\",\n"
+                "\"PPA named myppa for Joe\nSmith\", "
             "which is hosted by Launchpad, has been "
                 "cancelled.\n\n"
             "You will now no longer be able to download software from this "
@@ -518,7 +562,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
             "of the archive to verify it.\n\n"
             "You can contact the archive owner by visiting their Launchpad "
                 "page here:\n\n"
-            "<http://launchpad.dev/~cprov>\n\n"
+            "<http://launchpad.dev/~joe>\n\n"
             "If you have any concerns you can contact the Launchpad team by "
                 "emailing\n"
             "feedback@launchpad.net\n\n"

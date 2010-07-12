@@ -5,7 +5,7 @@
 
 """Logging setup for scripts.
 
-Don't import from this module. Import it from canonical.scripts.
+Don't import from this module. Import it from canonical.launchpad.scripts.
 
 Parts of this may be moved into canonical.launchpad somewhere if it is
 to be used for non-script stuff.
@@ -25,12 +25,14 @@ __all__ = [
     'DEBUG6', 'DEBUG7', 'DEBUG8', 'DEBUG9'
     ]
 
+
+import hashlib
 import logging
 import re
-import sha
 import sys
 import traceback
 import time
+
 from optparse import OptionParser
 from cStringIO import StringIO
 from datetime import datetime, timedelta
@@ -63,10 +65,21 @@ logging.addLevelName(DEBUG9, 'DEBUG9')
 
 
 class FakeLogger:
-    """Emulates a proper logger, just printing everything out to stdout.
-    Used exclusively in doc tests."""
-    def message(self, prefix, *stuff, **kw):
-        print prefix, ' '.join(stuff)
+    """Emulates a proper logger, just printing everything out the given file.
+    """
+    def __init__(self, output_file=None):
+        """The default output_file is sys.stdout."""
+        self.output_file = output_file
+
+    def message(self, prefix, msg, *stuff, **kw):
+        # We handle the default output file here because sys.stdout
+        # might have been reassigned. Between now and when this object
+        # was instantiated.
+        if self.output_file is None:
+            output_file = sys.stdout
+        else:
+            output_file = self.output_file
+        print >> output_file, prefix, msg % stuff
 
         if 'exc_info' in kw:
             exception = traceback.format_exception(*sys.exc_info())
@@ -102,10 +115,11 @@ class FakeLogger:
 class QuietFakeLogger(FakeLogger):
     """Extra quiet FakeLogger.
 
-    Does not print any message.
+    Does not print any message. Messages can be retrieved from
+    logger.output_file, which is a StringIO instance.
     """
-    def message(self, prefix, *stuff, **kw):
-        pass
+    def __init__(self):
+        self.output_file = StringIO()
 
 
 class BufferLogger(FakeLogger):
@@ -151,12 +165,12 @@ class LibrarianFormatter(logging.Formatter):
         except:
             pass
         if not exception_string:
-            exception_string = str(ei[0]).split('.')[-1]
+            exception_string = ei[0].__name__
 
         expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
         try:
             filename = base(
-                    long(sha.new(traceback).hexdigest(),16), 62
+                    long(hashlib.sha1(traceback).hexdigest(),16), 62
                     ) + '.txt'
             url = librarian.remoteAddFile(
                     filename, len(traceback), StringIO(traceback),

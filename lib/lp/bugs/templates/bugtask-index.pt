@@ -3,79 +3,64 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_side"
 >
   <body>
     <metal:block fill-slot="head_epilogue">
       <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
-      <script type="text/javascript"
-        tal:content="string:var subscriber_ids = ${view/subscriber_ids_js};" />
-      <tal:devmode condition="devmode">
-       <script type="text/javascript"
-                tal:define="lp_js string:${icingroot}/build"
-                tal:attributes="src string:${lp_js}/bugs/subscriber.js">
-       </script>
-        <script type="text/javascript"
-                tal:define="lp_js string:${icingroot}/build"
-                tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
-        </script>
-        <script type="text/javascript"
-                tal:define="lp_js string:${icingroot}/build"
-                tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
-        </script>
-      </tal:devmode>
       <script type="text/javascript">
-        YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
-            Y.bugs.setup_bugtask_index();
+        LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
+                  'lp.code.branchmergeproposal.diff', function(Y) {
+            Y.lp.bugs.bugtask_index.setup_bugtask_index();
+            Y.on('load', function(e) {
+              Y.lp.code.branchmergeproposal.diff.connect_diff_links();
+            }, window);
         });
       </script>
       <style type="text/css">
         /* A page-specific fix for inline text are editing to line up box. */
         #edit-description .yui-ieditor-input { top: 0; }
         /* Align the 'add comment' link to the right of the comment box. */
-        #add-comment-form textarea { width: 100%; max-width=60em;}
+        #add-comment-form textarea { width: 100%; }
         #add-comment-form { max-width: 60em; padding-bottom: 4em; }
         #add-comment-form .actions {float: right;}
+        .bug-branch-summary dd { font-size: 85% }
+        a#privacy-link:link:hover, a#privacy-link:visited:hover {text-decoration:none;}
       </style>
     </metal:block>
+
+    <metal:side fill-slot="side" tal:define="context_menu context/menu:context">
+      <div tal:replace="structure context/bug/@@+portlet-privacy" />
+      <div tal:replace="structure context/bug/@@+portlet-actions" />
+      <div tal:replace="structure context/bug/@@+portlet-duplicates" />
+      <div tal:replace="structure context/bug/@@+portlet-subscribers" />
+      <div tal:replace="structure context/bug/@@+portlet-questions" />
+      <div tal:replace="structure context/bug/@@+portlet-specs" />
+      <div tal:replace="structure context/bug/@@+portlet-attachments" />
+      <div tal:replace="structure context/bug/@@+portlet-watch" />
+    </metal:side>
+
+    <tal:registering metal:fill-slot="registering">
+      Bug #<tal:block content="context/bug/id"/> reported by
+      <tal:reporter replace="structure context/bug/owner/fmt:link" />
+      <span
+        tal:attributes="title context/bug/datecreated/fmt:datetime"
+        tal:content="context/bug/datecreated/fmt:displaydate" />
+      <tal:heat replace="structure view/bug_heat_html" />
+    </tal:registering>
+
+    <metal:heading fill-slot="heading" tal:define="context_menu context/menu:context">
+      <h1 tal:replace="structure view/bug_title_edit_widget">
+        Bug title
+      </h1>
+    </metal:heading>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
       <div id="tags-autocomplete">
        <div id="tags-autocomplete-content"></div>
       </div>
-      <p class="object timestamp">
-
-          Bug #<tal:block content="context/bug/id"/> reported
-          by <tal:reporter replace="structure context/bug/owner/fmt:link" />
-          <span
-              tal:attributes="title context/bug/datecreated/fmt:datetime"
-              tal:content="context/bug/datecreated/fmt:displaydate" />
-          <tal:activitylog
-            define="link context_menu/activitylog"
-            condition="link/enabled"
-          >(<tal:link replace="structure link/render" />)</tal:activitylog>
-
-      </p>
-      <div class="object identifier">
-
-          <a tal:attributes="href context/bug/fmt:url;
-                             class string: ${context/image:sprite_css}">
-            Bug #<span tal:content="context/bug/id"
-            >12345</span><tal:nickname
-                          condition="context/bug/name">
-          (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>:</a>
-
-      </div>
-      <tal:privacy replace="structure context/bug/@@+portlet-privacy" />
-      <h1 tal:replace="structure view/bug_title_edit_widget">
-        Bug title
-      </h1>
-
       <tal:block condition="view/reportBugInContext" />
 
       <p class="informational message"
@@ -87,7 +72,7 @@
 
       <p
          id="can-expire"
-         tal:condition="context/bug/can_expire"
+         tal:condition="python: context.bug.isExpirable(days_old=0)"
          >
         <tal:expiration_message replace="view/expiration_message" />
         (<a href="https://help.launchpad.net/BugExpiry">find out why</a>)
@@ -107,79 +92,17 @@
         </tal:XXX>
       </p>
 
-      <table style="width: 100%; margin-bottom: 0.33em;">
-        <tr>
-          <td style="text-align: left; width: 50%;">
-            <span id="mark-duplicate-text"
-                tal:define="link context_menu/markduplicate"
-                tal:condition="python: link.enabled and not
-                              context.bug.duplicateof"
-            >
-            <a
-              tal:attributes="href link/path"
-              class="menu-link-mark-dupe sprite bug-dupe">Mark as duplicate</a>
-            </span>
-            <tal:block
-              tal:condition="context/bug/duplicates"
-              tal:define="number_of_dupes context/bug/duplicates/count"
-            ><span id="number_of_dupes">(This bug has
-            <tal:num-dupes condition="python:number_of_dupes == 1">1
-            duplicate)</tal:num-dupes>
-            <tal:num-dupes condition="python:number_of_dupes > 1"
-            content="string:${number_of_dupes} duplicates)"
-            >2 duplicates</tal:num-dupes></span>
-            </tal:block>
-            <tal:block
-              tal:define="duplicateof context/bug/duplicateof"
-              tal:condition="duplicateof"
-            >
-              <span id="mark-duplicate-text">Duplicate of
-              <a
-                tal:condition="duplicateof/required:launchpad.View"
-                tal:attributes="href duplicateof/fmt:url; title
-                   duplicateof/title; style string:margin-right: 4px;
-                   id string:duplicate-of;"
-                tal:content="string:bug #${duplicateof/id}"
-              >bug #42</a>
-                <span
-                  tal:condition="not:duplicateof/required:launchpad.View"
-                  tal:replace="string:bug #${duplicateof/id}" />
-            <a
-              tal:define="link context_menu/markduplicate"
-              tal:condition="python: link.enabled"
-              id="change_duplicate_bug"
-              title="Edit or remove linked duplicate bug"
-              class="sprite edit"
-              tal:attributes="href link/url">
-            </a>
-            </span>
-            </tal:block>
-          </td>
-
-          <td style="text-align: right; width: 50%;">
-            <tal:createquestion
-              define="link context_menu/createquestion"
-              condition="link/enabled"
-              replace="structure link/render" />
-
-            <tal:removequestion
-              define="link context_menu/removequestion"
-              condition="link/enabled"
-              replace="structure link/render" />
-          </td>
-        </tr>
-      </table>
-
       <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
       <div id="maincontentsub">
-        <div id="nonportlets">
+        <div><!-- id="nonportlets"> -->
+        <div class="top-portlet">
 
       <div class="report">
         <tal:description
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
-        <div id="edit-description"
+        <div id="edit-description" class="lazr-multiline-edit"
           tal:content="structure view/bug_description_html"
           />
 
@@ -208,7 +131,7 @@
                 <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
                 <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit"></a>
               <script type="text/javascript">
-                  YUI().use('event', 'node', 'bugs.bug_tags_entry', function(Y) {
+                  LPS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
                       // XXX intellectronica 2009-04-16 bug #362309:
                       // The load event fires very late on bug pages that take a
                       // long time to render, but we prefer to use it since the
@@ -217,13 +140,14 @@
                       // non-JS form, we first disable the link. This is awful and
                       // must be fixed as soon as YUI3 is fixed.
                       if (LP.client.links['me'] !== undefined) {
-                          Y.get('#edit-tags-trigger').on('click', function(e) {
+                          Y.one('#edit-tags-trigger').on('click', function(e) {
                               e.halt();
                           });
                       }
                       Y.on('load',
                            function(e) {
-                               Y.bugs.setup_tag_entry(available_official_tags);
+                               Y.lp.bugs.bug_tags_entry.setup_tag_entry(
+                                   available_official_tags);
                            },
                            window);
                   });
@@ -236,6 +160,8 @@
                       id="edit-tags-cancel" style="display: none"
                       type="button">Cancel</button>
            </form>
+           <a href="/+help/tag-help.html" target="help" class="sprite maybe">&nbsp;
+             <span class="invisible-link">Tag help</span></a>
           </div>
           <div id="add-bug-tags"
                tal:attributes="class python: ('tags-container ' +
@@ -244,62 +170,44 @@
             <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
               Add tags
             </a>
+            <a href="/+help/tag-help.html" target="help" class="sprite maybe">&nbsp;
+             <span class="invisible-link">Tag help</span></a>
           </div>
 
         <div class="clearfix"></div>
       </div>
 
-      <tal:branches define="linked_branches view/linked_branches"
-                    condition="linked_branches">
+      <div id="branches-and-cves">
+        <div id="bug-branches-container"
+            style="float: left">
+          <tal:branches
+              define="linked_branches view/linked_branches"
+              condition="linked_branches">
 
-        <h2>Related branches</h2>
+            <div id="bug-branches">
+              <h2>Related branches</h2>
 
-        <tal:bug-branches repeat="linked_branch linked_branches">
-          <div tal:define="show_edit linked_branch/required:launchpad.Edit"
-               tal:condition="linked_branch/branch/required:launchpad.View">
-            <div class="bug-branch-summary">
-              <tal:branch-ref replace="structure linked_branch/branch/fmt:link"/>
-              (<span tal:content="linked_branch/branch/lifecycle_status/title"
-              tal:attributes="class string:branchstatus${linked_branch/branch/lifecycle_status/name}"
-              >Experimental</span>)
-              <a title="Remove link"
-                 tal:condition="show_edit"
-                 tal:attributes="href string:${linked_branch/branch/fmt:url}/+bug/${linked_branch/bug/id}/+delete;">
-                <img src="/@@/remove"/>
-              </a>
+              <tal:bug-branches repeat="linked_branch linked_branches">
+                <tal:bug-branch replace="structure linked_branch/@@+bug-branch" />
+              </tal:bug-branches>
             </div>
-          </div>
-        </tal:bug-branches>
-      </tal:branches>
+          </tal:branches>
+        </div><!-- bug-branch-container -->
 
-      <p>
-        <tal:addbranch
-            define="link context_menu/addbranch"
-            condition="link/enabled"
-            replace="structure link/render" />
-      </p>
+        <div tal:condition="context/bug/cves" class="cves">
+          <h2>CVE References</h2>
+          <ul>
+            <li class="sprite cve" tal:repeat="cve context/bug/cves">
+              <a tal:attributes="href cve/fmt:url;
+                                 title cve/description/fmt:shorten/40"
+                 tal:content="cve/sequence"
+                 >2002-1342</a>
+            </li>
+          </ul>
+        </div>
 
-      <div tal:condition="context/bug/cves">
-        <h2>CVE References</h2>
-        <ul>
-          <li class="sprite cve" tal:repeat="cve context/bug/cves">
-            <a tal:attributes="href cve/fmt:url;
-                               title cve/description/fmt:shorten/40"
-               tal:content="cve/sequence"
-               >2002-1342</a>
-          </li>
-        </ul>
-      </div>
-      <div class="actions">
-        <tal:linktocve
-            define="link context_menu/linktocve"
-            condition="link/enabled"
-            replace="structure link/render" />
-        <tal:unlinkcve
-            define="link context_menu/unlinkcve"
-            condition="link/enabled"
-            replace="structure link/render" />
-      </div>
+        <div class="clearfix"></div>
+      </div> <!-- branches and CVEs -->
 
       <tal:comments>
         <tal:comment repeat="comment_or_activity view/activity_and_comments">
@@ -322,6 +230,12 @@
                   metal:use-macro="context/@@bugcomment-macros/activity-box" />
           </tal:is-activity>
         </tal:comment>
+        <div style="float: right;">
+          <tal:activity_log
+              define="context_menu context/menu:context"
+              content="structure context_menu/activitylog/render" />
+        </div>
+        <div class="clearfix"></div>
 
         <tal:comment-list-complete
             tal:condition="not:view/visible_comments_truncated_for_display">
@@ -333,7 +247,10 @@
                   tal:condition="context/bug/duplicateof"
                   class="warning message"
                   id="warning-comment-on-duplicate">
-                  Remember, this bug report is a duplicate.
+                  Remember, this bug report is a duplicate of
+                    <a href="#" tal:attributes="href
+                      context/bug/duplicateof/fmt:url">bug #<span
+                      tal:replace="context/bug/duplicateof/id">42</span></a>.
                   Comment here only if you think the duplicate status is wrong.
               </div>
               <h2>Add comment</h2>
@@ -360,6 +277,12 @@
               <script type="text/javascript">
                 var button = document.getElementById('field.actions.save');
                 button.style.display = 'none';
+              </script>
+              <script type="text/javascript">
+                LPS.use('lp.comment', function(Y) {
+                    var comment = new Y.lp.Comment();
+                    comment.render();
+                });
               </script>
             </div>
             <tal:attachment-link
@@ -393,26 +316,6 @@
         </tal:comment-list-truncated>
       </tal:comments>
 
-      <div id="mentoring" style="margin-top: 4em">
-        <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
-                     condition="mentoring_offers">
-          <p>
-            <b>Mentors:</b>
-            <tal:block repeat="mentoring_offer mentoring_offers">
-              <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
-            </tal:block>
-          </p>
-          <tal:block condition="not: context/bug/is_complete">
-            <div tal:condition="view/userIsMentor" class="actions">
-              <img class="inlineLinkIcon sprite remove" alt=""/><a href="+retractmentoring">Retract my offer of mentorship</a>
-            </div>
-          </tal:block>
-        </tal:mentors>
-        <p tal:define="link context_menu/offermentoring"
-             tal:condition="link/enabled"
-             tal:content="structure link/render"
-        />
-      </div>
       <div class="related">
         <h2>What next?</h2>
         <ul>
@@ -431,17 +334,9 @@
         </ul>
       </div>
 
+      </div><!-- class="top-portlet" -->
         </div><!-- id="nonportlets"-->
       </div><!--- id="maincontentsub"-->
-      <div id="portlets">
-        <div tal:replace="structure context/bug/@@+portlet-duplicates" />
-        <div tal:replace="structure context/bug/@@+portlet-subscribers" />
-        <div tal:replace="structure context/bug/@@+portlet-questions" />
-        <div tal:replace="structure context/bug/@@+portlet-specs" />
-        <div tal:replace="structure context/bug/@@+portlet-attachments" />
-        <div tal:replace="structure context/bug/@@+portlet-watch" />
-        <div tal:replace="structure context/@@+portlet-search" />
-      </div>
       <div>
         <div id="duplicate-form-container"></div>
         <div id="privacy-form-container"></div>

@@ -7,7 +7,7 @@ import unittest
 
 from zope.component import getUtility
 
-from lp.translations.browser.productserieslanguage import (
+from lp.translations.browser.serieslanguage import (
     ProductSeriesLanguageView)
 from lp.translations.interfaces.translator import ITranslatorSet
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -38,11 +38,18 @@ class TestProductSeries(TestCaseWithFactory):
 
         potemplate1 = self.factory.makePOTemplate(
             productseries=self.productseries)
-        self.assertTrue(self.view.single_potemplate)
+
+        # self.view may cache the old single_potemplate value, so create
+        # a fresh view now that the underlying data has changed.
+        fresh_view = ProductSeriesView(
+            self.productseries, LaunchpadTestRequest())
+        self.assertTrue(fresh_view.single_potemplate)
 
         potemplate2 = self.factory.makePOTemplate(
             productseries=self.productseries)
-        self.assertFalse(self.view.single_potemplate)
+        fresh_view = ProductSeriesView(
+            self.productseries, LaunchpadTestRequest())
+        self.assertFalse(fresh_view.single_potemplate)
 
     def test_has_translation_documentation(self):
         self.assertFalse(self.view.has_translation_documentation)
@@ -137,6 +144,7 @@ class TestProductSeriesLanguage(TestCaseWithFactory):
         group = self.factory.makeTranslationGroup(
             self.productseries.product.owner, url=None)
         self.productseries.product.translationgroup = group
+        self.view.initialize()
         self.assertEquals(self.view.translation_group, group)
 
     def test_translation_team(self):
@@ -155,6 +163,7 @@ class TestProductSeriesLanguage(TestCaseWithFactory):
         # Recreate the view because we are using a cached property.
         self.view = ProductSeriesLanguageView(
             self.psl, LaunchpadTestRequest())
+        self.view.initialize()
         self.assertEquals(self.view.translation_team, translator)
 
 def test_suite():

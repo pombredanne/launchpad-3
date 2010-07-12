@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'InMemoryFrontend',
-    'XMLRPCWrapper'
+    'XMLRPCWrapper',
     ]
 
 import operator
@@ -18,6 +18,11 @@ from zope.component import adapter, getSiteManager
 from zope.interface import implementer
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.xmlrpc import faults
+
+from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.code.errors import UnknownBranchTypeError
 from lp.code.model.branchnamespace import BranchNamespaceSet
 from lp.code.model.branchtarget import (
     PackageBranchTarget, ProductBranchTarget)
@@ -27,12 +32,10 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
+from lp.code.xmlrpc.codehosting import datetime_from_tuple
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.utils import iter_split
 from lp.testing.factory import ObjectFactory
-from canonical.launchpad.validators import LaunchpadValidationError
-from lp.code.xmlrpc.codehosting import (
-    datetime_from_tuple, iter_split)
-from canonical.launchpad.xmlrpc import faults
 
 
 class FakeStore:
@@ -61,10 +64,20 @@ class FakeStore:
         expected_value = kwargs[attribute]
         branch = self._object_set.get(branch_id)
         if branch is None:
-            return None
+            return FakeResult(None)
         if expected_value is getattr(branch, attribute):
-            return branch
+            return FakeResult(branch)
         return None
+
+
+class FakeResult:
+    """As with FakeStore, just enough of a result to pass tests."""
+
+    def __init__(self, branch):
+        self._branch = branch
+
+    def one(self):
+        return self._branch
 
 
 class FakeDatabaseObject:
@@ -420,7 +433,7 @@ class FakeObjectFactory(ObjectFactory):
         if branch is None:
             branch = self.makeBranch(product=product)
         product.development_focus.branch = branch
-        branch.last_mirrored = 'rev1'
+        branch.last_mirrored_id = 'rev1'
         return branch
 
     def enableDefaultStackingForPackage(self, package, branch):
@@ -432,48 +445,44 @@ class FakeObjectFactory(ObjectFactory):
         """
         package.development_version.setBranch(
             PackagePublishingPocket.RELEASE, branch, branch.owner)
-        branch.last_mirrored = 'rev1'
+        branch.last_mirrored_id = 'rev1'
         return branch
 
 
-class FakeBranchPuller:
+class FakeCodehosting:
 
-    def __init__(self, branch_set, script_activity_set):
+    def __init__(self, branch_set, person_set, product_set, distribution_set,
+                 distroseries_set, sourcepackagename_set, factory,
+                 script_activity_set):
         self._branch_set = branch_set
+        self._person_set = person_set
+        self._product_set = product_set
+        self._distribution_set = distribution_set
+        self._distroseries_set = distroseries_set
+        self._sourcepackagename_set = sourcepackagename_set
+        self._factory = factory
         self._script_activity_set = script_activity_set
 
-    def _getBranchPullInfo(self, branch):
-        default_branch = ''
-        if branch.product is not None:
-            series = branch.product.development_focus
-            user_branch = series.branch
-            if (user_branch is not None
-                and not (
-                    user_branch.private
-                    and branch.branch_type == BranchType.MIRRORED)):
-                default_branch = '/' + user_branch.unique_name
-        return (
-            branch.id, branch.getPullURL(), branch.unique_name,
-            default_branch)
-
-    def getBranchPullQueue(self, branch_type):
-        queue = []
-        branch_type = BranchType.items[branch_type]
-        for branch in self._branch_set:
-            if (branch.branch_type == branch_type
-                and branch.next_mirror_time < UTC_NOW):
-                queue.append(self._getBranchPullInfo(branch))
-        return queue
-
-    def acquireBranchToPull(self):
+    def acquireBranchToPull(self, branch_type_names):
+        if not branch_type_names:
+            branch_type_names = 'HOSTED', 'MIRRORED', 'IMPORTED'
+        branch_types = []
+        for branch_type_name in branch_type_names:
+            try:
+                branch_types.append(BranchType.items[branch_type_name])
+            except KeyError:
+                raise UnknownBranchTypeError(
+                    'Unknown branch type: %r' % (branch_type_name,))
         branches = sorted(
             [branch for branch in self._branch_set
              if branch.next_mirror_time is not None
-             and branch.branch_type != BranchType.REMOTE],
+             and branch.branch_type in branch_types],
             key=operator.attrgetter('next_mirror_time'))
         if branches:
             branch = branches[-1]
-            self.startMirroring(branch.id)
+            # Mark it as started mirroring.
+            branch.last_mirror_attempt = UTC_NOW
+            branch.next_mirror_time = None
             default_branch = branch.target.default_stacked_on_branch
             if default_branch is None:
                 default_branch_name = ''
@@ -486,26 +495,6 @@ class FakeBranchPuller:
                     default_branch_name, branch.branch_type.name)
         else:
             return ()
-
-    def startMirroring(self, branch_id):
-        branch = self._branch_set.get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        branch.last_mirror_attempt = UTC_NOW
-        branch.next_mirror_time = None
-        return True
-
-    def mirrorComplete(self, branch_id, last_revision_id):
-        branch = self._branch_set.get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        branch.last_mirrored_id = last_revision_id
-        branch.last_mirrored = UTC_NOW
-        branch.mirror_failures = 0
-        for stacked_branch in self._branch_set:
-            if stacked_branch.stacked_on is branch:
-                stacked_branch.requestMirror()
-        return True
 
     def mirrorFailed(self, branch_id, reason):
         branch = self._branch_set.get(branch_id)
@@ -520,42 +509,10 @@ class FakeBranchPuller:
             FakeScriptActivity(name, hostname, date_started, date_completed))
         return True
 
-    def setStackedOn(self, branch_id, stacked_on_location):
-        branch = self._branch_set.get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        if stacked_on_location == '':
-            branch.stacked_on = None
-            return True
-        stacked_on_location = stacked_on_location.rstrip('/')
-        for stacked_on_branch in self._branch_set:
-            if stacked_on_location == stacked_on_branch.url:
-                branch.stacked_on = stacked_on_branch
-                break
-            if stacked_on_location == '/' + stacked_on_branch.unique_name:
-                branch.stacked_on = stacked_on_branch
-                break
-        else:
-            return faults.NoSuchBranch(stacked_on_location)
-        return True
-
-
-class FakeBranchFilesystem:
-
-    def __init__(self, branch_set, person_set, product_set, distribution_set,
-                 distroseries_set, sourcepackagename_set, factory):
-        self._branch_set = branch_set
-        self._person_set = person_set
-        self._product_set = product_set
-        self._distribution_set = distribution_set
-        self._distroseries_set = distroseries_set
-        self._sourcepackagename_set = sourcepackagename_set
-        self._factory = factory
-
     def createBranch(self, requester_id, branch_path):
         if not branch_path.startswith('/'):
             return faults.InvalidPath(branch_path)
-        escaped_path = unescape(branch_path.strip('/')).encode('utf-8')
+        escaped_path = unescape(branch_path.strip('/'))
         try:
             namespace_path, branch_name = escaped_path.rsplit('/', 1)
         except ValueError:
@@ -565,7 +522,7 @@ class FakeBranchFilesystem:
         owner = self._person_set.getByName(data['person'])
         if owner is None:
             return faults.NotFound(
-                "User/team %r does not exist." % (data['person'],))
+                "User/team '%s' does not exist." % (data['person'],))
         registrant = self._person_set.get(requester_id)
         # The real code consults the branch creation policy of the product. We
         # don't need to do so here, since the tests above this layer never
@@ -583,7 +540,7 @@ class FakeBranchFilesystem:
             product = self._product_set.getByName(data['product'])
             if product is None:
                 return faults.NotFound(
-                    "Project %r does not exist." % (data['product'],))
+                    "Project '%s' does not exist." % (data['product'],))
         elif data['distribution'] is not None:
             distro = self._distribution_set.getByName(data['distribution'])
             if distro is None:
@@ -612,10 +569,53 @@ class FakeBranchFilesystem:
                 sourcepackage=sourcepackage, registrant=registrant,
                 branch_type=BranchType.HOSTED).id
         except LaunchpadValidationError, e:
-            return faults.PermissionDenied(str(e))
+            msg = e.args[0]
+            if isinstance(msg, unicode):
+                msg = msg.encode('utf-8')
+            return faults.PermissionDenied(msg)
 
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()
+
+    def branchChanged(self, login_id, branch_id, stacked_on_location,
+                      last_revision_id, control_string, branch_string,
+                      repository_string):
+        branch = self._branch_set._find(id=branch_id)
+        if branch is None:
+            return faults.NoBranchWithID(branch_id)
+        branch.mirror_status_message = None
+        if stacked_on_location == '':
+            stacked_on_branch = None
+        else:
+            # We could log or something if the branch is not found here, but
+            # we just wait until the scanner fails and sets up an appropriate
+            # message.
+            stacked_on_branch = self._branch_set._find(
+                unique_name=stacked_on_location.strip('/'))
+            if stacked_on_branch is None:
+                branch.mirror_status_message = (
+                    'Invalid stacked on location: ' + stacked_on_location)
+        branch.stacked_on = stacked_on_branch
+        branch.last_mirrored = UTC_NOW
+        if branch.last_mirrored_id != last_revision_id:
+            branch.last_mirrored_id = last_revision_id
+
+        def match_title(enum, title, default):
+            for value in enum.items:
+                if value.title == title:
+                    return value
+            else:
+                return default
+
+        branch.control_format = match_title(
+            ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
+        branch.branch_format = match_title(
+            BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
+        branch.repository_format = match_title(
+            RepositoryFormat, repository_string,
+            RepositoryFormat.UNRECOGNIZED)
+
+        return True
 
     def _canRead(self, person_id, branch):
         """Can the person 'person_id' see 'branch'?"""
@@ -739,31 +739,22 @@ class InMemoryFrontend:
             self._branch_set, self._person_set, self._product_set,
             self._distribution_set, self._distroseries_set,
             self._sourcepackagename_set)
-        self._puller = FakeBranchPuller(
-            self._branch_set, self._script_activity_set)
-        self._branchfs = FakeBranchFilesystem(
+        self._codehosting = FakeCodehosting(
             self._branch_set, self._person_set, self._product_set,
             self._distribution_set, self._distroseries_set,
-            self._sourcepackagename_set, self._factory)
+            self._sourcepackagename_set, self._factory,
+            self._script_activity_set)
         sm = getSiteManager()
         sm.registerAdapter(fake_product_to_branch_target)
         sm.registerAdapter(fake_source_package_to_branch_target)
 
-    def getFilesystemEndpoint(self):
+    def getCodehostingEndpoint(self):
         """See `LaunchpadDatabaseFrontend`.
 
         Return an in-memory implementation of IBranchFileSystem that passes
         the tests in `test_codehosting`.
         """
-        return self._branchfs
-
-    def getPullerEndpoint(self):
-        """See `LaunchpadDatabaseFrontend`.
-
-        Return an in-memory implementation of IBranchPuller that passes the
-        tests in `test_codehosting`.
-        """
-        return self._puller
+        return self._codehosting
 
     def getLaunchpadObjectFactory(self):
         """See `LaunchpadDatabaseFrontend`.

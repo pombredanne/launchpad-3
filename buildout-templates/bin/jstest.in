@@ -1,4 +1,4 @@
-#!${buildout:executable}
+#!${buildout:executable} -S
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -14,10 +14,11 @@ The script exit codes are:
 
 """
 
-# Add the buildout sys.path
+# Initialize our paths.
+${python-relative-path-setup}
 import sys
-sys.path[0:0] = [${string-paths}]
-
+sys.path.insert(0, ${scripts:parts-directory|path-repr})
+import site
 
 import subprocess
 import os
@@ -48,7 +49,7 @@ test_suites = {
         'domain':    'code.launchpad.dev'
     },
     'soyuz': {
-        'suite_dir': 'lib/canonical/launchpad/windmill/tests/test_soyuz',
+        'suite_dir': 'lib/lp/soyuz/windmill',
         'domain':    'launchpad.dev'
     },
     'translations': {

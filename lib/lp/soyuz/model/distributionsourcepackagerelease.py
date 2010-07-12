@@ -16,11 +16,13 @@ from zope.interface import implements
 
 from storm.expr import Desc
 
+from canonical.database.sqlbase import sqlvalues
+
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from canonical.database.sqlbase import sqlvalues
-
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
@@ -29,7 +31,7 @@ from lp.soyuz.model.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory)
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.publishing import \
     SourcePackagePublishingHistory
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
@@ -67,7 +69,7 @@ class DistributionSourcePackageRelease:
     @property
     def title(self):
         """See IDistributionSourcePackageRelease."""
-        return '%s %s (source) in %s' % (
+        return '"%s" %s source package in %s' % (
             self.name, self.version, self.distribution.displayname)
 
     @property
@@ -100,18 +102,21 @@ class DistributionSourcePackageRelease:
         # distribution that were built for a PPA but have been published
         # in a main archive.
         builds_for_distro_exprs = (
-            Build.sourcepackagerelease == self.sourcepackagerelease,
-            Build.distroarchseries == DistroArchSeries.id,
+            (BinaryPackageBuild.source_package_release ==
+                self.sourcepackagerelease),
+            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             DistroArchSeries.distroseries == DistroSeries.id,
             DistroSeries.distribution == self.distribution,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id
             )
 
         # First, get all the builds built in a main archive (this will
         # include new and failed builds.)
         builds_built_in_main_archives = store.find(
-            Build,
+            BinaryPackageBuild,
             builds_for_distro_exprs,
-            Build.archive == Archive.id,
+            PackageBuild.archive == Archive.id,
             Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
 
         # Next get all the builds that have a binary published in the
@@ -119,9 +124,9 @@ class DistributionSourcePackageRelease:
         # query, but not the new/failed ones. It will also include
         # ppa builds that have been published in main archives.
         builds_published_in_main_archives = store.find(
-            Build,
+            BinaryPackageBuild,
             builds_for_distro_exprs,
-            BinaryPackageRelease.build == Build.id,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.archive == Archive.id,
@@ -130,7 +135,7 @@ class DistributionSourcePackageRelease:
 
         return builds_built_in_main_archives.union(
             builds_published_in_main_archives).order_by(
-                Desc(Build.datecreated), Desc(Build.id))
+                Desc(BinaryPackageBuild.id))
 
     @property
     def binary_package_names(self):
@@ -138,10 +143,10 @@ class DistributionSourcePackageRelease:
         return BinaryPackageName.select("""
             BinaryPackageName.id =
                 BinaryPackageRelease.binarypackagename AND
-            BinaryPackageRelease.build = Build.id AND
-            Build.sourcepackagerelease = %s
+            BinaryPackageRelease.build = BinaryPackageBuild.id AND
+            BinaryPackageBuild.source_package_release = %s
             """ % sqlvalues(self.sourcepackagerelease.id),
-            clauseTables=['BinaryPackageRelease', 'Build'],
+            clauseTables=['BinaryPackageRelease', 'BinaryPackageBuild'],
             orderBy='name',
             distinct=True)
 
@@ -157,8 +162,8 @@ class DistributionSourcePackageRelease:
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = BinaryPackageName.id AND
-            BinaryPackageRelease.build = Build.id AND
-            Build.sourcepackagerelease = %s
+            BinaryPackageRelease.build = BinaryPackageBuild.id AND
+            BinaryPackageBuild.source_package_release = %s
             """ % sqlvalues(self.distribution,
                             self.distribution.all_distro_archive_ids,
                             self.sourcepackagerelease),
@@ -166,7 +171,7 @@ class DistributionSourcePackageRelease:
             orderBy=['BinaryPackageName.name'],
             clauseTables=['DistroArchSeries', 'DistroSeries',
                           'BinaryPackageRelease', 'BinaryPackageName',
-                          'Build'],
+                          'BinaryPackageBuild'],
             prejoinClauseTables=['BinaryPackageRelease', 'BinaryPackageName'])
         samples = []
         names = set()

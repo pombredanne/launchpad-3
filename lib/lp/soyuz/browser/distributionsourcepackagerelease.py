@@ -4,7 +4,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistributionSourcePackageReleaseBreadcrumb',
     'DistributionSourcePackageReleaseNavigation',
+    'DistributionSourcePackageReleasePublishingHistoryView',
     'DistributionSourcePackageReleaseView',
     ]
 
@@ -14,14 +16,25 @@ from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (
     LaunchpadView, Navigation, stepthrough)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.archivepublisher.debversion import Version
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+
+from canonical.lazr.utils import smartquote
+
+
+class DistributionSourcePackageReleaseBreadcrumb(Breadcrumb):
+    """A breadcrumb for `IDistributionSourcePackageRelease`."""
+
+    @property
+    def text(self):
+        return self.context.version
 
 
 class DistributionSourcePackageReleaseNavigation(Navigation):
@@ -34,7 +47,7 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
         except ValueError:
             return None
         try:
-            return getUtility(IBuildSet).getByBuildID(build_id)
+            return getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
         except NotFoundError:
             return None
 
@@ -45,8 +58,12 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
     usedfor = IDistributionSourcePackageRelease
 
     @property
+    def label(self):
+        return smartquote(self.context.title)
+
+    @property
     def page_title(self):
-        return self.context.title
+        return self.label
 
     @cachedproperty
     def _cached_publishing_history(self):
@@ -102,7 +119,7 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
         :return: a `list` of dictionaries containing 'distroseries' and its
              grouped 'builds' ordered by descending distroseries versions.
         """
-        # Build a local list of `IBuilds` ordered by ascending
+        # Build a local list of `IBinaryPackageBuilds` ordered by ascending
         # 'architecture_tag'.
         cached_builds = sorted(
             self.context.builds, key=operator.attrgetter('arch_tag'))
@@ -112,7 +129,7 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
         def distroseries_sort_key(item):
             return Version(item.version)
         sorted_distroseries = sorted(
-            set(build.distroseries for build in cached_builds),
+            set(build.distro_series for build in cached_builds),
             key=distroseries_sort_key, reverse=True)
 
         # Group builds as dictionaries.
@@ -121,9 +138,21 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
             builds = [
                 build
                 for build in cached_builds
-                if build.distroseries == distroseries
+                if build.distro_series == distroseries
                 ]
             distroseries_builds.append(
                 {'distroseries': distroseries, 'builds': builds})
 
         return distroseries_builds
+
+
+class DistributionSourcePackageReleasePublishingHistoryView(LaunchpadView):
+    """Presenting `DistributionSourcePackageRelease` publishing history."""
+
+    usedfor = IDistributionSourcePackageRelease
+
+    page_title = 'Publishing history'
+
+    @property
+    def label(self):
+        return 'Publishing history of %s' % smartquote(self.context.title)

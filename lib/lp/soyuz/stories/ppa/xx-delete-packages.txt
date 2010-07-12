@@ -42,13 +42,13 @@ Celso's PPA.
     ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> cprov_browser.getLink('Delete packages').click()
     >>> print cprov_browser.title
-    +delete-packages : PPA for Celso Providelo : Celso Providelo
+    Delete packages from PPA for Celso Providelo...
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> admin_browser.getLink('Delete packages').click()
     >>> print admin_browser.title
-    +delete-packages : PPA for Celso Providelo : Celso Providelo
+    Delete packages from PPA for Celso Providelo...
 
 Once accessed the page provides a way to search for published package
 sources and optionally delete one or more matching packages via POST
@@ -211,7 +211,7 @@ will use another browser to inspect the results of our deletions.
     cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors  i386
 
     >>> cprov_browser.getControl(
-    ...    name='field.status_filter').value = ['any']
+    ...    name='field.status_filter').value = ['']
     >>> cprov_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
     Source            Published   Status     Series          Section  Build
@@ -274,7 +274,7 @@ previous state to check if the bug 185922 is really fixed.
 Any user can see that all packages present in Celso's PPA are deleted.
 
     >>> cprov_browser.getControl(
-    ...    name='field.status_filter').value = ['any']
+    ...    name='field.status_filter').value = ['']
     >>> cprov_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
     Source            Published   Status     Series          Section  Build
@@ -300,7 +300,7 @@ message is presented.
     >>> admin_browser.open(
     ...    'http://launchpad.dev/~no-priv/+archive/ppa/+delete-packages')
     >>> print admin_browser.title
-    +delete-packages : PPA for No Privileges Person : No Privileges Person
+    Delete packages from PPA for No Privileges Person...
 
     >>> print extract_text(find_main_content(admin_browser.contents))
     Delete packages from PPA for No Privileges Person
@@ -349,8 +349,8 @@ SUPERSEDED source with a PUBLISHED binary in No Privileged Person's PPA.
     ...     version="1.0", architecturehintlist='i386',
     ...     distroseries=hoary, archive=no_priv.archive,
     ...     status=PackagePublishingStatus.SUPERSEDED)
-    >>> foo_pub_src.secure_record.datesuperseded = UTC_NOW
-    >>> foo_pub_src.secure_record.datemadepending = UTC_NOW
+    >>> foo_pub_src.datesuperseded = UTC_NOW
+    >>> foo_pub_src.datemadepending = UTC_NOW
 
     >>> foo_pub_binaries = test_publisher.getPubBinaries(
     ...     distroseries=hoary, pub_source=foo_pub_src,
@@ -371,7 +371,7 @@ overview page.
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
-    foo - 1.0  (changesfile)     Superseded Hoary           Base
+    foo - 1.0  (changes file)     Superseded Hoary           Base
 
 We don't show the publishing details for binary packages, but the
 presence of 'Built packages' and the binary filename in the 'Files'
@@ -396,12 +396,12 @@ available for deletion because it contains a PUBLISHED binary.
 
     >>> user_browser.getLink('Delete packages').click()
     >>> print user_browser.title
-    +delete-packages : PPA for No Privileges Person : No Privileges Person
+    Delete packages from PPA for No Privileges Person...
 
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
-    foo - 1.0  (changesfile)     Superseded Hoary           Base
+    foo - 1.0  (changes file)     Superseded Hoary           Base
 
     >>> expander_url = user_browser.getLink(
     ...     id='pub%s-expander' % foo_pub_src.id).url
@@ -421,7 +421,7 @@ The list of 'deletable' sources can be filtered by status. The default
 filter is 'Any Status', but the user can choose another.
 
     >>> print user_browser.getControl(name='field.status_filter').value
-    ['any']
+    ['']
 
 When the user selects 'Published' filter and update the results, no
 records are presented.
@@ -440,7 +440,7 @@ When he selects 'Superseded' the SUPERSEDED source shows up again.
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
-    foo - 1.0  (changesfile)     Superseded Hoary           Base
+    foo - 1.0  (changes file)     Superseded Hoary           Base
 
 The deletion works exactly as it does for PUBLISHED sources, both,
 source and binaries are marked as DELETED and the corresponding
@@ -479,7 +479,7 @@ opposed to being truncated after the fisrt 20 characters.
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
-    foo - 1.0 (changesfile)      Deleted    Hoary           Base
+    foo - 1.0 (changes file)      Deleted    Hoary           Base
 
     >>> expander_url = user_browser.getLink(
     ...     id='pub%s-expander' % foo_pub_src.id).url
@@ -507,7 +507,7 @@ Remove the just deleted publication from disk setting its
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> deleted_pub = no_priv.archive.getPublishedSources(
     ...     status=PackagePublishingStatus.DELETED)[0]
-    >>> deleted_pub.secure_record.dateremoved = deleted_pub.datecreated
+    >>> deleted_pub.dateremoved = deleted_pub.datecreated
     >>> logout()
 
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -543,7 +543,7 @@ as it would refer to non-existent links.
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/foobar/1.0")
     >>> user_browser.getLink('See full publishing history').click()
     >>> print extract_text(find_main_content(user_browser.contents))
-    Ubuntu
+    Publishing history of “foobar” 1.0 source package in Ubuntu
     ...
     1.0
     Removed from disk on 2006-12-02.

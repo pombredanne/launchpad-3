@@ -10,18 +10,18 @@ When subscribers subscribe to branches, they can specify what level of
 notification they would like to receive.
 
     >>> from difflib import unified_diff
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
     >>> from lp.code.interfaces.branchmergeproposal import (
-    ...     IMergeProposalCreatedJobSource)
-    >>> from lp.code.interfaces.diff import IStaticDiffSource
+    ...     IBranchMergeProposalJobSource)
+    >>> from lp.code.model.diff import PreviewDiff
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> import transaction
     >>> login('test@canonical.com')
     >>> diff_bytes = ''.join(unified_diff('', 'c'))
-    >>> diff = getUtility(IStaticDiffSource).acquireFromText(
-    ...     'a', 'b', diff_bytes)
+    >>> preview_diff = PreviewDiff.create(diff_bytes, u'a', u'b', None, None)
     >>> # Make Librarian happy.
     >>> transaction.commit()
     >>> bmp = factory.makeBranchMergeProposal()
@@ -30,13 +30,13 @@ notification they would like to receive.
     >>> _unused = bmp.source_branch.subscribe(source_subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF,
-    ...     CodeReviewNotificationLevel.STATUS)
+    ...     CodeReviewNotificationLevel.STATUS, source_subscriber)
     >>> target_subscriber = factory.makePerson(
     ...     email='target@example.com', displayname='Target Subscriber')
     >>> target_subscription = bmp.target_branch.subscribe(target_subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF,
-    ...     CodeReviewNotificationLevel.FULL)
+    ...     CodeReviewNotificationLevel.FULL, target_subscriber)
 
 The owners of the branches are subscribed when the branches are created.
 
@@ -69,8 +69,8 @@ Only subscribers whose level is >= the minimum level are selected.
 
 Now we will unsubscribe the branch owners to simplify the rest of the test.
 
-    >>> bmp.source_branch.unsubscribe(source_owner)
-    >>> bmp.target_branch.unsubscribe(target_owner)
+    >>> bmp.source_branch.unsubscribe(source_owner, source_owner)
+    >>> bmp.target_branch.unsubscribe(target_owner, target_owner)
     >>> recipients = bmp.getNotificationRecipients(
     ...     CodeReviewNotificationLevel.FULL)
 
@@ -99,11 +99,15 @@ is created.  When those jobs are run, the email is sent from the registrant.
     >>> notifications = pop_notifications()
     >>> registrant = factory.makePerson(
     ...     displayname="Eric", email="eric@example.com")
-    >>> # To avoid trying to access branches, pre-populate review_diff.
+    >>> # To avoid needing to access branches, pre-populate diffs.
     >>> bmp = source_branch.addLandingTarget(
-    ...     registrant, target_branch, review_diff=diff)
-    >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
-    >>> _unused_diff = job.run()
+    ...     registrant, target_branch)
+    >>> removeSecurityProxy(bmp).preview_diff = preview_diff
+    >>> # Fake the update preview diff as done.
+    >>> bmp.next_preview_diff_job.start()
+    >>> bmp.next_preview_diff_job.complete()
+    >>> [job] = list(getUtility(IBranchMergeProposalJobSource).iterReady())
+    >>> job.run()
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
 
@@ -151,10 +155,14 @@ in the email.
     ...     """)
     >>> bmp.deleteProposal()
     >>> bmp = source_branch.addLandingTarget(
-    ...     registrant, target_branch, review_diff=diff,
-    ...     initial_comment=initial_comment, review_requests=reviewers)
-    >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
-    >>> _unused_diff = job.run()
+    ...     registrant, target_branch,
+    ...     description=initial_comment, review_requests=reviewers)
+    >>> removeSecurityProxy(bmp).preview_diff = preview_diff
+    >>> # Fake the update preview diff as done.
+    >>> bmp.next_preview_diff_job.start()
+    >>> bmp.next_preview_diff_job.complete()
+    >>> [job] = list(getUtility(IBranchMergeProposalJobSource).iterReady())
+    >>> job.run()
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
     >>> for notification in notifications:

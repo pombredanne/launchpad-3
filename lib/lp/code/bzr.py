@@ -6,38 +6,32 @@
 __metaclass__ = type
 __all__ = [
     'BranchFormat',
-    'BRANCH_FORMAT_UPGRADE_PATH',
     'ControlFormat',
+    'CURRENT_BRANCH_FORMATS',
+    'CURRENT_REPOSITORY_FORMATS',
     'RepositoryFormat',
-    'REPOSITORY_FORMAT_UPGRADE_PATH',
     ]
 
 
-# Ensure correct plugins are loaded. Do not delete this line.
+# Ensure correct plugins are loaded. Do not delete this comment or the line
+# below this comment.
 import lp.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6, BzrBranchFormat7, BzrBranchFormat8)
+    BzrBranchFormat6, BzrBranchFormat7)
 from bzrlib.bzrdir import (
     BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
 from bzrlib.plugins.loom.branch import (
     BzrBranchLoomFormat1, BzrBranchLoomFormat6)
 from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
     RepositoryFormatKnit3, RepositoryFormatKnit4)
-try:
-    from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
-    # Shut up, pyflakes.
-    RepositoryFormat2a
-except ImportError:
-    RepositoryFormat2a = None
 from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
-    RepositoryFormatKnitPack4, RepositoryFormatKnitPack5,
-    RepositoryFormatKnitPack6, RepositoryFormatKnitPack6RichRoot
-    )
+    RepositoryFormatKnitPack4, RepositoryFormatKnitPack5)
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
     RepositoryFormat7)
+from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
 
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -197,11 +191,7 @@ class RepositoryFormat(DBEnumeratedType):
         " and chk inventories\n",
         )
 
-    BZR_CHK_2A = DBItem(415,
-        "Bazaar repository format 2a (needs bzr 1.16 or later)\n",
-        "Development repository format - rich roots, group compression"
-        " and chk inventories\n",
-        )
+    BZR_CHK_2A = _format_enum(415, RepositoryFormat2a)
 
 
 class ControlFormat(DBEnumeratedType):
@@ -222,48 +212,27 @@ class ControlFormat(DBEnumeratedType):
     BZR_METADIR_1 = _format_enum(1, BzrDirMetaFormat1)
 
 
-BRANCH_FORMAT_UPGRADE_PATH = {
-    BranchFormat.UNRECOGNIZED: None,
-    BranchFormat.BRANCH_REFERENCE: None,
-    BranchFormat.BZR_BRANCH_4: BzrBranchFormat8,
-    BranchFormat.BZR_BRANCH_5: BzrBranchFormat8,
-    BranchFormat.BZR_BRANCH_6: BzrBranchFormat8,
-    BranchFormat.BZR_BRANCH_7: BzrBranchFormat8,
-    BranchFormat.BZR_BRANCH_8: None,
-    BranchFormat.BZR_LOOM_1: None,
-    BranchFormat.BZR_LOOM_2: None,
-    BranchFormat.BZR_LOOM_3: None,
-    }
+# A tuple of branch formats that should not suggest upgrading.
+CURRENT_BRANCH_FORMATS = (
+    None,
+    BranchFormat.UNRECOGNIZED,
+    BranchFormat.BRANCH_REFERENCE,
+    BranchFormat.BZR_BRANCH_7,
+    BranchFormat.BZR_BRANCH_8,
+    BranchFormat.BZR_LOOM_1,
+    BranchFormat.BZR_LOOM_2,
+    BranchFormat.BZR_LOOM_3)
 
-
-REPOSITORY_FORMAT_UPGRADE_PATH = {
-    RepositoryFormat.UNRECOGNIZED: None,
-    RepositoryFormat.BZR_REPOSITORY_4: RepositoryFormatKnitPack6,
-    RepositoryFormat.BZR_REPOSITORY_5: RepositoryFormatKnitPack6,
-    RepositoryFormat.BZR_REPOSITORY_6: RepositoryFormatKnitPack6,
-    RepositoryFormat.BZR_REPOSITORY_7: RepositoryFormatKnitPack6,
-    RepositoryFormat.BZR_KNIT_1: RepositoryFormatKnitPack6,
-    RepositoryFormat.BZR_KNIT_3: RepositoryFormatKnitPack3,
-    RepositoryFormat.BZR_KNIT_4: RepositoryFormatKnitPack6RichRoot,
-    RepositoryFormat.BZR_KNITPACK_1: RepositoryFormatKnitPack6,
-    RepositoryFormat.BZR_KNITPACK_3: None,
-    RepositoryFormat.BZR_KNITPACK_4: RepositoryFormatKnitPack6RichRoot,
-    RepositoryFormat.BZR_KNITPACK_5: None,
-    RepositoryFormat.BZR_KNITPACK_5_RRB: RepositoryFormatKnitPack6RichRoot,
-    RepositoryFormat.BZR_KNITPACK_5_RR: None,
-    RepositoryFormat.BZR_KNITPACK_6: None,
-    RepositoryFormat.BZR_KNITPACK_6_RR: None,
-    RepositoryFormat.BZR_PACK_DEV_0: None,
-    RepositoryFormat.BZR_PACK_DEV_0_SUBTREE: None,
-    RepositoryFormat.BZR_DEV_1: None,
-    RepositoryFormat.BZR_DEV_1_SUBTREE: None,
-    RepositoryFormat.BZR_DEV_2: None,
-    RepositoryFormat.BZR_DEV_2_SUBTREE: None,
-    RepositoryFormat.BZR_CHK1: None,
-    RepositoryFormat.BZR_CHK2: None,
-    RepositoryFormat.BZR_CHK_2A: None
-    }
-
-if RepositoryFormat2a is not None:
-    for k in [RepositoryFormat.BZR_CHK1, RepositoryFormat.BZR_CHK2]:
-        REPOSITORY_FORMAT_UPGRADE_PATH[k] = RepositoryFormat2a
+# A tuple of repository formats that should not suggest upgrading.
+CURRENT_REPOSITORY_FORMATS = (
+    None,
+    RepositoryFormat.UNRECOGNIZED,
+    RepositoryFormat.BZR_PACK_DEV_0,
+    RepositoryFormat.BZR_PACK_DEV_0_SUBTREE,
+    RepositoryFormat.BZR_DEV_1,
+    RepositoryFormat.BZR_DEV_1_SUBTREE,
+    RepositoryFormat.BZR_DEV_2,
+    RepositoryFormat.BZR_DEV_2_SUBTREE,
+    RepositoryFormat.BZR_CHK1,
+    RepositoryFormat.BZR_CHK2,
+    RepositoryFormat.BZR_CHK_2A)

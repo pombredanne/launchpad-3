@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistroArchSeriesBinaryPackageBreadcrumb',
     'DistroArchSeriesBinaryPackageNavigation',
     'DistroArchSeriesBinaryPackageView',
     ]
@@ -14,14 +13,6 @@ from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
 from canonical.launchpad.webapp import ApplicationMenu, GetitemNavigation
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
-
-
-class DistroArchSeriesBinaryPackageBreadcrumb(Breadcrumb):
-    """A breadcrumb for `DistroArchSeriesBinaryPackage`."""
-
-    @property
-    def text(self):
-        return self.context.name
 
 
 class DistroArchSeriesBinaryPackageOverviewMenu(ApplicationMenu):

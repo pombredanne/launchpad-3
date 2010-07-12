@@ -19,6 +19,7 @@
     <include package="lp.services.inlinehelp" file="meta.zcml" />
     <include package="lp.services.openid" />
     <include package="lp.services.job" />
+    <include package="lp.services.memcache" />
     <include package="lp.services.scripts" />
     <include package="lp.services.worlddata" />
     <include package="lazr.uri" />
@@ -47,6 +48,17 @@
         factory="zope.app.publication.traversers.SimpleComponentTraverser"
         permission="zope.Public"
         />
+    <!-- We don't include zope.app.publication (see zopeapp.zcml in the
+         top level), so we lose the default registration that makes our
+         private XMLRPC server work.  Copy that from Zope into here.
+         -->
+    <view
+        for="zope.interface.Interface"
+        type="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
+        provides="zope.publisher.interfaces.xmlrpc.IXMLRPCPublisher"
+        factory="zope.app.publication.traversers.SimpleComponentTraverser"
+        permission="zope.Public"
+        />
 
     <!-- Protocol errors (eg. HTTP 405 or 415 errors) should be published
          with a minimalist template. -->
@@ -58,26 +70,6 @@
         permission="zope.Public"
         />
 
-
-    <!-- This is an index.html view on the root object.
-        The root object is not ever published itself.  Only its views are.
-        -->
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="lp.registry.browser.root.LaunchpadRootIndexView"
-        name="index.html"
-        template="launchpad/templates/root-index.pt"
-        permission="zope.Public"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="lp.registry.browser.featuredproject.FeaturedProjectsView"
-        name="+featuredprojects"
-        template="launchpad/templates/root-featuredprojects.pt"
-        permission="launchpad.Admin"
-        />
 
     <!-- The following directives set up root front pages for the different
          virtual host layers.  The directives come in pairs.
@@ -162,7 +154,5 @@
     <include package="canonical.lazr" />
     <include zcml:condition="installed canonical.shipit"
              package="canonical.shipit" />
-    <include zcml:condition="installed canonical.signon"
-             package="canonical.signon" />
 
 </configure>

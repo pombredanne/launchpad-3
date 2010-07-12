@@ -81,8 +81,9 @@ class IBugMessageAddForm(Interface):
     filecontent = Bytes(
         title=u"Attachment", required=False,
         constraint=attachment_size_constraint)
-    patch = Bool(title=u"This attachment is a patch", required=False,
-        default=False)
+    patch = Bool(
+        title=u"This attachment contains a solution (patch) for this bug",
+        required=False, default=False)
     attachment_description = Title(title=u'Description', required=False)
     email_me = Bool(
         title=u"E-mail me about changes to this bug report",
@@ -124,3 +125,7 @@ class IBugComment(IMessage):
         "A list of BugActivityItems associated with this comment.")
     show_footer = Attribute(
         "Whether or not to show a footer for the comment.")
+    patches = Attribute(
+        "Patches attched to this comment.")
+    rendered_cache_time = Attribute(
+        "How long we can cache the rendered comment for.")

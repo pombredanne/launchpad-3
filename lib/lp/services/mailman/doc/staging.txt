@@ -20,24 +20,25 @@ informing them of their new list.  We can ignore these.
 
     >>> from canonical.launchpad.ftests import login, logout
 
-    >>> login('foo.bar@canonical.com')
-    >>> from zope.component import getUtility
+    >>> login('admin@canonical.com')
 
-    >>> owner = factory.makePerson()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> owner = removeSecurityProxy(factory.makePerson())
     >>> team_one = factory.makeTeam(owner=owner, name='staging-one')
     >>> team_two = factory.makeTeam(owner=owner, name='staging-two')
     >>> transaction.commit()
     >>> logout()
 
-    >>> browser = Browser('%s:%s' %
+    >>> from canonical.launchpad.testing.pages import setupBrowser
+    >>> browser = setupBrowser('Basic %s:%s' %
     ...     (owner._preferredemail_cached.email,
     ...      owner._password_cleartext_cached))
 
     >>> from lp.services.mailman.testing import helpers
     >>> helpers.apply_for_list(browser, 'staging-one')
-    >>> helpers.apply_for_list(browser, 'staging-two')
-
     >>> list_one = helpers.review_list('staging-one')
+
+    >>> helpers.apply_for_list(browser, 'staging-two')
     >>> list_two = helpers.review_list('staging-two')
 
 Anne subscribes to two mailing lists.  Bart and Cris both subscribe to only
@@ -127,7 +128,7 @@ sync script has to deal with.
     >>> from canonical.launchpad.interfaces import (
     ...     EmailAddressStatus, IEmailAddressSet, IPersonSet)
     >>> from zope.component import getUtility
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> team = getUtility(IPersonSet).getByName('staging-two')
     >>> email = getUtility(IEmailAddressSet).new(
     ...     'contact@example.com', team, EmailAddressStatus.VALIDATED)
@@ -199,7 +200,8 @@ launchpad.conf file.
     ...     stdout=PIPE, stderr=PIPE,
     ...     cwd=LayerProcessController.appserver_config.root,
     ...     env=dict(LPCONFIG='testrunner-appserver',
-    ...              PYTHONPATH=os.pathsep.join(sys.path)))
+    ...              PYTHONPATH=os.pathsep.join(sys.path),
+    ...              PATH=os.environ.get('PATH')))
     >>> stdout, stderr = proc.communicate()
 
     # Ignore stdout and stderr, but print the return code.  stdout should be

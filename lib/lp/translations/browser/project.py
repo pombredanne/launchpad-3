@@ -1,12 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Project-related View Classes"""
+"""ProjectGroup-related View Classes"""
 
 __metaclass__ = type
 
 __all__ = [
-    'ProjectChangeTranslatorsView',
+    'ProjectSettingsView',
     'ProjectTranslationsMenu',
     'ProjectView',
     ]
@@ -14,21 +14,21 @@ __all__ = [
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, Link, LaunchpadView)
 from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.browser.project import ProjectEditView
 from lp.translations.browser.translations import TranslationsMixin
 
 
 class ProjectTranslationsMenu(NavigationMenu):
 
-    usedfor = IProject
+    usedfor = IProjectGroup
     facet = 'translations'
     links = ['products', 'settings', 'overview']
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
-        text = 'Settings'
-        return Link('+changetranslators', text, icon='edit')
+        text = 'Change permissions'
+        return Link('+settings', text, icon='edit')
 
     def products(self):
         text = 'Products'
@@ -41,7 +41,10 @@ class ProjectTranslationsMenu(NavigationMenu):
 
 
 class ProjectView(LaunchpadView):
-    """A view for `IProject` in the translations context."""
+    """A view for `IProjectGroup` in the translations context."""
+
+    label = "Translatable applications"
+
     @property
     def untranslatables(self):
         translatables = set(self.context.translatables())
@@ -49,14 +52,10 @@ class ProjectView(LaunchpadView):
         return list(all_products - translatables)
 
 
-class ProjectChangeTranslatorsView(TranslationsMixin, ProjectEditView):
-    label = "Select a new translation group"
+class ProjectSettingsView(TranslationsMixin, ProjectEditView):
+    label = "Set permissions and policies"
+    page_title = "Permissions and policies"
     field_names = ["translationgroup", "translationpermission"]
-
-    @property
-    def page_title(self):
-        return "Set translation permissions for %s" % (
-            self.context.displayname)
 
     @property
     def cancel_url(self):

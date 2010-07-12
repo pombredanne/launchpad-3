@@ -10,10 +10,6 @@
   i18n:domain="malone"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>All registered CVEs</h1>
-    </metal:heading>
-
 <div metal:fill-slot="main"
      tal:define="batchnav view/getAllBatched;
                  batch batchnav/currentBatch">

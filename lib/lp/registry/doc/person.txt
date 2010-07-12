@@ -1,4 +1,5 @@
-= Person =
+Person
+======
 
 The Person class is what we use to represent Launchpad users, teams and
 some people which have done work on the free software community but are
@@ -29,6 +30,7 @@ Any Person object (either a person or a team) implements IPerson...
     >>> verifyObject(IPerson, ubuntu_team)
     True
 
+
 ...and IHasTranslationImports...
 
     >>> IHasTranslationImports.providedBy(foobar)
@@ -53,10 +55,16 @@ meaningless because teams cannot post to mailing lists.
     True
 
 
-== The IPersonSet utility ==
+The IPersonSet utility
+----------------------
 
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> verifyObject(IPersonSet, personset)
+    True
 
 You can create a new person using the createPersonAndEmail method of
 IPersonSet. All you need for that is a valid email address. You can also
@@ -111,11 +119,9 @@ visible to other users which are not admins.
 
 By default, newly created Person entries will have
 AccountStatus.NOACCOUNT as their account_status. This is only changed
-if/when we turn that entry into an actual user account. (Currently, we
-assume that a Person entry is turned into a user account when its first
-email address is confirmed) Note that both the Person and the
-EmailAddress have accounts when they are created using the
-createPersonAndEmail() method.
+if/when we turn that entry into an actual user account.  Note that both
+the Person and the EmailAddress have accounts when they are created
+using the createPersonAndEmail() method.
 
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
@@ -127,6 +133,16 @@ createPersonAndEmail() method.
     >>> email.status
     <DBItem EmailAddressStatus.PREFERRED...
 
+    >>> p.account_status
+    <DBItem AccountStatus.NOACCOUNT...
+
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
+    >>> from canonical.launchpad.database.account import Account
+    >>> account = IMasterStore(Account).get(Account, p.accountID)
+    >>> account.activate(
+    ...     "Activated by doc test.",
+    ...     password=p.password,
+    ...     preferred_email=email)
     >>> p.account_status
     <DBItem AccountStatus.ACTIVE...
 
@@ -180,9 +196,6 @@ Unlike people, teams don't need a contact address, so we can pass None
 to setContactAddress() to leave a team without a contact address.
 
     >>> shipit_admins.setContactAddress(None)
-    >>> email.status
-    <DBItem EmailAddressStatus.VALIDATED...
-
     >>> print shipit_admins.preferredemail
     None
 
@@ -218,7 +231,8 @@ issuing a DB query.
     [u'name16']
 
 
-=== Accounts ===
+Accounts
+........
 
 A Person may be linked to an Account.
 
@@ -228,7 +242,8 @@ A Person may be linked to an Account.
     u'no-priv_oid'
 
 
-==== Adapting an Account into a Person ====
+Adapting an Account into a Person
+.................................
 
 And when the person is linked to an account, it's possible to adapt that
 account into an IPerson.
@@ -245,14 +260,14 @@ We can't adapt an account which has no person associated with, though.
     >>> print IPerson(personless_account, None)
     None
 
-Our security adapters expect to get passed an IPerson, but we use IAccounts to
-represent logged in users, so we need to adapt them into IPerson before
-passing that to the adapters.  Since our Account table has no reference to the
-Person table, the adaptation may end up hitting the DB, which is something we
-don't want our security adapters to be doing as they're called tons of times
-for every page we render.  For that reason, whenever there is a browser
-request, we will cache the IPerson objects associated to the accounts we
-adapt.
+Our security adapters expect to get passed an IPerson, but we use
+IAccounts to represent logged in users, so we need to adapt them into
+IPerson before passing that to the adapters.  Since our Account table
+has no reference to the Person table, the adaptation may end up hitting
+the DB, which is something we don't want our security adapters to be
+doing as they're called tons of times for every page we render.  For
+that reason, whenever there is a browser request, we will cache the
+IPerson objects associated to the accounts we adapt.
 
 Up to now there was no browser request we could use, so no caching was
 done.
@@ -262,35 +277,38 @@ done.
     >>> print request.annotations.get('launchpad.person_to_account_cache')
     None
 
-Now we log in with the request so that whenever we adapt an account into a
-Person, the Person is cached in the request.
+Now we log in with the request so that whenever we adapt an account into
+a Person, the Person is cached in the request.
 
     >>> login('foo.bar@canonical.com', request)
     >>> IPerson(person.account)
     <Person...No Privileges Person)>
+
     >>> cache = request.annotations.get('launchpad.person_to_account_cache')
     >>> from zope.security.proxy import removeSecurityProxy
     >>> cache[removeSecurityProxy(person.account)]
     <Person...No Privileges Person)>
 
-If we manually change the cache, the adapter will be fooled and will return
-the wrong object.
+If we manually change the cache, the adapter will be fooled and will
+return the wrong object.
 
     >>> cache[removeSecurityProxy(person.account)] = 'foo'
     >>> IPerson(person.account)
     'foo'
 
-If the cached value is None, though, the adapter will look up the correct
-Person again and update the cache.
+If the cached value is None, though, the adapter will look up the
+correct Person again and update the cache.
 
     >>> cache[removeSecurityProxy(person.account)] = None
     >>> IPerson(person.account)
     <Person...No Privileges Person)>
+
     >>> cache[removeSecurityProxy(person.account)]
     <Person...No Privileges Person)>
 
 
-=== Personal standing ===
+Personal standing
+.................
 
 People have a property called 'personal standing', which affects for
 example their ability to post to mailing lists they are not members of.
@@ -348,18 +366,21 @@ Non-administrators may not change a person's standing.
     >>> login(ANONYMOUS)
 
 
-=== Ubuntu Code of Conduct signees ===
+Ubuntu Code of Conduct signees
+..............................
 
-Some people have signed the latest version of the Ubuntu Code of Conduct and
-others have not.
+Some people have signed the latest version of the Ubuntu Code of Conduct
+and others have not.
 
     >>> foobar.is_ubuntu_coc_signer
     True
+
     >>> lifeless.is_ubuntu_coc_signer
     False
 
 
-== Teams ==
+Teams
+-----
 
 As we said above, the Person class is overloaded to represent teams so
 we may have Person objects which are, in fact, teams. To find out
@@ -391,7 +412,8 @@ account_status will always be NOACCOUNT.
     <DBItem AccountStatus.NOACCOUNT...
 
 
-=== Creating teams ===
+Creating teams
+..............
 
 Teams are created by the IPersonSet.newTeam() method, which takes the
 team owner and some of the team's details, returning the newly created
@@ -424,10 +446,12 @@ created team.
     ...     ITeam, IObjectCreatedEvent, print_event)
     >>> another_team = personset.newTeam(ddaa, 'new3', 'Another a new team')
     ObjectCreatedEvent fired for team 'new3'
+
     >>> listener.unregister()
 
 
-=== Turning people into teams ===
+Turning people into teams
+.........................
 
 Launchpad may create Person entries automatically and it always assumes
 these are actual people.  Sometimes, though, these should actually be
@@ -482,7 +506,7 @@ The team owner is also added as an administrator of its team.
 And we can even add other members to our new team!
 
     >>> login('foo.bar@canonical.com')
-    >>> not_a_person.addMember(lifeless, reviewer=ddaa)
+    >>> ignored = not_a_person.addMember(lifeless, reviewer=ddaa)
     >>> login(ANONYMOUS)
     >>> [member.name for member in not_a_person.activemembers]
     [u'ddaa', u'lifeless']
@@ -504,7 +528,8 @@ account_status is NOACCOUNT, though.
     AssertionError: Can't convert a team to a team.
 
 
-=== Team members ===
+Team members
+............
 
 The relationship between a person and a team is stored in
 TeamMemberships table. TeamMemberships have a status (which can be any
@@ -626,12 +651,11 @@ to ensure that the cache can be kept consistent when membership changes.
     {}
 
 ** See lib/canonical/launchpad/doc/teammembership.txt for more
-information
-
-   about team membership/participation.
+information about team membership/participation.
 
 
-=== Email notifications to teams ===
+Email notifications to teams
+............................
 
 If a team has a contact email address, all notifications we send to the
 team will go to that address.
@@ -661,25 +685,24 @@ direct member of that team.
      'robertc@robertcollins.net']
 
 
-=== Team Visibility ===
+Team Visibility
+...............
 
-A Team can have its visibility attribute set to
-PersonVisibility.PUBLIC, PersonVisibility.PRIVATE_MEMBERSHIP, or
-PersonVisibility.PRIVATE.
+A Team can have its visibility attribute set to PersonVisibility.PUBLIC,
+PersonVisibility.PRIVATE_MEMBERSHIP, or PersonVisibility.PRIVATE.
 
-A PRIVATE_MEMBERSHIP team is a team that exists for the sole purpose
-of providing a membership list for the purpose of single sign on,
-etc.  PRIVATE_MEMBERSHIP teams can have mailing lists but cannot
-participate in Launchpad in other ways.
+A PRIVATE_MEMBERSHIP team is a team that exists for the sole purpose of
+providing a membership list for the purpose of single sign on, etc.
+PRIVATE_MEMBERSHIP teams can have mailing lists but cannot participate
+in Launchpad in other ways.
 
 Like PRIVATE_MEMBERSHIP teams, PRIVATE teams are hidden from view from
 non-members but they are allowed to actually do things in Launchpad.
 
-To prevent leaking of private membership information,
-private-membership teams are only allowed to be connected with a few
-different database objects. This is enforced in the model, but there
-are also checks in the form handling to provide clearer error
-messages.
+To prevent leaking of private membership information, private-membership
+teams are only allowed to be connected with a few different database
+objects. This is enforced in the model, but there are also checks in the
+form handling to provide clearer error messages.
 
 The PublicPersonChoice for interface classes and the
 validate_public_person for database classes only allow public teams to
@@ -747,11 +770,13 @@ false for people.
     >>> salgado.private
     False
 
-The visibility attribute may only be modified if the user has launchpad.Commercial permissions.
+The visibility attribute may only be modified if the user has
+launchpad.Commercial permissions.
 
     >>> login('commercial-member@canonical.com')
     >>> print myteam.visibility.name
     PRIVATE_MEMBERSHIP
+
     >>> myteam.visibility = PersonVisibility.PUBLIC
     >>> print myteam.visibility.name
     PUBLIC
@@ -763,7 +788,8 @@ The visibility attribute may only be modified if the user has launchpad.Commerci
     Unauthorized: ...
 
 
-== Latest Team Memberships ==
+Latest Team Memberships
+-----------------------
 
 The key concept in displaying the latest team memberships is that the
 team list is actually sorted by date joined.
@@ -782,7 +808,8 @@ team list is actually sorted by date joined.
     2005-10-13 13:03:41.668724+00:00
 
 
-== Searching ==
+Searching
+---------
 
 You can search based on a person's name or displayname, or any of the
 email addresses that belongs to a person using the methods provided by
@@ -813,7 +840,8 @@ address:
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
     Ubuntu Technical Board (techboard): []
     Ubuntu Translators (ubuntu-translators): []
-    Ubuntu-branches-owner (ubuntu-branches-owner): [u'ubuntu-branches-owner@example.com']
+    Ubuntu-branches-owner (ubuntu-branches-owner):
+      [u'ubuntu-branches-owner@example.com']
 
     >>> print_people(personset.find('steve.alexander'))
     Steve Alexander (stevea): [u'steve.alexander@ubuntulinux.com']
@@ -839,7 +867,8 @@ Anonymous users cannot see non-public teams, such as 'myteam'.
     HWDB Team (hwdb-team): []
     Just a new team (new-team): []
     My Team (myteam): []
-    No Team Memberships (no-team-memberships): [u'no-team-memberships@test.com']
+    No Team Memberships (no-team-memberships):
+      [u'no-team-memberships@test.com']
     Other Team (otherteam): []
     Simple Team (simple-team): []
     Team Membership Janitor (team-membership-janitor): []
@@ -860,7 +889,8 @@ But Owner, a member of that team, will see it in the results.
     HWDB Team (hwdb-team): []
     Just a new team (new-team): []
     My Team (myteam): []
-    No Team Memberships (no-team-memberships): [u'no-team-memberships@test.com']
+    No Team Memberships (no-team-memberships):
+      [u'no-team-memberships@test.com']
     Other Team (otherteam): []
     Simple Team (simple-team): []
     Team Membership Janitor (team-membership-janitor): []
@@ -886,6 +916,18 @@ Searching only for People based on their names or email addresses:
     >>> print_people(personset.findPerson('dave'))
     Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
                              u'justdave@bugzilla.org']
+
+The created_before and created_after arguments can be used to restrict
+the matches by the IPerson.datecreated value.
+
+    >>> from datetime import datetime
+    >>> import pytz
+
+    >>> created_after = datetime(2008, 6, 27, tzinfo=pytz.UTC)
+    >>> created_before = datetime(2008, 7, 1, tzinfo=pytz.UTC)
+    >>> print_people(personset.findPerson(text='',
+    ...     created_after=created_after, created_before=created_before))
+    Brad Crittenden (bac): [u'bac@canonical.com']
 
 By default, when searching only for people, any person whose account is
 inactive is not included in the list, but we can tell findPerson to
@@ -951,13 +993,15 @@ the previous search will include myteam in the results.
 
 Searching for users with non-ASCII characters in their name works.
 
-    >>> print_people(personset.find(u'P\xf6ll\xe4'))
-    Matti Pöllä (mpo): [u'mpo@iki.fi']
+    >>> [found_person] = personset.find(u'P\xf6ll\xe4')
+    >>> found_person.displayname
+    u'Matti P\xf6ll\xe4'
 
     >>> bjorns_team = factory.makeTeam(salgado, name='bjorn-team',
     ...     displayname=u'Team Bj\xf6rn')
-    >>> print_people(personset.findTeam(u'Bj\xf6rn'))
-    Team Bj... (bjorn-team): []
+    >>> [found_person] = personset.find(u'Bj\xf6rn')
+    >>> found_person.displayname
+    u'Team Bj\xf6rn'
 
 You can get the top overall contributors, that is, the people with the
 most karma.
@@ -969,7 +1013,8 @@ most karma.
     mark: 130
 
 
-== Packages related to a person ==
+Packages related to a person
+----------------------------
 
 To obtain the packages a person is related to, we can use:
 
@@ -1042,7 +1087,8 @@ maintainer got omitted from the results:
     (u'iceweasel', u'1.0', u'mark', u'mark', u'mark', u'Ubuntu Warty')
 
 
-== Packages a Person is subscribed to ==
+Packages a Person is subscribed to
+----------------------------------
 
 IPerson.getBugSubscriberPackages returns this list of packages, sorted
 alphabetically by package name.
@@ -1064,7 +1110,8 @@ alphabetically by package name.
     [u'mozilla-firefox', u'pmount']
 
 
-== Pillars owned or driven by a person or team ==
+Pillars owned or driven by a person or team
+-------------------------------------------
 
 To obtain all distributions, project groups and projects owned or driven
 by a person or team, we can use the getOwnedOrDrivenPillars() method of
@@ -1073,14 +1120,14 @@ project groups and projects.
 
     >>> login(ANONYMOUS)
 
-    >>> from canonical.launchpad.interfaces import (IDistribution, IProject,
-    ...     IProduct)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistribution, IProjectGroup, IProduct)
 
     >>> def print_pillar(pillarname):
     ...     pillar = pillarname.pillar
     ...     if IDistribution.providedBy(pillar):
     ...         pillar_type = 'distribution'
-    ...     elif IProject.providedBy(pillar):
+    ...     elif IProjectGroup.providedBy(pillar):
     ...         pillar_type = 'project group'
     ...     elif IProduct.providedBy(pillar):
     ...         pillar_type = 'project'
@@ -1107,11 +1154,12 @@ project groups and projects.
     project: Tomcat (tomcat)
 
 
-== Project owned by a person or team ==
+Project owned by a person or team
+---------------------------------
 
 To obtain active projects owned by a person or team, we can use the
-getOwnedProjects() method of IPerson.  This method returns
-projects ordered by displayname.
+getOwnedProjects() method of IPerson.  This method returns projects
+ordered by displayname.
 
     >>> for project in mark.getOwnedProjects():
     ...     print project.displayname
@@ -1127,7 +1175,7 @@ The method does not return inactive projects.
     >>> registry_member = factory.makePerson()
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
-    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> ignored = registry.addMember(registry_member, registry.teamowner)
     >>> logout()
 
     >>> login_person(registry_member)
@@ -1160,7 +1208,8 @@ Searching for a non-existent project returns no matches.
     []
 
 
-== Languages ==
+Languages
+---------
 
 Users can set their preferred languages, retrievable as
 Person.languages.
@@ -1212,7 +1261,8 @@ English names.
     cy     Welsh
 
 
-== Specification Lists ==
+Specification Lists
+-------------------
 
 We should be able to generate lists of specifications for people based
 on certain criteria:
@@ -1302,6 +1352,10 @@ Inactive products are excluded from the listings.
     >>> from canonical.launchpad.ftests import login
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("mark@example.com")
+
+    # Unlink the source packages so the project can be deactivated.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(firefox)
     >>> firefox.active = False
     >>> flush_database_updates()
     >>> cprov.specifications(filter=['svg']).count()
@@ -1313,12 +1367,14 @@ Reset firefox so we don't mess up later tests.
     >>> flush_database_updates()
 
 
-== Branches ==
+Branches
+--------
 
 ** See branch.txt for API related to branches.
 
 
-== Distribution uploaders ==
+Distribution uploaders
+----------------------
 
 We can ascertain whether a person has uploader rights to a distribution
 or not.
@@ -1335,7 +1391,8 @@ or not.
     False
 
 
-== Bug contribution ==
+Bug contribution
+----------------
 
 We can check whether a person has any bugs assigned to them, either
 within the context of a specific bug target, or in Launchpad in general.
@@ -1371,14 +1428,14 @@ Now Celso is a bug contributor in Launchpad.
 
 Celso is a bug contributer in the context of the `firefox` product.
 
-    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> from canonical.launchpad.interfaces import IProjectGroupSet
     >>> cprov.isBugContributorInTarget(user=foobar, target=firefox)
     True
 
 And also in the context of the `mozilla` project, by association.
 
     >>> cprov.isBugContributorInTarget(user=foobar,
-    ...     target=getUtility(IProjectSet).getByName('mozilla'))
+    ...     target=getUtility(IProjectGroupSet).getByName('mozilla'))
     True
 
 But not in other contexts.
@@ -1388,7 +1445,8 @@ But not in other contexts.
     False
 
 
-== Creating a Person without an email address ==
+Creating a Person without an email address
+------------------------------------------
 
 Although createPersonAndEmail() is the usual method to use when creating
 a new Person, there is also a method that can be used when a Person
@@ -1423,7 +1481,8 @@ takes no parameters regarding to emails or passwords.
     name16
 
 
-== The _newPerson() method ==
+The _newPerson() method
+-----------------------
 
 The PersonSet database class has a method _newPerson(), which is used to
 create new Person objects. This isn't exposed in the interface, so to
@@ -1460,3 +1519,47 @@ be raised.
     Traceback (most recent call last):
       ...
     InvalidName: ThisIsn'tValid is not a valid name for a person.
+
+
+Probationary users
+------------------
+
+Users without karma have not demostrated their intentions and may not
+have the same privileges as users who have made contributions. Users who
+have made recent contributions are not on probation.
+
+    >>> active_user = personset.getByName('name12')
+    >>> active_user.is_probationary
+    False
+
+    >>> active_user.karma > 0
+    True
+
+    >>> active_user.is_valid_person
+    True
+
+New users (those without karma) are on probation.
+
+    >>> new_user = factory.makePerson()
+    >>> new_user.is_probationary
+    True
+
+    >>> new_user.karma > 0
+    False
+
+    >>> new_user.is_valid_person
+    True
+
+Teams are never on probation.
+
+    >>> team = factory.makeTeam()
+    >>> team.is_probationary
+    False
+
+    >>> team.karma > 0
+    False
+
+    >>> team.is_valid_person
+    False
+
+

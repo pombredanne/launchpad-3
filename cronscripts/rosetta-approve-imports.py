@@ -1,4 +1,4 @@
-#! /usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -9,27 +9,11 @@
 
 import _pythonpath
 
-from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from lp.translations.scripts.po_import import AutoApproveProcess
-from lp.services.scripts.base import LaunchpadCronScript
-
-
-class RosettaImportApprover(LaunchpadCronScript):
-    def main(self):
-        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
-        process = AutoApproveProcess(self.txn, self.logger)
-        self.logger.debug('Starting auto-approval of translation imports')
-        process.run()
-        self.logger.debug('Completed auto-approval of translation imports')
+from lp.translations.scripts.import_queue_gardener import ImportQueueGardener
 
 
 if __name__ == '__main__':
-    script = RosettaImportApprover('rosetta-approve-imports',
-        dbuser=config.poimport.dbuser)
-    script.lock_or_quit()
-    try:
-        script.run()
-    finally:
-        script.unlock()
-
+    script = ImportQueueGardener(
+        'translations-import-queue-gardener',
+        dbuser='translations_import_queue_gardener')
+    script.lock_and_run()

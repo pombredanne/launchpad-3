@@ -26,12 +26,13 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 import canonical.launchpad.layers
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.adapter import (
     clear_request_started, set_request_started)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 
-class SystemErrorView:
+class SystemErrorView(LaunchpadView):
     """Helper class for views on exceptions.
 
     Also, sets a 500 response code.
@@ -64,8 +65,7 @@ class SystemErrorView:
     safe_to_show_in_restricted_mode = False
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(SystemErrorView, self).__init__(context, request)
         self.request.response.removeAllNotifications()
         if self.response_code is not None:
             self.request.response.setStatus(self.response_code)
@@ -166,7 +166,7 @@ class SystemErrorView:
     @property
     def layer_help(self):
         if canonical.launchpad.layers.FeedsLayer.providedBy(self.request):
-            return '''<a href="http://help.launchpad.net/Feeds">
+            return '''<a href="https://help.launchpad.net/Feeds">
                       Help with Launchpad feeds</a>'''
         else:
             return None
@@ -210,6 +210,12 @@ class NotFoundView(SystemErrorView):
             return referrer
         else:
             return None
+
+
+class GoneView(NotFoundView):
+    """The page is gone, such as a page belonging to a suspended user."""
+    page_title = 'Error: Page gone'
+    response_code = 410
 
 
 class RequestExpiredView(SystemErrorView):
@@ -277,3 +283,8 @@ class ReadOnlyErrorView(SystemErrorView):
     def __call__(self):
         return self.index()
 
+
+class NoReferrerErrorView(SystemErrorView):
+    """View rendered when a POST request does not include a REFERER header."""
+
+    response_code = 403 # Forbidden.

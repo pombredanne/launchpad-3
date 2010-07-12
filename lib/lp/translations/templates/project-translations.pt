@@ -7,21 +7,19 @@
 <body>
   <div metal:fill-slot="main">
 
-    <h1>Translatable applications</h1>
-
     <div class="top-portlet">
       <p tal:condition="context/translatables">
         Select a project you want to translate into your own language.
       </p>
       <p tal:condition="not:context/translatables">
         There are no translatable projects in
-        <span tal:content="context/displayname">GNOME</span>.
+        <span tal:content="context/displayname">Project Group</span>.
       </p>
       <p tal:condition="not:view/required:launchpad.Edit">
-        If a project for <span tal:content="context/displayname">Project
+        If a project for <span tal:content="context/displayname">Project Group
         </span> is not listed here, get in touch with
         <a tal:replace="structure context/owner/fmt:link">owner</a> who is
-        the administrator for the project.
+        the administrator for the project group.
       </p>
 
       <p>

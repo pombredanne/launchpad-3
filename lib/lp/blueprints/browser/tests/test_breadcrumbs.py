@@ -6,8 +6,8 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tests.breadcrumbs import (
-    BaseBreadcrumbTestCase)
+
+from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
 class TestHasSpecificationsBreadcrumbOnBlueprintsVHost(
@@ -25,20 +25,36 @@ class TestHasSpecificationsBreadcrumbOnBlueprintsVHost(
             self.product, rootsite='blueprints')
 
     def test_product(self):
-        crumbs = self._getBreadcrumbs(
-            self.product_specs_url, [self.root, self.product])
+        crumbs = self.getBreadcrumbsForObject(self.product, rootsite='blueprints')
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.product_specs_url)
-        self.assertEquals(
-            last_crumb.text, 'Blueprints for %s' % self.product.title)
+        self.assertEquals(last_crumb.text, 'Blueprints')
 
     def test_person(self):
-        crumbs = self._getBreadcrumbs(
-            self.person_specs_url, [self.root, self.person])
+        crumbs = self.getBreadcrumbsForObject(self.person, rootsite='blueprints')
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.person_specs_url)
-        self.assertEquals(last_crumb.text,
-                          'Blueprints involving %s' % self.person.displayname)
+        self.assertEquals(last_crumb.text, 'Blueprints')
+
+
+class TestSpecificationBreadcrumb(BaseBreadcrumbTestCase):
+    """Test breadcrumbs for an `ISpecification`."""
+
+    def setUp(self):
+        super(TestSpecificationBreadcrumb, self).setUp()
+        self.product = self.factory.makeProduct(
+            name='crumb-tester', displayname="Crumb Tester")
+        self.specification = self.factory.makeSpecification(
+            title="Crumby Specification", product=self.product)
+        self.specification_url = canonical_url(
+            self.specification, rootsite='blueprints')
+
+    def test_specification(self):
+        crumbs = self.getBreadcrumbsForObject(self.specification)
+        last_crumb = crumbs[-1]
+        self.assertEquals(last_crumb.url, self.specification_url)
+        self.assertEquals(
+            last_crumb.text, self.specification.title)
 
 
 def test_suite():

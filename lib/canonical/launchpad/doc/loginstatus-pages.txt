@@ -81,6 +81,19 @@ The logout page.
     >>> status.login_url
     'http://localhost/+login'
 
+The +openid-callback page.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost', '/+openid-callback', '')
+    >>> context = object()
+    >>> status = LoginStatus(context, request)
+    >>> status.logged_in
+    False
+    >>> status.login_shown
+    True
+    >>> status.login_url
+    'http://localhost/+login'
+
 Logging in.
 
     >>> login('foo.bar@canonical.com')

@@ -33,6 +33,7 @@ class TestRevisionEmailExtraction(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestRevisionEmailExtraction, self).setUp()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
 
     def test_email_extracted_from_name(self):
@@ -132,6 +133,7 @@ class TestNewlyValidatedEmailsLinkRevisionAuthors(MakeHarryTestCase):
 
     def setUp(self):
         # Create a revision author that doesn't have a user yet.
+        super(TestNewlyValidatedEmailsLinkRevisionAuthors, self).setUp()
         launchpad_dbuser = config.launchpad.dbuser
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.author = RevisionSet()._createRevisionAuthor(
@@ -171,6 +173,7 @@ class TestRevisionAuthor(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestRevisionAuthor, self).setUp()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
 
     def testGetNameWithoutEmailReturnsNamePart(self):

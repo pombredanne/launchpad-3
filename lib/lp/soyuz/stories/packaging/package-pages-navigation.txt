@@ -31,7 +31,7 @@ also have a Translations page.)
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > ?alsa-utils? package > Bugs in alsa-utils
+    Hierarchy: Ubuntu > ?alsa-utils? package > Bugs
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -52,7 +52,7 @@ source package.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > ?alsa-utils? package
+    Hierarchy: Ubuntu > ?alsa-utils? package > 1.0.9a-4ubuntu1
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -60,7 +60,7 @@ source package.
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: alsa-utils 1.0.9a-4ubuntu1 (source) in Ubuntu
+    Main heading: ?alsa-utils? 1.0.9a-4ubuntu1 source package in Ubuntu
 
 
 == Distribution source package release build ==
@@ -74,7 +74,7 @@ source package release, but that's more than I can chew off for now.)
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > ?alsa-utils? package
+    Hierarchy: Ubuntu > ?alsa-utils? package > 1.0.9a-4ubuntu1 > i386 build
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -93,7 +93,7 @@ and Answers.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04 > ?alsa-utils? package
+    Hierarchy: Ubuntu > Hoary (5.04) > ?alsa-utils? source package
     Tabs:
     * Overview (selected) - not linked
     * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
@@ -101,7 +101,7 @@ and Answers.
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Answers - http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    Main heading: alsa-utils in Ubuntu Hoary
+    Main heading: ?alsa-utils? source package in Hoary
 
 (XXX 20080612 mpt: That should eventually be "?alsa-utils? source package in
 Ubuntu Hoary".)
@@ -109,8 +109,7 @@ Ubuntu Hoary".)
     >>> anon_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04 > ?alsa-utils? package >
-        Questions for alsa-utils in Ubuntu Hoary
+    Hierarchy: Ubuntu > Hoary (5.04) > ?alsa-utils? source package > Questions
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
@@ -132,7 +131,7 @@ series source package.
     ...     'http://launchpad.dev/ubuntu/hoary/'
     ...     '+source/alsa-utils/1.0.9a-4ubuntu1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04 > ?alsa-utils? package
+    Hierarchy: Ubuntu > Hoary (5.04) > ?alsa-utils? source package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
@@ -140,7 +139,8 @@ series source package.
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Answers - http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    Main heading: alsa-utils 1.0.9a-4ubuntu1 (source) in ubuntu hoary
+    Main heading: ?alsa-utils? 1.0.9a-4ubuntu1 source package in
+        The Hoary Hedgehog Release
 
 
 == Distribution series architecture ==
@@ -150,7 +150,7 @@ Translations from the distribution series.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04 > i386
+    Hierarchy: Ubuntu > Hoary (5.04) > i386
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
     * Code - http://code.launchpad.dev/ubuntu/hoary
@@ -168,7 +168,7 @@ Bugs, Blueprints and Translations from the distribution series.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386/pmount')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04 > i386 > pmount
+    Hierarchy: Ubuntu > Hoary (5.04) > i386 > pmount
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
     * Code - http://code.launchpad.dev/ubuntu/hoary
@@ -187,7 +187,7 @@ Bugs, Blueprints and Translations from the distribution series.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/i386/pmount/0.1-1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04 > i386 > pmount > 0.1-1
+    Hierarchy: Ubuntu > Hoary (5.04) > i386 > pmount > 0.1-1
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
     * Code - http://code.launchpad.dev/ubuntu/hoary

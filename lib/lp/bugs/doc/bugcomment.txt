@@ -365,3 +365,46 @@ with the comment.
     >>> bug_comment.bugwatch = factory.makeBugWatch()
     >>> bug_comment.show_footer
     True
+
+
+== Comment attachments ==
+
+Attachments are provided in the properties BugComment.patches and
+BugComment.attachments. The latter provides only those attachments
+not included in BugComment.patches.
+
+    >>> bug_task = factory.makeBugTask(owner=user)
+    >>> bug = bug_task.bug
+    >>> attachment_1 = bug.addAttachment(
+    ...     owner=None, data=StringIO.StringIO('whatever'),
+    ...     comment=bug.initial_message, filename='file1',
+    ...     is_patch=False, content_type='text/plain',
+    ...     description='sample data 1')
+    >>> attachment_2 = bug.addAttachment(
+    ...     owner=None, data=StringIO.StringIO('whatever'),
+    ...     comment=bug.initial_message, filename='file2',
+    ...     is_patch=False, content_type='text/plain',
+    ...     description='sample data 2')
+    >>> patch_1 = bug.addAttachment(
+    ...     owner=None, data=StringIO.StringIO('whatever'),
+    ...     comment=bug.initial_message, filename='patch1',
+    ...     is_patch=True, content_type='text/plain',
+    ...     description='patch 1')
+    >>> patch_2 = bug.addAttachment(
+    ...     owner=None, data=StringIO.StringIO('whatever'),
+    ...     comment=bug.initial_message, filename='patch2',
+    ...     is_patch=True, content_type='text/plain',
+    ...     description='patch 2')
+    >>> bug_view = getMultiAdapter(
+    ...     (bug_task, LaunchpadTestRequest()), name='+index')
+    >>> bug_view.initialize()
+
+    >>> bug_comment = bug_view.comments[0]
+    >>> for attachment in bug_comment.bugattachments:
+    ...     print attachment.title, attachment.type.title
+    sample data 1 Unspecified
+    sample data 2 Unspecified
+    >>> for patch in bug_comment.patches:
+    ...     print patch.title, patch.type.title
+    patch 1 Patch
+    patch 2 Patch

@@ -6,14 +6,6 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <body>
-    <div metal:fill-slot="heading">
-      <h1>
-        <tal:translation-group replace="context/title">
-          Foo bar
-        </tal:translation-group> translation group
-      </h1>
-    </div>
-
     <div metal:fill-slot="main"
          style="max-width:800px;">
       <p>
@@ -79,9 +71,10 @@
                 <td class="translator-link">
                   <a tal:condition="translator/style_guide_url"
                      tal:attributes="href translator/style_guide_url"
-                     ><img src="/@@/link" alt="Doc"
+                     ><span alt="Doc"
                            tal:attributes="title translator/style_guide_url"
-                           />
+                           class="external-link sprite"
+                           ></span>
                     <tal:link
                        replace="translator/style_guide_url/fmt:shorten/30"
                        ></tal:link></a>

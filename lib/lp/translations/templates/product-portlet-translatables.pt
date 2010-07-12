@@ -23,7 +23,7 @@
 <div tal:condition="context/required:launchpad.Edit">
   <div class="portlet" id="portlet-untranslatable-branches"
        tal:condition="view/untranslatable_series">
-    <h3>Set up translations for other series</h3>
+    <h3>Set up translations for a series</h3>
 
     <div class="portletBody portletContent">
       <ul>
@@ -34,10 +34,10 @@
             series title</a> —
           <a tal:attributes="
               href string:${series/fmt:url}/+translations-upload">
-            upload</a> or
+            manual</a> or
           <a tal:attributes="
               href string:${series/fmt:url}/+translations-settings">
-            set up a bzr import</a>.
+            automatic import</a>.
         </li>
       </ul>
     </div>
@@ -63,4 +63,16 @@
   </div>
 
 </div>
+
+<div class="portlet"
+     tal:condition="context/required:launchpad.Admin"
+     id="custom-language-codes">
+  If necessary, you may
+  <a tal:attributes="href context/fmt:url/+custom-language-codes"
+     class="edit sprite">
+    define custom language codes
+  </a>
+  for this project.
+</div>
+
 </tal:root>

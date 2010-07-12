@@ -146,7 +146,7 @@ common words and stop words.
     >>> faq = target.newFAQ(
     ...     no_priv, 'How to answer a question',
     ...     'Description on how to use the Answer Tracker can be found at: '
-    ...     'http://help.launchpad.net/AnswerTrackerDocumentation')
+    ...     'https://help.launchpad.net/AnswerTrackerDocumentation')
     >>> faq = target.newFAQ(
     ...     no_priv, 'How to become a Launchpad king',
     ...     'The secret to achieve uber-karma is to answer questions using '
@@ -154,7 +154,7 @@ common words and stop words.
     >>> faq = target.newFAQ(
     ...     no_priv, 'How to use bug mail',
     ...     'The syntax of bug mail commands is described at: '
-    ...     'http://help.launchpad.net/BugTrackerEmailInterface')
+    ...     'https://help.launchpad.net/BugTrackerEmailInterface')
 
     >>> for faq in target.findSimilarFAQs('How do I use the Answer Tracker'):
     ...     print faq.title

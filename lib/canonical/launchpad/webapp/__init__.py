@@ -125,5 +125,5 @@ class StandardLaunchpadFacets(FacetMenu):
         # this is disabled by default, because relatively few objects have
         # branch views
         text = 'Code'
-        summary = 'View related branches of code'
+        summary = 'View related code'
         return Link('', text, summary=summary)

@@ -64,7 +64,7 @@ Bug Watch Updater.
 Members of the syncing team will get the notifications.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> syncing_team.addMember(no_priv, no_priv)
+    >>> ignored = syncing_team.addMember(no_priv, no_priv)
     >>> transaction.commit()
 
     >>> LaunchpadZopelessLayer.switchDbUser('bugnotification')

@@ -1,6 +1,5 @@
-===========================
-Appointing a Project Driver
-===========================
+Appointing a ProjectGroup Driver
+================================
 
 Appoint Sample Person as the driver of the GNOME Project.
 
@@ -11,7 +10,7 @@ Appoint Sample Person as the driver of the GNOME Project.
     >>> print browser.url
     http://launchpad.dev/gnome/+driver
     >>> print browser.title
-    +driver : GNOME
+    Appoint the driver for...
 
     >>> browser.getControl('Driver').value = 'name12'
     >>> browser.getControl('Change').click()

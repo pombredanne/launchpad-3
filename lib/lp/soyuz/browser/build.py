@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuildBreadcrumb',
     'BuildContextMenu',
     'BuildNavigation',
     'BuildRecordsView',
@@ -14,6 +15,7 @@ __all__ = [
     'BuildView',
     ]
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -21,25 +23,26 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
     FileNavigationMixin, ProxiedLibraryFileAlias)
-from canonical.lazr.utils import safe_hasattr
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuild, IBuildRescoreForm)
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, ContextMenu,
     GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
     StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from lazr.delegates import delegates
+from canonical.lazr.utils import safe_hasattr
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.interfaces.binarypackagebuild import (
+    IBinaryPackageBuild, IBuildRescoreForm, IBinaryPackageBuildSet)
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 
 
 class BuildUrl:
-    """Dynamic URL declaration for IBuild.
+    """Dynamic URL declaration for IBinaryPackageBuild.
 
     When dealing with distribution builds we want to present them
     under IDistributionSourcePackageRelease url:
@@ -72,19 +75,20 @@ class BuildUrl:
 
 
 class BuildNavigation(GetitemNavigation, FileNavigationMixin):
-    usedfor = IBuild
+    usedfor = IBinaryPackageBuild
 
 
 class BuildFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IBuild."""
+    """The links that will appear in the facet menu for an
+    IBinaryPackageBuild."""
     enable_only = ['overview']
 
-    usedfor = IBuild
+    usedfor = IBinaryPackageBuild
 
 
 class BuildContextMenu(ContextMenu):
     """Overview menu for build records """
-    usedfor = IBuild
+    usedfor = IBinaryPackageBuild
 
     links = ['ppa', 'records', 'retry', 'rescore']
 
@@ -120,26 +124,30 @@ class BuildContextMenu(ContextMenu):
             enabled=self.context.can_be_rescored)
 
 
-class BuildView(LaunchpadView):
-    """Auxiliary view class for IBuild"""
-    __used_for__ = IBuild
+class BuildBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `IBinaryPackageBuild`."""
 
-    def retry_build(self):
-        """Check user confirmation and perform the build record retry."""
-        if not self.context.can_be_retried:
-            self.request.response.addErrorNotification(
-                'Build can not be retried')
+    @property
+    def text(self):
+        # If this is a PPA or copy archive build, include the source
+        # name and version. But for distro archives there are already
+        # breadcrumbs for both, so we omit them.
+        if self.context.archive.is_ppa or self.context.archive.is_copy:
+            return '%s build of %s %s' % (
+                self.context.arch_tag,
+                self.context.source_package_release.sourcepackagename.name,
+                self.context.source_package_release.version)
         else:
-            action = self.request.form.get('RETRY', None)
-            # No action, return None to present the form again.
-            if action is None:
-                return
+            return '%s build' % self.context.arch_tag
 
-            # Invoke context method to retry the build record.
-            self.context.retry()
-            self.request.response.addInfoNotification('Build record active')
 
-        self.request.response.redirect(canonical_url(self.context))
+class BuildView(LaunchpadView):
+    """Auxiliary view class for IBinaryPackageBuild"""
+    __used_for__ = IBinaryPackageBuild
+
+    @property
+    def label(self):
+        return self.context.title
 
     @property
     def user_can_retry_build(self):
@@ -150,15 +158,26 @@ class BuildView(LaunchpadView):
         return (check_permission('launchpad.Edit', self.context)
             and self.context.can_be_retried)
 
-    @property
-    def has_done_upload(self):
-        """Return True if this build's package upload is done."""
-        package_upload = self.context.package_upload
+    @cachedproperty
+    def package_upload(self):
+        """Return the corresponding package upload for this build."""
+        return self.context.package_upload
 
-        if package_upload is None:
-            return False
+    @cachedproperty
+    def has_published_binaries(self):
+        """Whether or not binaries were already published for this build."""
+        # Binaries imported by gina (missing `PackageUpload` record)
+        # are always published.
+        imported_binaries = (
+            self.package_upload is None and
+            self.context.binarypackages.count() > 0)
+        # Binaries uploaded from the buildds are published when the
+        # corresponding `PackageUpload` status is DONE.
+        uploaded_binaries = (
+            self.package_upload is not None and
+            self.package_upload.status == PackageUploadStatus.DONE)
 
-        if package_upload.status == PackageUploadStatus.DONE:
+        if imported_binaries or uploaded_binaries:
             return True
 
         return False
@@ -193,16 +212,60 @@ class BuildView(LaunchpadView):
         files = []
         for package in self.context.binarypackages:
             for file in package.files:
-                files.append(
-                    ProxiedLibraryFileAlias(file.libraryfile, self.context))
+                if file.libraryfile.deleted is False:
+                    alias = ProxiedLibraryFileAlias(
+                        file.libraryfile, self.context)
+                    files.append(alias)
 
         return files
+
+    @property
+    def dispatch_time_estimate_available(self):
+        """True if a dispatch time estimate is available for this build.
+
+        The build must be in state NEEDSBUILD and the associated job must be
+        in state WAITING.
+        """
+        return (
+            self.context.status == BuildStatus.NEEDSBUILD and
+            self.context.buildqueue_record.job.status == JobStatus.WAITING)
+
+
+class BuildRetryView(BuildView):
+    """View class for retrying `IBinaryPackageBuild`s"""
+
+    __used_for__ = IBinaryPackageBuild
+
+    @property
+    def label(self):
+        return 'Retry %s' % self.context.title
+
+    def retry_build(self):
+        """Check user confirmation and perform the build record retry."""
+        if not self.context.can_be_retried:
+            self.request.response.addErrorNotification(
+                'Build can not be retried')
+        else:
+            action = self.request.form.get('RETRY', None)
+            # No action, return None to present the form again.
+            if action is None:
+                return
+
+            # Invoke context method to retry the build record.
+            self.context.retry()
+            self.request.response.addInfoNotification('Build record active')
+
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class BuildRescoringView(LaunchpadFormView):
     """View class for build rescoring."""
 
     schema = IBuildRescoreForm
+
+    @property
+    def label(self):
+        return 'Rescore %s' % self.context.title
 
     def initialize(self):
         """See `ILaunchpadFormView`.
@@ -232,8 +295,8 @@ class BuildRescoringView(LaunchpadFormView):
 
 
 class CompleteBuild:
-    """Super object to store related IBuild & IBuildQueue."""
-    delegates(IBuild)
+    """Super object to store related IBinaryPackageBuild & IBuildQueue."""
+    delegates(IBinaryPackageBuild)
     def __init__(self, build, buildqueue_record):
         self.context = build
         self._buildqueue_record = buildqueue_record
@@ -253,17 +316,21 @@ def setupCompleteBuilds(batch):
     Return a list of built CompleteBuild instances, or empty
     list if no builds were contained in the received batch.
     """
-    builds = list(batch)
+    builds = [build.getSpecificJob() for build in batch]
     if not builds:
         return []
 
+    # This pre-population of queue entries is only implemented for
+    # IBinaryPackageBuilds.
     prefetched_data = dict()
-    build_ids = [build.id for build in builds]
-    results = getUtility(IBuildQueueSet).getForBuilds(build_ids)
-    for (buildqueue, builder) in results:
+    build_ids = [
+        build.id for build in builds if IBinaryPackageBuild.providedBy(build)]
+    results = getUtility(IBinaryPackageBuildSet).getQueueEntriesForBuildIDs(
+        build_ids)
+    for (buildqueue, _builder, build_job) in results:
         # Get the build's id, 'buildqueue', 'sourcepackagerelease' and
         # 'buildlog' (from the result set) respectively.
-        prefetched_data[buildqueue.build.id] = buildqueue
+        prefetched_data[build_job.build.id] = buildqueue
 
     complete_builds = []
     for build in builds:
@@ -283,6 +350,16 @@ class BuildRecordsView(LaunchpadView):
     """
     __used_for__ = IHasBuildRecords
 
+    page_title = 'Builds'
+
+    # Currenly most build records views are interested in binaries
+    # only, but subclasses can set this if desired.
+    binary_only = True
+
+    @property
+    def label(self):
+        return 'Builds for %s' % self.context.displayname
+
     def setupBuildList(self):
         """Setup a batched build records list.
 
@@ -299,10 +376,16 @@ class BuildRecordsView(LaunchpadView):
         # build self.state & self.available_states structures
         self._setupMappedStates(state_tag)
 
+        # By default, we use the binary_only class attribute, but we
+        # ensure it is true if we are passed an arch tag or a name.
+        binary_only = self.binary_only
+        if self.text is not None or self.arch_tag is not None:
+            binary_only = True
+
         # request context build records according the selected state
         builds = self.context.getBuildRecords(
             build_state=self.state, name=self.text, arch_tag=self.arch_tag,
-            user=self.user)
+            user=self.user, binary_only=binary_only)
         self.batchnav = BatchNavigator(builds, self.request)
         # We perform this extra step because we don't what to issue one
         # extra query to retrieve the BuildQueue for each Build (batch item)
@@ -325,7 +408,7 @@ class BuildRecordsView(LaunchpadView):
     def architecture_options(self):
         """Return the architecture options for the context."""
         # Guard against contexts that cannot tell us the available
-        # distroarchserieses.
+        # distroarchseries.
         if safe_hasattr(self.context, 'architectures') is False:
             return []
 
@@ -457,4 +540,3 @@ class BuildRecordsView(LaunchpadView):
     @property
     def no_results(self):
         return self.form_submitted and not self.complete_builds
-

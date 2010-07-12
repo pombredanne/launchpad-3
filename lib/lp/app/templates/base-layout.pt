@@ -24,7 +24,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en" lang="en" dir="ltr">
   <head tal:define="
-    yui string:${icingroot}/yui/3.0.0pr2/build;
+    yui string:${icingroot}/yui/current/build;
     lazr_js string:${icingroot}/lazr/build;
     lp_js string:${icingroot}/build">
     <title tal:content="view/fmt:pagetitle">Page Title</title>
@@ -43,15 +43,6 @@
     <style tal:condition="is_demo" type="text/css">
       html, body {background-image: url(/@@/demo) !important;}
     </style>
-
-    <tal:comment condition="nothing">
-      Internet Explorer apparently doubles the horizontal margins of the
-      application tabs, which causes the 'Answers' tab to wrap onto a second
-      row. To work around this, we give IE some speshul CSS:
-    </tal:comment>
-    <!--[if lte IE 7]>
-      <style type="text/css">#lp-apps span {margin: 0 0.125%;}</style>
-    <![endif]-->
 
     <tal:comment condition="nothing">
       This CSS collapses the contents of collapsible fieldsets,
@@ -78,13 +69,20 @@
       ${view/macro:pagetype}
       ${view/context/fmt:public-private-css}
       yui-skin-sam">
+        <script type="text/javascript"
+          tal:condition="python: is_edge or is_lpnet">
+          var _gaq = _gaq || [];
+          _gaq.push(['_setAccount', 'UA-12833497-1']);
+          _gaq.push(['_setDomainName', '.launchpad.net']);
+          _gaq.push(['_trackPageview']);
+
+          (function() {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ga);
+          })();
+        </script>
     <div class="yui-d0">
-      <div id="globalheader" xml:lang="en" lang="en" dir="ltr"
-           tal:condition="site_message">
-        <div class="sitemessage" tal:content="structure site_message">
-          This site is running pre-release code.
-        </div>
-      </div>
       <div id="locationbar">
         <tal:login replace="structure context/@@login_status" />
       </div><!--id="locationbar"-->
@@ -95,6 +93,9 @@
         <h2 tal:replace="structure view/watermark:heading">
           Celso Providelo
         </h2>
+        <div id="registration" class="registering">
+          <metal:registering define-slot="registering" />
+        </div>
         <metal:heading_nav
           use-macro="context/@@+base-layout-macros/application-buttons"/>
       </div>
@@ -102,32 +103,32 @@
       <div class="yui-t4"
         tal:omit-tag="not: view/macro:pagehas/portlets">
         <div id="maincontent" class="yui-main">
-
-          <tal:maintenance
-            replace="structure context/@@+maintenancemessage" />
-          <tal:notifications
-            define="notifications request/notifications"
-            condition="notifications">
-            <metal:notifications
-              use-macro="context/@@+base-layout-macros/notifications"/>
-          </tal:notifications>
-
           <div class="yui-b"
             tal:attributes="
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
             <div tal:condition="view/macro:pagehas/applicationtabs">
-            <h1
-              tal:condition="view/label|nothing"
-              tal:content="view/label"
-              metal:define-slot="heading"
-              >Page Label</h1>
+              <h1
+                tal:condition="view/label|nothing"
+                tal:content="view/label"
+                metal:define-slot="heading"
+                >Page Label
+              </h1>
               <tal:breadcrumbs replace="structure context/@@+hierarchy">
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
             </div>
-            <metal:main define-slot="main" />
+
+            <tal:maintenance
+              replace="structure context/@@+maintenancemessage" />
+            <tal:notifications
+              define="notifications request/notifications"
+              condition="notifications">
+              <metal:notifications
+                use-macro="context/@@+base-layout-macros/notifications"/>
+            </tal:notifications>
+              <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
@@ -175,7 +176,7 @@
 
     At least ${log}
 
-    ${version}
+    r${revno}
   --&gt;" />
 </tal:template>
 </metal:page>

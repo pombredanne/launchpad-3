@@ -10,11 +10,7 @@
 <body>
 
 <div metal:fill-slot="main">
-    <h1 tal:content="view/label"/>
-
-    <tal:block condition="context/distinctreleases">
-
-    <div id="changelogs">
+    <div class="top-portlet" id="changelogs">
       <ul tal:condition="context/distinctreleases">
         <li tal:repeat="spr context/distinctreleases">
           <div tal:replace="structure spr/@@+changelog"/>
@@ -25,9 +21,7 @@
         There are no change logs associated with this source package.
       </p>
     </div>
+</div>
 
-    </tal:block>
-
-    </div>
-  </body>
+</body>
 </html>

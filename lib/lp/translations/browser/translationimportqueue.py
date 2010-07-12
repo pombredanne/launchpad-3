@@ -1,7 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Browser views for ITranslationImportQueue."""
+"""Browser views for `ITranslationImportQueue`."""
 
 __metaclass__ = type
 
@@ -21,18 +21,21 @@ from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from canonical.launchpad.webapp.interfaces import (
+    NotFoundError, UnexpectedFormData)
 from lp.translations.browser.hastranslationimports import (
     HasTranslationImportsView)
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
     ITranslationImportQueue, RosettaImportStatus,
     SpecialTranslationImportTargetFilter, TranslationFileType)
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, UnexpectedFormData)
+from lp.translations.utilities.template import make_domain, make_name
 
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadFormView)
@@ -47,6 +50,8 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
     """The view part of admin interface for the translation import queue."""
     label = "Review import queue entry"
     schema = IEditTranslationImportQueueEntry
+
+    max_series_to_display = 3
 
     @property
     def initial_values(self):
@@ -77,12 +82,16 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 field_values['languagepack'] = (
                     self.context.potemplate.languagepack)
         if (file_type in (TranslationFileType.POT,
-                          TranslationFileType.UNSPEC) and
-                          self.context.potemplate is not None):
-            field_values['name'] = (
-                self.context.potemplate.name)
-            field_values['translation_domain'] = (
-                self.context.potemplate.translation_domain)
+                          TranslationFileType.UNSPEC)):
+            potemplate = self.context.potemplate
+            if potemplate is None:
+                domain = make_domain(self.context.path)
+                field_values['name'] = make_name(domain)
+                field_values['translation_domain'] = domain
+            else:
+                field_values['name'] = potemplate.name
+                field_values['translation_domain'] = (
+                    potemplate.translation_domain)
         if file_type in (TranslationFileType.PO, TranslationFileType.UNSPEC):
             field_values['potemplate'] = self.context.potemplate
             if self.context.pofile is not None:
@@ -127,6 +136,84 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             return referrer
         else:
             return None
+
+    @property
+    def import_target(self):
+        """The entry's `ProductSeries` or `SourcePackage`."""
+        productseries = self.context.productseries
+        distroseries = self.context.distroseries
+        sourcepackagename = self.context.sourcepackagename
+        if distroseries is None:
+            return productseries
+        else:
+            factory = getUtility(ISourcePackageFactory)
+            return factory.new(sourcepackagename, distroseries)
+
+    @property
+    def productseries_templates_link(self):
+        """Return link to `ProductSeries`' templates.
+
+        Use this only if the entry is attached to a `ProductSeries`.
+        """
+        assert self.context.productseries is not None, (
+            "Entry is not attached to a ProductSeries.")
+
+        template_count = self.context.productseries.potemplate_count
+        if template_count == 0:
+            return "no templates"
+        else:
+            link = "%s/+templates" % canonical_url(
+                self.context.productseries, rootsite='translations')
+            if template_count == 1:
+                word = "template"
+            else:
+                word = "templates"
+            return '<a href="%s">%d %s</a>' % (link, template_count, word)
+
+    def _composeProductSeriesLink(self, productseries):
+        """Produce HTML to link to `productseries`."""
+        return '<a href="%s">%s</a>' % (
+            canonical_url(productseries, rootsite='translations'),
+            productseries.name)
+
+    @property
+    def product_translatable_series(self):
+        """Summarize whether `Product` has translatable series.
+
+        Use this only if the entry is attached to a `ProductSeries`.
+        """
+        assert self.context.productseries is not None, (
+            "Entry is not attached to a ProductSeries.")
+
+        product = self.context.productseries.product
+        translatable_series = list(product.translatable_series)
+        if len(translatable_series) == 0:
+            return "Project has no translatable series."
+        else:
+            links = [
+                self._composeProductSeriesLink(series)
+                for series in translatable_series[:self.max_series_to_display]
+                ]
+            links_text = ', '.join(links)
+            if len(translatable_series) > self.max_series_to_display:
+                tail = ", ..."
+            else:
+                tail = "."
+            return "Project has translatable series: " + links_text + tail
+
+    @property
+    def status_change_date(self):
+        """Show date of last status change.
+
+        Says nothing at all if the entry's status has not changed since
+        upload.
+        """
+        change_date = self.context.date_status_changed
+        if change_date == self.context.dateimported:
+            return ""
+        else:
+            formatter = DateTimeFormatterAPI(change_date)
+            return "Last changed %s." % formatter.displaydate()
 
     @property
     def next_url(self):
@@ -231,21 +318,25 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                             path, self.context.productseries,
                             self.context.distroseries,
                             self.context.sourcepackagename))
+                    already_exists = existing_file is not None
                 else:
                     pofile_set = getUtility(IPOFileSet)
-                    existing_file = pofile_set.getPOFileByPathAndOrigin(
+                    existing_files = pofile_set.getPOFilesByPathAndOrigin(
                         path, self.context.productseries,
                         self.context.distroseries,
                         self.context.sourcepackagename)
-                if existing_file is None:
-                    # There is no other pofile in the given path for this
-                    # context, let's change it as requested by admins.
-                    path_changed = True
-                else:
+                    already_exists = not existing_files.is_empty()
+
+                if already_exists:
                     # We already have an IPOFile in this path, let's notify
                     # the user about that so they choose another path.
                     self.setFieldError('path',
                         'There is already a file in the given path.')
+                else:
+                    # There is no other pofile in the given path for this
+                    # context, let's change it as requested by admins.
+                    path_changed = True
+
         return path_changed
 
     def _validatePOT(self, data):
@@ -414,7 +505,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         # Store the associated IPOTemplate.
         self.context.potemplate = potemplate
 
-        self.context.setStatus(RosettaImportStatus.APPROVED)
+        self.context.setStatus(RosettaImportStatus.APPROVED, self.user)
         self.context.date_status_changed = UTC_NOW
 
 
@@ -424,11 +515,8 @@ class TranslationImportQueueNavigation(GetitemNavigation):
 
 class TranslationImportQueueView(HasTranslationImportsView):
     """The global Translation Import Queue."""
-    @property
-    def page_title(self):
-        """See `HasTranslationImportsView`."""
-        # There's no useful context here, so dumb down the title.
-        return "Translation import queue"
+
+    label = "Translation import queue"
 
     def initialize(self):
         """Useful initialization for this view class."""

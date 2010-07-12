@@ -34,7 +34,6 @@ class TextLineEditorWidget:
     # in case it's not provided.
     last_id = 0
 
-
     # The HTML template used to render the widget.
     # Replacements:
     #   activation_script: the JS script to active the widget
@@ -62,10 +61,11 @@ class TextLineEditorWidget:
     # Template for the activation script.
     ACTIVATION_TEMPLATE = dedent(u"""\
         <script>
-        YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
+        LPS.use('lazr.editor', 'lp.client.plugins', function (Y) {
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
                 accept_empty: %(accept_empty)s,
+                width: '%(width)s',
                 initial_value_override: %(initial_value_override)s
             });
             widget.editor.plug({
@@ -77,10 +77,9 @@ class TextLineEditorWidget:
         </script>
         """)
 
-
     def __init__(self, context, attribute, edit_url, id=None, title="Edit",
                  tag='h1', public_attribute=None, accept_empty=False,
-                 default_text=None, initial_value_override=None):
+                 default_text=None, initial_value_override=None, width=None):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -98,6 +97,7 @@ class TextLineEditorWidget:
             parameter value is missing or None.
         :param initial_value_override: Use this text for the initial edited
             field value instead of the attribute's current value.
+        :param width: Initial widget width.
         """
         self.context = context
         self.attribute = attribute
@@ -118,6 +118,7 @@ class TextLineEditorWidget:
         self.title = title
         self.default_text = default_text
         self.initial_value_override = initial_value_override
+        self.width = width
 
     @classmethod
     def _generate_id(cls):
@@ -147,6 +148,7 @@ class TextLineEditorWidget:
             'accept_empty': self.accept_empty,
             'initial_value_override': simplejson.dumps(
                 self.initial_value_override),
+            'width': self.width,
             }
         # Only display the trigger link and the activation script if
         # the user can write the attribute.
@@ -196,42 +198,28 @@ class TextAreaEditorWidget(TextLineEditorWidget):
 
     ACTIVATION_TEMPLATE = dedent(u"""\
         <script>
-        YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
+        LPS.use('lazr.editor', 'lp.client.plugins', function (Y) {
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
+                accept_empty: %(accept_empty)s,
                 multiline: true,
                 buttons: 'top'
             });
             widget.editor.plug({
                 fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
                   patch: '%(attribute)s',
-                  resource: '%(context_url)s',
-                  accept: 'application/xhtml+xml',
-                  formatter: function(result, attribute) {
-                      var dl = Y.DOM.create(result)[1]
-                      var dl_nodes = dl.childNodes;
-                      var i;
-                      // <dd> in XHR responses breaks description formatting.
-                      for (i=0; i<dl_nodes.length; i++) {
-                          var child = dl_nodes[i];
-                          // Ignore text nodes when looking for the attribute.
-                          // 3 is the text nodeType.
-                          if (child.nodeType != 3 &&
-                              child.firstChild.textContent == attribute) {
-                              var ptags = dl_nodes[i+2].childNodes;
-                              var span = Y.Node.create('<span></span>');
-                              var n;
-                              for (n=0; n<ptags.length; n++) {
-                                  span.appendChild(ptags[n]);
-                              }
-                              return span;
-                          }
-                      }
-                  }
+                  resource: '%(context_url)s/%(attribute)s',
+                  patch_field: true,
+                  accept: 'application/xhtml+xml'
             }});
             if (!Y.UA.opera) {
                 widget.render();
             }
+            var lpns = Y.namespace('lp');
+            if (!lpns.widgets) {
+                lpns.widgets = {};
+            }
+            lpns.widgets['%(id)s'] = widget;
         });
         </script>
         """)
@@ -248,6 +236,7 @@ class TextAreaEditorWidget(TextLineEditorWidget):
             'context_url': canonical_url(
                 self.context, path_only_if_possible=True),
             'attribute': self.attribute,
+            'accept_empty': self.accept_empty,
             'edit_controls': '',
             }
         # Only display the trigger link and the activation script if
@@ -340,11 +329,16 @@ class InlineEditPickerWidget:
             # The user may not have write access on the attribute itself, but
             # the REST API may have a mutator method configured, such as
             # transitionToAssignee.
-            exported_tag = self.interface_attribute.getTaggedValue(
+            #
+            # We look at the top of the annotation stack, since Ajax
+            # requests always go to the most recent version of the web
+            # service.
+            exported_tag_stack = self.interface_attribute.getTaggedValue(
                 'lazr.restful.exported')
-            mutator = exported_tag.get('mutated_by')
-            if mutator is not None:
-                return canAccess(self.context, mutator.__name__)
+            mutator_info = exported_tag_stack.get('mutator_annotations')
+            if mutator_info is not None:
+                mutator_method, mutator_extra = mutator_info
+                return canAccess(self.context, mutator_method.__name__)
             else:
                 return False
 

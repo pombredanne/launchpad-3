@@ -67,9 +67,9 @@ class BranchMergeProposalDelta:
     """Represent changes made to a BranchMergeProposal."""
 
     delta_values = (
-        'registrant', 'source_branch', 'target_branch', 'dependent_branch',
+        'registrant', 'source_branch', 'target_branch', 'prerequisite_branch',
         'queue_status', 'queue_position',)
-    new_values = ('commit_message', 'whiteboard',)
+    new_values = ('commit_message', 'whiteboard', 'description')
     interface = IBranchMergeProposal
 
     def __init__(self, **kwargs):

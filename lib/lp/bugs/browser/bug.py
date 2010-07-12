@@ -30,7 +30,6 @@ from email.MIMEText import MIMEText
 import re
 
 import pytz
-from simplejson import dumps
 
 from zope.app.form.browser import TextWidget
 from zope.component import adapter, getUtility
@@ -50,18 +49,19 @@ from lazr.restful.interfaces import (
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces._schema_circular_imports import IBug
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
-from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bug import IBug, IBugSet
+from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, IBugTask, IFrontPageBugTaskSearch)
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
 from lp.bugs.interfaces.bugnomination import IBugNominationSet
+from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
 
 from canonical.launchpad.mailnotification import (
-    MailWrapper, format_rfc2822_date)
+    MailWrapper)
 from canonical.launchpad.searchbuilder import any, greater_than
 from canonical.launchpad.webapp import (
     ContextMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
@@ -69,7 +69,7 @@ from canonical.launchpad.webapp import (
     custom_widget, redirection, stepthrough, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.tales import FormattersAPI
+from lp.app.browser.stringformatter import FormattersAPI
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.bug import BugTagsWidget
@@ -214,12 +214,17 @@ class BugContextMenu(ContextMenu):
         else:
             text = 'Subscribe'
             icon = 'add'
-        return Link('+subscribe', text, icon=icon)
+        return Link('+subscribe', text, icon=icon, summary=(
+                'When you are subscribed, Launchpad will email you each time '
+                'this bug changes'))
 
     def addsubscriber(self):
         """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
-        return Link('+addsubscriber', text, icon='add')
+        return Link(
+            '+addsubscriber', text, icon='add', summary=(
+                'Launchpad will email that person whenever this bugs '
+                'changes'))
 
     def nominate(self):
         """Return the 'Target/Nominate for release' Link."""
@@ -234,15 +239,12 @@ class BugContextMenu(ContextMenu):
 
     def addcomment(self):
         """Return the 'Comment or attach file' Link."""
-        text = 'Add an attachment'
+        text = 'Add attachment or patch'
         return Link('+addcomment', text, icon='add')
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        if self.context.bug.linked_branches.count() > 0:
-            text = 'Link another branch'
-        else:
-            text = 'Link a related branch'
+        text = 'Link a related branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
@@ -283,17 +285,17 @@ class BugContextMenu(ContextMenu):
         """Create a question from this bug."""
         text = 'Convert to a question'
         enabled = self.context.bug.getQuestionCreatedFromBug() is None
-        return Link('+create-question', text, enabled=enabled)
+        return Link('+create-question', text, enabled=enabled, icon='add')
 
     def removequestion(self):
         """Remove the created question from this bug."""
         text = 'Convert back to a bug'
         enabled = self.context.bug.getQuestionCreatedFromBug() is not None
-        return Link('+remove-question', text, enabled=enabled)
+        return Link('+remove-question', text, enabled=enabled, icon='remove')
 
     def activitylog(self):
         """Return the 'Activity log' Link."""
-        text = 'Activity log'
+        text = 'See full activity log'
         return Link('+activity', text)
 
     def affectsmetoo(self):
@@ -436,12 +438,7 @@ class BugViewMixin:
             ids[sub.name] = 'subscriber-%s' % sub.id
         return ids
 
-    @property
-    def subscriber_ids_js(self):
-        """Return subscriber_ids in a form suitable for JavaScript use."""
-        return dumps(self.subscriber_ids)
-
-    def subscription_class(self, subscribed_person):
+    def getSubscriptionClassForUser(self, subscribed_person):
         """Return a set of CSS class names based on subscription status.
 
         For example, "subscribed-false dup-subscribed-true".
@@ -455,6 +452,34 @@ class BugViewMixin:
             return 'subscribed-true %s' % dup_class
         else:
             return 'subscribed-false %s' % dup_class
+
+    @property
+    def current_user_subscription_class(self):
+        bug = self.context
+
+        if bug.personIsSubscribedToDuplicate(self.user):
+            dup_class = 'dup-subscribed-true'
+        else:
+            dup_class = 'dup-subscribed-false'
+
+        if bug.personIsDirectSubscriber(self.user):
+            return 'subscribed-true %s' % dup_class
+        else:
+            return 'subscribed-false %s' % dup_class
+
+    @property
+    def regular_attachments(self):
+        """The list of bug attachments that are not patches."""
+        return [attachment
+                for attachment in self.context.attachments
+                if attachment.type != BugAttachmentType.PATCH]
+
+    @property
+    def patches(self):
+        """The list of bug attachments that are patches."""
+        return [attachment
+                for attachment in self.context.attachments
+                if attachment.type == BugAttachmentType.PATCH]
 
 
 class BugView(LaunchpadView, BugViewMixin):
@@ -563,13 +588,14 @@ class BugEditView(BugEditViewBase):
     _confirm_new_tags = False
 
     def __init__(self, context, request):
+        """context is always an IBugTask."""
         BugEditViewBase.__init__(self, context, request)
         self.notifications = []
 
     @property
     def label(self):
         """The form label."""
-        return 'Edit details for bug #%d' % self.context.id
+        return 'Edit details for bug #%d' % self.context.bug.id
 
     @property
     def page_title(self):
@@ -601,8 +627,7 @@ class BugEditView(BugEditViewBase):
                 confirm_action.label, confirm_action.__name__))
         for new_tag in newly_defined_tags:
             self.notifications.append(
-                'The tag "%s" hasn\'t yet been used by %s before.'
-                ' Is this a new tag? %s' % (
+                'The tag "%s" hasn\'t been used by %s before. %s' % (
                     new_tag, bugtarget.bugtargetdisplayname, confirm_button))
             self._confirm_new_tags = True
 
@@ -613,7 +638,7 @@ class BugEditView(BugEditViewBase):
             self.updateBugFromData(data)
             self.next_url = canonical_url(self.context)
 
-    @action('Yes, define new tag', name='confirm_tag')
+    @action('Create the new tag', name='confirm_tag')
     def confirm_tag_action(self, action, data):
         """Define a new tag."""
         self.actions['field.actions.change'].success(data)
@@ -644,12 +669,12 @@ class BugSecrecyEditView(BugEditViewBase):
 
     @property
     def label(self):
-        return 'Bug #%i - Set visiblity and security' % self.context.bug.id
+        return 'Bug #%i - Set visibility and security' % self.context.bug.id
 
     page_title = label
 
     def setUpFields(self):
-        """Make the read-only version of `private` writable."""
+        """Make the read-only version of the form fields writable."""
         private_field = Bool(
             __name__='private',
             title=_("This bug report should be private"),
@@ -657,10 +682,17 @@ class BugSecrecyEditView(BugEditViewBase):
             description=_("Private bug reports are visible only to "
                           "their subscribers."),
             default=False)
+        security_related_field = Bool(
+            __name__='security_related',
+            title=_("This bug is a security vulnerability"),
+            required=False, default=False)
+
         super(BugSecrecyEditView, self).setUpFields()
         self.form_fields = self.form_fields.omit('private')
+        self.form_fields = self.form_fields.omit('security_related')
         self.form_fields = (
-            formlib.form.Fields(private_field) + self.form_fields)
+            formlib.form.Fields(private_field) +
+            formlib.form.Fields(security_related_field))
 
     @property
     def initial_values(self):
@@ -681,16 +713,18 @@ class BugSecrecyEditView(BugEditViewBase):
         bug_before_modification = Snapshot(
             bug, providing=providedBy(bug))
         private = data.pop('private')
+        security_related = data.pop('security_related')
         private_changed = bug.setPrivate(
             private, getUtility(ILaunchBag).user)
-        if private_changed:
-            # Although the call to updateBugFromData later on will
-            # send notification of changes, it will only do so if it
-            # makes the change. We have applied the 'private' change
-            # already, so updateBugFromData will only send an event if
-            # 'security_related' is changed, and we can't have that.
+        security_related_changed = bug.setSecurityRelated(security_related)
+        if private_changed or security_related_changed:
+            changed_fields = []
+            if private_changed:
+                changed_fields.append('private')
+            if security_related_changed:
+                changed_fields.append('security_related')
             notify(ObjectModifiedEvent(
-                    bug, bug_before_modification, ['private']))
+                    bug, bug_before_modification, changed_fields))
 
         # Apply other changes.
         self.updateBugFromData(data)
@@ -758,7 +792,13 @@ class BugTextView(LaunchpadView):
 
         text.append('attachments: ')
         for attachment in bug.attachments:
-            text.append(' %s' % self.attachment_text(attachment))
+            if attachment.type != BugAttachmentType.PATCH:
+                text.append(' %s' % self.attachment_text(attachment))
+
+        text.append('patches: ')
+        for attachment in bug.attachments:
+            if attachment.type == BugAttachmentType.PATCH:
+                text.append(' %s' % self.attachment_text(attachment))
 
         text.append('tags: %s' % ' '.join(bug.tags))
 
@@ -936,5 +976,5 @@ def bug_description_xhtml_representation(context, field, request):
     def renderer(value):
         nomail  = formatter(value).obfuscate_email()
         html    = formatter(nomail).text_to_html()
-        return html
+        return html.encode('utf-8')
     return renderer

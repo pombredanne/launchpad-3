@@ -18,6 +18,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchtarget import (
     check_default_stacked_on, IBranchTarget)
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
@@ -34,6 +35,13 @@ class _BaseBranchTarget:
 
     def __ne__(self, other):
         return self.context != other.context
+
+    def newCodeImport(self, registrant, branch_name, rcs_type, url=None,
+                      cvs_root=None, cvs_module=None, owner=None):
+        """See `IBranchTarget`."""
+        return getUtility(ICodeImportSet).new(
+            registrant, self, branch_name, rcs_type, url=url,
+            cvs_root=cvs_root, cvs_module=cvs_module, owner=owner)
 
 
 class PackageBranchTarget(_BaseBranchTarget):
@@ -94,6 +102,16 @@ class PackageBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return True
 
+    @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return True
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         # Branches are mergable into a PackageTarget if the source package
@@ -114,12 +132,13 @@ class PackageBranchTarget(_BaseBranchTarget):
         else:
             return False
 
-    def assignKarma(self, person, action_name):
+    def assignKarma(self, person, action_name, date_created=None):
         """See `IBranchTarget`."""
-        person.assignKarma(
+        return person.assignKarma(
             action_name,
             distribution=self.context.distribution,
-            sourcepackagename=self.context.sourcepackagename)
+            sourcepackagename=self.context.sourcepackagename,
+            datecreated=date_created)
 
     def getBugTask(self, bug):
         """See `IBranchTarget`."""
@@ -180,13 +199,24 @@ class PersonBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return False
 
+    @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return False
+
+    @property
+    def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return False
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         return False
 
-    def assignKarma(self, person, action_name):
+    def assignKarma(self, person, action_name, date_created=None):
         """See `IBranchTarget`."""
         # Does nothing. No karma for +junk.
+        return None
 
     def getBugTask(self, bug):
         """See `IBranchTarget`."""
@@ -255,6 +285,16 @@ class ProductBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return True
 
+    @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return True
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         # Branches are mergable into a PackageTarget if the source package
@@ -273,13 +313,14 @@ class ProductBranchTarget(_BaseBranchTarget):
         else:
             return False
 
-    def assignKarma(self, person, action_name):
+    def assignKarma(self, person, action_name, date_created=None):
         """See `IBranchTarget`."""
-        person.assignKarma(action_name, product=self.product)
+        return person.assignKarma(
+            action_name, product=self.product, datecreated=date_created)
 
     def getBugTask(self, bug):
         """See `IBranchTarget`."""
-        task = bug.getBugTask(self.context)
+        task = bug.getBugTask(self.product)
         if task is None:
             # Just choose the first task for the bug.
             task = bug.bugtasks[0]

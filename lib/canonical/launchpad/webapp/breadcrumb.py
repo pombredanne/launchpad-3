@@ -8,12 +8,11 @@ __metaclass__ = type
 __all__ = [
     'Breadcrumb',
     'DisplaynameBreadcrumb',
+    'NameBreadcrumb',
     'TitleBreadcrumb',
     ]
 
 
-from zope.traversing.interfaces import IPathAdapter
-from zope.component import queryAdapter
 from zope.interface import implements
 
 from canonical.launchpad.webapp import canonical_url
@@ -54,21 +53,21 @@ class Breadcrumb:
         else:
             return self._url
 
-    @property
-    def icon(self):
-        """See `IBreadcrumb`."""
-        # Get the <img> tag from the path adapter.
-        return queryAdapter(
-            self.context, IPathAdapter, name='image').icon()
-
     def __repr__(self):
-        if self.icon is not None:
-            icon_repr = " icon='%s'" % self.icon
-        else:
-            icon_repr = ""
+        # XXX: salgado, 2009-10-14, http://bugs.python.org/issue5876: In
+        # python 2.5, the return value of __repr__() may be forced into a
+        # type(str), so we can't include unicode here.
+        text = self.text.encode('raw-unicode-escape')
+        return "<%s url='%s' text='%s'>" % (
+            self.__class__.__name__, self.url, text)
 
-        return "<%s url='%s' text='%s'%s>" % (
-            self.__class__.__name__, self.url, self.text, icon_repr)
+
+class NameBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the context's name as its text."""
+
+    @property
+    def text(self):
+        return self.context.name
 
 
 class DisplaynameBreadcrumb(Breadcrumb):

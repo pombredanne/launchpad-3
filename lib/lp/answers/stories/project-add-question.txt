@@ -1,7 +1,7 @@
-= Asking a New Question from a Project =
+= Asking a New Question from a ProjectGroup =
 
-Even though projects are not QuestionTargets, it is still possible to
-create a question from a project. There are some form and behaviour
+Even though project groups are not QuestionTargets, it is still possible to
+create a question from a project group. There are some form and behaviour
 difference from the regular process for asking a question (documented
 in 35-question-add.txt). Firstly, we do not know the product the
 product the question is about, so we ask the user to select one.
@@ -9,7 +9,7 @@ Secondly, without knowing the product, we cannot show the which of the
 user's preferred languages are supported.
 
 
-== Ask a question about a Product in a Project ==
+== Ask a question about a Product in a ProjectGroup ==
 
 The user must be logged in to ask a question. When he attempts to ask
 a question, without being logged in, he encounters an unauthorized
@@ -26,10 +26,10 @@ Project in this case.
     >>> user_browser.open('http://answers.launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    +addquestion : Questions for The Mozilla Project : the Mozilla Project
+    Ask a question...
 
 The workflow is identical to the regular one, except that the user
-must select one of the Project's Products. The page displays a list of
+must select one of the ProjectGroup's Products. The page displays a list of
 products associated with the project. Note that the site policy is
 to use the word 'Project' for 'Products' (and 'Distributions') so
 that users do not have to learn our business' semantics.
@@ -85,7 +85,7 @@ redirected to the first page. Let's assume he does this by accident
 as he revises the summary after reading the similar questions.
 
     >>> user_browser.getControl('Summary').value = ''
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
 
 An error message in the page informs the user that the summary is
 missing:
@@ -114,13 +114,13 @@ an appropriate message is displayed to inform him of this:
     entered.
 
 The user then elaborates upon his question by entering a description
-of the problem. He submits the form using the 'Add' button.
+of the problem. He submits the form using the 'Post Question' button.
 
     >>> user_browser.getControl('Description').value = (
     ... "I received an HTML message containing an inlined SVG\n"
     ... "representation of a chessboard. It didn't displayed properly.\n"
     ... "Is there a way to configure Thunderbird to display SVG properly?\n")
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
 
 No Privileged Person is taken to page displaying his question. From
 this point on, the user's interaction with the question follows to
@@ -129,7 +129,7 @@ regular workflow. (see 30-question-workflow.txt for the details).
     >>> user_browser.url
     '.../thunderbird/+question/...'
     >>> print user_browser.title
-    +index : Questions for Mozilla Thunderbird : Mozilla Thunderbird
+    Question #... : Questions : Mozilla Thunderbird
 
 
 == Supported Language behaviour ==
@@ -150,7 +150,7 @@ non-English languages. Dafydd speaks Japanese, so we will use him.
     >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
     >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
     >>> print daf_browser.title
-    +editlanguages : Dafydd Harries
+    Language preferences...
 
     >>> daf_browser.getControl('Japanese').selected
     True
@@ -158,7 +158,7 @@ non-English languages. Dafydd speaks Japanese, so we will use him.
     >>> daf_browser.open(
     ...     'http://answers.launchpad.dev/thunderbird/+support-contact')
     >>> print daf_browser.title
-    +answer-contact : Questions for Mozilla Thunderbird : Mozilla Thunderbird
+    Answer contact for...
 
     >>> daf_browser.getControl('I want to be an answer contact for '
     ...                        'Mozilla Thunderbird').selected = True
@@ -177,7 +177,7 @@ behaviour.
     >>> user_browser.open(
     ...     'http://launchpad.dev/~no-priv/+editlanguages')
     >>> print user_browser.title
-    +editlanguages : No Privileges Person
+    Language preferences...
 
     >>> user_browser.getControl('Japanese').selected = True
     >>> user_browser.getControl('Save').click()
@@ -201,7 +201,7 @@ Person asks a question Thunderbird question from the context of the
 Mozilla Project.
 
 
-=== Ask a non-English question about a Product in a Project ===
+=== Ask a non-English question about a Product in a ProjectGroup ===
 
 Supported languages are only shown after the user submits the 'Product'
 associated with the project. When a user enters the 'Product'
@@ -211,7 +211,7 @@ user.
 ==== Supported languages aren't displayed after choosing a product ====
 
 XXX sinzui 2007-05-02 #111793 (Supported languages will not be shown in
-some cases when asking questions from the Project facet)
+some cases when asking questions from the ProjectGroup facet)
 No Privileges Person visits the Ask a question page from a project just
 as No Privileged Person did above, but this time in wants to do so in
 Japanese.
@@ -219,7 +219,7 @@ Japanese.
     >>> user_browser.open('http://answers.launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    +addquestion : Questions for The Mozilla Project : the Mozilla Project
+    Ask a question...
 
 The page displays a list of products associated with the project.
 The first item in the list is the default value, and it will be
@@ -275,7 +275,7 @@ If No Privileges Person asks a question in Japanese, it will be
 supported by Dafydd, but No Privileges Person will never know that.
 Let's stop here. The rest of this scenario is just adding a question
 as described above--filling in a description and submitting the data
-with the 'Add' button.
+with the 'Post Question' button.
 
 ==== Supported languages are displayed after the submitting a product ====
 
@@ -286,7 +286,7 @@ his question.
     >>> user_browser.open('http://answers.launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    +addquestion : Questions for The Mozilla Project : the Mozilla Project
+    Ask a question...
 
     >>> user_browser.getControl('Mozilla Thunderbird').selected = True
 
@@ -311,7 +311,7 @@ question summary is submitted for a product.
 
 No Privileges Person sets the language to Japanese, changes his
 question summary, writes a description, and submits the form with the
-'Add' button.
+'Post Question' button.
 
     >>> print user_browser.getControl('Project').displayValue
     ['Mozilla Thunderbird']
@@ -320,7 +320,7 @@ question summary, writes a description, and submits the form with the
     ...     'Pretend this is written in Japanese')
     >>> user_browser.getControl('Description').value = (
     ... "Something in kanji and hiragana.")
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
 
 The user is taken to page displaying his question. Changing the
 language or the summary did not search for similar questions
@@ -329,4 +329,4 @@ again--the question is created.
     >>> user_browser.url
     '.../thunderbird/+question/...'
     >>> print user_browser.title
-    +index : Questions for Mozilla Thunderbird : Mozilla Thunderbird
+    Question #... : Questions : Mozilla Thunderbird

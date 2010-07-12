@@ -88,10 +88,11 @@ The listing also displays projects and projects linked to bug trackers.
 Let's link a pair to debbugs:
 
     >>> def link_to_debbugs(name):
-    ...     admin_browser.open("http://launchpad.dev/%s/+edit" % name)
+    ...     admin_browser.open(
+    ...         "http://launchpad.dev/%s/+configure-bugtracker" % name)
     ...     admin_browser.getControl("In a registered bug tracker").click()
     ...     bt = admin_browser.getControl(name="field.bugtracker.bugtracker")
-    ...     bt.value = ["3"]
+    ...     bt.value = 'debbugs'
     ...     admin_browser.getControl("Change").click()
     ...
     >>> link_to_debbugs('upstart')

@@ -112,6 +112,19 @@ RewriteLock /var/tmp/rewrite-lock
   </Directory>
 </VirtualHost>
 
+<VirtualHost 127.0.0.88:80>
+  ServerName archive.launchpad.dev
+  LogLevel debug
+
+  DocumentRoot /var/tmp/archive
+  <Directory /var/tmp/archive/>
+    Order Deny,Allow
+    Deny from all
+    Allow from 127.0.0.0/255.0.0.0
+    Options Indexes
+  </Directory>
+</VirtualHost>
+
 <VirtualHost 127.0.0.88:443>
   ServerName launchpad.dev
   ServerAlias *.launchpad.dev

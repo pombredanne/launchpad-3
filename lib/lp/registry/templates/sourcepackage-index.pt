@@ -3,148 +3,142 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/title">source package name</h1>
-    </metal:heading>
+    <div metal:fill-slot="main"
+        tal:define="current context/currentrelease">
+      <div class="top-portlet">
+        <div id="summary"
+          tal:content="structure context/summary/fmt:text-to-html" />
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
+        <ul class="horizontal">
+          <li>
+            <a tal:replace="structure context/menu:overview/distribution_source_package/fmt:link" />
+          </li>
+        </ul>
+      </div>
 
-  <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-releases" />
-    <div tal:replace="structure context/@@+portlet-upstream" />
-  </metal:rightportlets>
+      <div class="portlet">
+        <h2>Versions published</h2>
 
-<div metal:fill-slot="main">
+        <p class="warning message" tal:condition="not:current">
+          There is no current release of this source package
+          in <span tal:replace="context/distroseries/title" />.
+          You can still report bugs, make translations, and so on,
+          but they might not be used until the package is published.
+        </p>
 
-  <h2>Versions published</h2>
+        <dl id="publishing_history" tal:condition="view/published_by_pocket">
+          <tal:block repeat="pocket view/published_by_pocket">
+            <tal:block condition="pocket/packages">
+              <dt><dfn tal:content="pocket/pocketdetails/title">Plain</dfn></dt>
+              <dd>
+                <p tal:content="pocket/pocketdetails/description">
+                  The description of the pocket.
+                </p>
+                <ul>
+                  <li tal:repeat="spr pocket/packages">
+                    <a tal:content="spr/displayname"
+                       tal:attributes="href spr/fmt:url">apache2</a>
+                  </li>
+                </ul>
+              </dd>
+            </tal:block>
+          </tal:block>
+        </dl>
 
-  <p class="warning message" tal:condition="not:context/currentrelease">
-    There is no current release of this source package
-    in <span tal:replace="context/distroseries/title" />.
-    You can still report bugs, make translations, and so on,
-    but they might not be used until the package is published.
-  </p>
+        <ul class="horizontal">
+          <li>
+            <a tal:replace="structure context/menu:overview/changelog/fmt:link" />
+          </li>
+          <li>
+            <a tal:replace="structure context/menu:overview/copyright/fmt:link" />
+          </li>
+        </ul>
+      </div>
 
-  <dl id="publishing_history" tal:condition="view/published_by_pocket">
-    <tal:block repeat="pocket view/published_by_pocket">
-      <tal:block condition="pocket/packages">
-        <dt><dfn tal:content="pocket/pocketdetails/title">Plain</dfn></dt>
-        <dd>
-          <p tal:content="pocket/pocketdetails/description">
-            The description of the pocket.
-          </p>
-          <ul>
-            <li tal:repeat="spr pocket/packages">
-              <a tal:content="spr/displayname"
-                 tal:attributes="href spr/fmt:url">apache2</a>
+      <div class="yui-g">
+        <div class="yui-u first">
+          <div tal:replace="structure context/@@+portlet-details" />
+        </div>
+
+        <div class="yui-u">
+          <div class="portlet" tal:content="structure context/@@+portlet-associations" />
+        </div>
+      </div>
+
+      <div class="yui-g">
+        <div class="yui-u first">
+          <div tal:replace="structure context/@@+portlet-releases" />
+
+          <ul class="horizontal" style="margin-bottom: 1em;">
+            <li>
+              <a tal:replace="structure context/menu:overview/builds/fmt:link" />
             </li>
           </ul>
-        </dd>
-      </tal:block>
-    </tal:block>
-  </dl>
+        </div>
 
-  <h2>Upstream associations</h2>
+        <div class="yui-u">
+          <div class="portlet" tal:condition="current">
+            <h2>Binary packages</h2>
 
-  <ul id="upstreams" tal:define="series context/productseries">
-    <tal:has_series condition="series">
-      <li tal:condition="series/product/project">
-       <b>Project Group:</b>
-         <a tal:define="project series/product/project"
-          tal:content="project/displayname"
-          tal:attributes="href string:/${project/name}">
-          Project</a>
-      </li>
-      <li><b>Project:</b>
-         <a tal:condition="series/product"
-            tal:content="series/product/displayname"
-            tal:attributes="href string:/${series/product/name}">
-         Project</a>
-      </li>
-      <li><b>Branch: </b>
-      <a tal:define="productseries context/productseries"
-         tal:content="productseries/name"
-         tal:attributes="href productseries/fmt:url">
-         ProjectSeries</a><br />
-      </li>
-    </tal:has_series>
-    <tal:has_no_series condition="not: context/productseries">
-       <li><b>Related project:</b>
-       <i>
-         No project associated with this sourcepackage
-       </i>
-       </li>
-    </tal:has_no_series>
-    <small>(<a tal:attributes="href string:${context/fmt:url}/+packaging">update</a>)</small>
-  </ul>
+            <div id="binaries" tal:define="binaries view/binaries">
+              <ul tal:condition="binaries">
+                <li tal:repeat="bin_name binaries">
+                  <span tal:replace="bin_name" />
+                  <span tal:repeat="archtag python:binaries[bin_name]">
+                    (<a tal:content="archtag" tal:attributes="href
+                                     string:../../${archtag}/${bin_name}" />)</span>
+                </li>
+              </ul>
 
-  <tal:block tal:condition="context/currentrelease"
-             tal:define="current context/currentrelease">
+              <p tal:condition="not: binaries">
+                 No binaries have been generated for this release.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <h2>Download files from current release (<span
-    tal:replace="current/version">2.1.3-4</span>)</h2>
+      <div class="portlet"
+        tal:condition="current">
+        <h2>Download files from current release (<span
+          tal:replace="current/version">2.1.3-4</span>)</h2>
 
-    <div id="files" tal:content="structure current/@@+files" />
+        <div id="files" tal:content="structure current/@@+files" />
 
-    <h2>Binary packages</h2>
+        <h2>Package relationships</h2>
 
-    <div id="binaries" tal:define="binaries view/binaries">
-      <ul tal:condition="binaries">
-        <li tal:repeat="bin_name binaries">
-          <span tal:replace="bin_name" />
-          <span tal:repeat="archtag python:binaries[bin_name]">
-            (<a tal:content="archtag" tal:attributes="href
-                             string:../../${archtag}/${bin_name}" />)</span>
-        </li>
-      </ul>
-      <p tal:condition="not: binaries">
-         No binaries have been generated for this release.
-      </p>
+        <table width="100%" valign="top">
+          <tr>
+              <td id="depends" tal:define="relationships view/builddepends">
+                  <h3>Build dependencies</h3>
+                  <tal:block tal:condition="relationships/has_items"
+                             replace="structure relationships/@@+render-list"/>
+              </td>
+              <td id="dependsindep"
+                  tal:define="relationships view/builddependsindep">
+                  <h3>Platform-independent build dependencies</h3>
+                  <tal:block tal:condition="relationships/has_items"
+                             replace="structure relationships/@@+render-list"/>
+              </td>
+          </tr>
+          <tr>
+              <td id="conflicts" tal:define="relationships view/build_conflicts">
+                  <h3>Build conflicts</h3>
+                  <tal:block tal:condition="relationships/has_items"
+                             replace="structure relationships/@@+render-list"/>
+              </td>
+              <td id="conflictsindep"
+                  tal:define="relationships view/build_conflicts_indep">
+                  <h3>Platform-independent build dependencies</h3>
+                  <tal:block tal:condition="relationships/has_items"
+                             replace="structure relationships/@@+render-list"/>
+              </td>
+          </tr>
+        </table>
+      </div>
     </div>
-
-    <h2>Package relationships</h2>
-
-    <table width="100%" valign="top">
-      <tr>
-          <td id="depends" tal:define="relationships view/builddepends">
-              <h3>Build dependencies</h3>
-              <tal:block tal:condition="relationships/has_items"
-                         replace="structure relationships/@@+render-list"/>
-          </td>
-          <td id="dependsindep"
-              tal:define="relationships view/builddependsindep">
-              <h3>Platform-independent build dependencies</h3>
-              <tal:block tal:condition="relationships/has_items"
-                         replace="structure relationships/@@+render-list"/>
-          </td>
-      </tr>
-      <tr>
-          <td id="conflicts" tal:define="relationships view/build_conflicts">
-              <h3>Build conflicts</h3>
-              <tal:block tal:condition="relationships/has_items"
-                         replace="structure relationships/@@+render-list"/>
-          </td>
-          <td id="conflictsindep"
-              tal:define="relationships view/build_conflicts_indep">
-              <h3>Platform-independent build dependencies</h3>
-              <tal:block tal:condition="relationships/has_items"
-                         replace="structure relationships/@@+render-list"/>
-          </td>
-      </tr>
-    </table>
-
-  </tal:block>
-
-</div>
-</body>
+  </body>
 </html>
-

@@ -24,8 +24,7 @@ Using the +viewstatus page, he can also see the email address.
     ...     'http://bugs.launchpad.dev'
     ...     '/debian/sarge/+source/mozilla-firefox/+bug/3/+viewstatus')
     >>> user_browser.title
-    '+viewstatus : Bug #3 : Bugs in mozilla-firefox
-    : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : 3.1 : Debian'
+    'Bug #3 in mozilla-firefox...
 
     >>> description = find_main_content(user_browser.contents).p
     >>> description.renderContents()
@@ -53,8 +52,7 @@ page.
     ...     'http://bugs.launchpad.dev'
     ...     '/debian/sarge/+source/mozilla-firefox/+bug/3/+viewstatus')
     >>> anon_browser.title
-    '+viewstatus : Bug #3 : Bugs in mozilla-firefox
-    : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : 3.1 : Debian'
+    'Bug #3 in mozilla-firefox...
 
     >>> 'user@domain.org' in anon_browser.contents
     False

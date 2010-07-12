@@ -65,7 +65,7 @@ Launchpad is free to use for <a href="https://help.launchpad.net/Legal/ProjectLi
                         <p class="screen-holder">
                             <img src="images/join/1.png" alt="Commercial subscriptions" />                        </p>
                         <p>Get all the benefits of hosting your closed-source project on Launchpad for just $250* a year. Easily share bug reports, code and more across your development community and, optionally, plug into the open source projects you rely on.</p><br />
-                        <p> At the same time, get an exclusive preview of our new privacy features, including:</p><br />
+                        <p>At the same time, try out our privacy features, including:</p><br />
 			<ul>
 				<li>private code branches</li>
 				<li>private bugs by default</li>
@@ -74,7 +74,7 @@ Launchpad is free to use for <a href="https://help.launchpad.net/Legal/ProjectLi
 			</ul><br />
 			<p>To get going, register your project and select <em>Other/Proprietary</em> as its licence.</p><br />
 			<p>Want to know more? <a href="mailto:commercial@launchpad.net">Get in touch</a>!</p><br />
-			<p><small>* US Dollars. Add VAT at 15% if you're in the European Union. Subscription is per project. Privacy features may incur additional charges after the beta.</small></p>
+			<p><small>* US Dollars. Add VAT at 17.5% if you're in the European Union. Subscription is per project. Prices may change in the future.</small></p>
 			<p style="float: right;"><a href="https://launchpad.net/projects/+new">Register your project &gt;</a></p><br />
 
                         </p>
@@ -114,7 +114,7 @@ Launchpad is free to use for <a href="https://help.launchpad.net/Legal/ProjectLi
                 <a href="index" title="Return to the start of the Launchpad tour" accesskey="g" tabindex="5">Start</a>
             </li>
              <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
+                &copy; 2004-2010 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>

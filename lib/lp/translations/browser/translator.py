@@ -2,6 +2,11 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
+__all__ = [
+    'TranslatorAdminView',
+    'TranslatorEditView',
+    'TranslatorRemoveView',
+    ]
 
 import cgi
 
@@ -10,12 +15,6 @@ from lp.translations.interfaces.translator import (
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
-
-__all__ = [
-    'TranslatorAdminView',
-    'TranslatorEditView',
-    'TranslatorRemoveView',
-    ]
 
 
 class TranslatorAdminView(LaunchpadEditFormView):
@@ -57,7 +56,7 @@ class TranslatorAdminView(LaunchpadEditFormView):
     @property
     def page_title(self):
         """Page title for the edit form."""
-        return self.label
+        return "Edit %s translation team" % self.context.language.englishname
 
     @property
     def cancel_url(self):
@@ -89,7 +88,7 @@ class TranslatorEditView(LaunchpadEditFormView):
     @property
     def page_title(self):
         """Page title for the edit form."""
-        return self.label
+        return "Set %s guidelines" % self.context.language.englishname
 
     @property
     def cancel_url(self):
@@ -125,7 +124,7 @@ class TranslatorRemoveView(LaunchpadFormView):
     @property
     def page_title(self):
         """Page title for the edit form."""
-        return self.label
+        return "Remove translation team"
 
     @property
     def cancel_url(self):

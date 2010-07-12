@@ -75,7 +75,7 @@ we copy an arbitrary source into it.
 
 Disabled PPAs are excluded from the 'PendingSigningKey' pool:
 
-    >>> no_priv.archive.enabled = False
+    >>> no_priv.archive.disable()
 
     >>> for ppa in archive_set.getPPAsPendingSigningKey():
     ...     print ppa.displayname
@@ -94,7 +94,7 @@ Indeed, Marks's PPA does not have a defined 'signing_key'.
 We will select the only available IGPGKey from the sampledata.
 
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
-    >>> [a_key] = foo_bar.gpgkeys
+    >>> [a_key] = foo_bar.gpg_keys
     >>> print a_key.displayname
     1024D/12345678
 
@@ -229,8 +229,8 @@ The generated key UID follows "Launchpad %(ppa.displayname)s" format.
     ...    signing_key.fingerprint)
 
     >>> [uid] = retrieved_key.uids
-    >>> print uid.name
-    Launchpad PPA for Celso áéíóú Providelo
+    >>> uid.name
+    u'Launchpad PPA for Celso \xe1\xe9\xed\xf3\xfa Providelo'
 
 The secret key is securily stored in the designed configuration
 path. So only the IGPGHandler itself can access it.

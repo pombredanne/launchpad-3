@@ -35,7 +35,7 @@ as they all have the same attribute name to count, and the object in that
 attribute has the required attribute to sort.
 
     >>> from lp.registry.browser import get_status_counts
-    >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
+    >>> from lp.registry.interfaces.series import SeriesStatus
 
     >>> class Concept:
     ...     def __init__(self, status, person):
@@ -48,9 +48,9 @@ attribute has the required attribute to sort.
     >>> a_person = factory.makePerson(name='andy', displayname="Andy")
     >>> b_person = factory.makePerson(name='bob', displayname="Bob")
 
-    >>> concept_1 = Concept(DistroSeriesStatus.EXPERIMENTAL, a_person)
-    >>> artefact_2 = Artefact(DistroSeriesStatus.EXPERIMENTAL, b_person)
-    >>> artefact_3 = Artefact(DistroSeriesStatus.CURRENT, b_person)
+    >>> concept_1 = Concept(SeriesStatus.EXPERIMENTAL, a_person)
+    >>> artefact_2 = Artefact(SeriesStatus.EXPERIMENTAL, b_person)
+    >>> artefact_3 = Artefact(SeriesStatus.CURRENT, b_person)
 
 The common example is for counting the status enums for an object. The default
 rule is to sort on the 'sortkey' attribute of the object being counted.

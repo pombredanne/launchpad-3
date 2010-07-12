@@ -32,8 +32,6 @@ class PackagePublishingPocket(DBEnumeratedType):
 
         The package versions that were published
         when the distribution release was made.
-        For releases that are still under development,
-        packages are published here only.
         """)
 
     SECURITY = DBItem(10, """

@@ -29,7 +29,7 @@
     <tr tal:condition="heading">
       <td class="section-heading"
           tal:content="heading"
-          colspan="3">
+          colspan="4">
         Section heading
       </td>
     </tr>
@@ -37,6 +37,7 @@
     <tr class="thead">
       <th>Branch Merge Proposal</th>
       <th>Requested By</th>
+      <th>Lines</th>
       <th>Activity</th>
     </tr>
 
@@ -53,6 +54,9 @@
       <td>
         <tal:registrant replace="structure proposal/registrant/fmt:link" />
         <tal:date replace="proposal/date_review_requested/fmt:displaydate"/>
+      </td>
+      <td style="text-align: right">
+        <tal:size replace='proposal/preview_diff/diff_lines_count' condition="proposal/preview_diff"/>
       </td>
       <td>
         <metal:votes use-macro="proposal/@@+bmp-macros/vote-summary"/>

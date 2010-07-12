@@ -25,6 +25,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from lp.bugs.interfaces.bugnotification import (
     IBugNotification, IBugNotificationRecipient, IBugNotificationSet)
+
+
 class BugNotification(SQLBase):
     """A textual representation about a bug change."""
     implements(IBugNotification)
@@ -82,6 +84,8 @@ class BugNotificationSet:
 
     def addNotification(self, bug, is_comment, message, recipients):
         """See `IBugNotificationSet`."""
+        if not recipients:
+            return
         bug_notification = BugNotification(
             bug=bug, is_comment=is_comment,
             message=message, date_emailed=None)

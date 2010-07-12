@@ -7,10 +7,13 @@ __metaclass__ = type
 __all__ = ['BaseExportView']
 
 
+from datetime import timedelta
+
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.translations.interfaces.poexportrequest import (
     IPOExportRequestSet)
 from lp.translations.interfaces.potemplate import (
@@ -28,6 +31,38 @@ class BaseExportView(LaunchpadView):
     @cachedproperty
     def uses_translations(self):
         return self.context.has_current_translation_templates
+
+    @property
+    def export_queue_status(self):
+        """Summary of queue status."""
+        queue_size = self.request_set.entry_count
+        estimated_backlog = self.request_set.estimateBacklog()
+
+        size_text = self.describeQueueSize(queue_size)
+        backlog_text = self.describeBacklog(estimated_backlog)
+
+        return " ".join((size_text, backlog_text))
+
+    def describeQueueSize(self, queue_size):
+        """Return string describing the given queue size."""
+        if queue_size == 0:
+            return "The export queue is currently empty."
+        elif queue_size == 1:
+            return "There is 1 file request on the export queue."
+        else:
+            return (
+                "There are %d file requests on the export queue."
+                % queue_size)
+
+    def describeBacklog(self, estimated_backlog):
+        """Return string describing the current export backlog."""
+        threshold = timedelta(minutes=10)
+        if estimated_backlog is None or estimated_backlog < threshold:
+            return ""
+
+        formatter = DurationFormatterAPI(estimated_backlog)
+        time_string = formatter.approximateduration()
+        return "The backlog is approximately %s." % time_string
 
     def getDefaultFormat(self):
         """Overridable: return default file format to use for the export."""

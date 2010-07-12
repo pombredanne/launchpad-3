@@ -110,12 +110,14 @@ class SignedCodeOfConductOverviewMenu(ApplicationMenu):
         return Link('../', text, icon='info')
 
 
-class CodeOfConductView:
+class CodeOfConductView(LaunchpadView):
     """Simple view class for CoC page."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    @property
+    def page_title(self):
+        """See `LaunchpadView`."""
+        # This page has no breadcrumbs, nor should it.
+        return self.context.title
 
 
 class CodeOfConductDownloadView:

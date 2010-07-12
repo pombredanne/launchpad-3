@@ -111,21 +111,21 @@ class POFileFacets(POTemplateFacets):
 class POFileMenuMixin:
     """Mixin class to share code between navigation and action menus."""
 
-    def description(self):
-        text = 'Description'
-        return Link('', text)
+    def details(self):
+        text = 'Translation details'
+        return Link('+details', text, icon='info')
 
     def translate(self):
         text = 'Translate'
-        return Link('+translate', text, icon='languages')
+        return Link('+translate', text, icon='language')
 
     @enabled_with_permission('launchpad.Edit')
     def upload(self):
-        text = 'Upload a file'
-        return Link('+upload', text, icon='edit')
+        text = 'Upload translation'
+        return Link('+upload', text, icon='add')
 
     def download(self):
-        text = 'Download'
+        text = 'Download translation'
         return Link('+export', text, icon='download')
 
 
@@ -133,7 +133,7 @@ class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
     """Navigation menus for `IPOFile` objects."""
     usedfor = IPOFile
     facet = 'translations'
-    links = ('description', 'translate', 'upload', 'download')
+    links = ('details', 'translate', 'upload', 'download')
 
 
 class POFileBaseView(LaunchpadView):
@@ -285,8 +285,8 @@ class POFileBaseView(LaunchpadView):
 
     def _initializeShowOption(self):
         # Get any value given by the user
-        self.show = self.request.form.get('show')
-        self.search_text = self.request.form.get('search')
+        self.show = self.request.form_ng.getOne('show')
+        self.search_text = self.request.form_ng.getOne('search')
         if self.search_text is not None:
             self.show = 'all'
 
@@ -309,7 +309,7 @@ class POFileBaseView(LaunchpadView):
         """Construct a BatchNavigator of POTMsgSets and return it."""
 
         # Changing the "show" option resets batching.
-        old_show_option = self.request.form.get('old_show')
+        old_show_option = self.request.form_ng.getOne('old_show')
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
         if show_option_changed:
@@ -443,6 +443,17 @@ class POFileView(LaunchpadView):
         return managers
 
 
+class POFileDetailsView(POFileView):
+    """View for the detail page of a POFile"""
+
+    page_title = _("Details")
+
+    @property
+    def label(self):
+        return _("Details for %s translation") % (
+                    self.context.language.englishname)
+
+
 class TranslationMessageContainer:
     def __init__(self, translation, pofile):
         self.data = translation
@@ -500,6 +511,7 @@ class POFileFilteredView(LaunchpadView):
         else:
             return self.person.displayname
 
+    @property
     def page_title(self):
         """See `LaunchpadView`."""
         return smartquote('Translations by %s in "%s"') % (
@@ -544,6 +556,8 @@ class POFileFilteredView(LaunchpadView):
 class POFileUploadView(POFileView):
     """A basic view for a `POFile`."""
 
+    page_title = "Upload translation"
+
     def initialize(self):
         self.form = self.request.form
         self.process_form()
@@ -553,10 +567,8 @@ class POFileUploadView(POFileView):
         return canonical_url(self.context)
 
     @property
-    def page_title(self):
-        return "Upload %s translation for %s" % (
-            self.context.language.englishname,
-            self.context.potemplate.displayname)
+    def label(self):
+        return "Upload %s translation" % self.context.language.englishname
 
     def process_form(self):
         """Handle a form submission to request a translation file upload."""
@@ -729,7 +741,7 @@ class POFileTranslateView(BaseTranslationView):
         """See BaseTranslationView._buildBatchNavigator."""
 
         # Changing the "show" option resets batching.
-        old_show_option = self.request.form.get('old_show')
+        old_show_option = self.request.form_ng.getOne('old_show')
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
         if show_option_changed:
@@ -853,8 +865,8 @@ class POFileTranslateView(BaseTranslationView):
 
     def _initializeShowOption(self):
         # Get any value given by the user
-        self.show = self.request.form.get('show')
-        self.search_text = self.request.form.get('search')
+        self.show = self.request.form_ng.getOne('show')
+        self.search_text = self.request.form_ng.getOne('search')
         if self.search_text is not None:
             self.show = 'all'
 
@@ -916,8 +928,30 @@ class POFileTranslateView(BaseTranslationView):
     def completeness(self):
         return '%.0f%%' % self.context.translatedPercentage()
 
+    def _messages_html_id(self):
+        order = []
+        for message in self.translationmessage_views:
+            if (message.form_is_writeable):
+                for dictionary in message.translation_dictionaries:
+                    order.append(
+                        dictionary['html_id_translation'] + '_new')
+        return order
+
+    @property
+    def autofocus_html_id(self):
+        if (len(self._messages_html_id()) > 0):
+            return self._messages_html_id()[0]
+        else:
+            return ""
+
+    @property
+    def translations_order(self):
+        return ' '.join(self._messages_html_id())
+
 
 class POExportView(BaseExportView):
+
+    page_title = "Download translation"
 
     def modifyFormat(self, format):
         pochanged = self.request.form.get("pochanged")
@@ -936,7 +970,5 @@ class POExportView(BaseExportView):
         return canonical_url(self.context)
 
     @property
-    def page_title(self):
-        return "Download %s translation of %s" % (
-            self.context.language.englishname,
-            self.context.potemplate.displayname)
+    def label(self):
+        return "Download %s translation" % self.context.language.englishname

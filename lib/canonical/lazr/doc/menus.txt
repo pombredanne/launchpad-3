@@ -547,7 +547,7 @@ state of its links. Without a request, an error is raised.
     >>> summarise_links(RecipeMenu(recipe))
     Traceback (most recent call last):
      ...
-    AttributeError: 'NoneType' object has no attribute 'participations'
+    AttributeError: 'NoneType' object has no attribute 'getURL'
 
 
 == Registering menus as adapters for content objects and views ==
@@ -1000,7 +1000,7 @@ that the comment refers to.
     ...     implements(IComment)
 
     # This is usually done in ZCML by browser:defaultView.
-    >>> from zope.component.bbb.interfaces import IDefaultViewName
+    >>> from zope.publisher.interfaces import IDefaultViewName
     >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
     >>> provideAdapter(
     ...     '+index',

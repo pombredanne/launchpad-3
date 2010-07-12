@@ -38,7 +38,7 @@ def _enable_bzr_ssh_in_urlparse():
 
     That allows the helpers in this module to operate usefully on bzr+ssh URLs
 
-    >>> urlparse('bzr+ssh://example.com/code/branch')
+    >>> tuple(urlparse('bzr+ssh://example.com/code/branch'))
     ('bzr+ssh', 'example.com', '/code/branch', '', '', '')
     """
     if 'bzr+ssh' not in urlparse_module.uses_netloc:
@@ -80,13 +80,13 @@ def urlparse(url, scheme='', allow_fragments=True):
     function ensures that the original urlparse is called always with a
     str object, and never unicode.
 
-        >>> urlparse(u'http://foo.com/bar')
+        >>> tuple(urlparse(u'http://foo.com/bar'))
         ('http', 'foo.com', '/bar', '', '', '')
 
-        >>> urlparse('http://foo.com/bar')
+        >>> tuple(urlparse('http://foo.com/bar'))
         ('http', 'foo.com', '/bar', '', '', '')
 
-        >>> original_urlparse('http://foo.com/bar')
+        >>> tuple(original_urlparse('http://foo.com/bar'))
         ('http', 'foo.com', '/bar', '', '', '')
 
     This is needed since external libraries might expect that the original
@@ -106,13 +106,13 @@ def urlsplit(url, scheme='', allow_fragments=True):
     function ensures that the original urlsplit is called always with a
     str object, and never unicode.
 
-        >>> urlsplit(u'http://foo.com/baz')
+        >>> tuple(urlsplit(u'http://foo.com/baz'))
         ('http', 'foo.com', '/baz', '', '')
 
-        >>> urlsplit('http://foo.com/baz')
+        >>> tuple(urlsplit('http://foo.com/baz'))
         ('http', 'foo.com', '/baz', '', '')
 
-        >>> original_urlsplit('http://foo.com/baz')
+        >>> tuple(original_urlsplit('http://foo.com/baz'))
         ('http', 'foo.com', '/baz', '', '')
 
     """

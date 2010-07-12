@@ -105,6 +105,7 @@ class CveUnlinkView(CveLinkView):
         self.request.response.addInfoNotification(
             'CVE-%s removed.' % data['sequence'])
 
+    @property
     def label(self):
         return  'Bug # %s Remove link to CVE report' % self.context.bug.id
 
@@ -127,6 +128,9 @@ class CveSetView:
 
         if self.text:
             self.pre_search()
+
+    label = 'Launchpad CVE tracker'
+    page_title = label
 
     def getAllBatched(self):
         return BatchNavigator(self.context.getAll(), self.request)

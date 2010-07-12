@@ -90,8 +90,4 @@
     </dd>
   </dl>
 
-  <p id="registrant">
-    Registered
-    <tal:created replace="context/date_created/fmt:approximatedate" />
-  </p>
 </div>

@@ -16,8 +16,6 @@
 <div metal:fill-slot="main"
      tal:define="batch view/forReviewBatched">
 
-  <h1>Review projects</h1>
-
   <div tal:condition="not: batch/currentBatch" class="warning message">
     No items found with these search options.
   </div>

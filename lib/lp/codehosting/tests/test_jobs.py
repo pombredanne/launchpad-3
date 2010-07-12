@@ -25,12 +25,12 @@ class TestRevisionMailJob(TestCaseWithFactory):
 
     def test_runJob_generates_diff(self):
         """Ensure that a diff is actually generated in this environment."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
         branch.subscribe(branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL, branch.registrant)
         tree_transport = tree.bzrdir.root_transport
         tree_transport.put_bytes("hello.txt", "Hello World\n")
         tree.add('hello.txt')
