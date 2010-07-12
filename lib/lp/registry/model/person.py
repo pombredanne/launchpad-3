@@ -193,6 +193,12 @@ def validate_person_visibility(person, attr, value):
     * Prevent private teams from any transition.
     """
 
+    # XXX: BradCrittenden 2010-07-12 bug=602773: Private membership teams are
+    # deprecated and new ones may not be created.
+    if value == PersonVisibility.PRIVATE_MEMBERSHIP:
+        raise AssertionError(
+            "Private membership teams are deprecated.")
+
     # Prohibit any visibility changes for private teams.  This rule is
     # recognized to be Draconian and may be relaxed in the future.
     if person.visibility == PersonVisibility.PRIVATE:

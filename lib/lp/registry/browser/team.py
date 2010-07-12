@@ -166,6 +166,28 @@ class TeamFormMixin:
         """Remove the visibility field if not authorized."""
         if not check_permission('launchpad.Commercial', self.context):
             self.form_fields = self.form_fields.omit('visibility')
+        else:
+            # XXX: BradCrittenden 2010-07-12 bug=602773:  This code can be
+            # removed when PRIVATE_MEMBERSHIP disappears fully.
+
+            # Remove the visibility selector and replace with one with a more
+            # limited vocabulary.
+            terms = [SimpleTerm(PersonVisibility.PUBLIC,
+                                PersonVisibility.PUBLIC.title,
+                                PersonVisibility.PUBLIC.name),
+                     SimpleTerm(PersonVisibility.PRIVATE,
+                                PersonVisibility.PRIVATE.title,
+                                PersonVisibility.PRIVATE.name),
+                     ]
+            visibility = self.form_fields['visibility'].field
+            field = Choice(
+                __name__=visibility.getName(),
+                title=visibility.title,
+                source=SimpleVocabulary(terms))
+            self.form_fields = (
+                self.form_fields.omit('visibility') +
+                form.Fields(field))
+            self.form_fields = self.form_fields.select(*self.field_names)
 
 
 class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
