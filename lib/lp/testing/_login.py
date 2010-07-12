@@ -79,7 +79,6 @@ def login_person(person, participation=None):
             raise ValueError("Got team, expected person: %r" % (person,))
     participation = _test_login_impl(participation)
     setupInteractionForPerson(person, participation)
-    return person
 
 
 def _get_arbitrary_team_member(team):
@@ -100,7 +99,8 @@ def login_team(team, participation=None):
     if not team.is_team:
         raise ValueError("Got person, expected team: %r" % (team,))
     person = _get_arbitrary_team_member(team)
-    return login_person(person, participation=participation)
+    login_person(person, participation=participation)
+    return person
 
 
 def login_as(person_or_team, participation=None):
