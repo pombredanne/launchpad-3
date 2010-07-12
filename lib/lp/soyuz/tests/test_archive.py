@@ -1099,7 +1099,35 @@ class TestCommercialArchive(TestCaseWithFactory):
         login("commercial-member@canonical.com")
         self.setCommercial(self.archive, True)
         self.assertTrue(self.archive.commercial)
-        
+
+
+class TestBuildDebugSymbols(TestCaseWithFactory):
+    """Tests relating to the build_debug_symbols flag."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBuildDebugSymbols, self).setUp()
+        self.archive = self.factory.makeArchive()
+
+    def setBuildDebugSymbols(self, archive, build_debug_symbols):
+        """Helper function."""
+        archive.build_debug_symbols = build_debug_symbols
+
+    def test_set_and_get_build_debug_symbols(self):
+        # Basic set and get of the build_debug_symbols property.  Anyone can
+        # read it and it defaults to False.
+        login_person(self.archive.owner)
+        self.assertFalse(self.archive.build_debug_symbols)
+
+        # The archive owner can't change the value.
+        self.assertRaises(
+            Unauthorized, self.setBuildDebugSymbols, self.archive, True)
+
+        # Commercial admins can change it.
+        login("commercial-member@canonical.com")
+        self.setBuildDebugSymbols(self.archive, True)
+        self.assertTrue(self.archive.build_debug_symbols)
 
 
 def test_suite():
