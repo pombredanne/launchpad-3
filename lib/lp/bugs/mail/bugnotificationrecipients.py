@@ -56,7 +56,12 @@ class BugNotificationRecipientReason(RecipientReason):
 
     @classmethod
     def forDistroBugSupervisor(cls, person, distro):
-        """..."""
+        """Return a `BugNotificationRecipientReason` for a bug supervisor."""
+        header = cls.makeRationale(
+            "Bug Supervisor (%s)" % distro.displayname, person)
+        reason = cls._getReasonTemplate(
+            "the bug supervisor for %s" % distro.displayname)
+        return cls(person, person, header, reason)
 
     @classmethod
     def forStructuralSubscriber(cls, person, target):

@@ -100,6 +100,32 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
         self._assertReasonAndHeaderAreCorrect(
             reason, expected_reason, expected_header)
 
+    def test_forDistroBugSupervisor(self):
+        distro = self.factory.makeDistribution()
+        reason = BugNotificationRecipientReason.forDistroBugSupervisor(
+            self.person, distro)
+
+        expected_header = "Bug Supervisor (%s)" % distro.displayname
+        expected_reason = (
+            "You received this bug notification because you are the bug "
+            "supervisor for %s." % distro.displayname)
+        self._assertReasonAndHeaderAreCorrect(
+            reason, expected_reason, expected_header)
+
+    def test_forDistroBugSupervisor_for_team(self):
+        distro = self.factory.makeDistribution()
+        reason = BugNotificationRecipientReason.forDistroBugSupervisor(
+            self.team, distro)
+
+        expected_header = "Bug Supervisor (%s) @%s" % (
+            distro.displayname, self.team.name)
+        expected_reason = (
+            "You received this bug notification because your team %s is the "
+            "bug supervisor for %s." %
+                (self.team.displayname, distro.displayname))
+        self._assertReasonAndHeaderAreCorrect(
+            reason, expected_reason, expected_header)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
