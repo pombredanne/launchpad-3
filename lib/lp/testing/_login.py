@@ -15,8 +15,11 @@ __all__ = [
     'is_logged_in',
     ]
 
+import random
+
 from zope.component import getUtility
 from zope.security.management import endInteraction
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import (
@@ -84,7 +87,9 @@ def _get_arbitrary_team_member(team):
 
     :param team: An `ITeam`.
     """
-    return team.teamowner
+    # Set up the interaction.
+    login(ANONYMOUS)
+    return random.choice(list(team.allmembers))
 
 
 def login_team(team, participation=None):
