@@ -6,14 +6,14 @@
 __metaclass__ = type
 
 __all__ = [
+    'SourcePackageRecipeBuildContextMenu',
     'SourcePackageRecipeBuildNavigation',
-    'SourcePackageRecipeBuildNavigationMenu',
     'SourcePackageRecipeBuildView',
     ]
 
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.webapp import (
-    LaunchpadView, Navigation, NavigationMenu)
+    ContextMenu, enabled_with_permission, LaunchpadView, Link, Navigation)
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -26,14 +26,18 @@ class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
     usedfor = ISourcePackageRecipeBuild
 
 
-class SourcePackageRecipeBuildNavigationMenu(NavigationMenu):
+class SourcePackageRecipeBuildContextMenu(ContextMenu):
     """Navigation menu for sourcepackagerecipe build."""
 
     usedfor = ISourcePackageRecipeBuild
 
     facet = 'branches'
 
-    links = ('edit', 'delete')
+    links = ('delete',)
+
+    #@enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        return Link('+delete', 'Delete build', icon='trash-icon')
 
 
 class SourcePackageRecipeBuildView(LaunchpadView):

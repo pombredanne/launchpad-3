@@ -1094,6 +1094,9 @@
         attribute_to_parent="recipe"
         path_expression="string:+build/${id}"
         rootsite="code" />
+    <browser:menus
+        classes="SourcePackageRecipeBuildContextMenu"
+        module="lp.code.browser.sourcepackagerecipebuild"/>
 
     <browser:navigation
         module="lp.code.browser.sourcepackagerecipe"
