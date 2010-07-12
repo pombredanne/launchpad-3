@@ -49,61 +49,44 @@ class TestDominator(TestNativePublishingBase):
         return (foo_11_source, foo_11_binaries[0],
                 foo_10_source, foo_10_binaries[0])
 
-    def testManualSourceDomination(self):
-        """Test source domination procedure."""
+    def dominateAndCheck(self, dominant, dominated, supersededby):
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
 
-        [dominant_source, dominant_binary, dominated_source,
-         dominated_binary] = self.createSimpleDominationContext()
-
-        # The _dominate* test methods require a dictionary where the source
+        # The _dominate* test methods require a dictionary where the
         # package name is the key. The key's value is a list of
         # source or binary packages representing dominant, the first element
         # and dominated, the subsequents.
-        source_input = {'foo': [dominant_source, dominated_source]}
+        pubs = {'foo': [dominant, dominated]}
 
-        dominator._dominatePublications(source_input)
+        dominator._dominatePublications(pubs)
         flush_database_updates()
 
         # The dominant version remains correctly published.
-        self.checkPublication(
-            dominant_source, PackagePublishingStatus.PUBLISHED)
-        self.assertTrue(dominant_source.supersededby is None)
-        self.assertTrue(dominant_source.datesuperseded is None)
-
-        # The dominated version is correctly dominated.
-        self.checkPublication(
-            dominated_source, PackagePublishingStatus.SUPERSEDED)
-        self.assertEqual(
-            dominated_source.supersededby,
-            dominant_source.sourcepackagerelease)
-        self.checkPastDate(dominated_source.datesuperseded)
-
-    def testManualBinaryDomination(self):
-        """Test binary domination procedure."""
-        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
-
-        [dominant_source, dominant, dominated_source,
-         dominated] = self.createSimpleDominationContext()
-
-        # See comment about domination input format and ordering above.
-        binary_input = {'foo-bin': [dominant, dominated]}
-
-        dominator._dominatePublications(binary_input)
-        flush_database_updates()
-
-        # Dominant version remains correctly published.
-        self.checkPublication(
-            dominant, PackagePublishingStatus.PUBLISHED)
+        self.checkPublication(dominant, PackagePublishingStatus.PUBLISHED)
         self.assertTrue(dominant.supersededby is None)
         self.assertTrue(dominant.datesuperseded is None)
 
-        # Dominated version is correctly dominated.
-        self.checkPublication(
-            dominated, PackagePublishingStatus.SUPERSEDED)
-        self.assertEqual(
-            dominated.supersededby, dominant.binarypackagerelease.build)
+        # The dominated version is correctly dominated.
+        self.checkPublication(dominated, PackagePublishingStatus.SUPERSEDED)
+        self.assertEqual(dominated.supersededby, supersededby)
         self.checkPastDate(dominated.datesuperseded)
+
+    def testManualSourceDomination(self):
+        """Test source domination procedure."""
+        [dominant_source, dominant_binary, dominated_source,
+         dominated_binary] = self.createSimpleDominationContext()
+
+        self.dominateAndCheck(
+            dominant_source, dominated_source,
+            dominant_source.sourcepackagerelease)
+
+    def testManualBinaryDomination(self):
+        """Test binary domination procedure."""
+        [dominant_source, dominant, dominated_source,
+         dominated] = self.createSimpleDominationContext()
+
+        self.dominateAndCheck(
+            dominant, dominated, dominant.binarypackagerelease.build)
 
     def testJudgeAndDominate(self):
         """Verify that judgeAndDominate correctly dominates everything."""
