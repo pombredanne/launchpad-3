@@ -22,7 +22,6 @@ __all__ = [
     'RDFIndexView',
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
-    'StructuralObjectPresentation',
     'get_launchpad_views',
     ]
 
@@ -55,8 +54,7 @@ from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
-    IRosettaApplication, IStructuralHeaderPresentation,
-    IStructuralObjectPresentation)
+    IRosettaApplication, IStructuralHeaderPresentation)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
@@ -852,24 +850,6 @@ class StructuralHeaderPresentation:
         return None
 
     def getMainHeading(self):
-        raise NotImplementedError()
-
-
-class StructuralObjectPresentation(StructuralHeaderPresentation):
-    """Base class for StructuralObjectPresentation adapters."""
-
-    implements(IStructuralObjectPresentation)
-
-    def listChildren(self, num):
-        return []
-
-    def countChildren(self):
-        raise NotImplementedError()
-
-    def listAltChildren(self, num):
-        return None
-
-    def countAltChildren(self):
         raise NotImplementedError()
 
 

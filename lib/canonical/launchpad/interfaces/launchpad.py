@@ -62,7 +62,6 @@ __all__ = [
     'IReadZODBAnnotation',
     'IRosettaApplication',
     'IStructuralHeaderPresentation',
-    'IStructuralObjectPresentation',
     'IWebServiceApplication',
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
@@ -493,28 +492,6 @@ class IStructuralHeaderPresentation(Interface):
 
     def getMainHeading():
         """can be None"""
-
-
-class IStructuralObjectPresentation(IStructuralHeaderPresentation):
-    """Adapter for less common parts of a structural object's presentation."""
-
-    def listChildren(num):
-        """List up to num children.  Return empty string for none of these"""
-
-    def countChildren():
-        """Return the total number of children."""
-
-    def listAltChildren(num):
-        """List up to num alternative children.
-
-        Return None if alt children are not supported.
-        """
-
-    def countAltChildren():
-        """Return the total number of alt children.
-
-        Will be called only if listAltChildren returns something.
-        """
 
 
 class IAppFrontPageSearchForm(Interface):
