@@ -822,7 +822,6 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
 
         # Adjust the binary package release original component.
         universe = getUtility(IComponentSet)['universe']
-        from zope.security.proxy import removeSecurityProxy
         removeSecurityProxy(binary.binarypackagerelease).component = universe
 
         self.copyAndCheck(
@@ -980,9 +979,6 @@ class BuildRecordCreationTests(TestNativePublishingBase):
 class TestBinaryDomination(TestNativePublishingBase):
     """Test BinaryPackagePublishingHistory.supersede() operates correctly."""
 
-    def setUp(self):
-        super(TestBinaryDomination, self).setUp()
-
     def checkSuperseded(self, binaries, supersededby=None):
         self.checkBinaryPublications(
             binaries, PackagePublishingStatus.SUPERSEDED)
@@ -1081,6 +1077,50 @@ class TestBinaryDomination(TestNativePublishingBase):
         bin.supersede(super_bin)
         self.checkSuperseded([bin], super_bin)
         self.assertEquals(super_date, bin.datesuperseded)
+
+
+class TestBinaryGetOtherPublications(TestNativePublishingBase):
+    """Test BinaryPackagePublishingHistory._getOtherPublications() works."""
+
+    def checkOtherPublications(self, this, others):
+        self.assertEquals(
+            set(removeSecurityProxy(this)._getOtherPublications()),
+            set(others))
+
+    def testFindsOtherArchIndepPublications(self):
+        """Arch-indep publications with the same overrides should be found."""
+        bins = self.getPubBinaries(architecturespecific=False)
+        self.checkOtherPublications(bins[0], bins)
+
+    def testDoesntFindArchSpecificPublications(self):
+        """Arch-dep publications shouldn't be found."""
+        bins = self.getPubBinaries(architecturespecific=True)
+        self.checkOtherPublications(bins[0], [bins[0]])
+
+    def testDoesntFindPublicationsInOtherArchives(self):
+        """Publications in other archives shouldn't be found."""
+        bins = self.getPubBinaries(architecturespecific=False)
+        foreign_bins = bins[0].copyTo(
+            bins[0].distroarchseries.distroseries, bins[0].pocket,
+            self.factory.makeArchive())
+        self.checkOtherPublications(bins[0], bins)
+        self.checkOtherPublications(foreign_bins[0], foreign_bins)
+
+    def testDoesntFindPublicationsWithDifferentOverrides(self):
+        """Publications with different overrides shouldn't be found."""
+        bins = self.getPubBinaries(architecturespecific=False)
+        universe = getUtility(IComponentSet)['universe']
+        foreign_bin = bins[0].changeOverride(new_component=universe)
+        self.checkOtherPublications(bins[0], bins)
+        self.checkOtherPublications(foreign_bin, [foreign_bin])
+
+    def testDoesntFindSupersededPublications(self):
+        """Superseded publications shouldn't be found."""
+        bins = self.getPubBinaries(architecturespecific=False)
+        self.checkOtherPublications(bins[0], bins)
+        # This will supersede both atomically.
+        bins[0].supersede()
+        self.checkOtherPublications(bins[0], [])
 
 
 def test_suite():

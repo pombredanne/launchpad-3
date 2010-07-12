@@ -123,64 +123,6 @@ class TestDominator(TestNativePublishingBase):
             dominated.supersededby, dominant.binarypackagerelease.build)
         self.checkPastDate(dominated.datesuperseded)
 
-    def testOtherBinaryPublications(self):
-        """Check the basis of architecture independent binary domination.
-
-        We use _getOtherPublications to identify other publications of the
-        same binarypackagerelease in other architectures (architecture
-        independent binaries), they will be dominated during a single step.
-
-        See overall details in `testDominationOfOldArchIndepBinaries`.
-        """
-        # Create architecture independent publications for foo-bin_1.0
-        # in i386 & hppa.
-        pub_source_archindep = self.getPubSource(
-            version='1.0', status=PackagePublishingStatus.PUBLISHED,
-            architecturehintlist='all')
-        pub_binaries_archindep = self.getPubBinaries(
-            pub_source=pub_source_archindep,
-            status=PackagePublishingStatus.PUBLISHED)
-        [hppa_pub, i386_pub] = pub_binaries_archindep
-
-        # We will also copy the binary publications to a PPA archive
-        # to check if the lookup is indeed restricted to the dominated
-        # archive. See bug #237845 for further information.
-        cprov = getUtility(IPersonSet).getByName('cprov')
-        i386_pub.copyTo(
-            self.breezy_autotest,
-            PackagePublishingPocket.RELEASE,
-            cprov.archive)
-        cprov_foo_binaries = cprov.archive.getAllPublishedBinaries(name='foo')
-        self.assertEqual(cprov_foo_binaries.count(), 2)
-
-        # Manually supersede the hppa binary.
-        hppa_pub.status = PackagePublishingStatus.SUPERSEDED
-        flush_database_updates()
-
-        # Check if we can reach the i386 publication using
-        # _getOtherBinaryPublications over the hppa binary.
-        [found] = list(hppa_pub._getOtherPublications())
-        self.assertEqual(i386_pub, found)
-
-        # Create architecture specific publications for foo-bin_1.1 in
-        # i386 & hppa.
-        pub_source_archdep = self.getPubSource(
-            version='1.1', status=PackagePublishingStatus.PUBLISHED,
-            architecturehintlist='any')
-        pub_binaries_archdep = self.getPubBinaries(
-            pub_source=pub_source_archdep)
-        [hppa_pub, i386_pub] = pub_binaries_archdep
-
-        # Manually supersede the hppa publication.
-        hppa_pub.status = PackagePublishingStatus.SUPERSEDED
-        flush_database_updates()
-
-        # Check if there is no other publication of the hppa binary package
-        # release.
-        self.assertEqual(
-            hppa_pub._getOtherPublications().count(),
-            0)
-
 
 class TestDomination(TestNativePublishingBase):
     """Test overall domination procedure."""
