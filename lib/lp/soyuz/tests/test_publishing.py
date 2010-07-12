@@ -452,16 +452,17 @@ class SoyuzTestPublisher:
         return source
 
 
-class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
+class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
     layer = LaunchpadZopelessLayer
     dbuser = config.archivepublisher.dbuser
 
     def __init__(self, methodName='runTest'):
-        unittest.TestCase.__init__(self, methodName=methodName)
+        super(TestNativePublishingBase, self).__init__(methodName=methodName)
         SoyuzTestPublisher.__init__(self)
 
     def setUp(self):
         """Setup a pool dir, the librarian, and instantiate the DiskPool."""
+        super(TestNativePublishingBase, self).setUp()
         self.layer.switchDbUser(config.archivepublisher.dbuser)
         self.prepareBreezyAutotest()
         self.config = Config(self.ubuntutest)
@@ -476,6 +477,7 @@ class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
 
     def tearDown(self):
         """Tear down blows the pool dir away."""
+        super(TestNativePublishingBase, self).tearDown()
         shutil.rmtree(self.config.distroroot)
 
     def getPubSource(self, *args, **kwargs):
@@ -973,6 +975,31 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEquals(2, len(builds))
         self.assertEquals(self.avr_distroarch, builds[0].distro_arch_series)
         self.assertEquals(self.sparc_distroarch, builds[1].distro_arch_series)
+
+
+class TestBinaryDomination(TestNativePublishingBase):
+    """Test BinaryPackagePublishingHistory.supersede() operates correctly."""
+
+    def setUp(self):
+        super(TestBinaryDomination, self).setUp()
+        self.binaries = self.getPubBinaries()
+
+    def testSupersede(self):
+        """Check that supersede() without arguments works."""
+        bin = self.binaries[0]
+        bin.supersede()
+        self.checkBinaryPublication(bin, PackagePublishingStatus.SUPERSEDED)
+        self.checkPastDate(bin.datesuperseded)
+        self.assertIs(None, bin.supersededby)
+
+    def testSupersedeWithDominant(self):
+        """Check that supersede() with a dominant publication works."""
+        bin = self.binaries[0]
+        super_bin = self.getPubBinaries()[0]
+        bin.supersede(super_bin)
+        self.checkBinaryPublication(bin, PackagePublishingStatus.SUPERSEDED)
+        self.checkPastDate(bin.datesuperseded)
+        self.assertIs(super_bin.binarypackagerelease.build, bin.supersededby)
 
 
 def test_suite():
