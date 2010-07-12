@@ -138,17 +138,6 @@ case) and -, +, _ and @ are allowed after that.
     LaunchpadValidationError: Invalid branch name 'invalid name!'.  Branch ...
 
 
-== Determing the number of branches with bugs ==
-
-The count of branches that have bugs associated with them is another
-useful piece of summary information that is supplied on one of the initial
-pages to show that there can be a relationship created between
-branches and bugs.
-
-    >>> branchset.countBranchesWithAssociatedBugs()
-    2
-
-
 == Determining the recently changed, registered and imported branches ==
 
 The IBranchSet methods getRecentlyChangedBranches, getRecentlyImportedBranches,

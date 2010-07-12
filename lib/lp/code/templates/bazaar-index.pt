@@ -127,10 +127,6 @@
           </a>
         </div>
         <div>
-          <strong tal:content="view/branches_with_bugs_count">12</strong>
-          branches associated with bug reports
-        </div>
-        <div>
           Launchpad uses <a href="http://bazaar.canonical.com/">Bazaar</a>
           <tal:version tal:content="view/bzr_version">2.0</tal:version>.
         </div>

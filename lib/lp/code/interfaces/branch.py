@@ -1160,12 +1160,6 @@ class IBranchSet(Interface):
 
     export_as_webservice_collection(IBranch)
 
-    def countBranchesWithAssociatedBugs():
-        """Return the number of branches that have bugs associated.
-
-        Only counts public branches.
-        """
-
     def getRecentlyChangedBranches(
         branch_count=None,
         lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
