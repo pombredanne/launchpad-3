@@ -1001,6 +1001,47 @@ class TestBinaryDomination(TestNativePublishingBase):
         self.checkPastDate(bin.datesuperseded)
         self.assertIs(super_bin.binarypackagerelease.build, bin.supersededby)
 
+    def testSupersedingSupersededArchSpecificBinaryFails(self):
+        """Check that supersede() fails with a superseded arch-dep binary.
+
+        Architecture-specific binaries should not normally be superseded twice.
+        If a second attempt is made, the Dominator's lookups are buggy.
+        """
+        bin = self.getPubBinaries(architecturespecific=True)[0]
+        super_bin = self.getPubBinaries(architecturespecific=True)[0]
+        bin.supersede(super_bin)
+
+        # Manually set a date in the past, so we can confirm that
+        # the second supersede() fails properly.
+        bin.datesuperseded = datetime.datetime(
+            2006, 12, 25, tzinfo=pytz.timezone("UTC"))
+        super_date = bin.datesuperseded
+
+        self.assertRaises(AssertionError, bin.supersede, super_bin)
+        self.checkBinaryPublication(bin, PackagePublishingStatus.SUPERSEDED)
+        self.assertEquals(super_date, bin.datesuperseded)
+
+    def testSupersedingSupersededArchIndependentBinarySkips(self):
+        """Check that supersede() skips a superseded arch-indep binary.
+
+        Since all publications of an architecture-independent binary are
+        superseded atomically, they may be superseded again later. In that
+        case, we skip the domination, leaving the old date unchanged.
+        """
+        bin = self.getPubBinaries(architecturespecific=False)[0]
+        super_bin = self.getPubBinaries(architecturespecific=False)[0]
+        bin.supersede(super_bin)
+        self.checkBinaryPublication(bin, PackagePublishingStatus.SUPERSEDED)
+
+        # Manually set a date in the past, so we can confirm that
+        # the second supersede() skips properly.
+        bin.datesuperseded = datetime.datetime(
+            2006, 12, 25, tzinfo=pytz.timezone("UTC"))
+        super_date = bin.datesuperseded
+
+        bin.supersede(super_bin)
+        self.checkBinaryPublication(bin, PackagePublishingStatus.SUPERSEDED)
+        self.assertEquals(super_date, bin.datesuperseded)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

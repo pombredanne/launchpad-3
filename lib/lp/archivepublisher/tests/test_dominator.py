@@ -125,65 +125,6 @@ class TestDominator(TestNativePublishingBase):
             dominated.supersededby, dominant.binarypackagerelease.build)
         self.checkPastDate(dominated.datesuperseded)
 
-    def testBinaryDomination(self):
-        """Test binary domination unit procedure."""
-        [dominant_source, dominant, dominated_source,
-         dominated] = self.createSimpleDominationContext()
-
-        dominated.supersede(dominant)
-        flush_database_updates()
-
-        dominated  = self.checkBinaryPublication(
-            dominated, PackagePublishingStatus.SUPERSEDED)
-        self.assertEqual(
-            dominated.supersededby, dominant.binarypackagerelease.build)
-        self.checkPastDate(dominated.datesuperseded)
-
-    def testBinaryDominationAssertsPendingOrPublished(self):
-        """Test binary domination asserts coherent dominated status.
-
-        Normally supersede() only accepts domination candidates in
-        PUBLISHED or PENDING status, a exception is opened for architecture
-        independent binaries because during the iteration they might have
-        been already SUPERSEDED with its first publication, when it happens
-        the candidate is skipped, i.e. it's not dominated again.
-
-        (remembering the architecture independent binaries get superseded
-        atomically)
-        """
-        [dominant_source, dominant, dominated_source,
-         dominated] = self.createSimpleDominationContext()
-
-        # Let's modify the domination candidate, so it will look wrong to
-        # supersede() which will raise because it's a architecture
-        # specific binary publication not in PENDING or PUBLISHED state.
-        dominated.status = PackagePublishingStatus.SUPERSEDED
-        manual_domination_date = datetime.datetime(
-            2006, 12, 25, tzinfo=pytz.timezone("UTC"))
-        dominated.datesuperseded = manual_domination_date
-        flush_database_updates()
-
-        # An error like that in production clearly indicates that something
-        # is wrong in the Dominator look-up methods.
-        self.assertRaises(
-            AssertionError, dominated.supersede, dominant)
-
-        # The refused publishing record remains the same.
-        dominated  = self.checkBinaryPublication(
-            dominated, PackagePublishingStatus.SUPERSEDED)
-        self.assertEqual(dominated.datesuperseded, manual_domination_date)
-
-        # Let's make it a architecture independent binary, so the domination
-        # can be executed, but the record will be skipped.
-        dominated.binarypackagerelease.architecturespecific = False
-        flush_database_updates()
-
-        dominated.supersede(dominant)
-        flush_database_updates()
-        dominated  = self.checkBinaryPublication(
-            dominated, PackagePublishingStatus.SUPERSEDED)
-        self.assertEqual(dominated.datesuperseded, manual_domination_date)
-
     def testOtherBinaryPublications(self):
         """Check the basis of architecture independent binary domination.
 
