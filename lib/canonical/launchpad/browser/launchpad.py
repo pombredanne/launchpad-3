@@ -21,7 +21,6 @@ __all__ = [
     'NavigationMenuTabs',
     'RDFIndexView',
     'SoftTimeoutView',
-    'StructuralHeaderPresentation',
     'get_launchpad_views',
     ]
 
@@ -54,7 +53,7 @@ from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
-    IRosettaApplication, IStructuralHeaderPresentation)
+    IRosettaApplication)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
@@ -836,21 +835,6 @@ class LaunchpadAPIDocFolder(ExportedFolder):
             return self, ('index.html', )
         else:
             return self, ()
-
-
-class StructuralHeaderPresentation:
-    """Base class for StructuralHeaderPresentation adapters."""
-
-    implements(IStructuralHeaderPresentation)
-
-    def __init__(self, context):
-        self.context = context
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        raise NotImplementedError()
 
 
 class Button:

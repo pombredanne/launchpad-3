@@ -61,7 +61,6 @@ __all__ = [
     'IPrivacy',
     'IReadZODBAnnotation',
     'IRosettaApplication',
-    'IStructuralHeaderPresentation',
     'IWebServiceApplication',
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
@@ -482,16 +481,6 @@ class IHasDateCreated(Interface):
     """Something created on a certain date."""
 
     datecreated = Attribute("The date on which I was created.")
-
-
-class IStructuralHeaderPresentation(Interface):
-    """Adapter for common aspects of a structural object's presentation."""
-
-    def getIntroHeading():
-        """Any heading introduction needed (e.g. "Ubuntu source package:")."""
-
-    def getMainHeading():
-        """can be None"""
 
 
 class IAppFrontPageSearchForm(Interface):
