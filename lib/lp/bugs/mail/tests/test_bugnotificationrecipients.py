@@ -153,6 +153,34 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
         self._assertReasonAndHeaderAreCorrect(
             reason, expected_reason, expected_header)
 
+    def test_forRegistrant(self):
+        target = self.factory.makeProduct()
+        reason = BugNotificationRecipientReason.forRegistrant(
+            self.person, target)
+
+        expected_header = "Registrant (%s)" % target.displayname
+        expected_reason = (
+            "You received this bug notification because you are the "
+            "registrant of %s." % target.displayname)
+
+        self._assertReasonAndHeaderAreCorrect(
+            reason, expected_reason, expected_header)
+
+    def test_forRegistrant_for_team(self):
+        target = self.factory.makeProduct()
+        reason = BugNotificationRecipientReason.forRegistrant(
+            self.team, target)
+
+        expected_header = "Registrant (%s) @%s" % (
+            target.displayname, self.team.name)
+        expected_reason = (
+            "You received this bug notification because your team %s "
+            "is the registrant of %s." % (
+                self.team.displayname, target.displayname))
+
+        self._assertReasonAndHeaderAreCorrect(
+            reason, expected_reason, expected_header)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -73,8 +73,13 @@ class BugNotificationRecipientReason(RecipientReason):
         return cls(person, person, header, reason)
 
     @classmethod
-    def forRegistrant(cls, person, upstream):
-        """..."""
+    def forRegistrant(cls, person, target):
+        """Return a recipient reason for a registrant."""
+        header = cls.makeRationale(
+            "Registrant (%s)" % target.displayname, person)
+        reason = cls._getReasonTemplate(
+            "the registrant of %s" % target.displayname)
+        return cls(person, person, header, reason)
 
 
 class BugNotificationRecipients(NotificationRecipientSet):
