@@ -99,11 +99,14 @@ class TestDominator(TestNativePublishingBase):
             foo_10_source.distroseries, foo_10_source.pocket, self.config)
 
         self.checkPublications(
-            [foo_12_source] + foo_12_binaries, PackagePublishingStatus.PUBLISHED)
+            [foo_12_source] + foo_12_binaries,
+            PackagePublishingStatus.PUBLISHED)
         self.checkPublications(
-            [foo_11_source] + foo_11_binaries, PackagePublishingStatus.SUPERSEDED)
+            [foo_11_source] + foo_11_binaries,
+            PackagePublishingStatus.SUPERSEDED)
         self.checkPublications(
-            [foo_10_source] + foo_10_binaries, PackagePublishingStatus.SUPERSEDED)
+            [foo_10_source] + foo_10_binaries,
+            PackagePublishingStatus.SUPERSEDED)
 
     def testEmptyDomination(self):
         """Domination asserts for not empty input list."""
