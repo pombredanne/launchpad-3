@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=F0401
 
+from __future__ import with_statement
+
 """Testing infrastructure for the Launchpad application.
 
 This module should not have any actual tests.
@@ -15,6 +17,7 @@ __all__ = [
     'ObjectFactory',
     ]
 
+from contextlib import nested
 from datetime import datetime, timedelta
 from email.encoders import encode_base64
 from email.utils import make_msgid, formatdate
@@ -25,6 +28,7 @@ from itertools import count
 import os.path
 from random import randint
 from StringIO import StringIO
+from textwrap import dedent
 from threading import local
 
 import pytz
@@ -55,10 +59,13 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
 from canonical.launchpad.ftests._sqlobject import syncUpdate
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
+from lp.archiveuploader.dscfile import DSCFile
+from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.blueprints.interfaces.sprint import ISprintSet
@@ -137,15 +144,19 @@ from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.processor import ProcessorFamily, ProcessorFamilySet
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
-from lp.testing import run_with_login, time_counter, login, logout
+from lp.testing import run_with_login, time_counter, login, logout, temp_dir
 
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.translationimportqueue import (
+    RosettaImportStatus)
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
-from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
+from lp.translations.interfaces.translator import ITranslatorSet
+from lp.translations.model.translationimportqueue import (
+    TranslationImportQueueEntry)
 
 
 SPACE = ' '
@@ -1852,6 +1863,47 @@ class LaunchpadObjectFactory(ObjectFactory):
         store.add(bq)
         return bq
 
+    def makeDscFile(self, tempdir_path=None):
+        """Make a DscFile.
+
+        :param tempdir_path: Path to a temporary directory to use.  If not
+            supplied, a temp directory will be created.
+        """
+        filename = 'ed_0.2-20.dsc'
+        contexts = []
+        if tempdir_path is None:
+            contexts.append(temp_dir())
+        # Use nested so temp_dir is an optional context.
+        with nested(*contexts) as result:
+            if tempdir_path is None:
+                tempdir_path = result[0]
+            fullpath = os.path.join(tempdir_path, filename)
+            with open(fullpath, 'w') as dsc_file:
+                dsc_file.write(dedent("""\
+                Format: 1.0
+                Source: ed
+                Version: 0.2-20
+                Binary: ed
+                Maintainer: James Troup <james@nocrew.org>
+                Architecture: any
+                Standards-Version: 3.5.8.0
+                Build-Depends: dpatch
+                Files:
+                 ddd57463774cae9b50e70cd51221281b 185913 ed_0.2.orig.tar.gz
+                 f9e1e5f13725f581919e9bfd62272a05 8506 ed_0.2-20.diff.gz
+                """))
+            class Changes:
+                architectures = ['source']
+            logger = QuietFakeLogger()
+            policy = BuildDaemonUploadPolicy()
+            policy.distroseries = self.makeDistroSeries()
+            policy.archive = self.makeArchive()
+            policy.distro = policy.distroseries.distribution
+            dsc_file = DSCFile(fullpath, 'digest', 0, 'main/editors',
+                'priority', 'package', 'version', Changes, policy, logger)
+            list(dsc_file.verify())
+        return dsc_file
+
     def makeTranslationTemplatesBuildJob(self, branch=None):
         """Make a new `TranslationTemplatesBuildJob`.
 
@@ -1990,6 +2042,42 @@ class LaunchpadObjectFactory(ObjectFactory):
                 translations=[translated]))
         translation.is_imported = is_imported
         translation.is_current = True
+
+    def makeTranslationImportQueueEntry(self, path=None, status=None,
+                                        sourcepackagename=None,
+                                        distroseries=None,
+                                        productseries=None, content=None,
+                                        uploader=None, is_published=False):
+        """Create a `TranslationImportQueueEntry`."""
+        if path is None:
+            path = self.getUniqueString() + '.pot'
+        if status is None:
+            status = RosettaImportStatus.NEEDS_REVIEW
+
+        if (sourcepackagename is None and distroseries is None):
+            if productseries is None:
+                productseries = self.makeProductSeries()
+        else:
+            if sourcepackagename is None:
+                sourcepackagename = self.makeSourcePackageName()
+            if distroseries is None:
+                distroseries = self.makeDistroSeries()
+
+        if uploader is None:
+            uploader = self.makePerson()
+
+        if content is None:
+            content = self.getUniqueString()
+
+        content_reference = getUtility(ILibraryFileAliasSet).create(
+            name=os.path.basename(path), size=len(content),
+            file=StringIO(content), contentType='text/plain')
+
+        return TranslationImportQueueEntry(
+            path=path, status=status, sourcepackagename=sourcepackagename,
+            distroseries=distroseries, productseries=productseries,
+            importer=uploader, content=content_reference,
+            is_published=is_published)
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""

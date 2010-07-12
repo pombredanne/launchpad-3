@@ -785,6 +785,7 @@ First, let's check the status of the existing entries.
 We need it blocked for this test.
 
     >>> entry5.setStatus(RosettaImportStatus.BLOCKED, rosetta_experts)
+    >>> transaction.commit()
 
 Let's see how many entries are blocked.
 
