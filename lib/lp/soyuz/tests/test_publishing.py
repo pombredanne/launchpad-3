@@ -527,6 +527,19 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
             limit = limit + lag
         self.assertTrue(date < limit, "%s >= %s" % (date, limit))
 
+    def checkSuperseded(self, pubs, supersededby=None):
+        self.checkPublications(pubs, PackagePublishingStatus.SUPERSEDED)
+        for pub in pubs:
+            self.checkPastDate(pub.datesuperseded)
+            if supersededby is not None:
+                if isinstance(pub, BinaryPackagePublishingHistory):
+                    dominant = supersededby.binarypackagerelease.build
+                else:
+                    dominant = supersededby.sourcepackagerelease
+                self.assertEquals(dominant, pub.supersededby)
+            else:
+                self.assertIs(None, pub.supersededby)
+
 
 class TestNativePublishing(TestNativePublishingBase):
 
@@ -947,24 +960,50 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEquals(self.sparc_distroarch, builds[1].distro_arch_series)
 
 
+class TestSourceDomination(TestNativePublishingBase):
+    """Test SourcePackagePublishingHistory.supersede() operates correctly."""
+
+    def testSupersede(self):
+        """Check that supersede() without arguments works."""
+        source = self.getPubSource()
+        source.supersede()
+        self.checkSuperseded([source])
+
+    def testSupersedeWithDominant(self):
+        """Check that supersede() with a dominant publication works."""
+        source = self.getPubSource()
+        super_source = self.getPubSource()
+        source.supersede(super_source)
+        self.checkSuperseded([source], super_source)
+
+    def testSupersedingSupersededSourceFails(self):
+        """Check that supersede() fails with a superseded source.
+
+        Sources should not be superseded twice. If a second attempt is made,
+        the Dominator's lookups are buggy.
+        """
+        source = self.getPubSource()
+        super_source = self.getPubSource()
+        source.supersede(super_source)
+        self.checkSuperseded([source], super_source)
+
+        # Manually set a date in the past, so we can confirm that
+        # the second supersede() fails properly.
+        source.datesuperseded = datetime.datetime(
+            2006, 12, 25, tzinfo=pytz.timezone("UTC"))
+        super_date = source.datesuperseded
+
+        self.assertRaises(AssertionError, source.supersede, super_source)
+        self.checkSuperseded([source], super_source)
+        self.assertEquals(super_date, source.datesuperseded)
+
+
 class TestBinaryDomination(TestNativePublishingBase):
     """Test BinaryPackagePublishingHistory.supersede() operates correctly."""
-
-    def checkSuperseded(self, binaries, supersededby=None):
-        self.checkPublications(binaries, PackagePublishingStatus.SUPERSEDED)
-        for binary in binaries:
-            self.checkPastDate(binary.datesuperseded)
-            if supersededby is not None:
-                self.assertEquals(
-                    supersededby.binarypackagerelease.build,
-                    binary.supersededby)
-            else:
-                self.assertIs(None, binary.supersededby)
 
     def testSupersede(self):
         """Check that supersede() without arguments works."""
         bins = self.getPubBinaries(architecturespecific=True)
-        super_bins = self.getPubBinaries(architecturespecific=True)
         bins[0].supersede()
         self.checkSuperseded([bins[0]])
         self.checkPublication(bins[1], PackagePublishingStatus.PENDING)
