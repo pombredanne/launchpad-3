@@ -12,6 +12,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
@@ -831,7 +832,7 @@ class TestArchiveTokens(TestCaseWithFactory):
         self.assertEqual(self.private_ppa.getAuthToken(self.joe), token)
 
     def test_getArchiveSubscriptionURL(self):
-        agent = self.factory.makePerson(name='software-center-agent')
+        agent = getUtility(ILaunchpadCelebrities).software_center_agent
         url = self.joe.getArchiveSubscriptionURL(self.joe, self.private_ppa)
         token = self.private_ppa.getAuthToken(self.joe)
         self.assertEqual(token.archive_url, url)

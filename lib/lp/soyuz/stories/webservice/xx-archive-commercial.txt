@@ -29,14 +29,16 @@ Using webservice directly:
 
 == Software Center Agent ==
 
-Create the accounts we will need, along with a P3A marked commercial.
+Create the P3A marked commercial, and fetch the celebrity.
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> login('admin@canonical.com')
-    >>> celebrity = factory.makePerson(name='software-center-agent')
+    >>> celebrity = getUtility(ILaunchpadCelebrities).software_center_agent
     >>> archive = factory.makeArchive(name='commercial', private=True)
     >>> archive.commercial = True
     >>> url = "/~%s/+archive/commercial" % archive.owner.name
-	>>> person = factory.makePerson(name='joe')
+    >>> person = factory.makePerson(name='joe')
     >>> logout()
 
 And fetch our objects:
