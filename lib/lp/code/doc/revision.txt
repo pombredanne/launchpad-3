@@ -6,6 +6,7 @@ have no creation interface and Launchpad cannot create or modify them.
 
 == Interfaces ==
 
+    >>> from canonical.launchpad.interfaces.lpstorm import IStore
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.code.interfaces.revision import (
     ...     IRevision, IRevisionAuthor, IRevisionParent, IRevisionSet)
@@ -21,7 +22,9 @@ have no creation interface and Launchpad cannot create or modify them.
     True
     >>> verifyObject(IRevisionSet, RevisionSet())
     True
-    >>> verifyObject(IBranchRevision, BranchRevision.get(1))
+    >>> verifyObject(
+    ...     IBranchRevision,
+    ...     IStore(BranchRevision).find(BranchRevision).any())
     True
 
 == Creating revisions ==
@@ -102,7 +105,8 @@ revisions are associated to the branch using BranchRevision whose sequence
 attribute is None.
 
     >>> from lp.code.model.branchrevision import BranchRevision
-    >>> ancestry = BranchRevision.selectBy(branch=branch)
+    >>> ancestry = IStore(BranchRevision).find(
+    ...     BranchRevision, BranchRevision.branch == branch)
     >>> for branch_revision in sorted(ancestry,
     ...         key=lambda r:(r.sequence, r.revision.id), reverse=True):
     ...     print branch_revision.sequence, branch_revision.revision.id

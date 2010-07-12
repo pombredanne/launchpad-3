@@ -533,9 +533,9 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
-        result = Store.of(self).using(Revision).find(
+        result = Store.of(self).using(BranchRevision, Revision).find(
             BranchRevision,
-            Revision == BranchRevision.revision,
+            Revision.id == BranchRevision.revision_id,
             BranchRevision.branch == self,
             BranchRevision.sequence != None,
             Revision.revision_date > timestamp)

@@ -13,13 +13,13 @@ __all__ = [
     ]
 
 from email.Utils import make_msgid
-from storm.expr import And, Or, Select
+from storm.expr import And, Desc, Join, LeftJoin, Or, Select
+from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import Join, LeftJoin
 from storm.locals import Int, Reference
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
@@ -489,7 +489,7 @@ class BranchMergeProposal(SQLBase):
             branch_revision = Store.of(self).find(
                 BranchRevision,
                 BranchRevision.branch == self.target_branch,
-                BranchRevision.sequence == merged_revno).get_one()
+                BranchRevision.sequence == merged_revno).one()
             if branch_revision is not None:
                 date_merged = branch_revision.revision.revision_date
 
@@ -581,14 +581,19 @@ class BranchMergeProposal(SQLBase):
 
     def getUnlandedSourceBranchRevisions(self):
         """See `IBranchMergeProposal`."""
-        return BranchRevision.select('''
-            BranchRevision.branch = %s AND
-            BranchRevision.sequence IS NOT NULL AND
-            BranchRevision.revision NOT IN (
-              SELECT revision FROM BranchRevision
-              WHERE branch = %s)
-            ''' % sqlvalues(self.source_branch, self.target_branch),
-            prejoins=['revision'], orderBy='-sequence', limit=10)
+        store = Store.of(self)
+        SourceRevision = ClassAlias(BranchRevision)
+        TargetRevision = ClassAlias(BranchRevision)
+        target_join = LeftJoin(
+            TargetRevision, And(
+                TargetRevision.revision_id == SourceRevision.revision_id,
+                TargetRevision.branch_id == self.target_branch.id))
+        result = store.using(SourceRevision, target_join).find(
+            SourceRevision,
+            SourceRevision.branch_id == self.source_branch.id,
+            SourceRevision.sequence != None,
+            TargetRevision.id == None)
+        return result.order_by(Desc(SourceRevision.sequence)).config(limit=10)
 
     def createComment(self, owner, subject, content=None, vote=None,
                       review_type=None, parent=None, _date_created=DEFAULT,
