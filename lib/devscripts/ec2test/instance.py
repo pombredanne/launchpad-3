@@ -19,11 +19,10 @@ import time
 import traceback
 
 from bzrlib.errors import BzrCommandError
-from bzrlib.plugins.launchpad.account import get_lp_login
 
 import paramiko
 
-from devscripts.ec2test.credentials import EC2Credentials
+from devscripts.ec2test.session import EC2SessionName
 
 
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
@@ -41,7 +40,7 @@ class AcceptAllPolicy:
 
 
 def get_user_key():
-    """Get a SSH key from the agent.  Raise an error if not found.
+    """Get a SSH key from the agent.  Raise an error if no keys were found.
 
     This key will be used to let the user log in (as $USER) to the instance.
     """
@@ -50,10 +49,14 @@ def get_user_key():
     if len(keys) == 0:
         raise BzrCommandError(
             'You must have an ssh agent running with keys installed that '
-            'will allow the script to rsync to devpad and get your '
+            'will allow the script to access Launchpad and get your '
             'branch.\n')
-    user_key = agent.get_keys()[0]
-    return user_key
+
+    # XXX mars 2010-05-07 bug=577118
+    # Popping the first key off of the stack can create problems if the person
+    # has more than one key in their ssh-agent, but alas, we have no good way
+    # to detect the right key to use.  See bug 577118 for a workaround.
+    return keys[0]
 
 
 # Commands to run to turn a blank image into one usable for the rest of the
@@ -106,6 +109,7 @@ hostnames=$(cat <<EOF
     shipit.edubuntu.dev
     shipit.kubuntu.dev
     shipit.ubuntu.dev
+    testopenid.dev
     translations.launchpad.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
@@ -128,9 +132,9 @@ apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f
 aptitude update
 aptitude -y full-upgrade
 
-apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
+DEBIAN_FRONTEND=noninteractive apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
 
-# Creat the ec2test user, give them passwordless sudo.
+# Create the ec2test user, give them passwordless sudo.
 adduser --gecos "" --disabled-password ec2test
 echo 'ec2test\tALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
@@ -160,6 +164,18 @@ mkdir /var/launchpad/sourcecode
 """
 
 
+postmortem_banner = """\
+Postmortem Console. EC2 instance is not yet dead.
+It will shut down when you exit this prompt (CTRL-D)
+
+Tab-completion is enabled.
+EC2Instance is available as `instance`.
+Also try these:
+  http://%(dns)s/current_test.log
+  ssh -A ec2test@%(dns)s
+"""
+
+
 class EC2Instance:
     """A single EC2 instance."""
 
@@ -170,6 +186,7 @@ class EC2Instance:
 
         :param name: The name to use for the key pair and security group for
             the instance.
+        :type name: `EC2SessionName`
         :param instance_type: One of the AVAILABLE_INSTANCE_TYPES.
         :param machine_id: The AMI to use, or None to do the usual regexp
             matching.  If you put 'based-on:' before the AMI id, it is assumed
@@ -180,6 +197,18 @@ class EC2Instance:
             to allow access to the instance.
         :param credentials: An `EC2Credentials` object.
         """
+        # This import breaks in the test environment.  Do it here so
+        # that unit tests (which don't use this factory) can still
+        # import EC2Instance.
+        from bzrlib.plugins.launchpad.account import get_lp_login
+
+        # XXX JeroenVermeulen 2009-11-27 bug=489073: EC2Credentials
+        # imports boto, which isn't necessarily installed in our test
+        # environment.  Doing the import here so that unit tests (which
+        # don't use this factory) can still import EC2Instance.
+        from devscripts.ec2test.credentials import EC2Credentials
+
+        assert isinstance(name, EC2SessionName)
         if instance_type not in AVAILABLE_INSTANCE_TYPES:
             raise ValueError('unknown instance_type %s' % (instance_type,))
 
@@ -200,7 +229,7 @@ class EC2Instance:
         # We always recreate the keypairs because there is no way to
         # programmatically retrieve the private key component, unless we
         # generate it.
-        account.delete_previous_key_pair()
+        account.collect_garbage()
 
         if machine_id and machine_id.startswith('based-on:'):
             from_scratch = True
@@ -332,21 +361,22 @@ class EC2Instance:
         """
         if not self._ec2test_user_has_keys:
             if connection is None:
-                connection = self._connect('root')
+                connection = self._connect('ubuntu')
                 our_connection = True
             else:
                 our_connection = False
             self._upload_local_key(connection, 'local_key')
             connection.perform(
-                'cat /root/.ssh/authorized_keys local_key '
-                '> /home/ec2test/.ssh/authorized_keys && rm local_key')
-            connection.perform('chown -R ec2test:ec2test /home/ec2test/')
-            connection.perform('chmod 644 /home/ec2test/.ssh/*')
+                'cat /home/ubuntu/.ssh/authorized_keys local_key '
+                '| sudo tee /home/ec2test/.ssh/authorized_keys > /dev/null'
+                '&& rm local_key')
+            connection.perform('sudo chown -R ec2test:ec2test /home/ec2test/')
+            connection.perform('sudo chmod 644 /home/ec2test/.ssh/*')
             if our_connection:
                 connection.close()
             self.log(
-                'You can now use ssh -A ec2test@%s to log in the instance.\n' %
-                self.hostname)
+                'You can now use ssh -A ec2test@%s to '
+                'log in the instance.\n' % self.hostname)
             self._ec2test_user_has_keys = True
 
     def connect(self):
@@ -357,13 +387,13 @@ class EC2Instance:
         lot of set up.
         """
         if self._from_scratch:
-            root_connection = self._connect('root')
-            self._upload_local_key(root_connection, 'local_key')
-            root_connection.perform(
+            ubuntu_connection = self._connect('ubuntu')
+            self._upload_local_key(ubuntu_connection, 'local_key')
+            ubuntu_connection.perform(
                 'cat local_key >> ~/.ssh/authorized_keys && rm local_key')
-            root_connection.run_script(from_scratch_root)
-            self._ensure_ec2test_user_has_keys(root_connection)
-            root_connection.close()
+            ubuntu_connection.run_script(from_scratch_root, sudo=True)
+            self._ensure_ec2test_user_has_keys(ubuntu_connection)
+            ubuntu_connection.close()
             conn = self._connect('ec2test')
             conn.run_script(
                 from_scratch_ec2test
@@ -372,6 +402,10 @@ class EC2Instance:
             return conn
         self._ensure_ec2test_user_has_keys()
         return self._connect('ec2test')
+
+    def _report_traceback(self):
+        """Print traceback."""
+        traceback.print_exc()
 
     def set_up_and_run(self, postmortem, shutdown, func, *args, **kw):
         """Start, run `func` and then maybe shut down.
@@ -387,36 +421,33 @@ class EC2Instance:
         :param args: Passed to `func`.
         :param kw: Passed to `func`.
         """
+        # We ignore the value of the 'shutdown' argument and always shut down
+        # unless `func` returns normally.
+        really_shutdown = True
+        retval = None
         try:
             self.start()
             try:
-                return func(*args, **kw)
+                retval = func(*args, **kw)
             except Exception:
                 # When running in postmortem mode, it is really helpful to see
                 # if there are any exceptions before it waits in the console
                 # (in the finally block), and you can't figure out why it's
                 # broken.
-                traceback.print_exc()
+                self._report_traceback()
+            else:
+                really_shutdown = shutdown
         finally:
             try:
                 if postmortem:
                     console = code.InteractiveConsole(locals())
-                    console.interact((
-                        'Postmortem Console.  EC2 instance is not yet dead.\n'
-                        'It will shut down when you exit this prompt '
-                        '(CTRL-D).\n'
-                        '\n'
-                        'Tab-completion is enabled.'
-                        '\n'
-                        'EC2Instance is available as `instance`.\n'
-                        'Also try these:\n'
-                        '  http://%(dns)s/current_test.log\n'
-                        '  ssh -A %(dns)s') %
-                                     {'dns': self.hostname})
+                    console.interact(
+                        postmortem_banner % {'dns': self.hostname})
                     print 'Postmortem console closed.'
             finally:
-                if shutdown:
+                if really_shutdown:
                     self.shutdown()
+        return retval
 
     def _copy_single_file(self, sftp, local_path, remote_dir):
         """Copy `local_path` to `remote_dir` on this instance.
@@ -534,6 +565,7 @@ class EC2Instance:
             'ec2-register',
             '--private-key=%s' % self.local_pk,
             '--cert=%s' % self.local_cert,
+            '--name=%s' % (name,),
             manifest_path,
             ]
         self.log("Executing command: %s" % ' '.join(cmd))
@@ -617,12 +649,15 @@ class EC2InstanceConnection:
             raise RuntimeError('Command failed: %s' % (cmd,))
         return res
 
-    def run_script(self, script_text):
+    def run_script(self, script_text, sudo=False):
         """Upload `script_text` to the instance and run it with bash."""
         script = self.sftp.open('script.sh', 'w')
         script.write(script_text)
         script.close()
-        self.run_with_ssh_agent('/bin/bash script.sh')
+        cmd = '/bin/bash script.sh'
+        if sudo:
+            cmd = 'sudo ' + cmd
+        self.run_with_ssh_agent(cmd)
         # At least for mwhudson, the paramiko connection often drops while the
         # script is running.  Reconnect just in case.
         self.reconnect()

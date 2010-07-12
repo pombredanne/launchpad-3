@@ -167,7 +167,7 @@ function will be used:
   ...         print '    Subject:', message.subject
   ...         print '    %s' % message.text_contents
   ...         print
-  ...     if bug.attachments:
+  ...     if bug.attachments.any():
   ...         print 'Attachments:'
   ...     for attachment in bug.attachments:
   ...         print '    Title:', attachment.title
@@ -522,12 +522,8 @@ Duplicate Bug Handling
 The Bugzilla duplicate bugs table can be used to mark the
 corresponding Launchpad bugs as duplicates too:
 
-  >>> class FakeTransactionManager:
-  ...     def begin(self):
-  ...         pass
-  ...     abort = commit = begin
-  ...
-  >>> bz.processDuplicates(FakeTransactionManager())
+  >>> from lp.testing.faketransaction import FakeTransaction
+  >>> bz.processDuplicates(FakeTransaction())
 
 Now check that the bugs have been marked duplicate:
 

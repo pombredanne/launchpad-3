@@ -84,6 +84,7 @@ Another dropdown offers the option to filter by status.
     Failed
     Needs Review
     Blocked
+    Needs Information
 
     >>> print_batch_heading(browser)
     1 ... 5 of 102 results

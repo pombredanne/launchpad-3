@@ -28,28 +28,15 @@
     />
 
   <securedutility
-    class="canonical.launchpad.systemhomes.BranchPullerApplication"
-    provides="lp.code.interfaces.codehosting.IBranchPullerApplication">
-    <allow interface="lp.code.interfaces.codehosting.IBranchPullerApplication"/>
+    class="canonical.launchpad.systemhomes.CodehostingApplication"
+    provides="lp.code.interfaces.codehosting.ICodehostingApplication">
+    <allow interface="lp.code.interfaces.codehosting.ICodehostingApplication"/>
   </securedutility>
 
   <xmlrpc:view
-    for="lp.code.interfaces.codehosting.IBranchPullerApplication"
-    interface="lp.code.interfaces.codehosting.IBranchPuller"
-    class="lp.code.xmlrpc.codehosting.BranchPuller"
-    permission="zope.Public"
-    />
-
-  <securedutility
-    class="canonical.launchpad.systemhomes.BranchFileSystemApplication"
-    provides="lp.code.interfaces.codehosting.IBranchFileSystemApplication">
-    <allow interface="lp.code.interfaces.codehosting.IBranchFileSystemApplication"/>
-  </securedutility>
-
-  <xmlrpc:view
-    for="lp.code.interfaces.codehosting.IBranchFileSystemApplication"
-    interface="lp.code.interfaces.codehosting.IBranchFileSystem"
-    class="lp.code.xmlrpc.codehosting.BranchFileSystem"
+    for="lp.code.interfaces.codehosting.ICodehostingApplication"
+    interface="lp.code.interfaces.codehosting.ICodehostingAPI"
+    class="lp.code.xmlrpc.codehosting.CodehostingAPI"
     permission="zope.Public"
     />
 
@@ -217,4 +204,7 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
+  <class class="canonical.launchpad.xmlrpc.faults.AccountSuspended">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
 </configure>

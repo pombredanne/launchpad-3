@@ -26,9 +26,17 @@
 
         <class
             class="canonical.launchpad.database.BinaryPackagePublishingHistory">
+            <allow
+                interface="canonical.launchpad.interfaces.IArchiveSafePublisher"/>
             <require
                 permission="launchpad.View"
-                interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistory"/>
+                interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistoryPublic"/>
+            <require
+                permission="launchpad.Edit"
+                interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
+            <require
+                permission="launchpad.Admin"
+                set_schema="canonical.launchpad.interfaces.IBinaryPackagePublishingHistory"/>
         </class>
 
         <!-- BinaryPackageFilePublishing -->
@@ -42,18 +50,6 @@
 
         </class>
 
-        <!-- SecureBinaryPackagePublishingHistory -->
-
-        <class
-            class="canonical.launchpad.database.SecureBinaryPackagePublishingHistory">
-            <allow
-                interface="canonical.launchpad.interfaces.ISecureBinaryPackagePublishingHistory"/>
-            <allow
-                interface="canonical.launchpad.interfaces.IArchiveSafePublisher"/>
-            <require
-                permission="launchpad.Admin"
-                set_schema="canonical.launchpad.interfaces.ISecureBinaryPackagePublishingHistory"/>
-        </class>
     </facet>
 
     <!-- ArchiveArch -->
@@ -116,9 +112,17 @@
 
         <class
             class="canonical.launchpad.database.SourcePackagePublishingHistory">
+            <allow
+                interface="canonical.launchpad.interfaces.IArchiveSafePublisher"/>
             <require
                 permission="launchpad.View"
-                interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"/>
+                interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistoryPublic"/>
+            <require
+                permission="launchpad.Edit"
+                interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
+            <require
+                permission="launchpad.Admin"
+                set_schema="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"/>
         </class>
 
         <!-- SourcePackageFilePublishing -->
@@ -130,19 +134,6 @@
 
             <!-- XXX cprov 2006-06-14: Missing security adapter. -->
 
-        </class>
-
-        <!-- SecureSourcePackagePublishingHistory -->
-
-        <class
-            class="canonical.launchpad.database.SecureSourcePackagePublishingHistory">
-            <allow
-                interface="canonical.launchpad.interfaces.ISecureSourcePackagePublishingHistory"/>
-            <allow
-                interface="canonical.launchpad.interfaces.IArchiveSafePublisher"/>
-            <require
-                permission="launchpad.Admin"
-                set_schema="canonical.launchpad.interfaces.ISecureSourcePackagePublishingHistory"/>
         </class>
 
         <!-- PublishingSet -->
@@ -234,6 +225,8 @@
         class="canonical.launchpad.database.PackageUploadCustom">
         <allow
             interface="lp.soyuz.interfaces.queue.IPackageUploadCustom"/>
+        <require
+            permission="launchpad.Admin" set_attributes="libraryfilealias"/>
     </class>
 
     <!-- PackageUploadSet -->
@@ -254,10 +247,24 @@
             <allow
                 interface="lp.soyuz.interfaces.binarypackagename.IBinaryPackageName"/>
         </class>
-        <utility
+        <securedutility
             name="BinaryPackageName"
             component="lp.soyuz.model.binarypackagename.BinaryPackageNameVocabulary"
-            provides="zope.schema.interfaces.IVocabularyFactory"/>
+            provides="zope.schema.interfaces.IVocabularyFactory">
+          <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+        </securedutility>
+
+        <class class="lp.soyuz.model.binarypackagename.BinaryPackageNameVocabulary">
+          <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+        </class>
+
+        <!-- BinaryPackagenameIterator -->
+
+        <class
+            class="lp.soyuz.model.binarypackagename.BinaryPackageNameIterator">
+            <allow
+                interface="canonical.launchpad.webapp.vocabulary.ICountableIterator"/>
+        </class>
 
         <!-- BinaryPackageNameSet -->
 
@@ -395,11 +402,12 @@
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
-            set_attributes="description displayname"/>
+            set_attributes="description displayname publish status"/>
         <require
             permission="launchpad.Commercial"
             set_attributes="authorized_size build_debug_symbols buildd_secret
-                            enabled external_dependencies private
+                            commercial enabled_restricted_families
+                            external_dependencies private
                             require_virtualized relative_build_score "/>
         <require
             permission="launchpad.Admin"
@@ -480,96 +488,48 @@
                 deletePackagesetUploader"/>
     </securedutility>
 
-    <!-- Build -->
+    <!-- BinaryPackageBuild -->
 
     <class
-        class="canonical.launchpad.database.Build">
+        class="lp.soyuz.model.binarypackagebuild.BinaryPackageBuild">
         <require
             permission="launchpad.View"
-            interface="lp.soyuz.interfaces.build.IBuildView"/>
+            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildView"/>
         <require
             permission="launchpad.Edit"
-            interface="lp.soyuz.interfaces.build.IBuildEdit"/>
+            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildEdit"/>
         <require
             permission="launchpad.Admin"
-            interface="lp.soyuz.interfaces.build.IBuildAdmin"/>
+            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildAdmin"/>
 
         <!-- XXX cprov 2005-10-27
 
     bug=3580: We need a autobuild celebrity. -->
 
         <require
-            permission="zope.Public"
-            set_attributes="buildlog datebuilt buildduration builder                                                                                                                 buildstate dependencies upload_log"/>
-    </class>
-
-    <!-- BuildSet -->
-
-    <securedutility
-        class="canonical.launchpad.database.BuildSet"
-        provides="lp.soyuz.interfaces.build.IBuildSet">
-        <allow
-            interface="lp.soyuz.interfaces.build.IBuildSet"/>
-    </securedutility>
-
-    <!-- BuilderSet -->
-
-    <securedutility
-        class="canonical.launchpad.database.BuilderSet"
-        provides="lp.soyuz.interfaces.builder.IBuilderSet">
-        <allow
-            interface="lp.soyuz.interfaces.builder.IBuilderSet"/>
-    </securedutility>
-    <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.soyuz.interfaces.builder.IBuilder"
-        factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.soyuz.interfaces.builder.IBuilderSet"
-        factory="lp.soyuz.browser.builder.BuilderSetBreadcrumb"
-        permission="zope.Public"/>
-
-    <!-- Builder -->
-
-    <class
-        class="canonical.launchpad.database.Builder">
-        <allow
-            interface="lp.soyuz.interfaces.builder.IBuilder"/>
-        <allow
-            interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
-        <require
             permission="launchpad.Edit"
-            set_schema="lp.soyuz.interfaces.builder.IBuilder"/>
+            set_attributes="log date_finished date_started builder
+                            status dependencies upload_log"/>
     </class>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
+        factory="lp.soyuz.browser.build.BuildBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJob"
+        for="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
+        factory="lp.soyuz.model.binarypackagebuild.get_binary_build_for_build_farm_job"
+        name="PACKAGEBUILD"
+        permission="zope.Public"/>
 
-    <!-- BuildQueue -->
-
-    <class
-        class="canonical.launchpad.database.BuildQueue">
-        <allow
-            interface="canonical.launchpad.interfaces.IBuildQueue"/>
-
-        <!-- XXX cprov 2005-10-20
-
-    bug=3580: We need a autobuild celebrity. -->
-
-
-        <!-- Grant permissions to write on BuildQueue and Build. -->
-
-        <require
-            permission="zope.Public"
-            set_attributes="lastscore builder buildstart logtail"/>
-    </class>
-
-    <!-- BuildQueueSet -->
+    <!-- BinaryPackageBuildSet -->
 
     <securedutility
-        class="canonical.launchpad.database.BuildQueueSet"
-        provides="canonical.launchpad.interfaces.IBuildQueueSet">
+        class="lp.soyuz.model.binarypackagebuild.BinaryPackageBuildSet"
+        provides="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildSet">
         <allow
-            interface="canonical.launchpad.interfaces.IBuildQueueSet"/>
+            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildSet"/>
     </securedutility>
 
     <!-- DistroArchSeriesBinaryPackage -->
@@ -664,6 +624,11 @@
         <allow
             interface="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"/>
     </class>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"
+        factory="lp.soyuz.browser.distributionsourcepackagerelease.DistributionSourcePackageReleaseBreadcrumb"
+        permission="zope.Public"/>
 
     <!-- DistroSeriesBinaryPackage -->
 
@@ -791,6 +756,28 @@
             interface="lp.soyuz.interfaces.section.ISectionSet"/>
     </securedutility>
 
+    <!-- SourcePackageFormatSelection -->
+
+    <class
+        class="lp.soyuz.model.sourcepackageformat.SourcePackageFormatSelection">
+        <allow
+            interface="lp.soyuz.interfaces.sourcepackageformat.ISourcePackageFormatSelection"/>
+    </class>
+
+    <!-- SourcePackageFormatSelectionSet -->
+
+    <class
+        class="lp.soyuz.model.sourcepackageformat.SourcePackageFormatSelectionSet">
+        <allow
+            interface="lp.soyuz.interfaces.sourcepackageformat.ISourcePackageFormatSelectionSet"/>
+    </class>
+    <securedutility
+        class="lp.soyuz.model.sourcepackageformat.SourcePackageFormatSelectionSet"
+        provides="lp.soyuz.interfaces.sourcepackageformat.ISourcePackageFormatSelectionSet">
+        <allow
+            interface="lp.soyuz.interfaces.sourcepackageformat.ISourcePackageFormatSelectionSet"/>
+    </securedutility>
+
     <!-- SourcePackageReleaseFile -->
 
     <class
@@ -855,5 +842,44 @@
             attributes="
                 new"/>
     </securedutility>
+
+    <!-- PackagesetGroup -->
+    <class
+        class="lp.soyuz.model.packagesetgroup.PackagesetGroup">
+        <allow
+            interface="lp.soyuz.interfaces.packagesetgroup.IPackagesetGroup"/>
+    </class>
+
+    <!-- BuildPackageJob -->
+    <class
+        class="lp.soyuz.model.buildpackagejob.BuildPackageJob">
+        <allow
+            interface="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"/>
+    </class>
+    <!--
+        The registration below is used to discover all build farm job classes
+        that implement the `IBuildFarmJob` interface. Please see bug #503839
+        for more detail.
+        The 'name' attribute needs to be set to the appropriate
+        `BuildFarmJobType` enumeration value.
+    -->
+    <utility component="lp.soyuz.model.buildpackagejob.BuildPackageJob"
+        name="PACKAGEBUILD"
+        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
+
+    <!-- BinaryPackageBuildBehavior -->
+    <adapter
+        for="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"
+        provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
+        factory="lp.soyuz.model.binarypackagebuildbehavior.BinaryPackageBuildBehavior"
+        permission="zope.Public" />
+
+    <!-- BinaryPackageReleaseDownloadCount -->
+    <class
+        class="lp.soyuz.model.binarypackagerelease.BinaryPackageReleaseDownloadCount">
+        <require
+            permission="launchpad.View"
+            interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"/>
+    </class>
 
 </configure>

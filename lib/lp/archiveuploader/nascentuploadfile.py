@@ -21,9 +21,8 @@ __all__ = [
 
 import apt_inst
 import apt_pkg
+import hashlib
 import os
-import md5
-import sha
 import subprocess
 import sys
 import time
@@ -33,14 +32,14 @@ from zope.component import getUtility
 from lp.archiveuploader.utils import (
     prefix_multi_line_string, re_taint_free, re_isadeb, re_issource,
     re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
-    re_extract_src_version)
+    re_extract_src_version, determine_source_file_type)
 from canonical.encoding import guess as guess_encoding
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import (
@@ -48,6 +47,7 @@ from lp.soyuz.interfaces.queue import (
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority)
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.files import SourceFileMixin
 from canonical.librarian.utils import filechunks
 
 
@@ -213,8 +213,8 @@ class NascentUploadFile:
 
         # Read in the file and compute its md5 and sha1 checksums and remember
         # the size of the file as read-in.
-        digest = md5.md5()
-        sha_cksum = sha.sha()
+        digest = hashlib.md5()
+        sha_cksum = hashlib.sha1()
         ckfile = open(self.filepath, "r")
         size = 0
         for chunk in filechunks(ckfile):
@@ -260,6 +260,8 @@ class CustomUploadFile(NascentUploadFile):
         'raw-ddtp-tarball': PackageUploadCustomFormat.DDTP_TARBALL,
         'raw-translations-static':
             PackageUploadCustomFormat.STATIC_TRANSLATIONS,
+        'raw-meta-data' :
+            PackageUploadCustomFormat.META_DATA,
         }
 
     @property
@@ -331,7 +333,7 @@ class PackageUploadFile(NascentUploadFile):
         return getUtility(ISectionSet)[self.section_name]
 
 
-class SourceUploadFile(PackageUploadFile):
+class SourceUploadFile(SourceFileMixin, PackageUploadFile):
     """Files mentioned in changesfile as source (orig, diff, tar).
 
     This class only check consistency on information contained in
@@ -339,6 +341,11 @@ class SourceUploadFile(PackageUploadFile):
     Further checks on file contents and package consistency are done
     in DSCFile.
     """
+
+    @property
+    def filetype(self):
+        return determine_source_file_type(self.filename)
+
     def verify(self):
         """Verify the uploaded source file.
 
@@ -351,7 +358,7 @@ class SourceUploadFile(PackageUploadFile):
                 "Architecture field." % (self.filename))
 
         version_chopped = re_no_epoch.sub('', self.version)
-        if self.filename.endswith("orig.tar.gz"):
+        if self.is_orig:
             version_chopped = re_no_revision.sub('', version_chopped)
 
         source_match = re_issource.match(self.filename)
@@ -688,7 +695,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                             tar_checker.ancient_files[first_file])
                         yield UploadError(
                             "%s: has %s file(s) with a time stamp too "
-                            "far into the future (e.g. %s [%s])."
+                            "far in the past (e.g. %s [%s])."
                              % (self.filename, len(ancient_files), first_file,
                                 timestamp))
                     return
@@ -801,7 +808,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             build = sourcepackagerelease.getBuildByArch(
                 dar, self.policy.archive)
             if build is not None:
-                build.buildstate = BuildStatus.FULLYBUILT
+                build.status = BuildStatus.FULLYBUILT
                 self.logger.debug("Updating build for %s: %s" % (
                     dar.architecturetag, build.id))
             else:
@@ -812,12 +819,12 @@ class BaseBinaryUploadFile(PackageUploadFile):
                     status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
         else:
-            build = getUtility(IBuildSet).getByBuildID(build_id)
+            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
             self.logger.debug("Build %s found" % build.id)
             # Ensure gathered binary is related to a FULLYBUILT build
             # record. It will be check in slave-scanner procedure to
             # certify that the build was processed correctly.
-            build.buildstate = BuildStatus.FULLYBUILT
+            build.status = BuildStatus.FULLYBUILT
             # Also purge any previous failed upload_log stored, so its
             # content can be garbage-collected since it's not useful
             # anymore.
@@ -826,9 +833,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense (ie. is not for the right
         # source package).
-        if (build.sourcepackagerelease != sourcepackagerelease or
+        if (build.source_package_release != sourcepackagerelease or
             build.pocket != self.policy.pocket or
-            build.distroarchseries != dar or
+            build.distro_arch_series != dar or
             build.archive != self.policy.archive):
             raise UploadError(
                 "Attempt to upload binaries specifying "

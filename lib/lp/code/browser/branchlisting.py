@@ -55,7 +55,7 @@ from canonical.launchpad.browser.feeds import (
 from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet)
-from canonical.launchpad.interfaces.personproduct import (
+from lp.registry.interfaces.personproduct import (
     IPersonProduct, IPersonProductFactory)
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
@@ -74,7 +74,7 @@ from lp.code.browser.branchmergeproposallisting import (
 from lp.code.enums import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchType)
 from lp.code.interfaces.branch import (
-    bazaar_identity, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    BzrIdentityMixin, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchBatchNavigator, IBranchListingQueryOptimiser)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
@@ -85,24 +85,18 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
-
-
-def get_plural_text(count, singular, plural):
-    """Return 'singular' if 'count' is 1, 'plural' otherwise."""
-    if count == 1:
-        return singular
-    else:
-        return plural
+from lp.services.browser_helpers import get_plural_text
 
 
 class CodeVHostBreadcrumb(Breadcrumb):
     rootsite = 'code'
-    text = 'Branches'
+    text = 'Code'
 
 
 class BranchBadges(HasBadgeBase):
@@ -143,7 +137,7 @@ class BranchBadges(HasBadgeBase):
             return HasBadgeBase.getBadge(self, badge_name)
 
 
-class BranchListingItem(BranchBadges):
+class BranchListingItem(BzrIdentityMixin, BranchBadges):
     """A decorated branch.
 
     Some attributes that we want to display are too convoluted or expensive
@@ -153,30 +147,29 @@ class BranchListingItem(BranchBadges):
     delegates(IBranch, 'context')
 
     def __init__(self, branch, last_commit, now, show_bug_badge,
-                 show_blueprint_badge, is_dev_focus,
-                 associated_product_series, show_mp_badge):
+                 show_blueprint_badge, show_mp_badge,
+                 associated_product_series, suite_source_packages):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
         self.show_merge_proposals = show_mp_badge
         self._now = now
-        self.is_development_focus = is_dev_focus
         self.associated_product_series = associated_product_series
+        self.suite_source_packages = suite_source_packages
 
     def associatedProductSeries(self):
         """Override the IBranch.associatedProductSeries."""
         return self.associated_product_series
 
+    def associatedSuiteSourcePackages(self):
+        """Override the IBranch.associatedSuiteSourcePackages."""
+        return self.suite_source_packages
+
     @property
     def active_series(self):
         return [series for series in self.associated_product_series
-                if series.status != DistroSeriesStatus.OBSOLETE]
-
-    @property
-    def bzr_identity(self):
-        """Produce the bzr identity from our known associated series."""
-        return bazaar_identity(self, self.is_development_focus)
+                if series.status != SeriesStatus.OBSOLETE]
 
     @property
     def since_updated(self):
@@ -314,7 +307,7 @@ class BranchListingItemsMixin:
     # Requires the following attributes:
     #   visible_branches_for_view
     def __init__(self, user):
-        self._dev_series_map = {}
+        self._distro_series_map = {}
         self._now = datetime.now(pytz.UTC)
         self.view_user = user
 
@@ -345,11 +338,7 @@ class BranchListingItemsMixin:
 
     @cachedproperty
     def product_series_map(self):
-        """Return a map of branch id to a list of product series.
-
-        While this code is still valid with package branches is it a query
-        that isn't needed.
-        """
+        """Return a map from branch id to a list of product series."""
         series_resultset = self._query_optimiser.getProductSeriesForBranches(
             self._visible_branch_ids)
         result = {}
@@ -373,19 +362,33 @@ class BranchListingItemsMixin:
                 series.insert(0, dev_focus)
         return series
 
-    def getDevFocusBranch(self, branch):
-        """Get the development focus branch that relates to `branch`."""
-        # XXX: 2009-07-02 TimPenhey spec=package-branches We need to determine
-        # here what constitutes a dev focus branch for package branches, and
-        # that perhaps this should also refer to targets instead of using
-        # product.
-        if branch.product is None:
-            return None
+    @cachedproperty
+    def official_package_links_map(self):
+        """Return a map from branch id to a list of package links."""
+        links = self._query_optimiser.getOfficialSourcePackageLinksForBranches(
+            self._visible_branch_ids)
+        result = {}
+        for link in links:
+            result.setdefault(link.branch.id, []).append(link)
+        return result
+
+    def getSuiteSourcePackages(self, branch):
+        """Get the associated SuiteSourcePackages for the branch.
+
+        If there is more than one, they are sorted by pocket.
+        """
+        links = [link.suite_sourcepackage for link in
+                 self.official_package_links_map.get(branch.id, [])]
+        return sorted(links, key=attrgetter('pocket'))
+
+    def getDistroDevelSeries(self, distribution):
+        """Since distribution.currentseries hits the DB every time, cache it."""
+        self._distro_series_map = {}
         try:
-            return self._dev_series_map[branch.product]
+            return self._distro_series_map[distribution]
         except KeyError:
-            result = branch.product.development_focus.branch
-            self._dev_series_map[branch.product] = result
+            result = distribution.currentseries
+            self._distro_series_map[distribution] = result
             return result
 
     @cachedproperty
@@ -436,11 +439,11 @@ class BranchListingItemsMixin:
         show_blueprint_badge = branch.id in self.branch_ids_with_spec_links
         show_mp_badge = branch.id in self.branch_ids_with_merge_proposals
         associated_product_series = self.getProductSeries(branch)
-        is_dev_focus = (self.getDevFocusBranch(branch) == branch)
+        suite_source_packages = self.getSuiteSourcePackages(branch)
         return BranchListingItem(
             branch, last_commit, self._now, show_bug_badge,
-            show_blueprint_badge, is_dev_focus,
-            associated_product_series, show_mp_badge)
+            show_blueprint_badge, show_mp_badge,
+            associated_product_series, suite_source_packages)
 
     def decoratedBranches(self, branches):
         """Return the decorated branches for the branches passed in."""
@@ -1007,7 +1010,8 @@ class PersonTeamBranchesView(LaunchpadView):
     @cachedproperty
     def teams_with_branches(self):
         teams = self._getCollection().getTeamsWithBranches(self.person)
-        return [self._createItem(team) for team in teams]
+        return [self._createItem(team) for team in teams
+                if check_permission('launchpad.View', team)]
 
 
 class PersonProductTeamBranchesView(PersonTeamBranchesView):
@@ -1093,7 +1097,7 @@ class ProductBranchesMenu(ApplicationMenu):
     def code_import(self):
         text = 'Import your project'
         enabled = not self.context.official_codehosting
-        return Link('/+code-imports/+new', text, icon='add', enabled=enabled)
+        return Link('+new-import', text, icon='add', enabled=enabled)
 
 
 class ProductBranchListingView(BranchListingView):
@@ -1316,6 +1320,7 @@ class ProjectBranchesView(BranchListingView):
     no_sort_by = (BranchListingSort.DEFAULT,)
     extra_columns = ('author', 'product')
     label_template = 'Bazaar branches of %(displayname)s'
+    show_series_links = True
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProject(self.context)
@@ -1466,7 +1471,7 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
         series_branches = {}
         all_branches = self._getBranchDict()
         official_branches = self._getOfficialBranches()
-        for series in self.context.distribution.serieses:
+        for series in self.context.distribution.series:
             if series in all_branches:
                 branches, more_count = self._getSeriesBranches(
                     official_branches.get(series, []),
@@ -1517,7 +1522,7 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
         result = []
         series_branches_map = self.series_branches_map
         sp_factory = getUtility(ISourcePackageFactory)
-        for series in self.context.distribution.serieses:
+        for series in self.context.distribution.series:
             if series in series_branches_map:
                 branches, more_count = series_branches_map[series]
                 sourcepackage = sp_factory.new(
@@ -1562,7 +1567,7 @@ class SourcePackageBranchesView(BranchListingView):
         our_series = self.context.distroseries
         our_sourcepackagename = self.context.sourcepackagename
         distribution = self.context.distribution
-        for series in distribution.serieses:
+        for series in distribution.series:
             if not series.active:
                 continue
             if distribution.currentseries == series:

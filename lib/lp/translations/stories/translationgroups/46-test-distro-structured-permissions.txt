@@ -1,7 +1,7 @@
 First, we state that netapplet is using Launchpad Translations.
 
     >>> admin_browser.open('http://launchpad.dev/netapplet')
-    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.getLink('Configure translations').click()
     >>> admin_browser.getControl(
     ...     'Translations for this project are done in Launchpad'
     ...     ).selected = True
@@ -29,7 +29,7 @@ as the translation group for the netapplet product...
 ... and its associated project, GNOME.
 
     >>> admin_browser.open(
-    ...     'http://translations.launchpad.dev/gnome/+changetranslators')
+    ...     'http://translations.launchpad.dev/gnome/+settings')
     >>> admin_browser.getControl('Translation group').displayValue = [
     ...     'Just a testing team']
     >>> admin_browser.getControl(

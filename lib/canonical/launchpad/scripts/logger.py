@@ -5,7 +5,7 @@
 
 """Logging setup for scripts.
 
-Don't import from this module. Import it from canonical.scripts.
+Don't import from this module. Import it from canonical.launchpad.scripts.
 
 Parts of this may be moved into canonical.launchpad somewhere if it is
 to be used for non-script stuff.
@@ -25,12 +25,14 @@ __all__ = [
     'DEBUG6', 'DEBUG7', 'DEBUG8', 'DEBUG9'
     ]
 
+
+import hashlib
 import logging
 import re
-import sha
 import sys
 import traceback
 import time
+
 from optparse import OptionParser
 from cStringIO import StringIO
 from datetime import datetime, timedelta
@@ -163,12 +165,12 @@ class LibrarianFormatter(logging.Formatter):
         except:
             pass
         if not exception_string:
-            exception_string = str(ei[0]).split('.')[-1]
+            exception_string = ei[0].__name__
 
         expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
         try:
             filename = base(
-                    long(sha.new(traceback).hexdigest(),16), 62
+                    long(hashlib.sha1(traceback).hexdigest(),16), 62
                     ) + '.txt'
             url = librarian.remoteAddFile(
                     filename, len(traceback), StringIO(traceback),

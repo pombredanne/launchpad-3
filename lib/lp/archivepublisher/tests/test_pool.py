@@ -5,13 +5,13 @@
 
 __metaclass__ = type
 
-
+import hashlib
 import os
-import sha
 import sys
 import shutil
-from tempfile import mkdtemp
 import unittest
+
+from tempfile import mkdtemp
 
 from lp.archivepublisher.tests.util import FakeLogger
 from lp.archivepublisher.diskpool import DiskPool, poolify
@@ -44,7 +44,7 @@ class PoolTestingFile:
     def addToPool(self, component):
         return self.pool.addFile(
             component, self.sourcename, self.filename,
-            sha.sha(self.contents).hexdigest(), MockFile(self.contents))
+            hashlib.sha1(self.contents).hexdigest(), MockFile(self.contents))
 
     def removeFromPool(self, component):
         return self.pool.removeFile(component, self.sourcename, self.filename)

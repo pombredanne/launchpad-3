@@ -13,8 +13,8 @@
     ...     nopriv_user, 'Test bug', 'Something')
     >>> firefox_bug = firefox.createBug(bug_params)
 
-Bug Supervisors can transition bugs to the Won't Fix and Triaged
-statuses.
+Bug Supervisors can transition bugs to the Won't Fix, Expired and
+Triaged statuses.
 
     >>> [firefox_bugtask] = firefox_bug.bugtasks
     >>> firefox_bugtask.transitionToStatus(
@@ -23,12 +23,17 @@ statuses.
     Won't Fix
 
     >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.EXPIRED, nopriv_user)
+    >>> print firefox_bugtask.status.title
+    Expired
+
+    >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.TRIAGED, nopriv_user)
     >>> print firefox_bugtask.status.title
     Triaged
 
-The product registrant can transition to the Won't Fix and Triaged
-statuses too.
+The product registrant can transition to the Won't Fix, Expired and
+Triaged statuses too.
 
     >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, nopriv_user)
@@ -42,6 +47,11 @@ statuses too.
     ...     BugTaskStatus.WONTFIX, firefox.owner)
     >>> print firefox_bugtask.status.title
     Won't Fix
+
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.EXPIRED, firefox.owner)
+    >>> print firefox_bugtask.status.title
+    Expired
 
     >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.TRIAGED, firefox.owner)
@@ -65,16 +75,44 @@ to ensure that all call sites adhere to this.
     UserCannotEditBugTaskStatus: Only Bug Supervisors may change status to Won't Fix.
 
     >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.EXPIRED, nopriv_user)
+    Traceback (most recent call last):
+    ...
+    UserCannotEditBugTaskStatus: Only Bug Supervisors may change status to Expired.
+
+    >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.TRIAGED, nopriv_user)
     Traceback (most recent call last):
     ...
     UserCannotEditBugTaskStatus: Only Bug Supervisors may change status to Triaged.
+
+Users who are not bug supervisors or product registrants cannot
+transition the status from Won't Fix to anything else.
+
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar = getUtility(ILaunchBag).user
+    >>> firefox.setBugSupervisor(foo_bar, foo_bar)
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.WONTFIX, foo_bar)
+
+    >>> login('no-priv@canonical.com')
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.NEW, nopriv_user)
+    Traceback (most recent call last):
+    ...
+    UserCannotEditBugTaskStatus: Only Bug Supervisors may change status to New.
 
 The method IBugTask.canTransitionToStatus comes in handy here. It
 tells us if a transition to a status is permitted. It is *not* a
 dry-run of transitionToStatus, but is good enough and fast enough to
 be used by UI code, e.g. to display only those statuses to which a
 user can transition a particular bugtask.
+
+    >>> login('foo.bar@canonical.com')
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.TRIAGED, foo_bar)
+
+    >>> login('no-priv@canonical.com')
 
     >>> firefox_bugtask.canTransitionToStatus(
     ...     BugTaskStatus.WONTFIX, nopriv_user)
@@ -87,3 +125,13 @@ user can transition a particular bugtask.
     >>> firefox_bugtask.canTransitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, nopriv_user)
     True
+
+    >>> login('foo.bar@canonical.com')
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.WONTFIX, getUtility(ILaunchBag).user)
+
+    >>> login('no-priv@canonical.com')
+
+    >>> firefox_bugtask.canTransitionToStatus(
+    ...     BugTaskStatus.NEW, nopriv_user)
+    False

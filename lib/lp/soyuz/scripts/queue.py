@@ -9,7 +9,6 @@
 # as Launchpad contains lots of queues.
 
 __metaclass__ = type
-
 __all__ = [
     'CommandRunner',
     'CommandRunnerError',
@@ -17,11 +16,12 @@ __all__ = [
     'name_queue_map'
     ]
 
+
 import errno
+import hashlib
 import pytz
 
 from datetime import datetime
-from sha import sha
 
 from zope.component import getUtility
 
@@ -287,7 +287,7 @@ class QueueAction:
                 self.display(
                     "\t | %s %s/%s/%s Component: %s Section: %s Priority: %s"
                     % (status_flag, bpr.name, bpr.version,
-                       bpr.build.distroarchseries.architecturetag,
+                       bpr.build.distro_arch_series.architecturetag,
                        bpr.component.name, bpr.section.name,
                        bpr.priority.name))
 
@@ -420,7 +420,7 @@ class QueueActionFetch(QueueAction):
                     libfile.close()
                 else:
                     # Check sha against existing file (bug #67014)
-                    existing_sha = sha()
+                    existing_sha = hashlib.sha1()
                     for chunk in filechunks(existing_file):
                         existing_sha.update(chunk)
                     existing_file.close()
@@ -567,11 +567,15 @@ class QueueActionOverride(QueueAction):
             raise QueueActionError('Not Found: %s' % info)
 
         for queue_item in self.items:
-            # There's usually only one item in queue_item.sources.
-            for source in queue_item.sources:
-                source.sourcepackagerelease.override(component=component,
-                                                     section=section)
-                self.displayInfo(queue_item)
+            # We delegate to the queue_item itself to override any/all
+            # of its sources.
+            if queue_item.contains_source:
+                queue_item.overrideSource(
+                    component, section, [
+                        component,
+                        queue_item.sourcepackagerelease.component
+                        ])
+            self.displayInfo(queue_item)
 
     def _override_binary(self):
         """Overrides binarypackagereleases selected"""
@@ -614,7 +618,7 @@ class QueueActionOverride(QueueAction):
                 # See if the new component requires a new archive on the
                 # build:
                 if component:
-                    distroarchseries = build.build.distroarchseries
+                    distroarchseries = build.build.distro_arch_series
                     distribution = distroarchseries.distroseries.distribution
                     new_archive = distribution.getArchiveByComponent(
                         self.component_name)

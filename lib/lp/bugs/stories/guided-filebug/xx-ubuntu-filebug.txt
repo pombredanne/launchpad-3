@@ -37,10 +37,12 @@ filing view of another context.
     >>> print user_browser.url
     http://bugs.launchpad.dev/ubuntu/+filebug?no-redirect
 
-    >>> user_browser.open(
-    ...    'http://bugs.launchpad.dev/ubuntu/hoary/+source/pmount/+filebug?no-redirect')
-    >>> print user_browser.url
-    http://bugs.launchpad.dev/ubuntu/+source/pmount/+filebug?no-redirect
+When filing bugs directly on source packages we are also not redirected.
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug')
+    >>> print admin_browser.url
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug
 
 Ubuntu's bug supervisor doesn't get automatically redirected either.
 
@@ -56,13 +58,6 @@ Ubuntu's bug supervisor doesn't get automatically redirected either.
     >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/+filebug')
     >>> print admin_browser.title
     Report a bug about Ubuntu...
-
-Source packages are also not redirected for Ubuntu's bug supervisor.
-
-    >>> admin_browser.open(
-    ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug')
-    >>> print admin_browser.url
-    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug
 
 Filing bugs with Apport also allows us to get to the bug filing interface.
 
@@ -86,3 +81,17 @@ Filing bugs with Apport also allows us to get to the bug filing interface.
 
     >>> _ = config.pop('malone')
 
+The inline filebug form never gets redirected.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+filebug-inline-form')
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/ubuntu/+filebug-inline-form
+
+Neither does the show-similar-bugs view.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/'
+    ...     '+filebug-show-similar?title=testing')
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/ubuntu/+filebug-show-similar?title=testing

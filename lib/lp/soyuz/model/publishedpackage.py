@@ -53,7 +53,7 @@ class PublishedPackage(SQLBase):
     binarypackagesummary = StringCol(immutable=True)
     binarypackagedescription = StringCol(immutable=True)
     binarypackageversion = StringCol(immutable=True)
-    build = ForeignKey(foreignKey='Build', dbName='build')
+    build = ForeignKey(foreignKey='BinaryPackageBuild', dbName='build')
     datebuilt = UtcDateTimeCol(immutable=True)
     sourcepackagerelease = ForeignKey(dbName="sourcepackagerelease",
                                       foreignKey="SourcePackageRelease",

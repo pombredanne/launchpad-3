@@ -87,7 +87,7 @@ class PPAReportScript(LaunchpadScript):
         clauses = [
             Archive.distribution == distribution,
             Archive.purpose == ArchivePurpose.PPA,
-            Archive.enabled == True,
+            Archive._enabled == True,
             ]
 
         owner_name = self.options.archive_owner_name

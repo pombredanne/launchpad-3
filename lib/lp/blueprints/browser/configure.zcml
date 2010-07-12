@@ -110,6 +110,7 @@
     <browser:page
         name="+addspec"
         for="lp.blueprints.interfaces.sprint.ISprint"
+        facet="specifications"
         class="lp.blueprints.browser.specification.NewSpecificationFromSprintView"
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
@@ -235,6 +236,7 @@
         <browser:menus
             module="lp.blueprints.browser.specification"
             classes="
+                SpecificationActionMenu
                 SpecificationContextMenu"/>
         <browser:navigation
             module="lp.blueprints.browser.specification"
@@ -576,7 +578,7 @@
         attribute="mdzCsv"/>
 
     <browser:pages
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
         facet="specifications"
         permission="zope.Public">
@@ -589,7 +591,7 @@
     </browser:pages>
     <browser:page
         name="+assignments"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.blueprints.browser.specificationtarget.SpecificationAssignmentsView"
         facet="specifications"
         permission="zope.Public"
@@ -597,7 +599,7 @@
 
     <browser:page
         name="+addspec"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.blueprints.browser.specification.NewSpecificationFromProjectView"
         facet="specifications"
         permission="launchpad.AnyPerson"

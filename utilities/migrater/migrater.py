@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -33,6 +33,8 @@ TLA_MAP = dict(
     svc='services',
     tes='testing',
     tra='translations',
+    pkg='registry',
+    hdb='hardwaredb',
     )
 
 RENAME_MAP = dict(
@@ -107,6 +109,7 @@ def convert_ctl_data(data):
     return app_data
 
 COLLIDED = []
+
 
 def move_it(old_path, new_path):
     """Move a versioned file without colliding with another file."""
@@ -233,8 +236,8 @@ def handle_test(old_path, new_path):
         # All unit tests except to browser unit tests move to the app
         # tests dir.
         new_path = os.sep.join(
-            path_part for path_part in path.split(os.sep)
-            if path_path not in unsupported_dirs)
+            path_part for path_part in new_path.split(os.sep)
+            if path_part not in unsupported_dirs)
     # Create new_path's directory if it doesn't exist yet.
     try:
         test_dir, dummy = os.path.split(new_path)
@@ -340,8 +343,10 @@ def get_special(doctests):
     code = ''.join(special_lines)
     helper_pattern = re.compile(r'\b(setUp|tearDown)=(\w*)\b')
     helpers = set(match.group(2) for match in helper_pattern.finditer(code))
-    helpers.remove('setUp')
-    helpers.remove('tearDown')
+    if 'setUp' in helpers:
+        helpers.remove('setUp')
+    if 'tearDown' in helpers:
+        helpers.remove('tearDown')
     # Extract the setup and teardown functions.
     lines = list(system_doc_lines)
     system_doc_lines = []
@@ -586,7 +591,7 @@ def main(ctl_data, apps, opts):
             path, file_name = os.path.split(to_path)
             spew("    to_path = %s", to_path)
             new_path_to_dir = os.path.join(NEW_TOP, app_name, path)
-            new_path_to_fn  = os.path.join(NEW_TOP, app_name, to_path)
+            new_path_to_fn = os.path.join(NEW_TOP, app_name, to_path)
             # Special cases.
             if set(fpath.split(os.sep)) & TEST_PATHS:
                 handle_test(full_path, new_path_to_fn)

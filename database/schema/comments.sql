@@ -22,6 +22,13 @@ COMMENT ON COLUMN AnswerContact.sourcepackagename IS 'The sourcepackagename that
 COMMENT ON COLUMN AnswerContact.person IS 'The person or team associated with the question target.';
 COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was submitted.';
 
+-- ApportJob
+
+COMMENT ON TABLE ApportJob IS 'Contains references to jobs to be run against Apport BLOBs.';
+COMMENT ON COLUMN ApportJob.blob IS 'The TemporaryBlobStorage entry on which the job is to be run.';
+COMMENT ON COLUMN ApportJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of ApportJobs.';
+COMMENT ON COLUMN ApportJob.json_data IS 'A JSON struct containing data for the job.';
+
 -- Branch
 COMMENT ON TABLE Branch IS 'Bzr branch';
 COMMENT ON COLUMN Branch.registrant IS 'The user that registered the branch.';
@@ -153,7 +160,9 @@ COMMENT ON COLUMN Bug.date_last_message IS 'When the last BugMessage was attache
 COMMENT ON COLUMN Bug.number_of_duplicates IS 'The number of bugs marked as duplicates of this bug, populated by a trigger after setting the duplicateof of bugs.';
 COMMENT ON COLUMN Bug.message_count IS 'The number of messages (currently just comments) on this bugbug, maintained by the set_bug_message_count_t trigger.';
 COMMENT ON COLUMN Bug.users_affected_count IS 'The number of users affected by this bug, maintained by the set_bug_users_affected_count_t trigger.';
-COMMENT ON COLUMN Bug.hotness IS 'The relevance of this bug. This value is computed periodically using bug_affects_person and other bug values.';
+COMMENT ON COLUMN Bug.heat IS 'The relevance of this bug. This value is computed periodically using bug_affects_person and other bug values.';
+COMMENT ON COLUMN Bug.heat_last_updated IS 'The time this bug''s heat was last updated, or NULL if the heat has never yet been updated.';
+COMMENT ON COLUMN Bug.latest_patch_uploaded IS 'The time when the most recent patch has been attached to this bug or NULL if no patches are attached';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
@@ -162,6 +171,12 @@ COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
 COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.registrant IS 'The person who linked the bug to the branch.';
+
+-- BugJob
+COMMENT ON TABLE BugJob IS 'Contains references to jobs to be run against Bugs.';
+COMMENT ON COLUMN BugJob.bug IS 'The bug on which the job is to be run.';
+COMMENT ON COLUMN BugJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of BugJobs.';
+COMMENT ON COLUMN BugJob.json_data IS 'A JSON struct containing data for the job.';
 
 -- BugNomination
 COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distroseries or productseries';
@@ -213,7 +228,7 @@ COMMENT ON COLUMN BugTask.date_fix_committed IS 'The date when this bug transiti
 COMMENT ON COLUMN BugTask.date_fix_released IS 'The date when this bug transitioned to a FIXRELEASED status.';
 COMMENT ON COLUMN BugTask.date_left_closed IS 'The date when this bug last transitioned out of a CLOSED status.';
 COMMENT ON COLUMN BugTask.date_milestone_set IS 'The date when this bug was targed to the milestone that is currently set.';
-COMMENT ON COLUMN BugTask.hotness_rank IS 'The hotness bin in which this bugtask appears, as a value from the BugTaskHotnessRank enumeration.';
+COMMENT ON COLUMN BugTask.heat_rank IS 'The heat bin in which this bugtask appears, as a value from the BugTaskHeatRank enumeration.';
 
 
 -- BugNotification
@@ -304,6 +319,17 @@ COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone
 COMMENT ON COLUMN BugWatch.last_error_type IS 'The type of error which last prevented this entry from being updated. Legal values are defined by the BugWatchErrorType enumeration.';
 COMMENT ON COLUMN BugWatch.remote_importance IS 'The importance of the bug as returned by the remote server. This will be converted into a Launchpad BugTaskImportance value.';
 COMMENT ON COLUMN BugWatch.remote_lp_bug_id IS 'The bug in Launchpad that the remote bug is pointing at. This can be different than the BugWatch.bug column, since the same remote bug can be linked from multiple bugs in Launchpad, but the remote bug can only link to a single bug in Launchpad. The main use case for this column is to avoid having to query the remote bug tracker for this information, in order to decide whether we need to give this information to the remote bug tracker.';
+COMMENT ON COLUMN BugWatch.next_check IS 'The time after which the watch should next be checked. Note that this does not denote an exact schedule for the next check since checkwatches only runs periodically.';
+
+
+-- BugWatchActivity
+
+COMMENT ON TABLE BugWatchActivity IS 'This table contains a record of each update for a given bug watch. This allows us to track whether a given update was successful or not and, if not, the details of the error which caused the update to fail.';
+COMMENT ON COLUMN BugWatchActivity.bug_watch IS 'The bug_watch to which this activity entry relates.';
+COMMENT ON COLUMN BugWatchActivity.activity_date IS 'The datetime at which the activity occurred.';
+COMMENT ON COLUMN BugWatchActivity.result IS 'The result of the update. Legal values are defined in the BugWatchErrorType enumeration. An update is considered successful if its error_type is NULL.';
+COMMENT ON COLUMN BugWatchActivity.message IS 'The message (if any) associated with the update.';
+COMMENT ON COLUMN BugWatchActivity.oops_id IS 'The OOPS id, if any, associated with the error that caused the update to fail.';
 
 
 -- BugAffectsPerson
@@ -321,7 +347,7 @@ COMMENT ON COLUMN CodeImport.registrant IS 'The person who originally requested 
 COMMENT ON COLUMN CodeImport.owner IS 'The person who is currently responsible for keeping the import details up to date, initially set to the registrant. This person can edit some of the details of the code import branch.';
 COMMENT ON COLUMN CodeImport.review_status IS 'Whether this code import request has been reviewed, and whether it was accepted.';
 COMMENT ON COLUMN CodeImport.rcs_type IS 'The revision control system used by the import source. The value is defined in dbschema.RevisionControlSystems.';
-COMMENT ON COLUMN CodeImport.svn_branch_url IS 'The URL of the Subversion branch for this import.';
+COMMENT ON COLUMN CodeImport.url IS 'The URL of the foreign VCS branch for this import.';
 COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the form :pserver:user@host:/path.';
 COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
 COMMENT ON COLUMN CodeImport.date_last_successful IS 'When this code import last succeeded. NULL if this import has never succeeded.';
@@ -446,7 +472,12 @@ COMMENT ON COLUMN Diff.removed_lines_count IS 'The number of lines removed in th
 
 COMMENT ON TABLE DistributionSourcePackage IS 'Representing a sourcepackage in a distribution across all distribution series.';
 COMMENT ON COLUMN DistributionSourcePackage.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on a particular a source package in a distribution.';
-
+COMMENT ON COLUMN DistributionSourcePackage.max_bug_heat IS 'The highest heat value across bugs for this source package. NULL means it has not yet been calculated.';
+COMMENT ON COLUMN DistributionSourcePackage.total_bug_heat IS 'Sum of bug heat matching the package distribution and sourcepackagename. NULL means it has not yet been calculated.';
+COMMENT ON COLUMN DistributionSourcePackage.bug_count IS 'Number of bugs matching the package distribution and sourcepackagename. NULL means it has not yet been calculated.';
+COMMENT ON COLUMN DistributionSourcePackage.po_message_count IS 'Number of translations matching the package distribution and sourcepackagename. NULL means it has not yet been calculated.';
+COMMENT ON COLUMN DistributionSourcePackage.is_upstream_link_allowed IS 'Whether an upstream link may be added if it does not already exist.';
+COMMENT ON COLUMN DistributionSourcePackage.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
 
 -- DistributionSourcePackageCache
 
@@ -459,7 +490,6 @@ COMMENT ON COLUMN DistributionSourcePackageCache.binpkgsummaries IS 'The aggrega
 COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggregated description of all the binary packages generated from these source packages in this distribution.';
 COMMENT ON COLUMN DistributionSourcePackageCache.changelog IS 'A concatenation of the source package release changelogs for this source package, where the status is not REMOVED.';
 COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where the source is published.';
-
 
 -- DistroSeriesPackageCache
 
@@ -581,6 +611,7 @@ COMMENT ON COLUMN Product.official_codehosting IS 'Whether or not this product u
 COMMENT ON COLUMN Product.bug_supervisor IS 'Person who is responsible for managing bugs on this product.';
 COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
+COMMENT ON COLUMN Product.translation_focus IS 'The ProductSeries that should get the translation effort focus.';
 --COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it''s different from the project bug tracker.';
 COMMENT ON COLUMN Product.development_focus IS 'The product series that is the current focus of development.';
 COMMENT ON COLUMN Product.homepage_content IS 'A home page for this product in the Launchpad.';
@@ -596,6 +627,10 @@ COMMENT ON COLUMN Product.bug_reporting_guidelines IS 'Guidelines to the end use
 COMMENT ON COLUMN Product.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
 COMMENT ON COLUMN Product.license_approved IS 'The Other/Open Source license has been approved by an administrator.';
 COMMENT ON COLUMN Product.remote_product IS 'The ID of this product on its remote bug tracker.';
+COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs for this product.';
+COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpad can resume suggesting Ubuntu packages that the project provides.';
+COMMENT ON COLUMN Product.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
+
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -687,6 +722,9 @@ COMMENT ON COLUMN Project.mugshot IS 'The library file alias of a mugshot image 
 COMMENT ON COLUMN Project.logo IS 'The library file alias of a smaller version of this product''s mugshot.';
 COMMENT ON COLUMN Project.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on products in this project.';
 COMMENT ON COLUMN Project.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
+COMMENT ON COLUMN Project.max_bug_heat IS 'The highest heat value across bugs for products in this project.';
+COMMENT ON COLUMN Project.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
+
 
 -- ProjectRelationship
 COMMENT ON TABLE ProjectRelationship IS 'Project Relationships. This table stores information about the way projects are related to one another in the open source world. The actual nature of the relationship is stored in the ''label'' field, and possible values are given by the ProjectRelationship enum in dbschema.py. Examples are AGGREGATES ("the Gnome Project AGGREGATES EOG and Evolution and Gnumeric and AbiWord") and SIMILAR ("the Evolution project is SIMILAR to the Mutt project").';
@@ -950,6 +988,9 @@ COMMENT ON COLUMN Distribution.language_pack_admin IS 'The Person or Team that h
 COMMENT ON COLUMN Distribution.enable_bug_expiration IS 'Indicates whether automatic bug expiration is enabled.';
 COMMENT ON COLUMN Distribution.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on this distribution.';
 COMMENT ON COLUMN Distribution.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
+COMMENT ON COLUMN Distribution.max_bug_heat IS 'The highest heat value across bugs for this distribution.';
+COMMENT ON COLUMN Distribution.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
+
 
 -- DistroSeries
 
@@ -1024,31 +1065,27 @@ COMMENT ON COLUMN SourcePackageName.name IS
 COMMENT ON COLUMN BinaryPackageName.name IS
     'A lowercase name identifying one or more binarypackages';
 
--- SecureBinaryPackagePublishingHistory
-COMMENT ON TABLE SecureBinaryPackagePublishingHistory IS 'PackagePublishingHistory: The history of a BinaryPackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.binarypackagerelease IS 'The binarypackage being published.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.distroarchseries IS 'The distroarchseries into which the binarypackage is being published.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.status IS 'The current status of the publishing.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.component IS 'The component into which the publishing takes place.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.section IS 'The section into which the publishing takes place.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.priority IS 'The priority at which the publishing takes place.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.datecreated IS 'The date/time on which the publishing record was created.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.datepublished IS 'The date/time on which the source was actually published into an archive.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.datesuperseded IS 'The date/time on which the source was superseded by a new source.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.supersededby IS 'The build which superseded this package. This seems odd but it is important because a new build may not actually build a given binarypackage and we need to supersede it appropriately';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the package is/was scheduled to be deleted.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.dateremoved IS 'The date/time at which the package was actually deleted.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distroseries name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.archive IS 'Target archive for this publishing record.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
+-- BinaryPackagePublishingHistory
+COMMENT ON TABLE BinaryPackagePublishingHistory IS 'PackagePublishingHistory: The history of a BinaryPackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.binarypackagerelease IS 'The binarypackage being published.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.distroarchseries IS 'The distroarchseries into which the binarypackage is being published.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.status IS 'The current status of the publishing.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.component IS 'The component into which the publishing takes place.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.section IS 'The section into which the publishing takes place.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.priority IS 'The priority at which the publishing takes place.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.datecreated IS 'The date/time on which the publishing record was created.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.datepublished IS 'The date/time on which the source was actually published into an archive.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.datesuperseded IS 'The date/time on which the source was superseded by a new source.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.supersededby IS 'The build which superseded this package. This seems odd but it is important because a new build may not actually build a given binarypackage and we need to supersede it appropriately';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the package is/was scheduled to be deleted.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.dateremoved IS 'The date/time at which the package was actually deleted.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distroseries name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.archive IS 'Target archive for this publishing record.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
 
--- BinaryPackagePublishingHistory and PublishedPackage Views
-
-COMMENT ON VIEW BinaryPackagePublishingHistory IS 'View on SecureBinaryPackagePublishingHistory that restricts access to embargoed entries';
+-- PublishedPackage View
 
 COMMENT ON VIEW PublishedPackage IS
     'A very large view that brings together all the information about
@@ -1281,13 +1318,77 @@ COMMENT ON COLUMN SourcePackageRelease.dsc_binaries IS 'DSC binary line, claimed
 COMMENT ON COLUMN SourcePackageRelease.copyright IS 'The copyright associated with this sourcepackage. Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/copyright';
 COMMENT ON COLUMN SourcePackageRelease.build_conflicts IS 'The list of packages that will conflict with this source while building, as mentioned in the control file "Build-Conflicts:" field.';
 COMMENT ON COLUMN SourcePackageRelease.build_conflicts_indep IS 'The list of packages that will conflict with this source while building in architecture independent environment, as mentioned in the control file "Build-Conflicts-Indep:" field.';
-
+COMMENT ON COLUMN SourcePackageRelease.changelog IS 'The LibraryFileAlias ID of changelog associated with this sourcepackage.  Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/changelog.Debian.gz';
 
 -- SourcePackageName
 
 COMMENT ON TABLE SourcePackageName IS 'SourcePackageName: A soyuz source package name.';
 
+-- SourcePackageRecipeData
+
+COMMENT ON TABLE SourcePackageRecipeData IS 'The database representation of a BaseRecipeBranch from bzr-builder.  Exactly one of sourcepackage_recipe or sourcepackage_recipe_build will be non-NULL.';
+COMMENT ON COLUMN SourcePackageRecipeData.base_branch IS 'The branch the recipe is based on.';
+COMMENT ON COLUMN SourcePackageRecipeData.recipe_format IS 'The format version of the recipe.';
+COMMENT ON COLUMN SourcePackageRecipeData.deb_version_template IS 'The template for the revision number of the build.';
+COMMENT ON COLUMN SourcePackageRecipeData.revspec IS 'The revision from base_branch to use.';
+COMMENT ON COLUMN SourcePackageRecipeData.sourcepackage_recipe IS 'The recipe that this data is for.';
+COMMENT ON COLUMN SourcePackageRecipeData.sourcepackage_recipe_build IS 'The build that resulted in this manifest.';
+
+-- SourcePackageRecipeDataInstruction
+
+COMMENT ON TABLE SourcePackageRecipeDataInstruction IS 'A line from the recipe, specifying a branch to nest or merge.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.name IS 'The name of the instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.type IS 'The type of the instruction (MERGE == 1, NEST == 2).';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.comment IS 'The comment from the recipe about this instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.line_number IS 'The line number of the instruction in the recipe.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.branch IS 'The branch being merged or nested.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.revspec IS 'The revision of the branch to use.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.directory IS 'The location to nest at, if this is a nest instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.recipe_data IS 'The SourcePackageRecipeData this instruction is part of.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.parent_instruction IS 'The nested branch this instruction applies to, or NULL for a top-level instruction.';
+
+-- SourcePackageRecipe
+
+COMMENT ON TABLE SourcePackageRecipe IS 'A recipe for assembling a source package from branches.';
+COMMENT ON COLUMN SourcePackageRecipe.registrant IS 'The person who created this recipe.';
+COMMENT ON COLUMN SourcePackageRecipe.owner IS 'The person or team who can edit this recipe.';
+COMMENT ON COLUMN SourcePackageRecipe.name IS 'The name of the recipe in the web/URL.';
+COMMENT ON COLUMN SourcePackageRecipe.build_daily IS 'If true, this recipe should be built daily.';
+COMMENT ON COLUMN SourcePackageRecipe.is_stale IS 'True if this recipe has not been built since a branch was updated.';
+
+COMMENT ON COLUMN SourcePackageREcipe.daily_build_archive IS 'The archive to build into for daily builds.';
+
+-- SourcePackageRecipeDistroSeries
+
+COMMENT ON TABLE SourcePackageRecipeDistroSeries IS 'Link table for sourcepackagerecipe and distroseries.';
+COMMENT ON COLUMN SourcePackageRecipeDistroSeries.distroseries IS 'The primary key of the DistroSeries.';
+COMMENT ON COLUMN SourcePackageRecipeDistroSeries.sourcepackagerecipe IS 'The primary key of the SourcePackageRecipe.';
+
+-- SourcePackageRecipeBuild
+
+COMMENT ON TABLE SourcePackageRecipeBuild IS 'The build record for the process of building a source package as described by a recipe.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.distroseries IS 'The distroseries the build was for.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.build_state IS 'The state of the build.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.date_built IS 'When the build record was processed.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.build_duration IS 'How long this build took to be processed.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.build_log IS 'Points to the build_log file stored in librarian.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.builder IS 'Points to the builder which has once processed it.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS 'Who requested the build.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.manifest IS 'The evaluated recipe that was built.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.archive IS 'The archive the source package will be built in and uploaded to.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.pocket IS 'The pocket the source package will be built in and uploaded to.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.dependencies IS 'The missing build dependencies, if any.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.upload_log IS 'The output from uploading the source package to the archive.';
+
+-- SourcePackageRecipeBuildJob
+
+COMMENT ON TABLE SourcePackageRecipeBuildJob IS 'The link between a SourcePackageRecipeBuild row and a Job row to schedule a build of a source package recipe.';
+COMMENT ON COLUMN SourcePackageRecipeBuildJob.sourcepackage_recipe_build IS 'The build record describing the package being built.';
+
 -- Specification
+
 COMMENT ON TABLE Specification IS 'A feature specification. At the moment we do not store the actual specification, we store a URL for the spec, which is managed in a wiki somewhere else. We store the overall state of the spec, as well as queueing information about who needs to review the spec, and why.';
 COMMENT ON COLUMN Specification.assignee IS 'The person who has been assigned to implement this specification.';
 COMMENT ON COLUMN Specification.drafter IS 'The person who has been asked to draft this specification. They are responsible for getting the spec to "approved" state.';
@@ -1429,11 +1530,9 @@ COMMENT ON COLUMN DIstroComponentUploader.uploader IS 'The uploader(s) permitted
 
 COMMENT ON TABLE LibraryFileContent IS 'LibraryFileContent: A librarian file''s contents. The librarian stores files in a safe and transactional way. This table represents the contents of those files within the database.';
 COMMENT ON COLUMN LibraryFileContent.datecreated IS 'The date on which this librarian file was created';
-COMMENT ON COLUMN LibraryFileContent.datemirrored IS 'When the file was mirrored from the librarian onto the backup server';
 COMMENT ON COLUMN LibraryFileContent.filesize IS 'The size of the file';
 COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file''s contents';
 COMMENT ON COLUMN LibraryFileContent.md5 IS 'The MD5 sum of the file''s contents';
-COMMENT ON COLUMN LibraryFileContent.deleted IS 'This file has been removed from disk by the librarian garbage collector.';
 COMMENT ON COLUMN LibraryFileContent.sha256 IS 'The SHA256 sum of the file''s contents';
 
 -- LibraryFileAlias
@@ -1501,24 +1600,32 @@ COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push 
 COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
 COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update the named archive';
 
--- Build
-COMMENT ON TABLE Build IS 'Build: This table stores the build procedure information of a sourcepackagerelease and its results (binarypackagereleases) for a given distroarchseries.';
-COMMENT ON COLUMN Build.datecreated IS 'When the build record was created.';
-COMMENT ON COLUMN Build.datebuilt IS 'When the build record was processed.';
-COMMENT ON COLUMN Build.buildduration IS 'How long this build took to be processed.';
-COMMENT ON COLUMN Build.distroarchseries IS 'Points the target Distroarchrelease for this build.';
-COMMENT ON COLUMN Build.processor IS 'Points to the Distroarchrelease available processor target for this build.';
-COMMENT ON COLUMN Build.sourcepackagerelease IS 'Sourcepackagerelease which originated this build.';
-COMMENT ON COLUMN Build.buildstate IS 'Stores the current build procedure state.';
-COMMENT ON COLUMN Build.buildlog IS 'Points to the buildlog file stored in librarian.';
-COMMENT ON COLUMN Build.builder IS 'Points to the builder which has once processed it.';
-COMMENT ON COLUMN Build.pocket IS 'Stores the target pocket identifier for this build.';
-COMMENT ON COLUMN Build.dependencies IS 'Contains a debian-like dependency line specifying the current missing-dependencies for this package.';
-COMMENT ON COLUMN Build.archive IS 'Targeted archive for this build.';
-COMMENT ON COLUMN Build.estimated_build_duration IS 'How long does the previous attempt to build this source took in this architecture.';
-COMMENT ON COLUMN Build.build_warnings IS 'Warnings and diagnosis messages provided by the builder while building this job.';
-COMMENT ON COLUMN Build.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
-COMMENT ON COLUMN Build.upload_log IS 'Reference to a LibraryFileAlias containing the upload log messages generated while processing the binaries resulted from this build.';
+-- BuildFarmJob, and its related tables, PackageBuild, BinaryPackageBuild
+COMMENT ON TABLE BuildFarmJob IS 'BuildFarmJob: This table stores the information common to all jobs on the Launchpad build farm.';
+COMMENT ON COLUMN BuildFarmJob.processor IS 'Points to the required processor target for this job, or null.';
+COMMENT ON COLUMN BuildFarmJob.virtualized IS 'The virtualization setting required by this build farm job, or null.';
+COMMENT ON COLUMN BuildFarmJob.date_created IS 'When the build farm job record was created.';
+COMMENT ON COLUMN BuildFarmJob.date_started IS 'When the build farm job started being processed.';
+COMMENT ON COLUMN BuildFarmJob.date_finished IS 'When the build farm job finished being processed.';
+COMMENT ON COLUMN BuildFarmJob.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
+COMMENT ON COLUMN BuildFarmJob.builder IS 'Points to the builder which processed this build farm job.';
+COMMENT ON COLUMN BuildFarmJob.status IS 'Stores the current build status.';
+COMMENT ON COLUMN BuildFarmJob.log IS 'Points to the log for this build farm job file stored in librarian.';
+COMMENT ON COLUMN BuildFarmJob.job_type IS 'The type of build farm job to which this record corresponds.';
+
+-- PackageBuild
+COMMENT ON TABLE PackageBuild IS 'PackageBuild: This table stores the information common to build farm jobs that build source or binary packages.';
+COMMENT ON COLUMN PackageBuild.build_farm_job IS 'Points to the build farm job with the base information.';
+COMMENT ON COLUMN PackageBuild.archive IS 'Targeted archive for this package build.';
+COMMENT ON COLUMN PackageBuild.pocket IS 'Stores the target pocket identifier for this package build.';
+COMMENT ON COLUMN PackageBuild.upload_log IS 'Reference to a LibraryFileAlias containing the upload log messages generated while processing the packages resulting from this package build.';
+COMMENT ON COLUMN PackageBuild.dependencies IS 'Contains a debian-like dependency line specifying the current missing-dependencies for this package.';
+
+-- BinaryPackageBuild
+COMMENT ON TABLE BinaryPackageBuild IS 'BinaryPackageBuild: This table links a package build with a distroarchseries and sourcepackagerelease.';
+COMMENT ON COLUMN BinaryPackageBuild.package_build IS 'Points to the related package build with the base information.';
+COMMENT ON COLUMN BinaryPackageBuild.distro_arch_series IS 'Points the target DistroArchSeries for this build.';
+COMMENT ON COLUMN BinaryPackageBuild.source_package_release IS 'SourcePackageRelease which originated this build.';
 
 -- Builder
 COMMENT ON TABLE Builder IS 'Builder: This table stores the build-slave registry and status information as: name, url, trusted, builderok, builderaction, failnotes.';
@@ -1531,14 +1638,16 @@ COMMENT ON COLUMN Builder.vm_host IS 'The virtual machine host associated to thi
 COMMENT ON COLUMN Builder.active IS 'Whether to present or not the builder in the public list of builders avaialble. It is used to hide transient or defunct builders while they get fixed.';
 
 -- BuildQueue
-COMMENT ON TABLE BuildQueue IS 'BuildQueue: The queue of builds in progress/scheduled to run. This table is the core of the build daemon master. It lists all builds in progress or scheduled to start.';
-COMMENT ON COLUMN BuildQueue.build IS 'The build for which this queue item exists. This is how the buildd master will find all the files it needs to perform the build';
+COMMENT ON TABLE BuildQueue IS 'BuildQueue: The queue of jobs in progress/scheduled to run on the Soyuz build farm.';
 COMMENT ON COLUMN BuildQueue.builder IS 'The builder assigned to this build. Some builds will have a builder assigned to queue them up; some will be building on the specified builder already; others will not have a builder yet (NULL) and will be waiting to be assigned into a builder''s queue';
-COMMENT ON COLUMN BuildQueue.created IS 'The timestamp of the creation of this row. This is used by the buildd master scheduling algorithm to decide how soon to schedule a build to run on a given builder.';
-COMMENT ON COLUMN BuildQueue.buildstart IS 'The timestamp of the start of the build run on the given builder. If this is NULL then the build is not running yet.';
 COMMENT ON COLUMN BuildQueue.logtail IS 'The tail end of the log of the current build. This is updated regularly as the buildd master polls the buildd slaves. Once the build is complete; the full log will be lodged with the librarian and linked into the build table.';
 COMMENT ON COLUMN BuildQueue.lastscore IS 'The last score ascribed to this build record. This can be used in the UI among other places.';
 COMMENT ON COLUMN BuildQueue.manual IS 'Indicates if the current record was or not rescored manually, if so it get skipped from the auto-score procedure.';
+COMMENT ON COLUMN BuildQueue.job IS 'Foreign key to the `Job` table row with the generic job data.';
+COMMENT ON COLUMN BuildQueue.job_type IS 'Type of job (enumeration value), enables us to find/query the correct table with the data specific to this type of job.';
+COMMENT ON COLUMN BuildQueue.estimated_duration IS 'Estimated job duration, based on previous running times of comparable jobs.';
+COMMENT ON COLUMN BuildQueue.processor IS 'The processor required by the associated build farm job.';
+COMMENT ON COLUMN BuildQueue.virtualized IS 'The virtualization setting required by the associated build farm job.';
 
 -- Mirrors
 
@@ -1559,31 +1668,25 @@ COMMENT ON TABLE MirrorSourceContent IS 'Stores which distroseries and component
 COMMENT ON COLUMN MirrorSourceContent.distroseries IS 'A distroseries that this mirror contains.';
 COMMENT ON COLUMN MirrorSourceContent.component IS 'What component of the distroseries that this sourcepackage mirror contains.';
 
--- SecureSourcePackagePublishingHistory
+-- SourcePackagePublishingHistory
 
-COMMENT ON TABLE SecureSourcePackagePublishingHistory IS 'SourcePackagePublishingHistory: The history of a SourcePackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.sourcepackagerelease IS 'The sourcepackagerelease being published.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.distroseries IS 'The distroseries into which the sourcepackagerelease is being published.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.status IS 'The current status of the publishing.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.component IS 'The component into which the publishing takes place.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.section IS 'The section into which the publishing takes place.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.datecreated IS 'The date/time on which the publishing record was created.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.datepublished IS 'The date/time on which the source was actually published into an archive.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.datesuperseded IS 'The date/time on which the source was superseded by a new source.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.supersededby IS 'The source which superseded this one.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the source is/was scheduled to be deleted.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.dateremoved IS 'The date/time at which the source was actually deleted.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distroseries name such as the UPDATES pocket (-updates), the SECURITY pocket (-security) and the PROPOSED pocket (-proposed)';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
-
--- SourcePackagePublishingHistory View
-
-COMMENT ON VIEW SourcePackagePublishingHistory IS 'A view on SecureSourcePackagePublishingHistory that restricts access to embargoed entries';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.archive IS 'The target archive for thi publishing record.';
+COMMENT ON TABLE SourcePackagePublishingHistory IS 'SourcePackagePublishingHistory: The history of a SourcePackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.sourcepackagerelease IS 'The sourcepackagerelease being published.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.distroseries IS 'The distroseries into which the sourcepackagerelease is being published.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.status IS 'The current status of the publishing.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.component IS 'The component into which the publishing takes place.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.section IS 'The section into which the publishing takes place.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.datecreated IS 'The date/time on which the publishing record was created.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.datepublished IS 'The date/time on which the source was actually published into an archive.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.datesuperseded IS 'The date/time on which the source was superseded by a new source.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.supersededby IS 'The source which superseded this one.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the source is/was scheduled to be deleted.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.dateremoved IS 'The date/time at which the source was actually deleted.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distroseries name such as the UPDATES pocket (-updates), the SECURITY pocket (-security) and the PROPOSED pocket (-proposed)';
+COMMENT ON COLUMN SourcePackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for thi publishing record.';
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
@@ -1796,6 +1899,7 @@ COMMENT ON COLUMN DistributionMirror.status IS 'This mirror''s status.';
 COMMENT ON COLUMN DistributionMirror.whiteboard IS 'Notes on the current status of the mirror';
 COMMENT ON COLUMN DistributionMirror.date_created IS 'The date and time the mirror was created.';
 COMMENT ON COLUMN DistributionMirror.date_reviewed IS 'The date and time the mirror was reviewed.';
+COMMENT ON COLUMN DistributionMirror.country_dns_mirror IS 'Is the mirror a country DNS mirror?';
 
 -- MirrorDistroArchSeries
 COMMENT ON TABLE MirrorDistroArchSeries IS 'The mirror of the packages of a given Distro Arch Release.';
@@ -1848,6 +1952,7 @@ COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for acce
 COMMENT ON COLUMN Archive.authorized_size IS 'Size, in MiB, allowed for this PPA.';
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
+COMMENT ON COLUMN Archive.status IS 'The status of this archive, e.g. ACTIVE.  See the ArchiveState DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
 COMMENT ON COLUMN Archive.package_description_cache IS 'Text blob containing all source and binary names and descriptions concatenated. Used to to build the tsearch indexes on this table.';
 COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached for this archive.';
@@ -1866,6 +1971,7 @@ COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days b
 COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
 COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
 COMMENT ON COLUMN Archive.external_dependencies IS 'Newline-separated list of repositories to be used to retrieve any external build dependencies when building packages in this archive, in the format: deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]  The series variable is replaced with the series name of the context build.  This column is specifically and only intended for OEM migration to Launchpad and should be re-examined in October 2010 to see if it is still relevant.';
+COMMENT ON COLUMN Archive.commercial IS 'Whether this archive is a commercial Archive and should appear in the Software Center.';
 
 -- ArchiveAuthToken
 
@@ -2239,11 +2345,20 @@ COMMENT ON COLUMN UserToUserEmail.message_id IS 'The Message-ID: header.';
 
 -- Packageset
 
-COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages for purposes like the control of upload permissions, et.';
+COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages (in a given distro series) for purposes like the control of upload permissions, etc.';
 COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
 COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package set';
 COMMENT ON COLUMN Packageset.name IS 'The name for the package set on hand.';
 COMMENT ON COLUMN Packageset.description IS 'The description for the package set on hand.';
+COMMENT ON COLUMN Packageset.packagesetgroup IS 'The group this package set is affiliated with.';
+COMMENT ON COLUMN Packageset.distroseries IS 'The distro series this package set belongs to.';
+
+-- PackagesetGroup
+
+COMMENT ON TABLE PackagesetGroup IS 'Package set groups keep track of equivalent package sets across distro series boundaries.';
+COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
+COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package
+set group.';
 
 -- PackagesetSources
 
@@ -2260,3 +2375,20 @@ COMMENT ON COLUMN PackagesetInclusion.child IS 'The package set that is being in
 COMMENT ON TABLE FlatPackagesetInclusion IS 'In order to facilitate the querying of set-subset relationships an expanded or flattened representation of the set-subset hierarchy is provided by this table.';
 COMMENT ON COLUMN FlatPackagesetInclusion.parent IS 'The package set that is (directly or indirectly) including a subset.';
 COMMENT ON COLUMN FlatPackagesetInclusion.child IS 'The package set that is being included as a subset.';
+
+-- SourcePackageFormatSelection
+COMMENT ON TABLE SourcePackageFormatSelection IS 'Allowed source package formats for a given distroseries.';
+COMMENT ON COLUMN SourcePackageFormatSelection.distroseries IS 'Refers to the distroseries in question.';
+COMMENT ON COLUMN SourcePackageFormatSelection.format IS 'The SourcePackageFormat to allow.';
+
+COMMENT ON TABLE DatabaseReplicationLag IS 'A cached snapshot of database replication lag between our master Slony node and its slaves.';
+COMMENT ON COLUMN DatabaseReplicationLag.node IS 'The Slony node number identifying the slave database.';
+COMMENT ON COLUMN DatabaseReplicationLag.lag IS 'lag time.';
+COMMENT ON COLUMN DatabaseReplicationLag.updated IS 'When this value was updated.';
+
+-- DatabaseTableStats
+COMMENT ON TABLE DatabaseTableStats IS 'Snapshots of pg_stat_user_tables to let us calculate arbitrary deltas';
+
+-- DatabaseCpuStats
+COMMENT ON TABLE DatabaseCpuStats IS 'Snapshots of CPU utilization per database username.';
+COMMENT ON COLUMN DatabaseCpuStats.cpu IS '% CPU utilization * 100, as reported by ps -o cp';

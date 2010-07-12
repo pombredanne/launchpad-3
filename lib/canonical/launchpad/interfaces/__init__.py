@@ -42,10 +42,9 @@ from lp.bugs.interfaces.bugtask import *
 from lp.bugs.interfaces.bugtarget import *
 from lp.bugs.interfaces.bugtracker import *
 from lp.bugs.interfaces.bugwatch import *
-from lp.soyuz.interfaces.build import *
-from lp.soyuz.interfaces.builder import *
+from lp.soyuz.interfaces.binarypackagebuild import *
+from lp.buildmaster.interfaces.builder import *
 from lp.soyuz.interfaces.buildrecords import *
-from lp.soyuz.interfaces.buildqueue import *
 from lp.registry.interfaces.codeofconduct import *
 from lp.registry.interfaces.commercialsubscription import *
 from lp.soyuz.interfaces.component import *
@@ -57,6 +56,7 @@ from lp.registry.interfaces.distributionmirror import *
 from lp.registry.interfaces.distributionsourcepackage import *
 from lp.soyuz.interfaces.distributionsourcepackagecache import *
 from lp.soyuz.interfaces.distributionsourcepackagerelease import *
+from lp.registry.interfaces.series import *
 from lp.soyuz.interfaces.distroarchseries import *
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import *
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease\
@@ -73,7 +73,7 @@ from lp.soyuz.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
 from lp.registry.interfaces.gpg import *
 from canonical.launchpad.interfaces.gpghandler import *
-from canonical.launchpad.interfaces.hwdb import *
+from lp.hardwaredb.interfaces.hwdb import *
 from lp.registry.interfaces.irc import *
 from lp.registry.interfaces.jabber import *
 from lp.registry.interfaces.karma import *
@@ -94,7 +94,6 @@ from lp.registry.interfaces.milestone import *
 from canonical.launchpad.interfaces.oauth import *
 from canonical.launchpad.interfaces.openidconsumer import *
 from canonical.launchpad.interfaces.packagerelationship import *
-from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.pathlookup import *
 from lp.registry.interfaces.poll import *
 from lp.soyuz.interfaces.processor import *
@@ -102,11 +101,10 @@ from lp.registry.interfaces.product import *
 from lp.registry.interfaces.productlicense import *
 from lp.registry.interfaces.productrelease import *
 from lp.registry.interfaces.productseries import *
-from lp.registry.interfaces.project import *
+from lp.registry.interfaces.projectgroup import *
 from lp.soyuz.interfaces.publishedpackage import *
 from lp.soyuz.interfaces.publishing import *
 from lp.soyuz.interfaces.queue import *
-from lp.registry.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
 from lp.services.scripts.interfaces.scriptactivity import *
 from lp.soyuz.interfaces.section import *
@@ -125,7 +123,7 @@ from lp.blueprints.interfaces.sprint import *
 from lp.blueprints.interfaces.sprintattendance import *
 from lp.blueprints.interfaces.sprintspecification import *
 from lp.registry.interfaces.ssh import *
-from canonical.launchpad.interfaces.structuralsubscription import *
+from lp.registry.interfaces.structuralsubscription import *
 from lp.registry.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
 from lp.registry.interfaces.wikiname import *
@@ -146,4 +144,3 @@ from lp.answers.interfaces.questionsubscription import *
 from lp.answers.interfaces.questiontarget import *
 
 from canonical.launchpad.interfaces._schema_circular_imports import *
-

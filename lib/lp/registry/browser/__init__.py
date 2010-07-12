@@ -22,6 +22,7 @@ from storm.store import Store
 
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadEditFormView)
@@ -101,7 +102,8 @@ class MilestoneOverlayMixin:
             }
         return """
             YUI().use(
-                'node', 'lp.milestoneoverlay', 'lp.milestonetable',
+                'node', 'lp.registry.milestoneoverlay',
+                'lp.registry.milestonetable',
                 function (Y) {
 
                 var series_uri = '%(series_api_uri)s';
@@ -116,15 +118,15 @@ class MilestoneOverlayMixin:
                     var config = {
                         milestone_form_uri: milestone_form_uri,
                         series_uri: series_uri,
-                        next_step: Y.lp.milestonetable.get_milestone_row,
+                        next_step: Y.lp.registry.milestonetable.get_milestone_row,
                         activate_node: create_milestone_link
                         };
-                    Y.lp.milestoneoverlay.attach_widget(config);
+                    Y.lp.registry.milestoneoverlay.attach_widget(config);
                     var table_config = {
                         milestone_row_uri_template: milestone_row_uri,
                         milestone_rows_id: milestone_rows_id
                         }
-                    Y.lp.milestonetable.setup(table_config);
+                    Y.lp.registry.milestonetable.setup(table_config);
                 });
             });
             """ % uris
@@ -141,10 +143,10 @@ class RegistryDeleteViewMixin:
     def _getBugtasks(self, target):
         """Return the list `IBugTask`s associated with the target."""
         if IProductSeries.providedBy(target):
-            params = BugTaskSearchParams(user=None)
+            params = BugTaskSearchParams(user=self.user)
             params.setProductSeries(target)
         else:
-            params = BugTaskSearchParams(milestone=target, user=None)
+            params = BugTaskSearchParams(milestone=target, user=self.user)
         bugtasks = getUtility(IBugTaskSet).search(params)
         return list(bugtasks)
 
@@ -206,6 +208,8 @@ class RegistryDeleteViewMixin:
         date_time = series.datecreated.strftime('%Y%m%d-%H%M%S')
         series.name = '%s-%s-%s' % (
             series.product.name, series.name, date_time)
+        series.status = SeriesStatus.OBSOLETE
+        series.releasefileglob = None
         series.product = getUtility(ILaunchpadCelebrities).obsolete_junk
 
     def _deleteMilestone(self, milestone):

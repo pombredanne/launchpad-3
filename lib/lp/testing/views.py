@@ -7,12 +7,16 @@ __metaclass__ = type
 __all__ = [
     'create_view',
     'create_initialized_view',
+    'YUITestFileView',
     ]
 
+import os
 
 from zope.component import getUtility, getMultiAdapter
 from zope.security.management import endInteraction, newInteraction
 
+from canonical.config import config
+from canonical.lazr import ExportedFolder
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -43,7 +47,7 @@ def create_view(context, name, form=None, layer=None, server_url=None,
     if request is None:
         request = LaunchpadTestRequest(
             form=form, SERVER_URL=server_url, QUERY_STRING=query_string,
-            HTTP_COOKIE=cookie, method=method, **kwargs)
+            HTTP_COOKIE=cookie, method=method, PATH_INFO=path_info, **kwargs)
     if principal is not None:
         request.setPrincipal(principal)
     else:
@@ -59,7 +63,8 @@ def create_view(context, name, form=None, layer=None, server_url=None,
 
 def create_initialized_view(context, name, form=None, layer=None,
                             server_url=None, method=None, principal=None,
-                            query_string=None, cookie=None, request=None):
+                            query_string=None, cookie=None, request=None,
+                            path_info='/'):
     """Return a view that has already been initialized."""
     if method is None:
         if form is None:
@@ -68,6 +73,13 @@ def create_initialized_view(context, name, form=None, layer=None,
             method = 'POST'
     view = create_view(
         context, name, form, layer, server_url, method, principal,
-        query_string, cookie, request)
+        query_string, cookie, request, path_info)
     view.initialize()
     return view
+
+
+class YUITestFileView(ExportedFolder):
+    """Export the lib directory where the test assets reside."""
+
+    folder = os.path.join(config.root, 'lib/')
+    export_subdirectories = True

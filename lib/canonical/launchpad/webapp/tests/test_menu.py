@@ -36,6 +36,7 @@ class TestMenuBaseLinkCaching(TestCase):
 
     def tearDown(self):
         logout()
+        super(TestMenuBaseLinkCaching, self).tearDown()
 
     def test_no_cache_when_there_is_no_request(self):
         # Calling login() would cause a new interaction to be setup with a

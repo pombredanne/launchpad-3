@@ -97,7 +97,7 @@ admin or expert, but he is one of the owners of a translation group.
     >>> oofy = factory.makePerson(email='oofy@drones.example.com',
     ...     name='oofy', password='test', displayname='Oofy Prosser')
     >>> rosetta_admins = personset.getByName('rosetta-admins')
-    >>> rosetta_admins.addMember(oofy, carlos)
+    >>> ignored = rosetta_admins.addMember(oofy, carlos)
 
     >>> gussie = factory.makePerson(email='gussie@drones.example.com',
     ...     name='gussie', password='test', displayname='Gussie Fink-Nottle')

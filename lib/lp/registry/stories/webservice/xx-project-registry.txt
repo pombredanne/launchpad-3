@@ -64,6 +64,7 @@ host.
     active: True
     active_milestones_collection_link: u'http://.../mozilla/active_milestones'
     all_milestones_collection_link: u'http://.../mozilla/all_milestones'
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     bug_tracker_link: None
     date_created: u'...'
@@ -93,12 +94,31 @@ The milestones can be accessed through the
 active_milestones_collection_link and the
 all_milestones_collection_link.
 
-    >>> response = webservice.get(mozilla['active_milestones_collection_link'])
+    >>> response = webservice.get(
+    ...     mozilla['active_milestones_collection_link'])
     >>> active_milestones = response.jsonBody()
     >>> print_self_link_of_entries(active_milestones)
     http://.../mozilla/+milestone/1.0
 
     >>> response = webservice.get(mozilla['all_milestones_collection_link'])
+    >>> all_milestones = response.jsonBody()
+    >>> print_self_link_of_entries(all_milestones)
+    http://.../mozilla/+milestone/0.8
+    http://.../mozilla/+milestone/0.9
+    http://.../mozilla/+milestone/0.9.1
+    http://.../mozilla/+milestone/0.9.2
+    http://.../mozilla/+milestone/1.0.0
+
+The milestones can also be accessed anonymously.
+
+    >>> response = anon_webservice.get(
+    ...     mozilla['active_milestones_collection_link'])
+    >>> active_milestones = response.jsonBody()
+    >>> print_self_link_of_entries(active_milestones)
+    http://.../mozilla/+milestone/1.0
+
+    >>> response = anon_webservice.get(
+    ...     mozilla['all_milestones_collection_link'])
     >>> all_milestones = response.jsonBody()
     >>> print_self_link_of_entries(all_milestones)
     http://.../mozilla/+milestone/0.8
@@ -131,11 +151,14 @@ Projects are available at their canonical URL on the API virtual host.
     active_milestones_collection_link: u'http://.../firefox/active_milestones'
     all_milestones_collection_link: u'http://.../firefox/all_milestones'
     brand_link: u'http://.../firefox/brand'
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
+    bug_supervisor_link: None
     bug_tracker_link: None
     commercial_subscription_is_due: True
     commercial_subscription_link: None
     date_created: u'2004-09-24T20:58:02.185708+00:00'
+    date_next_suggest_packaging: None
     description: u'The Mozilla Firefox web browser'
     development_focus_link: u'http://.../firefox/trunk'
     display_name: u'Mozilla Firefox'
@@ -162,11 +185,13 @@ Projects are available at their canonical URL on the API virtual host.
     resource_type_link: u'http://.../#project'
     reviewer_whiteboard: None
     screenshots_url: None
+    security_contact_link: None
     self_link: u'http://.../firefox'
     series_collection_link: u'http://.../firefox/series'
     sourceforge_project: None
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
+    translation_focus_link: None
     wiki_url: None
 
 In Launchpad project names may not have uppercase letters in their
@@ -189,11 +214,14 @@ several that are not available to non-privileged users marked as
     active_milestones_collection_link: u'http://.../firefox/active_milestones'
     all_milestones_collection_link: u'http://.../firefox/all_milestones'
     brand_link: u'http://.../firefox/brand'
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
+    bug_supervisor_link: None
     bug_tracker_link: None
     commercial_subscription_is_due: True
     commercial_subscription_link: None
     date_created: u'2004-09-24T20:58:02.185708+00:00'
+    date_next_suggest_packaging: None
     description: u'The Mozilla Firefox web browser'
     development_focus_link: u'http://.../firefox/trunk'
     display_name: u'Mozilla Firefox'
@@ -220,18 +248,21 @@ several that are not available to non-privileged users marked as
     resource_type_link: u'http://.../#project'
     reviewer_whiteboard:...redacted...
     screenshots_url: None
+    security_contact_link: None
     self_link: u'http://.../firefox'
     series_collection_link: u'http://.../firefox/series'
     sourceforge_project: None
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
+    translation_focus_link: None
     wiki_url: None
 
 The milestones can be accessed through the
 active_milestones_collection_link and the
 all_milestones_collection_link.
 
-    >>> response = webservice.get(firefox['active_milestones_collection_link'])
+    >>> response = webservice.get(
+    ...     firefox['active_milestones_collection_link'])
     >>> active_milestones = response.jsonBody()
     >>> print_self_link_of_entries(active_milestones)
     http://.../firefox/+milestone/1.0
@@ -265,11 +296,11 @@ The project group can be accessed through the project_group_link.
 A list of series can be accessed through the series_collection_link.
 
     >>> response = webservice.get(firefox['series_collection_link'])
-    >>> serieses = response.jsonBody()
-    >>> print serieses['total_size']
+    >>> series = response.jsonBody()
+    >>> print series['total_size']
     2
 
-    >>> print_self_link_of_entries(serieses)
+    >>> print_self_link_of_entries(series)
     http://.../firefox/1.0
     http://.../firefox/trunk
 
@@ -279,6 +310,24 @@ A list of series can be accessed through the series_collection_link.
     ...     firefox['self_link'], "getSeries", name="1.0").jsonBody()
     >>> print series_1_0['self_link']
     http://.../firefox/1.0
+
+Series can also be accessed anonymously.
+
+    >>> response = anon_webservice.get(firefox['series_collection_link'])
+    >>> series = response.jsonBody()
+    >>> print series['total_size']
+    2
+
+"newSeries" permits the creation of new series.
+
+    >>> experimental_new_series = webservice.named_post(
+    ...     firefox['self_link'], "newSeries", name="experimental",
+    ...     summary="An experimental new series.")
+    >>> print experimental_new_series
+    HTTP/1.1 201 Created
+    ...
+    Location: http://.../firefox/experimental
+    ...
 
 A list of releases can be accessed through the releases_collection_link.
 
@@ -299,6 +348,13 @@ A list of releases can be accessed through the releases_collection_link.
     ...     firefox['self_link'], "getRelease", version="0.9.1").jsonBody()
     >>> print release_0_9_1['self_link']
     http://.../firefox/trunk/0.9.1
+
+Releases can also be accessed anonymously.
+
+    >>> response = anon_webservice.get(firefox['releases_collection_link'])
+    >>> releases = response.jsonBody()
+    >>> print releases['total_size']
+    4
 
 The development focus series can be accessed through the
 development_focus_link.
@@ -344,11 +400,14 @@ changed as well.
     >>> # Create a product with a series and release.
     >>> login('test@canonical.com')
     >>> test_project_owner = factory.makePerson(name='test-project-owner')
-    >>> test_project = factory.makeProduct(name='test-project', owner=test_project_owner)
+    >>> test_project = factory.makeProduct(
+    ...     name='test-project', owner=test_project_owner)
     >>> test_series = factory.makeProductSeries(
-    ...     product=test_project, name='test-series', owner=test_project_owner)
+    ...     product=test_project, name='test-series',
+    ...     owner=test_project_owner)
     >>> test_milestone = factory.makeMilestone(
-    ...     product=test_project, name='test-milestone', productseries=test_series)
+    ...     product=test_project, name='test-milestone',
+    ...     productseries=test_series)
     >>> test_project_release = factory.makeProductRelease(
     ...     product=test_project, milestone=test_milestone)
     >>> logout()
@@ -424,12 +483,18 @@ hierarchy of series, milestones, and releases.
     ...     include_inactive=True).jsonBody()
     >>> print pretty(timeline)
     [{u'is_development_focus': False,
-      u'landmarks': [{u'code_name': u'First Stable Release',
+     u'landmarks': [],
+     u'name': u'experimental',
+     u'status': u'Active Development',
+     u'uri': u'/firefox/experimental'},
+    {u'is_development_focus': False,
+     u'landmarks': [{u'code_name': u'First Stable Release',
                       u'date': u'2004-06-28',
                       u'name': u'1.0.0',
                       u'type': u'release',
                       u'uri': u'/firefox/1.0/1.0.0'}],
       u'name': u'1.0',
+      u'status': u'Active Development',
       u'uri': u'/firefox/1.0'},
      {u'is_development_focus': True,
       u'landmarks': [{u'code_name': None,
@@ -453,6 +518,7 @@ hierarchy of series, milestones, and releases.
                       u'type': u'release',
                       u'uri': u'/firefox/trunk/0.9'}],
       u'name': u'trunk',
+      u'status': u'Obsolete',
       u'uri': u'/firefox/trunk'}]
 
 
@@ -482,7 +548,8 @@ The batch size can be changed through the ws.size argument.
     >>> project_collection = webservice.get("/projects?ws.size=75").jsonBody()
 
     >>> project_entries = sorted(
-    ...     project_collection['entries'], key=itemgetter('display_name'))
+    ...     project_collection['entries'],
+    ...     key=itemgetter('display_name', 'name'))
     >>> len(project_entries)
     25
 
@@ -510,7 +577,8 @@ It's possible to search the list and get a subset of the project groups.
 If you don't specify "text" to the search a batched list of all the
 projects is returned.
 
-    >>> project_collection = webservice.named_get("/projects", "search").jsonBody()
+    >>> project_collection = webservice.named_get(
+    ...     "/projects", "search").jsonBody()
     >>> len(project_collection['entries'])
     5
 
@@ -792,9 +860,13 @@ virtual host.
 
     >>> babadoo_foobadoo = webservice.get('/babadoo/foobadoo').jsonBody()
     >>> pprint_entry(babadoo_foobadoo)
-    active_milestones_collection_link: u'http://.../babadoo/foobadoo/active_milestones'
-    all_milestones_collection_link: u'http://.../babadoo/foobadoo/all_milestones'
+    active: True
+    active_milestones_collection_link:
+            u'http://.../babadoo/foobadoo/active_milestones'
+    all_milestones_collection_link:
+            u'http://.../babadoo/foobadoo/all_milestones'
     branch_link: u'http://.../~babadoo-owner/babadoo/fooey'
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     date_created: u'...'
     display_name: u'foobadoo'
@@ -804,6 +876,7 @@ virtual host.
     official_bug_tags: []
     owner_link: u'http://.../~babadoo-owner'
     project_link: u'http://.../babadoo'
+    release_finder_url_pattern: None
     releases_collection_link: u'http://.../babadoo/foobadoo/releases'
     resource_type_link: u'...'
     self_link: u'http://.../babadoo/foobadoo'
@@ -820,6 +893,7 @@ milestones and releases.
     {u'is_development_focus': False,
      u'landmarks': [],
      u'name': u'foobadoo',
+     u'status': u'Active Development',
      u'uri': u'/babadoo/foobadoo'}
 
 
@@ -961,7 +1035,7 @@ Project release file collection
     >>> pr_files = webservice.get(
     ...     '/firefox/trunk/0.9.2/files').jsonBody()
     >>> print_self_link_of_entries(pr_files)
-    http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz
+    http://.../firefox/trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz
 
 
 Milestone entry
@@ -1016,32 +1090,35 @@ Project release file entry
 Project release files are available at their canonical URL on the API
 virtual host.
 
-    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz'
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz'
     >>> result = webservice.get(url).jsonBody()
     >>> pprint_entry(result)
     date_uploaded: u'2005-06-06T08:59:51.926792+00:00'
     description: None
-    file_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
+    file_link:
+        u'http://.../firefox/trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz/file'
     file_type: u'Code Release Tarball'
     project_release_link: u'http://.../firefox/trunk/0.9.2'
     resource_type_link: u'http://.../#project_release_file'
-    self_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz'
-    signature_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
+    self_link:
+        u'http://.../firefox/trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz'
+    signature_link:
+        u'http://.../trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz/signature'
 
 The actual file redirects to the librarian when accessed.
 
-    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz/file'
     >>> result = webservice.get(url)
     >>> print result
     HTTP/1.1 303 See Other
     ...
-    Location: http://localhost:58000/.../firefox-0.9.2.orig.tar.gz
+    Location: http://localhost:58000/.../firefox_0.9.2.orig.tar.gz
     ...
 
 The signature file will redirect too, if found.  In this case there is
 no signature so we get a 404.
 
-    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz/signature'
     >>> result = webservice.get(url)
     >>> print result
     HTTP/1.1 404 Not Found
@@ -1050,14 +1127,14 @@ no signature so we get a 404.
 The file and signature on a Project Release File are 'readonly'. Trying
 to put new content will result in a ForbiddenAttribute error.
 
-    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz/file'
     >>> response = webservice.put(url, 'application/x-tar-gz', 'fakefiledata')
     >>> print response
     HTTP/1.1 405 Method Not Allowed...
     Allow: GET
     ...
 
-    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz/signature'
     >>> response = webservice.put(url, 'pgpapplication/data', 'signaturedata')
     >>> print response
     HTTP/1.1 405 Method Not Allowed...
@@ -1173,6 +1250,8 @@ through the API.
 
     >>> logout()
 
+    >>> from lazr.restful.interfaces import IRepresentationCache
+    >>> ws_uncache(mmm)
     >>> mmm = webservice.get("/mega-money-maker").jsonBody()
     >>> print mmm['display_name']
     Mega Money Maker

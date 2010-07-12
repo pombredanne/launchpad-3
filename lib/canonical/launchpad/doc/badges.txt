@@ -31,6 +31,7 @@ Iterating over this collection gives:
     bug
     mentoring
     mergeproposal
+    patch
     private
     security
 

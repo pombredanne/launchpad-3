@@ -21,8 +21,8 @@ The default url for a milestone is to the main site.
 Milestone defines several menus.
 
     >>> from lp.registry.browser.milestone import (
-    ...     MilestoneContextMenu, MilestoneOverviewMenu,
-    ...     MilestoneOverviewNavigationMenu)
+    ...     MilestoneContextMenu, MilestoneInlineNavigationMenu,
+    ...     MilestoneOverviewMenu, MilestoneOverviewNavigationMenu)
     >>> from lp.testing.menu import check_menu_links
 
     >>> check_menu_links(MilestoneContextMenu(milestone))
@@ -31,6 +31,18 @@ Milestone defines several menus.
     True
     >>> check_menu_links(MilestoneOverviewNavigationMenu(milestone))
     True
+    >>> check_menu_links(MilestoneInlineNavigationMenu(milestone))
+    True
+
+The MilestoneView used can be adapted to a MilestoneInlineNavigationMenu
+for use with inline presentation of milestones.
+
+    >>> from canonical.lazr.canonicalurl import nearest_adapter
+    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
+
+    >>> view = create_view(milestone, name='+productseries-table-row')
+    >>> nearest_adapter(view, INavigationMenu, name='overview')
+    <lp.registry.browser.milestone.MilestoneInlineNavigationMenu ...>
 
 The MilestoneView provides access to the milestone and to its release if
 it has one.
@@ -60,11 +72,14 @@ Bugs and specifications targeted to the milestone are accessible too.
 The has_bugs_or_specs boolean property can be used to verify if the
 milestone has any bugs or specifications.
 
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+
     >>> view.has_bugs_or_specs
     False
 
     >>> bug = factory.makeBug(title="kiwi")
     >>> bugtask = factory.makeBugTask(bug=bug, target=milestone.product)
+    >>> bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED, person)
     >>> bugtask.transitionToAssignee(person)
     >>> bugtask.milestone = milestone
     >>> spec = factory.makeSpecification(
@@ -113,6 +128,7 @@ is used by the decorator.
     <BugTask ...>
         has_branch: False
         has_mentoring_offer: False
+        has_patch: False
         has_specification: False
 
     >>> view.bugtasks[0].last_significant_change_date
@@ -130,6 +146,7 @@ supports plural descriptions.
 
     >>> bug = factory.makeBug(title="emo")
     >>> bugtask = factory.makeBugTask(bug=bug, target=milestone.product)
+    >>> bugtask.transitionToAssignee(person)
     >>> bugtask.milestone = milestone
     >>> spec = factory.makeSpecification(
     ...     product=milestone.product, title='ostrich')
@@ -141,6 +158,15 @@ supports plural descriptions.
 
     >>> print view.specification_count_text
     <strong>2 blueprints</strong>
+
+Bugtasks are ordered by status (fix released last), and importance
+(critical first).
+
+    >>> for bugtask in view.bugtasks:
+    ...     assignee = bugtask.assignee
+    ...     print bugtask.bug.title, assignee.name, bugtask.status.title
+    emo   puffin-owner  New
+    kiwi  puffin-owner  Fix Committed
 
 The view provides a list of StatusCounts that summarise the targeted
 specifications and bugtasks.
@@ -162,7 +188,8 @@ specifications and bugtasks.
 
     >>> for status_count in view.bugtask_status_counts:
     ...     print '%s: %s' % (status_count.status.title, status_count.count)
-    New: 2
+    New: 1
+    Fix Committed: 1
 
 The assignment_counts property returns all the users and count of bugs and
 specifications assigned to them.
@@ -274,8 +301,8 @@ not have edit permission.
     >>> login_person(person)
 
 
-Project milestones
-------------------
+ProjectGroup milestones
+-----------------------
 
 The projectgroup milestones are virtual and cannot be modified. The template
 generates CSS that hides the space occupied by the side portlets.
@@ -700,3 +727,25 @@ project owner or series driver..
     >>> check_permission('launchpad.Edit', view)
     False
 
+Milestones with private bugs can be deleted. There is one caveate, the person
+deleting the milestone must have permssion to access the bug for it to be
+untargeted. It is possible for the owner or release manager to not have access
+to a private bug that was targeted to a milestone by a driver.
+
+    >>> login_person(owner)
+    >>> milestone = firefox_1_0.newMilestone('1.0.13')
+    >>> private_bug = factory.makeBug(product=firefox, private=True)
+    >>> private_bugtask = bug.bugtasks[0]
+    >>> private_bugtask.milestone = milestone
+    >>> view = create_initialized_view(milestone, '+delete')
+    >>> [bugtask.milestone.name for bugtask in view.bugtasks]
+    [u'1.0.13']
+
+    >>> view = create_initialized_view(milestone, '+delete', form=form)
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Milestone 1.0.13 deleted.
+
+    >>> transaction.commit()
+    >>> print private_bugtask.milestone
+    None

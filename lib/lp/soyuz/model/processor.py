@@ -10,6 +10,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
+from storm.locals import Bool
 
 from canonical.database.sqlbase import SQLBase
 
@@ -39,6 +40,12 @@ class ProcessorFamily(SQLBase):
     description = StringCol(dbName='description', notNull=True)
 
     processors = SQLMultipleJoin('Processor', joinColumn='family')
+    restricted = Bool(allow_none=False, default=False)
+
+    def addProcessor(self, name, title, description):
+        """See `IProcessorFamily`."""
+        return Processor(family=self, name=name, title=title,
+            description=description)
 
 
 class ProcessorFamilySet:
@@ -52,6 +59,11 @@ class ProcessorFamilySet:
         rset = store.find(ProcessorFamily, ProcessorFamily.name == name)
         return rset.one()
 
+    def getRestricted(self):
+        """See `IProcessorFamilySet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(ProcessorFamily, ProcessorFamily.restricted == True)
+
     def getByProcessorName(self, name):
         """Please see `IProcessorFamilySet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -62,3 +74,8 @@ class ProcessorFamilySet:
         # but there is also the possibility that the user specified a name for
         # a non-existent processor.
         return rset.one()
+
+    def new(self, name, title, description, restricted=False):
+        """See `IProcessorFamily`."""
+        return ProcessorFamily(name=name, title=title,
+            description=description, restricted=restricted)

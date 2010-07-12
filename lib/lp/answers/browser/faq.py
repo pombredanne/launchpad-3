@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'FAQBreadcrumb',
     'FAQNavigationMenu',
     'FAQEditView',
     'FAQView',
@@ -15,6 +16,7 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action, NavigationMenu, canonical_url, enabled_with_permission,
     LaunchpadView, LaunchpadEditFormView, Link)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.interfaces.faq import IFAQ
@@ -44,19 +46,22 @@ class FAQNavigationMenu(NavigationMenu):
         return Link(url, 'List all FAQs', icon='info')
 
 
+class FAQBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `IFAQ`."""
+
+    @property
+    def text(self):
+        return 'FAQ #%d' % self.context.id
+
+
 class FAQView(LaunchpadView):
     """View for the FAQ index."""
 
     __used_for__ = IFAQ
 
     @property
-    def page_title(self):
-        return '%s FAQ #%d: "%s"' % (
-            self.context.target.displayname,
-            self.context.id,
-            self.context.title)
-
-    label = page_title
+    def label(self):
+        return self.context.title
 
 
 class FAQEditView(LaunchpadEditFormView):

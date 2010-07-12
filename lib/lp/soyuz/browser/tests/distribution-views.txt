@@ -10,6 +10,8 @@ Distribution Soyuz Views
 DistributionArchivesView
 ------------------------
 
+    >>> from lp.registry.interfaces.person import IPersonSet
+
 The DistributionArchivesView includes an archive_list property that
 returns a list of copy archives only for the given distribution (because
 only copy archives are exposed through the distribution/+archives UI):
@@ -29,6 +31,14 @@ And then after creating a copy archive for Ubuntu:
     >>> archives.count()
     1
 
+Disabled archives will be visible:
+
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> copy_location = factory.makeCopyArchiveLocation(
+    ...     distribution=ubuntu, enabled=False, owner=foo_bar)
+    >>> archives = distro_archives_view.archive_list
+    >>> archives.count()
+    2
 
 DistributionPackageSearchView
 -----------------------------
@@ -103,6 +113,15 @@ cases it will always be on source:
     ...     debian, name="+search", form={'search_type': 'binary'})
     >>> distro_pkg_search_view.search_by_binary_name
     False
+
+Leading and trailing white-space is stripped from the search text.
+
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search",
+    ...     form={'text': ' a '},
+    ...     query_string='text=a')
+    >>> distro_pkg_search_view.text
+    'a'
 
 
 Exact matches

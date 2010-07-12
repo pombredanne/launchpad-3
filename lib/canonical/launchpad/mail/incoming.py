@@ -9,8 +9,8 @@ __metaclass__ = type
 
 from logging import getLogger
 from cStringIO import StringIO as cStringIO
-from email.Utils import getaddresses, parseaddr
-import email.Errors
+from email.utils import getaddresses, parseaddr
+import email.errors
 import re
 import sys
 
@@ -18,7 +18,7 @@ import transaction
 from zope.component import getUtility
 from zope.interface import directlyProvides, directlyProvidedBy
 
-from canonical.uuid import generate_uuid
+from uuid import uuid1
 from canonical.launchpad.interfaces import (
     AccountStatus, GPGVerificationError, IGPGHandler, ILibraryFileAliasSet,
     IMailBox, IPerson, IWeaklyAuthenticatedPrincipal)
@@ -29,6 +29,7 @@ from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.mail.commands import get_error_message
 from canonical.launchpad.mail.handlers import mail_handlers
+from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
@@ -105,7 +106,7 @@ def authenticateEmail(mail):
         # verifySignature failed to verify the signature.
         raise InvalidSignature("Signature couldn't be verified: %s" % str(e))
 
-    for gpgkey in person.gpgkeys:
+    for gpgkey in person.gpg_keys:
         if gpgkey.fingerprint == sig.fingerprint:
             break
     else:
@@ -195,7 +196,7 @@ def handleMail(trans=transaction):
                 trans.begin()
 
                 # File the raw_mail in the Librarian
-                file_name = generate_uuid() + '.txt'
+                file_name = str(uuid1()) + '.txt'
                 try:
                     file_alias = getUtility(ILibraryFileAliasSet).create(
                             file_name, len(raw_mail),
@@ -265,19 +266,21 @@ def handleMail(trans=transaction):
                     continue
 
                 # Extract the domain the mail was sent to. Mails sent to
-                # Launchpad should have an X-Original-To header.
-                if mail.has_key('X-Original-To'):
-                    addresses = [mail['X-Original-To']]
-                else:
-                    log = getLogger('canonical.launchpad.mail')
-                    log.warn(
-                        "No X-Original-To header was present in email: %s" %
-                         file_alias_url)
-                    # Process all addresses found as a fall back.
-                    cc = mail.get_all('cc') or []
-                    to = mail.get_all('to') or []
-                    names_addresses = getaddresses(to + cc)
-                    addresses = [addr for name, addr in names_addresses]
+                # Launchpad should have an X-Original-To header, but
+                # it has an incorrect address.
+                # Process all addresses found as a fall back.
+                cc = mail.get_all('cc') or []
+                to = mail.get_all('to') or []
+                names_addresses = getaddresses(to + cc)
+                addresses = [addr for name, addr in names_addresses]
+
+                try:
+                    do_paranoid_envelope_to_validation(addresses)
+                except AssertionError, e:
+                    _handle_error(
+                        "Invalid email address: %s" % e,
+                        file_alias_url, notify=False)
+                    continue
 
                 handler = None
                 for email_addr in addresses:

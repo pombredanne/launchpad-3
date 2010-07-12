@@ -13,7 +13,7 @@ to be added to the bug report. The information is passed as a file
 object to the constructor.
 
     >>> from StringIO import StringIO
-    >>> from lp.bugs.browser.bugtarget import FileBugDataParser
+    >>> from lp.bugs.utilities.filebugdataparser import FileBugDataParser
     >>> parser = FileBugDataParser(StringIO('123456789'))
 
 To make parsing easier and more efficient, it has a buffer where it
@@ -205,8 +205,8 @@ optionally followed by space characters.
     >>> parser._setDataFromHeaders(
     ...     data,
     ...     {'HWDB-Submission': ' submission-one, two\t,three ,  \nfour  '})
-    >>> list(data.hwdb_submission_keys)
-    [u'submission-one', u'two', u'three', u'four']
+    >>> data.hwdb_submission_keys
+    [u'four', u'submission-one', u'three', u'two']
 
 
 === Message Parts ===

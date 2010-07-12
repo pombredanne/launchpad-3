@@ -310,7 +310,7 @@ BranchSubscriptionNotificationLevel.
     ...     subscriber,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
-    ...     CodeReviewNotificationLevel.FULL)
+    ...     CodeReviewNotificationLevel.FULL, subscriber)
     >>> verifyObject(IBranchSubscription, subscription)
     True
     >>> subscription.branch == branch and subscription.person == subscriber
@@ -338,7 +338,7 @@ The settings for a subscription can be changed by re-subscribing.
     ...     subscriber,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
+    ...     CodeReviewNotificationLevel.NOEMAIL, subscriber)
     >>> subscription == subscription2
     True
     >>> subscription2.review_level == CodeReviewNotificationLevel.NOEMAIL
@@ -346,7 +346,7 @@ The settings for a subscription can be changed by re-subscribing.
 
     Unsubscribing is also supported.
 
-    >>> branch.unsubscribe(subscriber)
+    >>> branch.unsubscribe(subscriber, subscriber)
     >>> branch.subscribers.count()
     1
 
@@ -365,7 +365,7 @@ subscription.
     ...     subscriber,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
+    ...     CodeReviewNotificationLevel.NOEMAIL, subscriber)
 
     >>> print_names(branch2.getSubscriptionsByLevel([
     ...     BranchSubscriptionNotificationLevel.FULL]))
@@ -426,14 +426,14 @@ the history.
     >>> list(junk.latest_revisions(3)) == three_latest
     True
 
-Branch.revisions_since gives all the BranchRevisions for revisions comitted
-since a given timestamp. It may give suprising results if some committers had a
+Branch.getRevisionsSince gives all the BranchRevisions for revisions committed
+since a given timestamp. It may give surprising results if some committers had a
 skewed clock.
 
     >>> from datetime import datetime
     >>> timestamp = datetime(2005, 10, 31, 12, 00, 00)
     >>> two_latest = list(junk.revision_history)[:2]
-    >>> list(junk.revisions_since(timestamp)) == two_latest
+    >>> list(junk.getRevisionsSince(timestamp)) == two_latest
     True
 
 
@@ -601,6 +601,8 @@ The current references to the branch table are shown here.
     productseries.branch
     productseries.translations_branch
     seriessourcepackagebranch.branch
+    sourcepackagerecipedata.base_branch
+    sourcepackagerecipedatainstruction.branch
     specificationbranch.branch
 
 (Unfortunately, references can form a cycle-- note that codereviewcomments

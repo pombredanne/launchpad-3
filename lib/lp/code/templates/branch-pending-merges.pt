@@ -1,11 +1,13 @@
 <div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n">
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  tal:define="context_menu view/context/menu:context"
+  tal:condition="view/show_merge_links">
 
+  <h3>Branch merges</h3>
   <div id="merge-links"
-       tal:condition="view/show_merge_links"
-       tal:define="context_menu context/menu:context">
+       class="actions">
     <div id="merge-summary">
 
       <div id="landing-candidates"
@@ -16,7 +18,7 @@
       <div id="landing-candidates"
            tal:condition="view/landing_candidates">
         <img src="/@@/merge-proposal-icon" />
-        <a href="+merges" tal:content="structure view/landing_candidate_count_text">
+        <a href="+activereviews" tal:content="structure view/landing_candidate_count_text">
           1 branch
         </a>
         proposed for merging into this one.
@@ -33,9 +35,8 @@
 
       <div id="landing-targets" tal:condition="view/landing_targets">
         <tal:landing-candidates repeat="mergeproposal view/landing_targets">
-          <div>
-            <tal:merge-fragment tal:replace="structure mergeproposal/@@+link-summary" />
-          </div>
+          <tal:merge-fragment
+              tal:replace="structure mergeproposal/@@+summary-fragment"/>
         </tal:landing-candidates>
       </div>
 

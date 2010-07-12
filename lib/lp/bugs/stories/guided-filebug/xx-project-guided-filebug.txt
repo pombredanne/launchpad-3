@@ -1,4 +1,4 @@
-= Filing bugs on Projects =
+= Filing bugs on ProjectGroups =
 
 Even though it's not possible to file bugs against projects directly,
 it's still possible to file a bug from a project's main page.
@@ -8,7 +8,7 @@ it's still possible to file a bug from a project's main page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/gnome/+filebug'
 
-The Project filebug page is like a Product's filebug page, except that
+The ProjectGroup filebug page is like a Product's filebug page, except that
 it also asks for a Product. Only Products that are using Bugs are
 shown in the list of options.
 
@@ -105,7 +105,7 @@ the user to the bug page.
     'Bug #... in Evolution: ...Faznambutron dumps core...'
 
 
-== Empty Projects ==
+== Empty ProjectGroups ==
 
 It isn't possible to file a bug against an empty project. However, we give the
 user some feedback in this regard. We need to create a new project first.
@@ -150,7 +150,7 @@ message:
     it.
 
 
-== Projects With no Products Using Launchpad Bugs ==
+== ProjectGroups With no Products Using Launchpad Bugs ==
 
 If we add a new product to our test project (specifically one that doesn't use
 Launchpad for bug tracking) information about that product will also be
@@ -205,10 +205,22 @@ The user will also be presented with a link to the product's overview page:
 If we set up an external bug tracker for Testy Product, this will be reflected
 in the Test Group's filebug page.
 
-    >>> admin_browser.open('http://launchpad.dev/testy/+edit')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+
+    >>> login('admin@canonical.com')
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> thunderbird_spn = factory.getOrMakeSourcePackageName('thunderbird')
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=thunderbird_spn, distroseries=hoary)
+    >>> logout()
+
+    >>> admin_browser.open('http://launchpad.dev/testy/+configure-bugtracker')
     >>> admin_browser.getControl(name='field.bugtracker').value = ['external']
     >>> admin_browser.getControl(
-    ...     name='field.bugtracker.bugtracker').value = ['3']
+    ...     name='field.bugtracker.bugtracker').value = 'debbugs'
     >>> admin_browser.getControl('Change').click()
 
 And on the filebug page...
@@ -230,7 +242,7 @@ And on the filebug page...
 Finally, we add Testy Product to a source package:
 
     >>> admin_browser.open('http://bugs.launchpad.dev/testy/trunk/+ubuntupkg')
-    >>> admin_browser.getControl(name='ubuntupkg').value = 'thunderbird'
+    >>> admin_browser.getControl('Source Package Name').value = 'thunderbird'
     >>> admin_browser.getControl('Update').click()
 
 And this is also shown on the filebug page:

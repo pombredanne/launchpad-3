@@ -1,13 +1,13 @@
 = SourcePackage View Classes =
 
   >>> from zope.component import queryMultiAdapter
-  >>> from zope.publisher.browser import TestRequest
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
   >>> from canonical.launchpad.interfaces import IDistributionSet
 
 Empty request.
 
   >>> mock_form = {}
-  >>> request = TestRequest(form=mock_form)
+  >>> request = LaunchpadTestRequest(form=mock_form)
 
 Retrieve an known Sourcepackage object:
 

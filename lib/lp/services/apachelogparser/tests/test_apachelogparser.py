@@ -6,10 +6,12 @@ import gzip
 import os
 from StringIO import StringIO
 import tempfile
+import textwrap
 import unittest
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -17,7 +19,7 @@ from canonical.testing import LaunchpadZopelessLayer, ZopelessLayer
 from canonical.launchpad.scripts.librarian_apache_log_parser import DBUSER
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry, get_day, get_files_to_parse,
-    get_host_date_status_and_request, parse_file)
+    get_fd_and_file_size, get_host_date_status_and_request, parse_file)
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 from lp.testing import TestCase
 
@@ -57,6 +59,30 @@ class TestLineParsing(TestCase):
     def test_day_extraction(self):
         date = '[13/Jun/2008:18:38:57 +0100]'
         self.assertEqual(get_day(date), datetime(2008, 6, 13))
+
+
+class Test_get_fd_and_file_size(TestCase):
+
+    def _ensureFileSizeIsCorrect(self, file_path):
+        """Ensure the file size returned is correct.
+
+        Also ensure that the file descriptors returned where seek()ed to the
+        very beginning.
+        """
+        fd, file_size = get_fd_and_file_size(file_path)
+        self.assertEqual(fd.tell(), 0)
+        self.assertEqual(len(fd.read()), file_size)
+
+    def test_regular_file(self):
+        file_path = os.path.join(
+            here, 'apache-log-files', 'librarian-oneline.log')
+        self._ensureFileSizeIsCorrect(file_path)
+
+    def test_gzip_file(self):
+        file_path = os.path.join(
+            here, 'apache-log-files',
+            'launchpadlibrarian.net.access-log.1.gz')
+        self._ensureFileSizeIsCorrect(file_path)
 
 
 def get_path_download_key(path):
@@ -100,7 +126,9 @@ class TestLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
-        self.assertEqual(self.logger.buffer.getvalue(), '')
+        self.assertEqual(
+            self.logger.buffer.getvalue().strip(),
+            'INFO: Parsed 5 lines resulting in 3 download stats.')
         date = datetime(2008, 6, 13)
         self.assertContentEqual(
             downloads.items(),
@@ -122,7 +150,9 @@ class TestLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=self._getLastLineStart(fd), logger=self.logger,
             get_download_key=get_path_download_key)
-        self.assertEqual(self.logger.buffer.getvalue(), '')
+        self.assertEqual(
+            self.logger.buffer.getvalue().strip(),
+            'INFO: Parsed 1 lines resulting in 1 download stats.')
         self.assertEqual(parsed_bytes, fd.tell())
 
         self.assertContentEqual(
@@ -149,7 +179,9 @@ class TestLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
-        self.assertEqual(self.logger.buffer.getvalue(), '')
+        self.assertEqual(
+            self.logger.buffer.getvalue().strip(),
+            'INFO: Parsed 1 lines resulting in 0 download stats.')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
 
@@ -172,7 +204,9 @@ class TestLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
-        self.assertEqual(self.logger.buffer.getvalue(), '')
+        self.assertEqual(
+            self.logger.buffer.getvalue().strip(),
+            'INFO: Parsed 1 lines resulting in 0 download stats.')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
 
@@ -188,14 +222,56 @@ class TestLogFileParsing(TestCase):
         downloads, parsed_bytes = parse_file(
             fd, start_position=0, logger=self.logger,
             get_download_key=get_path_download_key)
-        self.assertEqual(self.logger.buffer.getvalue(), '')
+        self.assertEqual(
+            self.logger.buffer.getvalue().strip(),
+            'INFO: Parsed 1 lines resulting in 1 download stats.')
 
-        date = datetime(2008, 6, 13)
-        self.assertEqual(downloads, 
+        self.assertEqual(downloads,
             {'/15018215/ul_logo_64x64.png':
                 {datetime(2008, 6, 13): {'US': 1}}})
 
         self.assertEqual(parsed_bytes, fd.tell())
+
+    def test_max_parsed_lines(self):
+        # The max_parsed_lines config option limits the number of parsed
+        # lines.
+        config.push(
+            'log_parser config',
+            textwrap.dedent('''\
+                [launchpad]
+                logparser_max_parsed_lines: 2
+                '''))
+        self.addCleanup(config.pop, 'log_parser config')
+        fd = open(os.path.join(
+            here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
+        self.addCleanup(fd.close)
+
+        downloads, parsed_bytes = parse_file(
+            fd, start_position=0, logger=self.logger,
+            get_download_key=get_path_download_key)
+
+        # We have initially parsed only the first two lines of data,
+        # corresponding to one download (the first line is a 404 and
+        # so ignored).
+        date = datetime(2008, 6, 13)
+        self.assertContentEqual(
+            downloads.items(),
+            [('/9096290/me-tv-icon-14x14.png', {date: {'AU': 1}})])
+        fd.seek(0)
+        lines = fd.readlines()
+        line_lengths = [len(line) for line in lines]
+        self.assertEqual(parsed_bytes, sum(line_lengths[:2]))
+
+        # And the subsequent parse will be for the 3rd and 4th lines,
+        # corresponding to two downloads of the same file.
+        downloads, parsed_bytes = parse_file(
+            fd, start_position=parsed_bytes, logger=self.logger,
+            get_download_key=get_path_download_key)
+        self.assertContentEqual(
+            downloads.items(),
+            [('/12060796/me-tv-icon-64x64.png', {date: {'AU': 1}}),
+             ('/8196569/mediumubuntulogo.png', {date: {'AR': 1}})])
+        self.assertEqual(parsed_bytes, sum(line_lengths[:4]))
 
 
 class TestParsedFilesDetection(TestCase):
@@ -206,6 +282,7 @@ class TestParsedFilesDetection(TestCase):
     root = os.path.join(here, 'apache-log-files')
 
     def setUp(self):
+        super(TestParsedFilesDetection, self).setUp()
         self.layer.switchDbUser(DBUSER)
 
     def test_not_parsed_file(self):
@@ -238,7 +315,7 @@ class TestParsedFilesDetection(TestCase):
 
     def test_different_files_with_same_name(self):
         # Thanks to log rotation, two runs of our script may see files with
-        # the same name but completely different content.  If we see a file 
+        # the same name but completely different content.  If we see a file
         # with a name matching that of an already parsed file but with content
         # differing from the last file with that name parsed, we know we need
         # to parse the file from the start.
@@ -277,6 +354,7 @@ class Test_create_or_update_parsedlog_entry(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(Test_create_or_update_parsedlog_entry, self).setUp()
         self.layer.switchDbUser(DBUSER)
 
     def test_creation_of_new_entries(self):

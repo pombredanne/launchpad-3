@@ -7,7 +7,8 @@ In this test, we are going to check that we detect and notify the error.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IPersonSet)
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
     >>> from lp.translations.model.potemplate import POTemplateSubset
@@ -15,6 +16,7 @@ Here are some imports we need to get this test running.
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
 We need this for the Librarian to work properly.
 
@@ -76,7 +78,7 @@ That's a syntax error.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
 
 The import fails.
 
@@ -135,7 +137,7 @@ explanatory text.
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, published, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> transaction.commit()
     >>> (subject, message) = pofile.importFromQueue(entry)
     >>> print entry.status.name
@@ -202,7 +204,7 @@ submits a translation with a nonsensical plurals definition.
     ...     pofile.path, pofile_contents, False, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
 
@@ -245,7 +247,7 @@ forms.  He receives an email notifying him of a syntax error.
     ...     pofile.path, pofile_contents, False, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
     >>> print entry.status.name
@@ -283,7 +285,7 @@ forms.  The same error is given.
     ...     pofile.path, pofile_contents, False, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
     >>> print entry.status.name
@@ -336,7 +338,7 @@ to get that information corrected if need be.
     ...     pofile.path, pofile_contents, False, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
     >>> print entry.status.name
@@ -398,7 +400,7 @@ plural forms, the file imports just fine.
     ...     pofile.path, pofile_contents, False, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
     >>> print entry.status.name

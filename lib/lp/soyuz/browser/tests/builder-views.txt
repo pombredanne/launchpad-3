@@ -1,7 +1,9 @@
 = Builder View Classes and Pages =
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> builder = getUtility(IBuilderSet).get(1)
@@ -31,7 +33,7 @@ Let's instantiate a view for +history:
 
     >>> builder_view = getMultiAdapter((builder, request), name="+history")
     >>> print builder_view.page_title
-    Build history for ...Bob The Builder...
+    Build history
 
     setupBuildList, build a batched list of build records and store it
     in view.batch, also store the batch navigator in view.batchnav. it
@@ -128,29 +130,29 @@ to the user who is trying to access a given content.
 Before checking if it works as expected we will setup an environment
 where builder 'Frog' is building a job from Celso's private PPA.
 
-    >>> from lp.soyuz.model.buildqueue import BuildQueue
+    >>> from lp.buildmaster.model.buildqueue import BuildQueue
     >>> from canonical.launchpad.interfaces import (
     ...    IBuilderSet, IPersonSet)
 
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
-    >>> cprov.archive.buildd_secret = "secret"
-    >>> cprov.archive.private = True
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, private=True)
 
 SoyuzTestPublisher is used to make a new publication only in Celso's
-PPA.
+private PPA.
 
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
     >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingStatus)
-    >>> from lp.soyuz.interfaces.build import BuildStatus
 
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
     >>> private_source_pub = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='privacy-test',
-    ...     archive=cprov.archive)
+    ...     archive=cprov_private_ppa)
     >>> [private_build] = private_source_pub.createMissingBuilds()
 
 Assign the build to the 'frog' builder:
@@ -158,7 +160,8 @@ Assign the build to the 'frog' builder:
     >>> frog = getUtility(IBuilderSet)['frog']
     >>> frog.builderok = True
     >>> private_build.builder = frog
-    >>> private_job = BuildQueue(build=private_build, builder=frog)
+    >>> private_job = private_build.buildqueue_record
+    >>> private_job.builder = frog
     >>> private_job_id = private_job.id
 
     >>> from canonical.database.sqlbase import flush_database_caches
@@ -170,20 +173,17 @@ is widely available:
  * Frog is OK;
  * Frog 'currentjob' exists;
  * Frog has no 'failnotes';
- * Frog status exposes its 'currentjob'.
 
     >>> print frog.builderok
     True
 
-    >>> print frog.currentjob.build.title
+    >>> build_set = getUtility(IBinaryPackageBuildSet)
+    >>> build = build_set.getByQueueEntry(frog.currentjob)
+    >>> print build.title
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
 
     >>> print frog.failnotes
     None
-
-    >>> print frog.status
-    Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
-        RELEASE [cprov/ppa]
 
 Accessing the view for $builder/+index as a Foo Bar, which has
 launchpad.View permission on the target archive of the 'currentjob',
@@ -199,19 +199,16 @@ all the 'private' information is exposed.
     >>> print admin_view.context.builderok
     True
 
-    >>> print admin_view.context.currentjob.build.title
+    >>> build = build_set.getByQueueEntry(admin_view.context.currentjob)
+    >>> print build.title
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
 
     >>> print admin_view.context.failnotes
     None
 
-    >>> print admin_view.context.status
-    Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
-        RELEASE [cprov/ppa]
-
     >>> import datetime
     >>> import pytz
-    >>> private_job.buildstart = (
+    >>> private_job.setDateStarted(
     ...     datetime.datetime.now(pytz.UTC) - datetime.timedelta(10))
     >>> print admin_view.current_build_duration
     10 days...
@@ -223,13 +220,11 @@ again.
     >>> store = Store.of(frog)
     >>> login("foo.bar@canonical.com")
     >>> private_job = store.get(BuildQueue, private_job_id)
-    >>> Store.of(private_job).remove(private_job)
+    >>> private_job.builder = None
+    >>> frog.current_build_behavior = None
 
     >>> login('no-priv@canonical.com')
     >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")
-
-    >>> print nopriv_view.context.status
-    Idle
 
     >>> login(ANONYMOUS)
 
@@ -392,13 +387,16 @@ processor queue in the PPA category.
     >>> any_failed_build = cprov.archive.getBuildRecords(
     ...     build_state=BuildStatus.FAILEDTOBUILD)[0]
     >>> one_minute = datetime.timedelta(seconds=60)
-    >>> removeSecurityProxy(
-    ...     any_failed_build).estimated_build_duration = one_minute
     >>> any_failed_build.retry()
+    >>> removeSecurityProxy(
+    ...     any_failed_build.buildqueue_record).estimated_duration = one_minute
+    >>> transaction.commit()
     >>> login(ANONYMOUS)
 
 Now the pending build is included in the right category and group.
 
+    >>> builderset_view = getMultiAdapter(
+    ...     (builderset, empty_request), name="+index")
     >>> builder_category = builderset_view.ppa_builders
     >>> print_category(builder_category)
     386    2  2  0:01:00

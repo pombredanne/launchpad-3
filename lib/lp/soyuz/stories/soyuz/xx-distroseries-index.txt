@@ -52,5 +52,5 @@ in production environment):
   >>> anon_browser.open(
   ...     "http://launchpad.dev/ubuntutest/breezy-autotest/"
   ...     "+portlet-latestuploads")
-  >>> "<ul" in anon_browser.contents
-  False
+  >>> find_tag_by_id(anon_browser.contents, 'no-latest-uploads') is not None
+  True

@@ -55,9 +55,8 @@
          on this page. You'll need to update them on your computer.
       </p>
       <form action="" method="post">
-        <button type="submit" name="regenerate" value="1">
-          Reset password
-        </button>
+        <input type="hidden" name="regenerate" value="1" />
+        <input type="submit" name="regenerate_btn" value="Reset Password" />
       </form>
       <p class="discreet">
          Note: after resetting the password for your personal

@@ -12,9 +12,9 @@ to that branch.
     >>> stdout
     ''
     >>> print stderr
-    INFO creating lockfile
+    INFO Creating lockfile: /var/lock/launchpad-translations-export-to-branch.lock
     INFO Exporting to translations branches.
-    INFO Processed 0 item(s); 0 failure(s).
+    INFO Processed 0 item(s); 0 failure(s), 0 unpushed branch(es).
 
     >>> from lp.translations.scripts.translations_to_branch import (
     ...     ExportTranslationsToBranch)
@@ -45,7 +45,7 @@ files into the branches.  We mock it up here.
     ...         if self.simulate_race:
     ...             raise ConcurrentUpdateError("Simulated race condition.")
     ...
-    ...     def commit(self, message=None):
+    ...     def commit(self, message=None, txn=None):
     ...         self._checkForRace()
     ...         self.logger.info("Committed %d file(s)." % self.written_files)
     ...
@@ -129,11 +129,11 @@ translations to the DirectBranchCommit.
 
     >>> transaction.commit()
     >>> script = MockExportTranslationsToBranch(
-    ...     'export-to-branch', test_args=['-vv'])
+    ...     'export-to-branch', test_args=[])
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
-    DEBUG No previous translations commit found.
+    DEBUG ...
     INFO Writing file 'po/main/nl.po':
     INFO # ...
     msgid ""
@@ -143,6 +143,7 @@ translations to the DirectBranchCommit.
     msgid "maingazpot msgid"
     msgstr "maingazpot msgstr"
     <BLANKLINE>
+    DEBUG ...
     INFO Writing file 'po/module/nl.po':
     INFO # ...
     msgid ""
@@ -152,9 +153,11 @@ translations to the DirectBranchCommit.
     <BLANKLINE>
     msgid "gazmod msgid"
     msgstr "gazmod msgstr"
+    <BLANKLINE>
+    DEBUG ...
     INFO Committed 2 file(s).
     INFO Unlock.
-    INFO Processed 1 item(s); 0 failure(s).
+    INFO Processed 1 item(s); 0 failure(s), 0 unpushed branch(es).
 
 When Gazblachko stops using Launchpad for Translations, the exports stop
 also.
@@ -163,7 +166,7 @@ also.
     >>> transaction.commit()
     >>> script.main()
     INFO Exporting to translations branches.
-    INFO Processed 0 item(s); 0 failure(s).
+    INFO Processed 0 item(s); 0 failure(s), 0 unpushed branch(es).
 
     >>> gazblachko.official_rosetta = True
     >>> transaction.commit()
@@ -186,9 +189,10 @@ the time it last exported them, it won't export them again.
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
+    DEBUG ....
     DEBUG Last commit was at ....
     INFO Unlock.
-    INFO Processed 1 item(s); 0 failure(s).
+    INFO Processed 1 item(s); 0 failure(s), 0 unpushed branch(es).
 
 If one of the files is updated, it is exported again.  Unchanged files
 are not.
@@ -197,12 +201,62 @@ are not.
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
+    DEBUG ....
     DEBUG Last commit was at ...
     INFO Writing file 'po/main/nl.po':
     INFO ...
     INFO Committed 1 file(s).
     INFO Unlock.
-    INFO Processed 1 item(s); 0 failure(s).
+    INFO Processed 1 item(s); 0 failure(s), 0 unpushed branch(es).
+
+
+Unpushed branches
+-----------------
+
+The Launchpad UI allows users to register branches in the Launchpad
+database without populating them in bzr.  Exporting to such a branch
+won't work, so we email a notification to the branch owner.
+
+    >>> from email import message_from_string
+    >>> from lp.services.mail import stub
+    >>> from lp.codehosting.vfs import get_rw_server
+    >>> productseries = factory.makeProductSeries()
+    >>> productseries.translations_branch = factory.makeBranch()
+    >>> template = factory.makePOTemplate(productseries=productseries)
+    >>> potmsgset = factory.makePOTMsgSet(template)
+    >>> pofile = removeSecurityProxy(
+    ...     factory.makePOFile('nl', potemplate=template))
+    >>> tm = factory.makeTranslationMessage(
+    ...     pofile=pofile, potmsgset=potmsgset, translator=template.owner)
+
+    >>> server = get_rw_server(direct_database=True)
+    >>> server.start_server()
+    >>> real_script = ExportTranslationsToBranch(
+    ...     'export-to-branch', test_args=[])
+    >>> real_script.logger = FakeLogger()
+    >>> try:
+    ...     real_script._exportToBranches([productseries])
+    ... finally:
+    ...     server.destroy()
+    INFO Exporting ...
+    INFO Processed 1 item(s); 0 failure(s), 1 unpushed branch(es).
+
+    # Give the email a chance to arrive in the test mailbox.
+    >>> transaction.commit()
+
+    >>> sender, recipients, body = stub.test_emails.pop()
+    >>> message = message_from_string(body)
+    >>> print message['Subject']
+    Launchpad: translations branch has not been set up.
+
+    >>> print message.get_payload()
+    Hello,
+    There was a problem with translations branch synchronization for
+    ...
+    Branch synchronization for this release series has been set up to
+    commit translations snapshots to the bzr branch at lp://...
+
+For the full message text, see emailtemplates/unpushed-branch.txt.
 
 
 Race conditions
@@ -228,14 +282,17 @@ refuse to commit to the branch.
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
+    DEBUG ....
     DEBUG No previous translations commit found.
+    DEBUG ....
     INFO Writing file 'po/main/nl.po':
     ...
     msgstr "gazmod msgstr"
     <BLANKLINE>
+    DEBUG ...
     INFO Unlock.
-    ERROR Failure: Simulated race condition.
-    INFO Processed 1 item(s); 1 failure(s).
+    ERROR Failure: ConcurrentUpdateError(...Simulated race condition...)
+    INFO Processed 1 item(s); 1 failure(s), 0 unpushed branch(es).
 
 
 === Pending imports from same branch ===
@@ -253,7 +310,25 @@ pending translations BranchJobs on the branch.
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
-    ERROR Failure: Translations branch for Gazblachko trunk series
-    has pending translations changes.  Not committing.
-    INFO Processed 1 item(s); 1 failure(s).
+    ERROR Failure: ConcurrentUpdateError(...Translations branch for
+    Gazblachko trunk series has pending translations changes.
+    Not committing...)
+    INFO Processed 1 item(s); 1 failure(s), 0 unpushed branch(es).
 
+There is one problem with detecting this race condition.  Jobs are never
+cleaned up.  So if the job failed for whatever reason, an unfinished job
+will stick around forever.
+
+To avoid blocking on such a job forever, the check ignores jobs that are
+old enough that they must have completed one way or another.
+
+    >>> job.date_created -= timedelta(days=7)
+    >>> transaction.commit()
+    >>> script.main()
+    INFO Exporting to translations branches.
+    INFO Exporting Gazblachko trunk series.
+    DEBUG ...
+    INFO Writing file 'po/main/nl.po':
+    INFO ...
+    INFO Unlock.
+    INFO Processed 1 item(s); 0 failure(s), 0 unpushed branch(es).

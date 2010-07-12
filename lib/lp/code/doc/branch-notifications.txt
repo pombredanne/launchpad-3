@@ -40,9 +40,9 @@ also sends the email to the list of recipients.
     ...     branch.owner,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
+    ...     CodeReviewNotificationLevel.NOEMAIL, branch.owner)
     >>> BranchMailer.forRevision(branch, 1, 'foo@canonical.com',
-    ...     'The contents.', None, None).sendAll()
+    ...     'The contents.', None, 'Subject line').sendAll()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -53,7 +53,7 @@ also sends the email to the list of recipients.
     >>> print branch_notification['From']
     foo@canonical.com
     >>> print branch_notification['Subject']
-    [Branch ~name12/firefox/main]
+    Subject line
     >>> print branch_notification['X-Launchpad-Project']
     firefox
     >>> print branch_notification['X-Launchpad-Branch']
@@ -69,9 +69,9 @@ also sends the email to the list of recipients.
     http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
     You are subscribed to branch lp://dev/~name12/firefox/main.
-    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/main/+edit-subscription
     <BLANKLINE>
-    >>> branch.unsubscribe(branch.owner)
+    >>> branch.unsubscribe(branch.owner, branch.owner)
 
 
 == Subscriptions ==
@@ -98,63 +98,55 @@ previous one.  The size limit is one of the following:
     >>> from lp.code.interfaces.branch import IBranch, IBranchSet
     >>> personset = getUtility(IPersonSet)
 
-    >>> branch.subscribe(
-    ...     personset.getByEmail('no-priv@canonical.com'),
+    >>> def subscribe_user_by_email(branch, email, level, size, level2):
+    ...     subscriber = personset.getByEmail(email)
+    ...     branch.subscribe(subscriber, level, size, level2, subscriber)
+
+    >>> subscribe_user_by_email(branch, 'no-priv@canonical.com',
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    <BranchSubscription ...
 
-    >>> branch.subscribe(
-    ...     personset.getByEmail('test@canonical.com'),
+    >>> subscribe_user_by_email(branch, 'test@canonical.com',
     ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    <BranchSubscription ...
 
-    >>> branch.subscribe(
-    ...     personset.getByEmail('carlos@canonical.com'),
+    >>> subscribe_user_by_email(branch, 'carlos@canonical.com',
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    <BranchSubscription ...
 
-    >>> branch.subscribe(
-    ...     personset.getByEmail('jeff.waugh@ubuntulinux.com'),
+    >>> subscribe_user_by_email(branch, 'jeff.waugh@ubuntulinux.com',
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.HALFKLINES,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    <BranchSubscription ...
 
-    >>> branch.subscribe(
-    ...     personset.getByEmail('celso.providelo@canonical.com'),
+    >>> subscribe_user_by_email(branch, 'celso.providelo@canonical.com',
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.ONEKLINES,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    <BranchSubscription ...
 
-    >>> branch.subscribe(
-    ...     personset.getByEmail('daf@canonical.com'),
+    >>> subscribe_user_by_email(branch, 'daf@canonical.com',
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    <BranchSubscription ...
 
-    >>> branch.subscribe(
-    ...     personset.getByEmail('mark@example.com'),
+    >>> subscribe_user_by_email(branch, 'mark@example.com',
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    <BranchSubscription ...
 
 Team are subscribed in the same way.
 
-    >>> branch.subscribe(
-    ...     personset.getByName('launchpad'),
+    >>> def subscribe_team_by_name(branch, name, level, size, level2):
+    ...     team = personset.getByName(name)
+    ...     branch.subscribe(team, level, size, level2, team.teamowner)
+
+    >>> subscribe_team_by_name(branch, 'launchpad',
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    <BranchSubscription ...
 
 And to make sure we have them:
 
@@ -268,7 +260,7 @@ unsubscribe link.
     Your team Launchpad Developers is subscribed to branch
     lp://dev/~name12/firefox/main.
     To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription
     <BLANKLINE>
     0 1 ... 5999...
 
@@ -288,7 +280,7 @@ Mark's unsubscription link is to his personal branch subscription.
     <BLANKLINE>
     ...
     To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription
     0 1 ... 5999...
 
 And just to be sure, lets create one with 800 lines.
@@ -358,7 +350,7 @@ And everything for mark:
 Unsubscribe everybody.
 
     >>> for subscription in branch.subscriptions:
-    ...     branch.unsubscribe(subscription.person)
+    ...     branch.unsubscribe(subscription.person, subscription.person)
     >>> len(list(branch.subscriptions))
     0
 
@@ -373,29 +365,23 @@ from a team registration.
 If a team is registered, and that team has an email address assigned,
 then that email address is used for the notifications.
 
-    >>> branch.subscribe(
-    ...     personset.getByEmail('david.allouche@canonical.com'),
+    >>> subscribe_user_by_email(branch, 'david.allouche@canonical.com',
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.HALFKLINES,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    <BranchSubscription ...
 
-    >>> branch.subscribe(
-    ...     personset.getByName('vcs-imports'),
+    >>> subscribe_team_by_name(branch, 'vcs-imports',
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    <BranchSubscription ...
 
 The ubuntu-team has an email address supplied (support@ubuntu.com), so
 that is used rather than the email addresses of the seven members.
 
-    >>> branch.subscribe(
-    ...     personset.getByName('ubuntu-team'),
+    >>> subscribe_team_by_name(branch, 'ubuntu-team',
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.ONEKLINES,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    <BranchSubscription ...
 
     >>> recipients = branch.getNotificationRecipients()
     >>> for email in recipients.getEmails():
@@ -427,12 +413,10 @@ sent.
 
 Resubscribe our test user.
 
-    >>> branch.subscribe(
-    ...     personset.getByEmail('test@canonical.com'),
+    >>> subscribe_user_by_email(branch, 'test@canonical.com',
     ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL)
-    <BranchSubscription ...
 
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
@@ -467,7 +451,7 @@ names just now, we'll pass them through anyway
     <BLANKLINE>
     You are subscribed to branch lp://dev/~name12/firefox/main.
     To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription
 
 
 The fields that are currently tracked with the delta, and cause
@@ -523,7 +507,7 @@ something like this:
     <BLANKLINE>
     You are subscribed to branch lp://dev/~name12/firefox/new-name.
     To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
+    http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription
 
 
 == Unicode in emails ==
@@ -541,21 +525,19 @@ must also handle the unicode.
     >>> notifications = pop_notifications()
     >>> len(notifications)
     1
-    >>> print_email_details(notifications.pop())
-    To: Sample Person <test@canonical.com>
-    From: Sample Person <test@canonical.com>
-    Subject: [Branch ~name12/firefox/new-name]
-    Whiteboard changed to:
-    <BLANKLINE>
-    A new ꀀ summary
-    <BLANKLINE>
-    --
-    lp://dev/~name12/firefox/new-name
-    http://code.launchpad.dev/~name12/firefox/new-name
-    <BLANKLINE>
-    You are subscribed to branch lp://dev/~name12/firefox/new-name.
-    To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
+    >>> email = notifications.pop()
+    >>> email.get_payload(decode=True).decode('utf-8').splitlines()
+    [u'Whiteboard changed to:',
+     u'',
+     u'A new \ua000 summary',
+     u'',
+     u'--',
+     u'lp://dev/~name12/firefox/new-name',
+     u'http://code.launchpad.dev/~name12/firefox/new-name',
+     u'',
+     u'You are subscribed to branch lp://dev/~name12/firefox/new-name.',
+     u'To unsubscribe from this branch go to
+     http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription']
 
 
 == Modifications by users other than the branch owner ==

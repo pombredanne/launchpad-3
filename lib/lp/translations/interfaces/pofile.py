@@ -19,6 +19,9 @@ from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleTerm, SimpleVocabulary)
 
+from lazr.restful.declarations import (
+    exported, export_as_webservice_entry)
+
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.person import IPerson
@@ -33,8 +36,12 @@ from lp.translations.interfaces.translationsperson import (
 class IPOFile(IRosettaStats):
     """A translation file."""
 
-    id = Int(
-        title=_('The translation file id.'), required=True, readonly=True)
+    export_as_webservice_entry(
+        singular_name="translation_file",
+        plural_name="translation_files")
+
+    id = exported(Int(
+        title=_('The translation file id.'), required=True, readonly=True))
 
     potemplate = Object(
         title=_('The translation file template.'),
@@ -121,8 +128,8 @@ class IPOFile(IRosettaStats):
         required=False)
 
     translation_messages = Attribute(_(
-        'All `ITranslationMessage` objects related to this translation file.'
-        ))
+        "All `ITranslationMessage` objects related to this "
+        "translation file."))
 
     plural_forms = Int(
         title=_('Number of plural forms for the language of this PO file.'),
@@ -214,6 +221,9 @@ class IPOFile(IRosettaStats):
     def canEditTranslations(person):
         """Whether the given person is able to add/edit translations."""
 
+    def setOwnerIfPrivileged(person):
+        """Set `owner` to `person`, provided `person` has edit rights."""
+
     def canAddSuggestions(person):
         """Whether the given person is able to add new suggestions."""
 
@@ -270,7 +280,7 @@ class IPOFile(IRosettaStats):
 
     def getTranslationRows():
         """Return exportable rows of translation data.
-        
+
         :return: a list of `VPOExport` objects.
         """
 
@@ -340,15 +350,15 @@ class IPOFileSet(Interface):
     def getDummy(potemplate, language):
         """Return a dummy pofile for the given po template and language."""
 
-    def getPOFileByPathAndOrigin(path, productseries=None,
+    def getPOFilesByPathAndOrigin(path, productseries=None,
         distroseries=None, sourcepackagename=None):
-        """Return an `IPOFile` that is stored at 'path' in source code.
+        """Find `IPOFile`s with 'path' in productseries or source package.
 
         We filter the `IPOFile` objects to check only the ones related to the
         given arguments 'productseries', 'distroseries' and
         'sourcepackagename'.
 
-        Return None if there is not such IPOFile.
+        :return: A Storm result set of matching `POFile`s.
         """
 
     def getBatch(starting_id, batch_size):
@@ -359,6 +369,13 @@ class IPOFileSet(Interface):
 
         The number of items in the sequence will only be less than batch_size
         if the end of the table has been reached.
+        """
+
+    def getPOFilesWithTranslationCredits():
+        """Get all POFiles with potential translation credits messages.
+
+        Returns a ResultSet of (POFile, POTMsgSet) tuples, ordered by
+        POFile.id.
         """
 
     def getPOFilesTouchedSince(date):

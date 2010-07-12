@@ -9,10 +9,8 @@ __metaclass__ = type
 __all__ = [
     'BRANCH_TRANSPORT',
     'CONTROL_TRANSPORT',
-    'IBranchPuller',
-    'IBranchPullerApplication',
-    'IBranchFileSystem',
-    'IBranchFileSystemApplication',
+    'ICodehostingAPI',
+    'ICodehostingApplication',
     'LAUNCHPAD_ANONYMOUS',
     'LAUNCHPAD_SERVICES',
     'READ_ONLY',
@@ -48,33 +46,25 @@ BRANCH_TRANSPORT = 'BRANCH_TRANSPORT'
 CONTROL_TRANSPORT = 'CONTROL_TRANSPORT'
 
 
-class IBranchPullerApplication(ILaunchpadApplication):
+class ICodehostingApplication(ILaunchpadApplication):
     """Branch Puller application root."""
 
 
-class IBranchPuller(Interface):
-    """The puller's interface to the rest of Launchpad.
+class ICodehostingAPI(Interface):
+    """The codehosting XML-RPC interface to Launchpad.
 
-    Published at 'branch_puller' on the private XML-RPC server.
+    Published at 'codehosting' on the private XML-RPC server.
+
+    The code hosting service and puller use this to register branches, to
+    retrieve information about a user's branches, and to update their status.
     """
 
-    def getBranchPullQueue(branch_type):
-        """Get the list of branches to be mirrored.
-
-        :param branch_type: One of 'HOSTED', 'MIRRORED', or 'IMPORTED'.
-
-        :raise UnknownBranchTypeError: if the branch type is unrecognized.
-
-        :returns: a list of (branch_id, pull_url, unique_name, default_branch)
-            4-tuples.  branch_id is the database id of the branch, pull_url is
-            where to pull from, unique_name is the unique_name of the branch
-            and default_branch is the default stacked on branch for the
-            branch's target.
-        """
-
-    def acquireBranchToPull():
+    def acquireBranchToPull(branch_type_names):
         """Return a Branch to pull and mark it as mirror-started.
 
+        :param branch_type_names: Only consider branches of these type names.
+            An empty list means consider HOSTED, MIRRORED and IMPORTED
+            branches.
         :return: A 5-tuple::
 
               (branch_id, pull_url, unique_name, default_branch, branch_type)
@@ -90,30 +80,6 @@ class IBranchPuller(Interface):
               * branch_type is one of 'hosted', 'mirrored', or 'imported'.
 
             or (), the empty tuple, if there is no branch to pull.
-        """
-
-    def startMirroring(branchID):
-        """Notify Launchpad that the given branch has started mirroring.
-
-        The last_mirror_attempt field of the given branch record will be
-        updated appropriately.
-
-        :param branchID: The database ID of the given branch.
-        :returns: True if the branch status was successfully updated.
-            `NoBranchWithID` fault if there's no branch with the given id.
-        """
-
-    def mirrorComplete(branchID, lastRevisionID):
-        """Notify Launchpad that the branch has been successfully mirrored.
-
-        In the Launchpad database, the last_mirrored field will be updated to
-        match the last_mirror_attempt value, the mirror_failures counter will
-        be reset to zero and the next_mirror_time will be set to NULL.
-
-        :param branchID: The database ID of the given branch.
-        :param lastRevisionID: The last revision ID mirrored.
-        :returns: True if the branch status was successfully updated.
-            `NoBranchWithID` fault if there's no branch with the given id.
         """
 
     def mirrorFailed(branchID, reason):
@@ -142,33 +108,6 @@ class IBranchPuller(Interface):
         :returns: True if the ScriptActivity record was successfully inserted.
         """
 
-    def setStackedOn(branch_id, stacked_on_location):
-        """Mark a branch as being stacked on another branch.
-
-        :param branch_id: The database ID of the stacked branch.
-        :param stacked_on_location: The location of the stacked-on branch.
-            For hosted branches, this is normally '/~foo/bar/baz' where
-            '~foo/bar/baz' is the unique name of another branch.
-        :return: True if the stacked branch information was set successfully.
-            `NoBranchWithID` fault if there's no branch with the given id.
-            `NoSuchBranch` fault if there's no branch matching
-            'stacked_on_location'.
-        """
-
-
-class IBranchFileSystemApplication(ILaunchpadApplication):
-    """Branch File System end point root."""
-
-
-class IBranchFileSystem(Interface):
-    """An interface for dealing with hosted branches in Launchpad.
-
-    Published at `branchfilesystem`.
-
-    The code hosting service uses this to register branches, to retrieve
-    information about a user's branches, and to update their status.
-    """
-
     def createBranch(login_id, branch_path):
         """Register a new hosted branch in Launchpad.
 
@@ -188,6 +127,24 @@ class IBranchFileSystem(Interface):
 
         :param loginID: the person ID of the user requesting the mirror.
         :param branchID: a branch ID.
+        """
+
+    def branchChanged(login_id, branch_id, stacked_on_url, last_revision_id,
+                      control_string, branch_string, repository_string):
+        """Record that a branch has been changed.
+
+        See `IBranch.branchChanged`.
+
+        :param login_id: the person ID of the user changing the branch.
+        :param branch_id: The database id of the branch to operate on.
+        :param stacked_on_url: The unique name of the branch this branch is
+            stacked on, or '' if this branch is not stacked.
+        :param last_revision_id: The tip revision ID of the branch.
+        :param control_string: The format string of the control directory of
+            the branch.
+        :param branch_string: The format string of the branch.
+        :param repository_string: The format string of the branch's
+            repository.
         """
 
     def translatePath(requester_id, path):

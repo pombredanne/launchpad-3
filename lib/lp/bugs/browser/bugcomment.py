@@ -10,9 +10,13 @@ __all__ = [
     'BugCommentBoxView',
     'BugCommentBoxExpandedReplyView',
     'BugCommentXHTMLRepresentation',
+    'BugCommentBreadcrumb',
     'build_comments_from_chunks',
     'should_display_remote_comments',
     ]
+
+from datetime import datetime, timedelta
+from pytz import utc
 
 from zope.component import adapts, getMultiAdapter, getUtility
 from zope.interface import implements, Interface
@@ -25,6 +29,7 @@ from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 from canonical.config import config
 
@@ -118,6 +123,7 @@ class BugComment:
 
         self.chunks = []
         self.bugattachments = []
+        self.patches = []
 
         if activity is None:
             activity = []
@@ -185,7 +191,8 @@ class BugComment:
             return False
         if self.title != other.title:
             return False
-        if self.bugattachments or other.bugattachments:
+        if (self.bugattachments or self.patches or other.bugattachments or
+            other.patches):
             # We shouldn't collapse comments which have attachments;
             # there's really no possible identity in that case.
             return False
@@ -195,7 +202,7 @@ class BugComment:
         """Return True if text_for_display is empty."""
 
         return (len(self.text_for_display) == 0 and
-            len(self.bugattachments) == 0)
+            len(self.bugattachments) == 0 and len(self.patches) == 0)
 
     @property
     def add_comment_url(self):
@@ -208,6 +215,39 @@ class BugComment:
             return True
         else:
             return False
+
+    @property
+    def rendered_cache_time(self):
+        """The number of seconds we can cache the rendered comment for.
+
+        Bug comments are cached with 'authenticated' visibility, so
+        should contain no information hidden from some users. We use
+        'authenticated' rather than 'public' as email addresses are
+        obfuscated for unauthenticated users.
+        """
+        now = datetime.now(tz=utc)
+        # The major factor in how long we can cache a bug comment is
+        # the timestamp. The rendering of the timestamp changes every
+        # minute for the first hour because we say '7 minutes ago'.
+        if self.datecreated > now - timedelta(hours=1):
+            return 60
+
+        # Don't cache for long if we are waiting for synchronization.
+        elif self.bugwatch and not self.synchronized:
+            return 5*60
+
+        # For the rest of the first day, the rendering changes every
+        # hour. '4 hours ago'. Expire in 15 minutes so the timestamp
+        # is at most 15 minutes out of date.
+        elif self.datecreated > now - timedelta(days=1):
+            return 15*60
+
+        # Otherwise, cache away. Lets cache for 6 hours. We don't want
+        # to cache for too long as there are still things that can
+        # become stale - eg. if a bug attachment has been deleted we
+        # should stop rendering the link.
+        else:
+            return 6*60*60
 
 
 class BugCommentView(LaunchpadView):
@@ -251,3 +291,13 @@ class BugCommentXHTMLRepresentation:
             (self.comment, self.request), name="+box")
         return comment_view()
 
+
+class BugCommentBreadcrumb(Breadcrumb):
+    """Breadcrumb for an `IBugComment`."""
+
+    def __init__(self, context):
+        super(BugCommentBreadcrumb, self).__init__(context)
+
+    @property
+    def text(self):
+        return "Comment #%d" % self.context.index

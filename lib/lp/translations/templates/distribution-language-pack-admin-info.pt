@@ -11,7 +11,7 @@
                     >Mr. No
     </span>.
     <tal:admin
-       condition="context/required:launchpad.Edit">
+       condition="context/required:launchpad.TranslationsAdmin">
       <a tal:attributes="
            href
            context/fmt:url/+select-language-pack-admin"
@@ -19,7 +19,7 @@
     </tal:admin>
   </p>
   <tal:admin
-     condition="context/required:launchpad.Edit">
+     condition="context/required:launchpad.TranslationsAdmin">
     <p tal:condition="not:context/language_pack_admin">
       <a tal:attributes="
            href

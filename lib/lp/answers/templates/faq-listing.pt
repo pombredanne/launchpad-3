@@ -12,7 +12,6 @@
 <metal:side fill-slot="side">
   <div tal:replace="structure context/@@+global-actions" />
   <div tal:replace="structure context/@@+portlet-answercontacts|nothing" />
-  <div tal:replace="structure context/@@+portlet-details|nothing" />
 </metal:side>
 
 

@@ -10,6 +10,7 @@
 <body>
 
 <metal:side fill-slot="side">
+  <div tal:content="structure context/@@+ask-a-question-button" />
   <div tal:replace="structure context/@@+global-actions" />
   <div tal:replace="structure context/@@+portlet-answercontacts|nothing" />
   <div tal:condition="context/distribution|nothing"
@@ -30,7 +31,6 @@
 
 <div metal:fill-slot="main"
      tal:define="questions view/searchResults">
-  
   <p tal:define="unspoken_languages view/unspoken_languages"
     tal:condition="unspoken_languages">
     <span tal:replace="context/displayname">Mozilla Firefox</span> has 
@@ -43,10 +43,6 @@
   <div>
     <form method="get" id="question-search-form" action=""
           tal:attributes="action request/URL">
-
-      <div style="float: right;"
-           tal:content="structure context/@@+ask-a-question-button" />
-
       <tal:searchbox replace="structure view/widgets/search_text" />
 
       <tal:sort replace="structure view/widgets/sort" />

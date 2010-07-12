@@ -28,8 +28,9 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
-from lp.archiveuploader.permission import verify_upload
+from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, ILibraryFileAliasSet,
@@ -302,53 +303,35 @@ class NascentUpload:
         """Heuristic checks on a sourceful upload.
 
         Raises AssertionError when called for a non-sourceful upload.
-        Ensures a sourceful upload has, at least:
-
-         * One DSC
-         * One or none DIFF
-         * One or none ORIG
-         * One or none TAR
-         * If no DIFF is present it must have a TAR (native)
-
-        'hasorig' and 'native' attributes are set when an ORIG and/or an
-        TAR file, respectively, are present.
+        Ensures a sourceful upload has exactly one DSC.
         """
         assert self.sourceful, (
             "Source consistency check called for a non-source upload")
 
         dsc = 0
-        diff = 0
-        orig = 0
-        tar = 0
+        native_tarball = 0
+        orig_tarball = 0
 
         for uploaded_file in self.changes.files:
-            if uploaded_file.filename.endswith(".dsc"):
+            filetype = determine_source_file_type(uploaded_file.filename)
+            if filetype == SourcePackageFileType.DSC:
                 dsc += 1
-            elif uploaded_file.filename.endswith(".diff.gz"):
-                diff += 1
-            elif uploaded_file.filename.endswith(".orig.tar.gz"):
-                orig += 1
-            elif (uploaded_file.filename.endswith(".tar.gz")
+            elif (filetype == SourcePackageFileType.NATIVE_TARBALL
                   and not isinstance(uploaded_file, CustomUploadFile)):
-                tar += 1
+                native_tarball += 1
+            elif filetype == SourcePackageFileType.ORIG_TARBALL:
+                orig_tarball += 1
 
-        # Okay, let's check the sanity of the upload.
+
+        # It is never sane to upload more than one source at a time.
         if dsc > 1:
             self.reject("Changes file lists more than one .dsc")
-        if diff > 1:
-            self.reject("Changes file lists more than one .diff.gz")
-        if orig > 1:
-            self.reject("Changes file lists more than one orig.tar.gz")
-        if tar > 1:
-            self.reject("Changes file lists more than one native tar.gz")
 
         if dsc == 0:
             self.reject("Sourceful upload without a .dsc")
-        if diff == 0 and tar == 0:
-            self.reject("Sourceful upload without a diff or native tar")
 
-        self.native = bool(tar)
-        self.hasorig = bool(orig)
+        self.native = bool(native_tarball)
+        self.hasorig = bool(orig_tarball)
 
     def _check_binaryful_consistency(self):
         """Heuristic checks on a binaryful upload.
@@ -493,20 +476,22 @@ class NascentUpload:
             return
 
         # Set up some convenient shortcut variables.
-        signer = self.changes.signer
+
+        uploader = self.policy.getUploader(self.changes)
         archive = self.policy.archive
 
         # If we have no signer, there's no ACL we can apply.
-        if signer is None:
+        if uploader is None:
             self.logger.debug("No signer, therefore ACL not processed")
             return
 
         source_name = getUtility(
             ISourcePackageNameSet).queryByName(self.changes.dsc.package)
 
-        rejection_reason = verify_upload(
-            signer, source_name, archive, self.changes.dsc.component,
-            not self.is_new)
+        rejection_reason = archive.checkUpload(
+            uploader, self.policy.distroseries, source_name, 
+            self.changes.dsc.component, self.policy.pocket, not self.is_new)
+
         if rejection_reason is not None:
             self.reject(str(rejection_reason))
 
@@ -596,7 +581,10 @@ class NascentUpload:
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
-        if self.policy.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
+        # If the archive is a main archive or a copy archive, we want to
+        # look up the ancestry in all the main archives.
+        if (self.policy.archive.purpose not in MAIN_ARCHIVE_PURPOSES and
+            not self.policy.archive.is_copy):
             archive = self.policy.archive
         else:
             archive = None
@@ -713,8 +701,11 @@ class NascentUpload:
 
         All files are also marked as new unless it's a PPA file, which are
         never considered new as they are auto-accepted.
+
+        COPY archive build uploads are also auto-accepted, otherwise they
+        would sit in the NEW queue since it's likely there's no ancestry.
         """
-        if self.is_ppa:
+        if self.is_ppa or self.policy.archive.is_copy:
             return
 
         # All newly-uploaded, non-PPA files must be marked as new so that
@@ -788,7 +779,11 @@ class NascentUpload:
                     # fine.
                     ancestry = self.getBinaryAncestry(
                         uploaded_file, try_other_archs=False)
-                    if ancestry is not None:
+                    if (ancestry is not None and
+                        not self.policy.archive.is_copy):
+                        # Ignore version checks for copy archives
+                        # because the ancestry comes from the primary
+                        # which may have changed since the copy.
                         self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
                     self.logger.debug(
@@ -815,10 +810,6 @@ class NascentUpload:
             self.do_reject(notify)
             return False
         try:
-            maintainerfrom = None
-            if self.changes.signer:
-                maintainerfrom = self.changes.changed_by['rfc2047']
-
             self.storeObjectsInDatabase()
 
             # Send the email.
@@ -909,7 +900,6 @@ class NascentUpload:
         # Queue entries are created in the NEW state by default; at the
         # end of this method we cope with uploads that aren't new.
         self.logger.debug("Creating queue entry")
-        distroseries = self.policy.distroseries
         self.queue_root = self._createQueueEntry()
 
         # When binaryful and sourceful, we have a mixed-mode upload.
@@ -920,7 +910,8 @@ class NascentUpload:
         sourcepackagerelease = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            sourcepackagerelease = self.changes.dsc.storeInDatabase()
+            build = self.changes.dsc.findBuild()
+            sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
             package_upload_source = self.queue_root.addSource(
                 sourcepackagerelease)
             ancestry = package_upload_source.getSourceAncestry()
@@ -929,7 +920,7 @@ class NascentUpload:
                 diff = to_sourcepackagerelease.requestDiffTo(
                     sourcepackagerelease.creator, sourcepackagerelease)
                 self.logger.debug(
-                    'Package diff for %s from %s requested' % (
+                    '%s %s requested' % (
                         diff.from_source.name, diff.title))
 
         if self.binaryful:
@@ -970,7 +961,7 @@ class NascentUpload:
                                    for build in self.queue_root.builds]
                 if considered_build.id in attached_builds:
                     continue
-                assert (considered_build.sourcepackagerelease.id ==
+                assert (considered_build.source_package_release.id ==
                         sourcepackagerelease.id), (
                     "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)
@@ -1012,6 +1003,11 @@ class NascentUpload:
             if self.is_ppa:
                 return
 
+            # XXX: JonathanLange 2009-09-16: It would be nice to use
+            # ISourcePackage.get_default_archive here, since it has the same
+            # logic. However, I'm not sure whether we can get a SourcePackage
+            # object.
+
             # See if there is an archive to override with.
             distribution = self.policy.distroseries.distribution
             archive = distribution.getArchiveByComponent(
@@ -1027,4 +1023,3 @@ class NascentUpload:
             else:
                 # Reset the archive in the policy to the partner archive.
                 self.policy.archive = archive
-

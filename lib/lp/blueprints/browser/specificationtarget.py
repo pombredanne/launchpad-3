@@ -22,7 +22,8 @@ from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject, IProjectSeries
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup, IProjectGroupSeries)
 from lp.blueprints.interfaces.specification import (
     SpecificationFilter, SpecificationSort)
 from lp.blueprints.interfaces.specificationtarget import (
@@ -31,16 +32,17 @@ from lp.blueprints.interfaces.sprint import ISprint
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.webapp import LaunchpadView, Link
+from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.menu import enabled_with_permission, Link
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
 from canonical.lazr.utils import smartquote
 
 
-class HasSpecificationsMenuMixin(object):
+class HasSpecificationsMenuMixin:
 
     def listall(self):
         """Return a link to show all blueprints."""
@@ -81,6 +83,12 @@ class HasSpecificationsMenuMixin(object):
         text = 'Register a blueprint'
         return Link('+addspec', text, icon='add')
 
+    @enabled_with_permission('launchpad.View')
+    def register_sprint(self):
+        text = 'Register a meeting'
+        summary = 'Register a developer sprint, summit, or gathering'
+        return Link('/sprints/+new', text, summary=summary, icon='add')
+
 
 class HasSpecificationsView(LaunchpadView):
     """Base class for several context-specific views that involve lists of
@@ -117,9 +125,8 @@ class HasSpecificationsView(LaunchpadView):
     is_sprint = False
     has_drivers = False
 
-    # XXX: jsk: 2007-07-12: This method might be improved by
+    # XXX: jsk: 2007-07-12 bug=173972: This method might be improved by
     # replacing the conditional execution with polymorphism.
-    # See https://bugs.launchpad.net/blueprint/+bug/173972.
     def initialize(self):
         if IPerson.providedBy(self.context):
             self.is_person = True
@@ -128,12 +135,12 @@ class HasSpecificationsView(LaunchpadView):
             self.is_target = True
             self.is_pillar = True
             self.show_series = True
-        elif IProject.providedBy(self.context):
+        elif IProjectGroup.providedBy(self.context):
             self.is_project = True
             self.is_pillar = True
             self.show_target = True
             self.show_series = True
-        elif IProjectSeries.providedBy(self.context):
+        elif IProjectGroupSeries.providedBy(self.context):
             self.show_milestone = True
             self.show_target = True
             self.show_series = True
@@ -145,7 +152,7 @@ class HasSpecificationsView(LaunchpadView):
             self.is_sprint = True
             self.show_target = True
         else:
-            raise AssertionError, 'Unknown blueprint listing site'
+            raise AssertionError('Unknown blueprint listing site.')
 
         if IHasDrivers.providedBy(self.context):
             self.has_drivers = True
@@ -161,6 +168,8 @@ class HasSpecificationsView(LaunchpadView):
             return _('Blueprints involving $name', mapping=mapping)
         else:
             return _('Blueprints for $name', mapping=mapping)
+
+    page_title = 'Blueprints'
 
     def mdzCsv(self):
         """Quick hack for mdz, to get csv dump of specs."""
@@ -340,7 +349,7 @@ class HasSpecificationsView(LaunchpadView):
         """
         categories = {}
         for spec in self.specs:
-            if categories.has_key(spec.definition_status):
+            if spec.definition_status in categories:
                 category = categories[spec.definition_status]
             else:
                 category = {}
@@ -352,8 +361,10 @@ class HasSpecificationsView(LaunchpadView):
         return sorted(categories, key=itemgetter('definition_status'))
 
     def getLatestSpecifications(self, quantity=5):
-        """Return <quantity> latest specs created for this target. This
-        is used by the +portlet-latestspecs view.
+        """Return <quantity> latest specs created for this target.
+
+        Only ACCEPTED specifications are returned.  This list is used by the
+        +portlet-latestspecs view.
         """
         return self.context.specifications(sort=SpecificationSort.DATE,
             quantity=quantity, prejoin_people=False)
@@ -382,7 +393,9 @@ class SpecificationDocumentationView(HasSpecificationsView):
 class RegisterABlueprintButtonView:
     """View that renders a button to register a blueprint on its context."""
 
-    def __call__(self):
+    @cachedproperty
+    def target_url(self):
+        """The +addspec URL for the specifiation target or None"""
         # Check if the context has an +addspec view available.
         if queryMultiAdapter(
             (self.context, self.request), name='+addspec'):
@@ -390,18 +403,27 @@ class RegisterABlueprintButtonView:
         else:
             # otherwise find an adapter to ISpecificationTarget which will.
             target = ISpecificationTarget(self.context)
+        if target is None:
+            return None
+        else:
+            return canonical_url(
+                target, rootsite='blueprints', view_name='+addspec')
 
+    def __call__(self):
+        if self.target_url is None:
+            return ''
         return """
-              <a href="%s/+addspec" id="addspec">
-                <img
-                  alt="Register a blueprint"
-                  src="/+icing/but-sml-registerablueprint.gif"
-                />
-              </a>
-        """ % canonical_url(target, rootsite='blueprints')
+            <div id="involvement" class="portlet involvement">
+              <ul>
+                <li style="border: none">
+                  <a class="menu-link-register_blueprint sprite blueprints"
+                    href="%s">Register a blueprint</a>
+                </li>
+              </ul>
+            </div>
+            """ % self.target_url
 
 
 class BlueprintsVHostBreadcrumb(Breadcrumb):
     rootsite = 'blueprints'
     text = 'Blueprints'
-

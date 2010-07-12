@@ -67,8 +67,8 @@
       <dd>
         <img src="/@@/private" alt="" />
         <tal:openid-login content="view/openid_identity_url" />
-        <a target="help" href="/+help/openid.html"
-           >(What&rsquo;s&nbsp;this?)</a>
+        <a target="help" href="/+help/openid.html" class="sprite maybe">&nbsp;
+          <span class="invisible-link">OpenID help</span></a>
       </dd>
     </dl>
 
@@ -142,20 +142,20 @@
         <a tal:replace="structure overview_menu/editpgpkeys/fmt:icon" />
       </dt>
       <dd>
-        <tal:keys repeat="key context/gpgkeys">
+        <tal:keys repeat="key context/gpg_keys">
           <a tal:attributes="href key/keyserverURL"
              tal:omit-tag="not: request/lp:person">
             <tal:keyid replace="key/keyid"
               /></a><span tal:condition="not: repeat/key/end">,</span>
         </tal:keys>
-        <div tal:condition="not: context/gpgkeys">
+        <div tal:condition="not: context/gpg_keys">
           No OpenPGP keys registered.
         </div>
       </dd>
     </dl>
 
     <dl id="sshkeys" tal:condition="view/should_show_sshkeys_section">
-      <dt>SSH Keys:
+      <dt>SSH keys:
         <a tal:replace="structure overview_menu/editsshkeys/fmt:icon" />
       </dt>
       <dd tal:define="sshkeys context/sshkeys">
@@ -195,6 +195,11 @@
       </dd>
     </dl>
   </div>
+  <div tal:define="link context/menu:overview/view_recipes"
+       tal:condition="link/enabled">
+    <a tal:replace="structure link/fmt:link" />
+  </div>
+
 
 </div>
 

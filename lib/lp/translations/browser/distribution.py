@@ -19,7 +19,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link)
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.browser.distribution import DistributionEditView
 from lp.translations.browser.translations import TranslationsMixin
 
@@ -35,10 +35,10 @@ class DistributionTranslationsMenu(NavigationMenu):
         link = canonical_url(self.context, rootsite='translations')
         return Link(link, text)
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
-        text = 'Settings'
-        return Link('+settings', text)
+        text = 'Change permissions'
+        return Link('+settings', text, icon='edit')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def language_pack_admin(self):
@@ -55,7 +55,6 @@ class DistributionLanguagePackAdminView(LaunchpadEditFormView):
 
     schema = IDistribution
     label = "Select the language pack administrator"
-    page_title = "Set language pack administrator"
     field_names = ['language_pack_admin']
 
     @property
@@ -92,26 +91,25 @@ class DistributionView(LaunchpadView):
         else:
             return self.context.translation_focus
 
-    def secondary_translatable_serieses(self):
+    def secondary_translatable_series(self):
         """Return a list of IDistroSeries that aren't the translation_focus.
 
         It only includes the ones that are still supported.
         """
-        serieses = [
+        series = [
             series
-            for series in self.context.serieses
-            if (series.status != DistroSeriesStatus.OBSOLETE
+            for series in self.context.series
+            if (series.status != SeriesStatus.OBSOLETE
                 and (self.translation_focus is None or
                      self.translation_focus.id != series.id))
             ]
 
-        return sorted(serieses, key=operator.attrgetter('version'),
+        return sorted(series, key=operator.attrgetter('version'),
                       reverse=True)
 
 
 class DistributionSettingsView(TranslationsMixin, DistributionEditView):
     label = "Set permissions and policies"
-    page_title = "Permissions and policies"
     field_names = ["translationgroup", "translationpermission"]
 
     @property

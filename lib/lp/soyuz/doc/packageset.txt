@@ -500,6 +500,20 @@ Which package sets include 'mozilla-firefox' directly? Remember that
       1 -> umbrella
       5 -> firefox
 
+We can filter the package sets by series:
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> print_data(
+    ...     ps_set.setsIncludingSource(firefox_spn,
+    ...                                distroseries=ubuntu['hoary']))
+      1 -> umbrella
+      4 -> mozilla
+      5 -> firefox
+    >>> print_data(
+    ...     ps_set.setsIncludingSource(firefox_spn,
+    ...                                distroseries=ubuntu['warty']))
+   
 It is also possible to ask the same question by providing the mere name of
 the source package.
 
@@ -581,7 +595,7 @@ Admins have access:
 
 Now add "test@canonical.com" to the techboard team and log in as him.
 
-    >>> techboard.addMember(
+    >>> ignored = techboard.addMember(
     ...     person2, reviewer=person2, status=TeamMembershipStatus.APPROVED,
     ...     force_team_add=True)
     >>> login_person(person2)
@@ -622,10 +636,8 @@ happy hacker.
 Introduce a copy archive that will be used to disambiguate archive
 permissions.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> from lp.soyuz.interfaces.archive import (
     ...     ArchivePurpose, IArchiveSet)
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> rebuild_archive = getUtility(IArchiveSet).new(
     ...     owner=person1, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='copy-archive',

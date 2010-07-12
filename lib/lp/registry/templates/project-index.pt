@@ -49,10 +49,10 @@
         This is the Project Group Description, which is a much more
         substantial description of the project group.  It should be
         several paragraphs long, and give you a very clear insight into
-        the work of the Project, and the people behind it. It should
+        the work of the Project Group, and the people behind it. It should
         describe the project history, and organisation.
 
-        The Project Description should also mention the major project or
+        The Project Group Description should also mention the major project or
         projects that make up the aggregate project. For example, the
         Apache Project description would highlight its work on the
         Apache Server, and mention other projects such as APR.
@@ -101,29 +101,13 @@
             There are no projects registered for
             <span tal:replace="context/displayname">project displayname</span>.
           </p>
-          <dl tal:condition="context/products"
-              tal:repeat="product context/products">
-            <dt><a tal:replace="structure product/fmt:link">product</a></dt>
-            <dd tal:define="dev_focus product/development_focus">
-              <a tal:attributes="href dev_focus/fmt:url"
-                 tal:content="dev_focus/name">trunk</a>
-              series:
-              <tal:releases repeat="release dev_focus/releases">
-                <strong>
-                  <a tal:attributes="href release/fmt:url"
-                     tal:content="release/version">release
-                </a></strong>,
-              </tal:releases>
-              <tal:releases repeat="milestone dev_focus/milestones">
-                <strong>
-                  <a tal:attributes="href milestone/fmt:url"
-                     tal:content="milestone/name">milestone
-                  </a></strong><tal:comma
-                    condition="not:repeat/milestone/end">,</tal:comma>
-              </tal:releases>
-            </dd>
-          </dl>
-          <ul class="horizontal">
+          <tal:cache content="cache:public, 1 hour">
+            <ul tal:condition="context/products"
+                tal:repeat="product context/products">
+              <li><a tal:replace="structure product/fmt:link">product</a></li>
+            </ul>
+          </tal:cache>
+          <ul style="margin-top: 0.5em;">
             <li tal:condition="context/menu:overview/new_product/enabled">
               <a tal:replace="structure context/menu:overview/new_product/fmt:link" />
             </li>
@@ -158,4 +142,3 @@
 
   </body>
 </html>
-

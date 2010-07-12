@@ -315,8 +315,8 @@ Launchpad administrators will see the expiration information.
     Commercial subscription expires ...
 
 
-Focus of development
---------------------
+Development
+-----------
 
 The project page shows the series that is the focus of development.
 
@@ -324,6 +324,18 @@ The project page shows the series that is the focus of development.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'development-focus'))
     Mozilla Firefox trunk series  is the current focus of development
+
+The page has a link to view the project's milestones.
+
+    >>> anon_browser.getLink('View milestones')
+    <Link ... url='http://launchpad.dev/firefox/+milestones'>
+
+Project owners and driver can see a link to register series.
+
+    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> owner_browser.open('http://launchpad.dev/firefox')
+    >>> owner_browser.getLink('Register a series')
+    <Link ... url='http://launchpad.dev/firefox/+addseries'>
 
 
 Aliases
@@ -336,3 +348,36 @@ home page.
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'aliases'))
     Also known as: iceweasel, snowchicken
+
+
+Ubuntu packaging
+----------------
+
+If a product is packaged in Ubuntu the links are shown.
+
+    >>> user_browser.open('http://launchpad.dev/firefox')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'portlet-packages'))
+    All packages
+    Packages in Ubuntu
+    “mozilla-firefox” source package in Warty Version 0.9 uploaded on...
+
+A product that has linked packages now displays suggestions and asks
+the user to select the package.
+
+    >>> login(ANONYMOUS)
+    >>> product = factory.makeProduct(name='pmount')
+    >>> logout()
+    >>> user_browser.open('http://launchpad.dev/pmount')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'portlet-packages'))
+    All packages...
+    Packages in Ubuntu...
+    Ubuntu Hoary packages:
+    pmount...
+
+    >>> user_browser.getControl(
+    ...     name='field.distributionsourcepackage').value = ['pmount']
+    >>> user_browser.getControl('Set Ubuntu Package Information').click()
+    >>> print_feedback_messages(user_browser.contents)
+    This project was linked to the source package "pmount in ubuntu"

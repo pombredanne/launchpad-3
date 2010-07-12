@@ -22,6 +22,7 @@ __all__ = [
     'CodeImportReviewStatus',
     'CodeReviewNotificationLevel',
     'CodeReviewVote',
+    'match_enum_title',
     'RevisionControlSystems',
     'TeamBranchVisibilityRule',
     'UICreatableBranchType',
@@ -29,6 +30,14 @@ __all__ = [
 
 from lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+
+
+def match_enum_title(enum, title, default):
+    for value in enum.items:
+        if value.title == title:
+            return value
+    else:
+        return default
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -388,7 +397,7 @@ class RevisionControlSystems(DBEnumeratedType):
         """)
 
     SVN = DBItem(2, """
-        Subversion
+        Subversion via CSCVS
 
         Imports from SVN using CSCVS.
         """)
@@ -403,6 +412,12 @@ class RevisionControlSystems(DBEnumeratedType):
         Git
 
         Imports from Git using bzr-git.
+        """)
+
+    HG = DBItem(5, """
+        Mercurial
+
+        Imports from Mercurial using bzr-hg.
         """)
 
 
@@ -666,6 +681,19 @@ class CodeImportEventDataType(DBEnumeratedType):
         Previous Git repo URL, when recording on import source change.
         """)
 
+    URL = DBItem(240, """
+        Foreign VCS branch URL
+
+        Location of the foreign VCS branch to import.
+        """)
+
+    OLD_URL = DBItem(241, """
+        Previous foreign VCS branch URL
+
+        Previous foreign VCS branch location, when recording an import source
+        change.
+        """)
+
     # Data related to machine events
 
     OFFLINE_REASON = DBItem(410, """Offline Reason
@@ -780,6 +808,20 @@ class CodeImportResultStatus(DBEnumeratedType):
         Import job completed successfully.
         """)
 
+    SUCCESS_NOCHANGE = DBItem(110, """
+        Success with no changes
+
+        Import job completed successfully, but there were no new revisions to
+        import.
+        """)
+
+    SUCCESS_PARTIAL = DBItem(120, """
+        Partial Success
+
+        Import job successfully imported some but not all of the foreign
+        revisions.
+        """)
+
     FAILURE = DBItem(200, """
         Failure
 
@@ -837,6 +879,8 @@ class CodeImportResultStatus(DBEnumeratedType):
         completed. It could have been an explicit request to kill the
         job, or the deletion of a CodeImport which had a running job.
         """)
+
+    successes = [SUCCESS, SUCCESS_NOCHANGE, SUCCESS_PARTIAL]
 
 
 class CodeReviewVote(DBEnumeratedType):

@@ -100,7 +100,7 @@
 
   <tr>
     <td colspan="2">
-      <fieldset class="collapsible collapsed">
+      <fieldset id="filebug-extra-options" class="collapsible collapsed">
         <legend>Extra options</legend>
         <table>
           <tal:status
@@ -143,7 +143,7 @@
       <div class="highlight-message">
         <a tal:replace="structure product_or_distro/fmt:link">Alsa Utils</a>
         <strong>does not use</strong> Launchpad as its bug tracker.
-        <a tal:attributes="href context/menu:overview/edit/fmt:url"
+        <a tal:attributes="href context/menu:overview/configure_bugtracker/fmt:url"
            tal:condition="context/required:launchpad.Edit">
           Change this&nbsp;<span class="sprite edit"></span>
         </a>
@@ -156,9 +156,9 @@
         <tal:defines define="bugtracker product_or_distro/getExternalBugTracker">
           <h3>
             Are you sure this bug is in <acronym class="explain"
-            style="color: inherit" title="the original developer of
-            the software">upstream</acronym> <span
-            tal:replace="product_or_distro/displayname" />?
+            style="color: inherit"
+            title="the original developer of the software">upstream</acronym>
+            <span tal:replace="product_or_distro/displayname" />?
           </h3>
           <tal:distro-source-pacakges
               condition="product_or_distro/distrosourcepackages">
@@ -172,7 +172,7 @@
             <ul class="source package" tal:repeat="dsp product_or_distro/distrosourcepackages">
               <li>
                 <a tal:attributes="href dsp/fmt:url"
-                   tal:content="string:${dsp/distribution/displayname} ${dsp/sourcepackagename}" />
+                   tal:content="string:${dsp/distribution/displayname} ${dsp/sourcepackagename/name}" />
               </li>
             </ul>
             <p>
@@ -198,8 +198,8 @@
           </tal:not-distro-source-packages>
           <tal:has-bugtracker condition="bugtracker">
             <p id="bugtarget-upstream-bugtracker-info">
-              Bugs in <abbr title="the original developer of the
-              software" class="explain">upstream</abbr>
+              Bugs in <abbr title="the original developer of the software"
+              class="explain">upstream</abbr>
               <span tal:replace="product_or_distro/displayname">
                 Alsa Utils
               </span>
@@ -323,7 +323,7 @@
                       <a tal:attributes="href package/fmt:url">
                         <tal:displayname
                             replace="package/distribution/displayname" />
-                        <tal:packagename replace="package/sourcepackagename" />
+                        <tal:packagename replace="package/sourcepackagename/name" />
                       </a>
                       (<a tal:attributes="href
                       package/fmt:url/+filebug">File a bug here</a>)
@@ -353,7 +353,7 @@
       tal:condition="guidelines">
     <td colspan="2" id="bug-reporting-guidelines">
       <tal:guidelines repeat="guideline guidelines">
-        <h3><span tal:replace="guideline/source" /> guidelines:</h3>
+        <h3><span tal:replace="guideline/source" /> bug reporting guidelines:</h3>
         <div tal:content="structure guideline/content/fmt:text-to-html" />
       </tal:guidelines>
     </td>
@@ -361,8 +361,19 @@
 </metal:bug_reporting_guidelines>
 
 <metal:similar-bugs define-macro="display-similar-bugs">
-  <p id="filebug-query-heading">Is "<strong><span tal:replace="view/search_text">my submitted bug
-    summary</span></strong>" one of these bugs?</p>
+  <tal:results-intro-with-summary condition="view/show_summary_in_results">
+    <p id="filebug-query-heading">
+      Is "<strong><span tal:replace="view/search_text">my submitted bug summary</span></strong>"
+      one of these bugs?
+    </p>
+  </tal:results-intro-with-summary>
+  <tal:results-intro-without-summary
+      condition="not: view/show_summary_in_results">
+    <p id="filebug-query-heading">
+      Do any of the following bugs describe the bug you're trying to
+      report?
+    </p>
+  </tal:results-intro-without-summary>
   <ul id="similar-bugs">
     <li tal:repeat="bug view/similar_bugs" class="similar-bug">
       <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
@@ -411,7 +422,8 @@
                       content="bug/date_last_updated/fmt:approximatedate">
                     2007-07-03
                   </tal:last-updated>
-                  <a class="view-bug-link" tal:attributes="href bug/fmt:url"
+                  <a class="view-bug-link" target="_blank"
+		      tal:attributes="href bug/fmt:url"
                   >view this bug</a>
                 </span>
               </div>
@@ -461,8 +473,9 @@
      tal:condition="error_message" tal:content="error_message" class="error message" />
 </metal:similar-bugs>
 
-<metal:similar-bugs-and-filebug-form
-    define-macro="show-similar-bugs-and-filebug-form">
+<metal:similar-bugs-and-filebug-button
+    define-macro="show-similar-bugs-and-filebug-button">
+
   <tal:similar-bugs condition="view/show_duplicate_list">
     <metal:similar-bugs
         use-macro="context/@@+filebug-macros/display-similar-bugs" />
@@ -477,22 +490,55 @@
              value="No, I need to report a new bug" />
     </p>
   </tal:similar-bugs>
+</metal:similar-bugs-and-filebug-button>
+
+<metal:similar-bugs-and-filebug-form
+    define-macro="show-similar-bugs-and-filebug-form">
+
+  <metal:similar-bugs
+      use-macro="context/@@+filebug-macros/show-similar-bugs-and-filebug-button" />
+
   <tal:submit-new-bug>
-    <div id="bug_reporting_form">
-      <metal:form use-macro="context/@@launchpad_form/form">
-        <a name="form-start" />
-        <metal:widgets metal:fill-slot="widgets">
-          <table class="form">
-            <metal:basic_filebug_widgets
-                metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
-          </table>
-        </metal:widgets>
-        <div class="actions" metal:fill-slot="buttons">
-          <input tal:replace="structure view/submit_bug_action/render" />
-        </div>
-      </metal:form>
-    </div>
+    <metal:basic_filebug_widgets
+        metal:use-macro="context/@@+filebug-macros/inline-filebug-form" />
   </tal:submit-new-bug>
 </metal:similar-bugs-and-filebug-form>
+
+<metal:inline-filebug-form define-macro="inline-filebug-form">
+  <div id="bug_reporting_form">
+    <metal:form use-macro="context/@@launchpad_form/form">
+      <a name="form-start" />
+      <metal:widgets metal:fill-slot="widgets">
+        <table class="form">
+          <metal:basic_filebug_widgets
+              metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+        </table>
+      </metal:widgets>
+      <div class="actions" metal:fill-slot="buttons">
+        <input tal:replace="structure view/submit_bug_action/render" />
+      </div>
+    </metal:form>
+  </div>
+</metal:inline-filebug-form>
+
+<metal:filebug-form define-macro="simple-filebug-form">
+  <form action="."
+        tal:attributes="action view/action_url"
+        name="launchpadform"
+        method="post"
+        enctype="multipart/form-data"
+        accept-charset="UTF-8"
+        id="filebug-form">
+
+    <table class="form">
+      <metal:basic_filebug_widgets
+          metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+    </table>
+    <div class="actions">
+      <input tal:replace="structure view/submit_bug_action/render" />
+    </div>
+
+  </form>
+</metal:filebug-form>
 
 </tal:root>

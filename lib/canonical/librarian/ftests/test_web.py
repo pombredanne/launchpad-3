@@ -2,7 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from cStringIO import StringIO
-from datetime import datetime, timedelta
+from datetime import datetime
 import unittest
 from urllib2 import urlopen, HTTPError
 
@@ -55,7 +55,8 @@ class LibrarianWebTestCase(unittest.TestCase):
             # because the server has no idea what mime-type to send it as
             # (NB. This could be worked around if necessary by having the
             # librarian allow access to files that don't exist in the DB
-            # and spitting them out with an 'unknown' mime-type-- StuartBishop)
+            # and spitting them out with an 'unknown' mime-type
+            # -- StuartBishop)
             try:
                 urlopen(url)
                 self.fail('Should have raised a 404')
@@ -115,8 +116,9 @@ class LibrarianWebTestCase(unittest.TestCase):
         mimetype = fileObj.headers['content-type']
         self.assertRaises(KeyError, fileObj.headers.__getitem__,
                           'content-encoding')
-        self.failUnless(mimetype == "application/x-tar",
-                        "Wrong mimetype. %s != 'application/x-tar'." % mimetype)
+        self.failUnless(
+            mimetype == "application/x-tar",
+            "Wrong mimetype. %s != 'application/x-tar'." % mimetype)
 
     def test_aliasNotFound(self):
         client = LibrarianClient()
@@ -261,16 +263,16 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
         id1 = client.addFile(filename, 6, StringIO('sample'), 'text/plain')
         self.commit()
 
-        # Manually force last accessed time to be some time way in the past, so
-        # that it'll be very clear if it's updated or not (otherwise, depending
-        # on the resolution of clocks and things, an immediate access might not
-        # look any newer).
+        # Manually force last accessed time to be some time way in the
+        # past, so that it'll be very clear if it's updated or not
+        # (otherwise, depending on the resolution of clocks and things,
+        # an immediate access might not look any newer).
         LibraryFileAlias.get(id1).last_accessed = datetime(
             2004,1,1,12,0,0, tzinfo=pytz.timezone('Australia/Sydney'))
         self.commit()
 
-        # Check that last_accessed is updated when the file is accessed over the
-        # web.
+        # Check that last_accessed is updated when the file is accessed
+        # over the web.
         access_time_1 = LibraryFileAlias.get(id1).last_accessed
         client = LibrarianClient()
         url = client.getURLForAlias(id1)
@@ -316,8 +318,8 @@ class DeletedContentTestCase(unittest.TestCase):
         # But when we flag the content as deleted
         cur = cursor()
         cur.execute("""
-            UPDATE LibraryFileContent SET deleted=TRUE WHERE id=%s
-            """, (alias.content.id,)
+            UPDATE LibraryFileAlias SET content=NULL WHERE id=%s
+            """, (alias.id,)
             )
         transaction.commit()
 

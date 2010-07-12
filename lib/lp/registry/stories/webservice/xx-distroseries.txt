@@ -1,4 +1,5 @@
-= Distribution Series =
+Distribution Series
+===================
 
 We can get a distroseries object via a distribution object in several ways:
 
@@ -10,6 +11,17 @@ We can get a distroseries object via a distribution object in several ways:
 Via all the available series:
 
     >>> all_series = webservice.get(
+    ...     ubuntu['series_collection_link']).jsonBody()
+    >>> for entry in all_series['entries']:
+    ...     print entry['self_link']
+    http://.../ubuntu/breezy-autotest
+    http://.../ubuntu/grumpy
+    http://.../ubuntu/hoary
+    http://.../ubuntu/warty
+
+The series are available to the anonymous API user too:
+
+    >>> all_series = anon_webservice.get(
     ...     ubuntu['series_collection_link']).jsonBody()
     >>> for entry in all_series['entries']:
     ...     print entry['self_link']
@@ -49,6 +61,7 @@ For distroseries we publish a subset of its attributes.
     active_milestones_collection_link:
         u'http://.../ubuntu/hoary/active_milestones'
     all_milestones_collection_link: u'http://.../ubuntu/hoary/all_milestones'
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     changeslist: u'hoary-changes@ubuntu.com'
     date_created: u'2006-10-16T18:31:43.483559+00:00'
@@ -57,6 +70,7 @@ For distroseries we publish a subset of its attributes.
     displayname: u'Hoary'
     distribution_link: u'http://.../ubuntu'
     driver_link: None
+    drivers_collection_link: u'http://.../ubuntu/hoary/drivers'
     fullseriesname: u'Ubuntu Hoary'
     main_archive_link: u'http://.../ubuntu/+archive/primary'
     name: u'hoary'
@@ -84,4 +98,3 @@ Creating a milestone on the distroseries
     ...
     Location: http://.../ubuntu/+milestone/alpha1
     ...
-

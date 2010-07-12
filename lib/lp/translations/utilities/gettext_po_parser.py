@@ -4,9 +4,10 @@
 # pylint: disable-msg=W0404
 # (Suppress warning about two datetimes being imported)
 #
-# Contains code from msgfmt.py (available from python source code),
-#     written by Martin v. Loewis <loewis@informatik.hu-berlin.de>
-#     changed by Christian 'Tiran' Heimes <ch@comlounge.net>
+# Originally based on code from msgfmt.py (available from python source
+# code), written by Martin v. Loewis and changed by Christian 'Tiran'
+# Heimes.  The code is no longer recognizably similar though, so don't
+# blame these people for any mistakes.
 
 __metaclass__ = type
 

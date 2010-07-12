@@ -60,7 +60,7 @@ class TopLevelMenuMixin:
         text = 'Merge people'
         return Link('/people/+adminpeoplemerge', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def admin_merge_teams(self):
         text = 'Merge teams'
         return Link('/people/+adminteammerge', text, icon='edit')

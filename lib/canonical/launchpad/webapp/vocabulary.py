@@ -71,6 +71,12 @@ class ICountableIterator(Interface):
         # presence of a count() method, or for a simpler interface than
         # ISelectResults, but I'm not going to do that today.
 
+    def __getslice__(argument):
+        """Return a slice of the collection."""
+        # Python will use __getitem__ if this method is not implemented,
+        # but it is convenient to define it in the interface for
+        # allowing access to the attributes through the security proxy.
+
 
 class CountableIterator:
     """Implements a wrapping iterator with a count() method.
