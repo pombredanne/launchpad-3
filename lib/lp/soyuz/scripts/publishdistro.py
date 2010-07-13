@@ -59,11 +59,11 @@ def add_options(parser):
 
     parser.add_option("--ppa", action="store_true",
                       dest="ppa", metavar="PPA", default=False,
-                      help="Run only over private PPA archives.")
+                      help="Run only over PPA archives.")
 
     parser.add_option("--private-ppa", action="store_true",
                       dest="private_ppa", metavar="PRIVATEPPA", default=False,
-                      help="Run only over PPA archives.")
+                      help="Run only over private PPA archives.")
 
     parser.add_option("--partner", action="store_true",
                       dest="partner", metavar="PARTNER", default=False,
