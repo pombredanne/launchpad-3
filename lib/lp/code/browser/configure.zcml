@@ -1135,6 +1135,12 @@
             name="+index"
             template="../templates/sourcepackagerecipebuild-index.pt"
             permission="launchpad.View"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+            class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildDeleteView"
+            name="+delete"
+            template="../../app/templates/generic-edit.pt"
+            permission="launchpad.View"/>
         <browser:menus
             classes="
                 SourcePackageRecipeNavigationMenu

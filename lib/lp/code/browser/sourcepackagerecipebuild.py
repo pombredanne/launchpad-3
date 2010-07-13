@@ -11,9 +11,12 @@ __all__ = [
     'SourcePackageRecipeBuildView',
     ]
 
+from zope.interface import Interface
+
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.webapp import (
-    ContextMenu, enabled_with_permission, LaunchpadView, Link, Navigation)
+    action, canonical_url, ContextMenu, enabled_with_permission,
+    LaunchpadView, LaunchpadFormView, Link, Navigation)
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -98,4 +101,20 @@ class SourcePackageRecipeBuildView(LaunchpadView):
         return list(self.context.binary_builds)
 
 
+class SourcePackageRecipeBuildDeleteView(LaunchpadFormView):
+    """Default view of a SourcePackageRecipeBuild."""
 
+    class schema(Interface):
+        """Schema for deleting a build."""
+
+    page_title = label = "Delete"
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action('Delete build', name='delete')
+    def request_action(self, action, data):
+        """Delete the build."""
+        self.next_url = canonical_url(self.context.recipe)
+        self.context.destroySelf()

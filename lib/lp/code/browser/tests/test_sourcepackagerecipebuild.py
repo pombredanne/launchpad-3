@@ -60,10 +60,36 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         build = self.makeRecipeBuild()
         transaction.commit()
         build_url = canonical_url(build)
+        recipe = build.recipe
+        next_url = canonical_url(recipe)
         logout()
 
         browser = self.getUserBrowser(build_url, user=self.chef)
         browser.getLink('Delete build').click()
+
+        browser.getControl('Delete build').click()
+
+        self.assertEqual(
+            browser.url,
+            next_url)
+        self.assertEqual(
+            recipe.getBuilds().count(),
+            0)
+
+    def test_delete_build_cancel(self):
+        """An admin can delete a build."""
+        build = self.makeRecipeBuild()
+        transaction.commit()
+        build_url = canonical_url(build)
+        logout()
+
+        browser = self.getUserBrowser(build_url, user=self.chef)
+        browser.getLink('Delete build').click()
+
+        browser.getLink('Cancel').click()
+        self.assertEqual(
+            browser.url,
+            build_url)
 
     def test_delete_build_not_admin(self):
         """No one but admins can delete a build."""
@@ -74,4 +100,3 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
         browser = self.getUserBrowser(build_url, user=self.chef)
         browser.getLink('Delete build').click()
-
