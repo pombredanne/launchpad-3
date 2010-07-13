@@ -205,15 +205,6 @@ def validate_person_visibility(person, attr, value):
         raise ImmutableVisibilityError(
             'A private team cannot change visibility.')
 
-    mailing_list = getUtility(IMailingListSet).get(person.name)
-
-    if (value == PersonVisibility.PUBLIC and
-        person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
-        mailing_list is not None and
-        mailing_list.status != MailingListStatus.PURGED):
-        raise ImmutableVisibilityError(
-            'This team cannot be made public since it has a mailing list')
-
     # If transitioning to a non-public visibility, check for existing
     # relationships that could leak data.
     if value != PersonVisibility.PUBLIC:

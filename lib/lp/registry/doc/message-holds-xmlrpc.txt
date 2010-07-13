@@ -176,11 +176,11 @@ transitioned to their permanent states.
     <DBItem PostedMessageStatus.DISCARDED, (70) Discarded>
 
 
-Private membership teams
-========================
+Private teams
+=============
 
-When a private membership team has a mailing list, its messages can also be
-held for moderator approval.
+When a private team has a mailing list, its messages can also be held
+for moderator approval.
 
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet, PersonVisibility, TeamSubscriptionPolicy)
@@ -188,7 +188,7 @@ held for moderator approval.
     >>> team_private = factory.makeTeam(
     ...     no_priv, name='team-private',
     ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
-    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+    ...     visibility=PersonVisibility.PRIVATE)
 
     >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> list_private = getUtility(IMailingListSet).new(team_private)
