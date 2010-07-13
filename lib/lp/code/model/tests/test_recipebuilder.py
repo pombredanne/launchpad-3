@@ -140,6 +140,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         expected_archives.append(
             "deb http://foo %s main" % job.build.distroseries.name)
         self.assertEqual({
+           'arch_tag': 'i386',
            'author_email': u'requester@ubuntu.com',
            'suite': u'mydistro',
            'author_name': u'Joe User',
@@ -169,6 +170,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
             job.build, distroarchseries, None)
         logger = BufferLogger()
         self.assertEqual({
+           'arch_tag': 'i386',
            'author_email': u'requester@ubuntu.com',
            'suite': u'mydistro',
            'author_name': u'Joe User',

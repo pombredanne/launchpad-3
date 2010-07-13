@@ -62,6 +62,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         if self.build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (self.build.pocket.name.lower())
         args['suite'] = suite
+        args['arch_tag'] = distroarchseries.architecturetag
         args["author_name"] = self.build.requester.displayname
         args["author_email"] = self.build.requester.preferredemail.email
         args["recipe_text"] = str(self.build.recipe.builder_recipe)
