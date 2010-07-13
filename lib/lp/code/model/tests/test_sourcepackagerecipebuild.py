@@ -291,6 +291,12 @@ class TestAsBuildmaster(TestCaseWithFactory):
         result=True)
         assertNotifyOnce('OK', prepare_build())
 
+    def test_destroySelf(self):
+         # ISourcePackageRecipeBuild should make sure to remove jobs and build
+         # queue entries and then invalidate itself.
+         build = self.factory.makeSourcePackageRecipeBuild()
+         build.destroySelf()
+
 
 class MakeSPRecipeBuildMixin:
     """Provide the common makeBuild method returning a queued build."""
