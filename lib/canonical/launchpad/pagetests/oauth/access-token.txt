@@ -98,9 +98,9 @@ also be 401.
     ...
     No request token specified.
 
-It the token's permission is set to UNAUTHORIZED, the response code is
+If the token's permission is set to UNAUTHORIZED, the response code is
 403 ("Forbidden"). This conveys that (to quote the HTTP RFC)
-"authorization will not help" and that the token will _never_ be
+"authorization will not help" and that the token can _never_ be
 exchanged for an access token.
 
     >>> token.review(salgado, OAuthPermission.UNAUTHORIZED)
