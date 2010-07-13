@@ -165,7 +165,7 @@ from lp.registry.interfaces.person import (
     PersonVisibility, TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
 from lp.registry.interfaces.poll import IPollSet, IPollSubset
 from lp.registry.interfaces.ssh import (
-    ISSHKeySet, SSHKeyType, SSHKeyAdditionError)
+    ISSHKeySet, SSHKeyAdditionError, SSHKeyCompromisedError, SSHKeyType)
 from lp.registry.interfaces.teammembership import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ITeamMembership,
     ITeamMembershipSet, TeamMembershipStatus)
@@ -3601,8 +3601,16 @@ class PersonEditSSHKeysView(LaunchpadView):
         sshkey = self.request.form.get('sshkey')
 	try:
       	    getUtility(ISSHKeySet).new(self.user, sshkey)
-        except SSHKeyAdditionError, e:
-            self.error_message = structured(e)
+        except SSHKeyAdditionError:
+            self.error_message = structured('Invalid public key')
+        except SSHKeyCompromisedError:
+            self.error_message = structured(
+                'This key is known to be compromised due to a security flaw '
+                'in the software used to generate it, so it will not be '
+                'accepted by Launchpad. See the full '
+                '<a href="http://www.ubuntu.com/usn/usn-612-2">Security '
+                'Notice</a> for further information and instructions on how '
+                'to generate another key.')
         else:
             self.info_message = structured('SSH public key added.')
 

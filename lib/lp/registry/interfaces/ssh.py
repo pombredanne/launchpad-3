@@ -11,6 +11,7 @@ __all__ = [
     'ISSHKey',
     'ISSHKeySet',
     'SSHKeyAdditionError',
+    'SSHKeyCompromisedError',
     'SSHKeyType',
     ]
 
@@ -78,6 +79,9 @@ class ISSHKeySet(Interface):
 
 
 class SSHKeyAdditionError(Exception):
-    """I get raised when something went wrong with adding an SSH key."""
+    """Raised when the SSH public key is invalid."""
 
+
+class SSHKeyCompromisedError(Exception):
+    """Raised when the SSH public key is known to be easily compromisable."""
 
