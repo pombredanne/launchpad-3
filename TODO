@@ -7,6 +7,7 @@ Temporary TODO
       before taking on this new work
     * Need to correctly handle bug activity/notify calls for
       dupes of dupe.
+    * 502881  Clicking "Mark as duplicate" doesn't focus field
 
   [TODO]
     * Extend JavaScript widget
@@ -15,7 +16,6 @@ Temporary TODO
     * Fix small issues while working on widget
         > 439608  mark as duplicate should strip spaces
         > 502882  After marking duplicate, bug link doesn't have title tooltip
-        > 502881  Clicking "Mark as duplicate" doesn't focus field
         > 355164  ajax duplicate marker not working on internet explorer 7
         > 604419  changing the master bug of a duplicate bug will make a
                   second 'edit' button appear
