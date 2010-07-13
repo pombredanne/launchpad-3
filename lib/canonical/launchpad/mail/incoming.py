@@ -122,7 +122,9 @@ def _authenticateDkim(signed_message, raw_mail):
     # in addition to the dkim signature being valid, we have to check that it
     # was actually signed by the user's domain.
     if len(signing_details) != 1:
-        log.errors('expected exactly one DKIM details record: %r' % (signing_details,))
+        log.errors(
+            'expected exactly one DKIM details record: %r'
+            % (signing_details,))
         return False
     signing_domain = signing_details[0]['d']
     from_domain = extract_address_domain(signed_message['From'])
@@ -168,6 +170,7 @@ def authenticateEmail(mail, raw_mail):
 
     if dkim_result:
         if mail.signature is not None:
+            log = logging.getLogger('process-mail')
             log.info('message has gpg signature, therefore not treating DKIM '
                 'success as conclusive')
         else:
@@ -269,7 +272,7 @@ def handleMail(trans=transaction):
             mail['From'], 'Submit Request Failure', str(error), mail)
         trans.commit()
 
-    log = getLogger('process-mail')
+    log = logging.getLogger('process-mail')
     mailbox = getUtility(IMailBox)
     log.info("Opening the mail box.")
     mailbox.open()
@@ -309,7 +312,7 @@ def handleMail(trans=transaction):
                     mail = signed_message_from_string(raw_mail)
                 except email.Errors.MessageError, error:
                     mailbox.delete(mail_id)
-                    log = getLogger('canonical.launchpad.mail')
+                    log = logging.getLogger('canonical.launchpad.mail')
                     log.warn(
                         "Couldn't convert email to email.Message: %s" % (
                             file_alias_url, ),
@@ -406,7 +409,7 @@ def handleMail(trans=transaction):
                 # from being processed.
                 _handle_error(
                     "Unhandled exception", file_alias_url)
-                log = getLogger('canonical.launchpad.mail')
+                log = logging.getLogger('canonical.launchpad.mail')
                 if file_alias_url is not None:
                     email_info = file_alias_url
                 else:
