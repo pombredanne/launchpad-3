@@ -9,7 +9,7 @@ import unittest
 
 from canonical.testing import DatabaseFunctionalLayer
 
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_replyto_address
 from lp.bugs.mail.bugnotificationmailer import BugNotificationMailer
@@ -25,7 +25,9 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
         super(TestBugNotificationMailerHeaders, self).setUp()
         self.notification_recipient = self.factory.makePerson()
         self.person = self.factory.makePerson()
-        self.bug = self.factory.makeBug(owner=self.person)
+        self.product = self.factory.makeProduct(owner=self.person)
+        self.bug = self.factory.makeBug(
+            owner=self.person, product=self.product)
 
         # We log in as self.person so that we can change things in the
         # test.
@@ -64,6 +66,8 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
         self.bug.bugtasks[0].transitionToStatus(
             BugTaskStatus.CONFIRMED, self.person)
         self.bug.bugtasks[0].transitionToAssignee(self.person)
+        self.bug.bugtasks[0].transitionToImportance(
+            BugTaskImportance.HIGH, self.person)
 
         notification = BugNotification.selectFirst(orderBy='-id')
         mailer = BugNotificationMailer(notification, 'bug-notification.txt')
@@ -79,7 +83,7 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
                 u'%s (%s)' % (self.person.displayname, self.person.name),
             'X-Launchpad-Bug': [
                 u'product=%s; status=Confirmed; '
-                u'importance=Undecided; assignee=%s;' % (
+                u'importance=High; assignee=%s;' % (
                     self.bug.bugtasks[0].product.name,
                     self.person.preferredemail.email),
                 ],
