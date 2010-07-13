@@ -585,11 +585,3 @@ class IEditTranslationImportQueueEntry(Interface):
             "For translations only: "
             "The language this PO file translates to."),
         vocabulary="Language")
-
-    variant = TextLine(
-        title=_("Variant"),
-        description=_(
-            "For translations only: "
-            "Language variant, usually used to note the script used to"
-            " write the translations (like 'Latn' for Latin)"),
-        required=False)

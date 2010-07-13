@@ -304,9 +304,7 @@ able to know that.
 And we will get the right IPOFile.
 
     >>> srlatn_entry.getGuessedPOFile().title
-    u'Serbian (sr) translation of kdebugdialog in Ubuntu Hoary package "kdebase"'
-    >>> srlatn_entry.getGuessedPOFile().variant
-    u'Latn'
+    u'Serbian Latin (sr@latin) translation of kdebugdialog in Ubuntu Hoary package "kdebase"'
 
 Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.
@@ -419,19 +417,17 @@ And we will get the right IPOFile.
     >>> es_entry.getGuessedPOFile().title
     u'Spanish (es) translation of koffice in Ubuntu Hoary package "koffice"'
 
-Let's try now a language with variant information like sr@Latn.
+Let's try now a language with variant information like sr@latin.
 
     >>> srlatn_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'koffice-i18n-sr@Latn-1.5.2/messages/koffice/koffice.po',
+    ...     'koffice-i18n-sr@latin-1.5.2/messages/koffice/koffice.po',
     ...     'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=koffice_l10n)
 
 And we will get the right IPOFile.
 
     >>> srlatn_entry.getGuessedPOFile().title
-    u'Serbian (sr) translation of koffice in Ubuntu Hoary package "koffice"'
-    >>> srlatn_entry.getGuessedPOFile().variant
-    u'Latn'
+    u'Serbian Latin (sr@latin) translation of koffice in Ubuntu Hoary package "koffice"'
 
 Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.

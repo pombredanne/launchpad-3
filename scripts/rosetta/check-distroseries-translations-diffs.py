@@ -56,7 +56,7 @@ def compare_translations(orig_distroseries, dest_distroseries):
                 new_template.title, old_template.title, output)
         for old_pofile in old_template.pofiles:
             new_pofile = new_template.getPOFileByLang(
-                old_pofile.language.code, old_pofile.variant)
+                old_pofile.language.code)
             old_pofile_content = old_pofile.uncachedExport(
                     included_obsolete=False,
                     force_utf8=True).split('\n')

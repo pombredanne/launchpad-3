@@ -51,9 +51,6 @@ class IPOFile(IRosettaStats):
         title=_('Language of this PO file.'),
         vocabulary='Language', required=True)
 
-    variant = TextLine(
-        title=_('The language variant for this translation file.'))
-
     title = TextLine(
         title=_('The translation file title.'), required=True, readonly=True)
 
@@ -273,10 +270,10 @@ class IPOFile(IRosettaStats):
         """
 
     def getFullLanguageCode():
-        """Return full language code, including variant if applicable."""
+        """Return the language code."""
 
     def getFullLanguageName():
-        """Return full language name, including variant if applicable."""
+        """Return the language name."""
 
     def getTranslationRows():
         """Return exportable rows of translation data.

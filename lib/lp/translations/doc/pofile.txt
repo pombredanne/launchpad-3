@@ -90,28 +90,24 @@ We need a helper method to better display test results.
 
 == getFullLanguageCode ==
 
-Returns the complete code for this POFile's language, including variant
-if present.
+Returns the complete code for this POFile's language.
 
     >>> print potemplate.getPOFileByLang('es').getFullLanguageCode()
     es
 
-    >>> print potemplate.getDummyPOFile('sr', variant=u'Latn'
-    ...     ).getFullLanguageCode()
-    sr@Latn
+    >>> print potemplate.getDummyPOFile('sr@latin').getFullLanguageCode()
+    sr@latin
 
 
 == getFullLanguageName ==
 
-Returns the complete English name for this POFile's language, including
-variant if present.
+Returns the complete English name for this POFile's language.
 
     >>> print potemplate.getPOFileByLang('es').getFullLanguageName()
     Spanish
 
-    >>> print potemplate.getDummyPOFile('sr', variant=u'Latn'
-    ...     ).getFullLanguageName()
-    Serbian ("Latn" variant)
+    >>> print potemplate.getDummyPOFile('sr@latin').getFullLanguageName()
+    Serbian Latin
 
 
 == findPOTMsgSetsContaining ==

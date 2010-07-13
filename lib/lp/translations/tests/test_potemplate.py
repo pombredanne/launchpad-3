@@ -39,8 +39,10 @@ class TestPOTemplate(TestCaseWithFactory):
             )
 
         self.potemplate.path = "testdir/messages.pot"
-        expected = "testdir/testdomain-eo@VARIANT.po"
-        result = self.potemplate._composePOFilePath(esperanto, 'VARIANT')
+        expected = "testdir/testdomain-eo@variant.po"
+        esperanto_variant = getUtility(ILanguageSet).getLanguageByCode(
+            'eo@variant')
+        result = self.potemplate._composePOFilePath(esperanto_variant)
         self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "directory, language code and variant. "
@@ -71,7 +73,7 @@ class TestPOTemplate(TestCaseWithFactory):
         gnome_credits = self.factory.makePOTMsgSet(
             self.potemplate, sequence=2, singular=u"translator-credits")
         kde_credits = self.factory.makePOTMsgSet(
-            self.potemplate, sequence=3, 
+            self.potemplate, sequence=3,
             singular=u"Your emails", context=u"EMAIL OF TRANSLATORS")
         self.factory.makePOTMsgSet(self.potemplate, sequence=4)
 

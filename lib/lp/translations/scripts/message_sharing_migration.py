@@ -48,8 +48,7 @@ def merge_pofiletranslators(from_potmsgset, to_template):
     for pofiletranslator in affected_rows:
         person = pofiletranslator.person
         from_pofile = pofiletranslator.pofile
-        to_pofile = to_template.getPOFileByLang(
-            from_pofile.language.code, variant=from_pofile.variant)
+        to_pofile = to_template.getPOFileByLang(from_pofile.language.code)
 
         pofiletranslator = removeSecurityProxy(pofiletranslator)
         if to_pofile is None:

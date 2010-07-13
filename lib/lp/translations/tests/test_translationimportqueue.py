@@ -270,7 +270,6 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
         serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
         self.assertEquals(potemplate, pofile.potemplate)
         self.assertEquals(serbian, pofile.language)
-        self.assertIs(None, pofile.variant)
 
     def test_KDE4_language_country(self):
         # If package name is kde-l10n-engb, it needs to be mapped
@@ -280,17 +279,16 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
         real_english = getUtility(ILanguageSet).getLanguageByCode('en_GB')
         self.assertEquals(potemplate, pofile.potemplate)
         self.assertEquals(real_english, pofile.language)
-        self.assertIs(None, pofile.variant)
 
     def test_KDE4_language_variant(self):
         # If package name is kde-l10n-ca-valencia, it needs to be mapped
         # to Valencian variant of Catalan (ca@valencia).
         potemplate, pofile = self._getGuessedPOFile(
             'kde-l10n-ca-valencia', 'template')
-        catalan = getUtility(ILanguageSet).getLanguageByCode('ca')
+        catalan_valencia = getUtility(ILanguageSet).getLanguageByCode(
+            'ca@valencia')
         self.assertEquals(potemplate, pofile.potemplate)
-        self.assertEquals(catalan, pofile.language)
-        self.assertEquals(u'valencia', pofile.variant)
+        self.assertEquals(catalan_valencia, pofile.language)
 
 
 def test_suite():

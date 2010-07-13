@@ -61,7 +61,6 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
     def pofiles(self):
         return POFile.select('''
             POFile.language = %s AND
-            POFile.variant IS NULL AND
             POFile.potemplate = POTemplate.id AND
             POTemplate.distroseries = %s AND
             POTemplate.iscurrent = TRUE

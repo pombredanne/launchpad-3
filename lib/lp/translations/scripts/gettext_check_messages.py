@@ -113,7 +113,7 @@ class GettextCheckMessages(LaunchpadScript):
         potmsgset = translationmessage.potmsgset
         pofile = translationmessage.pofile
         return potmsgset.getImportedTranslationMessage(
-            pofile.potemplate, pofile.language, pofile.variant)
+            pofile.potemplate, pofile.language)
 
     def _check_and_fix(self, translationmessage):
         """Check message against gettext, and fix it if necessary."""

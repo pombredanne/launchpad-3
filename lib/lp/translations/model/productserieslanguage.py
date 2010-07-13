@@ -27,13 +27,12 @@ class ProductSeriesLanguage(RosettaStats):
     """See `IProductSeriesLanguage`."""
     implements(IProductSeriesLanguage)
 
-    def __init__(self, productseries, language, variant=None, pofile=None):
+    def __init__(self, productseries, language, pofile=None):
         assert 'en' != language.code, (
             'English is not a translatable language.')
         RosettaStats.__init__(self)
         self.productseries = productseries
         self.language = language
-        self.variant = variant
         self.pofile = pofile
         self.id = 0
         self._last_changed_date = None
@@ -75,7 +74,6 @@ class ProductSeriesLanguage(RosettaStats):
               Sum(POFile.rosettacount),
               Sum(POFile.unreviewed_count)),
             POFile.language==self.language,
-            POFile.variant==None,
             POFile.potemplate==POTemplate.id,
             POTemplate.productseries==self.productseries,
             POTemplate.iscurrent==True)
@@ -127,7 +125,6 @@ class ProductSeriesLanguage(RosettaStats):
         result = store.find(
             POFile,
             POFile.language==self.language,
-            POFile.variant==self.variant,
             POFile.potemplate==POTemplate.id,
             POTemplate.productseries==self.productseries,
             POTemplate.iscurrent==True)
@@ -135,7 +132,7 @@ class ProductSeriesLanguage(RosettaStats):
 
     def getPOFilesFor(self, potemplates):
         """See `IProductSeriesLanguage`."""
-        return get_pofiles_for(potemplates, self.language, self.variant)
+        return get_pofiles_for(potemplates, self.language)
 
 
 class DummyProductSeriesLanguage(ProductSeriesLanguage):
@@ -146,15 +143,15 @@ class DummyProductSeriesLanguage(ProductSeriesLanguage):
     """
     implements(IProductSeriesLanguage)
 
-    def __init__(self, productseries, language, variant=None, pofile=None):
+    def __init__(self, productseries, language, pofile=None):
         ProductSeriesLanguage.__init__(
-            self, productseries, language, variant, pofile)
+            self, productseries, language, pofile)
         self.setCounts(self._getMessageCount(), 0, 0, 0, 0)
 
     def getPOFilesFor(self, potemplates):
         """See `IProductSeriesLanguage`."""
         return [
-            DummyPOFile(template, self.language, self.variant)
+            DummyPOFile(template, self.language)
             for template in potemplates
             ]
 
@@ -166,12 +163,11 @@ class ProductSeriesLanguageSet:
     """
     implements(IProductSeriesLanguageSet)
 
-    def getProductSeriesLanguage(self, productseries, language,
-                                 variant=None):
+    def getProductSeriesLanguage(self, productseries, language):
         """See `IProductSeriesLanguageSet`."""
-        return ProductSeriesLanguage(productseries, language, variant)
+        return ProductSeriesLanguage(productseries, language)
 
-    def getDummy(self, productseries, language, variant=None, pofile=None):
+    def getDummy(self, productseries, language, pofile=None):
         """See `IProductSeriesLanguageSet`."""
         return DummyProductSeriesLanguage(
-            productseries, language, variant, pofile)
+            productseries, language, pofile)
