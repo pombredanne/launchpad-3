@@ -143,10 +143,10 @@ class BugNotificationRecipients(NotificationRecipientSet):
         reason = "You received this bug notification because you %s." % reason
         self.add(person, reason, header)
 
-    def addDupeSubscriber(self, person):
+    def addDupeSubscriber(self, person, duplicate_bug):
         """Registers a subscriber of a duplicate of this bug."""
         reason = BugNotificationRecipientReason.forDupeSubscriber(
-            person, self.duplicateof)
+            person, duplicate_bug)
         self.add(person, reason, reason.mail_header)
 
     def addDirectSubscriber(self, person):

@@ -124,6 +124,38 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
             }
         self.assertEqual(expected_headers, generated_mail.headers)
 
+    def test_marked_as_duplicate(self):
+        # When a bug is marked as a duplicate of another bug, its email
+        # headers reflect this.
+        duplicated_bug = self.factory.makeBug()
+        self.bug.markAsDuplicate(duplicated_bug)
+
+        notification = BugNotification.selectFirst(orderBy='-id')
+        mailer = BugNotificationMailer(notification, 'bug-notification.txt')
+        mailer.message_id = '<foobar-example-com>'
+        generated_mail = mailer.generateEmail(
+            self.bug.owner.preferredemail.email, self.bug.owner)
+
+        expected_headers = {
+            'Sender': 'bounces@canonical.com',
+            'X-Launchpad-Bug-Commenters': u'%s' %
+                duplicated_bug.owner.name,
+            'X-Launchpad-Bug-Private': 'no',
+            'X-Launchpad-Bug-Reporter':
+                u'%s (%s)' % (
+                    duplicated_bug.owner.displayname,
+                    duplicated_bug.owner.name),
+            'X-Launchpad-Bug': [
+                u'product=%s; status=New; '
+                u'importance=Undecided; assignee=None;' % (
+                    duplicated_bug.bugtasks[0].product.name),
+                ],
+            'Reply-To': get_bugmail_replyto_address(duplicated_bug),
+            'X-Launchpad-Bug-Security-Vulnerability': 'no',
+            'X-Launchpad-Message-Rationale':
+                'Subscriber to Duplicate via Bug %s' % self.bug.id,
+            }
+        self.assertEqual(expected_headers, generated_mail.headers)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

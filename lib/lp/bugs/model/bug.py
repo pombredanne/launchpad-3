@@ -647,22 +647,29 @@ class Bug(SQLBase):
         if self.private:
             return []
 
-        dupe_subscribers = set(
-            Person.select("""
-                Person.id = BugSubscription.person AND
+        dupe_subscriptions = set(
+            BugSubscription.select("""
                 BugSubscription.bug = Bug.id AND
                 Bug.duplicateof = %d""" % self.id,
                 clauseTables=["Bug", "BugSubscription"]))
 
-        # Direct and "also notified" subscribers take precedence over
-        # subscribers from dupes. Note that we don't supply recipients
-        # here because we are doing this to /remove/ subscribers.
-        dupe_subscribers -= set(self.getDirectSubscribers())
-        dupe_subscribers -= set(self.getAlsoNotifiedSubscribers(level=level))
-
+        dupe_subscribers = set()
         if recipients is not None:
-            for subscriber in dupe_subscribers:
-                recipients.addDupeSubscriber(subscriber)
+            direct_subscribers = self.getDirectSubscribers()
+            also_notified_subscribers = self.getAlsoNotifiedSubscribers(
+                level=level)
+
+            for subscription in dupe_subscriptions:
+                # Direct and "also notified" subscribers take precedence over
+                # subscribers from dupes, so we make sure they don't get
+                # added to the recipients.
+                if (subscription.person in direct_subscribers or
+                    subscription.person in also_notified_subscribers):
+                    continue
+                else:
+                    dupe_subscribers.add(subscription.person)
+                    recipients.addDupeSubscriber(
+                        subscription.person, subscription.bug)
 
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
