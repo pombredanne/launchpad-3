@@ -95,6 +95,7 @@ Returns the complete code for this POFile's language.
     >>> print potemplate.getPOFileByLang('es').getFullLanguageCode()
     es
 
+    >>> sr_latin = factory.makeLanguage('sr@latin', 'Serbian Latin')
     >>> print potemplate.getDummyPOFile('sr@latin').getFullLanguageCode()
     sr@latin
 
@@ -1050,7 +1051,6 @@ the getPOFileContributorsByLanguage() method of IDistroSeries.
     jorge-gonzalez-gonzalez
     carlos
     valyag
-    danner
     name16
     name12
     ubuntu-translators

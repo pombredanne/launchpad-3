@@ -283,10 +283,10 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
     def test_KDE4_language_variant(self):
         # If package name is kde-l10n-ca-valencia, it needs to be mapped
         # to Valencian variant of Catalan (ca@valencia).
+        catalan_valencia = self.factory.makeLanguage(
+            'ca@valencia', 'Catalan Valencia')
         potemplate, pofile = self._getGuessedPOFile(
             'kde-l10n-ca-valencia', 'template')
-        catalan_valencia = getUtility(ILanguageSet).getLanguageByCode(
-            'ca@valencia')
         self.assertEquals(potemplate, pofile.potemplate)
         self.assertEquals(catalan_valencia, pofile.language)
 
