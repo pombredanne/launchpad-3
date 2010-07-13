@@ -4,6 +4,7 @@
 """Test Archive software center agent celebrity."""
 
 from zope.component import getUtility
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from canonical.testing import LaunchpadFunctionalLayer
@@ -17,7 +18,7 @@ class TestArchivePrivacy(TestCaseWithFactory):
         super(TestArchivePrivacy, self).setUp()
         self.ppa = self._makePrivateArchive()
         self.ppa.commercial = True
-        self.agent = self.factory.makePerson(name='software-center-agent')
+        self.agent = getUtility(ILaunchpadCelebrities).software_center_agent
         self.joe = self.factory.makePerson(name='joe')
 
     def _makePrivateArchive(self):
@@ -52,9 +53,9 @@ class TestArchivePrivacy(TestCaseWithFactory):
         self.assertEqual(subscription.registrant, self.agent)
         self.assertEqual(subscription.subscriber, self.joe)
 
-    def test_getPrivateSourcesList(self):
+    def test_getArchiveSubscriptionURL(self):
         login_person(self.agent)
-        sources = self.ppa.getPrivateSourcesList(self.joe)
+        sources = self.joe.getArchiveSubscriptionURL(self.agent, self.ppa)
         authtoken = self.ppa.getAuthToken(self.joe).token
         url = self.ppa.archive_url.split('http://')[1]
         new_url = "http://joe:%s@%s" % (authtoken, url)
