@@ -32,6 +32,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.xmlrpc.codehosting import datetime_from_tuple
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.utils import iter_split
@@ -267,6 +268,7 @@ class FakeProduct(FakeDatabaseObject):
 
     def __init__(self, name):
         self.name = name
+        self.bzr_path = name
         self.development_focus = FakeProductSeries()
 
 
@@ -275,6 +277,13 @@ class FakeProduct(FakeDatabaseObject):
 def fake_product_to_branch_target(fake_product):
     """Adapt a `FakeProduct` to `IBranchTarget`."""
     return ProductBranchTarget(fake_product)
+
+
+@adapter(FakeProduct)
+@implementer(ICanHasLinkedBranch)
+def fake_product_to_can_has_linked_branch(fake_product):
+    """Adapt a `FakeProduct` to `ICanHasLinkedBranch`."""
+    return fake_product
 
 
 class FakeProductSeries(FakeDatabaseObject):
@@ -704,7 +713,12 @@ class FakeCodehosting:
         for first, second in iter_split(stripped_path, '/'):
             first = unescape(first).encode('utf-8')
             # Is it a branch?
-            branch = self._branch_set._find(unique_name=first)
+            if first.startswith('+branch/'):
+                product_name = first[len('+branch/'):]
+                product = self._product_set.getByName(product_name)
+                branch = product.development_focus.branch
+            else:
+                branch = self._branch_set._find(unique_name=first)
             if branch is not None:
                 branch = self._serializeBranch(requester_id, branch, second)
                 if isinstance(branch, Fault):
@@ -745,6 +759,7 @@ class InMemoryFrontend:
             self._sourcepackagename_set, self._factory,
             self._script_activity_set)
         sm = getSiteManager()
+        sm.registerAdapter(fake_product_to_can_has_linked_branch)
         sm.registerAdapter(fake_product_to_branch_target)
         sm.registerAdapter(fake_source_package_to_branch_target)
 

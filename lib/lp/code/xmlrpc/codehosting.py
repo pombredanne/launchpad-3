@@ -271,7 +271,14 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             for first, second in iter_split(stripped_path, '/'):
                 first = unescape(first)
                 # Is it a branch?
-                branch = getUtility(IBranchLookup).getByUniqueName(first)
+                if first.startswith('+branch/'):
+                    # XXX: 'first' will start with +branch on every iteration
+                    # of the loop or it never will. So, change this to be more
+                    # efficient.
+                    branch = getUtility(IBranchLookup).getByLPPath(
+                        first[len('+branch/'):])[0]
+                else:
+                    branch = getUtility(IBranchLookup).getByUniqueName(first)
                 if branch is not None:
                     branch = self._serializeBranch(requester, branch, second)
                     if branch is None:

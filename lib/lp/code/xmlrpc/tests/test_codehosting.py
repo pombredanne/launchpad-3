@@ -34,6 +34,7 @@ from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.model.tests.test_branchpuller import AcquireBranchToPullTests
 from lp.code.xmlrpc.codehosting import (
     CodehostingAPI, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES, run_with_login)
@@ -741,6 +742,20 @@ class CodehostingTest(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.IMPORTED, owner=requester)
         path = escape(u'/%s' % branch.unique_name)
+        translation = self.codehosting_api.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_short_name(self):
+        # translatePath translates the short name of a branch if it's prefixed
+        # by +branch.
+        requester = self.factory.makePerson()
+        branch = self.factory.makeProductBranch()
+        removeSecurityProxy(branch.product.development_focus).branch = branch
+        short_name = ICanHasLinkedBranch(branch.product).bzr_path
+        path = escape(u'/+branch/%s' % short_name)
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
