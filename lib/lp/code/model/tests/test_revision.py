@@ -18,7 +18,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.ftests.logger import MockLogger
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
@@ -33,6 +32,7 @@ from lp.code.model.revision import RevisionCache, RevisionSet
 from lp.registry.model.karma import Karma
 from lp.testing import TestCaseWithFactory, time_counter
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.logger import MockLogger
 
 
 class TestRevisionCreationDate(TestCaseWithFactory):

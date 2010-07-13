@@ -10,7 +10,7 @@ from unittest import TestLoader
 from zope.component import getUtility
 
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.registry.interfaces.packaging import IPackagingUtil, PackagingType
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.testing import TestCaseWithFactory
@@ -41,13 +41,30 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
             product=self.product, name='hotter')
         self.packaging_util = getUtility(IPackagingUtil)
 
+    def test_no_error_when_trying_to_readd_same_package(self):
+        # There is no reason to display an error when the user's action
+        # wouldn't cause a state change.
+        self.packaging_util.createPackaging(
+            productseries=self.productseries,
+            sourcepackagename=self.sourcepackagename,
+            distroseries=self.hoary, packaging=PackagingType.PRIME,
+            owner=self.product.owner)
+
+        form = {
+            'field.distroseries': self.hoary.name,
+            'field.sourcepackagename': self.sourcepackagename.name,
+            'field.actions.continue': 'Continue',
+            }
+        view = create_initialized_view(
+            self.productseries, '+ubuntupkg', form=form)
+        self.assertEqual([], view.errors)
+
     def test_cannot_link_to_linked_package(self):
         # Once a distro series sourcepackage is linked to a product series,
         # no other product series can link to it.
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'hot',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
@@ -58,7 +75,6 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'hot',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
@@ -73,7 +89,6 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': '',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
@@ -89,7 +104,6 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'vapor',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
@@ -105,7 +119,6 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         form = {
             'field.distroseries': 'warty',
             'field.sourcepackagename': 'hot',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(

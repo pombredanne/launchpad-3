@@ -5,11 +5,13 @@ __metaclass__ = type
 
 import unittest
 
+from zope.interface.verify import verifyObject
+
 from canonical.testing import ZopelessDatabaseLayer
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
-from lp.testing import TestCaseWithFactory, verifyObject
+from lp.testing import TestCaseWithFactory
 
 
 class HasTranslationTemplatesTestMixin(TestCaseWithFactory):

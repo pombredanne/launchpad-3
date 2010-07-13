@@ -425,5 +425,9 @@ patch_reference_property(IPOTemplateSubset, 'productseries', IProductSeries)
 # IPOTemplateSharingSubset
 patch_reference_property(IPOTemplateSharingSubset, 'product', IProduct)
 
+# IPerson
+patch_collection_return_type(
+        IPerson, 'getBugSubscriberPackages', IDistributionSourcePackage)
+
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)
