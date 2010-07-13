@@ -75,7 +75,7 @@ def login_person(person, participation=None):
     if person is not None:
         # The login will fail even without this check, but this gives us a
         # nice error message, which can save time when debugging.
-        if person.is_team:
+        if getattr(person, 'is_team', None):
             raise ValueError("Got team, expected person: %r" % (person,))
     participation = _test_login_impl(participation)
     setupInteractionForPerson(person, participation)

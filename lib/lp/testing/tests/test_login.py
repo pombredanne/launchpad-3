@@ -100,6 +100,13 @@ class TestLoginHelpers(TestCaseWithFactory):
         e = self.assertRaises(ValueError, login_person, team)
         self.assertEqual(str(e), "Got team, expected person: %r" % (team,))
 
+    def test_login_account(self):
+        # Calling login_person with an account logs you in with that account.
+        person = self.factory.makePerson()
+        account = person.account
+        login_person(account)
+        self.assertLoggedIn(person)
+
     def test_login_with_email(self):
         # login() logs a person in by email.
         person = self.factory.makePerson()
