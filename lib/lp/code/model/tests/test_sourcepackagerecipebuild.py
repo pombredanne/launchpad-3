@@ -241,10 +241,10 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertContentEqual([recent_build], get_recent())
 
     def test_destroySelf(self):
-         # ISourcePackageRecipeBuild should make sure to remove jobs and build
-         # queue entries and then invalidate itself.
-         build = self.factory.makeSourcePackageRecipeBuild()
-         build.destroySelf()
+        # ISourcePackageRecipeBuild should make sure to remove jobs and build
+        # queue entries and then invalidate itself.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        build.destroySelf()
 
 
 class TestAsBuildmaster(TestCaseWithFactory):
