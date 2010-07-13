@@ -1301,7 +1301,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
     def test_creation_pofile(self):
         # When a new pofile is created, dummy translations are created for
         # all translation credits messages.
-        
+
         credits = self.factory.makePOTMsgSet(
             self.potemplate, u'translator-credits', sequence=1)
         eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)

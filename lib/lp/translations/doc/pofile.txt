@@ -81,8 +81,7 @@ We need a helper method to better display test results.
     ...                plural = plural[:17] + "..."
     ...         if pofile is not None:
     ...             translation = potmsgset.getCurrentTranslationMessage(
-    ...                 pofile.potemplate, pofile.language,
-    ...                 pofile.variant).translations[0]
+    ...                 pofile.potemplate, pofile.language).translations[0]
     ...             if len(translation) > 20:
     ...                 translation = translation[:17] + "..."
     ...         print "%2d. %-20s   %-20s   %-20s" % (
@@ -427,7 +426,7 @@ breakage.
     >>> potmsgset = pofile_es.potemplate.getPOTMsgSetByMsgIDText(
     ...     singular_text=u'evolution addressbook')
     >>> translation_message = potmsgset.getCurrentTranslationMessage(
-    ...     pofile_es.potemplate, pofile_es.language, pofile_es.variant)
+    ...     pofile_es.potemplate, pofile_es.language)
     >>> is_imported = False
     >>> lock_timestamp = datetime.datetime.now(UTC)
     >>> translation_message.potmsgset.updateTranslation(
@@ -756,7 +755,7 @@ Now, just to be sure that this entry doesn't exist yet:
     >>> potmsgset = pofile_sr.potemplate.getOrCreateSharedPOTMsgSet(
     ...     singular_text=msgid, plural_text=msgid_plural)
     >>> print potmsgset.getCurrentTranslationMessage(
-    ...     pofile_sr.potemplate, pofile_sr.language, pofile_sr.variant)
+    ...     pofile_sr.potemplate, pofile_sr.language)
     None
 
 Is time to create it.
