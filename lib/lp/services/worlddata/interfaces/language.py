@@ -194,12 +194,6 @@ class ILanguageSet(Interface):
         Unrecognised language codes are ignored.
         """
 
-    def getLanguageAndVariantFromString(language_string):
-        """Return the ILanguage and variant that language_string represents.
-
-        If language_string doesn't represent a know language, return None.
-        """
-
     def createLanguage(code, englishname, nativename=None, pluralforms=None,
                        pluralexpression=None, visible=True,
                        direction=TextDirection.LTR):
