@@ -8,18 +8,13 @@ __metaclass__ = type
 
 from mechanize import LinkNotFoundError
 import transaction
+from zope.component import getUtility
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.testing.pages import (
-    extract_text, find_main_content, find_tags_by_class)
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
-from lp.code.browser.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildView)
-from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from canonical.testing import DatabaseFunctionalLayer
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.testing import ANONYMOUS, BrowserTestCase, login, logout
+from lp.testing import BrowserTestCase, logout
 
 
 class TestSourcePackageRecipeBuild(BrowserTestCase):
@@ -58,6 +53,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_delete_build(self):
         """An admin can delete a build."""
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
         build = self.makeRecipeBuild()
         transaction.commit()
         build_url = canonical_url(build)
@@ -65,8 +61,12 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         next_url = canonical_url(recipe)
         logout()
 
-        browser = self.getUserBrowser(build_url, user=self.chef)
+        browser = self.getUserBrowser(build_url, user=experts)
         browser.getLink('Delete build').click()
+
+        self.assertEqual(
+            browser.getLink('Cancel').url,
+            build_url)
 
         browser.getControl('Delete build').click()
 
@@ -76,21 +76,6 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         self.assertEqual(
             recipe.getBuilds().count(),
             0)
-
-    def test_delete_build_cancel(self):
-        """An admin can delete a build."""
-        build = self.makeRecipeBuild()
-        transaction.commit()
-        build_url = canonical_url(build)
-        logout()
-
-        browser = self.getUserBrowser(build_url, user=self.chef)
-        browser.getLink('Delete build').click()
-
-        browser.getLink('Cancel').click()
-        self.assertEqual(
-            browser.url,
-            build_url)
 
     def test_delete_build_not_admin(self):
         """No one but admins can delete a build."""
