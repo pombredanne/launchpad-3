@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
-    'ApplicationButtons',
     'DoesNotExistView',
     'Hierarchy',
     'IcingContribFolder',
@@ -17,7 +16,6 @@ __all__ = [
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
-    'MenuBox',
     'NavigationMenuTabs',
     'RDFIndexView',
     'SoftTimeoutView',
@@ -123,44 +121,6 @@ from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
 
 from lp.answers.interfaces.questioncollection import IQuestionSet
-
-
-class MenuBox(LaunchpadView):
-    """View class that helps its template render the actions menu box.
-
-    Nothing at all is rendered if there are no contextmenu items and also
-    no applicationmenu items.
-
-    If there is at least one item, the template is rendered.
-
-    The context may be another view, or a content object.
-    """
-
-    def initialize(self):
-        menuapi = MenuAPI(self.context)
-        # We are only interested on enabled links in non development mode.
-        self.contextmenuitems = sorted([
-            link for link in menuapi.context.values()
-            if link.enabled or config.devmode],
-            key=operator.attrgetter('sort_key'))
-        facet = menuapi.selectedfacetname()
-        if facet != 'unknown':
-            # XXX sinzui 2008-06-23 bug=242453:
-            # Why are we getting unknown? Bounties are borked. We need
-            # to end the facet hacks to get a clear state for the menus.
-            application_links = getattr(menuapi, facet).values()
-        else:
-            application_links = []
-        self.applicationmenuitems = sorted([
-            link for link in application_links
-            if link.enabled or config.devmode],
-            key=operator.attrgetter('sort_key'))
-
-    def render(self):
-        if (not self.contextmenuitems and not self.applicationmenuitems):
-            return u''
-        else:
-            return self.template()
 
 
 class NavigationMenuTabs(LaunchpadView):
@@ -870,74 +830,6 @@ class StructuralObjectPresentation(StructuralHeaderPresentation):
 
     def countAltChildren(self):
         raise NotImplementedError()
-
-
-class Button:
-
-    def __init__(self, **kw):
-        assert len(kw) == 1
-        self.name = kw.keys()[0]
-        self.text = kw.values()[0]
-        self.replacement_dict = self.makeReplacementDict()
-
-    def makeReplacementDict(self):
-        return dict(
-            url=allvhosts.configs[self.name].rooturl,
-            buttonname=self.name,
-            text=self.text)
-
-    def renderActive(self):
-        return (
-            '<a href="%(url)s">\n'
-            '  <img'
-            '    width="64"'
-            '    height="64"'
-            '    alt="%(buttonname)s"'
-            '    src="/+icing/app-%(buttonname)s-sml-active.gif"'
-            '    title="%(text)s"'
-            '  />\n'
-            '</a>\n' % self.replacement_dict)
-
-    def renderInactive(self):
-        return (
-            '<a href="%(url)s">\n'
-            '  <img'
-            '    width="64"'
-            '    height="64"'
-            '    alt="%(buttonname)s"'
-            '    src="/+icing/app-%(buttonname)s-sml.gif"'
-            '    title="%(text)s"'
-            '  />\n'
-            '</a>\n' % self.replacement_dict)
-
-    def renderFrontPage(self):
-        return (
-            '<a href="%(url)s">\n'
-            '  <img'
-            '    width="146"'
-            '    height="146"'
-            '    alt="%(buttonname)s"'
-            '    src="/+icing/app-%(buttonname)s.gif"'
-            '    title="%(text)s"'
-            '  />\n'
-            '</a>\n' % self.replacement_dict)
-
-    def renderButton(self, is_active, is_front_page):
-        if (is_front_page):
-            return self.renderFrontPage()
-        elif is_active:
-            return self.renderActive()
-        else:
-            return self.renderInactive()
-
-
-class PeopleButton(Button):
-
-    def makeReplacementDict(self):
-        return dict(
-            url='%speople/' % allvhosts.configs['mainsite'].rooturl,
-            buttonname=self.name,
-            text=self.text)
 
 
 class AppFrontPageSearchView(LaunchpadFormView):
