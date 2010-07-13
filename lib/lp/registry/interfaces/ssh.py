@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'ISSHKey',
     'ISSHKeySet',
+    'SSHKeyAdditionError',
     'SSHKeyType',
     ]
 
@@ -63,7 +64,7 @@ class ISSHKey(Interface):
 class ISSHKeySet(Interface):
     """The set of SSHKeys."""
 
-    def new(person, keytype, keytext, comment):
+    def new(person, sshkey):
         """Create a new SSHKey pointing to the given Person."""
 
     def getByID(id, default=None):
@@ -74,4 +75,9 @@ class ISSHKeySet(Interface):
 
     def getByPeople(people):
         """Return SSHKey object associated to the people provided."""
+
+
+class SSHKeyAdditionError(Exception):
+    """I get raised when something went wrong with adding an SSH key."""
+
 
