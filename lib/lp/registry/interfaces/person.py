@@ -904,6 +904,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         The results are ordered using Person.sortingColumns.
         """
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getBugSubscriberPackages():
         """Return the packages for which this person is a bug subscriber.
 
