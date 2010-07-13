@@ -240,6 +240,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         removeSecurityProxy(recent_build).datecreated += a_second
         self.assertContentEqual([recent_build], get_recent())
 
+    def test_destroySelf(self):
+         # ISourcePackageRecipeBuild should make sure to remove jobs and build
+         # queue entries and then invalidate itself.
+         build = self.factory.makeSourcePackageRecipeBuild()
+         build.destroySelf()
+
 
 class TestAsBuildmaster(TestCaseWithFactory):
 
@@ -290,12 +296,6 @@ class TestAsBuildmaster(TestCaseWithFactory):
         removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
         result=True)
         assertNotifyOnce('OK', prepare_build())
-
-    def test_destroySelf(self):
-         # ISourcePackageRecipeBuild should make sure to remove jobs and build
-         # queue entries and then invalidate itself.
-         build = self.factory.makeSourcePackageRecipeBuild()
-         build.destroySelf()
 
 
 class MakeSPRecipeBuildMixin:
