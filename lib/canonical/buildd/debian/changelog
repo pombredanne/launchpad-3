@@ -1,3 +1,10 @@
+launchpad-buildd (66) UNRELEASED; urgency=low
+
+  * Take an 'arch_tag' argument, so the master can override the slave
+    architecture.
+
+ -- William Grant <wgrant@ubuntu.com>  Tue, 13 Jul 2010 19:11:05 +1000
+
 launchpad-buildd (65) hardy-cat; urgency=low
 
   * Drop preinst check, since human time does not scale across a large
