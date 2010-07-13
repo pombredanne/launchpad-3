@@ -157,6 +157,9 @@ class IPersonRoles(Interface):
     in_bazaar_experts = Bool(
         title=_("True if this person is a Bazaar expert."),
         required=True, readonly=True)
+    in_software_center_agent = Bool(
+        title=_("True if this person is the Software Center Agent."),
+        required=True, readonly=True)
     in_bug_importer = Bool(
         title=_("True if this person is a bug importer."),
         required=True, readonly=True)

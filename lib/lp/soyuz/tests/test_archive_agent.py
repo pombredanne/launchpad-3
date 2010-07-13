@@ -18,7 +18,7 @@ class TestArchivePrivacy(TestCaseWithFactory):
         super(TestArchivePrivacy, self).setUp()
         self.ppa = self._makePrivateArchive()
         self.ppa.commercial = True
-        self.agent = getUtility(ILaunchpadCelebrites).software_center_agent
+        self.agent = getUtility(ILaunchpadCelebrities).software_center_agent
         self.joe = self.factory.makePerson(name='joe')
 
     def _makePrivateArchive(self):
