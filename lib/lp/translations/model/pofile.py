@@ -420,11 +420,11 @@ class POFileMixIn(RosettaStats):
 
     def getFullLanguageCode(self):
         """See `IPOFile`."""
-        return self.language.getFullCode(self.variant)
+        return self.language.code
 
     def getFullLanguageName(self):
         """See `IPOFile`."""
-        return self.language.getFullEnglishName(self.variant)
+        return self.language.englishname
 
     def makeTranslatableMessage(self, potmsgset):
         """See `IPOFile`."""

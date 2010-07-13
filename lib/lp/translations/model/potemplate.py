@@ -699,7 +699,7 @@ class POTemplate(SQLBase, RosettaStats):
         """
         potemplate_dir = os.path.dirname(self.path)
         path = '%s-%s.po' % (
-            self.translation_domain, language.getFullCode(variant))
+            self.translation_domain, language.code)
 
         return os.path.join(potemplate_dir, path)
 

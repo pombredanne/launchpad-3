@@ -546,7 +546,7 @@ class MessageSharingMerge(LaunchpadScript):
                 key = self._getPOTMsgSetTranslationMessageKey(tm)
 
                 if key in translations:
-                    language_code = tm.language.getFullCode()
+                    language_code = tm.language.code
                     log.info(
                         "Cleaning up identical '%s' message for: \"%s\"" % (
                             language_code, potmsgset.singular_text))
