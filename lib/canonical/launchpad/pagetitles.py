@@ -46,7 +46,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMaloneApplication, IPerson, IStructuralObjectPresentation)
+    ILaunchBag, IMaloneApplication, IStructuralObjectPresentation)
 from canonical.lazr.utils import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
@@ -163,6 +163,16 @@ def bugnomination_edit(context, view):
 
 bugtarget_bugs = ContextTitle('Bugs in %s')
 
+def bugtarget_filebug_advanced(context, view):
+    """Return the page title for reporting a bug."""
+    if IMaloneApplication.providedBy(context):
+        # We're generating a title for a top-level, contextless bug
+        # filing page.
+        return 'Report a bug'
+    else:
+        # We're generating a title for a contextual bug filing page.
+        return 'Report a bug about %s' % context.title
+
 bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
@@ -214,8 +224,6 @@ cve_linkbug = ContextDisplayName('Link %s to a bug report')
 
 cve_unlinkbugs = ContextDisplayName('Remove links between %s and bug reports')
 
-distributionmirror_index = ContextTitle('Mirror %s')
-
 distribution_archive_list = ContextTitle('%s Copy Archives')
 
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
@@ -231,9 +239,6 @@ distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 distribution_index = ContextTitle('%s in Launchpad')
 
 distributionsourcepackage_index = ContextTitle('%s')
-
-distributionsourcepackage_publishinghistory = ContextTitle(
-    'Publishing history of %s')
 
 distroarchseries_index = ContextTitle('%s in Launchpad')
 
@@ -252,8 +257,6 @@ distroseries_queue = ContextTitle('Queue for %s')
 
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
-faq = 'Launchpad Frequently Asked Questions'
-
 hasannouncements_index = ContextDisplayName('%s news and announcements')
 
 hassprints_sprints = ContextTitle("Events related to %s")
@@ -270,28 +273,18 @@ launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
 launchpad_librarianfailure = "Sorry, you can't do this right now"
 
-malone_index = 'Launchpad Bugs'
-
-milestone_add = ContextTitle('Add new milestone for %s')
-
-milestone_edit = ContextTitle('Edit %s')
-
-milestone_delete = ContextTitle('Delete %s')
-
 oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 
 object_templates = ContextDisplayName('Translation templates for %s')
 
 oops = 'Oops!'
 
-people_adminrequestmerge = 'Merge Launchpad accounts'
-
 people_mergerequest_sent = 'Merge request sent'
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
 
-person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
+person_packagebugs = ContextDisplayName("%s's package bug reports")
 
 person_packagebugs_overview = person_packagebugs
 
@@ -325,8 +318,6 @@ product_index = ContextTitle('%s in Launchpad')
 product_purchase_subscription = ContextDisplayName(
     'Purchase Subscription for %s')
 
-product_review_license = ContextTitle('Review %s')
-
 product_translations = ContextTitle('Translations of %s in Launchpad')
 
 productseries_translations = ContextTitle('Translations overview for %s')
@@ -334,8 +325,6 @@ productseries_translations = ContextTitle('Translations overview for %s')
 productseries_translations_settings = 'Settings for translations'
 
 project_index = ContextTitle('%s in Launchpad')
-
-project_edit = 'Change project group details'
 
 project_translations = ContextTitle('Translatable projects for %s')
 
@@ -346,10 +335,6 @@ root_index = 'Launchpad'
 rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
-
-question_confirm_answer = ContextId('Confirm an answer to question #%s')
-
-questions_index = 'Launchpad Answers'
 
 series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
 
@@ -396,32 +381,6 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
-
-sourcepackage_changelog = 'Source package changelog'
-
-sourcepackagenames_index = 'Source package name set'
-
-specification_linkbug = ContextTitle(
-  u'Link blueprint \N{left double quotation mark}%s'
-  u'\N{right double quotation mark} to a bug report')
-
-specification_unlinkbugs = 'Remove links to bug reports'
-
-specification_goaldecide = 'Approve or decline blueprint goal'
-
-specification_givefeedback = 'Clear feedback requests'
-
-specification_edit = 'Edit blueprint details'
-
-specifications_index = 'Launchpad Blueprints'
-
-specificationbranch_status = 'Edit blueprint branch status'
-
-sprint_attend = ContextTitle('Register your attendance at %s')
-
-sprint_new = 'Register a meeting or sprint in Launchpad'
-
-sprintspecification_admin = 'Approve blueprint for sprint agenda'
 
 standardshipitrequests_index = 'Standard ShipIt options'
 
