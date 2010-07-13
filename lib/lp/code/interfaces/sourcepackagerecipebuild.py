@@ -69,7 +69,7 @@ class ISourcePackageRecipeBuild(IBuildBase):
         """Return the file under +files with specified name."""
 
     def destroySelf():
-        """Delete the build."""
+        """Delete the build itself."""
 
 
 class ISourcePackageRecipeBuildSource(Interface):
