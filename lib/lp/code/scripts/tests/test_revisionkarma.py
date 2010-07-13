@@ -11,14 +11,14 @@ from unittest import TestLoader
 
 from canonical.config import config
 from canonical.launchpad.database.emailaddress import EmailAddressSet
-from canonical.launchpad.ftests.logger import MockLogger
 from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
-from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.code.model.revision import RevisionSet
 from lp.code.scripts.revisionkarma import RevisionKarmaAllocator
 from lp.registry.model.karma import Karma
+from lp.testing import TestCaseWithFactory
+from lp.testing.logger import MockLogger
 
 
 class TestRevisionKarma(TestCaseWithFactory):
