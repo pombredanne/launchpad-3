@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # Quick hack makefile to (re)create the Launchpad database.
@@ -42,7 +42,7 @@ DROPDB=${PYTHON} ../../utilities/pgmassacre.py
 # The command we use to drop (if exists) and recreate a database.
 CREATEDB=${PYTHON} ../../utilities/pgmassacre.py -t
 
-HEADER="-- Copyright 2009 Canonical Ltd.  This software is licensed under \
+HEADER="-- Copyright 2010 Canonical Ltd.  This software is licensed under \
 	the\n-- GNU Affero General Public License version 3 (see the file \
 	LICENSE)."
 
