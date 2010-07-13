@@ -1121,15 +1121,6 @@ class IArchiveView(IHasBuildRecords):
         :return: A new IArchiveAuthToken
         """
 
-    @call_with(person=REQUEST_USER)
-    @export_write_operation()
-    def getPrivateSourcesList(person):
-        """Get a text line that is suitable to be used for a sources.list
-        entry.
-
-        It will create a new IArchiveAuthToken if one doesn't already exist.
-        """
-
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
 

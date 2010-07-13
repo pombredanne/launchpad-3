@@ -40,6 +40,7 @@ from zope.interface import alsoProvides, implementer, implements
 from zope.component import adapter, getUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
+from zope.publisher.interfaces import Unauthorized
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
@@ -2324,13 +2325,32 @@ class Person(
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
 
-    def getArchiveSubscriptionURLs(self):
+    def getArchiveSubscriptionURLs(self, requester):
         """See `IPerson`."""
+        agent = getUtility(ILaunchpadCelebrities).software_center_agent
+        # If the requester isn't asking about themselves, and they aren't the
+        # software center agent, deny them
+        if requester.id != agent.id:
+            if self.id != requester.id:
+                raise Unauthorized
         subscriptions = getUtility(
             IArchiveSubscriberSet).getBySubscriberWithActiveToken(
                 subscriber=self)
         return [token.archive_url for (subscription, token) in subscriptions
                 if token is not None]
+
+    def getArchiveSubscriptionURL(self, requester, archive):
+        """See `IPerson`."""
+        agent = getUtility(ILaunchpadCelebrities).software_center_agent
+        # If the requester isn't asking about themselves, and they aren't the
+        # software center agent, deny them
+        if requester.id != agent.id:
+            if self.id != requester.id:
+                raise Unauthorized
+        token = archive.getAuthToken(self)
+        if token is None:
+            token = archive.newAuthToken(self)
+        return token.archive_url
 
     @property
     def ppas(self):
