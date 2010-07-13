@@ -12,14 +12,13 @@ __all__ = [
 class Collection(object):
     """An arbitrary collection of database objects."""
 
-    def __init__(self, base=None, conditions=None):
+    def __init__(self, base, *conditions):
         """Construct a collection, possibly based on another one."""
         if base is None:
-            self.conditions = []
+            base_conditions = (True,)
         else:
-            self.conditions = base.conditions
-        if conditions is not None:
-            self.conditions += conditions
+            base_conditions = base.conditions
+        self.conditions = base_conditions + conditions
 
     def select(self, values, store=None):
         """Return the selected values from the collection."""
