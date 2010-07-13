@@ -30,8 +30,9 @@ INSERT INTO Language
 -- staging: 850000 rows, ...
 UPDATE translationmessage
   SET language=(
-      SELECT id FROM language
-        WHERE code=old_language.code || '@' || variant)
+        SELECT id FROM language
+          WHERE code=old_language.code || '@' || variant),
+      variant=NULL
   FROM language AS old_language
   WHERE
     translationmessage.language=old_language.id AND
@@ -40,8 +41,9 @@ UPDATE translationmessage
 -- staging: 13029 rows, 22s
 UPDATE pofile
   SET language=(
-      SELECT id FROM language
-        WHERE code=old_language.code || '@' || variant)
+        SELECT id FROM language
+          WHERE code=old_language.code || '@' || variant),
+      variant=NULL
   FROM language AS old_language
   WHERE
     pofile.language=old_language.id AND
