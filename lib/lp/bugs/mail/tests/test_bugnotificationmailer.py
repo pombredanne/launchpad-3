@@ -1,4 +1,3 @@
-import pdb
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -10,10 +9,11 @@ import unittest
 
 from canonical.testing import DatabaseFunctionalLayer
 
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_replyto_address
 from lp.bugs.mail.bugnotificationmailer import BugNotificationMailer
-from lp.testing import TestCaseWithFactory
+from lp.testing import login, logout, TestCaseWithFactory
 
 
 class TestBugNotificationMailerHeaders(TestCaseWithFactory):
@@ -22,20 +22,24 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugNotificationMailerHeaders, self).setUp(
-            user='test@canonical.com')
-
+        super(TestBugNotificationMailerHeaders, self).setUp()
         self.notification_recipient = self.factory.makePerson()
         self.person = self.factory.makePerson()
+        self.bug = self.factory.makeBug(owner=self.person)
+
+        # We log in as self.person so that we can change things in the
+        # test.
+        login(self.person.preferredemail.email)
 
     def test_bug_creation(self):
-        bug = self.factory.makeBug(owner=self.person)
+        # The first notification should be the creation notification for
+        # the new bug.
         notification = BugNotification.selectFirst(orderBy='-id')
         mailer = BugNotificationMailer(notification, 'bug-notification.txt')
 
         mailer.message_id = '<foobar-example-com>'
         generated_mail = mailer.generateEmail(
-            bug.owner.preferredemail.email, bug.owner)
+            self.bug.owner.preferredemail.email, self.bug.owner)
 
         expected_headers = {
             'Sender': 'bounces@canonical.com',
@@ -46,9 +50,71 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
             'X-Launchpad-Bug': [
                 u'product=%s; status=New; '
                 u'importance=Undecided; assignee=None;' % (
-                    bug.bugtasks[0].product.name),
+                    self.bug.bugtasks[0].product.name),
                 ],
-            'Reply-To': get_bugmail_replyto_address(bug),
+            'Reply-To': get_bugmail_replyto_address(self.bug),
+            'X-Launchpad-Bug-Security-Vulnerability': 'no',
+            'X-Launchpad-Message-Rationale': 'Subscriber',
+            }
+        self.assertEqual(expected_headers, generated_mail.headers)
+
+    def test_bugtask_changed(self):
+        # When a bugtask is changed, the Bug's headers will remain
+        # unchanged except for those pertaining to the changed task.
+        self.bug.bugtasks[0].transitionToStatus(
+            BugTaskStatus.CONFIRMED, self.person)
+        self.bug.bugtasks[0].transitionToAssignee(self.person)
+
+        notification = BugNotification.selectFirst(orderBy='-id')
+        mailer = BugNotificationMailer(notification, 'bug-notification.txt')
+        mailer.message_id = '<foobar-example-com>'
+        generated_mail = mailer.generateEmail(
+            self.bug.owner.preferredemail.email, self.bug.owner)
+
+        expected_headers = {
+            'Sender': 'bounces@canonical.com',
+            'X-Launchpad-Bug-Commenters': u'%s' % self.person.name,
+            'X-Launchpad-Bug-Private': 'no',
+            'X-Launchpad-Bug-Reporter':
+                u'%s (%s)' % (self.person.displayname, self.person.name),
+            'X-Launchpad-Bug': [
+                u'product=%s; status=Confirmed; '
+                u'importance=Undecided; assignee=%s;' % (
+                    self.bug.bugtasks[0].product.name,
+                    self.person.preferredemail.email),
+                ],
+            'Reply-To': get_bugmail_replyto_address(self.bug),
+            'X-Launchpad-Bug-Security-Vulnerability': 'no',
+            'X-Launchpad-Message-Rationale': 'Subscriber',
+            }
+        self.assertEqual(expected_headers, generated_mail.headers)
+
+    def test_bugtask_added(self):
+        # When a task is added to a bug, a new set of headers will be
+        # added to the X-Launchpad-Bug headers describing the new task.
+        new_bug_task = self.factory.makeBugTask(bug=self.bug)
+
+        notification = BugNotification.selectFirst(orderBy='-id')
+        mailer = BugNotificationMailer(notification, 'bug-notification.txt')
+        mailer.message_id = '<foobar-example-com>'
+        generated_mail = mailer.generateEmail(
+            self.bug.owner.preferredemail.email, self.bug.owner)
+
+        expected_headers = {
+            'Sender': 'bounces@canonical.com',
+            'X-Launchpad-Bug-Commenters': u'%s' % self.person.name,
+            'X-Launchpad-Bug-Private': 'no',
+            'X-Launchpad-Bug-Reporter':
+                u'%s (%s)' % (self.person.displayname, self.person.name),
+            'X-Launchpad-Bug': [
+                u'product=%s; status=New; '
+                u'importance=Undecided; assignee=None;' % (
+                    self.bug.bugtasks[0].product.name),
+                u'product=%s; status=New; '
+                u'importance=Undecided; assignee=None;' % (
+                    self.bug.bugtasks[1].product.name),
+                ],
+            'Reply-To': get_bugmail_replyto_address(self.bug),
             'X-Launchpad-Bug-Security-Vulnerability': 'no',
             'X-Launchpad-Message-Rationale': 'Subscriber',
             }
