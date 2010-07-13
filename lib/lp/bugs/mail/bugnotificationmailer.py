@@ -9,6 +9,8 @@ __all__ = [
     ]
 
 from canonical.config import config
+from canonical.launchpad.mailnotification import generate_bug_add_email
+from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.bugs.mail.bugnotificationbuilder import (
     get_bugmail_from_address, get_bugmail_replyto_address)
@@ -33,7 +35,7 @@ class BugNotificationMailer(BaseMailer):
         self.bug = bug_notification.bug
 
         # We clobber the super()'d version of _recipients and replace it
-        # with that which comes from the notififcation.
+        # with that which comes from the notification.
         self._recipients = self.bug.getBugNotificationRecipients()
 
     def _getHeaders(self, email):
@@ -79,3 +81,17 @@ class BugNotificationMailer(BaseMailer):
             '%s (%s)' % (self.bug.owner.displayname, self.bug.owner.name))
 
         return headers
+
+    def _getTemplateParams(self, email):
+        """Return a dict of values to use in the body and subject."""
+        reason, rationale = self._recipients.getReason(email)
+        subject, content = generate_bug_add_email(self.bug)
+        params = {
+            'bug_title': self.bug.title,
+            'bug_url': canonical_url(self.bug),
+            'content': content,
+            'notification_rationale': reason.getReason(),
+            }
+
+        return params
+

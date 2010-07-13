@@ -1,3 +1,4 @@
+import pdb
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -49,8 +50,10 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
                 ],
             'Reply-To': get_bugmail_replyto_address(bug),
             'X-Launchpad-Bug-Security-Vulnerability': 'no',
+            'X-Launchpad-Message-Rationale': 'Subscriber',
             }
         self.assertEqual(expected_headers, generated_mail.headers)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
