@@ -198,13 +198,15 @@ Now, we confirm the activity log for the other bugs correctly list the
 final_bug as their master bug.
 
     >>> latest_activity = dupe_one.activity[-1]
-    u'marked as duplicate'
+    >>> print latest_activity.whatchanged
+    changed duplicate marker
     >>> latest_activity.oldvalue == unicode(initial_bug.id)
     True
     >>> latest_activity.newvalue == unicode(final_bug.id)
     True
     >>> latest_activity = dupe_two.activity[-1]
-    u'marked as duplicate'
+    >>> print latest_activity.whatchanged
+    changed duplicate marker
     >>> latest_activity.oldvalue == unicode(initial_bug.id)
     True
     >>> latest_activity.newvalue == unicode(final_bug.id)
