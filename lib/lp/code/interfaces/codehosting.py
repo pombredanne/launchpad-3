@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BRANCH_ALIAS_PREFIX',
     'BRANCH_TRANSPORT',
     'CONTROL_TRANSPORT',
     'ICodehostingAPI',
@@ -44,6 +45,9 @@ WRITABLE = 'w'
 BRANCH_TRANSPORT = 'BRANCH_TRANSPORT'
 # Indicates that a path points to a control directory.
 CONTROL_TRANSPORT = 'CONTROL_TRANSPORT'
+
+# The path prefix for getting at branches via their short name.
+BRANCH_ALIAS_PREFIX = '+branch'
 
 
 class ICodehostingApplication(ILaunchpadApplication):

@@ -40,8 +40,8 @@ from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
 from lp.code.interfaces import branchpuller
 from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, ICodehostingAPI, LAUNCHPAD_ANONYMOUS,
-    LAUNCHPAD_SERVICES)
+    BRANCH_ALIAS_PREFIX, BRANCH_TRANSPORT, CONTROL_TRANSPORT, ICodehostingAPI,
+    LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
 from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
@@ -271,12 +271,12 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             for first, second in iter_split(stripped_path, '/'):
                 first = unescape(first)
                 # Is it a branch?
-                if first.startswith('+branch/'):
-                    # XXX: 'first' will start with +branch on every iteration
-                    # of the loop or it never will. So, change this to be more
-                    # efficient.
+                if first.startswith(BRANCH_ALIAS_PREFIX + '/'):
+                    # XXX: 'first' will start with BRANCH_ALIAS_PREFIX on
+                    # every iteration of the loop or it never will. So, change
+                    # this to be more efficient.
                     branch = getUtility(IBranchLookup).getByLPPath(
-                        first[len('+branch/'):])[0]
+                        first[len(BRANCH_ALIAS_PREFIX + '/'):])[0]
                 else:
                     branch = getUtility(IBranchLookup).getByUniqueName(first)
                 if branch is not None:
@@ -291,4 +291,3 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                     return product
             raise faults.PathTranslationError(path)
         return run_with_login(requester_id, translate_path)
-

@@ -20,7 +20,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from lp.services.scripts.interfaces.scriptactivity import (
     IScriptActivitySet)
-from lp.code.interfaces.codehosting import BRANCH_TRANSPORT, CONTROL_TRANSPORT
+from lp.code.interfaces.codehosting import (
+    BRANCH_ALIAS_PREFIX, BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
@@ -755,7 +756,7 @@ class CodehostingTest(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         removeSecurityProxy(branch.product.development_focus).branch = branch
         short_name = ICanHasLinkedBranch(branch.product).bzr_path
-        path = escape(u'/+branch/%s' % short_name)
+        path = escape(u'/%s/%s' % (BRANCH_ALIAS_PREFIX, short_name))
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
