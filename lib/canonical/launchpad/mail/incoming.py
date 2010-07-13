@@ -77,7 +77,7 @@ _trusted_dkim_domains = [
 
 
 def _isDkimDomainTrusted(domain):
-    # XXX: really this should come from a dynamically-modifiable
+    # Really this should come from a dynamically-modifiable
     # configuration, but we don't have such a thing yet.
     #
     # Being listed here means that we trust the domain not to be an open relay
@@ -85,13 +85,10 @@ def _isDkimDomainTrusted(domain):
     return domain in _trusted_dkim_domains
 
 
-def _authenticateDkim(signed_message, raw_mail):
+def _authenticateDkim(signed_message):
     """"Attempt DKIM authentication of email; return True if known authentic
-    
+
     :param signed_message: ISignedMessage
-    :param raw_mail: byte string of the raw contents: needed because 
-    DKIM may be in strict mode and we want to avoid any header rewrapping
-    involved in parsing and regenerating the message.
     """
 
     log = logging.getLogger('mail-authenticate-dkim')
@@ -106,7 +103,8 @@ def _authenticateDkim(signed_message, raw_mail):
     try:
         # NB: if this fails with a keyword argument error, you need the
         # python-dkim 0.3-3.2 that adds it
-        dkim_result = dkim.verify(raw_mail, dkim_log, details=signing_details)
+        dkim_result = dkim.verify(
+            signed_message.parsed_string, dkim_log, details=signing_details)
     except dkim.DKIMException, e:
         log.warning('DKIM error: %r' % (e,))
         dkim_result = False
@@ -140,12 +138,10 @@ def _authenticateDkim(signed_message, raw_mail):
     return True
 
 
-def authenticateEmail(mail, raw_mail):
+def authenticateEmail(mail):
     """Authenticates an email by verifying the PGP signature.
 
     The mail is expected to be an ISignedMessage.
-
-    raw_mail is just a byte string of the uninterpreted mail.
     """
 
     signature = mail.signature
@@ -166,7 +162,7 @@ def authenticateEmail(mail, raw_mail):
         raise InactiveAccount(
             "Mail from a user with an inactive account.")
 
-    dkim_result = _authenticateDkim(mail, raw_mail)
+    dkim_result = _authenticateDkim(mail)
 
     if dkim_result:
         if mail.signature is not None:
@@ -343,7 +339,7 @@ def handleMail(trans=transaction):
                     continue
 
                 try:
-                    principal = authenticateEmail(mail, raw_mail)
+                    principal = authenticateEmail(mail)
                 except InvalidSignature, error:
                     _handle_user_error(error, mail)
                     continue

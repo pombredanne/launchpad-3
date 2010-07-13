@@ -19,8 +19,7 @@ from canonical.launchpad.mail import (
     incoming,
     signed_message_from_string,
     )
-from canonical.launchpad.mail.incoming import (
-    authenticateEmail, )
+from canonical.launchpad.mail.incoming import authenticateEmail
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
 from lp.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -127,8 +126,8 @@ class TestDKIM(TestCaseWithFactory):
         signed_message = self.fake_signing(plain_content)
         self._dns_responses['example._domainkey.canonical.com.'] = \
             'aothuaonu'
-        principal = authenticateEmail(signed_message_from_string(signed_message),
-            signed_message)
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
@@ -139,8 +138,8 @@ class TestDKIM(TestCaseWithFactory):
             canonicalize=(dkim.Simple, dkim.Simple))
         self._dns_responses['example._domainkey.canonical.com.'] = \
             sample_dns
-        principal = authenticateEmail(signed_message_from_string(signed_message),
-            signed_message)
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
         self.assertStronglyAuthenticated(principal, signed_message)
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
@@ -149,8 +148,8 @@ class TestDKIM(TestCaseWithFactory):
         signed_message = self.fake_signing(plain_content)
         self._dns_responses['example._domainkey.canonical.com.'] = \
             sample_dns
-        principal = authenticateEmail(signed_message_from_string(signed_message),
-            signed_message)
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
         self.assertStronglyAuthenticated(principal, signed_message)
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
@@ -165,8 +164,8 @@ class TestDKIM(TestCaseWithFactory):
             incoming._trusted_dkim_domains = saved_domains
         self.addCleanup(restore)
         incoming._trusted_dkim_domains = []
-        principal = authenticateEmail(signed_message_from_string(signed_message),
-            signed_message)
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
@@ -181,8 +180,8 @@ class TestDKIM(TestCaseWithFactory):
         signed_message = self.fake_signing(tweaked_message)
         self._dns_responses['example._domainkey.canonical.com.'] = \
             sample_dns
-        principal = authenticateEmail(signed_message_from_string(signed_message),
-            signed_message)
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
         # should come from From, not the dkim signature
         self.assertEqual(principal.person.preferredemail.email,
@@ -198,8 +197,8 @@ class TestDKIM(TestCaseWithFactory):
             sample_dns
         fiddled_message = signed_message.replace('From: Foo Bar <foo.bar@canonical.com>',
             'From: Carlos <carlos@canonical.com>')
-        principal = authenticateEmail(signed_message_from_string(fiddled_message),
-            fiddled_message)
+        principal = authenticateEmail(
+            signed_message_from_string(fiddled_message))
         self.assertWeaklyAuthenticated(principal, fiddled_message)
         # should come from From, not the dkim signature
         self.assertEqual(principal.person.preferredemail.email,
@@ -212,8 +211,8 @@ class TestDKIM(TestCaseWithFactory):
             sample_dns
         fiddled_message = signed_message.replace('From: Foo Bar <foo.bar@canonical.com>',
             'From: Evil Foo <foo.bar@canonical.com>')
-        principal = authenticateEmail(signed_message_from_string(fiddled_message),
-            fiddled_message)
+        principal = authenticateEmail(
+            signed_message_from_string(fiddled_message))
         # we don't care about the real name for determining the principal
         self.assertWeaklyAuthenticated(principal, fiddled_message)
         self.assertEqual(principal.person.preferredemail.email,
@@ -223,16 +222,16 @@ class TestDKIM(TestCaseWithFactory):
         # if there's no DNS entry for the pubkey
         # it should be handled decently
         signed_message = self.fake_signing(plain_content)
-        principal = authenticateEmail(signed_message_from_string(signed_message),
-            signed_message)
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
 
     def test_dkim_message_unsigned(self):
         # degenerate case: no signature treated as weakly authenticated
-        principal = authenticateEmail(signed_message_from_string(plain_content),
-            plain_content)
+        principal = authenticateEmail(
+            signed_message_from_string(plain_content))
         self.assertWeaklyAuthenticated(principal, plain_content)
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
@@ -246,8 +245,8 @@ class TestDKIM(TestCaseWithFactory):
         signed_message += 'blah blah'
         self._dns_responses['example._domainkey.canonical.com.'] = \
             sample_dns
-        principal = authenticateEmail(signed_message_from_string(signed_message),
-            signed_message)
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
