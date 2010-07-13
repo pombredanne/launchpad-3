@@ -26,13 +26,19 @@ class TestTable(Storm):
 def get_store():
     return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
-def make_table(store, first_id, last_id):
+def make_table(store, range_start, range_end):
     """Create a temporary table."""
+    assert range_start < range_end
     store.execute("""
        CREATE TEMP TABLE TestTable AS
        SELECT generate_series AS id
        FROM generate_series(%d, %d)
-       """ % (first_id, last_id))
+       """ % (range_start, range_end - 1))
+
+
+def get_ids(testtable_rows):
+    """Helper to unpack ids from a sequence of TestTable objects."""
+    return [row.id for row in testtable_rows] 
 
 class CollectionTest(TestCaseWithFactory):
 
@@ -40,10 +46,9 @@ class CollectionTest(TestCaseWithFactory):
 
     def test_make_table(self):
         store = get_store()
-        make_table(store, 1, 4)
-        result = store.find(TestTable)
-        for res in result:
-            print res.id
+        make_table(store, 1, 5)
+        result = store.find(TestTable).order_by(TestTable.id)
+        self.assertEqual(range(1, 5), get_ids(result))
 
 
 def test_suite():
