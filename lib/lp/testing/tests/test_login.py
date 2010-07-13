@@ -31,9 +31,9 @@ class TestLoginHelpers(TestCaseWithFactory):
         logged in, then return ANONYMOUS. Otherwise, return the logged-in
         `IPerson`.
         """
-        # XXX: JonathanLange 2010-07-09: I don't really know the canonical way
-        # of asking for "the logged-in person", so instead I'm using all the
-        # ways I can find and making sure they match each other.
+        # I don't really know the canonical way of asking for "the logged-in
+        # person", so instead I'm using all the ways I can find and making
+        # sure they match each other. -- jml
         by_launchbag = getUtility(IOpenLaunchBag).user
         principal = get_current_principal()
         if principal is None:
@@ -99,6 +99,13 @@ class TestLoginHelpers(TestCaseWithFactory):
         team = self.factory.makeTeam()
         e = self.assertRaises(ValueError, login_person, team)
         self.assertEqual(str(e), "Got team, expected person: %r" % (team,))
+
+    def test_login_account(self):
+        # Calling login_person with an account logs you in with that account.
+        person = self.factory.makePerson()
+        account = person.account
+        login_person(account)
+        self.assertLoggedIn(person)
 
     def test_login_with_email(self):
         # login() logs a person in by email.

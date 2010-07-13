@@ -15,8 +15,11 @@ __all__ = [
     'is_logged_in',
     ]
 
+import random
+
 from zope.component import getUtility
 from zope.security.management import endInteraction
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import (
@@ -72,11 +75,10 @@ def login_person(person, participation=None):
     if person is not None:
         # The login will fail even without this check, but this gives us a
         # nice error message, which can save time when debugging.
-        if person.is_team:
+        if getattr(person, 'is_team', None):
             raise ValueError("Got team, expected person: %r" % (person,))
     participation = _test_login_impl(participation)
     setupInteractionForPerson(person, participation)
-    return person
 
 
 def _get_arbitrary_team_member(team):
@@ -84,7 +86,9 @@ def _get_arbitrary_team_member(team):
 
     :param team: An `ITeam`.
     """
-    return team.teamowner
+    # Set up the interaction.
+    login(ANONYMOUS)
+    return random.choice(list(team.allmembers))
 
 
 def login_team(team, participation=None):
@@ -95,14 +99,15 @@ def login_team(team, participation=None):
     if not team.is_team:
         raise ValueError("Got person, expected team: %r" % (team,))
     person = _get_arbitrary_team_member(team)
-    return login_person(person, participation=participation)
+    login_person(person, participation=participation)
+    return person
 
 
 def login_as(person_or_team, participation=None):
     """Login as a person or a team.
 
     :param person_or_team: A person, a team, ANONYMOUS or None. None and
-        ANONYMOUS are equivalent, and will log the person is as the anonymous
+        ANONYMOUS are equivalent, and will log the person in as the anonymous
         user.
     """
     if person_or_team == ANONYMOUS:
