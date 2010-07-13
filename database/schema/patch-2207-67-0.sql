@@ -5,8 +5,8 @@ DELETE FROM bugsubscription WHERE id NOT IN (
     bugsubscription AS dup 
     GROUP BY dup.person, dup.bug);
 
-ALTER TABLE BugSubscription ADD CONSTRAINT bugsubscription__no_duplicate_subscription
+ALTER TABLE BugSubscription ADD CONSTRAINT bugsubscription__person__bug__key
     UNIQUE (person, bug);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 67, 0);
 
