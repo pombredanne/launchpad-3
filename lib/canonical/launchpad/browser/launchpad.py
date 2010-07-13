@@ -721,13 +721,6 @@ class SoftTimeoutView(LaunchpadView):
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
 
 
-class ObjectForTemplate:
-
-    def __init__(self, **kw):
-        for name, value in kw.items():
-            setattr(self, name, value)
-
-
 class IcingFolder(ExportedFolder):
     """Export the Launchpad icing."""
 
