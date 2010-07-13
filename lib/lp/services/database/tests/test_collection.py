@@ -7,11 +7,13 @@ __metaclass__ = type
 
 import unittest
 
-from storm.locals import Int, Store, Storm
+from storm.locals import Int, Storm
+from storm.expr import LeftJoin
 from zope.component import getUtility
 
 from lp.services.database.collection import Collection
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 from canonical.testing import ZopelessDatabaseLayer
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from canonical.launchpad.webapp.interfaces import (
@@ -36,13 +38,17 @@ def make_table(range_start, range_end, table_name=None):
     class TestTable(Storm):
         __storm_table__ = table_name
         id = Int(primary=True)
+        def __init__(self, id):
+            self.id = id
+        def __eq__(self, other):
+            return self.id == other.id
 
     return TestTable
 
 
-def get_ids(testtable_rows):
+def get_ids(testtable_objects):
     """Helper to unpack ids from a sequence of TestTable objects."""
-    return [row.id for row in testtable_rows]
+    return [obj.id for obj in testtable_objects]
 
 
 class CollectionTest(TestCaseWithFactory):
@@ -113,21 +119,32 @@ class CollectionTest(TestCaseWithFactory):
         result = collection.select(TestTable1.id, TestTable2.id)
         self.assertEqual([(1, 2)], list(result))
 
-    def test_select_join_class_and_column(self):
-        pass
-
     def test_select_partial_join(self):
-        pass
+        TestTable1 = make_table(1, 2, 'TestTable1')
+        TestTable2 = make_table(2, 3, 'TestTable2')
+        collection = Collection(None, TestTable2.id == TestTable1.id + 1)
+        result = collection.select(TestTable1.id)
+        self.assertEqual([1], list(result))
 
     def test_select_outer_join(self):
-        pass
+        TestTable1 = make_table(1, 3, 'TestTable1')
+        TestTable2 = make_table(2, 4, 'TestTable2')
+
+        # Add an outer-join table to the collection.
+        collection = Collection(None).outer_join(
+            TestTable2, TestTable2.id == TestTable1.id)
+        result = collection.select(TestTable1.id, TestTable2.id)
+        self.assertContentEqual([(1, None), (2, 2)], list(result))
 
     def test_select_store(self):
         TestTable = make_table(1, 2)
         collection = Collection(None)
         store = ISlaveStore(TestTable)
+        expected_obj = TestTable(1)
+        store.find = FakeMethod(result=[expected_obj])
         result_obj = collection.use(store).select(TestTable)[0]
-        self.assertIs(store, Store.of(result_obj))
+        self.assertEqual(expected_obj, result_obj)
+        self.assertNotEqual(0, store.find.call_count)
 
 
 def test_suite():
