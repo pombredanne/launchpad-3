@@ -45,7 +45,6 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
-from zope.traversing.interfaces import ITraversable
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -939,45 +938,6 @@ class PeopleButton(Button):
             url='%speople/' % allvhosts.configs['mainsite'].rooturl,
             buttonname=self.name,
             text=self.text)
-
-
-class ApplicationButtons(LaunchpadView):
-    """Those buttons that you get on the index pages."""
-
-    implements(ITraversable)
-
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
-        self.name = None
-
-    buttons = [
-        PeopleButton(people="Join thousands of people and teams collaborating"
-            " in software development."),
-        Button(code="Publish your code for people to merge and branch from."),
-        Button(bugs="Share bug reports and fixes."),
-        Button(blueprints="Track blueprints through approval and "
-            "implementation."),
-        Button(translations="Localize software into your favorite language."),
-        Button(answers="Ask and answer questions about software."),
-        ]
-
-    def render(self):
-        L = []
-        for button in self.buttons:
-            if self.name:
-                is_active = button.name == self.name
-            else:
-                is_active = True
-            is_front_page = self.name == 'main'
-            L.append(button.renderButton(is_active, is_front_page))
-        return u'\n'.join(L)
-
-    def traverse(self, name, furtherPath):
-        self.name = name
-        if furtherPath:
-            raise AssertionError(
-                'Max of one path item after +applicationbuttons')
-        return self
 
 
 class AppFrontPageSearchView(LaunchpadFormView):
