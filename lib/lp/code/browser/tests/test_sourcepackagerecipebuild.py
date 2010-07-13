@@ -6,6 +6,7 @@
 
 __metaclass__ = type
 
+from mechanize import LinkNotFoundError
 import transaction
 
 from canonical.launchpad.webapp import canonical_url
@@ -99,4 +100,6 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         logout()
 
         browser = self.getUserBrowser(build_url, user=self.chef)
-        browser.getLink('Delete build').click()
+        self.assertRaises(
+            LinkNotFoundError,
+            browser.getLink, 'Delete build')

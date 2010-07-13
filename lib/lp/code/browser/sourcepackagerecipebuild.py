@@ -38,7 +38,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     links = ('delete',)
 
-    #@enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Edit')
     def delete(self):
         return Link('+delete', 'Delete build', icon='trash-icon')
 
