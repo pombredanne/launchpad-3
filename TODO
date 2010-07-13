@@ -5,6 +5,8 @@ Temporary TODO
   [DONE]
     * Should do work to move js code and fix namespaces
       before taking on this new work
+    * Need to correctly handle bug activity/notify calls for
+      dupes of dupe.
 
   [TODO]
     * Extend JavaScript widget
@@ -17,5 +19,3 @@ Temporary TODO
         > 355164  ajax duplicate marker not working on internet explorer 7
         > 604419  changing the master bug of a duplicate bug will make a
                   second 'edit' button appear
-    * Need to correctly handle bug activity/notify calls for
-      dupes of dupe.
