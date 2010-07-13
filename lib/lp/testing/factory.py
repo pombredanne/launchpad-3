@@ -1959,11 +1959,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         return template
 
     def makePOFile(self, language_code, potemplate=None, owner=None,
-                   variant=None, create_sharing=False):
+                   create_sharing=False):
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        return potemplate.newPOFile(language_code, variant,
+        return potemplate.newPOFile(language_code,
                                     create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
