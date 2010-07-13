@@ -8,7 +8,7 @@ open source projects.
 For testing purposes we use a custom XML-RPC transport which
 implements a mock proxy in the transport and avoids network traffic.
 
-    >>> from lp.registry.tests.salesforce import (
+    >>> from lp.services.salesforce.tests.proxy import (
     ...     SalesforceXMLRPCTestTransport)
     >>> import xmlrpclib
     >>> test_transport = SalesforceXMLRPCTestTransport()
@@ -132,7 +132,7 @@ Reset the class variable to disable forced faults.
 The interface `ISalesforceVoucherProxy` defines the interaction with
 the Salesforce proxy.
 
-    >>> from lp.registry.interfaces.salesforce import (
+    >>> from lp.services.salesforce.interfaces import (
     ...     ISalesforceVoucher, ISalesforceVoucherProxy)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> voucher_proxy = getUtility(ISalesforceVoucherProxy)

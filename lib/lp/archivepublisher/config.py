@@ -84,6 +84,11 @@ def getPubConfig(archive):
             "Unknown archive purpose %s when getting publisher config.",
             archive.purpose)
 
+    meta_root = os.path.join(
+        pubconf.distroroot, archive.owner.name)
+    pubconf.metaroot = os.path.join(
+        meta_root, "meta", archive.name)
+
     return pubconf
 
 

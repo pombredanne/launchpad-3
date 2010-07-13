@@ -76,14 +76,6 @@
     </div>
 
   </div>
-
-  <div metal:fill-slot="help">
-    <p>This bug seems to affect a project which is not yet registered in
-    Launchpad.  Here you can register the project and link this bug to the
-    relevant bug in the project's bug tracker.
-    </p>
-  </div>
-
 </body>
 </html>
 

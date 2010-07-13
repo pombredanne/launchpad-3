@@ -32,12 +32,13 @@ from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough)
+    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.code.errors import ForbiddenInstruction
+from lp.code.errors import BuildAlreadyPending
 from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
@@ -48,6 +49,14 @@ from lp.soyuz.interfaces.archive import (
     IArchiveSet)
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+
+RECIPE_BETA_MESSAGE = structured(
+    'We\'re still working on source package recipes. '
+    'We would love for you to try them out, and if you have '
+    'any issues, please '
+    '<a href="http://bugs.edge.launchpad.net/launchpad-code">'
+    'file a bug</a>.  We\'ll be happy to fix any problems you encounter.')
+
 
 class IRecipesForPerson(Interface):
     """A marker interface for source package recipe sets."""
@@ -138,6 +147,12 @@ class SourcePackageRecipeContextMenu(ContextMenu):
 class SourcePackageRecipeView(LaunchpadView):
     """Default view of a SourcePackageRecipe."""
 
+    def initialize(self):
+        # XXX: rockstar: This should be removed when source package recipes are
+        # put into production. spec=sourcepackagerecipes
+        super(SourcePackageRecipeView, self).initialize()
+        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+
     @property
     def page_title(self):
         return "%(name)s\'s %(recipe_name)s recipe" % {
@@ -215,10 +230,8 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     label = title
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         return canonical_url(self.context)
-
-    cancel_url = next_url
 
     def validate(self, data):
         over_quota_distroseries = []
@@ -235,9 +248,18 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     def request_action(self, action, data):
         """User action for requesting a number of builds."""
         for distroseries in data['distros']:
-            self.context.requestBuild(
-                data['archive'], self.user, distroseries,
-                PackagePublishingPocket.RELEASE, manual=True)
+            try:
+                self.context.requestBuild(
+                    data['archive'], self.user, distroseries,
+                    PackagePublishingPocket.RELEASE, manual=True)
+            except BuildAlreadyPending, e:
+                self.setFieldError(
+                    'distros',
+                    'An identical build is already pending for %s.' %
+                    e.distroseries)
+                return
+        self.next_url = self.cancel_url
+
 
 
 class ISourcePackageAddEditSchema(Interface):
@@ -247,7 +269,10 @@ class ISourcePackageAddEditSchema(Interface):
         'name',
         'description',
         'owner',
+        'build_daily'
         ])
+    daily_build_archive = Choice(vocabulary='TargetPPAs',
+        title=u'Daily build archive')
     distros = List(
         Choice(vocabulary='BuildableDistroSeries'),
         title=u'Default Distribution series')
@@ -256,10 +281,16 @@ class ISourcePackageAddEditSchema(Interface):
         description=u'The text of the recipe.')
 
 
+
 class RecipeTextValidatorMixin:
     """Class to validate that the Source Package Recipe text is valid."""
 
     def validate(self, data):
+        if data['build_daily']:
+            if len(data['distros']) == 0:
+                self.setFieldError(
+                    'distros',
+                    'You must specify at least one series for daily builds.')
         try:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
@@ -277,11 +308,18 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     schema = ISourcePackageAddEditSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
 
+    def initialize(self):
+        # XXX: rockstar: This should be removed when source package recipes are
+        # put into production. spec=sourcepackagerecipes
+        super(SourcePackageRecipeAddView, self).initialize()
+        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+
     @property
     def initial_values(self):
         return {
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
-            'owner': self.user}
+            'owner': self.user,
+            'build_daily': False}
 
     @property
     def cancel_url(self):
@@ -295,7 +333,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
             source_package_recipe = getUtility(
                 ISourcePackageRecipeSource).new(
                     self.user, self.user, data['name'], recipe,
-                    data['description'], data['distros'])
+                    data['description'], data['distros'],
+                    data['daily_build_archive'], data['build_daily'])
         except ForbiddenInstruction:
             # XXX: bug=592513 We shouldn't be hardcoding "run" here.
             self.setFieldError(
