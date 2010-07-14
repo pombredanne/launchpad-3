@@ -61,10 +61,15 @@ Mozilla-firefox 0.9 has got some builds. including a PPA build.  The 'builds'
 property only returns the non-PPA builds.
 
    >>> from canonical.launchpad.interfaces import IPersonSet
+   >>> from lp.buildmaster.model.packagebuild import PackageBuild
    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+   >>> from storm.store import Store
    >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
-   >>> ff_ppa_build = BinaryPackageBuild.selectBy(
-   ...     archive=cprov_ppa, sourcepackagerelease=spr)
+   >>> ff_ppa_build = Store.of(cprov_ppa).find(
+   ...     BinaryPackageBuild,
+   ...     BinaryPackageBuild.source_package_release == spr,
+   ...     BinaryPackageBuild.package_build == PackageBuild.id,
+   ...     PackageBuild.archive == cprov_ppa)
    >>> ff_ppa_build.count()
    1
    >>> ff_ppa_build[0].archive.purpose.name

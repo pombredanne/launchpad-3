@@ -13,13 +13,14 @@ from sqlobject import ForeignKey
 from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
-
+from canonical.launchpad.interfaces.launchpad import IPersonRoles
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.security import BranchSubscriptionEdit
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership)
 
@@ -41,8 +42,18 @@ class BranchSubscription(SQLBase):
                              notNull=False, default=DEFAULT)
     review_level = EnumCol(enum=CodeReviewNotificationLevel,
                                  notNull=True, default=DEFAULT)
+    subscribed_by = ForeignKey(
+        dbName='subscribed_by', foreignKey='Person',
+        storm_validator=validate_person_not_private_membership, notNull=True)
 
     @property
     def target(self):
         """See `IHasBranchTarget`."""
         return self.branch.target
+
+    def canBeUnsubscribedByUser(self, user):
+        """See `IBranchSubscription`."""
+        if user is None:
+            return False
+        permission_check = BranchSubscriptionEdit(self)
+        return permission_check.checkAuthenticated(IPersonRoles(user))

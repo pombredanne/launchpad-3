@@ -8,7 +8,7 @@ page, with the addition of a breadcrumb itself.
     Hierarchy: None displayed
     Tabs:
     * Launchpad Home - http://launchpad.dev/
-    * Branches - http://code.launchpad.dev/
+    * Code - http://code.launchpad.dev/
     * Bugs (selected) - http://bugs.launchpad.dev/
     * Blueprints - http://blueprints.launchpad.dev/
     * Translations - http://translations.launchpad.dev/
@@ -92,7 +92,7 @@ Let's link a pair to debbugs:
     ...         "http://launchpad.dev/%s/+configure-bugtracker" % name)
     ...     admin_browser.getControl("In a registered bug tracker").click()
     ...     bt = admin_browser.getControl(name="field.bugtracker.bugtracker")
-    ...     bt.value = ["3"]
+    ...     bt.value = 'debbugs'
     ...     admin_browser.getControl("Change").click()
     ...
     >>> link_to_debbugs('upstart')

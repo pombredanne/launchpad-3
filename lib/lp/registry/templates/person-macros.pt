@@ -159,7 +159,7 @@
       <tal:built condition="not: spr/needs_building">
           <tal:failed repeat="build spr/failed_builds">
              <a tal:attributes="href build/fmt:url"
-                tal:content="build/distroarchseries/architecturetag" />
+                tal:content="build/distro_arch_series/architecturetag" />
           </tal:failed>
           <tal:not_failed condition="not: spr/failed_builds">
              None

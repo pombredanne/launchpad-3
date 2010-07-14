@@ -98,6 +98,14 @@ class TestReadOnlyModeSwitches(TestCase):
         self.slave_connection = slave._connection
         self.zstorm = getUtility(IZStorm)
         self.publication = LaunchpadBrowserPublication(None)
+        # Run through once to initialize. beforeTraversal will never
+        # disconnect Stores the first run through because there is no
+        # need.
+        request = LaunchpadTestRequest()
+        self.publication.beforeTraversal(request)
+        self.publication.endRequest(request, None)
+        getUtility(IStoreSelector).pop()
+
         self.request = LaunchpadTestRequest()
 
     @property

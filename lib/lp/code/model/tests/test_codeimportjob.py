@@ -651,14 +651,12 @@ class TestCodeImportJobWorkflowStartJob(TestCaseWithFactory,
     def test_wrongJobState(self):
         # Calling startJob with a job whose state is not PENDING is an error.
         code_import = self.factory.makeCodeImport()
-        machine = self.factory.makeCodeImportMachine()
+        machine = self.factory.makeCodeImportMachine(set_online=True)
         job = self.factory.makeCodeImportJob(code_import)
         # ICodeImportJob does not allow setting 'state', so we must
         # use removeSecurityProxy.
         RUNNING = CodeImportJobState.RUNNING
         removeSecurityProxy(job).state = RUNNING
-        # Machines are OFFLINE when they are created.
-        machine.setOnline()
         # Testing startJob failure.
         self.assertFailure(
             "The CodeImportJob associated with %s is "
@@ -709,8 +707,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
     def setUp(self):
         super(TestCodeImportJobWorkflowFinishJob, self).setUp()
         login_for_code_imports()
-        self.machine = self.factory.makeCodeImportMachine()
-        self.machine.setOnline()
+        self.machine = self.factory.makeCodeImportMachine(set_online=True)
 
     def makeRunningJob(self, code_import=None):
         """Make and return a CodeImportJob object with state==RUNNING.

@@ -6,6 +6,7 @@ __metaclass__ = type
 import unittest
 from datetime import datetime
 import pytz
+import time
 
 import transaction
 
@@ -14,6 +15,7 @@ from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
@@ -37,7 +39,7 @@ from lp.bugs.model.bugtask import get_related_bugtasks_search_params
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
-from lp.testing import TestCaseWithFactory
+from lp.testing import login_person, logout, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import PrivatePersonLinkageError
@@ -479,6 +481,63 @@ class TestPersonSet(unittest.TestCase):
         self.assertEqual(person1, person2)
 
 
+class TestPersonSetMerge(TestCaseWithFactory):
+    """Test cases for PersonSet merge."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonSetMerge, self).setUp()
+        self.person_set = getUtility(IPersonSet)
+
+    def _do_premerge(self, from_person, to_person):
+        # Do the pre merge work performed by the LoginToken.
+        login('admin@canonical.com')
+        email = from_person.preferredemail
+        email.status = EmailAddressStatus.NEW
+        email.person = to_person
+        email.account = to_person.account
+        transaction.commit()
+        logout()
+
+    def _get_testible_account(self, person, date_created, openid_identifier):
+        # Return a naked account with predicable attributes.
+        account = removeSecurityProxy(person.account)
+        account.date_created = date_created
+        account.openid_identifier = openid_identifier
+        return account
+
+    def test_reused_openid_identifier(self):
+        # Verify that an account can be merged when it has a reused OpenID
+        # identifier. eg. The identifier was freed by a previous merge.
+        test_identifier = 'Z1Y2X3W4'
+        test_date = datetime(
+            2010, 04, 01, 0, 0, 0, 0, tzinfo=pytz.timezone('UTC'))
+        # Free an OpenID identifier using merge.
+        first_duplicate = self.factory.makePerson()
+        first_account = self._get_testible_account(
+            first_duplicate, test_date, test_identifier)
+        first_person = self.factory.makePerson()
+        self._do_premerge(first_duplicate, first_person)
+        login_person(first_person)
+        self.person_set.merge(first_duplicate, first_person)
+        expected = 'merged-%s-%s' % (
+            test_identifier, time.mktime(test_date.timetuple()))
+        self.assertEqual(expected, first_account.openid_identifier)
+        # Create an account that reuses the freed OpenID_identifier.
+        test_date = test_date.replace(2010, 05)
+        second_duplicate = self.factory.makePerson()
+        second_account = self._get_testible_account(
+            second_duplicate, test_date, test_identifier)
+        second_person = self.factory.makePerson()
+        self._do_premerge(second_duplicate, second_person)
+        login_person(second_person)
+        self.person_set.merge(second_duplicate, second_person)
+        expected = 'merged-%s-%s' % (
+            test_identifier, time.mktime(test_date.timetuple()))
+        self.assertEqual(expected, second_account.openid_identifier)
+
+
 class TestCreatePersonAndEmail(unittest.TestCase):
     """Test `IPersonSet`.createPersonAndEmail()."""
     layer = DatabaseFunctionalLayer
@@ -526,7 +585,8 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
 
     def checkUserFields(
         self, params, assignee=None, bug_subscriber=None,
-        owner=None, bug_commenter=None, bug_reporter=None):
+        owner=None, bug_commenter=None, bug_reporter=None,
+        structural_subscriber=None):
         self.failUnlessEqual(assignee, params.assignee)
         # fromSearchForm() takes a bug_subscriber parameter, but saves
         # it as subscriber on the parameter object.
@@ -534,14 +594,15 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         self.failUnlessEqual(owner, params.owner)
         self.failUnlessEqual(bug_commenter, params.bug_commenter)
         self.failUnlessEqual(bug_reporter, params.bug_reporter)
+        self.failUnlessEqual(structural_subscriber, params.structural_subscriber)
 
     def test_get_related_bugtasks_search_params(self):
         # With no specified options, get_related_bugtasks_search_params()
-        # returns 4 BugTaskSearchParams objects, each with a different
+        # returns 5 BugTaskSearchParams objects, each with a different
         # user field set.
         search_params = get_related_bugtasks_search_params(
             self.user, self.context)
-        self.assertEqual(len(search_params), 4)
+        self.assertEqual(len(search_params), 5)
         self.checkUserFields(
             search_params[0], assignee=self.context)
         self.checkUserFields(
@@ -550,13 +611,15 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
             search_params[2], owner=self.context, bug_reporter=self.context)
         self.checkUserFields(
             search_params[3], bug_commenter=self.context)
+        self.checkUserFields(
+            search_params[4], structural_subscriber=self.context)
 
     def test_get_related_bugtasks_search_params_with_assignee(self):
         # With assignee specified, get_related_bugtasks_search_params()
-        # returns 3 BugTaskSearchParams objects.
+        # returns 4 BugTaskSearchParams objects.
         search_params = get_related_bugtasks_search_params(
             self.user, self.context, assignee=self.user)
-        self.assertEqual(len(search_params), 3)
+        self.assertEqual(len(search_params), 4)
         self.checkUserFields(
             search_params[0], assignee=self.user, bug_subscriber=self.context)
         self.checkUserFields(
@@ -564,19 +627,23 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
             bug_reporter=self.context)
         self.checkUserFields(
             search_params[2], assignee=self.user, bug_commenter=self.context)
+        self.checkUserFields(
+            search_params[3], assignee=self.user, structural_subscriber=self.context)
 
     def test_get_related_bugtasks_search_params_with_owner(self):
         # With owner specified, get_related_bugtasks_search_params() returns
-        # 3 BugTaskSearchParams objects.
+        # 4 BugTaskSearchParams objects.
         search_params = get_related_bugtasks_search_params(
             self.user, self.context, owner=self.user)
-        self.assertEqual(len(search_params), 3)
+        self.assertEqual(len(search_params), 4)
         self.checkUserFields(
             search_params[0], owner=self.user, assignee=self.context)
         self.checkUserFields(
             search_params[1], owner=self.user, bug_subscriber=self.context)
         self.checkUserFields(
             search_params[2], owner=self.user, bug_commenter=self.context)
+        self.checkUserFields(
+            search_params[3], owner=self.user, structural_subscriber=self.context)
 
     def test_get_related_bugtasks_search_params_with_bug_reporter(self):
         # With bug reporter specified, get_related_bugtasks_search_params()
@@ -584,7 +651,7 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         # is overwritten in one instance.
         search_params = get_related_bugtasks_search_params(
             self.user, self.context, bug_reporter=self.user)
-        self.assertEqual(len(search_params), 4)
+        self.assertEqual(len(search_params), 5)
         self.checkUserFields(
             search_params[0], bug_reporter=self.user,
             assignee=self.context)
@@ -599,13 +666,16 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         self.checkUserFields(
             search_params[3], bug_reporter=self.user,
             bug_commenter=self.context)
+        self.checkUserFields(
+            search_params[4], bug_reporter=self.user,
+            structural_subscriber=self.context)
 
     def test_get_related_bugtasks_search_params_illegal(self):
         self.assertRaises(
             IllegalRelatedBugTasksParams,
             get_related_bugtasks_search_params, self.user, self.context,
             assignee=self.user, owner=self.user, bug_commenter=self.user,
-            bug_subscriber=self.user)
+            bug_subscriber=self.user, structural_subscriber=self.user)
 
     def test_get_related_bugtasks_search_params_illegal_context(self):
         # in case the `context` argument is not  of type IPerson an

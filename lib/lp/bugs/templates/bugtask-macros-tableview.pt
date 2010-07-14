@@ -234,7 +234,8 @@
 </metal:header>
 
 
-<metal:advanced_search_form define-macro="advanced_search_form">
+<metal:advanced_search_form define-macro="advanced_search_form"
+  tal:define="bugs_rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/bugs/rooturl">
 
   <form class="long" name="search" method="get" action="">
     <span tal:condition="view/current_package|nothing">
@@ -527,7 +528,7 @@
                          tal:content="structure view/widgets/tag/label">
                     Tag
                   </label>: <input tal:replace="structure view/widgets/tag" />
-                  <a href="/+help/tag-search.html"
+                  <a tal:attributes="href string:${bugs_rooturl}/+help/tag-search.html"
                       target="help">Tag search help</a>
                   <div
                     tal:condition="error"

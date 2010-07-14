@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from __future__ import with_statement
 
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,W0612,C0322
@@ -30,6 +31,7 @@ from operator import attrgetter
 import pytz
 import random
 import re
+import time
 import weakref
 
 from bzrlib.plugins.builder import RecipeParser
@@ -60,9 +62,13 @@ from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
 from canonical.launchpad.database.account import Account, AccountPassword
+from canonical.launchpad.interfaces.account import AccountSuspendedError
 from lp.bugs.model.bugtarget import HasBugsBase
 from canonical.launchpad.database.stormsugar import StartsWith
 from lp.registry.model.karma import KarmaCategory
+from lp.services.salesforce.interfaces import (
+    ISalesforceVoucherProxy, REDEEMABLE_VOUCHER_STATUSES,
+    VOUCHER_STATUSES)
 from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
@@ -115,14 +121,10 @@ from lp.registry.interfaces.personnotification import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.salesforce import (
-    ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
 from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
@@ -151,6 +153,7 @@ from lp.registry.model.teammembership import (
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -958,22 +961,31 @@ class Person(
                                  orderBy=['displayname'])
         return results
 
-    def getCommercialSubscriptionVouchers(self):
+    def getAllCommercialSubscriptionVouchers(self, voucher_proxy=None):
         """See `IPerson`."""
-        voucher_proxy = getUtility(ISalesforceVoucherProxy)
+        if voucher_proxy is None:
+            voucher_proxy = getUtility(ISalesforceVoucherProxy)
         commercial_vouchers = voucher_proxy.getAllVouchers(self)
-        unredeemed_commercial_vouchers = []
-        redeemed_commercial_vouchers = []
+        vouchers = {}
+        for status in VOUCHER_STATUSES:
+            vouchers[status] = []
         for voucher in commercial_vouchers:
             assert voucher.status in VOUCHER_STATUSES, (
                 "Voucher %s has unrecognized status %s" %
                 (voucher.voucher_id, voucher.status))
-            if voucher.status == 'Redeemed':
-                redeemed_commercial_vouchers.append(voucher)
-            else:
-                unredeemed_commercial_vouchers.append(voucher)
-        return (unredeemed_commercial_vouchers,
-                redeemed_commercial_vouchers)
+            vouchers[voucher.status].append(voucher)
+        return vouchers
+
+    def getRedeemableCommercialSubscriptionVouchers(self, voucher_proxy=None):
+        """See `IPerson`."""
+        if voucher_proxy is None:
+            voucher_proxy = getUtility(ISalesforceVoucherProxy)
+        vouchers = voucher_proxy.getUnredeemedVouchers(self)
+        for voucher in vouchers:
+            assert voucher.status in REDEEMABLE_VOUCHER_STATUSES, (
+                "Voucher %s has invalid status %s" %
+                (voucher.voucher_id, voucher.status))
+        return vouchers
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
@@ -2263,15 +2275,13 @@ class Person(
         return rset
 
     def createRecipe(self, name, description, recipe_text, distroseries,
-                     sourcepackagename, registrant):
+                     registrant, daily_build_archive=None, build_daily=False):
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         builder_recipe = RecipeParser(recipe_text).parse()
-        spnset = getUtility(ISourcePackageNameSet)
-        sourcepackagename = spnset.getOrCreateByName(sourcepackagename)
         return SourcePackageRecipe.new(
-            registrant, self, distroseries, sourcepackagename, name,
-            builder_recipe, description)
+            registrant, self, name, builder_recipe, description, distroseries,
+            daily_build_archive, build_daily)
 
     def getRecipe(self, name):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
@@ -2428,6 +2438,59 @@ class PersonSet:
             top_people,
             key=lambda obj: (obj.karma, obj.displayname, obj.id),
             reverse=True)
+
+    def getOrCreateByOpenIDIdentifier(
+        self, openid_identifier, email_address, full_name,
+        creation_rationale, comment):
+        """See `IPersonSet`."""
+        assert email_address is not None and full_name is not None, (
+                "Both email address and full name are required to "
+                "create an account.")
+        db_updated = False
+        with MasterDatabasePolicy():
+            account_set = getUtility(IAccountSet)
+            email_set = getUtility(IEmailAddressSet)
+            email = email_set.getByEmail(email_address)
+            try:
+                account = account_set.getByOpenIDIdentifier(
+                    openid_identifier)
+            except LookupError:
+                if email is None:
+                    # There is no account associated with the identifier
+                    # nor an email associated with the email address.
+                    # We'll create one.
+                    account, email = account_set.createAccountAndEmail(
+                            email_address, creation_rationale, full_name,
+                            password=None,
+                            openid_identifier=openid_identifier)
+                else:
+                    account = email.account
+                    assert account is not None, (
+                        "This email address should have an associated "
+                        "account.")
+                    removeSecurityProxy(account).openid_identifier = (
+                        openid_identifier)
+                db_updated = True
+
+            if account.status == AccountStatus.SUSPENDED:
+                raise AccountSuspendedError(
+                    "The account matching the identifier is suspended.")
+            elif account.status in [AccountStatus.DEACTIVATED,
+                                    AccountStatus.NOACCOUNT]:
+                password = '' # Needed just to please reactivate() below.
+                if email is None:
+                    email = email_set.new(email_address, account=account)
+                removeSecurityProxy(account).reactivate(
+                    comment, password, removeSecurityProxy(email))
+            else:
+                # Account is active, so nothing to do.
+                pass
+            if IPerson(account, None) is None:
+                removeSecurityProxy(account).createPerson(
+                    creation_rationale, comment=comment)
+                db_updated = True
+
+        return IPerson(account), db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -3519,13 +3582,17 @@ class PersonSet:
 
         # Change the merged Account's OpenID identifier so that it cannot be
         # used to lookup the merged Person; Launchpad will instead select the
-        # remaining Person based on the email address.
+        # remaining Person based on the email address. The rename uses a
+        # dash, which does not occur in SSO identifiers. The epoch from
+        # the account date_created is used to ensure it is unique if the
+        # original identifier is reused and merged.
         if from_person.account is not None:
             account = IMasterObject(from_person.account)
-            # This works because dashes do not occur in SSO identifiers.
-            merge_identifier = 'merged-%s' % removeSecurityProxy(
-                account).openid_identifier
-            removeSecurityProxy(account).openid_identifier = merge_identifier
+            naked_account = removeSecurityProxy(account)
+            unique_part = time.mktime(naked_account.date_created.timetuple())
+            merge_identifier = 'merged-%s-%s' % (
+                naked_account.openid_identifier, unique_part)
+            naked_account.openid_identifier = merge_identifier
 
         # Inform the user of the merge changes.
         if not to_person.isTeam():

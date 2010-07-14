@@ -193,7 +193,9 @@
                     isSubscribed
                     getPackageComponent
                     userCanEditImportance
-                    userCanEditMilestone"/>
+                    userCanEditMilestone
+                    userCanSetAnyAssignee
+                    userCanUnassign"/>
             <require
                 permission="launchpad.View"
                 attributes="
@@ -659,7 +661,8 @@
                     users_affected_with_dupes
                     bug_messages
                     isUserAffected
-                    getHWSubmissions"/>
+                    getHWSubmissions
+                    isExpirable"/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -691,7 +694,8 @@
                     unlinkHWSubmission
                     linkBranch
                     unlinkBranch
-                    linkAttachment"
+                    linkAttachment
+                    updateHeat"
                 set_attributes="
                     activity initial_message
                     activityscore
@@ -720,7 +724,8 @@
                 permission="launchpad.Admin"
                 attributes="
                     setCommentVisibility
-                    setHeat"/>
+                    setHeat"
+                set_attributes="heat_last_updated" />
         </class>
         <adapter
             for="lp.bugs.interfaces.bug.IBug"
@@ -852,7 +857,6 @@
                     can_be_rescheduled
                     datecreated
                     failed_activity
-                    getLastErrorMessage
                     hasComment
                     unpushed_comments
                     id
@@ -949,7 +953,7 @@
             interface="lp.bugs.interfaces.bugnotification.IBugNotificationRecipient"/>
     </class>
     <class
-        class="canonical.launchpad.mailnotification.BugNotificationRecipients">
+        class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients">
         <allow
             interface="canonical.launchpad.interfaces.INotificationRecipientSet"/>
     </class>
@@ -965,18 +969,6 @@
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
-
-    <!-- CalculateBugHeatJobs -->
-    <class class="lp.bugs.model.bugheat.CalculateBugHeatJob">
-        <allow interface="lp.bugs.interfaces.bugjob.IBugJob" />
-        <allow interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJob"/>
-    </class>
-    <securedutility
-        component="lp.bugs.model.bugheat.CalculateBugHeatJob"
-        provides="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource">
-        <allow
-            interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource"/>
-    </securedutility>
 
     <!-- ProcessApportBlobJobs -->
     <class class="lp.bugs.model.apportjob.ProcessApportBlobJob">

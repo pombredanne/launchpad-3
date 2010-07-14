@@ -201,53 +201,6 @@ class BugWatch(SQLBase):
         assert len(self.bugtasks) == 0, "Can't delete linked bug watches"
         SQLBase.destroySelf(self)
 
-    def getLastErrorMessage(self):
-        """See `IBugWatch`."""
-
-        if not self.last_error_type:
-            return None
-
-        error_message_mapping = {
-            BugWatchActivityStatus.BUG_NOT_FOUND: "%(bugtracker)s bug #"
-                "%(bug)s appears not to exist. Check that the bug "
-                "number is correct.",
-            BugWatchActivityStatus.CONNECTION_ERROR: "Launchpad couldn't "
-                "connect to %(bugtracker)s.",
-            BugWatchActivityStatus.INVALID_BUG_ID: "Bug ID %(bug)s isn't "
-                "valid on %(bugtracker)s. Check that the bug ID is "
-                "correct.",
-            BugWatchActivityStatus.TIMEOUT: "Launchpad's connection to "
-                "%(bugtracker)s timed out.",
-            BugWatchActivityStatus.UNKNOWN: "Launchpad couldn't import bug "
-                "#%(bug)s from " "%(bugtracker)s.",
-            BugWatchActivityStatus.UNPARSABLE_BUG: "Launchpad couldn't "
-                "extract a status from %(bug)s on %(bugtracker)s.",
-            BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER: "Launchpad "
-                "couldn't determine the version of %(bugtrackertype)s "
-                "running on %(bugtracker)s.",
-            BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER: "Launchpad "
-                "doesn't support importing bugs from %(bugtrackertype)s"
-                " bug trackers.",
-            BugWatchActivityStatus.PRIVATE_REMOTE_BUG: "The bug is marked as "
-                "private on the remote bug tracker. Launchpad cannot import "
-                "the status of private remote bugs.",
-            }
-
-        if self.last_error_type in error_message_mapping:
-            message = error_message_mapping[self.last_error_type]
-        elif self.last_error_type != BugWatchActivityStatus.UNKNOWN:
-            message = self.last_error_type.description
-        else:
-            message = ("Launchpad couldn't import bug #%(bug)s from "
-                "%(bugtracker)s.")
-
-        error_data = {
-            'bug': self.remotebug,
-            'bugtracker': self.bugtracker.title,
-            'bugtrackertype': self.bugtracker.bugtrackertype.title}
-
-        return message % error_data
-
     @property
     def unpushed_comments(self):
         """Return the unpushed comments for this `BugWatch`."""
@@ -345,10 +298,20 @@ class BugWatch(SQLBase):
             # been checked.
             return False
 
+        if self.activity[0].result in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES:
+            # If the last update was successful the watch can't be
+            # rescheduled.
+            return False
+
         if self.failed_activity.is_empty():
             # Don't show the reschedule button if the watch has never
             # failed.
             return False
+
+        if self.failed_activity.count() == 1 and self.activity.count() == 1:
+            # In cases where a watch has been updated once and failed,
+            # we allow the user to reschedule it.
+            return True
 
         # If the ratio is lower than the reschedule threshold, we
         # can show the button.

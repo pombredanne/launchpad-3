@@ -275,3 +275,34 @@ shown for teams.
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
     Team deleted.
+
+Private teams can be deleted by admins.
+
+    >>> from lp.registry.interfaces.person import PersonVisibility
+
+    >>> login('commercial-member@canonical.com')
+    >>> private_team = factory.makeTeam(
+    ...     name='secret', visibility=PersonVisibility.PRIVATE)
+    >>> login('admin@canonical.com')
+    >>> form = {'field.actions.delete': 'Delete'}
+    >>> view = create_initialized_view(private_team, '+delete', form=form)
+    >>> view.errors
+    []
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Team deleted.
+
+Private membership teams can be deleted by admins, and when they are all
+deleted, we can remove this visibility type.
+
+    >>> login('commercial-member@canonical.com')
+    >>> pm_team = factory.makeTeam(
+    ...     name='sekret', visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+    >>> login('admin@canonical.com')
+    >>> form = {'field.actions.delete': 'Delete'}
+    >>> view = create_initialized_view(pm_team, '+delete', form=form)
+    >>> view.errors
+    []
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Team deleted.

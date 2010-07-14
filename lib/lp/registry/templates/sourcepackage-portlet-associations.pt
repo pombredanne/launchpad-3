@@ -22,7 +22,7 @@
       </tal:has_series>
 
       <tal:has_no_series condition="not: series">
-        <div id="no-upstreams" tal:condition="view/product_suggestions">
+        <div id="no-upstreams">
           <p>
             Launchpad doesn&#8217;t know which project and series this
             package belongs to. Links from distribution packages to
@@ -31,11 +31,16 @@
             efficiently.
           </p>
 
+          <p tal:condition="not: view/product_suggestions">
+          There are no projects registered in Launchpad that are a potential
+          match for this source package.  Can you help us find one?
+          </p>
+
           <tal:message
              define="count python:len(view.product_suggestions);
                      singular string:Is the following project the upstream for this source package?;
                      plural string:Is one of these projects the upstream for this source package?"
-             >
+             condition="view/product_suggestions">
             <b>
             <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
             </b>
@@ -44,19 +49,8 @@
           <div metal:use-macro="context/@@launchpad_form/form">
             <div class="actions" metal:fill-slot="buttons">
               <input tal:replace="structure view/link/render"/>
-              &nbsp;or&nbsp;
-              <a tal:replace="structure
-                              context/menu:overview/set_upstream/fmt:link" />
             </div>
           </div>
-        </div>
-        <div id="no-upstreams" tal:condition="not: view/product_suggestions">
-          <p>
-          There are no projects registered in Launchpad that are a potential
-          match for this source package.  Can you help us find one?
-          </p>
-          <a tal:replace="structure
-                          context/menu:overview/set_upstream/fmt:link" />
         </div>
       </tal:has_no_series>
     </div>

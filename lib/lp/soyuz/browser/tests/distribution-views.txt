@@ -10,6 +10,8 @@ Distribution Soyuz Views
 DistributionArchivesView
 ------------------------
 
+    >>> from lp.registry.interfaces.person import IPersonSet
+
 The DistributionArchivesView includes an archive_list property that
 returns a list of copy archives only for the given distribution (because
 only copy archives are exposed through the distribution/+archives UI):
@@ -29,6 +31,14 @@ And then after creating a copy archive for Ubuntu:
     >>> archives.count()
     1
 
+Disabled archives will be visible:
+
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> copy_location = factory.makeCopyArchiveLocation(
+    ...     distribution=ubuntu, enabled=False, owner=foo_bar)
+    >>> archives = distro_archives_view.archive_list
+    >>> archives.count()
+    2
 
 DistributionPackageSearchView
 -----------------------------

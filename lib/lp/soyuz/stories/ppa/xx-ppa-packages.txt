@@ -23,7 +23,7 @@ a descriptive main heading.
     Hierarchy: Celso Providelo > PPA for Celso Providelo > Packages in...
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
-    * Branches - http://code.launchpad.dev/~cprov
+    * Code - http://code.launchpad.dev/~cprov
     * Bugs - http://bugs.launchpad.dev/~cprov
     * Blueprints - http://blueprints.launchpad.dev/~cprov
     * Translations - http://translations.launchpad.dev/~cprov

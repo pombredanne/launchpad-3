@@ -16,6 +16,7 @@ We publish a subset of their attributes.
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
+    commercial: False
     dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
@@ -80,6 +81,7 @@ The archive has the following attributes:
     >>> ubuntu_main_archive = webservice.get(
     ...     ubuntutest['main_archive_link']).jsonBody()
     >>> pprint_entry(ubuntu_main_archive)
+    commercial: False
     dependencies_collection_link: u'http://.../ubuntutest/+archive/primary/dependencies'
     description: None
     displayname: u'Primary Archive for Ubuntu Test'
@@ -335,6 +337,19 @@ component.
     Archive Upload Rights ...~ubuntu-team restricted None
     Archive Upload Rights ...~ubuntu-team universe None
 
+We can use ``checkUpload`` to verify that a person can upload a 
+sourcepackage.
+
+    >>> grumpy = user_webservice.get("/ubuntu/grumpy").jsonBody()
+    >>> response = user_webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'checkUpload', 
+    ...     distroseries=grumpy['self_link'],
+    ...     sourcepackagename='mozilla-firefox', pocket='Release',
+    ...     component='restricted', person=name12['self_link'])
+    >>> print(response)
+    HTTP/1.1 200 Ok
+    ...
+
 deleteComponentUploader() removes that permission:
 
     >>> print cjwatson_webservice.named_post(
@@ -350,6 +365,21 @@ And we can see that it's gone:
     Archive Upload Rights ...~ubuntu-team main None
     Archive Upload Rights ...~ubuntu-team restricted None
     Archive Upload Rights ...~ubuntu-team universe None
+
+And ``checkUpload`` now also no longer passes:
+
+    >>> grumpy = user_webservice.get("/ubuntu/grumpy").jsonBody()
+    >>> response = user_webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'checkUpload', 
+    ...     distroseries=grumpy['self_link'],
+    ...     sourcepackagename='mozilla-firefox', pocket='Release',
+    ...     component='main', person=name12['self_link'])
+    >>> print(response)
+    HTTP/1.1 403 Forbidden
+    ...
+	InsufficientUploadRights: The signer of this package is lacking the upload rights for the source package, component or package set in question.
+
+
 
 Only the archive owners can add or remove component-uploaders.
 
@@ -456,7 +486,6 @@ And we can see that it's gone:
     Queue Administration Rights ...~name12 multiverse None
     Queue Administration Rights ...~name12 restricted None
     Queue Administration Rights ...~name12 universe None
-
 
 == Malformed archive permission URLs ==
 
@@ -792,6 +821,7 @@ attributes are only exposed when the requestor has View permission in
 the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(user_webservice.get("/~cprov/+archive/p3a").jsonBody())
+    commercial: False
     dependencies_collection_link: u'http://.../~cprov/+archive/p3a/dependencies'
     description: u'tag:launchpad.net:2008:redacted'
     displayname: u'PPA named p3a for Celso Providelo'
@@ -805,6 +835,7 @@ the IArchive context, in this case only Celso has it.
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'
 
     >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/p3a").jsonBody())
+    commercial: False
     dependencies_collection_link: u'http://.../~cprov/+archive/p3a/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA named p3a for Celso Providelo'
@@ -858,6 +889,16 @@ First we'll subscribe mark to cprov's archive:
 
     >>> print response.getHeader('Location')
     http://.../~cprov/+archive/p3a/+subscriptions/mark
+
+We can print the sources.list entry for the archive, which will include an
+AuthToken:
+
+    >>> sources_response = webservice.named_post(
+    ...     cprov_private_ppa['self_link'], 'getPrivateSourcesList')
+    >>> print sources_response
+    HTTP/1.1 200 Ok
+    ...
+    "http://salgado:...@private-ppa.launchpad.dev/cprov/p3a/ubuntu"
 
 We publish a subset of the IArchiveSubscriber attributes.
 

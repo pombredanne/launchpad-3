@@ -105,7 +105,6 @@ from lp.registry.interfaces.projectgroup import *
 from lp.soyuz.interfaces.publishedpackage import *
 from lp.soyuz.interfaces.publishing import *
 from lp.soyuz.interfaces.queue import *
-from lp.registry.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
 from lp.services.scripts.interfaces.scriptactivity import *
 from lp.soyuz.interfaces.section import *
@@ -145,4 +144,3 @@ from lp.answers.interfaces.questionsubscription import *
 from lp.answers.interfaces.questiontarget import *
 
 from canonical.launchpad.interfaces._schema_circular_imports import *
-

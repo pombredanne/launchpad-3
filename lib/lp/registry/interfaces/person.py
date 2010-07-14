@@ -16,6 +16,8 @@ __all__ = [
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
+    'ISoftwareCenterAgentAPI',
+    'ISoftwareCenterAgentApplication',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'ITeam',
@@ -75,7 +77,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchpadApplication, NameLookupFailed)
 
 from lp.app.interfaces.headings import IRootContext
 from lp.blueprints.interfaces.specificationtarget import (
@@ -295,6 +298,13 @@ class PersonCreationRationale(DBEnumeratedType):
 
         A watch was made against a remote bug that the user submitted or
         commented on.
+        """)
+
+    SOFTWARE_CENTER_PURCHASE = DBItem(16, """
+        Created by purchasing commercial software through Software Center.
+
+        A purchase of commercial software (ie. subscriptions to a private
+        and commercial archive) was made via Software Center.
         """)
 
 
@@ -850,18 +860,21 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         distroseries=List(value_type=Reference(schema=Interface)),
         name=TextLine(),
         recipe_text=Text(),
-        sourcepackagename=TextLine(),
+        daily_build_archive=Reference(schema=Interface),
+        build_daily=Bool(),
         )
     @export_factory_operation(Interface, [])
     def createRecipe(name, description, recipe_text, distroseries,
-                     sourcepackagename, registrant):
+                     registrant, daily_build_archive=None, build_daily=False):
         """Create a SourcePackageRecipe owned by this person.
 
         :param name: the name to use for referring to the recipe.
         :param description: A description of the recipe.
         :param recipe_text: The text of the recipe.
         :param distroseries: The distroseries to use.
-        :param sourcepackagename: The name of the sourcepackage for the recipe.
+        :param registrant: The person who created this recipe.
+        :param daily_build_archive: The archive to use for daily builds.
+        :param build_daily: If True, build this recipe daily (if changed).
         :return: a SourcePackageRecipe.
         """
 
@@ -973,12 +986,23 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         :param match_name: string optional project name to screen the results.
         """
 
-    def getCommercialSubscriptionVouchers():
+    def getAllCommercialSubscriptionVouchers(voucher_proxy=None):
         """Return all commercial subscription vouchers.
 
-        The vouchers are separated into two lists, unredeemed vouchers and
-        redeemed vouchers.
-        :return: tuple (unredeemed_vouchers, redeemed_vouchers)
+        All of a `Person`s vouchers are returned, regardless of redemption
+        status.  Even vouchers marked inactive are returned.
+        The result is a dictionary, indexed by the three
+        voucher statuses.
+        :return: dict
+        """
+
+    def getRedeemableCommercialSubscriptionVouchers(voucher_proxy=None):
+        """Return the set of redeemable vouchers.
+
+        The `Person`s vouchers are returned if they are unredeemed and active.
+
+        The result is a list of vouchers.
+        :return: list
         """
 
     def assignKarma(action_name, product=None, distribution=None,
@@ -1751,6 +1775,33 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
+    def getOrCreateByOpenIDIdentifier(openid_identifier, email,
+                                      full_name, creation_rationale, comment):
+        """Get or create a person for a given OpenID identifier.
+
+        This is used when users login. We get the account with the given
+        OpenID identifier (creating one if it doesn't already exist) and
+        act according to the account's state:
+          - If the account is suspended, we stop and raise an error.
+          - If the account is deactivated, we reactivate it and proceed;
+          - If the account is active, we just proceed.
+
+        If there is no existing Launchpad person for the account, we
+        create it.
+
+        :param openid_identifier: representing the authenticated user.
+        :param email_address: the email address of the user.
+        :param full_name: the full name of the user.
+        :param creation_rationale: When an account or person needs to
+            be created, this indicates why it was created.
+        :param comment: If the account is reactivated or person created,
+            this comment indicates why.
+        :return: a tuple of `IPerson` and a boolean indicating whether the
+            database was updated.
+        :raises AccountSuspendedError: if the account associated with the
+            identifier has been suspended.
+        """
+
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', teamdescription='team_description',
@@ -2047,6 +2098,26 @@ class ITeamContactAddressForm(Interface):
     contact_method = Choice(
         title=_("How do people contact these team's members?"),
         required=True, vocabulary=TeamContactMethod)
+
+
+class ISoftwareCenterAgentAPI(Interface):
+    """XMLRPC API used by the software center agent."""
+
+    def getOrCreateSoftwareCenterCustomer(openid_identifier, email,
+                                          full_name):
+        """Get or create an LP person based on a given identifier.
+
+        See the method of the same name on `IPersonSet`. This XMLRPC version
+        doesn't require the creation rationale and comment.
+
+        This is added as a private XMLRPC method instead of exposing via the
+        API as it should not be needed long-term. Long term we should allow
+        the software center to create subscriptions to private PPAs without
+        requiring a Launchpad account.
+        """
+
+class ISoftwareCenterAgentApplication(ILaunchpadApplication):
+    """XMLRPC application root for ISoftwareCenterAgentAPI."""
 
 
 class JoinNotAllowed(Exception):

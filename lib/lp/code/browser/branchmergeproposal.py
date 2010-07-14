@@ -63,13 +63,14 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.tales import (
-    DateTimeFormatterAPI, FormattersAPI)
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.widgets.lazrjs import (
     TextAreaEditorWidget, vocabulary_to_choice_edit_items)
 
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
+from lp.code.browser.decorations import DecoratedBranch, DecoratedBug
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel,
     CodeReviewVote)
@@ -212,7 +213,6 @@ class BranchMergeProposalMenuMixin:
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
         text = 'Change status'
-        status = self.context.queue_status
         return Link('+edit-status', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -459,7 +459,6 @@ class BranchMergeProposalStatusMixin:
 
     def _createStatusVocabulary(self):
         # Create the vocabulary that is used for the status widget.
-        curr_status = self.context.queue_status
         possible_next_states = (
             BranchMergeProposalStatus.WORK_IN_PROGRESS,
             BranchMergeProposalStatus.NEEDS_REVIEW,
@@ -590,7 +589,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         start_date = self.context.date_review_requested
         if start_date is None:
             start_date = self.context.date_created
-        source = self.context.source_branch
+        source = DecoratedBranch(self.context.source_branch)
         resultset = source.getMainlineBranchRevisions(
             start_date, self.revision_end_date, oldest_first=True)
         # Now group by date created.
@@ -663,8 +662,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @cachedproperty
     def linked_bugs(self):
         """Return DecoratedBugs linked to the source branch."""
-        # Avoid import loop
-        from lp.code.browser.branch import DecoratedBug
         return [DecoratedBug(bug, self.context.source_branch)
                 for bug in self.context.related_bugs]
 
@@ -839,7 +836,7 @@ class IReviewRequest(Interface):
     reviewer = copy_field(ICodeReviewVoteReference['reviewer'])
 
     review_type = copy_field(
-        ICodeReviewVoteReference['review_type'], 
+        ICodeReviewVoteReference['review_type'],
         description=u'Lowercase keywords describing the type of review you '
                      'would like to be performed.')
 
@@ -874,8 +871,7 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
 
     def requestReview(self, candidate, review_type):
         """Request a `review_type` review from `candidate` and email them."""
-        vote_reference = self.context.nominateReviewer(
-            candidate, self.user, review_type)
+        self.context.nominateReviewer(candidate, self.user, review_type)
 
     @action('Request Review', name='review')
     @notify
@@ -1334,7 +1330,7 @@ class IAddVote(Interface):
     vote = copy_field(ICodeReviewComment['vote'], required=True)
 
     review_type = copy_field(
-        ICodeReviewVoteReference['review_type'], 
+        ICodeReviewVoteReference['review_type'],
         description=u'Lowercase keywords describing the type of review you '
                      'are performing.')
 
@@ -1428,7 +1424,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
                 # team.
                 vote_ref.claimReview(self.user)
 
-        comment = self.context.createComment(
+        self.context.createComment(
             self.user, subject=None, content=data['comment'],
             vote=data['vote'], review_type=review_type)
 

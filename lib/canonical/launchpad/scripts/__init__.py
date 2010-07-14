@@ -24,11 +24,9 @@ import sys
 from textwrap import dedent
 import threading
 
-import zope.app.appsetup
 import zope.sendmail.delivery
 import zope.site.hooks
 from zope.configuration.config import ConfigurationMachine
-from zope.configuration.config import GroupingContextDecorator
 from zope.security.management import setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
@@ -44,29 +42,6 @@ from canonical.launchpad.scripts.logger import (
     logger_options, logger, log, BufferLogger, FakeLogger, QuietFakeLogger)
 # Intentional re-export, following along the lines of the logger module.
 from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
-
-# XXX StuartBishop 2005-06-02:
-# We should probably split out all the stuff in this directory that
-# doesn't rely on Zope and migrate it to canonical/scripts.
-
-class NullItem:
-    def __init__(self, context, handler, info, *argdata):
-        newcontext = GroupingContextDecorator(context)
-        newcontext.info = info
-        self.context = newcontext
-        self.handler = handler
-        self.argdata = argdata
-
-    def contained(self, name, data, info):
-        return NullItem(self.context, None, None)
-
-    def finish(self):
-        pass
-
-
-def NullFactory(context, data, info):
-    return NullItem(context, data, info)
-
 
 def execute_zcml_for_scripts(use_web_security=False):
     """Execute the zcml rooted at launchpad/script.zcml

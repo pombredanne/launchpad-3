@@ -22,6 +22,7 @@ from zope.component import getUtility
 from canonical.launchpad.validators.name import invalid_name_pattern
 from canonical.launchpad.validators.version import sane_version
 
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productrelease import UpstreamFileType
 from lp.registry.scripts.productreleasefinder.hose import Hose
@@ -72,6 +73,11 @@ def extract_version(filename):
     # Remove processor and language flavors from the version:
     # eg. _de_DE, _all, _i386.
     version = flavor_pattern.sub('', version)
+    # Bug #599250. If there is no file extension after extracting
+    # the version number, we have added an unknown file extension to the
+    # version. Ignore this dud match.
+    if filename.endswith(version):
+        return None
     # Launchpad requires all versions to be lowercase. They may contain
     # letters, numbers, dots, underscores, and hyphens (a-z0-9._-).
     version = version.lower()
@@ -105,7 +111,8 @@ class ProductReleaseFinder:
             filters = []
 
             for series in product.series:
-                if not series.releasefileglob:
+                if (series.status == SeriesStatus.OBSOLETE
+                    or not series.releasefileglob):
                     continue
 
                 filters.append(FilterPattern(series.name,

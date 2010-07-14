@@ -116,7 +116,7 @@ class HasRenewalPolicyMixin:
 
 
 class TeamFormMixin:
-    """Form to be used on forms which conditionally display team visiblity.
+    """Form to be used on forms which conditionally display team visibility.
 
     The visibility field should only be shown to users with
     launchpad.Commercial permission on the team.

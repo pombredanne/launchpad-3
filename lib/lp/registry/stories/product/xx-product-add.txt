@@ -5,7 +5,7 @@ Sample Person decides to register her new project, which she can do either
 from the Launchpad home page or the projects home page.
 
     >>> user_browser.open('http://launchpad.dev')
-    >>> user_browser.getLink('Create a new project').click()
+    >>> user_browser.getLink('Register a project').click()
     >>> print user_browser.title
     Register a project in Launchpad...
 
@@ -14,12 +14,31 @@ from the Launchpad home page or the projects home page.
     >>> print user_browser.title
     Register a project in Launchpad...
 
-The page includes both a direct link and a button to order Ubuntu CDs.
+The page includes both a direct link and a button to test projects on staging.
 
-    >>> print user_browser.getLink('shipit.ubuntu.com').url
-    https://shipit.ubuntu.com/
-    >>> print user_browser.getControl('Oh, I want Ubuntu CDs').type
+    >>> print user_browser.getLink('staging.launchpad.net').url
+    https://staging.launchpad.net/
+    >>> print user_browser.getControl(
+    ...     'Oh, I want to create a test project').type
     submit
+
+The user can see links about things that are often assumed to be related to
+project registration.
+
+    >>> print user_browser.getLink('Register a team').url
+    https://help.launchpad.net/Teams
+
+    >>> print user_browser.getLink('Activate a PPA').url
+    https://help.launchpad.net/Packaging/PPA
+
+    >>> print user_browser.getLink('Access your personal branches').url
+    https://help.launchpad.net/Code/PersonalBranches
+
+    >>> print user_browser.getLink('Translate a project').url
+    https://help.launchpad.net/Translations/YourProject
+
+    >>> print user_browser.getLink('Request a project group').url
+    https://help.launchpad.net/ProjectGroups
 
 
 Project basics
@@ -117,6 +136,54 @@ Let's ensure the summary and description are presented.
     >>> print extract_text(desc)
     The desktop aardvark is an ornery thing.
 
+Let's ensure the registrant and maintainer are listed correctly.
+
+    >>> registrant = find_tag_by_id(user_browser.contents,
+    ...                             'registration')
+    >>> print extract_text(registrant)
+    Registered...by...No Privileges Person...
+
+    >>> maintainer = find_tag_by_id(user_browser.contents,
+    ...                             'owner')
+    >>> print extract_text(maintainer)
+    Maintainer: No Privileges Person...
+
+
+Turning over maintainership
+---------------------------
+
+Sample Person wants to create a project in Launchpad for a project
+that exists elsewhere as an upstream.  She wants it to exist in
+Launchpad so she can file a bug, for instance, but she is not
+interested in being the project maintainer for the long run.
+
+    >>> user_browser.open('http://launchpad.dev')
+    >>> user_browser.getLink('Register a project').click()
+
+    >>> user_browser.getControl('Name').value = 'kittyhawk'
+    >>> user_browser.getControl('URL').value = 'kittyhawk'
+    >>> user_browser.getControl('Title').value = 'Kitty Hawk ATC'
+    >>> user_browser.getControl('Summary').value = (
+    ...     'Kitty Hawk Air Traffic Simulator')
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.getControl('Python License').click()
+    >>> disclaim = user_browser.getControl(name='field.disclaim_maintainer')
+    >>> disclaim.value = ['checked']
+    >>> user_browser.getControl('Complete Registration').click()
+
+Sample person is shown as the registrant but the maintainer is now
+Registry Admins.
+
+    >>> registrant = find_tag_by_id(user_browser.contents,
+    ...                             'registration')
+    >>> print extract_text(registrant)
+    Registered...by...No Privileges Person...
+
+    >>> maintainer = find_tag_by_id(user_browser.contents,
+    ...                             'owner')
+    >>> print extract_text(maintainer)
+    Maintainer: Registry Administrators...
+
 
 Search results
 --------------
@@ -125,7 +192,7 @@ Sample Person has another project she wants to register.  It is similar to
 Firefox.
 
     >>> user_browser.open('http://launchpad.dev')
-    >>> user_browser.getLink('Create a new project').click()
+    >>> user_browser.getLink('Register a project').click()
     >>> print user_browser.title
     Register a project in Launchpad...
 

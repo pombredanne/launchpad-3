@@ -392,7 +392,8 @@ class CodeImportNewView(CodeImportBaseView):
             self.user,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            self.user)
 
         self.next_url = canonical_url(code_import.branch)
 

@@ -141,10 +141,6 @@
             name="+index"
             template="../templates/bazaar-index.pt"/>
     </browser:pages>
-    <browser:menus
-        classes="
-            BazaarBranchesMenu"
-        module="lp.code.browser.bazaar"/>
     <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         name="+hierarchy"
@@ -395,6 +391,9 @@
         <browser:page
             name="++branch-pending-merges"
             template="../templates/branch-pending-merges.pt" />
+        <browser:page
+            name="++branch-recipes"
+            template="../templates/branch-recipes.pt" />
         <browser:page
             name="++branch-import-details"
             template="../templates/branch-import-details.pt" />
@@ -864,17 +863,6 @@
             permission="zope.Public"/>
     </facet>
 
-    <browser:pages
-        for="lp.registry.interfaces.product.IProduct"
-        permission="zope.Public"
-        class="lp.registry.browser.product.ProductView">
-
-      <browser:page
-            name="+portlet-latestbranches"
-            template="../templates/product-portlet-latestbranches.pt"/>
-
-    </browser:pages>
-
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.code.browser.branchlisting.ProductBranchesView"
@@ -1140,14 +1128,14 @@
         <browser:page
             for="lp.code.interfaces.branch.IBranch"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
-            permission="zope.Public"
+            permission="launchpad.AnyPerson"
             facet="branches"
             name="+new-recipe"
             template="../../app/templates/generic-edit.pt"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeEditView"
-            permission="zope.Public"
+            permission="launchpad.Edit"
             facet="branches"
             name="+edit"
             template="../../app/templates/generic-edit.pt"/>

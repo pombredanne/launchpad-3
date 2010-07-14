@@ -14,7 +14,7 @@ same navigation as the bug page itself.
     Hierarchy: Ubuntu > ?mozilla-firefox? package > Bugs > Bug #1...
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/+source/mozilla-firefox
-    * Branches - http://code.launchpad.dev/ubuntu/+source/mozilla-firefox
+    * Code - http://code.launchpad.dev/ubuntu/+source/mozilla-firefox
     * Bugs (selected) - http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox
     * Blueprints - not linked
     * Translations - not linked

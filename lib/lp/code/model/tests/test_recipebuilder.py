@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 
+import re
 import transaction
 import unittest
 
@@ -25,6 +26,7 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.model.recipebuilder import RecipeBuildBehavior
 from lp.code.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuild)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building)
 from lp.soyuz.model.processor import ProcessorFamilySet
@@ -65,10 +67,11 @@ class TestRecipeBuilder(TestCaseWithFactory):
         somebranch = self.factory.makeBranch(owner=requester, name="pkg",
             product=self.factory.makeProduct("someapp"))
         recipe = self.factory.makeSourcePackageRecipe(requester, requester,
-             distroseries, spn, u"recept", u"Recipe description",
+             distroseries, u"recept", u"Recipe description",
              branches=[somebranch])
         spb = self.factory.makeSourcePackageRecipeBuild(
-            sourcepackage=sourcepackage, recipe=recipe, requester=requester)
+            sourcepackage=sourcepackage, recipe=recipe, requester=requester,
+            distroseries=distroseries)
         job = spb.makeJob()
         job_id = removeSecurityProxy(job.job).id
         BuildQueue(job_type=BuildFarmJobType.RECIPEBRANCHBUILD, job=job_id)
@@ -79,7 +82,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # display_name contains a sane description of the job
         job = self.makeJob()
         self.assertEquals(job.display_name,
-            "distro/mydistro/apackage, recept")
+            "Mydistro, recept, joe")
 
     def test_logStartBuild(self):
         # logStartBuild will properly report the package that's being built
@@ -87,7 +90,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         logger = BufferLogger()
         job.logStartBuild(logger)
         self.assertEquals(logger.buffer.getvalue(),
-            "INFO: startBuild(distro/mydistro/apackage, recept)\n")
+            "INFO: startBuild(Mydistro, recept, joe)\n")
 
     def test_verifyBuildRequest_valid(self):
         # VerifyBuildRequest won't raise any exceptions when called with a
@@ -98,6 +101,28 @@ class TestRecipeBuilder(TestCaseWithFactory):
         logger = BufferLogger()
         job.verifyBuildRequest(logger)
         self.assertEquals("", logger.buffer.getvalue())
+
+    def test_verifyBuildRequest_non_virtual(self):
+        # verifyBuildRequest will raise if a non-virtual builder is proposed.
+        job = self.makeJob()
+        builder = MockBuilder('non-virtual builder', OkSlave())
+        builder.virtualized = False
+        job.setBuilder(builder)
+        logger = BufferLogger()
+        e = self.assertRaises(AssertionError, job.verifyBuildRequest, logger)
+        self.assertEqual(
+            'Attempt to build virtual item on a non-virtual builder.', str(e))
+
+    def test_verifyBuildRequest_bad_pocket(self):
+        # verifyBuildRequest will raise if a bad pocket is proposed.
+        build = self.factory.makeSourcePackageRecipeBuild(
+            pocket=PackagePublishingPocket.SECURITY)
+        job = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        job = IBuildFarmJobBehavior(job.specific_job)
+        job.setBuilder(MockBuilder("bob-de-bouwer", OkSlave()))
+        e = self.assertRaises(
+            AssertionError, job.verifyBuildRequest, BufferLogger())
+        self.assertIn('invalid pocket due to the series status of', str(e))
 
     def test__extraBuildArgs(self):
         # _extraBuildArgs will return a sane set of additional arguments
@@ -111,17 +136,16 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.makeJob()
         distroarchseries = job.build.distroseries.architectures[0]
         expected_archives = get_sources_list_for_building(
-            job.build, distroarchseries, job.build.sourcepackagename.name)
+            job.build, distroarchseries, None)
         expected_archives.append(
             "deb http://foo %s main" % job.build.distroseries.name)
         self.assertEqual({
            'author_email': u'requester@ubuntu.com',
            'suite': u'mydistro',
            'author_name': u'Joe User',
-           'package_name': u'apackage',
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
-           'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
+           'recipe_text': '# bzr-builder format 0.2 deb-version 0+{revno}\n'
                           'lp://dev/~joe/someapp/pkg\n',
            'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
@@ -142,16 +166,15 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.makeJob()
         distroarchseries = job.build.distroseries.architectures[0]
         expected_archives = get_sources_list_for_building(
-            job.build, distroarchseries, job.build.sourcepackagename.name)
+            job.build, distroarchseries, None)
         logger = BufferLogger()
         self.assertEqual({
            'author_email': u'requester@ubuntu.com',
            'suite': u'mydistro',
            'author_name': u'Joe User',
-           'package_name': u'apackage',
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
-           'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
+           'recipe_text': '# bzr-builder format 0.2 deb-version 0+{revno}\n'
                           'lp://dev/~joe/someapp/pkg\n',
            'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
@@ -167,7 +190,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         distroarchseries = job.build.distroseries.architectures[0]
         args = job._extraBuildArgs(distroarchseries)
         expected_archives = get_sources_list_for_building(
-            job.build, distroarchseries, job.build.sourcepackagename.name)
+            job.build, distroarchseries, None)
         self.assertEqual(args["archives"], expected_archives)
 
 

@@ -60,7 +60,7 @@
           define="build context/binarypackagerelease/build;
                   archive build/archive;
                   pocket build/pocket;
-                  arch build/distroarchseries;
+                  arch build/distro_arch_series;
                   series arch/distroseries;
                   distro series/distribution;
                   message string:${distro/name} ${series/name}-${pocket/name/fmt:lower} ${arch/architecturetag} in ${archive/displayname}"

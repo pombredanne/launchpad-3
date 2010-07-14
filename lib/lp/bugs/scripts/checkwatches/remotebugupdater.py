@@ -155,15 +155,23 @@ class RemoteBugUpdater(WorkingBase):
                             self.external_bugtracker),
                     info=sys.exc_info())
 
-            for bug_watch in bug_watches:
-                bug_watch_updater = BugWatchUpdater(
-                    self, bug_watch, self.external_bugtracker)
+                # Set the error and activity on all bug watches
+                with self.transaction:
+                    getUtility(IBugWatchSet).bulkSetError(
+                        bug_watches, error)
+                    getUtility(IBugWatchSet).bulkAddActivity(
+                        bug_watches, result=error, oops_id=oops_id)
 
-                bug_watch_updater.updateBugWatch(
-                    new_remote_status, new_malone_status,
-                    new_remote_importance, new_malone_importance,
-                    self.can_import_comments, self.can_push_comments,
-                    self.can_back_link, error, oops_id)
+            else:
+                # Assuming nothing's gone wrong, we can now deal with
+                # each BugWatch in turn.
+                for bug_watch in bug_watches:
+                    bug_watch_updater = BugWatchUpdater(
+                        self, bug_watch, self.external_bugtracker)
+
+                    bug_watch_updater.updateBugWatch(
+                        new_remote_status, new_malone_status,
+                        new_remote_importance, new_malone_importance)
 
         except Exception, error:
             # Send the error to the log.

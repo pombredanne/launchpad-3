@@ -578,9 +578,7 @@
         <allow
             interface="lp.code.interfaces.branchjob.IBranchJob"/>
         <allow
-            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
-        <allow
-            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobDerived"/>
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobOld"/>
     </class>
     <securedutility
         component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"

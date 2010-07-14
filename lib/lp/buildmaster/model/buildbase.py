@@ -3,13 +3,18 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from __future__ import with_statement
 
 """Common build base classes."""
 
+
+from __future__ import with_statement
+
 __metaclass__ = type
 
-__all__ = ['BuildBase']
+__all__ = [
+    'handle_status_for_build',
+    'BuildBase',
+    ]
 
 import datetime
 import logging
@@ -23,7 +28,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     clear_current_connection_cache, cursor, flush_database_updates)
 from canonical.launchpad.helpers import filenameToContentType
@@ -38,6 +42,27 @@ from lp.registry.interfaces.pocket import pocketsuffix
 UPLOAD_LOG_FILENAME = 'uploader.log'
 
 
+def handle_status_for_build(build, status, librarian, slave_status,
+                            build_class=None):
+    """Find and call the correct method for handling the build status.
+
+    This is extracted from build base so that the implementation
+    can be shared by the newer IPackageBuild class.
+    """
+    logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
+
+    if build_class is None:
+        build_class = BuildBase
+    method = getattr(build_class, '_handleStatus_' + status, None)
+
+    if method is None:
+        logger.critical("Unknown BuildStatus '%s' for builder '%s'"
+                        % (status, build.buildqueue_record.builder.url))
+        return
+
+    method(build, librarian, slave_status, logger)
+
+
 class BuildBase:
     """A mixin class providing functionality for farm jobs that build a
     package.
@@ -46,27 +71,26 @@ class BuildBase:
     the properties defined on IBuildBase on the inheriting class tables.
     BuildBase cannot therefore implement IBuildBase itself, as storm requires
     that the corresponding __storm_table__ be defined for the class. Instead,
-    the classes using the BuildBase mixin must ensure that they implement IBuildBase.
+    the classes using the BuildBase mixin must ensure that they implement
+    IBuildBase.
     """
     policy_name = 'buildd'
 
-    def getUploadLeaf(self, build_id, now=None):
-        """Return a directory name to store build things in.
-
-        :param build_id: The id as returned by the slave, normally
-            $BUILD_ID-$BUILDQUEUE_ID
-        :param now: The `datetime` to use. If not provided, defaults to now.
-        """
-        # UPLOAD_LEAF: <TIMESTAMP>-<BUILD_ID>-<BUILDQUEUE_ID>
+    @staticmethod
+    def getUploadDirLeaf(build_cookie, now=None):
+        """See `IPackageBuild`."""
+        # UPLOAD_LEAF: <TIMESTAMP>-<BUILD-COOKIE>
         if now is None:
             now = datetime.datetime.now()
-        return '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_id)
+        return '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie)
 
-    def getUploadDir(self, upload_leaf):
+    @staticmethod
+    def getUploadDir(upload_leaf):
         """Return the directory that things will be stored in."""
         return os.path.join(config.builddmaster.root, 'incoming', upload_leaf)
 
-    def getUploaderCommand(self, upload_leaf, uploader_logfilename):
+    @staticmethod
+    def getUploaderCommand(build, upload_leaf, uploader_logfilename):
         """See `IBuildBase`."""
         root = os.path.abspath(config.builddmaster.root)
         uploader_command = list(config.builddmaster.uploader.split())
@@ -74,12 +98,12 @@ class BuildBase:
         # add extra arguments for processing a binary upload
         extra_args = [
             "--log-file", "%s" % uploader_logfilename,
-            "-d", "%s" % self.distribution.name,
-            "-s", "%s" % (self.distroseries.name +
-                          pocketsuffix[self.pocket]),
-            "-b", "%s" % self.id,
+            "-d", "%s" % build.distribution.name,
+            "-s", "%s" % (build.distro_series.name +
+                          pocketsuffix[build.pocket]),
+            "-b", "%s" % build.id,
             "-J", "%s" % upload_leaf,
-            '--context=%s' % self.policy_name,
+            '--context=%s' % build.policy_name,
             "%s" % root,
             ]
 
@@ -102,7 +126,8 @@ class BuildBase:
             return None
         return self._getProxiedFileURL(self.buildlog)
 
-    def getUploadLogContent(self, root, leaf):
+    @staticmethod
+    def getUploadLogContent(root, leaf):
         """Retrieve the upload log contents.
 
         :param root: Root directory for the uploads
@@ -130,18 +155,11 @@ class BuildBase:
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
-        logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
+        return handle_status_for_build(
+            self, status, librarian, slave_status, self.__class__)
 
-        method = getattr(self, '_handleStatus_' + status, None)
-
-        if method is None:
-            logger.critical("Unknown BuildStatus '%s' for builder '%s'"
-                            % (status, self.buildqueue_record.builder.url))
-            return
-
-        method(librarian, slave_status, logger)
-
-    def _handleStatus_OK(self, librarian, slave_status, logger):
+    @staticmethod
+    def _handleStatus_OK(build, librarian, slave_status, logger):
         """Handle a package that built successfully.
 
         Once built successfully, we pull the files, store them in a
@@ -151,36 +169,36 @@ class BuildBase:
         filemap = slave_status['filemap']
 
         logger.info("Processing successful build %s from builder %s" % (
-            self.buildqueue_record.specific_job.build.title,
-            self.buildqueue_record.builder.name))
+            build.buildqueue_record.specific_job.build.title,
+            build.buildqueue_record.builder.name))
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
-        if not self.archive.allowUpdatesToReleasePocket():
-            assert self.distroseries.canUploadToPocket(self.pocket), (
+        if not build.archive.allowUpdatesToReleasePocket():
+            assert build.distro_series.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
-                % (self.title, self.id, self.pocket.name))
+                % (build.title, build.id, build.pocket.name))
 
         # ensure we have the correct build root as:
         # <BUILDMASTER_ROOT>/incoming/<UPLOAD_LEAF>/<TARGET_PATH>/[FILES]
         root = os.path.abspath(config.builddmaster.root)
 
         # create a single directory to store build result files
-        upload_leaf = self.getUploadLeaf(
-            '%s-%s' % (self.id, self.buildqueue_record.id))
-        upload_dir = self.getUploadDir(upload_leaf)
+        upload_leaf = build.getUploadDirLeaf(
+            '%s-%s' % (build.id, build.buildqueue_record.id))
+        upload_dir = build.getUploadDir(upload_leaf)
         logger.debug("Storing build result at '%s'" % upload_dir)
 
         # Build the right UPLOAD_PATH so the distribution and archive
         # can be correctly found during the upload:
         #       <archive_id>/distribution_name
         # for all destination archive types.
-        archive = self.archive
-        distribution_name = self.distribution.name
+        archive = build.archive
+        distribution_name = build.distribution.name
         target_path = '%s/%s' % (archive.id, distribution_name)
         upload_path = os.path.join(upload_dir, target_path)
         os.makedirs(upload_path)
 
-        slave = removeSecurityProxy(self.buildqueue_record.builder.slave)
+        slave = removeSecurityProxy(build.buildqueue_record.builder.slave)
         successful_copy_from_slave = True
         for filename in filemap:
             logger.info("Grabbing file: %s" % filename)
@@ -192,7 +210,7 @@ class BuildBase:
                 successful_copy_from_slave = False
                 logger.warning(
                     "A slave tried to upload the file '%s' "
-                    "for the build %d." % (filename, self.id))
+                    "for the build %d." % (filename, build.id))
                 break
             out_file = open(out_file_name, "wb")
             slave_file = slave.getFile(filemap[filename])
@@ -203,8 +221,8 @@ class BuildBase:
         if successful_copy_from_slave:
             uploader_logfilename = os.path.join(
                 upload_dir, UPLOAD_LOG_FILENAME)
-            uploader_command = self.getUploaderCommand(
-                upload_leaf, uploader_logfilename)
+            uploader_command = build.getUploaderCommand(
+                build, upload_leaf, uploader_logfilename)
             logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
 
             logger.info("Invoking uploader on %s" % root)
@@ -243,7 +261,7 @@ class BuildBase:
             'BuildMaster/BuilderGroup transaction isolation should be '
             'ISOLATION_LEVEL_READ_COMMITTED (not "%s")' % isolation_str)
 
-        original_slave = self.buildqueue_record.builder.slave
+        original_slave = build.buildqueue_record.builder.slave
 
         # XXX Robert Collins, Celso Providelo 2007-05-26 bug=506256:
         # 'Refreshing' objects  procedure  is forced on us by using a
@@ -257,12 +275,12 @@ class BuildBase:
         # us by sqlobject refreshing the builder object during the
         # transaction cache clearing. Once we sort the previous problem
         # this step should probably not be required anymore.
-        self.buildqueue_record.builder.setSlaveForTesting(
+        build.buildqueue_record.builder.setSlaveForTesting(
             removeSecurityProxy(original_slave))
 
         # Store build information, build record was already updated during
         # the binary upload.
-        self.storeBuildInfo(librarian, slave_status)
+        build.storeBuildInfo(build, librarian, slave_status)
 
         # Retrive the up-to-date build record and perform consistency
         # checks. The build record should be updated during the binary
@@ -277,56 +295,59 @@ class BuildBase:
         # uploader about this occurrence. The failure notification will
         # also contain the information required to manually reprocess the
         # binary upload when it was the case.
-        if (self.buildstate != BuildStatus.FULLYBUILT or
+        if (build.status != BuildStatus.FULLYBUILT or
             not successful_copy_from_slave or
-            not self.verifySuccessfulUpload()):
-            logger.warning("Build %s upload failed." % self.id)
-            self.buildstate = BuildStatus.FAILEDTOUPLOAD
-            uploader_log_content = self.getUploadLogContent(root,
+            not build.verifySuccessfulUpload()):
+            logger.warning("Build %s upload failed." % build.id)
+            build.status = BuildStatus.FAILEDTOUPLOAD
+            uploader_log_content = build.getUploadLogContent(root,
                 upload_leaf)
             # Store the upload_log_contents in librarian so it can be
             # accessed by anyone with permission to see the build.
-            self.storeUploadLog(uploader_log_content)
+            build.storeUploadLog(uploader_log_content)
             # Notify the build failure.
-            self.notify(extra_info=uploader_log_content)
+            build.notify(extra_info=uploader_log_content)
         else:
             logger.info(
                 "Gathered %s %d completely" % (
-                self.__class__.__name__, self.id))
+                build.__class__.__name__, build.id))
 
         # Release the builder for another job.
-        self.buildqueue_record.builder.cleanSlave()
+        build.buildqueue_record.builder.cleanSlave()
         # Remove BuildQueue record.
-        self.buildqueue_record.destroySelf()
+        build.buildqueue_record.destroySelf()
 
-    def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger):
+    @staticmethod
+    def _handleStatus_PACKAGEFAIL(build, librarian, slave_status, logger):
         """Handle a package that had failed to build.
 
         Build has failed when trying the work with the target package,
         set the job status as FAILEDTOBUILD, store available info and
         remove Buildqueue entry.
         """
-        self.buildstate = BuildStatus.FAILEDTOBUILD
-        self.storeBuildInfo(librarian, slave_status)
-        self.buildqueue_record.builder.cleanSlave()
-        self.notify()
-        self.buildqueue_record.destroySelf()
+        build.status = BuildStatus.FAILEDTOBUILD
+        build.storeBuildInfo(build, librarian, slave_status)
+        build.buildqueue_record.builder.cleanSlave()
+        build.notify()
+        build.buildqueue_record.destroySelf()
 
-    def _handleStatus_DEPFAIL(self, librarian, slave_status, logger):
+    @staticmethod
+    def _handleStatus_DEPFAIL(build, librarian, slave_status, logger):
         """Handle a package that had missing dependencies.
 
         Build has failed by missing dependencies, set the job status as
         MANUALDEPWAIT, store available information, remove BuildQueue
         entry and release builder slave for another job.
         """
-        self.buildstate = BuildStatus.MANUALDEPWAIT
-        self.storeBuildInfo(librarian, slave_status)
+        build.status = BuildStatus.MANUALDEPWAIT
+        build.storeBuildInfo(build, librarian, slave_status)
         logger.critical("***** %s is MANUALDEPWAIT *****"
-                        % self.buildqueue_record.builder.name)
-        self.buildqueue_record.builder.cleanSlave()
-        self.buildqueue_record.destroySelf()
+                        % build.buildqueue_record.builder.name)
+        build.buildqueue_record.builder.cleanSlave()
+        build.buildqueue_record.destroySelf()
 
-    def _handleStatus_CHROOTFAIL(self, librarian, slave_status,
+    @staticmethod
+    def _handleStatus_CHROOTFAIL(build, librarian, slave_status,
                                  logger):
         """Handle a package that had failed when unpacking the CHROOT.
 
@@ -334,15 +355,16 @@ class BuildBase:
         job as CHROOTFAIL, store available information, remove BuildQueue
         and release the builder.
         """
-        self.buildstate = BuildStatus.CHROOTWAIT
-        self.storeBuildInfo(librarian, slave_status)
+        build.status = BuildStatus.CHROOTWAIT
+        build.storeBuildInfo(build, librarian, slave_status)
         logger.critical("***** %s is CHROOTWAIT *****" %
-                        self.buildqueue_record.builder.name)
-        self.buildqueue_record.builder.cleanSlave()
-        self.notify()
-        self.buildqueue_record.destroySelf()
+                        build.buildqueue_record.builder.name)
+        build.buildqueue_record.builder.cleanSlave()
+        build.notify()
+        build.buildqueue_record.destroySelf()
 
-    def _handleStatus_BUILDERFAIL(self, librarian, slave_status, logger):
+    @staticmethod
+    def _handleStatus_BUILDERFAIL(build, librarian, slave_status, logger):
         """Handle builder failures.
 
         Build has been failed when trying to build the target package,
@@ -350,14 +372,15 @@ class BuildBase:
         and 'clean' the builder to do another jobs.
         """
         logger.warning("***** %s has failed *****"
-                       % self.buildqueue_record.builder.name)
-        self.buildqueue_record.builder.failBuilder(
+                       % build.buildqueue_record.builder.name)
+        build.buildqueue_record.builder.failBuilder(
             "Builder returned BUILDERFAIL when asked for its status")
         # simply reset job
-        self.storeBuildInfo(librarian, slave_status)
-        self.buildqueue_record.reset()
+        build.storeBuildInfo(build, librarian, slave_status)
+        build.buildqueue_record.reset()
 
-    def _handleStatus_GIVENBACK(self, librarian, slave_status, logger):
+    @staticmethod
+    def _handleStatus_GIVENBACK(build, librarian, slave_status, logger):
         """Handle automatic retry requested by builder.
 
         GIVENBACK pseudo-state represents a request for automatic retry
@@ -365,74 +388,88 @@ class BuildBase:
         ZERO.
         """
         logger.warning("***** %s is GIVENBACK by %s *****"
-                       % (self.buildqueue_record.specific_job.build.title,
-                          self.buildqueue_record.builder.name))
-        self.storeBuildInfo(librarian, slave_status)
+                       % (build.buildqueue_record.specific_job.build.title,
+                          build.buildqueue_record.builder.name))
+        build.storeBuildInfo(build, librarian, slave_status)
         # XXX cprov 2006-05-30: Currently this information is not
         # properly presented in the Web UI. We will discuss it in
         # the next Paris Summit, infinity has some ideas about how
         # to use this content. For now we just ensure it's stored.
-        self.buildqueue_record.builder.cleanSlave()
-        self.buildqueue_record.reset()
+        build.buildqueue_record.builder.cleanSlave()
+        build.buildqueue_record.reset()
 
-    def getLogFromSlave(self):
+    @staticmethod
+    def getLogFromSlave(build):
         """See `IBuildBase`."""
-        return self.buildqueue_record.builder.transferSlaveFileToLibrarian(
-            'buildlog', self.buildqueue_record.getLogFileName(),
-            self.is_private)
+        return build.buildqueue_record.builder.transferSlaveFileToLibrarian(
+            'buildlog', build.buildqueue_record.getLogFileName(),
+            build.is_private)
 
-    def storeBuildInfo(self, librarian, slave_status):
+    @staticmethod
+    def storeBuildInfo(build, librarian, slave_status):
         """See `IBuildBase`."""
-        self.buildlog = self.getLogFromSlave()
-        self.builder = self.buildqueue_record.builder
+        # XXX michaeln 2010-05-05 bug=567922
+        # As this method is temporarily static until BuildBase is
+        # removed and the implementation moved to PackageBuild,
+        # self.attr_name is temporarily build.attr_name, which
+        # means we cannot set the build attributes.
+        naked_build = removeSecurityProxy(build)
+        naked_build.log = build.getLogFromSlave(build)
+        naked_build.builder = build.buildqueue_record.builder
         # XXX cprov 20060615 bug=120584: Currently buildduration includes
         # the scanner latency, it should really be asking the slave for
         # the duration spent building locally.
-        self.datebuilt = UTC_NOW
-        # We need dynamic datetime.now() instance to be able to perform
-        # the time operations for duration.
-        RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
-        self.buildduration = RIGHT_NOW - self.buildqueue_record.date_started
+        naked_build.date_finished = datetime.datetime.now(pytz.UTC)
         if slave_status.get('dependencies') is not None:
-            self.dependencies = unicode(slave_status.get('dependencies'))
+            build.dependencies = unicode(slave_status.get('dependencies'))
         else:
-            self.dependencies = None
+            build.dependencies = None
 
-    def storeUploadLog(self, content):
-        """See `IBuildBase`."""
+    @staticmethod
+    def createUploadLog(build, content, filename=None):
+        """Creates a file on the librarian for the upload log.
+
+        :return: ILibraryFileAlias for the upload log file.
+        """
         # The given content is stored in the librarian, restricted as
         # necessary according to the targeted archive's privacy.  The content
         # object's 'upload_log' attribute will point to the
         # `LibrarianFileAlias`.
 
-        assert self.upload_log is None, (
+        assert build.upload_log is None, (
             "Upload log information already exists and cannot be overridden.")
 
-        filename = 'upload_%s_log.txt' % self.id
+        if filename is None:
+            filename = 'upload_%s_log.txt' % build.id
         contentType = filenameToContentType(filename)
         file_size = len(content)
         file_content = StringIO(content)
-        restricted = self.is_private
+        restricted = build.is_private
 
-        library_file = getUtility(ILibraryFileAliasSet).create(
+        return getUtility(ILibraryFileAliasSet).create(
             filename, file_size, file_content, contentType=contentType,
             restricted=restricted)
+
+    def storeUploadLog(self, content):
+        """See `IBuildBase`."""
+        library_file = self.createUploadLog(self, content)
         self.upload_log = library_file
 
-    def queueBuild(self, suspended=False):
+    @staticmethod
+    def queueBuild(build, suspended=False):
         """See `IBuildBase`"""
-        specific_job = self.makeJob()
+        specific_job = build.makeJob()
 
         # This build queue job is to be created in a suspended state.
         if suspended:
             specific_job.job.suspend()
 
-        duration_estimate = self.estimateDuration()
+        duration_estimate = build.estimateDuration()
         queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
-            job_type=self.build_farm_job_type,
+            job_type=build.build_farm_job_type,
             job=specific_job.job, processor=specific_job.processor,
             virtualized=specific_job.virtualized)
-        Store.of(self).add(queue_entry)
+        Store.of(build).add(queue_entry)
         return queue_entry
 

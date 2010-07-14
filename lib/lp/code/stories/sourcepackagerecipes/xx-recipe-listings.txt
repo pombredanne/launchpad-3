@@ -29,13 +29,14 @@ Create a sample branch.
     >>> nopriv_browser = setupBrowser(
     ...     auth='Basic nopriv@canonical.com:test')
 
+There should be a link on the branch page that says "No recipes" that leads to
+the recipe listings page.
+
 The link to the source package recipe listings should not be shown.
 
     >>> nopriv_browser.open(recipeless_branch_url)
-    >>> nopriv_browser.getLink('View source package recipes')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
+    >>> print nopriv_browser.getLink('No recipes').url
+    http://code.launchpad.dev/%7Eperson-name.../product-name.../branch.../+recipes
 
 Create a new sample branch, but this time create some source package branches
 to go along with them.
@@ -53,18 +54,18 @@ Keep these urls, including the product url.  We'll use these later.
 
     >>> logout()
 
-The link to source package recipes should now be shown.  Let's click through.
+Since there are 3 recipes associated with this branch now, the link should now
+read "3 recipes." Let's click through.
 
     >>> nopriv_browser.open(branch_url)
-    >>> nopriv_browser.getLink('View source package recipes').click()
+    >>> nopriv_browser.getLink('3 recipes').click()
     >>> print nopriv_browser.url
-    http://code.launchpad.dev/~person-name.../product-name.../branch.../+recipes
+    http://code.launchpad.dev/%7Eperson-name.../product-name.../branch.../+recipes
 
 The "Base branch" column should not be shown.
 
     >>> print_recipe_listing_head(nopriv_browser)
     Name
-    Project
     Owner
     Registered
 
@@ -72,9 +73,9 @@ The branch page should have a list of all the recipes the branch is a
 base_branch for.
 
     >>> print_recipe_listing_contents(nopriv_browser)
-    generic-string... Product-name... Person-name...
-    generic-string... Product-name... Person-name...
-    generic-string... Product-name... Person-name...
+    generic-string... Person-name...
+    generic-string... Person-name...
+    generic-string... Person-name...
 
 
 Product Recipe Listings
@@ -86,9 +87,6 @@ Let's use the product from the former branch test.
     >>> nopriv_browser.getLink('View source package recipes').click()
     >>> print nopriv_browser.url
     http://launchpad.dev/product-name.../+recipes
-
-The "Project" column should be missing, since, well, all of these recipes are
-from the same product.
 
     >>> print_recipe_listing_head(nopriv_browser)
     Name
@@ -127,7 +125,6 @@ The "Owner" section should be missing.
 
     >>> print_recipe_listing_head(nopriv_browser)
     Name
-    Project
     Base Branch
     Registered
 
@@ -135,6 +132,6 @@ The listings should now show all recipes whose base branch is a branch from
 this product.
 
     >>> print_recipe_listing_contents(nopriv_browser)
-    generic-string... Product-name... lp://dev/... ...
-    generic-string... Product-name... lp://dev/... ...
-    generic-string... Product-name... lp://dev/... ...
+    generic-string... lp://dev/... ...
+    generic-string... lp://dev/... ...
+    generic-string... lp://dev/... ...

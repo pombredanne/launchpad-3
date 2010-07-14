@@ -3,6 +3,8 @@
 
 """Tests for branch listing."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 from datetime import timedelta
@@ -25,14 +27,16 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.code.model.branch import Branch
 from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
+from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
-    TestCase, TestCaseWithFactory, login_person, time_counter)
+    BrowserTestCase, TestCase, TestCaseWithFactory, login_person,
+    person_logged_in, time_counter)
 from lp.testing.views import create_initialized_view
+from canonical.launchpad.testing.pages import extract_text, find_tag_by_id
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 
 class TestListingToSortOrder(TestCase):
     """Tests for the BranchSet._listingSortToOrderBy static method.
@@ -353,6 +357,47 @@ class TestProductSeriesTemplate(TestCaseWithFactory):
             canonical_url(branch.product, rootsite='code'))
         link = browser.getLink(re.compile('^' + series.name + '$'))
         self.assertEqual('launchpad.dev', URI(link.url).host)
+
+
+class TestPersonBranchesPage(BrowserTestCase):
+    """Tests for the person branches page.
+
+    This is the default page shown for a person on the code subdomain.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def _make_branch_for_private_team(self):
+        private_team = self.factory.makeTeam(
+            name='shh', displayname='Shh',
+            visibility=PersonVisibility.PRIVATE)
+        member = self.factory.makePerson(
+            email='member@example.com', password='test')
+        with person_logged_in(private_team.teamowner):
+            private_team.addMember(member, private_team.teamowner)
+        branch = self.factory.makeProductBranch(owner=private_team)
+        return private_team, member, branch
+
+    def test_private_team_membership_for_team_member(self):
+        # If the logged in user can see the private teams, they are shown in
+        # the related 'Branches owned by' section at the bottom of the page.
+        private_team, member, branch = self._make_branch_for_private_team()
+        browser = self.getUserBrowser(
+            canonical_url(member, rootsite='code'), member)
+        branches = find_tag_by_id(browser.contents, 'portlet-team-branches')
+        text = extract_text(branches)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            'Branches owned by Shh', text)
+
+    def test_private_team_membership_for_non_member(self):
+        # Make sure that private teams are not shown (or attempted to be
+        # shown) for people who can not see the private teams.
+        private_team, member, branch = self._make_branch_for_private_team()
+        browser = self.getUserBrowser(canonical_url(member, rootsite='code'))
+        branches = find_tag_by_id(browser.contents, 'portlet-team-branches')
+        # Since there are no teams with branches that the user can see, the
+        # portlet isn't shown.
+        self.assertIs(None, branches)
 
 
 def test_suite():

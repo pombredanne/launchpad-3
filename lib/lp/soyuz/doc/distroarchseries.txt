@@ -374,7 +374,7 @@ DistroArchSeriesSet Methods
 ===========================
 
 The `DistroArchSeriesSet` class provides a helper method
-getIdsForArchitectures() - not exposed through the `IDistroArchSeriesSet` 
+getIdsForArchitectures() - not exposed through the `IDistroArchSeriesSet`
 interface - which will filter an iterable of DistroArchSeries
 using an optional arch_tag and return a list of their IDs.
 

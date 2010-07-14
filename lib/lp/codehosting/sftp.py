@@ -16,6 +16,7 @@ __metaclass__ = type
 __all__ = [
     'avatar_to_sftp_server',
     'TransportSFTPServer',
+    'FileIsADirectory',
     ]
 
 

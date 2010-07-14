@@ -8,6 +8,7 @@ import pytz
 import unittest
 
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import sqlvalues
@@ -18,20 +19,23 @@ from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.interfaces.archive import (IArchiveSet, ArchivePurpose,
+    ArchiveStatus, CannotRestrictArchitectures, CannotSwitchPrivacy,
+    InvalidPocketForPartnerArchive, InvalidPocketForPPA)
 from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet, ArchivePurpose, ArchiveStatus, CannotSwitchPrivacy)
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import login, login_person, TestCaseWithFactory
 
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
@@ -236,7 +240,7 @@ class TestSeriesWithSources(TestCaseWithFactory):
         ubuntu_test = breezy_autotest.distribution
         self.series = [breezy_autotest]
         self.series.append(self.factory.makeDistroRelease(
-            distribution=ubuntu_test, name="foo-series"))
+            distribution=ubuntu_test, name="foo-series", version='1.0'))
 
         self.sources = []
         gedit_src_hist = self.publisher.getPubSource(
@@ -321,8 +325,8 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
 
         # Collect the source package releases for reference.
         self.sourcepackagereleases = [
-            self.builds_foo[0].sourcepackagerelease,
-            self.builds_bar[0].sourcepackagerelease,
+            self.builds_foo[0].source_package_release,
+            self.builds_bar[0].source_package_release,
             ]
 
     def test_getSourcePackageReleases_with_no_params(self):
@@ -336,7 +340,7 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
 
         # Set the builds for one of the sprs to needs build.
         for build in self.builds_foo:
-            build.buildstate = BuildStatus.NEEDSBUILD
+            removeSecurityProxy(build).status = BuildStatus.NEEDSBUILD
 
         result = self.archive.getSourcePackageReleases(
             build_status=BuildStatus.NEEDSBUILD)
@@ -344,6 +348,7 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
         self.failUnlessEqual(1, result.count())
         self.failUnlessEqual(
             self.sourcepackagereleases[0], result[0])
+
 
 class TestCorrespondingDebugArchive(TestCaseWithFactory):
 
@@ -462,19 +467,23 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
             duration += 60
             bq = build.buildqueue_record
             bq.lastscore = score
-            bq.estimated_duration = timedelta(seconds=duration)
+            removeSecurityProxy(bq).estimated_duration = timedelta(
+                seconds=duration)
 
     def _getBuildJobsByStatus(self, archive, status):
         # Return the count for archive build jobs with the given status.
         query = """
             SELECT COUNT(Job.id)
-            FROM Build, BuildPackageJob, BuildQueue, Job
+            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue, Job,
+                 PackageBuild, BuildFarmJob
             WHERE
-                Build.archive = %s
-                AND BuildPackageJob.build = Build.id
+                BuildPackageJob.build = BinaryPackageBuild.id
                 AND BuildPackageJob.job = BuildQueue.job
                 AND Job.id = BuildQueue.job
-                AND Build.buildstate = %s
+                AND BinaryPackageBuild.package_build = PackageBuild.id
+                AND PackageBuild.archive = %s
+                AND PackageBuild.build_farm_job = BuildFarmJob.id
+                AND BuildFarmJob.status = %s
                 AND Job.status = %s;
         """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
 
@@ -520,6 +529,7 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         self.archive.disable()
         self.assertRaises(AssertionError, self.archive.disable)
 
+
 class TestCollectLatestPublishedSources(TestCaseWithFactory):
     """Ensure that the private helper method works as expected."""
 
@@ -564,6 +574,70 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
             self.archive, ["foo"])
         self.assertEqual(1, len(pubs))
         self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
+
+
+class TestArchiveCanUpload(TestCaseWithFactory):
+    """Test the various methods that verify whether uploads are allowed to 
+    happen."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_checkArchivePermission_by_PPA_owner(self):
+        # Uploading to a PPA should be allowed for a user that is the owner 
+        owner = self.factory.makePerson(name="somebody")
+        archive = self.factory.makeArchive(owner=owner)
+        self.assertEquals(True, archive.checkArchivePermission(owner))
+        someone_unrelated = self.factory.makePerson(name="somebody-unrelated")
+        self.assertEquals(False,
+            archive.checkArchivePermission(someone_unrelated))
+
+    def test_checkArchivePermission_distro_archive(self):
+        # Regular users can not upload to ubuntu
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY, 
+                                           distribution=ubuntu)
+        main = getUtility(IComponentSet)["main"]
+        # A regular user doesn't have access
+        somebody = self.factory.makePerson(name="somebody")
+        self.assertEquals(False, 
+            archive.checkArchivePermission(somebody, main))
+        # An ubuntu core developer does have access
+        kamion = getUtility(IPersonSet).getByName('kamion')
+        self.assertEquals(True, archive.checkArchivePermission(kamion, main))
+
+    def test_checkArchivePermission_ppa(self):
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        owner = self.factory.makePerson(name="eigenaar")
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA, 
+                                           distribution=ubuntu,
+                                           owner=owner)
+        somebody = self.factory.makePerson(name="somebody")
+        # The owner has access
+        self.assertEquals(True, archive.checkArchivePermission(owner))
+        # Somebody unrelated does not
+        self.assertEquals(False, archive.checkArchivePermission(somebody))
+
+    def test_checkUpload_partner_invalid_pocket(self):
+        # Partner archives only have release and proposed pockets
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertIsInstance(archive.checkUpload(self.factory.makePerson(), 
+                                self.factory.makeDistroSeries(),
+                                self.factory.makeSourcePackageName(),
+                                self.factory.makeComponent(),
+                                PackagePublishingPocket.UPDATES),
+                                InvalidPocketForPartnerArchive)
+ 
+    def test_checkUpload_ppa_invalid_pocket(self):
+        # PPA archives only have release pockets
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertIsInstance(archive.checkUpload(self.factory.makePerson(), 
+                                self.factory.makeDistroSeries(),
+                                self.factory.makeSourcePackageName(),
+                                self.factory.makeComponent(),
+                                PackagePublishingPocket.PROPOSED),
+                                InvalidPocketForPPA)
+
+    # XXX: JRV 20100511: IArchive.canUploadSuiteSourcePackage needs tests
 
 
 class TestUpdatePackageDownloadCount(TestCaseWithFactory):
@@ -665,57 +739,101 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.assertCount(3, self.archive, self.bpr_2, day, self.australia)
 
 
-class TestARMBuildsAllowed(TestCaseWithFactory):
-    """Ensure that ARM builds can be allowed and disallowed correctly."""
+class TestEnabledRestrictedBuilds(TestCaseWithFactory):
+    """Ensure that restricted architecture family builds can be allowed and
+    disallowed correctly."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Setup an archive with relevant publications."""
-        super(TestARMBuildsAllowed, self).setUp()
+        super(TestEnabledRestrictedBuilds, self).setUp()
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
         self.archive = self.factory.makeArchive()
         self.archive_arch_set = getUtility(IArchiveArchSet)
         self.arm = getUtility(IProcessorFamilySet).getByName('arm')
 
+    def test_main_archive_can_use_restricted(self):
+        # Main archives for distributions can always use restricted 
+        # architectures.
+        distro = self.factory.makeDistribution()
+        self.assertContentEqual([self.arm],
+            distro.main_archive.enabled_restricted_families)
+
+    def test_main_archive_can_not_be_restricted(self):
+        # A main archive can not be restricted to certain architectures.
+        distro = self.factory.makeDistribution()
+        # Restricting to all restricted architectures is fine
+        distro.main_archive.enabled_restricted_families = [self.arm]
+        def restrict():
+            distro.main_archive.enabled_restricted_families = []
+        self.assertRaises(CannotRestrictArchitectures, restrict)
+
     def test_default(self):
-        """By default, ARM builds are not allowed."""
+        """By default, ARM builds are not allowed as ARM is restricted."""
         self.assertEquals(0,
             self.archive_arch_set.getByArchive(
                 self.archive, self.arm).count())
-        self.assertFalse(self.archive.arm_builds_allowed)
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
 
     def test_get_uses_archivearch(self):
         """Adding an entry to ArchiveArch for ARM and an archive will
-        enable arm_builds_allowed for that archive."""
-        self.assertFalse(self.archive.arm_builds_allowed)
+        enable enabled_restricted_families for arm for that archive."""
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
         self.archive_arch_set.new(self.archive, self.arm)
-        self.assertTrue(self.archive.arm_builds_allowed)
+        self.assertEquals([self.arm],
+                list(self.archive.enabled_restricted_families))
 
-    def test_get_uses_arm_only(self):
-        """Adding an entry to ArchiveArch for something other than ARM
-        does not enable arm_builds_allowed for that archive."""
-        self.assertFalse(self.archive.arm_builds_allowed)
+    def test_get_returns_restricted_only(self):
+        """Adding an entry to ArchiveArch for something that is not
+        restricted does not make it show up in enabled_restricted_families.
+        """
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
         self.archive_arch_set.new(self.archive,
             getUtility(IProcessorFamilySet).getByName('amd64'))
-        self.assertFalse(self.archive.arm_builds_allowed)
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
 
     def test_set(self):
         """The property remembers its value correctly and sets ArchiveArch."""
-        self.archive.arm_builds_allowed = True
+        self.archive.enabled_restricted_families = [self.arm]
         allowed_restricted_families = self.archive_arch_set.getByArchive(
             self.archive, self.arm)
         self.assertEquals(1, allowed_restricted_families.count())
         self.assertEquals(self.arm,
             allowed_restricted_families[0].processorfamily)
-        self.assertTrue(self.archive.arm_builds_allowed)
-        self.archive.arm_builds_allowed = False
+        self.assertEquals([self.arm], self.archive.enabled_restricted_families)
+        self.archive.enabled_restricted_families = []
         self.assertEquals(0,
             self.archive_arch_set.getByArchive(
                 self.archive, self.arm).count())
-        self.assertFalse(self.archive.arm_builds_allowed)
+        self.assertContentEqual([], self.archive.enabled_restricted_families)
 
+
+class TestArchiveTokens(TestCaseWithFactory):
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestArchiveTokens, self).setUp()
+        owner = self.factory.makePerson()
+        self.private_ppa = self.factory.makeArchive(owner=owner)
+        self.private_ppa.buildd_secret = 'blah'
+        self.private_ppa.private = True
+        self.joe = self.factory.makePerson(name='joe')
+        self.private_ppa.newSubscription(self.joe, owner)
+
+    def test_getAuthToken_with_no_token(self):
+        token = self.private_ppa.getAuthToken(self.joe)
+        self.assertEqual(token, None)
+
+    def test_getAuthToken_with_token(self):
+        token = self.private_ppa.newAuthToken(self.joe)
+        self.assertEqual(self.private_ppa.getAuthToken(self.joe), token)
+
+    def test_getPrivateSourcesList(self):
+        url = self.private_ppa.getPrivateSourcesList(self.joe)
+        token = self.private_ppa.getAuthToken(self.joe)
+        self.assertEqual(token.archive_url, url)
 
 class TestArchivePrivacySwitching(TestCaseWithFactory):
 
@@ -952,6 +1070,36 @@ class TestArchiveDelete(TestCaseWithFactory):
         self.archive.disable()
         self.archive.delete(deleted_by=self.archive.owner)
         self.failUnlessEqual(ArchiveStatus.DELETING, self.archive.status)
+
+
+class TestCommercialArchive(TestCaseWithFactory):
+    """Tests relating to commercial archives."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestCommercialArchive, self).setUp()
+        self.archive = self.factory.makeArchive()
+
+    def setCommercial(self, archive, commercial):
+        """Helper function."""
+        archive.commercial = commercial
+
+    def test_set_and_get_commercial(self):
+        # Basic set and get of the commercial property.  Anyone can read
+        # it and it defaults to False.
+        login_person(self.archive.owner)
+        self.assertFalse(self.archive.commercial)
+
+        # The archive owner can't change the value.
+        self.assertRaises(
+            Unauthorized, self.setCommercial, self.archive, True)
+
+        # Commercial admins can change it.
+        login("commercial-member@canonical.com")
+        self.setCommercial(self.archive, True)
+        self.assertTrue(self.archive.commercial)
+        
 
 
 def test_suite():

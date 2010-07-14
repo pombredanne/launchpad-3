@@ -66,19 +66,20 @@ def set_up_logging_for_script(options, name):
     This also configures oops reporting to use the section named
     'name'."""
     logger_object = logger(options, name)
-    set_up_oops_reporting(name, mangle_stdout=True)
+    set_up_oops_reporting(name, name, mangle_stdout=True)
     return logger_object
 
 
-def set_up_oops_reporting(name, mangle_stdout=False):
+def set_up_oops_reporting(configuration, name, mangle_stdout=True):
     """Set up OOPS reporting by starting the Twisted logger with an observer.
 
-    :param name: The name of the logger and config section to use for oops
+    :param configuration: The name of the config section to use for oops
         reporting.
+    :param name: The name of the logger to use for oops reporting.
     :param mangle_stdout: If True, send stdout and stderr to the logger.
         Defaults to False.
     """
-    errorlog.globalErrorUtility.configure(name)
+    errorlog.globalErrorUtility.configure(configuration)
     log.startLoggingWithObserver(
         OOPSLoggingObserver(loggerName=name).emit, mangle_stdout)
 

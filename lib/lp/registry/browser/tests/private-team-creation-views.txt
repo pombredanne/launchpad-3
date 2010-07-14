@@ -411,7 +411,7 @@ those permitted by private teams.
     ...         team,
     ...         BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...         BranchSubscriptionDiffSize.WHOLEDIFF,
-    ...         CodeReviewNotificationLevel.STATUS)
+    ...         CodeReviewNotificationLevel.STATUS, team_owner)
     ...     # A branch visibility rule.
     ...     from lp.code.enums import BranchVisibilityRule
     ...     from lp.registry.interfaces.product import IProductSet

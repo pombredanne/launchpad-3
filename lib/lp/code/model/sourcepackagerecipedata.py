@@ -27,11 +27,10 @@ from zope.component import getUtility
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
 
+from lp.code.errors import ForbiddenInstruction, TooNewRecipeFormat
 from lp.code.model.branch import Branch
 from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.sourcepackagerecipe import (
-    ForbiddenInstruction, TooNewRecipeFormat)
 
 
 class InstructionType(DBEnumeratedType):
@@ -156,6 +155,19 @@ class SourcePackageRecipeData(Storm):
             ))
         )
 
+    @classmethod
+    def createManifestFromText(cls, text, sourcepackage_recipe_build):
+        """Create a manifest for the specified build.
+
+        :param text: The text of the recipe to create a manifest for.
+        :param sourcepackage_recipe_build: The build to associate the manifest
+            with.
+        :return: an instance of SourcePackageRecipeData.
+        """
+        from bzrlib.plugins.builder.recipe import RecipeParser
+        parser = RecipeParser(text)
+        return cls(parser.parse(),
+                   sourcepackage_recipe_build=sourcepackage_recipe_build)
 
     def getRecipe(self):
         """The BaseRecipeBranch version of the recipe."""
@@ -212,6 +224,8 @@ class SourcePackageRecipeData(Storm):
             line_number += 1
             comment = None
             db_branch = branch_map[instruction.recipe_branch.url]
+            if db_branch is None:
+                raise NoSuchBranch(instruction.recipe_branch.url)
             insn = _SourcePackageRecipeDataInstruction(
                 instruction.recipe_branch.name, type, comment,
                 line_number, db_branch, instruction.recipe_branch.revspec,
@@ -241,12 +255,14 @@ class SourcePackageRecipeData(Storm):
         self.deb_version_template = unicode(builder_recipe.deb_version)
         self.recipe_format = unicode(builder_recipe.format)
 
-    def __init__(self, recipe, sourcepackage_recipe):
+    def __init__(self, recipe, sourcepackage_recipe=None,
+                 sourcepackage_recipe_build=None):
         """Initialize from the bzr-builder recipe and link it to a db recipe.
         """
         super(SourcePackageRecipeData, self).__init__()
         self.setRecipe(recipe)
         self.sourcepackage_recipe = sourcepackage_recipe
+        self.sourcepackage_recipe_build = sourcepackage_recipe_build
 
     def getReferencedBranches(self):
         """Return an iterator of the Branch objects referenced by this recipe.

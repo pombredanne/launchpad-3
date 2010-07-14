@@ -220,7 +220,7 @@ in the Test Group's filebug page.
     >>> admin_browser.open('http://launchpad.dev/testy/+configure-bugtracker')
     >>> admin_browser.getControl(name='field.bugtracker').value = ['external']
     >>> admin_browser.getControl(
-    ...     name='field.bugtracker.bugtracker').value = ['3']
+    ...     name='field.bugtracker.bugtracker').value = 'debbugs'
     >>> admin_browser.getControl('Change').click()
 
 And on the filebug page...

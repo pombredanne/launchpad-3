@@ -166,7 +166,7 @@ class ProductSeriesFacets(StandardLaunchpadFacets):
     def branches(self):
         """Return a link to view the branches related to this series."""
         # Override to go to the branches for the product.
-        text = 'Branches'
+        text = 'Code'
         summary = 'View related branches of code'
         link = canonical_url(self.context.product, rootsite='code')
         return Link(link, text, summary=summary)
@@ -511,33 +511,25 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         sourcepackagename = data.get('sourcepackagename', None)
         distroseries = self._getSubmittedSeries(data)
 
-        if sourcepackagename == self.default_sourcepackagename:
-            # The data has not changed, so nothing else needs to be done.
-            return
-
-        if sourcepackagename is None:
-            message = "You must choose the source package name."
-            self.setFieldError('sourcepackagename', message)
-        # Do not allow users to create links to unpublished Ubuntu packages.
-        elif distroseries.distribution.full_functionality:
-            source_package = distroseries.getSourcePackage(sourcepackagename)
-            if source_package.currentrelease is None:
-                message = ("The source package is not published in %s." %
-                    distroseries.displayname)
-                self.setFieldError('sourcepackagename', message)
-        else:
-            pass
         packaging_util = getUtility(IPackagingUtil)
         if packaging_util.packagingEntryExists(
             productseries=productseries,
             sourcepackagename=sourcepackagename,
             distroseries=distroseries):
-            # The series packaging conflicts with itself.
-            message = _(
-                "This series is already packaged in %s." %
-                distroseries.displayname)
-            self.setFieldError('sourcepackagename', message)
-        elif packaging_util.packagingEntryExists(
+            # The package already exists. Don't display an error. The
+            # action method will let this go by.
+            return
+
+        # Do not allow users to create links to unpublished Ubuntu packages.
+        if (sourcepackagename is not None
+            and distroseries.distribution.full_functionality):
+            source_package = distroseries.getSourcePackage(sourcepackagename)
+            if source_package.currentrelease is None:
+                message = ("The source package is not published in %s." %
+                    distroseries.displayname)
+                self.setFieldError('sourcepackagename', message)
+
+        if packaging_util.packagingEntryExists(
             sourcepackagename=sourcepackagename,
             distroseries=distroseries):
             # The series package conflicts with another series.
@@ -550,10 +542,6 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
                  sourcepackagename.name,
                  distroseries.displayname))
             self.setFieldError('sourcepackagename', message)
-        else:
-            # The distroseries and sourcepackagename are not already linked
-            # to this series, or any other series.
-            pass
 
     @action('Update', name='continue')
     def continue_action(self, action, data):

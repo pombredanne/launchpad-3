@@ -212,11 +212,11 @@ DSC.
     x11
     >>> print ekg.component.name
     universe
-    >>> print ekg.build.sourcepackagerelease.sourcepackagename.name
+    >>> print ekg.build.source_package_release.sourcepackagename.name
     bdftopcf
-    >>> print ekg.build.sourcepackagerelease.component.name
+    >>> print ekg.build.source_package_release.component.name
     main
-    >>> print ekg.build.sourcepackagerelease.version
+    >>> print ekg.build.source_package_release.version
     0.99.0-1
 
 Check that we publishing bdftopcf into the correct distroarchseries:

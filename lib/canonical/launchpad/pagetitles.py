@@ -673,15 +673,15 @@ shipit_login = 'ShipIt'
 
 shipit_login_error = 'ShipIt - Unsuccessful login'
 
-shipit_myrequest = "Your ShipIt order"
+shipit_myrequest = "Your Ubuntu CD order"
 
 shipit_oops = 'Error: Oops'
 
 shipit_reports = 'ShipIt reports'
 
-shipit_requestcds = 'Your ShipIt Request'
+shipit_requestcds = 'Your Ubuntu CD Request'
 
-shipit_survey = 'ShipIt Survey'
+shipit_survey = 'Ubuntu Server Edition survey'
 
 shipitrequests_index = 'ShipIt requests'
 

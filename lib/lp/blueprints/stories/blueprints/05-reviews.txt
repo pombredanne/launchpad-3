@@ -134,9 +134,9 @@ Now we POST this page back to itself. First, we clear a single item.
     >>> print mark_browser.url
     http://blueprints.launchpad.dev/firefox/+spec/canvas/+givefeedback
 
-    >>> print extract_text(find_main_content(mark_browser.contents))
-    Cleared requests from: Carlos Perelló Marín
-    ...
+    >>> for message in get_feedback_messages(mark_browser.contents):
+    ...     print extract_text(message)
+    Cleared requests from: Carlos ...
 
 And now, the remaining two. This time we expect to be redirected.
 

@@ -2,6 +2,9 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
+__all__ = [
+    'UploadFileSystem',
+    ]
 
 import datetime
 import os
@@ -73,7 +76,7 @@ class UploadFileSystem:
     def readfile(self, path, outstream, start=0, end=None):
         """Outputs the file at path to a stream.
 
-        Not allowed - see upload.txt.
+        Not allowed - see filesystem.txt.
         """
         raise Unauthorized
 

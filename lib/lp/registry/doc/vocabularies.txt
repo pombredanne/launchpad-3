@@ -767,6 +767,7 @@ Almost all teams have the word 'team' as part of their names, so a search
 for 'team' should give us some of them.  Notice that the
 PRIVATE_MEMBERSHIP_TEAM 'myteam' is not included in the results.
 
+    >>> login_person(sample_person)
     >>> ephemeral = factory.makeTeam(owner=foo_bar, name='ephemeral-team')
     >>> sorted(person.name for person in vocab.search('team'))
     [u'ephemeral-team', u'hwdb-team', u'name18', u'name20', u'name21',
@@ -776,8 +777,10 @@ PRIVATE_MEMBERSHIP_TEAM 'myteam' is not included in the results.
 
 Valid teams do not include teams that have been merged.
 
+    >>> login_person(foo_bar)
     >>> ephemeral.deactivateAllMembers("Merging", foo_bar)
     >>> person_set.merge(ephemeral, foo_bar)
+    >>> login_person(sample_person)
     >>> sorted(person.name for person in vocab.search('team'))
     [u'hwdb-team', u'name18', u'name20', u'name21',
      u'no-team-memberships', u'otherteam', u'simple-team',
@@ -809,11 +812,12 @@ A PRIVATE team is displayed when the logged in user is a member of the team.
      u'simple-team', u'testing-spanish-team', u'ubuntu-security',
      u'ubuntu-team', u'warty-gnome']
 
-The PRIVATE team is also displayed for Launchpad admins.
+The PRIVATE team is also displayed for Launchpad admins, as is the
+PRIVATE_MEMBERSHIP team 'myteam'.
 
     >>> login('foo.bar@canonical.com')
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'hwdb-team', u'name18', u'name20', u'name21',
+    [u'hwdb-team', u'myteam', u'name18', u'name20', u'name21',
      u'no-team-memberships', u'otherteam',
      u'private-team', u'simple-team', u'testing-spanish-team',
      u'ubuntu-security', u'ubuntu-team', u'warty-gnome']

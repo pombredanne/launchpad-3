@@ -155,7 +155,7 @@ A project milestone page has the same navigation as the project:
     Hierarchy: Mozilla Firefox > 1.0
     Tabs:
     * Overview (selected) - http://launchpad.dev/firefox
-    * Branches - http://code.launchpad.dev/firefox
+    * Code - http://code.launchpad.dev/firefox
     * Bugs - http://bugs.launchpad.dev/firefox
     * Blueprints - http://blueprints.launchpad.dev/firefox
     * Translations - http://translations.launchpad.dev/firefox
@@ -173,7 +173,7 @@ the distribution:
     Hierarchy: Debian > 3.1
     Tabs:
     * Overview (selected) - http://launchpad.dev/debian
-    * Branches - http://code.launchpad.dev/debian
+    * Code - http://code.launchpad.dev/debian
     * Bugs - http://bugs.launchpad.dev/debian
     * Blueprints - http://blueprints.launchpad.dev/debian
     * Translations - http://translations.launchpad.dev/debian
@@ -199,7 +199,8 @@ Firefox product:
 
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Thank you for your bug report...
     >>> bug_1_url = browser.url
 
@@ -209,7 +210,8 @@ Firefox product:
 
     >>> browser.getControl('Further information').value = 'Test Bug 2'
     >>> browser.getControl('Submit').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Thank you for your bug report...
     >>> bug_2_url = browser.url
 
@@ -276,6 +278,11 @@ Now we'll mark the second bug as a duplicate of the first:
 Since duplicate bugs are not listed in milestone listings, only our first bug
 is listed in the 1.0 milestone listing:
 
+    >>> from canonical.testing.layers import MemcachedLayer
+
+    >>> # The listing is updated when the cache expires.
+    >>> MemcachedLayer.purge()
+
     >>> browser.open(milestone_url)
     >>> browser.getLink('Test Bug 1').click()
     >>> browser.url == bug_1_url
@@ -297,6 +304,9 @@ However, it's also possible to clear the duplicate status of our second bug:
     False
 
 Now both bugs are listed in the 1.0 milestone listing once again:
+
+    >>> # The listing is updated when the cache expires.
+    >>> MemcachedLayer.purge()
 
     >>> browser.open(milestone_url)
     >>> browser.getLink('Test Bug 1').click()
@@ -344,6 +354,10 @@ We'll also create a new test milestone within the "trunk" series:
     >>> browser.getControl('Register Milestone').click()
     >>> print browser.title
     Series trunk : Mozilla Firefox
+
+    >>> # The listing is updated when the cache expires.
+    >>> MemcachedLayer.purge()
+    >>> browser.open('http://launchpad.dev/firefox/trunk')
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'series-trunk'))
     Version                         Expected    Released              Summary
@@ -444,6 +458,8 @@ milestone's bug listing:
     >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Save Changes').click()
 
+    >>> # The listing is updated when the cache expires.
+    >>> MemcachedLayer.purge()
     >>> browser.open(milestone_url)
     >>> print extract_text(find_tag_by_id(browser.contents,
     ...                                   'milestone_bugtasks'))

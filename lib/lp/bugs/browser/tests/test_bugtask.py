@@ -245,8 +245,8 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
             self.bug.default_bugtask, LaunchpadTestRequest())
         view.initialize()
         self.assertEqual(
-            ['New', 'Incomplete', 'Invalid', 'Confirmed', 'In Progress',
-             'Fix Committed', 'Fix Released'],
+            ['New', 'Incomplete', 'Opinion', 'Invalid', 'Confirmed',
+             'In Progress', 'Fix Committed', 'Fix Released'],
             self.getWidgetOptionTitles(view.form_fields['status']))
 
     def test_status_field_privileged_persons(self):
@@ -260,8 +260,9 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
                 self.bug.default_bugtask, LaunchpadTestRequest())
             view.initialize()
             self.assertEqual(
-                ['New', 'Incomplete', 'Invalid', "Won't Fix", 'Confirmed',
-                 'Triaged', 'In Progress', 'Fix Committed', 'Fix Released'],
+                ['New', 'Incomplete', 'Opinion', 'Invalid', "Won't Fix",
+                 'Confirmed', 'Triaged', 'In Progress', 'Fix Committed',
+                 'Fix Released'],
                 self.getWidgetOptionTitles(view.form_fields['status']),
                 'Unexpected set of settable status options for %s'
                 % user.name)
@@ -278,8 +279,8 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
             self.bug.default_bugtask, LaunchpadTestRequest())
         view.initialize()
         self.assertEqual(
-            ['New', 'Incomplete', 'Invalid', 'Confirmed', 'In Progress',
-             'Fix Committed', 'Fix Released', 'Unknown'],
+            ['New', 'Incomplete', 'Opinion', 'Invalid', 'Confirmed',
+             'In Progress', 'Fix Committed', 'Fix Released', 'Unknown'],
             self.getWidgetOptionTitles(view.form_fields['status']))
 
     def test_status_field_bug_task_in_status_expired(self):
@@ -292,15 +293,45 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
             self.bug.default_bugtask, LaunchpadTestRequest())
         view.initialize()
         self.assertEqual(
-            ['New', 'Incomplete', 'Invalid', 'Expired', 'Confirmed',
-             'In Progress', 'Fix Committed', 'Fix Released'],
+            ['New', 'Incomplete', 'Opinion', 'Invalid', 'Expired',
+             'Confirmed', 'In Progress', 'Fix Committed', 'Fix Released'],
             self.getWidgetOptionTitles(view.form_fields['status']))
+
+
+class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTaskEditViewAssigneeField, self).setUp()
+        self.bugtask = self.factory.makeBug().default_bugtask
+
+    def test_assignee_field_vocabulary_regular_user(self):
+        # For regular users, the assignee vocabulary is
+        # AllUserTeamsParticipation.
+        login('test@canonical.com')
+        view = BugTaskEditView(self.bugtask, LaunchpadTestRequest())
+        view.initialize()
+        self.assertEqual(
+            'AllUserTeamsParticipation',
+            view.form_fields['assignee'].field.vocabularyName)
+
+    def test_assignee_field_vocabulary_privileged_user(self):
+        # Privileged users, like the bug task target owner, can
+        # assign anybody.
+        login_person(self.bugtask.target.owner)
+        view = BugTaskEditView(self.bugtask, LaunchpadTestRequest())
+        view.initialize()
+        self.assertEqual(
+            'ValidAssignee',
+            view.form_fields['assignee'].field.vocabularyName)
 
 
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestBugTasksAndNominationsView))
     suite.addTest(unittest.makeSuite(TestBugTaskEditViewStatusField))
+    suite.addTest(unittest.makeSuite(TestBugTaskEditViewAssigneeField))
     suite.addTest(DocTestSuite(bugtask))
     suite.addTest(LayeredDocFileSuite(
         'bugtask-target-link-titles.txt', setUp=setUp, tearDown=tearDown,

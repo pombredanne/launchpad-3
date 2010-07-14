@@ -115,7 +115,7 @@ class TacTestSetup:
 
     You can override setUpRoot to set up a root directory for the daemon.
     """
-    def setUp(self, spew=False):
+    def setUp(self, spew=False, umask=None):
         # Before we run, we want to make sure that we have cleaned up any
         # previous runs. Although tearDown() should have been called already,
         # we can't guarantee it.
@@ -138,6 +138,8 @@ class TacTestSetup:
                 '--pidfile', self.pidfile, '--logfile', self.logfile]
         if spew:
             args.append('--spew')
+        if umask is not None:
+            args.extend(('--umask', umask))
 
         # Run twistd, and raise an error if the return value is non-zero or
         # stdout/stderr are written to.

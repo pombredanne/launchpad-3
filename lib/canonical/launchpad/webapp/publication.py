@@ -167,24 +167,28 @@ class LaunchpadBrowserPublication(
         transaction.begin()
 
         db_policy = IDatabasePolicy(request)
-        if not isinstance(db_policy, DatabaseBlockedPolicy):
-            # Database access is not blocked, so make sure our stores point to
-            # the appropriate databases, according to the mode we're on.
-            main_master_store = getUtility(IStoreSelector).get(
-                MAIN_STORE, MASTER_FLAVOR)
-            # XXX: 2009-01-12, salgado, bug=506536: We shouldn't need to go
-            # through private attributes to get to the store's database.
-            dsn = main_master_store._connection._database.dsn_without_user
-            if dsn.strip() != dbconfig.main_master.strip():
-                # Remove the stores from zstorm to force them to be
-                # re-created, thus using the correct databases for the mode
-                # we're on right now.
-                main_slave_store = getUtility(IStoreSelector).get(
-                    MAIN_STORE, SLAVE_FLAVOR)
-                zstorm = getUtility(IZStorm)
-                for store in [main_master_store, main_slave_store]:
-                    zstorm.remove(store)
-                    store.close()
+
+        # If we have switched to or from read-only mode, we need to
+        # disconnect all Stores for this thread. We don't want the
+        # appserver to leave dangling connections as this will interfere
+        # with database maintenance.
+        # We don't disconnect Stores for threads currently handling
+        # requests. That would generate unreproducable OOPSes. This
+        # isn't a problem, as our requests should complete soon or
+        # timeout. Unfortunately, there is no way to disconnect Stores
+        # for idle threads. This means connections are left dangling
+        # until the appserver has processed as many requests as there
+        # are worker threads. We will be able to handle this better
+        # when we have a connection pool.
+        was_read_only = getattr(self.thread_locals, 'was_read_only', None)
+        if was_read_only is not None and was_read_only != is_read_only():
+            zstorm = getUtility(IZStorm)
+            for name, store in list(zstorm.iterstores()):
+                zstorm.remove(store)
+                store.close()
+        # is_read_only() is cached for the entire request, so there
+        # is no race condition here.
+        self.thread_locals.was_read_only = is_read_only()
 
         # Now we are logged in, install the correct IDatabasePolicy for
         # this request.
@@ -413,8 +417,12 @@ class LaunchpadBrowserPublication(
         # The view name used in the pageid usually comes from ZCML and so
         # it will be a unicode string although it shouldn't.  To avoid
         # problems we encode it into ASCII.
-        request.setInWSGIEnvironment(
-            'launchpad.pageid', pageid.encode('ASCII'))
+        pageid = pageid.encode('US-ASCII')
+
+        request.setInWSGIEnvironment('launchpad.pageid', pageid)
+
+        # And spit the pageid out to our tracelog.
+        tracelog(request, 'p', pageid)
 
         if isinstance(removeSecurityProxy(ob), METHOD_WRAPPER_TYPE):
             # this is a direct call on a C-defined method such as __repr__ or
@@ -435,13 +443,24 @@ class LaunchpadBrowserPublication(
         Because of this we cannot chain to the superclass and implement
         the whole behaviour here.
         """
-        orig_env = request._orig_env
         assert hasattr(request, '_publicationticks_start'), (
             'request._publicationticks_start, which should have been set by '
             'callObject(), was not found.')
         ticks = tickcount.difference(
             request._publicationticks_start, tickcount.tickcount())
         request.setInWSGIEnvironment('launchpad.publicationticks', ticks)
+
+        # Calculate SQL statement statistics.
+        sql_statements = da.get_request_statements()
+        sql_milliseconds = sum(
+            endtime - starttime
+                for starttime, endtime, id, sql_statement in sql_statements)
+
+        # Log publication tickcount, sql statement count, and sql time
+        # to the tracelog.
+        tracelog(request, 't', '%d %d %d' % (
+            ticks, len(sql_statements), sql_milliseconds))
+
         # Annotate the transaction with user data. That was done by
         # zope.app.publication.zopepublication.ZopePublication.
         txn = transaction.get()
@@ -497,9 +516,7 @@ class LaunchpadBrowserPublication(
         _maybePlacefullyAuthenticate.
         """
         # Log the URL including vhost information to the ZServer tracelog.
-        tracelog = ITraceLog(request, None)
-        if tracelog is not None:
-            tracelog.log(request.getURL())
+        tracelog(request, 'u', request.getURL())
 
         assert hasattr(request, '_traversalticks_start'), (
             'request._traversalticks_start, which should have been set by '
@@ -788,3 +805,16 @@ def is_browser(request):
     return (
         user_agent is not None
         and _browser_re.search(user_agent) is not None)
+
+
+def tracelog(request, prefix, msg):
+    """Emit a message to the ITraceLog, or do nothing if there is none.
+
+    The message will be prefixed by ``prefix`` to make writing parsers
+    easier. ``prefix`` should be unique and contain no spaces, and
+    preferably a single character to save space.
+    """
+    tracelog = ITraceLog(request, None)
+    if tracelog is not None:
+        tracelog.log('%s %s' % (prefix, msg.encode('US-ASCII')))
+

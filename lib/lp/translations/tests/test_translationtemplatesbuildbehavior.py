@@ -173,7 +173,8 @@ class TestTranslationTemplatesBuildBehavior(
             "File from the slave.",
             behavior._readTarball(buildqueue, {path: path}, logging))
 
-    def test_updateBuild_WAITING(self):
+    def test_updateBuild_WAITING_OK(self):
+        # Hopefully, a build will succeed and produce a tarball.
         behavior = self.makeBehavior()
         behavior._getChroot = FakeChroot
         behavior._uploadTarball = FakeMethod()
@@ -192,6 +193,59 @@ class TestTranslationTemplatesBuildBehavior(
             }
         behavior.updateSlaveStatus(builder.slave.status(), slave_status)
         behavior.updateBuild_WAITING(queue_item, slave_status, None, logging)
+
+        self.assertEqual(1, queue_item.destroySelf.call_count)
+        self.assertEqual(1, builder.cleanSlave.call_count)
+        self.assertEqual(0, behavior._uploadTarball.call_count)
+
+    def test_updateBuild_WAITING_failed(self):
+        # Builds may also fail (and produce no tarball).
+        behavior = self.makeBehavior()
+        behavior._getChroot = FakeChroot
+        behavior._uploadTarball = FakeMethod()
+        queue_item = FakeBuildQueue(behavior)
+        builder = behavior._builder
+        behavior.dispatchBuildToSlave(queue_item, logging)
+        raw_status = (
+            'BuilderStatus.WAITING',
+            'BuildStatus.FAILEDTOBUILD',
+            builder.slave.status()[2],
+            )
+        status_dict = {
+            'builder_status': raw_status[0],
+            'build_status': raw_status[1],
+            }
+        behavior.updateSlaveStatus(raw_status, status_dict)
+        self.assertNotIn('filemap', status_dict)
+
+        behavior.updateBuild_WAITING(queue_item, status_dict, None, logging)
+
+        self.assertEqual(1, queue_item.destroySelf.call_count)
+        self.assertEqual(1, builder.cleanSlave.call_count)
+        self.assertEqual(0, behavior._uploadTarball.call_count)
+
+    def test_updateBuild_WAITING_notarball(self):
+        # Even if the build status is "OK," absence of a tarball will
+        # not faze the Behavior class.
+        behavior = self.makeBehavior()
+        behavior._getChroot = FakeChroot
+        behavior._uploadTarball = FakeMethod()
+        queue_item = FakeBuildQueue(behavior)
+        builder = behavior._builder
+        behavior.dispatchBuildToSlave(queue_item, logging)
+        raw_status = (
+            'BuilderStatus.WAITING',
+            'BuildStatus.OK',
+            builder.slave.status()[2],
+            )
+        status_dict = {
+            'builder_status': raw_status[0],
+            'build_status': raw_status[1],
+            }
+        behavior.updateSlaveStatus(raw_status, status_dict)
+        self.assertFalse('filemap' in status_dict)
+
+        behavior.updateBuild_WAITING(queue_item, status_dict, None, logging)
 
         self.assertEqual(1, queue_item.destroySelf.call_count)
         self.assertEqual(1, builder.cleanSlave.call_count)

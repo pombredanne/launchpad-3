@@ -214,7 +214,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         [build] = builds
         self.assertEqual(
             build.title, 'i386 build of bar 1.0-1 in ubuntu breezy RELEASE')
-        self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(build.status.name, 'NEEDSBUILD')
         self.assertTrue(build.buildqueue_record.lastscore is not 0)
 
         #
@@ -241,7 +241,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         [build, build_old] = builds
         self.assertEqual(
             build.title, 'i386 build of bar 1.0-10 in ubuntu breezy RELEASE')
-        self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(build.status.name, 'NEEDSBUILD')
         self.assertTrue(build.buildqueue_record.lastscore is not 0)
 
         #
@@ -391,7 +391,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         [build] = builds
         self.assertEqual(
             build.title, 'i386 build of bar 1.0-1 in ubuntu breezy RELEASE')
-        self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(build.status.name, 'NEEDSBUILD')
         self.assertTrue(build.buildqueue_record.lastscore is not 0)
 
         # Binary upload to the just-created build record.
@@ -575,7 +575,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         [build] = builds
         self.assertEqual(
             build.title, 'i386 build of bar 1.0-1 in ubuntu breezy RELEASE')
-        self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(build.status.name, 'NEEDSBUILD')
         self.assertTrue(build.buildqueue_record.lastscore is not 0)
 
     def testNotMemberUploadToTeamPPA(self):

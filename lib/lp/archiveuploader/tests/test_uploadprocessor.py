@@ -397,19 +397,24 @@ class TestUploadProcessor(TestUploadProcessorBase):
         finally:
             shutil.rmtree(testdir)
 
+    def _makeUpload(self, testdir):
+        """Create a dummy upload for testing the move/remove methods."""
+        upload = tempfile.mkdtemp(dir=testdir)
+        distro = upload + ".distro"
+        f = open(distro, mode="w")
+        f.write("foo")
+        f.close()
+        return upload, distro
+
     def testMoveUpload(self):
         """moveUpload should move the upload directory and .distro file."""
         testdir = tempfile.mkdtemp()
         try:
             # Create an upload, a .distro and a target to move it to.
-            upload = tempfile.mkdtemp(dir=testdir)
-            upload_name = os.path.basename(upload)
-            distro = upload + ".distro"
-            f = open(distro, mode="w")
-            f.write("foo")
-            f.close()
+            upload, distro = self._makeUpload(testdir)
             target = tempfile.mkdtemp(dir=testdir)
             target_name = os.path.basename(target)
+            upload_name = os.path.basename(upload)
 
             # Move it
             self.options.base_fsroot = testdir
@@ -420,6 +425,72 @@ class TestUploadProcessor(TestUploadProcessorBase):
             self.assertTrue(os.path.exists(os.path.join(target, upload_name)))
             self.assertTrue(os.path.exists(os.path.join(
                 target, upload_name + ".distro")))
+            self.assertFalse(os.path.exists(upload))
+            self.assertFalse(os.path.exists(distro))
+        finally:
+            shutil.rmtree(testdir)
+
+    def testMoveProcessUploadAccepted(self):
+        testdir = tempfile.mkdtemp()
+        try:
+            # Create an upload, a .distro and a target to move it to.
+            upload, distro = self._makeUpload(testdir)
+            upload_name = os.path.basename(upload)
+
+            # Remove it
+            self.options.base_fsroot = testdir
+            up = UploadProcessor(self.options, None, self.log)
+            up.moveProcessedUpload(upload, "accepted")
+
+            # Check it was removed, not moved
+            self.assertFalse(os.path.exists(os.path.join(
+                testdir, "accepted")))
+            self.assertFalse(os.path.exists(os.path.join(testdir,
+                "accepted", upload_name + ".distro")))
+            self.assertFalse(os.path.exists(upload))
+            self.assertFalse(os.path.exists(distro))
+        finally:
+            shutil.rmtree(testdir)
+
+    def testMoveProcessUploadFailed(self):
+        """moveProcessedUpload should move if the result was not successful."""
+        testdir = tempfile.mkdtemp()
+        try:
+            # Create an upload, a .distro and a target to move it to.
+            upload, distro = self._makeUpload(testdir)
+            upload_name = os.path.basename(upload)
+
+            # Move it
+            self.options.base_fsroot = testdir
+            up = UploadProcessor(self.options, None, self.log)
+            up.moveProcessedUpload(upload, "rejected")
+
+            # Check it moved
+            self.assertTrue(os.path.exists(os.path.join(testdir,
+                "rejected", upload_name)))
+            self.assertTrue(os.path.exists(os.path.join(testdir,
+                "rejected", upload_name + ".distro")))
+            self.assertFalse(os.path.exists(upload))
+            self.assertFalse(os.path.exists(distro))
+        finally:
+            shutil.rmtree(testdir)
+
+    def testRemoveUpload(self):
+        """RemoveUpload should remove the upload directory and .distro file."""
+        testdir = tempfile.mkdtemp()
+        try:
+            # Create an upload, a .distro and a target to move it to.
+            upload, distro = self._makeUpload(testdir)
+            upload_name = os.path.basename(upload)
+
+            # Remove it
+            self.options.base_fsroot = testdir
+            up = UploadProcessor(self.options, None, self.log)
+            up.removeUpload(upload)
+
+            # Check it was removed, not moved
+            self.assertFalse(os.path.exists(os.path.join(
+                testdir, "accepted")))
             self.assertFalse(os.path.exists(upload))
             self.assertFalse(os.path.exists(distro))
         finally:
@@ -1014,7 +1085,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(
             build.title,
             'i386 build of foocomm 1.0-2 in ubuntu breezy RELEASE')
-        self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(build.status.name, 'NEEDSBUILD')
         self.assertTrue(build.buildqueue_record.lastscore is not None)
 
         # Upload the next binary version of the package.

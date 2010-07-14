@@ -53,7 +53,6 @@ from lp.registry.model.structuralsubscription import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.packaging import PackagingType
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
@@ -84,7 +83,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(IHasBugHeat, IProductSeries, IHasTranslationTemplates)
+    implements(IHasBugHeat, IProductSeries)
 
     _table = 'ProductSeries'
 
@@ -179,6 +178,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def bug_reporting_guidelines(self):
         """See `IBugTarget`."""
         return self.product.bug_reporting_guidelines
+
+    @property
+    def bug_reported_acknowledgement(self):
+        """See `IBugTarget`."""
+        return self.product.bug_reported_acknowledgement
 
     @property
     def sourcepackages(self):
@@ -428,7 +432,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See `IHasTranslationTemplates`."""
         result = POTemplate.selectBy(
             productseries=self, orderBy=['-priority', 'name'])
-        return shortlist(result, 300)
+        return result
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
@@ -614,4 +618,3 @@ class ProductSeriesSet:
                 import_mode != TranslationsBranchImportMode.NO_IMPORT)
 
         return Store.of(branch).find(ProductSeries, And(*conditions))
-

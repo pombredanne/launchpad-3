@@ -130,7 +130,7 @@ Private teams can subscribe to branches.
     ...     priv_team,
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
-    ...     CodeReviewNotificationLevel.STATUS)
+    ...     CodeReviewNotificationLevel.STATUS, team_owner)
     >>> print subscription.person.name
     private-team
 
@@ -141,7 +141,7 @@ Private membership teams cannot subscribe to branches.
     ...     pm_team,
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
-    ...     CodeReviewNotificationLevel.STATUS)
+    ...     CodeReviewNotificationLevel.STATUS, team_owner)
     Traceback (most recent call last):
     ...
     PrivatePersonLinkageError: Cannot link person

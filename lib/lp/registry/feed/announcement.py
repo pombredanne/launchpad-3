@@ -26,7 +26,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from canonical.launchpad.interfaces.launchpad import IFeedsApplication
-from canonical.launchpad.webapp.tales import FormattersAPI
+from lp.app.browser.stringformatter import FormattersAPI
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData)
 

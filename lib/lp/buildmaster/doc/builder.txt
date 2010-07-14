@@ -111,29 +111,22 @@ virtualization status, architecture, then name.
     bob
     frog
 
-'getBuildQueueSizeForProcessor' returns the number of pending builds
-for a given Processor. The callsites can also control which build-farm
-they are interested via the 'virtualized' argument.
+'getBuildQueueSizes' returns the number of pending builds for each
+Processor/virtualization.
 
-    >>> from lp.soyuz.model.processor import Processor
-    >>> p386 = Processor.selectOneBy(name='386')
-    >>> amd64 = Processor.selectOneBy(name='amd64')
+    >>> queue_sizes = builderset.getBuildQueueSizes()
+    >>> queue_sizes['nonvirt']['386']
+    (1L, datetime.timedelta(0, 60))
 
-'virtualized' defaults to False, so if not passed, it will return the
-size and estimated duration of the non-virtualized (trusted) build queue.
+There are no 'amd64' build queue entries.
 
-    >>> builderset.getBuildQueueSizeForProcessor(p386)
-    (1, datetime.timedelta(0, 60))
-
-The 'amd64' build queue is empty.
-
-    >>> builderset.getBuildQueueSizeForProcessor(amd64)
-    (0, None)
+    >>> queue_sizes['nonvirt'].keys()
+    [u'386']
 
 The virtualized build queue for 386 is also empty.
 
-    >>> builderset.getBuildQueueSizeForProcessor(p386, virtualized=True)
-    (0, None)
+    >>> queue_sizes['virt'].keys()
+    []
 
 The queue size is not affect by builds target to disabled
 archives. Builds for disabled archive are not dispatched as well, this
@@ -145,23 +138,46 @@ We will temporarily disable the ubuntu primary archive.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu.main_archive.disable()
+    >>> import transaction
+    >>> transaction.commit()
     >>> login(ANONYMOUS)
 
 That done, the non-virtualized queue for i386 becomes empty.
 
-    >>> builderset.getBuildQueueSizeForProcessor(p386)
-    (0, None)
+    >>> queue_sizes = builderset.getBuildQueueSizes()
+    >>> queue_sizes['nonvirt'].keys()
+    []
 
 Let's re-enable the ubuntu primary archive.
 
     >>> login('foo.bar@canonical.com')
     >>> ubuntu.main_archive.enable()
+    >>> transaction.commit()
     >>> login(ANONYMOUS)
 
 The build for the ubuntu primary archive shows up again.
 
-    >>> builderset.getBuildQueueSizeForProcessor(p386)
-    (1, datetime.timedelta(0, 60))
+    >>> queue_sizes = builderset.getBuildQueueSizes()
+    >>> queue_sizes['nonvirt']['386']
+    (1L, datetime.timedelta(0, 60))
+
+All job types are included. If we create a recipe build job, it will
+show up in the calculated queue size.
+
+    >>> recipe_bq = factory.makeSourcePackageRecipeBuildJob()
+    >>> # XXX wgrant 20100625 bug=598397: The factory erroneously creates
+    >>> # architecture-independent jobs.
+    >>> print recipe_bq.processor
+    None
+
+    >>> from lp.soyuz.interfaces.processor import IProcessorFamilySet
+    >>> i386_family = getUtility(IProcessorFamilySet).getByName('x86')
+    >>> recipe_bq.processor = i386_family.processors[0]
+    
+    >>> transaction.commit()
+    >>> queue_sizes = builderset.getBuildQueueSizes()
+    >>> print queue_sizes['virt']['386']
+    (1L, datetime.timedelta(0, 64))
 
 
 Resuming buildd slaves
@@ -306,6 +322,6 @@ but there's no need to abort a completed build. Such builders are
 instead simply cleaned, ready for the next build.
 
     >>> rescue_slave_if_lost(WaitingSlave(build_id='bad'))
-    Cleaning slave 
+    Cleaning slave
     WARNING:root:Builder 'mock' rescued from 'bad': 'Bad value'
 

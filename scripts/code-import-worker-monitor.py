@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5 -S
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -36,7 +36,7 @@ class CodeImportWorker(LaunchpadScript):
 
     def __init__(self, name, dbuser=None, test_args=None):
         LaunchpadScript.__init__(self, name, dbuser, test_args)
-        set_up_oops_reporting(name, mangle_stdout=True)
+        set_up_oops_reporting('codeimportworker', name, mangle_stdout=True)
 
     def _init_db(self, implicit_begin, isolation):
         # This script doesn't access the database.

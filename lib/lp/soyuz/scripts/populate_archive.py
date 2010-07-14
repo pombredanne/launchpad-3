@@ -53,7 +53,7 @@ class ArchivePopulator(SoyuzScript):
         self, from_archive, from_distribution, from_suite, from_user,
         component, to_distribution, to_suite, to_archive, to_user, reason,
         include_binaries, arch_tags, merge_copy_flag,
-        packageset_delta_flag):
+        packageset_delta_flag, packageset_tags, nonvirtualized):
         """Create archive, populate it with packages and builds.
 
         Please note: if a component was specified for the origin then the
@@ -79,6 +79,9 @@ class ArchivePopulator(SoyuzScript):
             existing copy archive.
         :param packageset_delta_flag: only show packages that are fresher or
             new in the origin archive. Do not copy anything.
+
+        :param packageset_tags: list of packagesets to limit the packages
+            copied to.
         """
         # Avoid circular imports.
         from lp.registry.interfaces.person import IPersonSet
@@ -108,13 +111,14 @@ class ArchivePopulator(SoyuzScript):
             for proc_family in proc_families:
                 ignore_this = aa_set.new(archive, proc_family)
 
-        def build_location(distro, suite, component):
+        def build_location(distro, suite, component, packageset_names=None):
             """Build and return package location."""
-            location = build_package_location(distro, suite=suite)
+            location = build_package_location(
+                distro, suite=suite, packageset_names=packageset_names)
             if component is not None:
                 try:
                     the_component = getUtility(IComponentSet)[component]
-                except NotFoundError, e:
+                except NotFoundError:
                     raise SoyuzScriptError(
                         "Invalid component name: '%s'" % component)
                 location.component = the_component
@@ -122,7 +126,9 @@ class ArchivePopulator(SoyuzScript):
 
         archive_set = getUtility(IArchiveSet)
         # Build the origin package location.
-        the_origin = build_location(from_distribution, from_suite, component)
+        the_origin = build_location(
+            from_distribution, from_suite, component,
+            packageset_names=packageset_tags)
 
         # Use a non-PPA(!) origin archive if specified and existent.
         if from_archive is not None and from_user is None:
@@ -206,10 +212,12 @@ class ArchivePopulator(SoyuzScript):
             # before the switch is flipped and build activity starts.
             # Also, builds for copy archives should default to using
             # virtual builders.
+            virtual = not nonvirtualized
             copy_archive = getUtility(IArchiveSet).new(
                 ArchivePurpose.COPY, registrant, name=to_archive,
                 distribution=the_destination.distribution,
-                description=reason, enabled=False, require_virtualized=True)
+                description=reason, enabled=False,
+                require_virtualized=virtual)
             the_destination.archive = copy_archive
             # Associate the newly created copy archive with the processor
             # families specified by the user.
@@ -310,12 +318,15 @@ class ArchivePopulator(SoyuzScript):
             raise SoyuzScriptError(
                 "Invalid origin archive name: '%s'" % opts.from_archive)
 
+        # For the love of $DEITY, WTF doesn't this method just accept a
+        # single parameter "opts" ...
         self.populateArchive(
             opts.from_archive, opts.from_distribution, opts.from_suite,
             opts.from_user, opts.component, opts.to_distribution,
             opts.to_suite, opts.to_archive, opts.to_user, opts.reason,
             opts.include_binaries, opts.arch_tags, opts.merge_copy_flag,
-            opts.packageset_delta_flag)
+            opts.packageset_delta_flag, opts.packageset_tags,
+            opts.nonvirtualized)
 
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.
@@ -379,6 +390,16 @@ class ArchivePopulator(SoyuzScript):
                 'Only show packages that are fresher or new in origin '
                 'archive. Destination archive must exist already.'))
 
+        self.parser.add_option(
+            "--package-set", dest="packageset_tags", action="append",
+            help=(
+                'Limit to copying packages in the selected packagesets.'))
+
+        self.parser.add_option(
+            "--nonvirtualized", dest="nonvirtualized", default=False,
+            action="store_true",
+            help='Create the archive as nonvirtual if specified.')
+
     def _createMissingBuilds(
         self, distroseries, archive, proc_families):
         """Create builds for all cloned source packages.
@@ -386,7 +407,7 @@ class ArchivePopulator(SoyuzScript):
         :param distroseries: the distro series for which to create builds.
         :param archive: the archive for which to create builds.
         :param proc_families: the list of processor families for
-            which to create builds (optional).
+            which to create builds.
         """
         # Avoid circular imports.
         from lp.soyuz.interfaces.publishing import active_publishing_status
@@ -425,7 +446,19 @@ class ArchivePopulator(SoyuzScript):
             """Return the source package name for a publishing record."""
             return pub.sourcepackagerelease.sourcepackagename.name
 
+        archindep_unavailable = distroseries.nominatedarchindep not in (
+            architectures)
+
         for pubrec in sources_published:
+            if (pubrec.sourcepackagerelease.architecturehintlist == "all"
+                and archindep_unavailable):
+                self.logger.info(
+                    "Skipping %s, arch-all package can't be built since %s "
+                    "is not requested" % (
+                        get_spn(pubrec),
+                        distroseries.nominatedarchindep.architecturetag))
+                continue
+
             builds = pubrec.createMissingBuilds(
                 architectures_available=architectures, logger=self.logger)
             if len(builds) == 0:

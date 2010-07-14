@@ -19,7 +19,7 @@ from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    DatabaseLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -82,6 +82,18 @@ def bugtaskExpirationSetUp(test):
     setUp(test)
     test.globs['commit'] = commit
     login('test@canonical.com')
+
+
+def updateRemoteProductSetup(test):
+    """Setup to use the 'updateremoteproduct' db user."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.updateremoteproduct.dbuser)
+
+
+def updateRemoteProductTeardown(test):
+    # Mark the DB as dirty, since we run a script in a sub process.
+    DatabaseLayer.force_dirty_database()
+    tearDown(test)
 
 
 special = {
@@ -377,7 +389,23 @@ special = {
         layer=LaunchpadZopelessLayer
         ),
     'filebug-data-parser.txt': LayeredDocFileSuite(
-    '../doc/filebug-data-parser.txt'),
+        '../doc/filebug-data-parser.txt'),
+    'product-update-remote-product.txt': LayeredDocFileSuite(
+        '../doc/product-update-remote-product.txt',
+        setUp=updateRemoteProductSetup,
+        tearDown=updateRemoteProductTeardown,
+        layer=LaunchpadZopelessLayer
+        ),
+    'product-update-remote-product-script.txt': LayeredDocFileSuite(
+        '../doc/product-update-remote-product-script.txt',
+        setUp=updateRemoteProductSetup,
+        tearDown=updateRemoteProductTeardown,
+        layer=LaunchpadZopelessLayer
+        ),
+    'sourceforge-remote-products.txt': LayeredDocFileSuite(
+        '../doc/sourceforge-remote-products.txt',
+        layer=LaunchpadZopelessLayer,
+        ),
     }
 
 

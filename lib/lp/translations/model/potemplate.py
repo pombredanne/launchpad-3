@@ -1297,8 +1297,8 @@ class POTemplateSet:
         elif sourcepackagename is None:
             # Multiple matches, and for a product not a package.
             logging.warn(
-                "Found %d templates with path '%s' for productseries %s" % (
-                    len(matches), path, productseries.title))
+                "Found %d templates with path '%s' for productseries %s",
+                len(matches), path, productseries.title)
             return None
         else:
             # Multiple matches, for a distribution package.  Prefer a
@@ -1316,9 +1316,9 @@ class POTemplateSet:
             else:
                 logging.warn(
                     "Found %d templates with path '%s' for package %s "
-                    "(%d matched on from_sourcepackagename)." % (
-                        len(matches), path, sourcepackagename.name,
-                        len(preferred_matches)))
+                    "(%d matched on from_sourcepackagename).",
+                    len(matches), path, sourcepackagename.name,
+                    len(preferred_matches))
                 return None
 
     @staticmethod
@@ -1509,10 +1509,6 @@ class POTemplateToTranslationFileDataAdapter:
                     for flag in row.flags_comment.split(',')
                     if flag
                     ])
-
-            # Store sequences so we can detect later whether we changed the
-            # message.
-            sequence = row.sequence
 
             # Store the message.
             messages.append(msgset)
