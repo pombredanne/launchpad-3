@@ -315,3 +315,32 @@ class SpecificationTargetTests(TestCaseWithFactory):
         spec = distro_on_webservice.getSpecification(name="some-spec")
         self.assertEqual("some-spec", spec.name)
         self.assertEqual("foobuntu", spec.distribution.name)
+
+    def test_get_specification_on_productseries(self):
+        product = self.factory.makeProduct("fooix")
+        productseries = self.factory.makeProductSeries(
+            product=product, name="fooix-dev")
+        spec_object = self.factory.makeSpecification(
+            product=product, name="some-spec", productseries=productseries)
+        product_on_webservice = self.getPillarOnWebservice(product)
+        productseries_on_webservice = product_on_webservice.getSeries(
+            name="fooix-dev")
+        spec = productseries_on_webservice.getSpecification(name="some-spec")
+        self.assertEqual("some-spec", spec.name)
+        self.assertEqual("fooix", spec.project.name)
+        self.assertEqual("fooix-dev", spec.project_series.name)
+
+    def test_get_specification_on_distroseries(self):
+        distribution = self.factory.makeDistribution("foobuntu")
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distribution, name="maudlin")
+        spec_object = self.factory.makeSpecification(
+            distribution=distribution, name="some-spec",
+            distroseries=distroseries)
+        distro_on_webservice = self.getPillarOnWebservice(distribution)
+        distroseries_on_webservice = distro_on_webservice.getSeries(
+            name_or_version="maudlin")
+        spec = distroseries_on_webservice.getSpecification(name="some-spec")
+        self.assertEqual("some-spec", spec.name)
+        self.assertEqual("foobuntu", spec.distribution.name)
+        self.assertEqual("maudlin", spec.distroseries.name)
