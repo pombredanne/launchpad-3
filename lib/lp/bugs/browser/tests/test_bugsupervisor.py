@@ -9,14 +9,11 @@ import unittest
 
 from zope.app.form.interfaces import ConversionError
 
-import transaction
-
 from lp.bugs.browser.bugsupervisor import BugSupervisorEditSchema
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import login, login_person, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 from canonical.testing import DatabaseFunctionalLayer
-from canonical.launchpad.fields import PrivateMembershipTeamNotAllowed
 
 
 class TestBugSupervisorEditView(TestCaseWithFactory):

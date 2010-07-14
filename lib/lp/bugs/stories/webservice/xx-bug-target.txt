@@ -46,8 +46,8 @@ Not everyone can modify it however:
 
 == Official Bug Tags ==
 
-We can access official bug tag targets and add and remove tags. We create a new
-product, owned by ~salgado.
+We can access official bug tag targets and add and remove tags. We
+create a new product, owned by ~salgado.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -57,7 +57,8 @@ product, owned by ~salgado.
     >>> product = factory.makeProduct(name='tags-test-product', owner=salgado)
     >>> logout()
 
-The webserice client is logged in as salgado, so we can add a new official tag.
+The webserice client is logged in as salgado, so we can add a new
+official tag.
 
     >>> print webservice.named_post(
     ...     '/tags-test-product', 'addOfficialBugTag',
