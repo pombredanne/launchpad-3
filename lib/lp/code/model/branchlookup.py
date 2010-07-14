@@ -27,7 +27,7 @@ from lp.code.interfaces.branchlookup import (
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, get_linked_branch, NoLinkedBranch)
+    CannotHaveLinkedBranch, get_linked_to_branch, NoLinkedBranch)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet, NoSuchDistroSeries)
@@ -381,7 +381,7 @@ class BranchLookup:
             doesn't.
         :return: The linked branch, an `IBranch`.
         """
-        linked = get_linked_branch(provided)
+        linked = get_linked_to_branch(provided)
         if not check_permission('launchpad.View', linked.branch):
             raise NoLinkedBranch(provided)
         return linked

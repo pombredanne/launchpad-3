@@ -13,7 +13,7 @@ backports branch for a source package or something else.
 __metaclass__ = type
 __all__ = [
     'CannotHaveLinkedBranch',
-    'get_linked_branch',
+    'get_linked_to_branch',
     'ICanHasLinkedBranch',
     'NoLinkedBranch',
     ]
@@ -58,8 +58,8 @@ class NoLinkedBranch(Exception):
         Exception.__init__(self, "%r has no linked branch." % (component,))
 
 
-def get_linked_branch(provided):
-    """Get the linked branch for 'provided', whatever that is.
+def get_linked_to_branch(provided):
+    """Get the `ICanHasLinkedBranch` for 'provided', whatever that is.
 
     :raise CannotHaveLinkedBranch: If 'provided' can never have a linked
         branch.
