@@ -1433,14 +1433,6 @@ class Archive(SQLBase):
         store.add(archive_auth_token)
         return archive_auth_token
 
-    def getPrivateSourcesList(self, person):
-        """See `IArchive`."""
-
-        token = self.getAuthToken(person)
-        if token is None:
-            token = self.newAuthToken(person)
-        return token.archive_url
-
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):
         """See `IArchive`."""

@@ -1,4 +1,4 @@
--- Copyright 2009 Canonical Ltd.  This software is licensed under the
+-- Copyright 2010 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 
 SET check_function_bodies = false;
@@ -869,6 +869,7 @@ INSERT INTO account (id, date_created, creation_rationale, status, date_status_s
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243634, '2009-08-24 14:36:04.670944', 1, 20, '2009-08-24 14:36:04.670944', 'Epiphany Maintainer', 'HHN3kCp', 'Activated when the preferred email was set.', NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243635, '2009-08-24 14:39:04.682972', 1, 20, '2009-08-24 14:39:04.682972', 'intltool maintainer', 'NbFGnBx', 'Activated when the preferred email was set.', NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243636, '2009-08-24 14:41:04.403504', 1, 20, '2009-08-24 14:41:04.403504', 'Lies Maintainer', 'e3eENYJ', 'Activated when the preferred email was set.', NULL);
+INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243637, '2010-07-12 09:48:27.198885', 1, 20, '2010-07-12 09:48:27.198885', 'Software-center-agent', 'zRtPxw8', NULL, NULL);
 
 
 ALTER TABLE account ENABLE TRIGGER ALL;
@@ -939,6 +940,7 @@ INSERT INTO accountpassword (id, account, password) VALUES (243636, 243633, 'BnG
 INSERT INTO accountpassword (id, account, password) VALUES (243637, 243634, 'j4OCnhO4rzPbvyJgeHYEGXe8FpfWYMsCsRvxb9wZVBUHsCfiUP/XvQ==');
 INSERT INTO accountpassword (id, account, password) VALUES (243638, 243635, 'MUDYvi+UgO8wUqxwhd9br4tXTgxPpcloU5EUW5BRTNUKUS2ac+hG7A==');
 INSERT INTO accountpassword (id, account, password) VALUES (243639, 243636, 'Q/4V+DAYdXXoCoQiSchF9DkfA4ntWhmkJhmzcmYmylpEnlbiZfvyIA==');
+INSERT INTO accountpassword (id, account, password) VALUES (243640, 243637, 'B3cm8e9QjsFqDC/NC69OBXU0LDpKhD6z4Lc3IH7Btj7mv1qnVoYxoQ==');
 
 
 ALTER TABLE accountpassword ENABLE TRIGGER ALL;
@@ -2593,6 +2595,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created, account) VALU
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (90, 'epiphany-maintainer@example.com', 243648, 4, '2009-08-24 14:36:04.670944', 243634);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (91, 'intltool-maintainer@example.com', 243649, 4, '2009-08-24 14:39:04.682972', 243635);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (92, 'lies@example.com', 243650, 4, '2009-08-24 14:41:04.403504', 243636);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (93, 'software-center-agent@example.com', 243651, 4, '2010-07-12 09:48:27.198885', 243637);
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -4085,6 +4088,7 @@ INSERT INTO lp_account (id, openid_identifier) VALUES (243633, 'YEBL6yn');
 INSERT INTO lp_account (id, openid_identifier) VALUES (243634, 'HHN3kCp');
 INSERT INTO lp_account (id, openid_identifier) VALUES (243635, 'NbFGnBx');
 INSERT INTO lp_account (id, openid_identifier) VALUES (243636, 'e3eENYJ');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243637, 'zRtPxw8');
 
 
 ALTER TABLE lp_account ENABLE TRIGGER ALL;
@@ -4207,6 +4211,7 @@ INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, langua
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243648, 'Epiphany Maintainer', NULL, NULL, 'epiphany-maintainer', NULL, NULL, NULL, NULL, 1, NULL, '2009-08-24 14:36:04.668409', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243634);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243649, 'intltool maintainer', NULL, NULL, 'intltool-maintainer', NULL, NULL, NULL, NULL, 1, NULL, '2009-08-24 14:38:22.003195', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243635);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243650, 'Lies Maintainer', NULL, NULL, 'lies-maintainer', NULL, NULL, NULL, NULL, 1, NULL, '2009-08-24 14:39:04.740018', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243636);
+INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243651, 'Software-center-agent', NULL, NULL, 'software-center-agent', NULL, NULL, NULL, NULL, 1, NULL, '2010-07-12 09:48:27.198885', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243637);
 
 
 ALTER TABLE lp_person ENABLE TRIGGER ALL;
@@ -4458,6 +4463,7 @@ INSERT INTO lp_teamparticipation (id, team, person) VALUES (249, 243641, 243646)
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (250, 243648, 243648);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (251, 243649, 243649);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (252, 243650, 243650);
+INSERT INTO lp_teamparticipation (id, team, person) VALUES (253, 243651, 243651);
 
 
 ALTER TABLE lp_teamparticipation ENABLE TRIGGER ALL;
@@ -5492,6 +5498,7 @@ INSERT INTO person (id, displayname, teamowner, teamdescription, name, language,
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243648, 'Epiphany Maintainer', NULL, NULL, 'epiphany-maintainer', NULL, NULL, NULL, NULL, 1, NULL, '2009-08-24 14:36:04.668409', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243634);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243649, 'intltool maintainer', NULL, NULL, 'intltool-maintainer', NULL, NULL, NULL, NULL, 1, NULL, '2009-08-24 14:38:22.003195', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243635);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243650, 'Lies Maintainer', NULL, NULL, 'lies-maintainer', NULL, NULL, NULL, NULL, 1, NULL, '2009-08-24 14:39:04.740018', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243636);
+INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243651, 'Software-center-agent', NULL, NULL, 'software-center-agent', NULL, NULL, NULL, NULL, 1, NULL, '2010-07-12 09:48:27.198885', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243637);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -10189,6 +10196,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (249, 243641, 243646);
 INSERT INTO teamparticipation (id, team, person) VALUES (250, 243648, 243648);
 INSERT INTO teamparticipation (id, team, person) VALUES (251, 243649, 243649);
 INSERT INTO teamparticipation (id, team, person) VALUES (252, 243650, 243650);
+INSERT INTO teamparticipation (id, team, person) VALUES (253, 243651, 243651);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
