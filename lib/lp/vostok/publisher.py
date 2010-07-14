@@ -1,47 +1,37 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""XXX: Module docstring goes here."""
+"""Vostok's custom publication."""
 
 __metaclass__ = type
-__all__ = ['vostok_request_publication_factory']
+__all__ = [
+    'VostokBrowserRequest',
+    'VostokLayer',
+    'vostok_request_publication_factory',
+    ]
 
 
 from zope.interface import implements
 from zope.publisher.interfaces.browser import (
     IBrowserRequest, IDefaultBrowserLayer)
 
-from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
-    AccountPrincipalMixin, LaunchpadBrowserRequest,
-    VirtualHostRequestPublicationFactory)
-from canonical.launchpad.webapp.vhosts import allvhosts
+    LaunchpadBrowserRequest, VirtualHostRequestPublicationFactory)
 
 
 class VostokLayer(IBrowserRequest, IDefaultBrowserLayer):
-    """The `Vostok` layer."""
-
-
-class VostokPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
-    """The publication used for the  sites."""
-    # Can override root object here.  Not sure if we need to.
+    """The Vostok layer."""
 
 
 class VostokBrowserRequest(LaunchpadBrowserRequest):
     implements(VostokLayer)
 
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        return allvhosts.configs['shipitubuntu'].rooturl
 
-    @property
-    def icing_url(self):
-        """The URL to the directory containing resources for this request."""
-        return "%s+icing-ubuntu/rev%d" % (
-            allvhosts.configs['vostok'].rooturl, versioninfo.revno)
+# We *might* end up customizing the root object and so need our own
+# LaunchpadBrowserPublication subclass.  Not yet though.
 
 
 def vostok_request_publication_factory():
     return VirtualHostRequestPublicationFactory(
-        'vostok', VostokBrowserRequest, VostokPublication)
+        'vostok', VostokBrowserRequest, LaunchpadBrowserPublication)
