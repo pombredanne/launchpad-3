@@ -27,7 +27,7 @@ __all__ = [
 
 
 from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
+    REQUEST_USER, call_with, exported, export_as_webservice_entry,
     export_write_operation, operation_parameters, operation_returns_entry)
 from lazr.restful.fields import Reference
 from zope.interface import Interface, Attribute
@@ -554,34 +554,39 @@ class SpecURLField(TextLine):
 class INewSpecification(Interface):
     """A schema for a new specification."""
 
-    name = SpecNameField(
+    name = exported(
+        SpecNameField(
         title=_('Name'), required=True, readonly=False,
         description=_(
             "May contain lower-case letters, numbers, and dashes. "
             "It will be used in the specification url. "
             "Examples: mozilla-type-ahead-find, postgres-smart-serial.")
-        )
-    title = Title(
+        ))
+    title = exported(
+        Title(
         title=_('Title'), required=True, description=_(
             "Describe the feature as clearly as possible in up to 70 "
             "characters. This title is displayed in every feature "
-            "list or report."))
-    specurl = SpecURLField(
+            "list or report.")))
+    specurl = exported(
+        SpecURLField(
         title=_('Specification URL'), required=False,
         description=_(
             "The URL of the specification. This is usually a wiki page."),
-        constraint=valid_webref)
-    summary = Summary(
+        constraint=valid_webref), exported_as="specification_url")
+    summary = exported(
+        Summary(
         title=_('Summary'), required=True, description=_(
             "A single-paragraph description of the feature. "
-            "This will also be displayed in most feature listings."))
-    definition_status = Choice(
+            "This will also be displayed in most feature listings.")))
+    definition_status = exported(
+        Choice(
         title=_('Definition Status'),
         vocabulary=SpecificationDefinitionStatus,
         default=SpecificationDefinitionStatus.NEW,
         description=_(
             "The current status of the process to define the "
-            "feature and get approval for the implementation plan."))
+            "feature and get approval for the implementation plan.")))
     assignee = PublicPersonChoice(
         title=_('Assignee'), required=False,
         description=_("The person responsible for implementing the feature."),

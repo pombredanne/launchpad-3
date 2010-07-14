@@ -1369,7 +1369,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         mail.parsed_string = mail.as_string()
         return mail
 
-    def makeSpecification(self, product=None, title=None, distribution=None):
+    def makeSpecification(self, product=None, title=None, distribution=None,
+            name=None, specurl=None, summary=None, definition_status=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -1379,12 +1380,18 @@ class LaunchpadObjectFactory(ObjectFactory):
             product = self.makeProduct()
         if title is None:
             title = self.getUniqueString('title')
+        if name is None:
+            name = self.getUniqueString('name')
+        if summary is None:
+            summary = self.getUniqueString('summary')
+        if definition_status is None:
+            definition_status = SpecificationDefinitionStatus.NEW
         return getUtility(ISpecificationSet).new(
-            name=self.getUniqueString('name'),
+            name=name,
             title=title,
-            specurl=None,
-            summary=self.getUniqueString('summary'),
-            definition_status=SpecificationDefinitionStatus.NEW,
+            specurl=specurl,
+            summary=summary,
+            definition_status=definition_status,
             owner=self.makePerson(),
             product=product,
             distribution=distribution)
