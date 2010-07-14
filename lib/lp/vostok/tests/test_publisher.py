@@ -36,7 +36,7 @@ class TestRegistration(TestCase):
 
     def test_vostok_request_provides_vostok_layer(self):
         # The Request object constructed for requests to the vostok hostname
-        # provide VostokLayer.
+        # provides VostokLayer.
         factory = factoryRegistry.lookup(
             "GET", "text/html", VOSTOK_ENVIRONMENT)
         request_factory, publication = factory()
