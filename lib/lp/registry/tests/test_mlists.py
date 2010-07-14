@@ -7,7 +7,6 @@ __metaclass__ = type
 
 
 import os
-import sys
 import errno
 import tempfile
 import unittest
@@ -30,6 +29,7 @@ from canonical.testing.layers import (
 
 
 factory = LaunchpadObjectFactory()
+
 
 class CapturingLogger(FakeLogger):
     def __init__(self):
@@ -130,7 +130,7 @@ class TestMailingListImports(BaseMailingListImportTest):
             'dperson@example.org',
             'elly.person@example.com (Elly Q. Person)',
             ))
-        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly',)
+        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
         self.assertAddresses(
             u'anne.person@example.com', u'bperson@example.org',
             u'cris.person@example.com', u'dperson@example.org',

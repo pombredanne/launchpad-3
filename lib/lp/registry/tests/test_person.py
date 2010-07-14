@@ -360,7 +360,8 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         self.failUnlessEqual(owner, params.owner)
         self.failUnlessEqual(bug_commenter, params.bug_commenter)
         self.failUnlessEqual(bug_reporter, params.bug_reporter)
-        self.failUnlessEqual(structural_subscriber, params.structural_subscriber)
+        self.failUnlessEqual(structural_subscriber,
+                             params.structural_subscriber)
 
     def test_get_related_bugtasks_search_params(self):
         # With no specified options, get_related_bugtasks_search_params()
@@ -394,7 +395,8 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         self.checkUserFields(
             search_params[2], assignee=self.user, bug_commenter=self.context)
         self.checkUserFields(
-            search_params[3], assignee=self.user, structural_subscriber=self.context)
+            search_params[3], assignee=self.user,
+            structural_subscriber=self.context)
 
     def test_get_related_bugtasks_search_params_with_owner(self):
         # With owner specified, get_related_bugtasks_search_params() returns
@@ -409,7 +411,8 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         self.checkUserFields(
             search_params[2], owner=self.user, bug_commenter=self.context)
         self.checkUserFields(
-            search_params[3], owner=self.user, structural_subscriber=self.context)
+            search_params[3], owner=self.user,
+            structural_subscriber=self.context)
 
     def test_get_related_bugtasks_search_params_with_bug_reporter(self):
         # With bug reporter specified, get_related_bugtasks_search_params()

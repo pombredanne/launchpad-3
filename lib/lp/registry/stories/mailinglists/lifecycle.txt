@@ -191,7 +191,8 @@ An active mailing list can be deactivated. If the deactivated mailing
 list was the team contact method, the contact method will be changed
 to 'each user individually'.
 
-    >>> browser.open('http://launchpad.dev/~landscape-developers/+mailinglist')
+    >>> browser.open(
+    ...     'http://launchpad.dev/~landscape-developers/+mailinglist')
     >>> browser.getControl('Deactivate this Mailing List').click()
     >>> browser.getLink(url='+contactaddress').click()
     >>> control = browser.getControl(name='field.contact_method')
@@ -199,7 +200,8 @@ to 'each user individually'.
     ['Each member individually']
 
     >>> act()
-    >>> browser.open('http://launchpad.dev/~landscape-developers/+mailinglist')
+    >>> browser.open(
+    ...     'http://launchpad.dev/~landscape-developers/+mailinglist')
     >>> print mailing_list_status_message(browser.contents)
     This team's mailing list has been deactivated.
 

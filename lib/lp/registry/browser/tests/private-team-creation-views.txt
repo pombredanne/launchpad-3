@@ -307,8 +307,9 @@ those permitted by private teams.
     ...     private_archive.private = True
     ...     # A private PPA subscription.
     ...     login('foo.bar@canonical.com')
-    ...     another_team = factory.makeTeam(owner=team_owner,
-    ...                                     visibility=PersonVisibility.PRIVATE)
+    ...     another_team = factory.makeTeam(
+    ...         owner=team_owner,
+    ...         visibility=PersonVisibility.PRIVATE)
     ...     # We must login as the archive owner to add the subscription.
     ...     login_person(team_owner)
     ...     subscription = private_archive.newSubscription(
@@ -366,7 +367,8 @@ change to Private.
     0
     >>> for error in view.errors:
     ...     print error
-    This team cannot be converted to Private since it is referenced by a bugtracker.
+    This team cannot be converted to Private since it is referenced by a
+    bugtracker.
 
 = Use of 'private-' prefix =
 
@@ -417,4 +419,5 @@ users will get a blacklist message.
 
     >>> for error in view.errors:
     ...     print view.getFieldError(error.field_name)
-    The name 'private-top-secret' has been blocked by the Launchpad administrators.
+    The name 'private-top-secret' has been blocked by the Launchpad
+    administrators.

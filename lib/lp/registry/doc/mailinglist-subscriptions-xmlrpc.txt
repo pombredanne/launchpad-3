@@ -269,7 +269,8 @@ However, in order to prevent this address from being used to forge spam onto
 the lists, the archive address is hard-coded to not be registered in
 Launchpad.
 
-    >>> mailinglist_api.isRegisteredInLaunchpad(config.mailman.archive_address)
+    >>> mailinglist_api.isRegisteredInLaunchpad(
+    ...     config.mailman.archive_address)
     False
 
 This is true even if by dumb luck the address actually gets registered in
@@ -281,7 +282,8 @@ Launchpad.
     ...     EmailAddressStatus.VALIDATED, account=fred.account)
     >>> transaction.commit()
 
-    >>> mailinglist_api.isRegisteredInLaunchpad(config.mailman.archive_address)
+    >>> mailinglist_api.isRegisteredInLaunchpad(
+    ...     config.mailman.archive_address)
     False
 
 The Mail Archive is only used for public team mailing lists.  If the team

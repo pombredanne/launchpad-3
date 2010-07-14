@@ -726,7 +726,8 @@ as teams:
     >>> [(p.name, p.is_valid_person) for p in vocab.search('matsubara')]
     [(u'matsubara', False)]
 
-    >>> [(p.name, p.is_valid_person) for p in vocab.search('mark@example.com')]
+    >>> [(p.name, p.is_valid_person)
+    ...  for p in vocab.search('mark@example.com')]
     [(u'mark', True)]
 
     >>> [(p.name, getattr(p.teamowner, 'name', None))
@@ -1158,7 +1159,8 @@ All 'valid' persons who are not a team.
     >>> people = vocab.search(None)
     >>> people.count() > 0
     True
-    >>> invalid_people = [person for person in people if not person.is_valid_person]
+    >>> invalid_people = [
+    ...     person for person in people if not person.is_valid_person]
     >>> print len(invalid_people)
     0
 
@@ -1167,7 +1169,8 @@ There are two 'Carlos' in the sample data but only one is a valid person.
     >>> carlos_people = vocab.search('Carlos')
     >>> print len(list(carlos_people))
     1
-    >>> invalid_carlos = [person for person in carlos_people if not person.is_valid_person]
+    >>> invalid_carlos = [
+    ...     person for person in carlos_people if not person.is_valid_person]
     >>> print len(invalid_carlos)
     0
 
@@ -1408,7 +1411,8 @@ projects are returned.
     >>> check_permission('launchpad.ProjectReview', product_set)
     True
 
-    >>> comm_proj_vocab = get_naked_vocab(registry_member, "CommercialProjects")
+    >>> comm_proj_vocab = get_naked_vocab(registry_member,
+    ...                                   "CommercialProjects")
     >>> print comm_proj_vocab.displayname
     Select a commercial project
 
