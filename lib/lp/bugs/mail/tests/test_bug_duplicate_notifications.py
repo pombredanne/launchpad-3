@@ -50,9 +50,8 @@ class TestAssignmentNotification(TestCaseWithFactory):
         self.dup_bug.markAsDuplicate(self.master_bug)
 
     def test_dup_subscriber_change_notification_message(self):
-        """Test that the duplicate bug number appears in the reason
-           (email footer) when a bug is modified and a duplicate of
-           another."""
+        """Duplicate bug number in the reason (email footer) for
+           duplicate subscribers when a master bug is modified."""
         self.assertEqual(len(stub.test_emails), 0, 'emails in queue')
         self.master_bug_task.transitionToStatus(BugTaskStatus.CONFIRMED, self.user)
         notify(ObjectModifiedEvent(
