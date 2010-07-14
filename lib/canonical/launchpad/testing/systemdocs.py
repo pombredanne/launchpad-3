@@ -60,12 +60,11 @@ def strip_prefix(path):
 
 class FilePrefixStrippingDocTestParser(doctest.DocTestParser):
     """A DocTestParser that strips a prefix from doctests."""
-    def get_doctest(self, string, globs, name, filename, lineno,
-                    optionflags=0):
+
+    def get_doctest(self, string, globs, name, filename, lineno):
         filename = strip_prefix(filename)
         return doctest.DocTestParser.get_doctest(
-            self, string, globs, name, filename, lineno,
-            optionflags=optionflags)
+            self, string, globs, name, filename, lineno)
 
 
 default_parser = FilePrefixStrippingDocTestParser()
