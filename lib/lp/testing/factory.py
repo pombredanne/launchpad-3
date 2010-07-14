@@ -1373,7 +1373,8 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeSpecification(self, product=None, title=None, distribution=None,
             name=None, specurl=None, summary=None, definition_status=None,
             assignee=None, drafter=None, approver=None, priority=None,
-            owner=None, goalstatus=None, whiteboard=None):
+            owner=None, goalstatus=None, whiteboard=None, productseries=None,
+            distroseries=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -1395,6 +1396,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             goalstatus = SpecificationGoalStatus.PROPOSED
         if owner is None:
             owner = self.makePerson()
+        goal_proposer = None
+        date_goal_proposed = None
+        if distroseries is not None or productseries is not None:
+            goal_proposer = self.makePerson()
+            date_goal_proposed = datetime.now(pytz.UTC)
         return getUtility(ISpecificationSet).new(
             name=name,
             title=title,
@@ -1403,13 +1409,17 @@ class LaunchpadObjectFactory(ObjectFactory):
             definition_status=definition_status,
             owner=owner,
             product=product,
+            productseries=productseries,
             distribution=distribution,
+            distroseries=distroseries,
             assignee=assignee,
             drafter=drafter,
             approver=approver,
             priority=priority,
             goalstatus=goalstatus,
             whiteboard=whiteboard,
+            goal_proposer=goal_proposer,
+            date_goal_proposed=date_goal_proposed,
             )
 
     def makeQuestion(self, target=None, title=None):

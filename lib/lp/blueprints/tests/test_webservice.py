@@ -55,9 +55,13 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
         user = self.factory.makePerson()
         launchpadlib = launchpadlib_for(
             "testing", user)
+        if spec_object.product is not None:
+            pillar_name = spec_object.product.name
+        else:
+            pillar_name = spec_object.distribution.name
         return launchpadlib.load(
             str(launchpadlib._root_uri) + '/%s/+spec/%s'
-            % (spec_object.product.name, spec_object.name))
+            % (pillar_name, spec_object.name))
 
     def getSimpleSpecificationResponse(self):
         self.spec_object = self.makeSimpleSpecification()
@@ -179,5 +183,78 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
         # Check that it is None on the webservice too
         self.assertEqual(None, spec.specification_url)
 
+    def test_representation_has_project_link(self):
+        product = self.makeProduct()
+        name = "some-spec"
+        spec_object = self.factory.makeSpecification(
+            product=product, name=name)
+        spec = self.getResponse(spec_object)
+        self.assertEqual('fooix', spec.project.name)
 
-# TODO: product, distribution, etc.
+    def test_representation_has_project_series_link(self):
+        product = self.makeProduct()
+        productseries = self.factory.makeProductSeries(
+            name='fooix-dev', product=product)
+        name = "some-spec"
+        spec_object = self.factory.makeSpecification(
+            product=product, name=name, productseries=productseries)
+        spec = self.getResponse(spec_object)
+        self.assertEqual('fooix-dev', spec.project_series.name)
+
+    def test_representation_has_distribution_link(self):
+        distribution = self.factory.makeDistribution(name='foobuntu')
+        name = "some-spec"
+        spec_object = self.factory.makeSpecification(
+            distribution=distribution, name=name)
+        spec = self.getResponse(spec_object)
+        self.assertEqual('foobuntu', spec.distribution.name)
+
+    def test_representation_has_distroseries_link(self):
+        distribution = self.factory.makeDistribution(name='foobuntu')
+        distroseries = self.factory.makeDistroSeries(
+            name='maudlin', distribution=distribution)
+        name = "some-spec"
+        spec_object = self.factory.makeSpecification(
+            distribution=distribution, name=name, distroseries=distroseries)
+        spec = self.getResponse(spec_object)
+        self.assertEqual('maudlin', spec.distroseries.name)
+
+    def test_representation_empty_distribution(self):
+        product = self.makeProduct()
+        name = "some-spec"
+        spec_object = self.factory.makeSpecification(
+            product=product, name=name)
+        # Check that we didn't pick one up in the factory
+        self.assertEqual(None, spec_object.distribution)
+        spec = self.getResponse(spec_object)
+        self.assertEqual(None, spec.distribution)
+
+    def test_representation_empty_project_series(self):
+        product = self.makeProduct()
+        name = "some-spec"
+        spec_object = self.factory.makeSpecification(
+            product=product, name=name)
+        # Check that we didn't pick one up in the factory
+        self.assertEqual(None, spec_object.productseries)
+        spec = self.getResponse(spec_object)
+        self.assertEqual(None, spec.project_series)
+
+    def test_representation_empty_project(self):
+        distribution = self.factory.makeDistribution(name='foobuntu')
+        name = "some-spec"
+        spec_object = self.factory.makeSpecification(
+            distribution=distribution, name=name)
+        # Check that we didn't pick one up in the factory
+        self.assertEqual(None, spec_object.product)
+        spec = self.getResponse(spec_object)
+        self.assertEqual(None, spec.project)
+
+    def test_representation_empty_distroseries(self):
+        distribution = self.factory.makeDistribution(name='foobuntu')
+        name = "some-spec"
+        spec_object = self.factory.makeSpecification(
+            distribution=distribution, name=name)
+        # Check that we didn't pick one up in the factory
+        self.assertEqual(None, spec_object.distroseries)
+        spec = self.getResponse(spec_object)
+        self.assertEqual(None, spec.distroseries)

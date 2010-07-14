@@ -686,7 +686,8 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     # target
     product = exported(
         ReferenceChoice(title=_('Project'), required=False,
-               vocabulary='Product', schema=IProduct))
+               vocabulary='Product', schema=IProduct),
+        exported_as='project')
     distribution = exported(
         ReferenceChoice(title=_('Distribution'), required=False,
                vocabulary='Distribution', schema=IDistribution))
@@ -698,7 +699,8 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
                description=_(
                 "Choose a series in which you would like to deliver "
                 "this feature. Selecting '(no value)' will clear the goal."),
-               schema=IProductSeries))
+               schema=IProductSeries),
+        exported_as='project_series')
     distroseries = exported(
         ReferenceChoice(title=_('Series Goal'), required=False,
                vocabulary='FilteredDistroSeries',
