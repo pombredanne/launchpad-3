@@ -36,11 +36,11 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     facet = 'branches'
 
-    links = ('delete',)
+    links = ('cancel',)
 
     @enabled_with_permission('launchpad.Edit')
-    def delete(self):
-        return Link('+delete', 'Delete build', icon='trash-icon')
+    def cancel(self):
+        return Link('+cancel', 'Cancel build', icon='remove')
 
 
 class SourcePackageRecipeBuildView(LaunchpadView):
@@ -101,20 +101,20 @@ class SourcePackageRecipeBuildView(LaunchpadView):
         return list(self.context.binary_builds)
 
 
-class SourcePackageRecipeBuildDeleteView(LaunchpadFormView):
-    """Default view of a SourcePackageRecipeBuild."""
+class SourcePackageRecipeBuildCancelView(LaunchpadFormView):
+    """View for cancelling a view."""
 
     class schema(Interface):
         """Schema for deleting a build."""
 
-    page_title = label = "Delete"
+    page_title = label = "Cancel build"
 
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+    next_url = cancel_url
 
-    @action('Delete build', name='delete')
+    @action('Cancel build', name='cancel')
     def request_action(self, action, data):
-        """Delete the build."""
-        self.next_url = canonical_url(self.context.recipe)
-        self.context.destroySelf()
+        """Cancel the build."""
+        self.context.cancelBuild()

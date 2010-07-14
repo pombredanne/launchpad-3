@@ -13,8 +13,9 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing import DatabaseFunctionalLayer
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.testing import BrowserTestCase, logout
+from lp.testing import ANONYMOUS, BrowserTestCase, login, logout
 
 
 class TestSourcePackageRecipeBuild(BrowserTestCase):
@@ -51,34 +52,34 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             recipe=recipe)
         return build
 
-    def test_delete_build(self):
-        """An admin can delete a build."""
+    def test_cancel_build(self):
+        """An admin can cancel a build."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
         build = self.makeRecipeBuild()
         transaction.commit()
         build_url = canonical_url(build)
-        recipe = build.recipe
-        next_url = canonical_url(recipe)
         logout()
 
         browser = self.getUserBrowser(build_url, user=experts)
-        browser.getLink('Delete build').click()
+        browser.getLink('Cancel build').click()
 
         self.assertEqual(
             browser.getLink('Cancel').url,
             build_url)
 
-        browser.getControl('Delete build').click()
+        browser.getControl('Cancel build').click()
 
         self.assertEqual(
             browser.url,
-            next_url)
-        self.assertEqual(
-            recipe.getBuilds().count(),
-            0)
+            build_url)
 
-    def test_delete_build_not_admin(self):
-        """No one but admins can delete a build."""
+        login(ANONYMOUS)
+        self.assertEqual(
+            BuildStatus.SUPERSEDED,
+            build.status)
+
+    def test_cancel_build_not_admin(self):
+        """No one but admins can cancel a build."""
         build = self.makeRecipeBuild()
         transaction.commit()
         build_url = canonical_url(build)
@@ -87,4 +88,4 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         browser = self.getUserBrowser(build_url, user=self.chef)
         self.assertRaises(
             LinkNotFoundError,
-            browser.getLink, 'Delete build')
+            browser.getLink, 'Cancel build')

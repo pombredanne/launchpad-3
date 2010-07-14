@@ -1126,8 +1126,8 @@
             permission="launchpad.View"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
-            class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildDeleteView"
-            name="+delete"
+            class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildCancelView"
+            name="+cancel"
             template="../../app/templates/generic-edit.pt"
             permission="launchpad.View"/>
         <browser:menus
