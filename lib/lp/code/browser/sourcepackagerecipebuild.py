@@ -43,7 +43,11 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def cancel(self):
-        return Link('+cancel', 'Cancel build', icon='remove')
+        if self.context.buildqueue_record is None:
+            enabled = False
+        else:
+            enabled = True
+        return Link('+cancel', 'Cancel build', icon='remove', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def rescore(self):

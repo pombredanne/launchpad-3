@@ -58,6 +58,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         """An admin can cancel a build."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
         build = self.makeRecipeBuild()
+        build.queueBuild(build)
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -88,6 +89,19 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         logout()
 
         browser = self.getUserBrowser(build_url, user=self.chef)
+        self.assertRaises(
+            LinkNotFoundError,
+            browser.getLink, 'Cancel build')
+
+    def test_cancel_build_wrong_state(self):
+        """If the build isn't queued, you can't cancel it."""
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        build = self.makeRecipeBuild()
+        transaction.commit()
+        build_url = canonical_url(build)
+        logout()
+
+        browser = self.getUserBrowser(build_url, user=experts)
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Cancel build')
