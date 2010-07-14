@@ -884,6 +884,27 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     def getRecipe(name):
         """Return the person's recipe with the given name."""
 
+    @call_with(requester=REQUEST_USER)
+    @export_read_operation()
+    def getArchiveSubscriptionURLs(requester):
+        """Return private archive URLs that this person can see.
+
+        For each of the private archives (PPAs) that this person can see,
+        return a URL that includes the HTTP basic auth data.  The URL
+        returned is suitable for including in a sources.list file.
+        """
+
+    @call_with(requester=REQUEST_USER)
+    @operation_parameters(
+        archive=Reference(schema=Interface)) # Really IArchive
+    @export_write_operation()
+    def getArchiveSubscriptionURL(requester, archive):
+        """Get a text line that is suitable to be used for a sources.list
+        entry.
+
+        It will create a new IArchiveAuthToken if one doesn't already exist.
+        """
+
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
 
@@ -904,6 +925,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         The results are ordered using Person.sortingColumns.
         """
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getBugSubscriberPackages():
         """Return the packages for which this person is a bug subscriber.
 
@@ -1498,15 +1521,6 @@ class IPersonEditRestricted(Interface):
         The given team's renewal policy must be ONDEMAND and the membership
         must be active (APPROVED or ADMIN) and set to expire in less than
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
-        """
-
-    @export_read_operation()
-    def getArchiveSubscriptionURLs():
-        """Return private archive URLs that this person can see.
-
-        For each of the private archives (PPAs) that this person can see,
-        return a URL that includes the HTTP basic auth data.  The URL
-        returned is suitable for including in a sources.list file.
         """
 
 
