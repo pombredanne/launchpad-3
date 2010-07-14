@@ -454,10 +454,12 @@ Bad filter_extension
 ~~~~~~~~~~~~~~~~~~~~
 
 Very often robots attempt to request URLs with garbage appended to the end.
-Presumably they scraped these URLs from the web and couldn't quite tell where
-the query string ended and the surrounding text began.  Here we'll simulate
-such a request and show that the resulting unrecognized filter_extension values
-do not generate an error.  See bug 388997.
+In at least one case it seems to have happened because someone on IRC closed a
+parenthesis right after the URL, and an IRC log site linkified the URL with
+the erroneous parenthesis included.
+
+Here we'll simulate such a request and show that the resulting unrecognized
+filter_extension values do not generate an error.  See bug 388997.
 
   >>> post_data = urllib.urlencode(
   ...     {

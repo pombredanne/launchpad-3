@@ -399,6 +399,6 @@ class TranslationImportFileExtensionVocabularyFactory:
             terms.append(SimpleTerm(extension, extension, title))
 
         # We use a ForgivingSimpleVocabulary because we don't care if a user
-        # provides an invalid value, if they do we just ignore it and show
+        # provides an invalid value.  If they do we just ignore it and show
         # them all files.
         return ForgivingSimpleVocabulary(terms, default_term=all_files)

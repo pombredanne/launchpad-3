@@ -20,9 +20,9 @@ class TestForgivingSimpleVocabulary(TestCase):
             terms=[self.term_1, self.term_2], default_term=self.term_2)
 
     def test_normal_lookup(self):
-        """Test that lookups for proper values succeed."""
+        """Lookups for proper values succeed."""
         self.assertIs(self.vocabulary.getTerm('term-1'), self.term_1)
 
     def test_errant_lookup(self):
-        """Test that lookups for invalid values return the default."""
+        """Lookups for invalid values return the default."""
         self.assertIs(self.vocabulary.getTerm('does-not-exist'), self.term_2)
