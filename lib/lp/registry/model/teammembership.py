@@ -21,6 +21,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.database.sqlbase import (
     flush_database_updates, SQLBase, sqlvalues)
 from canonical.database.constants import UTC_NOW
@@ -208,6 +209,12 @@ class TeamMembership(SQLBase):
         assert self.dateexpires > datetime.now(pytz.timezone('UTC')), (
             "This membership's expiration date must be in the future: %s"
             % self.dateexpires.strftime('%Y-%m-%d'))
+        if self.team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC:
+            # An email will be sent later by handleMembershipsExpiringToday()
+            # when the membership is automatically renewed.
+            raise AssertionError(
+                'Team %r with automatic renewals should not send expiration '
+                'warnings.' % self.team.name)
         member = self.person
         team = self.team
         if member.isTeam():
@@ -522,14 +529,22 @@ class TeamMembershipSet:
         """See `ITeamMembershipSet`."""
         return TeamMembership.selectOneBy(person=person, team=team)
 
-    def getMembershipsToExpire(self, when=None):
+    def getMembershipsToExpire(self, when=None, exclude_autorenewals=False):
         """See `ITeamMembershipSet`."""
         if when is None:
             when = datetime.now(pytz.timezone('UTC'))
-        query = ("date_expires <= %s AND status IN (%s, %s)"
-                 % sqlvalues(when, TeamMembershipStatus.ADMIN,
-                             TeamMembershipStatus.APPROVED))
-        return TeamMembership.select(query)
+        conditions = [
+            TeamMembership.dateexpires <= when,
+            TeamMembership.status.is_in(
+                [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED])
+            ]
+        if exclude_autorenewals:
+            # Avoid circular import.
+            from lp.registry.model.person import Person
+            conditions.append(TeamMembership.team == Person.id)
+            conditions.append(
+                Person.renewal_policy != TeamMembershipRenewalPolicy.AUTOMATIC)
+        return IStore(TeamMembership).find(TeamMembership, *conditions)
 
 
 class TeamParticipation(SQLBase):
