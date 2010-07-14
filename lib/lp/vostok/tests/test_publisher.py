@@ -34,9 +34,11 @@ class TestRegistration(TestCase):
         # The Request object constructed for requests to the vostok hostname
         # provide VostokLayer.
         factory = factoryRegistry.lookup(
-            "GET", "text/html", {'HTTP_HOST': config.vhost.vostok.hostname})
-        request, publication = factory()
-        self.assert_(VostokLayer.providedBy(request))
+            "GET", "text/html",
+            {'HTTP_HOST': config.vhost.vostok.hostname,
+             'REQUEST_METHOD': 'GET'})
+        request_factory, publication = factory()
+        self.assert_(VostokLayer.implementedBy(request_factory.requestfactory))
 
 
 def test_suite():
