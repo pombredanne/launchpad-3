@@ -658,12 +658,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return self.name
 
-    def getLatestBranches(self, quantity=5, visible_by_user=None):
-        """See `IProduct`."""
-        return shortlist(
-            getUtility(IBranchSet).getLatestBranchesForProduct(
-                self, quantity, visible_by_user))
-
     def getPackage(self, distroseries):
         """See `IProduct`."""
         if isinstance(distroseries, Distribution):

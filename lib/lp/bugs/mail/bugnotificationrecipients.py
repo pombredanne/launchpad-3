@@ -73,7 +73,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
         reason = "You received this bug notification because you %s." % reason
         self.add(person, reason, header)
 
-    def addDupeSubscriber(self, person):
+    def addDupeSubscriber(self, person, duplicate_bug=None):
         """Registers a subscriber of a duplicate of this bug."""
         reason = "Subscriber of Duplicate"
         if person.isTeam():
@@ -82,6 +82,8 @@ class BugNotificationRecipients(NotificationRecipientSet):
             reason += " @%s" % person.name
         else:
             text = "are a direct subscriber of a duplicate bug"
+        if duplicate_bug is not None:
+            text += " (%s)" % duplicate_bug.id
         self._addReason(person, text, reason)
 
     def addDirectSubscriber(self, person):

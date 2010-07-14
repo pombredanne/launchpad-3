@@ -450,3 +450,14 @@ class NoSuchCodeImportJob(LaunchpadFault):
 
     def __init__(self, job_id):
         LaunchpadFault.__init__(self, job_id=job_id)
+
+
+class AccountSuspended(LaunchpadFault):
+    """Raised by `ISoftwareCenterAgentAPI` when an account is suspended."""
+
+    error_code = 370
+    msg_template = ('The openid_identifier \'%(openid_identifier)s\''
+                    ' is linked to a suspended account.')
+
+    def __init__(self, openid_identifier):
+        LaunchpadFault.__init__(self, openid_identifier=openid_identifier)

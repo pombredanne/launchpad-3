@@ -100,6 +100,7 @@ class ILaunchpadCelebrities(Interface):
     """
     admin = Attribute("The 'admins' team.")
     bazaar_experts = Attribute("The Bazaar Experts team.")
+    software_center_agent = Attribute("The Software Center Agent.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
     buildd_admin = Attribute("The Build Daemon administrator.")
@@ -155,6 +156,9 @@ class IPersonRoles(Interface):
         required=True, readonly=True)
     in_bazaar_experts = Bool(
         title=_("True if this person is a Bazaar expert."),
+        required=True, readonly=True)
+    in_software_center_agent = Bool(
+        title=_("True if this person is the Software Center Agent."),
         required=True, readonly=True)
     in_bug_importer = Bool(
         title=_("True if this person is a bug importer."),
@@ -295,6 +299,9 @@ class IPrivateApplication(ILaunchpadApplication):
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
     bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")
+
+    softwarecenteragent = Attribute(
+        """Software center agent XML-RPC end point.""")
 
 
 class IAuthServerApplication(ILaunchpadApplication):
