@@ -33,6 +33,28 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
         # test.
         login(self.person.preferredemail.email)
 
+    def _getExpectedHeaders(self, bug=None):
+        """Return a dict of expected headers for a bug."""
+        if bug is None:
+            bug = self.bug
+
+        expected_headers = {
+            'Sender': 'bounces@canonical.com',
+            'X-Launchpad-Bug-Commenters': u'%s' % bug.owner.name,
+            'X-Launchpad-Bug-Private': 'no',
+            'X-Launchpad-Bug-Reporter':
+                u'%s (%s)' % (bug.owner.displayname, bug.owner.name),
+            'X-Launchpad-Bug': [
+                u'product=%s; status=New; '
+                u'importance=Undecided; assignee=None;' % (
+                    bug.bugtasks[0].product.name),
+                ],
+            'Reply-To': get_bugmail_replyto_address(bug),
+            'X-Launchpad-Bug-Security-Vulnerability': 'no',
+            'X-Launchpad-Message-Rationale': 'Subscriber',
+            }
+        return expected_headers
+
     def test_bug_creation(self):
         # The first notification should be the creation notification for
         # the new bug.
@@ -43,21 +65,7 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
         generated_mail = mailer.generateEmail(
             self.bug.owner.preferredemail.email, self.bug.owner)
 
-        expected_headers = {
-            'Sender': 'bounces@canonical.com',
-            'X-Launchpad-Bug-Commenters': u'%s' % self.person.name,
-            'X-Launchpad-Bug-Private': 'no',
-            'X-Launchpad-Bug-Reporter':
-                u'%s (%s)' % (self.person.displayname, self.person.name),
-            'X-Launchpad-Bug': [
-                u'product=%s; status=New; '
-                u'importance=Undecided; assignee=None;' % (
-                    self.bug.bugtasks[0].product.name),
-                ],
-            'Reply-To': get_bugmail_replyto_address(self.bug),
-            'X-Launchpad-Bug-Security-Vulnerability': 'no',
-            'X-Launchpad-Message-Rationale': 'Subscriber',
-            }
+        expected_headers = self._getExpectedHeaders()
         self.assertEqual(expected_headers, generated_mail.headers)
 
     def test_bugtask_changed(self):
@@ -75,22 +83,13 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
         generated_mail = mailer.generateEmail(
             self.bug.owner.preferredemail.email, self.bug.owner)
 
-        expected_headers = {
-            'Sender': 'bounces@canonical.com',
-            'X-Launchpad-Bug-Commenters': u'%s' % self.person.name,
-            'X-Launchpad-Bug-Private': 'no',
-            'X-Launchpad-Bug-Reporter':
-                u'%s (%s)' % (self.person.displayname, self.person.name),
-            'X-Launchpad-Bug': [
-                u'product=%s; status=Confirmed; '
-                u'importance=High; assignee=%s;' % (
-                    self.bug.bugtasks[0].product.name,
-                    self.person.preferredemail.email),
-                ],
-            'Reply-To': get_bugmail_replyto_address(self.bug),
-            'X-Launchpad-Bug-Security-Vulnerability': 'no',
-            'X-Launchpad-Message-Rationale': 'Subscriber',
-            }
+        expected_headers = self._getExpectedHeaders()
+        expected_headers['X-Launchpad-Bug'] = [
+            u'product=%s; status=Confirmed; '
+            u'importance=High; assignee=%s;' % (
+                self.bug.bugtasks[0].product.name,
+                self.person.preferredemail.email),
+            ]
         self.assertEqual(expected_headers, generated_mail.headers)
 
     def test_bugtask_added(self):
@@ -104,24 +103,15 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
         generated_mail = mailer.generateEmail(
             self.bug.owner.preferredemail.email, self.bug.owner)
 
-        expected_headers = {
-            'Sender': 'bounces@canonical.com',
-            'X-Launchpad-Bug-Commenters': u'%s' % self.person.name,
-            'X-Launchpad-Bug-Private': 'no',
-            'X-Launchpad-Bug-Reporter':
-                u'%s (%s)' % (self.person.displayname, self.person.name),
-            'X-Launchpad-Bug': [
-                u'product=%s; status=New; '
-                u'importance=Undecided; assignee=None;' % (
-                    self.bug.bugtasks[0].product.name),
-                u'product=%s; status=New; '
-                u'importance=Undecided; assignee=None;' % (
-                    self.bug.bugtasks[1].product.name),
-                ],
-            'Reply-To': get_bugmail_replyto_address(self.bug),
-            'X-Launchpad-Bug-Security-Vulnerability': 'no',
-            'X-Launchpad-Message-Rationale': 'Subscriber',
-            }
+        expected_headers = self._getExpectedHeaders()
+        expected_headers['X-Launchpad-Bug'] = [
+            u'product=%s; status=New; '
+            u'importance=Undecided; assignee=None;' % (
+                self.bug.bugtasks[0].product.name),
+            u'product=%s; status=New; '
+            u'importance=Undecided; assignee=None;' % (
+                self.bug.bugtasks[1].product.name),
+            ]
         self.assertEqual(expected_headers, generated_mail.headers)
 
     def test_marked_as_duplicate(self):
@@ -136,25 +126,9 @@ class TestBugNotificationMailerHeaders(TestCaseWithFactory):
         generated_mail = mailer.generateEmail(
             self.bug.owner.preferredemail.email, self.bug.owner)
 
-        expected_headers = {
-            'Sender': 'bounces@canonical.com',
-            'X-Launchpad-Bug-Commenters': u'%s' %
-                duplicated_bug.owner.name,
-            'X-Launchpad-Bug-Private': 'no',
-            'X-Launchpad-Bug-Reporter':
-                u'%s (%s)' % (
-                    duplicated_bug.owner.displayname,
-                    duplicated_bug.owner.name),
-            'X-Launchpad-Bug': [
-                u'product=%s; status=New; '
-                u'importance=Undecided; assignee=None;' % (
-                    duplicated_bug.bugtasks[0].product.name),
-                ],
-            'Reply-To': get_bugmail_replyto_address(duplicated_bug),
-            'X-Launchpad-Bug-Security-Vulnerability': 'no',
-            'X-Launchpad-Message-Rationale':
-                'Subscriber to Duplicate via Bug %s' % self.bug.id,
-            }
+        expected_headers = self._getExpectedHeaders(duplicated_bug)
+        expected_headers['X-Launchpad-Message-Rationale'] = (
+            'Subscriber to Duplicate via Bug %s' % self.bug.id)
         self.assertEqual(expected_headers, generated_mail.headers)
 
 def test_suite():
