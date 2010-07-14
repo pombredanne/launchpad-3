@@ -12,4 +12,10 @@
         mimetypes="*"
         priority="150" />
 
+    <securedutility
+        class="lp.vostok.publisher.VostokRoot"
+        provides="lp.vostok.publisher.IVostokRoot">
+        <allow interface="lp.vostok.publisher.IVostokRoot" />
+    </securedutility>
+
 </configure>

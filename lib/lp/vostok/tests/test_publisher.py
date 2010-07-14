@@ -8,13 +8,15 @@ __metaclass__ = type
 import unittest
 
 from canonical.config import config
-from canonical.testing.layers import FunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 from lp.testing import TestCase
 
-from lp.vostok.publisher import VostokLayer
+from lp.vostok.publisher import VostokLayer, VostokRoot
 
 from zope.app.publication.requestpublicationregistry import factoryRegistry
+from zope.component import getUtility
 
 
 VOSTOK_ENVIRONMENT = {
@@ -26,7 +28,7 @@ VOSTOK_ENVIRONMENT = {
 class TestRegistration(TestCase):
     """Vostok's publication customizations are installed correctly."""
 
-    layer = FunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_publication_factory_is_registered(self):
         # There is a vostok-specific request factory registered for the
@@ -40,10 +42,22 @@ class TestRegistration(TestCase):
         # provides VostokLayer.
         factory = factoryRegistry.lookup(
             "GET", "text/html", VOSTOK_ENVIRONMENT)
-        request_factory, publication = factory()
+        request_factory, publication_factory = factory()
         request = request_factory('', VOSTOK_ENVIRONMENT)
         self.assertProvides(request, VostokLayer)
 
+    def test_root_object(self):
+        # The root object for requests to the vostok host is an instance of
+        # VostokRoot.
+        factory = factoryRegistry.lookup(
+            "GET", "text/html", VOSTOK_ENVIRONMENT)
+        request_factory, publication_factory = factory()
+        request = request_factory('', VOSTOK_ENVIRONMENT)
+        publication = publication_factory(None)
+        # XXX This shouldn't be needed.
+        getUtility(IOpenLaunchBag).clear()
+        root = publication.getApplication(request)
+        self.assertIsInstance(root, VostokRoot)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

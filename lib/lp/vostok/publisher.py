@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
+from zope.interface import implements, Interface
 from zope.publisher.interfaces.browser import (
     IBrowserRequest, IDefaultBrowserLayer)
 
@@ -28,10 +28,18 @@ class VostokBrowserRequest(LaunchpadBrowserRequest):
     implements(VostokLayer)
 
 
-# We *might* end up customizing the root object and so need our own
-# LaunchpadBrowserPublication subclass.  Not yet though.
+class IVostokRoot(Interface): # might need to inherit from some IRoot thing
+    """Marker interface for the root vostok object."""
+
+
+class VostokRoot:
+    implements(IVostokRoot)
+
+
+class VostokBrowserPublication(LaunchpadBrowserPublication):
+    root_object_interface = IVostokRoot
 
 
 def vostok_request_publication_factory():
     return VirtualHostRequestPublicationFactory(
-        'vostok', VostokBrowserRequest, LaunchpadBrowserPublication)
+        'vostok', VostokBrowserRequest, VostokBrowserPublication)
