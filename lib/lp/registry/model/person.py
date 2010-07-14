@@ -31,6 +31,7 @@ from operator import attrgetter
 import pytz
 import random
 import re
+import subprocess
 import time
 import weakref
 
@@ -126,7 +127,9 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.registry.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
+from lp.registry.interfaces.ssh import (
+    ISSHKey, ISSHKeySet, SSHKeyAdditionError, SSHKeyCompromisedError,
+    SSHKeyType)
 from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
@@ -3766,7 +3769,29 @@ class SSHKey(SQLBase):
 class SSHKeySet:
     implements(ISSHKeySet)
 
-    def new(self, person, keytype, keytext, comment):
+    def new(self, person, sshkey):
+        try:
+            kind, keytext, comment = sshkey.split(' ', 2)
+        except ValueError:
+            raise SSHKeyAdditionError
+
+        if not (kind and keytext and comment):
+            raise SSHKeyAdditionError
+
+        process = subprocess.Popen(
+            '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (out, err) = process.communicate(sshkey.encode('utf-8'))
+        if 'compromised' in out.lower():
+            raise SSHKeyCompromisedError
+
+        if kind == 'ssh-rsa':
+            keytype = SSHKeyType.RSA
+        elif kind == 'ssh-dss':
+            keytype = SSHKeyType.DSA
+        else:
+            raise SSHKeyAdditionError
+
         return SSHKey(person=person, keytype=keytype, keytext=keytext,
                       comment=comment)
 
