@@ -41,10 +41,13 @@ def make_table(range_start, range_end, table_name=None):
        """ % (table_name, range_start, range_end - 1))
 
     class TestTable(Storm):
+        """A test class/table generated on the fly for testing purposes."""
         __storm_table__ = table_name
         id = Int(primary=True)
+
         def __init__(self, id):
             self.id = id
+
         def __eq__(self, other):
             return self.id == other.id
 

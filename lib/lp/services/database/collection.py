@@ -26,6 +26,7 @@ class Collection(object):
     needed by the caller, you can select any mix of classes and
     individual columns or other Storm expressions.
     """
+
     def __init__(self, base, *conditions, **kwargs):
         """Construct a collection, possibly based on another one.
 
