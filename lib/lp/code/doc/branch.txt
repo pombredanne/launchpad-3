@@ -158,10 +158,10 @@ branches and bugs.
 
 == Determining the recently changed, registered and imported branches ==
 
-The IBranchSet methods getRecentlyChangedBranches, getRecentlyImportedBranches,
-and getRecentlyRegisteredBranches are used to give summary information that
-is to be displayed on the code.launchpad.net page to entice the
-user to click through.
+The IBranchSet methods getRecentlyChangedBranches,
+getRecentlyImportedBranches, and getRecentlyRegisteredBranches are used to
+give summary information that is to be displayed on the code.launchpad.net
+page to entice the user to click through.
 
 Changed branches are branches that are owned by real people or groups (as
 opposed to vcs-imports), and have recently had new revisions detected by
@@ -315,8 +315,8 @@ BranchSubscriptionNotificationLevel.
     True
     >>> subscription.branch == branch and subscription.person == subscriber
     True
-    >>> subscription.notification_level == BranchSubscriptionNotificationLevel.FULL
-    True
+    >>> print subscription.notification_level.name
+    FULL
     >>> subscription.max_diff_lines == BranchSubscriptionDiffSize.FIVEKLINES
     True
     >>> subscription.review_level == CodeReviewNotificationLevel.FULL
@@ -327,7 +327,7 @@ BranchSubscriptionNotificationLevel.
     True
     >>> from canonical.launchpad.webapp import canonical_url
     >>> print canonical_url(subscription)
-    http://code.launchpad.dev/~user/product/subscribed/+subscription/subscriber
+    http://code...dev/~user/product/subscribed/+subscription/subscriber
 
 The settings for a subscription can be changed by re-subscribing.
 
@@ -399,8 +399,8 @@ Let's get a branch with some revisions in it.
 
 Branch.revision_history gives the sequence of revisions in this branch's
 history, latest revisions first. All revision history items must implement the
-IBranchRevision interface. The Branch.revision_count attribute gives the length
-of the revision_history attribute but without building the list.
+IBranchRevision interface. The Branch.revision_count attribute gives the
+length of the revision_history attribute but without building the list.
 
     >>> from lp.code.interfaces.branchrevision import IBranchRevision
     >>> junk.revision_count
@@ -427,8 +427,8 @@ the history.
     True
 
 Branch.getRevisionsSince gives all the BranchRevisions for revisions committed
-since a given timestamp. It may give surprising results if some committers had a
-skewed clock.
+since a given timestamp. It may give surprising results if some committers had
+a skewed clock.
 
     >>> from datetime import datetime
     >>> timestamp = datetime(2005, 10, 31, 12, 00, 00, 0, pytz.UTC)
@@ -440,10 +440,11 @@ skewed clock.
 == Ancestry of Revision ==
 
 The revision-history of a given branch, is only one possible ancestry path in
-the ancestry graph. It is also possible to examine the ancestry graph directly.
+the ancestry graph. It is also possible to examine the ancestry graph
+directly.
 
-A Bazaar branch may contains references (by revision_id) to revisions for which
-no data is available. Such revisions are called "ghosts".
+A Bazaar branch may contains references (by revision_id) to revisions for
+which no data is available. Such revisions are called "ghosts".
 
 Initial commits (after a "bzr init") revisions have no parent.
 
@@ -452,8 +453,8 @@ Initial commits (after a "bzr init") revisions have no parent.
     >>> initial.parent_ids
     []
 
-Normal commits (as opposed to merges) have exactly one parent. The first parent
-of a revision is always the revision that was current when committing.
+Normal commits (as opposed to merges) have exactly one parent. The first
+parent of a revision is always the revision that was current when committing.
 
     >>> commit = history[-2].revision
     >>> [type(a) for a in commit.parent_ids] == [unicode]
@@ -492,8 +493,8 @@ The last revision that we have stored in the database for any given branch
 is identified by the branch attribute "last_scanned_id".  This is the textual
 revision_id for the bzr revision.  The reason that it is a text id rather than
 an integer foreign key is so it can easily be compared to the
-"last_mirrored_id".  The "last_mirrored_id" is set by the branch puller, and is
-used to identify when a scan is needed for a branch.
+"last_mirrored_id".  The "last_mirrored_id" is set by the branch puller, and
+is used to identify when a scan is needed for a branch.
 
     >>> branch = branch_lookup.get(1)
     >>> branch.last_scanned_id
@@ -504,7 +505,8 @@ used to identify when a scan is needed for a branch.
     >>> branch.getTipRevision() is None
     True
 
-    >>> branch.last_scanned_id = 'test@canonical.com-20051031165248-6f1bb97973c2b4f4'
+    >>> branch.last_scanned_id = (
+    ...     'test@canonical.com-20051031165248-6f1bb97973c2b4f4')
     >>> rev = branch.getTipRevision()
     >>> print rev.date_created
     2005-10-31 17:21:47.381770+00:00
@@ -560,7 +562,8 @@ associated with through ProductSeries.branch.
 
 == Deleting branches ==
 
-If a user creates a branch in error, they should be able to remove that branch.
+If a user creates a branch in error, they should be able to remove that
+branch.
 
 A branch can be deleted trivially if it is not associated with any bugs or
 blueprints, has no subscribers, and hasn't been associated with any product
@@ -585,9 +588,12 @@ The current references to the branch table are shown here.
     >>> cur = cursor()
     >>> references = list(postgresql.listReferences(cur, 'branch', 'id'))
 
-    >>> for name in sorted([
-    ...     '%s.%s' % (src_tab, src_col) for
-    ...     src_tab, src_col, ref_tab, ref_col, updact, delact in references]):
+    >>> listing = sorted([
+    ...     '%s.%s' % (src_tab, src_col)
+    ...     for src_tab, src_col, ref_tab, ref_col, updact, delact
+    ...     in references
+    ...     ])
+    >>> for name in listing:
     ...     print name
     branch.stacked_on
     branchjob.branch

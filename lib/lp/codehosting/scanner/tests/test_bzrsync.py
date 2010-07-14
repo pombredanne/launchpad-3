@@ -37,6 +37,7 @@ from canonical.testing import LaunchpadZopelessLayer
 def run_as_db_user(username):
     """Create a decorator that will run a function as the given database user.
     """
+
     def _run_with_different_user(f):
 
         def decorated(*args, **kwargs):
