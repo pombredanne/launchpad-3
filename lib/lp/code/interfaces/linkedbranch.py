@@ -65,7 +65,7 @@ def get_linked_branch(provided):
         branch.
     :raise NoLinkedBranch: If 'provided' could have a linked branch, but
         doesn't.
-    :return: The linked branch, an `IBranch`.
+    :return: The `ICanHasLinkedBranch` object.
     """
     has_linked_branch = ICanHasLinkedBranch(provided, None)
     if has_linked_branch is None:
@@ -77,4 +77,4 @@ def get_linked_branch(provided):
     branch = has_linked_branch.branch
     if branch is None:
         raise NoLinkedBranch(provided)
-    return branch
+    return has_linked_branch

@@ -70,6 +70,13 @@ class TestProductLinkedBranch(TestCaseWithFactory):
         ICanHasLinkedBranch(product).setBranch(branch)
         self.assertEqual(branch, product.development_focus.branch)
 
+    def test_get_linked_branch(self):
+        branch = self.factory.makeProductBranch()
+        product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(product).setBranch(branch)
+        got_linkable = get_linked_branch(product)
+        self.assertEqual(got_linkable, ICanHasLinkedBranch(product))
+
     def test_bzr_path(self):
         # The bzr_path of a product linked branch is the product name.
         product = self.factory.makeProduct()

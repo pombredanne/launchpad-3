@@ -358,7 +358,9 @@ class BranchLookup:
             # If the first element doesn't start with a tilde, then maybe
             # 'path' is a shorthand notation for a branch.
             result = getUtility(ILinkedBranchTraverser).traverse(path)
-            branch = self._getLinkedBranch(result)
+            linked = self._getLinkedBranch(result)
+            branch = linked.branch
+            suffix = path[len(linked.bzr_path) + 1:]
         else:
             namespace_set = getUtility(IBranchNamespaceSet)
             segments = iter(path.lstrip('~').split('/'))
@@ -379,7 +381,7 @@ class BranchLookup:
             doesn't.
         :return: The linked branch, an `IBranch`.
         """
-        branch = get_linked_branch(provided)
-        if not check_permission('launchpad.View', branch):
+        linked = get_linked_branch(provided)
+        if not check_permission('launchpad.View', linked.branch):
             raise NoLinkedBranch(provided)
-        return branch
+        return linked
