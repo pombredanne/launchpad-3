@@ -79,6 +79,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.codehosting.bzrutils import safe_open
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
+from lp.services.database.prejoin import prejoin
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
@@ -226,12 +227,13 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     @property
     def revision_history(self):
-        # XXX JeroenVermeulen 2010-07-12: Prejoin revision.
         result = Store.of(self).find(
-            BranchRevision,
+            (BranchRevision, Revision),
             BranchRevision.branch_id == self.id,
+            Revision.id == BranchRevision.revision_id,
             BranchRevision.sequence != None)
-        return result.order_by(Desc(BranchRevision.sequence))
+        result = result.order_by(Desc(BranchRevision.sequence))
+        return prejoin(result, return_slice=slice(0, 1))
 
     subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
