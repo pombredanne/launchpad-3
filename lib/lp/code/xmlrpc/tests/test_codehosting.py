@@ -780,6 +780,13 @@ class CodehostingTest(TestCaseWithFactory):
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False},
              path_in_branch), translation)
 
+    def test_translatePath_branch_alias_no_such_branch(self):
+        requester = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = '/%s/~%s/%s/doesntexist' % (
+            BRANCH_ALIAS_PREFIX, requester.name, product.name)
+        self.assertNotFound(requester, path)
+
     def assertTranslationIsControlDirectory(self, translation,
                                             default_stacked_on,
                                             trailing_path):

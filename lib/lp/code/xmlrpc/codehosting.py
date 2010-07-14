@@ -34,7 +34,7 @@ from canonical.launchpad.xmlrpc.helpers import return_fault
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType, match_enum_title
-from lp.code.interfaces.branch import BranchCreationException
+from lp.code.interfaces.branch import BranchCreationException, NoSuchBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
@@ -279,7 +279,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                     try:
                         branch, trailing = getUtility(IBranchLookup).getByLPPath(
                             first[len(BRANCH_ALIAS_PREFIX + '/'):])
-                    except NoSuchProductSeries:
+                    except (NoSuchProductSeries, NoSuchBranch, InvalidNamespace):
                         # XXX: I don't know if this is a good idea. The reason
                         # we're doing it is that getByLPPath thinks that
                         # 'foo/.bzr' is a request for the '.bzr' series of a
