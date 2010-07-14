@@ -241,7 +241,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         return builds
 
     def _unqueueBuild(self):
-        """Remove the packages queue and job."""
+        """Remove the build's queue and job."""
         store = Store.of(self)
         if self.buildqueue_record is not None:
             job = self.buildqueue_record.job

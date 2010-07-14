@@ -103,7 +103,7 @@ class SourcePackageRecipeBuildView(LaunchpadView):
 
 
 class SourcePackageRecipeBuildCancelView(LaunchpadFormView):
-    """View for cancelling a view."""
+    """View for cancelling a build."""
 
     class schema(Interface):
         """Schema for cancelling a build."""
