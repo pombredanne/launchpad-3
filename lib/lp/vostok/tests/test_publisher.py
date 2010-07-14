@@ -22,6 +22,7 @@ VOSTOK_ENVIRONMENT = {
     'REQUEST_METHOD': 'GET',
     }
 
+
 class TestRegistration(TestCase):
     """Vostok's publication customizations are installed correctly."""
 
