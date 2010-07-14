@@ -270,39 +270,39 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             u'main', u'hot-translatable', u'hot', u'translatable', u'normal']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings(self):
+    def test_getPrioritizedPackagings(self):
         # Verify the ordering of packagings that need more upstream info.
         for name in ['main', 'hot-translatable', 'hot', 'translatable']:
             self.linkPackage(name)
-        packagings = self.series.getPrioritizedlPackagings()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [
             u'main', u'hot-translatable', u'hot', u'translatable', u'linked']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings_bug_tracker(self):
+    def test_getPrioritizedPackagings_bug_tracker(self):
         # Verify the ordering of packagings with and without a bug tracker.
         self.linkPackage('hot')
         self.makeSeriesPackage('cold')
         product_series = self.linkPackage('cold')
         product_series.product.bugtraker = self.factory.makeBugTracker()
-        packagings = self.series.getPrioritizedlPackagings()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'hot', u'cold', u'linked']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings_branch(self):
+    def test_getPrioritizedPackagings_branch(self):
         # Verify the ordering of packagings with and without a branch.
         self.linkPackage('translatable')
         self.makeSeriesPackage('withbranch')
         product_series = self.linkPackage('withbranch')
         product_series.branch = self.factory.makeBranch()
-        packagings = self.series.getPrioritizedlPackagings()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'withbranch']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings_translation(self):
+    def test_getPrioritizedPackagings_translation(self):
         # Verify the ordering of translatable packagings that are and are not
         # configured to import.
         self.linkPackage('translatable')
@@ -311,7 +311,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         product_series.branch = self.factory.makeBranch()
         product_series.translations_autoimport_mode = (
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        packagings = self.series.getPrioritizedlPackagings()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'importabletranslatable']
         self.assertEqual(expected, names)

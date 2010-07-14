@@ -481,7 +481,7 @@ class DistroSeriesPackagesView(LaunchpadView):
     @cachedproperty
     def cached_packagings(self):
         """The batched upstream packaging links."""
-        packagings = self.context.getPrioritizedlPackagings()
+        packagings = self.context.getPrioritizedPackagings()
         navigator = BatchNavigator(packagings, self.request, size=20)
         navigator.setHeadings('packaging', 'packagings')
         return navigator

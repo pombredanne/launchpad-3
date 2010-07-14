@@ -414,7 +414,7 @@ class IDistroSeriesPublic(
         and total_messages (translatable messages).
         """
 
-    def getPrioritizedlPackagings():
+    def getPrioritizedPackagings():
         """Return a list of packagings that need more upstream information."""
 
     def getMostRecentlyLinkedPackagings():

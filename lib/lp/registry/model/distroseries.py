@@ -334,14 +334,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         condition = SQL(conditions + "AND packaging.id IS NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC', SourcePackageName.name)
-        return [{
-                 'package': SourcePackage(
-                    sourcepackagename=spn, distroseries=self),
-                 'bug_count': bug_count,
-                 'total_messages': total_messages}
-                for (spn, score, bug_count, total_messages) in results]
+        results = results.config(distinct=True)
+        return results.config(distinct=True)
+#        return [{
+#                 'package': SourcePackage(
+#                    sourcepackagename=spn, distroseries=self),
+#                 'bug_count': bug_count,
+#                 'total_messages': total_messages}
+#                for (spn, score, bug_count, total_messages) in results]
 
-    def getPrioritizedlPackagings(self):
+    def getPrioritizedPackagings(self):
         """See `IDistroSeries`.
 
         The prioritization is a heuristic rule using the branch, bug heat,
@@ -373,8 +375,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         condition = SQL(conditions + "AND packaging.id IS NOT NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC, SourcePackageName.name ASC')
-        return [packaging
-                for (packaging, spn, series, product, score) in results]
+        return results.config(distinct=True)
+        #return [packaging
+        #        for (packaging, spn, series, product, score) in results]
 
     @property
     def _current_sourcepackage_joins_and_conditions(self):

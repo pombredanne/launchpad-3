@@ -447,9 +447,9 @@ an `IProductSeries` to provide the the upstream information to share bugs,
 translations, and code. Each item in the list is a dict with the 'package',
 total_bugs, and total_messages (translatable messages).
 
-    >>> for summary in hoary.getPrioritizedUnlinkedSourcePackages():
-    ...     print  summary['package'].name
-    ...     print '%(bug_count)s %(total_messages)s' % summary
+    >>> for spn, score, bug_count, total_messages in (
+    ...     hoary.getPrioritizedUnlinkedSourcePackages()):
+    ...     print spn.name, bug_count, total_messages
     pmount  0  64
     alsa-utils  0  0
     cnews  0  0
@@ -457,12 +457,13 @@ total_bugs, and total_messages (translatable messages).
     linux-source-2.6.15  0  0
 
 
-The distroseries getPrioritizedlPackagings() method that returns a prioritized
+The distroseries getPrioritizedPackagings() method that returns a prioritized
 list of `IPackaging` that need more information about the upstream project to
 share bugs, translations, and code.
 
-    >>> for packaging in hoary.getPrioritizedlPackagings():
-    ...     print packaging.sourcepackagename.name
+    >>> for packaging, spn, series, product, score in (
+    ...     hoary.getPrioritizedPackagings()):
+    ...     print spn.name
     netapplet
     evolution
 
