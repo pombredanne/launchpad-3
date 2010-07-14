@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import datetime
+import os
 import pytz
 import unittest
 
@@ -749,19 +750,35 @@ class CodehostingTest(TestCaseWithFactory):
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
             translation)
 
-    def test_translatePath_short_name(self):
+    def test_translatePath_branch_alias_short_name(self):
         # translatePath translates the short name of a branch if it's prefixed
         # by +branch.
         requester = self.factory.makePerson()
         branch = self.factory.makeProductBranch()
         removeSecurityProxy(branch.product.development_focus).branch = branch
         short_name = ICanHasLinkedBranch(branch.product).bzr_path
-        path = escape(u'/%s/%s' % (BRANCH_ALIAS_PREFIX, short_name))
+        path_in_branch = '.bzr/branch-format'
+        path = escape(u'/%s' % os.path.join(
+                BRANCH_ALIAS_PREFIX, short_name, path_in_branch))
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
-            translation)
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False},
+             path_in_branch), translation)
+
+    def test_translatePath_branch_alias_unique_name(self):
+        # translatePath translates +branch paths that are followed by the
+        # unique name as if they didn't have the prefix at all.
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        path_in_branch = '.bzr/branch-format'
+        path = escape(u'/%s' % os.path.join(
+                BRANCH_ALIAS_PREFIX, branch.unique_name, path_in_branch))
+        translation = self.codehosting_api.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False},
+             path_in_branch), translation)
 
     def assertTranslationIsControlDirectory(self, translation,
                                             default_stacked_on,

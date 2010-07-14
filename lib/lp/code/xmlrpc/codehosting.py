@@ -44,6 +44,7 @@ from lp.code.interfaces.codehosting import (
     LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
 from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
+from lp.registry.interfaces.productseries import NoSuchProductSeries
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.utils import iter_split
 
@@ -275,8 +276,16 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                     # XXX: 'first' will start with BRANCH_ALIAS_PREFIX on
                     # every iteration of the loop or it never will. So, change
                     # this to be more efficient.
-                    branch = getUtility(IBranchLookup).getByLPPath(
-                        first[len(BRANCH_ALIAS_PREFIX + '/'):])[0]
+                    try:
+                        branch, trailing = getUtility(IBranchLookup).getByLPPath(
+                            first[len(BRANCH_ALIAS_PREFIX + '/'):])
+                    except NoSuchProductSeries:
+                        # XXX: I don't know if this is a good idea. The reason
+                        # we're doing it is that getByLPPath thinks that
+                        # 'foo/.bzr' is a request for the '.bzr' series of a
+                        # product. -- jml
+                        continue
+                    second = '/'.join([trailing, second]).strip('/')
                 else:
                     branch = getUtility(IBranchLookup).getByUniqueName(first)
                 if branch is not None:
