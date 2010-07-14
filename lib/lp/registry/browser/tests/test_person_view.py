@@ -25,7 +25,7 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.soyuz.interfaces.archive import ArchiveStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import TestCaseWithFactory, login_person
-from lp.testing.views import create_view, create_initialized_view
+from lp.testing.views import create_initialized_view, create_view
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
