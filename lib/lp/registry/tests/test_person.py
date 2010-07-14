@@ -17,16 +17,12 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressAlreadyTaken, IEmailAddressSet, InvalidEmailAddress)
+    EmailAddressAlreadyTaken, InvalidEmailAddress)
 from lazr.lifecycle.snapshot import Snapshot
-from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import InvalidName
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import (
     IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility)
@@ -41,7 +37,6 @@ from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
 from lp.testing import login_person, logout, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
-from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
 
