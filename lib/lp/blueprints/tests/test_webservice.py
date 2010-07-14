@@ -258,3 +258,22 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
         self.assertEqual(None, spec_object.distroseries)
         spec = self.getResponse(spec_object)
         self.assertEqual(None, spec.distroseries)
+
+    def test_representation_contains_milestone(self):
+        product = self.makeProduct()
+        productseries = self.factory.makeProductSeries(product=product)
+        milestone = self.factory.makeMilestone(
+            name="1.0", product=product, productseries=productseries)
+        spec_object = self.factory.makeSpecification(
+            product=product, productseries=productseries, milestone=milestone)
+        spec = self.getResponse(spec_object)
+        self.assertEqual("1.0", spec.milestone.name)
+
+    def test_representation_empty_milestone(self):
+        product = self.makeProduct()
+        spec_object = self.factory.makeSpecification(
+            product=product, milestone=None)
+        # Check that the factory didn't add a milestone
+        self.assertEqual(None, spec_object.milestone)
+        spec = self.getResponse(spec_object)
+        self.assertEqual(None, spec.milestone)

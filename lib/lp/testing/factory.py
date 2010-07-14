@@ -1374,7 +1374,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             name=None, specurl=None, summary=None, definition_status=None,
             assignee=None, drafter=None, approver=None, priority=None,
             owner=None, goalstatus=None, whiteboard=None, productseries=None,
-            distroseries=None):
+            distroseries=None, milestone=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -1420,6 +1420,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             whiteboard=whiteboard,
             goal_proposer=goal_proposer,
             date_goal_proposed=date_goal_proposed,
+            milestone=milestone,
             )
 
     def makeQuestion(self, target=None, title=None):
