@@ -878,8 +878,6 @@ class Branch(SQLBase, BzrIdentityMixin):
             ancestry.add(revision_id)
             branch_revision_map[revision_id] = branch_revision_id
             if sequence is not None:
-                assert sequence == len(history) + 1, (
-                    "Broken revision sequence number.")
                 history.append(revision_id)
         return ancestry, history, branch_revision_map
 
