@@ -1436,7 +1436,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, target=None, branch_name=None,
                        git_repo_url=None, hg_repo_url=None, registrant=None,
-                       rcs_type=None):
+                       rcs_type=None, review_status=None):
         """Create and return a new, arbitrary code import.
 
         The type of code import will be inferred from the source details
@@ -1461,26 +1461,29 @@ class LaunchpadObjectFactory(ObjectFactory):
             else:
                 assert rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN)
-            return code_import_set.new(
+            code_import = code_import_set.new(
                 registrant, target, branch_name, rcs_type=rcs_type,
                 url=svn_branch_url)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
-            return code_import_set.new(
+            code_import = code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
                 url=git_repo_url)
         elif hg_repo_url is not None:
-            return code_import_set.new(
+            code_import = code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.HG,
                 url=hg_repo_url)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
-            return code_import_set.new(
+            code_import = code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
                 cvs_root=cvs_root, cvs_module=cvs_module)
+        if review_status:
+            removeSecurityProxy(code_import).review_status = review_status
+        return code_import
 
     def makeCodeImportEvent(self):
         """Create and return a CodeImportEvent."""

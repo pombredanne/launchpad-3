@@ -9,7 +9,7 @@ import logging
 import unittest
 from cStringIO import StringIO
 
-from canonical.launchpad.ftests.logger import MockLogger
+from lp.testing.logger import MockLogger
 
 
 class TestMockLogger(unittest.TestCase):
