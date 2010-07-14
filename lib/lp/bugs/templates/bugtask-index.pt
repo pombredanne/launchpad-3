@@ -279,7 +279,7 @@
                 button.style.display = 'none';
               </script>
               <script type="text/javascript">
-                LPS.use('lp.comment', function(Y) {
+                LPS.use('lp.app.comment', function(Y) {
                     var comment = new Y.lp.Comment();
                     comment.render();
                 });
