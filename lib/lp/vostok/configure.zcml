@@ -5,6 +5,8 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
 
+    <include package=".browser" />
+
     <publisher
         name="vostok"
         factory="lp.vostok.publisher.vostok_request_publication_factory"
