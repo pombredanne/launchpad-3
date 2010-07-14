@@ -451,7 +451,7 @@ class Branch(SQLBase, BzrIdentityMixin):
     @property
     def code_is_browseable(self):
         """See `IBranch`."""
-        return (self.revision_count > 0  or self.last_mirrored != None)
+        return (self.revision_count > 0 or self.last_mirrored != None)
 
     def codebrowse_url(self, *extras):
         """See `IBranch`."""
@@ -890,19 +890,19 @@ class Branch(SQLBase, BzrIdentityMixin):
             prefix = config.launchpad.bzr_imports_root_url
             return urlappend(prefix, '%08x' % self.id)
         else:
-            raise AssertionError("No pull URL for %r" % (self,))
+            raise AssertionError("No pull URL for %r" % (self, ))
 
     def requestMirror(self):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
             raise BranchTypeError(self.unique_name)
         from canonical.launchpad.interfaces import IStore
-        IStore(self).find(
+        branch = IStore(self).find(
             Branch,
             Branch.id == self.id,
             Or(Branch.next_mirror_time > UTC_NOW,
-               Branch.next_mirror_time == None)
-            ).set(next_mirror_time=UTC_NOW)
+               Branch.next_mirror_time == None))
+        branch.set(next_mirror_time=UTC_NOW)
         self.next_mirror_time = AutoReload
         return self.next_mirror_time
 
@@ -997,6 +997,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def commitsForDays(self, since):
         """See `IBranch`."""
+
         class DateTrunc(NamedFunc):
             name = "date_trunc"
         results = Store.of(self).find(
@@ -1080,6 +1081,7 @@ class DeletionOperation:
     def __init__(self, affected_object, rationale):
         self.affected_object = ProxyFactory(affected_object)
         self.rationale = rationale
+
     def __call__(self):
         """Perform the deletion operation."""
         raise NotImplementedError(DeletionOperation.__call__)
@@ -1161,7 +1163,7 @@ class DeleteCodeImport(DeletionOperation):
 
     def __init__(self, code_import):
         DeletionOperation.__init__(
-            self, code_import, _( 'This is the import data for this branch.'))
+            self, code_import, _('This is the import data for this branch.'))
 
     def __call__(self):
         from lp.code.model.codeimport import CodeImportSet
