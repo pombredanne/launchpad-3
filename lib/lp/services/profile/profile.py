@@ -9,9 +9,9 @@ __metaclass__ = type
 
 from datetime import datetime
 import os
-from cProfile import Profile
 import threading
 
+from bzrlib.lsprof import Profiler
 from zope.error.interfaces import IErrorReportingUtility
 from zope.component import getUtility
 
@@ -34,8 +34,8 @@ def start_request(event):
     profiling is requested, save the VSS and RSS.
     """
     if config.profiling.profile_requests:
-        _profilers.profiler = Profile()
-        _profilers.profiler.enable()
+        _profilers.profiler = Profiler()
+        _profilers.profiler.start()
 
     if config.profiling.memory_profile_log:
         _profilers.memory_profile_start = (memory(), resident())
@@ -53,7 +53,7 @@ def end_request(event):
     if config.profiling.profile_requests:
         profiler = _profilers.profiler
         _profilers.profiler = None
-        profiler.disable()
+        prof_stats = profiler.stop()
 
         if oopsid is None:
             # Log an OOPS to get a log of the SQL queries, and other
@@ -67,8 +67,8 @@ def end_request(event):
             timestamp, pageid, oopsid,
             threading.currentThread().getName())
 
-        profiler.dump_stats(
-            os.path.join(config.profiling.profile_dir, filename))
+        dump_path = os.path.join(config.profiling.profile_dir, filename)
+        prof_stats.save(dump_path, format="callgrind")
 
         # Free some memory.
         _profilers.profiler = None
