@@ -47,7 +47,11 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def rescore(self):
-        return Link('+rescore', 'Rescore build', icon='edit')
+        if self.context.buildqueue_record is None:
+            enabled = False
+        else:
+            enabled = True
+        return Link('+rescore', 'Rescore build', icon='edit', enabled=enabled)
 
 
 class SourcePackageRecipeBuildView(LaunchpadView):

@@ -159,3 +159,15 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             LinkNotFoundError,
             browser.getLink, 'Rescore build')
 
+    def test_rescore_build_wrong_state(self):
+        """If the build isn't queued, you can't rescore it."""
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        build = self.makeRecipeBuild()
+        transaction.commit()
+        build_url = canonical_url(build)
+        logout()
+
+        browser = self.getUserBrowser(build_url, user=experts)
+        self.assertRaises(
+            LinkNotFoundError,
+            browser.getLink, 'Rescore build')
