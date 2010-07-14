@@ -55,7 +55,6 @@ from lp.translations.interfaces.translationimporter import (
     ITranslationImporter)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
-from lp.translations.model.potemplate import POTemplate
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, GetitemNavigation,
     LaunchpadView, LaunchpadEditFormView, Link, Navigation, NavigationMenu,
@@ -807,6 +806,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
     productseries = None
     label = "Translation templates"
     page_title = "All templates"
+    template_edit_permission = None
 
     def initialize(self, series, is_distroseries=True):
         self.is_distroseries = is_distroseries
@@ -815,44 +815,30 @@ class BaseSeriesTemplatesView(LaunchpadView):
         else:
             self.productseries = series
 
-    def templates(self):
+    def iter_templates(self):
         potemplateset = getUtility(IPOTemplateSet)
-        templates_values = potemplateset.getSubset(
+        return potemplateset.getSubset(
             productseries=self.productseries,
             distroseries=self.distroseries,
-            ordered_by_names=True).getColumns(
-                POTemplate.iscurrent,
-                POTemplate.priority,
-                POTemplate.name,
-                POTemplate.messagecount,
-                POTemplate.date_last_updated)
-        templates = []
-        for (
-            iscurrent,
-            priority,
-            name,
-            messagecount,
-            date_last_updated) in templates_values:
-            template = {}
-            template['name'] = name
-            template['priority'] = priority
-            template['messagecount'] = messagecount
-            template['date_last_updated'] = date_last_updated
-            template['language_count'] = 42
-            template['iscurrent'] = iscurrent
-            templates.append(template)
-        return templates
+            ordered_by_names=True)
 
     def rowCSSClass(self, template):
-        if template['iscurrent']:
+        if template.iscurrent:
             return "active-template"
         else:
             return "inactive-template"
 
-    def isVisible(self):
-        return True
-#        if (template['iscurrent'] or
-#            check_permission('launchpad.Edit', template)):
-#            return True
-#        else:
-#            return False
+    def isVisible(self, template):
+        '''Returns True if the template should be display to users.
+        
+        Since all templates from a distroseries have the same permissions,
+        security checking is cached and the condition is based on `iscurrent`
+        attribute.
+        '''
+        if self.template_edit_permission is None:
+            self.template_edit_permission = (
+                check_permission('launchpad.Edit', template))
+        if (template.iscurrent or self.template_edit_permission):
+            return True
+        else:
+            return False

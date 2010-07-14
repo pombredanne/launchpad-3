@@ -1074,10 +1074,6 @@ class POTemplateSubset:
         for potemplate in self._build_query():
             yield potemplate
 
-    def getColumns(self, *columns):
-        """See `IPOTemplateSubset`."""
-        return self._build_query().values(*columns)
-
     def __len__(self):
         """See `IPOTemplateSubset`."""
         result = self._build_query(do_prejoin=False, ordered=False)

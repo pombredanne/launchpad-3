@@ -538,13 +538,6 @@ class IPOTemplateSubset(Interface):
     def __getitem__(name):
         """Get a POTemplate by its name."""
 
-    def getColumns(columns):
-        '''Only return tuple values for columns specified in `args`.
-        
-        This can be used for performance optimization and avoiding creating
-        storm objects for all data from the result set.
-        '''
-
     def new(name, translation_domain, path, owner):
         """Create a new template for the context of this Subset."""
 
