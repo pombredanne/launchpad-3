@@ -88,3 +88,6 @@ class FeedsLayer(LaunchpadLayer):
 class WebServiceLayer(IWebServiceLayer, LaunchpadLayer):
     """The layer for web service requests."""
 
+
+class VostokLayer(LaunchpadLayer):
+    """The layer for the Linaro archive management skin."""
