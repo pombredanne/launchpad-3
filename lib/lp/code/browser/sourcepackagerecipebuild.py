@@ -9,6 +9,7 @@ __all__ = [
     'SourcePackageRecipeBuildContextMenu',
     'SourcePackageRecipeBuildNavigation',
     'SourcePackageRecipeBuildView',
+    'SourcePackageRecipeBuildCancelView',
     ]
 
 from zope.interface import Interface
@@ -105,7 +106,7 @@ class SourcePackageRecipeBuildCancelView(LaunchpadFormView):
     """View for cancelling a view."""
 
     class schema(Interface):
-        """Schema for deleting a build."""
+        """Schema for cancelling a build."""
 
     page_title = label = "Cancel build"
 
