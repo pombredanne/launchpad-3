@@ -70,6 +70,14 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     layer = DatabaseFunctionalLayer
 
+    def makeBranch(self):
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        self.factory.makeSourcePackage(sourcepackagename='ratatouille')
+        return branch
+
     def test_create_new_recipe_not_logged_in(self):
         from canonical.launchpad.testing.pages import setupBrowser
         product = self.factory.makeProduct(
@@ -86,11 +94,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             Unauthorized, browser.getLink('Create packaging recipe').click)
 
     def test_create_new_recipe(self):
-        product = self.factory.makeProduct(
-            name='ratatouille', displayname='Ratatouille')
-        branch = self.factory.makeBranch(
-            owner=self.chef, product=product, name='veggies')
-
+        branch = self.makeBranch()
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
         browser.getLink('Create packaging recipe').click()
@@ -98,6 +102,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
+        browser.getControl('Build daily').click()
         browser.getControl('Create Recipe').click()
 
         pattern = """\
@@ -108,9 +113,11 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             Make some food!
 
             Recipe information
+            Build daily: True
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/veggies
             Debian version: 0\+\{revno\}
+            Daily build archive: Secret PPA
             Distribution series: Secret Squirrel
             .*
 
@@ -190,6 +197,17 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             get_message_text(browser, 2),
             'The recipe text is not a valid bzr-builder recipe.')
 
+    def test_create_recipe_no_distroseries(self):
+        browser = self.getViewBrowser(self.makeBranch(), '+new-recipe')
+        browser.getControl(name='field.name').value = 'daily'
+        browser.getControl('Description').value = 'Make some food!'
+
+        browser.getControl('Build daily').click()
+        browser.getControl('Create Recipe').click()
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[2]),
+            'You must specify at least one series for daily builds.')
+
     def test_create_recipe_bad_base_branch(self):
         # If a user tries to create source package recipe with a bad base
         # branch location, they should get an error.
@@ -252,7 +270,11 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
             name=u'things', description=u'This is a recipe',
-            distroseries=self.squirrel, branches=[veggie_branch])
+            distroseries=self.squirrel, branches=[veggie_branch],
+            daily_build_archive=self.ppa)
+        self.factory.makeArchive(
+            distribution=self.ppa.distribution, name='ppa2',
+            displayname="PPA 2", owner=self.chef)
 
         meat_path = meat_branch.bzr_identity
 
@@ -264,6 +286,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             MINIMAL_RECIPE_TEXT % meat_path)
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Mumbly Midget').click()
+        browser.getControl('PPA 2').click()
         browser.getControl('Update Recipe').click()
 
         pattern = """\
@@ -274,9 +297,12 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
+            Build daily: False
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: 0\+\{revno\}
+            Daily build archive:
+            PPA 2
             Distribution series: Mumbly Midget
             .*
 
@@ -381,9 +407,13 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
+            Build daily:
+            False
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: 0\+\{revno\}
+            Daily build archive:
+            Secret PPA
             Distribution series: Mumbly Midget
             .*
 
@@ -413,9 +443,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             This recipe .*changes.
 
             Recipe information
+            Build daily: False
             Owner: Master Chef
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: 0\+\{revno\}
+            Daily build archive: Secret PPA
             Distribution series: Secret Squirrel
 
             Build records
@@ -560,15 +592,36 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             supports_virtualized=True)
 
         recipe = self.makeRecipe()
-        [recipe.requestBuild(
-            self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
-            for x in range(5)]
+        for x in range(5):
+            build = recipe.requestBuild(
+                self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
+            removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
 
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
         browser.getControl('Request builds').click()
         self.assertIn("You have exceeded today's quota for ubuntu woody.",
                 extract_text(find_main_content(browser.contents)))
+
+    def test_request_builds_rejects_duplicate(self):
+        """Over-quota build requests cause validation failures."""
+        woody = self.factory.makeDistroSeries(
+            name='woody', displayname='Woody',
+            distribution=self.ppa.distribution)
+        woody.nominatedarchindep = woody.newArch(
+            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
+            supports_virtualized=True)
+
+        recipe = self.makeRecipe()
+        recipe.requestBuild(
+            self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
+
+        browser = self.getViewBrowser(recipe, '+request-builds')
+        browser.getControl('Woody').click()
+        browser.getControl('Request builds').click()
+        self.assertIn(
+            "An identical build is already pending for ubuntu woody.",
+            extract_text(find_main_content(browser.contents)))
 
 
 class TestSourcePackageRecipeBuildView(BrowserTestCase):

@@ -1004,7 +1004,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     @property
     def days_to_expiration(self):
         """Return the number of days before the bug is expired, or None."""
-        if not self.context.bug.can_expire:
+        if not self.context.bug.isExpirable(days_old=0):
             return None
 
         expire_after = timedelta(days=config.malone.days_before_expiration)
@@ -1023,7 +1023,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
         If the bug is not due to be expired None will be returned.
         """
-        if not self.context.bug.can_expire:
+        if not self.context.bug.isExpirable(days_old=0):
             return None
 
         days_to_expiration = self.days_to_expiration
@@ -1943,9 +1943,11 @@ class BugsStatsMixin(BugsInfoMixin):
         The bugtarget may be an `IDistribution`, `IDistroSeries`, `IProduct`,
         or `IProductSeries`.
         """
+        days_old = config.malone.days_before_expiration
+
         if target_has_expirable_bugs_listing(self.context):
             return getUtility(IBugTaskSet).findExpirableBugTasks(
-                0, user=self.user, target=self.context).count()
+                days_old, user=self.user, target=self.context).count()
         else:
             return None
 
@@ -2646,7 +2648,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 dict(
                     value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
-        return helpers.shortlist(widget_values, longest_expected=11)
+        return helpers.shortlist(widget_values, longest_expected=12)
 
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
@@ -3761,9 +3763,10 @@ class BugTaskExpirableListingView(LaunchpadView):
     @property
     def search(self):
         """Return an `ITableBatchNavigator` for the expirable bugtasks."""
+        days_old = config.malone.days_before_expiration
         bugtaskset = getUtility(IBugTaskSet)
         bugtasks = bugtaskset.findExpirableBugTasks(
-            0, user=self.user, target=self.context)
+            days_old, user=self.user, target=self.context)
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)

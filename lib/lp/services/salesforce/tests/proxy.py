@@ -18,8 +18,8 @@ import re
 from xmlrpclib import Fault, loads, Transport
 from zope.interface import implements
 
-from lp.registry.utilities.salesforce import SalesforceVoucherProxy
-from lp.registry.interfaces.salesforce import ISalesforceVoucherProxy
+from lp.services.salesforce.proxy import SalesforceVoucherProxy
+from lp.services.salesforce.interfaces import ISalesforceVoucherProxy
 
 
 TERM_RE = re.compile("^LPCBS(\d{2})-.*")
@@ -49,7 +49,6 @@ class Voucher:
         self.status = 'Reserved'
         self.project_id = None
         self.project_name = None
-        product = self.voucher_id.split('-')[0]
         self.term_months = self._getTermMonths()
 
     def _getTermMonths(self):
@@ -192,16 +191,14 @@ class SalesforceXMLRPCTestTransport(Transport):
         return voucher
 
     @force_fault
-    def redeemVoucher(self, voucher_id, lp_openid,
-                      lp_project_id, lp_project_name):
+    def redeemVoucher(self, voucher_id, lp_openid, lp_project_id,
+                      lp_project_name):
         """Redeem the voucher.
 
         :param voucher_id: string representing the unique voucher id.
         :param lp_openid: string representing the Launchpad user's OpenID.
-        :param lp_project_id: integer representing the id for the project
-           being subscribed by the use of this voucher.
-        :param lp_project_name: string representing the name of the project in
-            Launchpad.
+        :param lp_project_id: Launchpad project id
+        :param lp_project_name: Launchpad project name
         :return: Boolean representing the success or failure of the operation.
         """
         voucher = self._findVoucher(voucher_id)
@@ -220,11 +217,10 @@ class SalesforceXMLRPCTestTransport(Transport):
         voucher.status = 'Redeemed'
         voucher.project_id = lp_project_id
         voucher.project_name = lp_project_name
-        product = voucher.voucher_id.split('-')[0]
         return [True]
 
     @force_fault
-    def updateProjectName(self, lp_project_id, lp_project_name):
+    def updateProjectName(self, lp_project_id, new_name):
         """Set the project name for the given project id.
 
         Returns the number of vouchers that were updated.
@@ -232,7 +228,7 @@ class SalesforceXMLRPCTestTransport(Transport):
         num_updated = 0
         for voucher in self.vouchers:
             if voucher.project_id == lp_project_id:
-                voucher.project_name = lp_project_name
+                voucher.project_name = new_name
                 num_updated += 1
         if num_updated == 0:
             raise Fault('NotFound',

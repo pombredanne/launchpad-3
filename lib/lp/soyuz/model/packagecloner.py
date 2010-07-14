@@ -323,6 +323,18 @@ class PackageCloner:
                 PackagePublishingStatus.PUBLISHED,
                 origin.pocket, origin.archive)
 
+        if origin.packagesets:
+            query += '''AND spph.sourcepackagerelease IN
+                            (SELECT spr.id
+                             FROM SourcePackageRelease AS spr,
+                                  packagesetsources AS pss,
+                                  flatpackagesetinclusion AS fpsi
+                             WHERE spr.sourcepackagename
+                                    = pss.sourcepackagename
+                             AND pss.packageset = fpsi.child
+                             AND fpsi.parent in %s)
+                     ''' % sqlvalues([p.id for p in origin.packagesets])
+
         if origin.component:
             query += "and spph.component = %s" % sqlvalues(origin.component)
 

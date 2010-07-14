@@ -31,18 +31,23 @@
   <div class="top-portlet" id="bugs-and-questions-summary"
        tal:define="newbugs context/new_bugtasks/count;
                    open_questions view/open_questions/count">
-    This package has
-    <a tal:attributes="href view/menu:overview/new_bugs/url">
-      <strong class="bugs-stat">
-        <tal:newbugs content="newbugs"/> new bug<tal:plural content="string:s" condition="python: newbugs!=1"/>
-      </strong>
-    </a>
-    and
-    <a tal:attributes="href view/menu:overview/open_questions/url">
-    <strong class="answers-stat">
-      <tal:openq content="open_questions"/> open question<tal:plural content="string:s" condition="python: open_questions!=1"/>.
-      </strong>
-    </a>
+    <div id="summary"
+      tal:content="structure context/summary/fmt:text-to-html" />
+
+    <p>
+      This package has
+      <a tal:attributes="href view/menu:overview/new_bugs/url">
+        <strong class="bugs-stat">
+          <tal:newbugs content="newbugs"/> new bug<tal:plural content="string:s" condition="python: newbugs!=1"/>
+        </strong>
+      </a>
+      and
+      <a tal:attributes="href view/menu:overview/open_questions/url">
+      <strong class="answers-stat">
+        <tal:openq content="open_questions"/> open question<tal:plural content="string:s" condition="python: open_questions!=1"/>.
+        </strong>
+      </a>
+    </p>
   </div>
 
   <div class="yui-g">
