@@ -20,6 +20,18 @@ from lp.services.mail.notificationrecipientset import (
 class BugNotificationRecipientReason(RecipientReason):
     """A `RecipientReason` subsclass specifically for `BugNotification`s."""
 
+    def _getTemplateValues(self):
+        template_values = (
+            super(BugNotificationRecipientReason, self)._getTemplateValues())
+        if self.recipient != self.subscriber or self.subscriber.is_team:
+            template_values['entity_is'] = (
+                'You are a member of %s, which is' %
+                self.subscriber.displayname)
+            template_values['lc_entity_is'] = (
+                'you are a member of %s, which is' %
+                self.subscriber.displayname)
+        return template_values
+
     @classmethod
     def _getReasonTemplate(cls, reason_string):
         """Return a reason template to pass to __init__()."""

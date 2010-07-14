@@ -29,10 +29,10 @@ helper function so we can format this output:
 
   >>> def print_rationales(rationale):
   ...   for address in rationale.getEmails():
-  ...     text, header = rationale.getReason(address)
+  ...     recipient_reason, header = rationale.getReason(address)
   ...     print address
   ...     print "    %s" % header
-  ...     print "    %s" % text
+  ...     print "    %s" % recipient_reason.getReason()
 
 And print them out. The first line is the email address; second is the
 text appropriate to be used in an X- header, and the last is the text
@@ -41,16 +41,19 @@ appropriate for an email footer.
   >>> print_rationales(recipients)
   foo.bar@canonical.com
       Subscriber (mozilla-firefox in ubuntu)
-      You received this bug notification because you are subscribed to mozilla-firefox in ubuntu.
+      You received this bug notification because you are subscribed to
+      mozilla-firefox in ubuntu.
   mark@example.com
       Assignee
       You received this bug notification because you are a bug assignee.
   support@ubuntu.com
       Registrant (Ubuntu) @ubuntu-team
-      You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.
+      You received this bug notification because you are a member of
+      Ubuntu Team, which is the registrant of Ubuntu.
   test@canonical.com
       Subscriber
-      You received this bug notification because you are a direct subscriber of the bug.
+      You received this bug notification because you are a direct
+      subscriber to the bug.
 
 == The Bug-BugNotificationRecipients API ==
 
@@ -78,9 +81,6 @@ BugNotificationRecipients instance is created:
 
 Then, subscribers of various types are added:
 
-  >>> foo_bar = personset.getByEmail("foo.bar@canonical.com")
-  >>> recipients.addDupeSubscriber(foo_bar)
-
   >>> test = personset.getByEmail("test@canonical.com")
   >>> recipients.addDirectSubscriber(test)
 
@@ -99,6 +99,12 @@ Then, subscribers of various types are added:
   >>> testtest = personset.getByEmail("testtest@canonical.com")
   >>> recipients.addRegistrant(testtest, gnomebaker)
 
+For subscribers-via-duplicates a duplicate bug must be provided, otherwise the rationale would make no sense.
+
+  >>> duplicate_bug = factory.makeBug()
+  >>> foo_bar = personset.getByEmail("foo.bar@canonical.com")
+  >>> recipients.addDupeSubscriber(foo_bar, duplicate_bug)
+
 If we print out the recipients and rationales, here's what we get:
 
   >>> print_rationales(recipients)
@@ -109,8 +115,8 @@ If we print out the recipients and rationales, here's what we get:
       Bug Supervisor (Debian)
       You received this bug notification because you are the bug supervisor for Debian.
   foo.bar@canonical.com
-      Subscriber of Duplicate
-      You received this bug notification because you are a direct subscriber of a duplicate bug.
+      Subscriber to Duplicate via Bug ...
+      You received this bug notification because you are a direct subscriber to duplicate bug ...
   marilize@hbd.com
       Bug Supervisor (alsa-utils)
       You received this bug notification because you are the bug supervisor for alsa-utils.
@@ -119,7 +125,7 @@ If we print out the recipients and rationales, here's what we get:
       You received this bug notification because you are a bug assignee.
   test@canonical.com
       Subscriber
-      You received this bug notification because you are a direct subscriber of the bug.
+      You received this bug notification because you are a direct subscriber to the bug.
 
 Note how we account for every important variation in bug subscriptions
 here: bug supervisors, subscribers, dupe subscribers and more.
