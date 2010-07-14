@@ -140,6 +140,7 @@ hostnames=$(cat <<EOF
     translations.launchpad.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
+    vostok.dev
 EOF
     )
 
