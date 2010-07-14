@@ -424,6 +424,17 @@ class CodehostingTest(TestCaseWithFactory):
         branch = self.branch_lookup.get(branch_id)
         self.assertEqual(unique_name, branch.unique_name)
 
+    def test_createBranch_using_branch_alias_product(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = u'/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
+        fault = self.codehosting_api.createBranch(owner.id, escape(path))
+        self.assertEqual(faults.PermissionDenied('foo'), fault)
+        #branch_id = self.codehosting_api.createBranch(owner.id, escape(path))
+        #login(ANONYMOUS)
+        #branch = self.branch_lookup.get(branch_id)
+        #self.assertEqual(ICanHasLinkedBranch(product).linked_branch, branch)
+
     def test_initialMirrorRequest(self):
         # The default 'next_mirror_time' for a newly created hosted branch
         # should be None.
