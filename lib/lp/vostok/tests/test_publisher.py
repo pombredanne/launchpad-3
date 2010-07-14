@@ -12,8 +12,6 @@ from canonical.testing.layers import FunctionalLayer
 
 from lp.testing import TestCase
 
-from lp.vostok.publisher import vostok_request_publication_factory
-
 from zope.app.publication.requestpublicationregistry import factoryRegistry
 
 
@@ -27,7 +25,7 @@ class TestRegistration(TestCase):
         # for vostok.
         factory = factoryRegistry.lookup(
             "GET", "text/html", {'HTTP_HOST': config.vhost.vostok.hostname})
-        self.assertIs(vostok_request_publication_factory, factory)
+        self.assertEqual('vostok', factory.vhost_name)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -7,7 +7,7 @@
 
     <publisher
         name="vostok"
-        factory="canonical.shipit.publisher.vostok_publication_factory"
+        factory="lp.vostok.publisher.vostok_request_publication_factory"
         methods="*"
         mimetypes="*"
         priority="150" />
