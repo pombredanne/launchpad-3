@@ -576,10 +576,6 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         BasicLaunchpadRequest.__init__(self, body_instream, environ, response)
         transaction.manager.registerSynch(self)
 
-    def traverse(self, obj):
-        #import pdb; pdb.set_trace()
-        return super(LaunchpadBrowserRequest, self).traverse(obj)
-
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
@@ -1399,6 +1395,10 @@ class PrivateXMLRPCRequest(PublicXMLRPCRequest):
 
 class ProtocolErrorRequest(LaunchpadBrowserRequest):
     """An HTTP request that happened to result in an HTTP error."""
+
+    def traverse(self, object):
+        """It's already been determined that there's an error. Return None."""
+        return None
 
 
 class ProtocolErrorPublicationFactory:

@@ -119,8 +119,6 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
           after the permission, use that to check the permission.
         - Otherwise, deny.
         """
-        if permission in ['zope.ManageApplication']:
-            return True # XXX
         # Shortcut in read-only mode. We have to do this now to avoid
         # accidentally using cached results. This will be important when
         # Launchpad automatically fails over to read-only mode when the

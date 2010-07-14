@@ -3,47 +3,7 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-Resources in LP are referenced via /@@/<name>, which is handled by the
-LaunchpadImageFolder view registered for ILaunchpadRoot.  That view
-looks up resources in our icing/ directory, so it won't find the
-zope.app.apidoc resources.  In order to bypass that view, I've created a
-new root object (to be used on the apidoc vhost), but now all resource
-access (via /@@/<name>) on the apidoc will cause an OOPS:
-
-    Traceback (most recent call last):
-
-    Module zope.publisher.publish, line 131, in publish
-    obj = request.traverse(obj)
-    Module canonical.launchpad.webapp.servers, line 581, in traverse
-    return super(LaunchpadBrowserRequest, self).traverse(obj)
-    Module zope.publisher.browser, line 542, in traverse
-    ob = super(BrowserRequest, self).traverse(obj)
-    Module zope.publisher.http, line 455, in traverse
-    ob = super(HTTPRequest, self).traverse(obj)
-    Module zope.publisher.base, line 261, in traverse
-    obj = publication.traverseName(self, obj, entry_name)
-    Module zope.app.publication.zopepublication, line 181, in traverseName
-    ob2 = namespaceLookup(ns, nm, ob, request)
-    Module zope.traversing.namespace, line 114, in namespaceLookup
-    return traverser.traverse(name, ())
-    Module zope.traversing.namespace, line 329, in traverse
-    name=name)
-    Module zope.component._api, line 122, in queryMultiAdapter
-    return sitemanager.queryMultiAdapter(objects, interface, name, default)
-    Module zope.component.registry, line 240, in queryMultiAdapter
-    objects, interface, name, default)
-    Module zope.interface.adapter, line 526, in queryMultiAdapter
-    result = factory(*objects)
-    TypeError: 'unicode' object is not callable<br />
-
-factory == u'++apidoc++' here.
-
-
-And these two ones which I haven't identified the cause yet.
-
- - The code browser shows up empty (whereas the one on apidoc.zope.org
-   doesn't) and searches take quite long.
-
- - The links on the tree view of the ZCML Reference are all 404s
-
- - the Book thing doesn't work, but I don't care.
+Need zope.login.http as BasicAuthAdapter is now there and not in
+zope.app.security.basicauthadapter as it used to be. This is needed because
+we're using a newer version of zope.app.security.
+  - I'm not sure this is true anymore.

@@ -170,6 +170,22 @@ class AuthorizationBase:
             return self.checkAuthenticated(IPersonRoles(person))
 
 
+class ManageApplicationForEverybody(AuthorizationBase):
+    """This is just to please apidoc.launchpad.dev.
+
+    We do this because zope.app.apidoc uses that permission, but nothing else
+    should be using it.
+    """
+    permission = 'zope.ManageApplication'
+    usedfor = Interface
+
+    def checkUnauthenticated(self, user):
+        return True
+
+    def checkAccountAuthenticated(self, user):
+        return True
+
+
 class ViewByLoggedInUser(AuthorizationBase):
     """The default ruleset for the launchpad.View permission.
 

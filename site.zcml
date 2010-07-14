@@ -61,12 +61,24 @@
       permission="zope.Public"
       allowed_interface="zope.publisher.interfaces.IPublishTraverse"
       />
-    <adapter factory="canonical.launchpad.webapp.publisher.BrowserResourceAbsoluteUrl" />
     <adapter factory="canonical.launchpad.webapp.authentication.LaunchpadPrincipalAnnotations" />
 
     <class class="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest">
       <implements interface="zope.app.apidoc.browser.skin.APIDOC" />
     </class>
+
+    <!-- XXX: Copied from zope.browserresource as apidoc breaks if we make
+         IAPIDocRoot implement ISite so that the original registration works
+         for us. -->
+    <view
+        for="canonical.launchpad.webapp.interfaces.IAPIDocRoot" 
+        type="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+        name=""
+        factory="zope.browserresource.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        />
+
     <include package="zope.location" />
     <include package="zope.app.applicationcontrol" />
     <include package="zope.app.renderer" />

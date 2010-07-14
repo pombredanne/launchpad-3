@@ -407,15 +407,6 @@ class CanonicalAbsoluteURL:
 
     __call__ = __str__
 
-# XXX hack import
-from zope.browserresource.resource import AbsoluteURL
-class BrowserResourceAbsoluteUrl(AbsoluteURL):
-
-    def __str__(self):
-        name = self.context.__name__
-        if name.startswith('++resource++'):
-            name = name[12:]
-        return self._createUrl(self.request.getApplicationURL(), name)
 
 def canonical_url(
     obj, request=None, rootsite=None, path_only_if_possible=False,
