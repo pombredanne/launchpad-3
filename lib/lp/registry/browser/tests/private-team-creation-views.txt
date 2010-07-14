@@ -54,7 +54,7 @@ When creating a private team, the team subscription policy must be
     ...     'field.defaultrenewalperiod': '365',
     ...     'field.subscriptionpolicy': 'OPEN',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(
@@ -78,7 +78,7 @@ When the inputs are correct the admin can successfully create the team.
     ...     'field.defaultrenewalperiod': '365',
     ...     'field.subscriptionpolicy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(
@@ -101,7 +101,7 @@ Commercial admins can create a team too.
     ...     'field.defaultrenewalperiod': '365',
     ...     'field.subscriptionpolicy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(
@@ -132,7 +132,7 @@ team get the normal error message.
     ...     'field.defaultrenewalperiod': '365',
     ...     'field.subscriptionpolicy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(
@@ -205,7 +205,7 @@ And a private team must have restricted membership.
     ...     'field.defaultrenewalperiod': '365',
     ...     'field.subscriptionpolicy': 'OPEN',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.save': 'Save',
     ...     }
     >>> view = create_initialized_view(
@@ -239,7 +239,7 @@ Private teams cannot be made public.
     ...     'field.defaultrenewalperiod': '365',
     ...     'field.subscriptionpolicy': 'OPEN',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Public',
+    ...     'field.visibility': 'PUBLIC',
     ...     'field.actions.save': 'Save',
     ...     }
     >>> view = create_initialized_view(
@@ -326,7 +326,7 @@ those permitted by private teams.
 
     >>> # With all of those artifacts in place we can still transition to private.
     >>> form = {
-    ...     'field.visibility': 'Private',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.subscriptionpolicy': 'RESTRICTED',
     ...     'field.actions.save': 'Save',
     ...     }
@@ -355,7 +355,7 @@ change to Private.
     >>> # With the addtion of hte bug tracker artifact the team will not
     >>> # be allowed to transition to Private.
     >>> form = {
-    ...     'field.visibility': 'Private',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.subscriptionpolicy': 'RESTRICTED',
     ...     'field.actions.save': 'Save',
     ...     }
@@ -381,7 +381,7 @@ Commercial admins can create private projects with the 'private-' prefix.
     ...     'field.defaultrenewalperiod': '365',
     ...     'field.subscriptionpolicy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(
@@ -405,7 +405,7 @@ users will get a blacklist message.
     ...     'field.defaultrenewalperiod': '365',
     ...     'field.subscriptionpolicy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(

@@ -173,11 +173,11 @@ class TeamFormMixin:
             # Remove the visibility selector and replace with one with a more
             # limited vocabulary.
             terms = [SimpleTerm(PersonVisibility.PUBLIC,
-                                PersonVisibility.PUBLIC.title,
-                                PersonVisibility.PUBLIC.name),
+                                PersonVisibility.PUBLIC.name,
+                                PersonVisibility.PUBLIC.title),
                      SimpleTerm(PersonVisibility.PRIVATE,
-                                PersonVisibility.PRIVATE.title,
-                                PersonVisibility.PRIVATE.name),
+                                PersonVisibility.PRIVATE.name,
+                                PersonVisibility.PRIVATE.title),
                      ]
             visibility = self.form_fields['visibility'].field
             field = Choice(

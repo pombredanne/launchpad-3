@@ -476,12 +476,12 @@ class TestImportToRestrictedList(BaseMailingListImportTest):
     def _makeList(self, name, owner):
         self.team, self.mailing_list = factory.makeTeamAndMailingList(
             name, owner,
-            visibility=PersonVisibility.PRIVATE_MEMBERSHIP,
+            visibility=PersonVisibility.PRIVATE,
             subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
 
     def test_simple_import_membership(self):
         # Test the import of a list/team membership to a restricted, private
-        # membership team.
+        # team.
         importer = Importer('aardvarks')
         importer.importAddresses((
             'anne.person@example.com',

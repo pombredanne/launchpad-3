@@ -182,7 +182,7 @@ class TestPerson(TestCaseWithFactory):
             'field.displayname': 'Other Team',
             'field.subscriptionpolicy': 'RESTRICTED',
             'field.renewal_policy': 'NONE',
-            'field.visibility': 'Public',
+            'field.visibility': 'PUBLIC',
             'field.actions.save': 'Save',
             })
         self.assertEqual(len(view.errors), 0)
