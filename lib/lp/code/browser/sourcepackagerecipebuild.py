@@ -168,4 +168,3 @@ class SourcePackageRecipeBuildRescoreView(LaunchpadFormView):
     @property
     def initial_values(self):
         return {'score': str(self.context.buildqueue_record.lastscore)}
-
