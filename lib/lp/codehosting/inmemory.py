@@ -714,9 +714,12 @@ class FakeCodehosting:
             first = unescape(first).encode('utf-8')
             # Is it a branch?
             if first.startswith('+branch/'):
-                product_name = first[len('+branch/'):]
-                product = self._product_set.getByName(product_name)
-                branch = product.development_focus.branch
+                component_name = first[len('+branch/'):]
+                product = self._product_set.getByName(component_name)
+                if product:
+                    branch = product.development_focus.branch
+                else:
+                    branch = self._branch_set._find(unique_name=component_name)
             else:
                 branch = self._branch_set._find(unique_name=first)
             if branch is not None:
