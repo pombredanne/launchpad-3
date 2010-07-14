@@ -463,9 +463,9 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
         is set, the branch gets moved into the junk namespace of the branch
         owner.
 
-        :raise: `BranchTargetError` if both project and source_package are set,
-          or if either the project or source_package fail to be adapted to an
-          IBranchTarget.
+        :raise: `BranchTargetError` if both project and source_package are
+            set, or if either the project or source_package fail to be adapted
+            to an `IBranchTarget`.
         """
 
     reviewer = exported(
@@ -668,12 +668,14 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
 
     # Joins
     revision_history = Attribute(
-        """The sequence of BranchRevision for the mainline of that branch.
+        """The sequence of revisions for the mainline of this branch.
 
         They are ordered with the most recent revision first, and the list
         only contains those in the "leftmost tree", or in other words
         the revisions that match the revision history from bzrlib for this
         branch.
+
+        The revisions are listed as tuples of (`BranchRevision`, `Revision`).
         """)
     subscriptions = exported(
         CollectionField(
@@ -703,7 +705,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
     def destroySelfBreakReferences():
         """Delete the specified branch.
 
-        BranchRevisions associated with this branch will also be deleted as 
+        BranchRevisions associated with this branch will also be deleted as
         well as any items with mandatory references.
         """
 
@@ -766,8 +768,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
             title=_('Commit message'),
             description=_('Message to use when committing this merge.')),
         reviewers=List(value_type=Reference(schema=IPerson)),
-        review_types=List(value_type=TextLine())
-        )
+        review_types=List(value_type=TextLine()))
     # target_branch and prerequisite_branch are actually IBranch, patched in
     # _schema_circular_imports.
     @call_with(registrant=REQUEST_USER)
@@ -782,7 +783,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
         Both the target_branch and the prerequisite_branch, if it is there,
         must be branches with the same target as the source branch.
 
-        Personal branches (a.k.a. junk branches) cannot specify landing targets.
+        Personal branches (a.k.a. junk branches) cannot specify landing
+        targets.
         """
 
     def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
@@ -794,7 +796,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
         Both the target_branch and the prerequisite_branch, if it is there,
         must be branches with the same target as the source branch.
 
-        Personal branches (a.k.a. junk branches) cannot specify landing targets.
+        Personal branches (a.k.a. junk branches) cannot specify landing
+        targets.
 
         :param registrant: The person who is adding the landing target.
         :param target_branch: Must be another branch, and different to self.
@@ -949,8 +952,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
         project is accessible using:
           lp:fooix - the linked object is the product fooix
           lp:fooix/trunk - the linked object is the trunk series of fooix
-          lp:~owner/fooix/name - the unique name of the branch where the linked
-            object is the branch itself.
+          lp:~owner/fooix/name - the unique name of the branch where the
+              linked object is the branch itself.
         """
 
     # subscription-related methods
