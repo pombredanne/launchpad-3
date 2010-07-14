@@ -1401,6 +1401,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         if distroseries is not None or productseries is not None:
             goal_proposer = self.makePerson()
             date_goal_proposed = datetime.now(pytz.UTC)
+        goal_decider = None
+        date_goal_decided = None
+        if goalstatus != SpecificationGoalStatus.PROPOSED:
+            goal_decider = self.makePerson()
+            date_goal_decided = datetime.now(pytz.UTC)
+        completer = None
+        date_completed = None
+        if definition_status == SpecificationDefinitionStatus.OBSOLETE:
+            completer = self.makePerson()
+            date_completed = datetime.now(pytz.UTC)
         return getUtility(ISpecificationSet).new(
             name=name,
             title=title,
@@ -1421,6 +1431,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             goal_proposer=goal_proposer,
             date_goal_proposed=date_goal_proposed,
             milestone=milestone,
+            date_completed=date_completed,
+            completer=completer,
+            goal_decider=goal_decider,
+            date_goal_decided=date_goal_decided,
             )
 
     def makeQuestion(self, target=None, title=None):

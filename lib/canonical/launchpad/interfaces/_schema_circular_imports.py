@@ -44,7 +44,7 @@ from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
 from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationTarget)
+    IHasSpecifications, ISpecificationTarget)
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -435,6 +435,12 @@ patch_collection_return_type(
 
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)
+
+# IHasSpecifications
+patch_collection_return_type(
+        IHasSpecifications, 'getAllSpecifications', ISpecification)
+patch_collection_return_type(
+        IHasSpecifications, 'getValidSpecifications', ISpecification)
 
 # ISpecificationTarget
 patch_entry_return_type(

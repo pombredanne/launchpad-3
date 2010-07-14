@@ -14,7 +14,35 @@ from lp.testing import (
     launchpadlib_for, TestCaseWithFactory)
 
 
-class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
+class SpecificationWebserviceTestCase(TestCaseWithFactory):
+
+    def makeProduct(self):
+        return self.factory.makeProduct(name="fooix")
+
+    def makeDistribution(self):
+        return self.factory.makeDistribution(name="foobuntu")
+
+    def getLaunchpadlib(self):
+        user = self.factory.makePerson()
+        return launchpadlib_for("testing", user)
+
+    def getSpecOnWebservice(self, spec_object):
+        launchpadlib = self.getLaunchpadlib()
+        if spec_object.product is not None:
+            pillar_name = spec_object.product.name
+        else:
+            pillar_name = spec_object.distribution.name
+        return launchpadlib.load(
+            str(launchpadlib._root_uri) + '/%s/+spec/%s'
+            % (pillar_name, spec_object.name))
+
+    def getPillarOnWebservice(self, pillar_obj):
+        launchpadlib = self.getLaunchpadlib()
+        return launchpadlib.load(
+            str(launchpadlib._root_uri) + '/' + pillar_obj.name)
+
+
+class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
     """Test accessing specification attributes over the webservice."""
     layer = DatabaseFunctionalLayer
 
@@ -48,24 +76,9 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
             priority=priority,
             owner=owner, whiteboard=self.whiteboard, goalstatus=goal_status)
 
-    def makeProduct(self):
-        return self.factory.makeProduct(name="fooix")
-
-    def getResponse(self, spec_object):
-        user = self.factory.makePerson()
-        launchpadlib = launchpadlib_for(
-            "testing", user)
-        if spec_object.product is not None:
-            pillar_name = spec_object.product.name
-        else:
-            pillar_name = spec_object.distribution.name
-        return launchpadlib.load(
-            str(launchpadlib._root_uri) + '/%s/+spec/%s'
-            % (pillar_name, spec_object.name))
-
     def getSimpleSpecificationResponse(self):
         self.spec_object = self.makeSimpleSpecification()
-        return self.getResponse(self.spec_object)
+        return self.getSpecOnWebservice(self.spec_object)
 
     def test_can_retrieve_representation(self):
         spec = self.makeSimpleSpecification()
@@ -135,7 +148,7 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
             product=product, name=name, whiteboard=None)
         # Check that the factory didn't add a whiteboard
         self.assertEqual(None, spec_object.whiteboard)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         # Check that it is None on the webservice too
         self.assertEqual(None, spec.whiteboard)
 
@@ -146,7 +159,7 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
             product=product, name=name, approver=None)
         # Check that the factory didn't add an approver
         self.assertEqual(None, spec_object.approver)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         # Check that it is None on the webservice too
         self.assertEqual(None, spec.approver)
 
@@ -157,7 +170,7 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
             product=product, name=name, drafter=None)
         # Check that the factory didn't add an drafter
         self.assertEqual(None, spec_object.drafter)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         # Check that it is None on the webservice too
         self.assertEqual(None, spec.drafter)
 
@@ -168,7 +181,7 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
             product=product, name=name, assignee=None)
         # Check that the factory didn't add an assignee
         self.assertEqual(None, spec_object.assignee)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         # Check that it is None on the webservice too
         self.assertEqual(None, spec.assignee)
 
@@ -179,7 +192,7 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
             product=product, name=name, specurl=None)
         # Check that the factory didn't add an specurl
         self.assertEqual(None, spec_object.specurl)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         # Check that it is None on the webservice too
         self.assertEqual(None, spec.specification_url)
 
@@ -188,7 +201,7 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
         name = "some-spec"
         spec_object = self.factory.makeSpecification(
             product=product, name=name)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual('fooix', spec.project.name)
 
     def test_representation_has_project_series_link(self):
@@ -198,25 +211,25 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
         name = "some-spec"
         spec_object = self.factory.makeSpecification(
             product=product, name=name, productseries=productseries)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual('fooix-dev', spec.project_series.name)
 
     def test_representation_has_distribution_link(self):
-        distribution = self.factory.makeDistribution(name='foobuntu')
+        distribution = self.makeDistribution()
         name = "some-spec"
         spec_object = self.factory.makeSpecification(
             distribution=distribution, name=name)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual('foobuntu', spec.distribution.name)
 
     def test_representation_has_distroseries_link(self):
-        distribution = self.factory.makeDistribution(name='foobuntu')
+        distribution = self.makeDistribution()
         distroseries = self.factory.makeDistroSeries(
             name='maudlin', distribution=distribution)
         name = "some-spec"
         spec_object = self.factory.makeSpecification(
             distribution=distribution, name=name, distroseries=distroseries)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual('maudlin', spec.distroseries.name)
 
     def test_representation_empty_distribution(self):
@@ -226,7 +239,7 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
             product=product, name=name)
         # Check that we didn't pick one up in the factory
         self.assertEqual(None, spec_object.distribution)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual(None, spec.distribution)
 
     def test_representation_empty_project_series(self):
@@ -236,27 +249,27 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
             product=product, name=name)
         # Check that we didn't pick one up in the factory
         self.assertEqual(None, spec_object.productseries)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual(None, spec.project_series)
 
     def test_representation_empty_project(self):
-        distribution = self.factory.makeDistribution(name='foobuntu')
+        distribution = self.makeDistribution()
         name = "some-spec"
         spec_object = self.factory.makeSpecification(
             distribution=distribution, name=name)
         # Check that we didn't pick one up in the factory
         self.assertEqual(None, spec_object.product)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual(None, spec.project)
 
     def test_representation_empty_distroseries(self):
-        distribution = self.factory.makeDistribution(name='foobuntu')
+        distribution = self.makeDistribution()
         name = "some-spec"
         spec_object = self.factory.makeSpecification(
             distribution=distribution, name=name)
         # Check that we didn't pick one up in the factory
         self.assertEqual(None, spec_object.distroseries)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual(None, spec.distroseries)
 
     def test_representation_contains_milestone(self):
@@ -266,7 +279,7 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
             name="1.0", product=product, productseries=productseries)
         spec_object = self.factory.makeSpecification(
             product=product, productseries=productseries, milestone=milestone)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual("1.0", spec.milestone.name)
 
     def test_representation_empty_milestone(self):
@@ -275,25 +288,16 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
             product=product, milestone=None)
         # Check that the factory didn't add a milestone
         self.assertEqual(None, spec_object.milestone)
-        spec = self.getResponse(spec_object)
+        spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual(None, spec.milestone)
 
 
-class SpecificationTargetTests(TestCaseWithFactory):
+class SpecificationTargetTests(SpecificationWebserviceTestCase):
     """Tests for accessing specifications via their targets."""
     layer = DatabaseFunctionalLayer
 
-    def getLaunchpadlib(self):
-        user = self.factory.makePerson()
-        return launchpadlib_for("testing", user)
-
-    def getPillarOnWebservice(self, pillar_obj):
-        launchpadlib = self.getLaunchpadlib()
-        return launchpadlib.load(
-            str(launchpadlib._root_uri) + '/' + pillar_obj.name)
-
     def test_get_specification_on_product(self):
-        product = self.factory.makeProduct("fooix")
+        product = self.makeProduct()
         spec_object = self.factory.makeSpecification(
             product=product, name="some-spec")
         product_on_webservice = self.getPillarOnWebservice(product)
@@ -302,13 +306,13 @@ class SpecificationTargetTests(TestCaseWithFactory):
         self.assertEqual("fooix", spec.project.name)
 
     def test_get_specification_not_found(self):
-        product = self.factory.makeProduct("fooix")
+        product = self.makeProduct()
         product_on_webservice = self.getPillarOnWebservice(product)
         spec = product_on_webservice.getSpecification(name="nonexistant")
         self.assertEqual(None, spec)
 
     def test_get_specification_on_distribution(self):
-        distribution = self.factory.makeDistribution("foobuntu")
+        distribution = self.makeDistribution()
         spec_object = self.factory.makeSpecification(
             distribution=distribution, name="some-spec")
         distro_on_webservice = self.getPillarOnWebservice(distribution)
@@ -317,7 +321,7 @@ class SpecificationTargetTests(TestCaseWithFactory):
         self.assertEqual("foobuntu", spec.distribution.name)
 
     def test_get_specification_on_productseries(self):
-        product = self.factory.makeProduct("fooix")
+        product = self.makeProduct()
         productseries = self.factory.makeProductSeries(
             product=product, name="fooix-dev")
         spec_object = self.factory.makeSpecification(
@@ -331,7 +335,7 @@ class SpecificationTargetTests(TestCaseWithFactory):
         self.assertEqual("fooix-dev", spec.project_series.name)
 
     def test_get_specification_on_distroseries(self):
-        distribution = self.factory.makeDistribution("foobuntu")
+        distribution = self.makeDistribution()
         distroseries = self.factory.makeDistroSeries(
             distribution=distribution, name="maudlin")
         spec_object = self.factory.makeSpecification(
@@ -344,3 +348,133 @@ class SpecificationTargetTests(TestCaseWithFactory):
         self.assertEqual("some-spec", spec.name)
         self.assertEqual("foobuntu", spec.distribution.name)
         self.assertEqual("maudlin", spec.distroseries.name)
+
+
+class IHasSpecificationsTests(SpecificationWebserviceTestCase):
+    """Tests for accessing IHasSpecifications methods over the webservice."""
+    layer = DatabaseFunctionalLayer
+
+    def assertNamesOfSpecificationsAre(self, names, specifications):
+        self.assertEqual(names, [s.name for s in specifications])
+
+    def test_product_getAllSpecifications(self):
+        product = self.makeProduct()
+        self.factory.makeSpecification(product=product, name="spec1")
+        self.factory.makeSpecification(product=product, name="spec2")
+        product_on_webservice = self.getPillarOnWebservice(product)
+        self.assertNamesOfSpecificationsAre(
+            ["spec1", "spec2"], product_on_webservice.getAllSpecifications())
+
+    def test_product_getValidSpecifications(self):
+        product = self.makeProduct()
+        self.factory.makeSpecification(product=product, name="spec1")
+        self.factory.makeSpecification(
+            product=product, name="spec2",
+            definition_status=SpecificationDefinitionStatus.OBSOLETE)
+        product_on_webservice = self.getPillarOnWebservice(product)
+        self.assertNamesOfSpecificationsAre(
+            ["spec1"], product_on_webservice.getValidSpecifications())
+
+    def test_distribution_getAllSpecifications(self):
+        distribution = self.makeDistribution()
+        self.factory.makeSpecification(
+            distribution=distribution, name="spec1")
+        self.factory.makeSpecification(
+            distribution=distribution, name="spec2")
+        distro_on_webservice = self.getPillarOnWebservice(distribution)
+        self.assertNamesOfSpecificationsAre(
+            ["spec1", "spec2"], distro_on_webservice.getAllSpecifications())
+
+    def test_distribution_getValidSpecifications(self):
+        distribution = self.makeDistribution()
+        self.factory.makeSpecification(
+            distribution=distribution, name="spec1")
+        self.factory.makeSpecification(
+            distribution=distribution, name="spec2",
+            definition_status=SpecificationDefinitionStatus.OBSOLETE)
+        distro_on_webservice = self.getPillarOnWebservice(distribution)
+        self.assertNamesOfSpecificationsAre(
+            ["spec1"], distro_on_webservice.getValidSpecifications())
+
+    def test_distroseries_getAllSpecifications(self):
+        distribution = self.makeDistribution()
+        distroseries = self.factory.makeDistroSeries(
+            name='maudlin', distribution=distribution)
+        self.factory.makeSpecification(
+            distribution=distribution, name="spec1",
+            distroseries=distroseries)
+        self.factory.makeSpecification(
+            distribution=distribution, name="spec2",
+            distroseries=distroseries)
+        self.factory.makeSpecification(
+            distribution=distribution, name="spec3")
+        distro_on_webservice = self.getPillarOnWebservice(distribution)
+        distroseries_on_webservice = distro_on_webservice.getSeries(
+            name_or_version="maudlin")
+        self.assertNamesOfSpecificationsAre(
+            ["spec1", "spec2"],
+            distroseries_on_webservice.getAllSpecifications())
+
+    def test_distroseries_getValidSpecifications(self):
+        distribution = self.makeDistribution()
+        distroseries = self.factory.makeDistroSeries(
+            name='maudlin', distribution=distribution)
+        self.factory.makeSpecification(
+            distribution=distribution, name="spec1",
+            distroseries=distroseries,
+            goalstatus=SpecificationGoalStatus.ACCEPTED)
+        self.factory.makeSpecification(
+            distribution=distribution, name="spec2",
+            goalstatus=SpecificationGoalStatus.DECLINED,
+            distroseries=distroseries)
+        self.factory.makeSpecification(
+            distribution=distribution, name="spec3",
+            distroseries=distroseries,
+            goalstatus=SpecificationGoalStatus.ACCEPTED,
+            definition_status=SpecificationDefinitionStatus.OBSOLETE)
+        self.factory.makeSpecification(
+            distribution=distribution, name="spec4")
+        distro_on_webservice = self.getPillarOnWebservice(distribution)
+        distroseries_on_webservice = distro_on_webservice.getSeries(
+            name_or_version="maudlin")
+        self.assertNamesOfSpecificationsAre(
+            ["spec1", "spec3"],
+            distroseries_on_webservice.getValidSpecifications())
+
+    def test_productseries_getAllSpecifications(self):
+        product = self.makeProduct()
+        productseries = self.factory.makeProductSeries(
+            product=product, name="fooix-dev")
+        self.factory.makeSpecification(
+            product=product, name="spec1", productseries=productseries)
+        self.factory.makeSpecification(
+            product=product, name="spec2", productseries=productseries)
+        self.factory.makeSpecification(product=product, name="spec3")
+        product_on_webservice = self.getPillarOnWebservice(product)
+        series_on_webservice = product_on_webservice.getSeries(
+            name="fooix-dev")
+        self.assertNamesOfSpecificationsAre(
+            ["spec1", "spec2"], series_on_webservice.getAllSpecifications())
+
+    def test_productseries_getValidSpecifications(self):
+        product = self.makeProduct()
+        productseries = self.factory.makeProductSeries(
+            product=product, name="fooix-dev")
+        self.factory.makeSpecification(
+            product=product, name="spec1", productseries=productseries,
+            goalstatus=SpecificationGoalStatus.ACCEPTED)
+        self.factory.makeSpecification(
+            goalstatus=SpecificationGoalStatus.DECLINED,
+            product=product, name="spec2", productseries=productseries)
+        self.factory.makeSpecification(
+            product=product, name="spec3", productseries=productseries,
+            goalstatus=SpecificationGoalStatus.ACCEPTED,
+            definition_status=SpecificationDefinitionStatus.OBSOLETE)
+        self.factory.makeSpecification(product=product, name="spec4")
+        product_on_webservice = self.getPillarOnWebservice(product)
+        series_on_webservice = product_on_webservice.getSeries(
+            name="fooix-dev")
+        # Should this be different to the results for distroseries?
+        self.assertNamesOfSpecificationsAre(
+            ["spec1", "spec2", "spec3"],
+            series_on_webservice.getAllSpecifications())

@@ -18,7 +18,8 @@ from zope.schema import TextLine
 
 from canonical.launchpad import _
 from lazr.restful.declarations import (
-    export_read_operation, operation_parameters, operation_returns_entry)
+    export_read_operation, operation_parameters,
+    operation_returns_collection_of, operation_returns_entry)
 
 
 class IHasSpecifications(Interface):
@@ -64,6 +65,15 @@ class IHasSpecifications(Interface):
         situations in which these are not rendered.
         """
 
+    @operation_returns_collection_of(Interface) # really ISpecification
+    @export_read_operation()
+    def getAllSpecifications():
+        """Return all the specifications associated with this object."""
+
+    @operation_returns_collection_of(Interface) # really ISpecification
+    @export_read_operation()
+    def getValidSpecifications():
+        """Return all the non-obsolete specifications for this object."""
 
 
 class ISpecificationTarget(IHasSpecifications):
