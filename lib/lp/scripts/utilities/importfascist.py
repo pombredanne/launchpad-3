@@ -21,7 +21,6 @@ def text_lines_to_set(text):
     return set(line.strip() for line in text.splitlines() if line.strip())
 
 
-# zope.testing.doctest: called as part of creating a DocTestSuite.
 permitted_database_imports = text_lines_to_set("""
     canonical.archivepublisher.deathrow
     canonical.archivepublisher.domination
@@ -38,7 +37,6 @@ permitted_database_imports = text_lines_to_set("""
     lp.registry.vocabularies
     canonical.librarian.client
     canonical.librarian.db
-    zope.testing.doctest
     """)
 
 

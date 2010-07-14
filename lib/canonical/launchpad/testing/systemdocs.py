@@ -17,6 +17,7 @@ __all__ = [
     'tearDown',
     ]
 
+import doctest
 import logging
 import os
 import pdb
@@ -25,7 +26,6 @@ import sys
 
 import transaction
 from zope.component import getUtility
-from zope.testing import doctest
 from zope.testing.loggingsupport import Handler
 
 from canonical.chunkydiff import elided_source
