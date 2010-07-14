@@ -403,6 +403,8 @@ class FakeObjectFactory(ObjectFactory):
         self._distroseries_set._add(distroseries)
         return distroseries
 
+    makeDistroSeries = makeDistroRelease
+
     def makeSourcePackageName(self):
         sourcepackagename = FakeSourcePackageName(self.getUniqueString())
         self._sourcepackagename_set._add(sourcepackagename)

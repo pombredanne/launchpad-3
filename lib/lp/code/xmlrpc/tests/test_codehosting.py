@@ -787,6 +787,39 @@ class CodehostingTest(TestCaseWithFactory):
             BRANCH_ALIAS_PREFIX, requester.name, product.name)
         self.assertNotFound(requester, path)
 
+    def test_translatePath_branch_alias_no_such_person(self):
+        requester = self.factory.makePerson()
+        path = '/%s/~doesntexist/dontcare/noreally' % (BRANCH_ALIAS_PREFIX,)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_no_such_product(self):
+        requester = self.factory.makePerson()
+        path = '/%s/~%s/doesntexist/branchname' % (
+            BRANCH_ALIAS_PREFIX, requester.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_no_such_distro(self):
+        requester = self.factory.makePerson()
+        path = '/%s/~%s/doesntexist/lucid/openssh/branchname' % (
+            BRANCH_ALIAS_PREFIX, requester.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_no_such_distroseries(self):
+        requester = self.factory.makePerson()
+        distro = self.factory.makeDistribution()
+        path = '/%s/~%s/%s/doesntexist/openssh/branchname' % (
+            BRANCH_ALIAS_PREFIX, requester.name, distro.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_no_such_sourcepackagename(self):
+        requester = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        distro = distroseries.distribution
+        path = '/%s/~%s/%s/%s/doesntexist/branchname' % (
+            BRANCH_ALIAS_PREFIX, requester.name, distro.name,
+            distroseries.name)
+        self.assertNotFound(requester, path)
+
     def assertTranslationIsControlDirectory(self, translation,
                                             default_stacked_on,
                                             trailing_path):
