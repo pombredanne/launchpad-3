@@ -45,7 +45,7 @@ class TestSignedMessage(TestCaseWithFactory):
         msg = signed_message_from_string(email_message.as_string())
         self.assertIs(None, msg.signedContent)
         self.assertIs(None, msg.signature)
-        principle = authenticateEmail(msg, msg.as_string())
+        principle = authenticateEmail(msg)
         self.assertEqual(sender, principle.person)
         self.assertTrue(
             IWeaklyAuthenticatedPrincipal.providedBy(principle))
@@ -73,7 +73,7 @@ class TestSignedMessage(TestCaseWithFactory):
         # the principle is set to the sender, but weakly authenticated.
         sender = self.factory.makePerson()
         msg = self._get_clearsigned_for_person(sender)
-        principle = authenticateEmail(msg, msg.as_string())
+        principle = authenticateEmail(msg)
         self.assertIsNot(None, msg.signature)
         self.assertEqual(sender, principle.person)
         self.assertTrue(
@@ -83,7 +83,7 @@ class TestSignedMessage(TestCaseWithFactory):
         # The test keys belong to Sample Person.
         sender = getUtility(IPersonSet).getByEmail('test@canonical.com')
         msg = self._get_clearsigned_for_person(sender)
-        principle = authenticateEmail(msg, msg.as_string())
+        principle = authenticateEmail(msg)
         self.assertIsNot(None, msg.signature)
         self.assertEqual(sender, principle.person)
         self.assertFalse(
@@ -127,7 +127,7 @@ class TestSignedMessage(TestCaseWithFactory):
         # the principle is set to the sender, but weakly authenticated.
         sender = self.factory.makePerson()
         msg = self._get_detached_message_for_person(sender)
-        principle = authenticateEmail(msg, msg.as_string())
+        principle = authenticateEmail(msg)
         self.assertIsNot(None, msg.signature)
         self.assertEqual(sender, principle.person)
         self.assertTrue(
@@ -137,7 +137,7 @@ class TestSignedMessage(TestCaseWithFactory):
         # Test a detached correct signature.
         sender = getUtility(IPersonSet).getByEmail('test@canonical.com')
         msg = self._get_detached_message_for_person(sender)
-        principle = authenticateEmail(msg, msg.as_string())
+        principle = authenticateEmail(msg)
         self.assertIsNot(None, msg.signature)
         self.assertEqual(sender, principle.person)
         self.assertFalse(
