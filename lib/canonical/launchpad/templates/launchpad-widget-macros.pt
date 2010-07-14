@@ -101,7 +101,7 @@
         <script type="text/javascript"
                 tal:attributes="src string:${yui2}/calendar/calendar.js"></script>
         <script type="text/javascript"
-                tal:attributes="src string:${lp_js}/lp/calendar.js"></script>
+                tal:attributes="src string:${lp_js}/app/calendar.js"></script>
         </tal:devmode>
         <tal:nondevmode condition="not: devmode">
         <script type="text/javascript"
@@ -116,7 +116,7 @@
     </tal:yui2resources>
 
     <script type="text/javascript">
-        YUI().use('node', 'lp.calendar', function(Y) {
+        YUI().use('node', 'lp.app.calendar', function(Y) {
             Y.lp.setup_calendar_widgets();
         });
     </script>
