@@ -54,10 +54,11 @@ class TestRegistration(TestCase):
         request_factory, publication_factory = factory()
         request = request_factory('', VOSTOK_ENVIRONMENT)
         publication = publication_factory(None)
-        # XXX This shouldn't be needed.
+        # XXX This shouldn't be needed:
         getUtility(IOpenLaunchBag).clear()
         root = publication.getApplication(request)
         self.assertIsInstance(root, VostokRoot)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
