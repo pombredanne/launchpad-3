@@ -41,11 +41,11 @@ class Collection(object):
         """
         if base is None:
             base_conditions = (True, )
-            base_tables = set()
+            base_tables = []
         else:
             self.store = base.store
             base_conditions = base.conditions
-            base_tables = base.tables
+            base_tables = list(base.tables)
 
 
         self.store = kwargs.get('store')
@@ -54,7 +54,7 @@ class Collection(object):
                 MAIN_STORE, DEFAULT_FLAVOR)
 
         self.tables = (
-            base_tables + set(self._parseTablesArg(kwargs.get('tables', []))))
+            base_tables + self._parseTablesArg(kwargs.get('tables', [])))
         self.conditions = base_conditions + conditions
 
     def _parseTablesArg(self, tables):
