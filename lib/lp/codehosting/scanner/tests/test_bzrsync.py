@@ -231,11 +231,10 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         :return: A set of tuples (sequence, revision-id) for all the
             BranchRevisions rows belonging to self.db_branch.
         """
-        branchrevisions = IStore(BranchRevision).find(
-            BranchRevision, BranchRevision.branch == db_branch)
-        return set(
-            (branch_revision.sequence, branch_revision.revision.revision_id)
-            for branch_revision in branchrevisions)
+        return set(IStore(BranchRevision).find(
+            (BranchRevision.sequence, Revision.revision_id),
+            Revision.id == BranchRevision.revision_id,
+            BranchRevision.branch == db_branch))
 
     def writeToFile(self, filename="file", contents=None):
         """Set the contents of the specified file.
@@ -463,9 +462,9 @@ class TestBzrSync(BzrSyncTestCase):
         # retrieveDatabaseAncestry.
         branch = getUtility(IBranchLookup).getByUniqueName(
             '~name12/+junk/junk.contrib')
-        branchrevisions = IStore(BranchRevision).find(
+        branch_revisions = IStore(BranchRevision).find(
             BranchRevision, BranchRevision.branch == branch)
-        sampledata = list(branchrevisions.order_by(BranchRevision.sequence))
+        sampledata = list(branch_revisions.order_by(BranchRevision.sequence))
         expected_ancestry = set(branch_revision.revision.revision_id
             for branch_revision in sampledata)
         expected_history = [branch_revision.revision.revision_id

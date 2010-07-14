@@ -668,13 +668,16 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
 
     # Joins
     revision_history = Attribute(
-        """The sequence of BranchRevision for the mainline of that branch.
+        """The sequence of revisions for the mainline of this branch.
 
         They are ordered with the most recent revision first, and the list
         only contains those in the "leftmost tree", or in other words
         the revisions that match the revision history from bzrlib for this
         branch.
+
+        The revisions are listed as tuples of (`BranchRevision`, `Revision`).
         """)
+
     subscriptions = exported(
         CollectionField(
             title=_("BranchSubscriptions associated to this branch."),

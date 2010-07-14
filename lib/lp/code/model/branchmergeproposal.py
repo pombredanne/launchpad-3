@@ -101,8 +101,8 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
         # queued) and note things as failing (approved and queued to failed).
         # This is perhaps more generous than needed, but its not clearly wrong
         # - a key concern is to prevent non reviewers putting things in the
-        # queue that haven't been oked (and thus moved to approved or one of
-        # the workflow states that approved leads to).
+        # queue that haven't been approved (and thus moved to approved or one
+        # of the workflow states that approved leads to).
         elif (next_state in reviewed_ok_states and
               from_state not in reviewed_ok_states):
             return False
@@ -596,7 +596,8 @@ class BranchMergeProposal(SQLBase):
             TargetRevision, And(
                 TargetRevision.revision_id == SourceRevision.revision_id,
                 TargetRevision.branch_id == self.target_branch.id))
-        result = store.using(SourceRevision, target_join).find(
+        origin = [SourceRevision, target_join]
+        result = store.using(*origin).find(
             SourceRevision,
             SourceRevision.branch_id == self.source_branch.id,
             SourceRevision.sequence != None,

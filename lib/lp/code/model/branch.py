@@ -34,7 +34,7 @@ from lazr.uri import URI
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
-    cursor, quote, SQLBase, sqlvalues)
+    SQLBase, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
@@ -860,15 +860,13 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getScannerData(self):
         """See `IBranch`."""
-# XXX JeroenVermeulen 2010-07-12: We're dropping BranchRevision.id.
-        rows = Store.of(self).execute("""
-            SELECT BranchRevision.id, BranchRevision.sequence,
-                Revision.revision_id
-            FROM Revision, BranchRevision
-            WHERE Revision.id = BranchRevision.revision
-                AND BranchRevision.branch = %s
-            ORDER BY BranchRevision.sequence
-            """ % sqlvalues(self))
+        columns = (
+            BranchRevision.id, BranchRevision.sequence, Revision.revision_id)
+        rows = Store.of(self).using(Revision, BranchRevision).find(
+            columns,
+            Revision.id == BranchRevision.revision_id,
+            BranchRevision.branch_id == self.id)
+        rows = rows.order_by(BranchRevision.sequence)
         ancestry = set()
         history = []
         branch_revision_map = {}
