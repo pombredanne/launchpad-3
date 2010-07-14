@@ -89,3 +89,45 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Cancel build')
+
+    def test_rescore_build(self):
+        """An admin can rescore a build."""
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        build = self.makeRecipeBuild()
+        build.queueBuild(build)
+        transaction.commit()
+        build_url = canonical_url(build)
+        logout()
+
+        browser = self.getUserBrowser(build_url, user=experts)
+        browser.getLink('Rescore build').click()
+
+        self.assertEqual(
+            browser.getLink('Cancel').url,
+            build_url)
+
+        browser.getControl('Score').value = '1024'
+
+        browser.getControl('Rescore build').click()
+
+        self.assertEqual(
+            browser.url,
+            build_url)
+
+        login(ANONYMOUS)
+        self.assertEqual(
+            build.buildqueue_record.lastscore,
+            1024)
+
+    def test_rescore_build_not_admin(self):
+        """No one but admins can rescore a build."""
+        build = self.makeRecipeBuild()
+        build.queueBuild(build)
+        transaction.commit()
+        build_url = canonical_url(build)
+        logout()
+
+        browser = self.getUserBrowser(build_url, user=self.chef)
+        self.assertRaises(
+            LinkNotFoundError,
+            browser.getLink, 'Rescore build')

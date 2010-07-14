@@ -10,9 +10,11 @@ __all__ = [
     'SourcePackageRecipeBuildNavigation',
     'SourcePackageRecipeBuildView',
     'SourcePackageRecipeBuildCancelView',
+    'SourcePackageRecipeBuildRescoreView',
     ]
 
 from zope.interface import Interface
+from zope.schema import Text
 
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.webapp import (
@@ -37,11 +39,15 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     facet = 'branches'
 
-    links = ('cancel',)
+    links = ('cancel', 'rescore')
 
     @enabled_with_permission('launchpad.Edit')
     def cancel(self):
         return Link('+cancel', 'Cancel build', icon='remove')
+
+    @enabled_with_permission('launchpad.Edit')
+    def rescore(self):
+        return Link('+rescore', 'Rescore build', icon='edit')
 
 
 class SourcePackageRecipeBuildView(LaunchpadView):
@@ -119,3 +125,30 @@ class SourcePackageRecipeBuildCancelView(LaunchpadFormView):
     def request_action(self, action, data):
         """Cancel the build."""
         self.context.cancelBuild()
+
+
+class SourcePackageRecipeBuildRescoreView(LaunchpadFormView):
+    """View for rescoring a build."""
+
+    class schema(Interface):
+        """Schema for deleting a build."""
+        score = Text(
+            title=u'Score', required=True,
+            description=u'The score of the recipe.')
+
+    page_title = label = "Rescore build"
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+    next_url = cancel_url
+
+    @action('Rescore build', name='rescore')
+    def request_action(self, action, data):
+        """Rescore the build."""
+        self.context.buildqueue_record.lastscore = int(data['score'])
+
+    @property
+    def initial_values(self):
+        return {'score': str(self.context.buildqueue_record.lastscore)}
+
