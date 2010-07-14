@@ -11,6 +11,8 @@ import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.testing.pages import (
+    extract_text, find_tags_by_class)
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing import DatabaseFunctionalLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -119,6 +121,31 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             build.buildqueue_record.lastscore,
             1024)
 
+    def test_rescore_build_invalid_score(self):
+        """Build scores can only take numbers."""
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        build = self.makeRecipeBuild()
+        build.queueBuild(build)
+        transaction.commit()
+        build_url = canonical_url(build)
+        logout()
+
+        browser = self.getUserBrowser(build_url, user=experts)
+        browser.getLink('Rescore build').click()
+
+        self.assertEqual(
+            browser.getLink('Cancel').url,
+            build_url)
+
+        browser.getControl('Score').value = 'tentwentyfour'
+
+        browser.getControl('Rescore build').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'You have specified an invalid value for score. '
+            'Please specify an integer')
+
     def test_rescore_build_not_admin(self):
         """No one but admins can rescore a build."""
         build = self.makeRecipeBuild()
@@ -131,3 +158,4 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Rescore build')
+

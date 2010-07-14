@@ -143,6 +143,15 @@ class SourcePackageRecipeBuildRescoreView(LaunchpadFormView):
         return canonical_url(self.context)
     next_url = cancel_url
 
+    def validate(self, data):
+        try:
+            score = int(data['score'])
+        except ValueError:
+            self.setFieldError(
+                'score',
+                'You have specified an invalid value for score. '
+                'Please specify an integer')
+
     @action('Rescore build', name='rescore')
     def request_action(self, action, data):
         """Rescore the build."""
