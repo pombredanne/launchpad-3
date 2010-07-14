@@ -87,20 +87,20 @@
           </tr>
         </thead>
         <tbody>
-          <tal:templates repeat="template view/iter_templates">
+          <tal:templates repeat="template view/templates">
             <tr tal:define="
                   inactive_css_class python:view.rowCSSClass(template)"
-                tal:condition="python: view.isVisible(template)"
+                tal:condition="python: view.isVisible()"
                 tal:attributes="
                   class string: template_row ${inactive_css_class}">
               <td class="priority_column"
                   tal:content="template/priority">7</td>
-              <td tal:condition="view/is_distroseries"
+              <td tal:condition="python: None"
                   tal:content="template/sourcepackagename/name"
                   class="sourcepackage_column">Source package
               </td>
               <td class="template_column">
-                <a tal:attributes="href template/fmt:url">
+                <a tal:attributes="href string:+pots/${template/name}">
                   <span tal:content="template/name">Template name</span>
                 </a>
                 <tal:inactive condition="not: template/iscurrent">
@@ -108,7 +108,7 @@
                 </tal:inactive>
               </td>
               <td class="length_column"
-                  tal:content="template/getPOTMsgSetsCount">1777</td>
+                  tal:content="template/messagecount">1777</td>
               <td class="languages_column"
                   tal:content="template/language_count">777</td>
               <td class="lastupdate_column">
@@ -131,16 +131,16 @@
                   tal:condition="context/required:launchpad.AnyPerson">
               <div class="template_links">
                 <a tal:replace="
-                    structure template/menu:translations/edit/fmt:link
+                    structure string:caca
                     " />
                 <a tal:replace="
-                    structure template/menu:translations/upload/fmt:link
+                    structure string:caca
                     " />
                 <a tal:replace="
-                    structure template/menu:translations/download/fmt:link
+                    structure string:caca
                     " />
                 <a tal:replace="
-                    structure template/menu:translations/administer/fmt:link
+                    structure string:caca
                     " />
               </div>
               </td>

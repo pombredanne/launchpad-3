@@ -55,6 +55,7 @@ from lp.translations.interfaces.translationimporter import (
     ITranslationImporter)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
+from lp.translations.model.potemplate import POTemplate
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, GetitemNavigation,
     LaunchpadView, LaunchpadEditFormView, Link, Navigation, NavigationMenu,
@@ -814,22 +815,44 @@ class BaseSeriesTemplatesView(LaunchpadView):
         else:
             self.productseries = series
 
-    def iter_templates(self):
+    def templates(self):
         potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(
+        templates_values = potemplateset.getSubset(
             productseries=self.productseries,
             distroseries=self.distroseries,
-            ordered_by_names=True)
+            ordered_by_names=True).getColumns(
+                POTemplate.iscurrent,
+                POTemplate.priority,
+                POTemplate.name,
+                POTemplate.messagecount,
+                POTemplate.date_last_updated)
+        templates = []
+        for (
+            iscurrent,
+            priority,
+            name,
+            messagecount,
+            date_last_updated) in templates_values:
+            template = {}
+            template['name'] = name
+            template['priority'] = priority
+            template['messagecount'] = messagecount
+            template['date_last_updated'] = date_last_updated
+            template['language_count'] = 42
+            template['iscurrent'] = iscurrent
+            templates.append(template)
+        return templates
 
     def rowCSSClass(self, template):
-        if template.iscurrent:
+        if template['iscurrent']:
             return "active-template"
         else:
             return "inactive-template"
 
-    def isVisible(self, template):
-        if (template.iscurrent or
-            check_permission('launchpad.Edit', template)):
-            return True
-        else:
-            return False
+    def isVisible(self):
+        return True
+#        if (template['iscurrent'] or
+#            check_permission('launchpad.Edit', template)):
+#            return True
+#        else:
+#            return False
