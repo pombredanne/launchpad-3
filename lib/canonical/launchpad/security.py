@@ -2060,6 +2060,12 @@ class ViewArchive(AuthorizationBase):
             if archive_subs:
                 return True
 
+        # The software center agent can view commercial archives
+        if self.obj.commercial:
+            agent = getUtility(ILaunchpadCelebrities).software_center_agent
+            if user.person == agent:
+                return True
+
         return False
 
     def checkUnauthenticated(self):
@@ -2097,6 +2103,12 @@ class AppendArchive(AuthorizationBase):
             self.obj.distribution == celebrities.ubuntu and
             user.in_ubuntu_security):
             return True
+
+        # The software center agent can change commercial archives
+        if self.obj.commercial:
+            agent = getUtility(ILaunchpadCelebrities).software_center_agent
+            if user.person == agent:
+                return True
 
         return False
 

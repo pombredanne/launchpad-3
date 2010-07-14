@@ -53,7 +53,7 @@ class ArchivePopulator(SoyuzScript):
         self, from_archive, from_distribution, from_suite, from_user,
         component, to_distribution, to_suite, to_archive, to_user, reason,
         include_binaries, arch_tags, merge_copy_flag,
-        packageset_delta_flag, nonvirtualized):
+        packageset_delta_flag, packageset_tags, nonvirtualized):
         """Create archive, populate it with packages and builds.
 
         Please note: if a component was specified for the origin then the
@@ -79,6 +79,9 @@ class ArchivePopulator(SoyuzScript):
             existing copy archive.
         :param packageset_delta_flag: only show packages that are fresher or
             new in the origin archive. Do not copy anything.
+
+        :param packageset_tags: list of packagesets to limit the packages
+            copied to.
         """
         # Avoid circular imports.
         from lp.registry.interfaces.person import IPersonSet
@@ -108,13 +111,14 @@ class ArchivePopulator(SoyuzScript):
             for proc_family in proc_families:
                 ignore_this = aa_set.new(archive, proc_family)
 
-        def build_location(distro, suite, component):
+        def build_location(distro, suite, component, packageset_names=None):
             """Build and return package location."""
-            location = build_package_location(distro, suite=suite)
+            location = build_package_location(
+                distro, suite=suite, packageset_names=packageset_names)
             if component is not None:
                 try:
                     the_component = getUtility(IComponentSet)[component]
-                except NotFoundError, e:
+                except NotFoundError:
                     raise SoyuzScriptError(
                         "Invalid component name: '%s'" % component)
                 location.component = the_component
@@ -122,7 +126,9 @@ class ArchivePopulator(SoyuzScript):
 
         archive_set = getUtility(IArchiveSet)
         # Build the origin package location.
-        the_origin = build_location(from_distribution, from_suite, component)
+        the_origin = build_location(
+            from_distribution, from_suite, component,
+            packageset_names=packageset_tags)
 
         # Use a non-PPA(!) origin archive if specified and existent.
         if from_archive is not None and from_user is None:
@@ -319,7 +325,8 @@ class ArchivePopulator(SoyuzScript):
             opts.from_user, opts.component, opts.to_distribution,
             opts.to_suite, opts.to_archive, opts.to_user, opts.reason,
             opts.include_binaries, opts.arch_tags, opts.merge_copy_flag,
-            opts.packageset_delta_flag, opts.nonvirtualized)
+            opts.packageset_delta_flag, opts.packageset_tags,
+            opts.nonvirtualized)
 
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.
@@ -382,6 +389,11 @@ class ArchivePopulator(SoyuzScript):
             help=(
                 'Only show packages that are fresher or new in origin '
                 'archive. Destination archive must exist already.'))
+
+        self.parser.add_option(
+            "--package-set", dest="packageset_tags", action="append",
+            help=(
+                'Limit to copying packages in the selected packagesets.'))
 
         self.parser.add_option(
             "--nonvirtualized", dest="nonvirtualized", default=False,

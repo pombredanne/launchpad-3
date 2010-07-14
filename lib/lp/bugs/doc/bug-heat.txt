@@ -308,6 +308,20 @@ A DistributionSourcePackage has its own maximum heat.
     >>> print dsp.max_bug_heat
     123
 
+A DistributionSourcePackage also has a cached value for bug_count and
+total_bug_heat.
+
+    >>> print dsp.bug_count
+    1
+    >>> print dsp.total_bug_heat
+    123
+    >>> dsp_task2 = factory.makeBugTask(target=dsp)
+    >>> dsp_task2.bug.setHeat(7)
+    >>> print dsp.bug_count
+    2
+    >>> print dsp.total_bug_heat
+    130
+
 Transitioning from one target to another, calculates the value for the new
 target.
 
