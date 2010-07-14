@@ -8,6 +8,7 @@ from twisted.application import service
 from twisted.web import server
 
 from lp.buildmaster.manager import BuilddManager
+from lp.services.twistedsupport.loggingsupport import RotatableFileLogObserver
 from canonical.config import config
 from canonical.launchpad.daemons import tachandler
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -17,6 +18,8 @@ execute_zcml_for_scripts()
 initZopeless(dbuser=config.builddmaster.dbuser)
 
 application = service.Application('BuilddManager')
+application.addComponent(
+    RotatableFileLogObserver('buildd-manager.log'), ignoreClass=1)
 
 # Service that announces when the daemon is ready.
 tachandler.ReadyService().setServiceParent(application)
