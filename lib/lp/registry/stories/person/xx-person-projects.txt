@@ -1,4 +1,5 @@
-== List of owned or driven projects ==
+List of owned or driven projects
+================================
 
 A Team home page displays a list of projects owned or driven by that
 team.

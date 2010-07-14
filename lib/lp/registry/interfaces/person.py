@@ -2128,6 +2128,7 @@ class ISoftwareCenterAgentAPI(Interface):
         requiring a Launchpad account.
         """
 
+
 class ISoftwareCenterAgentApplication(ILaunchpadApplication):
     """XMLRPC application root for ISoftwareCenterAgentAPI."""
 
