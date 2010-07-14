@@ -240,7 +240,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
             recipe.is_stale = False
         return builds
 
-    def destroySelf(self):
+    def _removeDependencies(self):
+        """Remove the packages queue and job."""
         store = Store.of(self)
         if self.buildqueue_record is not None:
             job = self.buildqueue_record.job
@@ -249,6 +250,17 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
                 SourcePackageRecipeBuildJob,
                 SourcePackageRecipeBuildJob.build == self.id).remove()
             store.remove(job)
+
+    def cancelBuild(self):
+        """See `ISourcePackageRecipeBuild.`"""
+        self._removeDependencies()
+
+        self.status = BuildStatus.SUPERSEDED
+
+    def destroySelf(self):
+        self._removeDependencies()
+
+        store = Store.of(self)
         store.remove(self)
 
     @classmethod
