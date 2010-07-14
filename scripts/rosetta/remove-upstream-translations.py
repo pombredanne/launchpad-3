@@ -225,7 +225,7 @@ def main(argv):
     if options.languagecode is not None:
         lang_code = options.languagecode
 
-    remove_upstream_entries(ztm, potemplates, lang_code, variant)
+    remove_upstream_entries(ztm, potemplates, lang_code)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

@@ -181,7 +181,6 @@ And provide information for this IPOFile to be newly created.
   >>> browser.getControl('File Type').value = ['PO']
   >>> browser.getControl(name='field.potemplate').value = ['11']
   >>> browser.getControl('Language').value = ['es']
-  >>> browser.getControl('Variant').value = ''
   >>> browser.getControl('Approve').click()
   >>> print browser.url
   http://translations.launchpad.dev/+imports

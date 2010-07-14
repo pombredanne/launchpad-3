@@ -166,6 +166,9 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Adding a translation for same POTMsgSet, but to a different
         # POFile (different language) will not add the translation
         # to the list of submitter's translations for *former* POFile.
+        serbian_latin = self.factory.makeLanguage(
+            'sr@latin', 'Serbian Latin')
+
         self.devel_sr_latin_pofile = self.factory.makePOFile(
             'sr@latin', potemplate=self.devel_potemplate)
         self.factory.makeTranslationMessage(
