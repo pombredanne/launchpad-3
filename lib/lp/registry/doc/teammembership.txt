@@ -631,7 +631,6 @@ a warning email several days before the expiration. The user will just
 be notified that the membership has already been automatically renewed
 on the expiration day.
 
-    >>> from lp.registry.interfaces.person import TeamMembershipRenewalPolicy
     >>> from storm.store import Store
     >>> autorenewal_team = factory.makeTeam(name="autorenewal-team")
     >>> autorenewal_team.renewal_policy = (
