@@ -11,56 +11,83 @@ __all__ = [
 from zope.component import getUtility
 
 from storm.expr import LeftJoin
-from storm.store import FindSpec
 
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 
 class Collection(object):
-    """An arbitrary collection of database objects."""
+    """An arbitrary collection of database objects.
 
-    store = None
-    using = None
+    Works as a Storm wrapper: create a collection based on another
+    collection, adding joins and select conditions to taste.
 
-    def __init__(self, base, *conditions):
-        """Construct a collection, possibly based on another one."""
+    Since deserializing long strings can be very slow and isn't always
+    needed by the caller, you can select any mix of classes and
+    individual columns or other Storm expressions.
+    """
+    def __init__(self, base, *conditions, **kwargs):
+        """Construct a collection, possibly based on another one.
+
+        :param base: The collection that this collection is based on.
+            The new collection will inherit its configuration.
+        :param conditions: Optional Storm select conditions, e.g.
+            `MyClass.attribute > 2`.
+        :param classes: A class, or tuple or list of classes, that
+            should go into the "FROM" clause of the new collection.
+            This need not include classes that are already in the
+            base collection, or that are included as outer joins.
+        :param store: Optional: Storm `Store` to use.
+        """
         if base is None:
             base_conditions = (True, )
-            self.using = tuple()
+            base_tables = set()
         else:
+            self.store = base.store
             base_conditions = base.conditions
-            self.using = base.using
+            base_tables = base.tables
+
+
+        self.store = kwargs.get('store')
+        if self.store is None:
+            self.store = getUtility(IStoreSelector).get(
+                MAIN_STORE, DEFAULT_FLAVOR)
+
+        self.tables = (
+            base_tables + set(self._parseTablesArg(kwargs.get('tables', []))))
         self.conditions = base_conditions + conditions
-        
+
+    def _parseTablesArg(self, tables):
+        """Turn tables argument into a list.
+
+        :param tables: A class, or tuple of classes, or list of classes.
+        :param return: All classes that were passed in, as a list.
+        """
+        if isinstance(tables, tuple):
+            return list(tables)
+        elif isinstance(tables, list):
+            return tables
+        else:
+            return [tables]
+
     def use(self, store):
         """Return a copy of this collection that uses the given store."""
-        new_collection = Collection(self)
-        new_collection.store = store
-        return new_collection
+        return Collection(self, store=store)
 
-    def outer_join(self, cls, *conditions):
+    def joinOuter(self, cls, *conditions):
         """Outer-join `cls` into the query."""
         join = LeftJoin(cls, *conditions)
-        new_collection = Collection(self)
-        new_collection.using = self.using + (join, )
-        return new_collection
-    
+        tables = [join]
+        return Collection(self, tables=tables)
+
     def select(self, *values):
-        """Return the selected values from the collection."""
-        if self.store is None:
-            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        """Return a result set containing the requested `values`."""
+        if len(self.tables) == 0:
+            source = self.store
         else:
-            store = self.store
-            
-        if len(self.using) == 0:
-            source = store
-        else:
-            find_spec = FindSpec(*values)
-            columns, tables = find_spec.get_columns_and_tables()
-            source = store.using(self.using + tables)
-            
-        if len(values) > 1:
-            return source.find(values, *self.conditions)
-        else:
-            return source.find(*(values + self.conditions))
+            source = self.store.using(*self.tables)
+
+        if len(values) == 1:
+            values = values[0]
+
+        return source.find(values, *self.conditions)
