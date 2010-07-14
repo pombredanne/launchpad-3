@@ -38,6 +38,7 @@ def run_as_db_user(username):
     """Create a decorator that will run a function as the given database user.
     """
     def _run_with_different_user(f):
+
         def decorated(*args, **kwargs):
             current_user = LaunchpadZopelessLayer.txn._dbuser
             if current_user == username:
@@ -48,6 +49,7 @@ def run_as_db_user(username):
             finally:
                 LaunchpadZopelessLayer.switchDbUser(current_user)
         return mergeFunctionMetadata(f, decorated)
+
     return _run_with_different_user
 
 
@@ -544,7 +546,7 @@ class TestBzrTranslationsUploadJob(BzrSyncTestCase):
 
     def test_upload_on_new_revision_series_not_configured(self):
         # Syncing a branch with a changed tip does not create a
-        # new RosettaUploadJob if the linked product series is not 
+        # new RosettaUploadJob if the linked product series is not
         # configured for translation uploads.
         self._makeProductSeries()
         self.commitRevision()
