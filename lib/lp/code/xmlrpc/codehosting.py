@@ -42,6 +42,7 @@ from lp.code.interfaces import branchpuller
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX, BRANCH_TRANSPORT, CONTROL_TRANSPORT, ICodehostingAPI,
     LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
+from lp.code.interfaces.linkedbranch import NoLinkedBranch
 from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
@@ -278,7 +279,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                     try:
                         branch, trailing = getUtility(IBranchLookup).getByLPPath(
                             first[len(BRANCH_ALIAS_PREFIX + '/'):])
-                    except (NameLookupFailed, InvalidNamespace):
+                    except (NameLookupFailed, InvalidNamespace, NoLinkedBranch):
                         # XXX: I don't know if this is a good idea. The reason
                         # we're doing it is that getByLPPath thinks that
                         # 'foo/.bzr' is a request for the '.bzr' series of a

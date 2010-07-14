@@ -781,6 +781,8 @@ class CodehostingTest(TestCaseWithFactory):
              path_in_branch), translation)
 
     def test_translatePath_branch_alias_no_such_branch(self):
+        # translatePath returns a not found when there's no such branch, given
+        # a unique name after +branch.
         requester = self.factory.makePerson()
         product = self.factory.makeProduct()
         path = '/%s/~%s/%s/doesntexist' % (
@@ -788,23 +790,31 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertNotFound(requester, path)
 
     def test_translatePath_branch_alias_no_such_person(self):
+        # translatePath returns a not found when there's no such person, given
+        # a unique name after +branch.
         requester = self.factory.makePerson()
         path = '/%s/~doesntexist/dontcare/noreally' % (BRANCH_ALIAS_PREFIX,)
         self.assertNotFound(requester, path)
 
     def test_translatePath_branch_alias_no_such_product(self):
+        # translatePath returns a not found when there's no such product,
+        # given a unique name after +branch.
         requester = self.factory.makePerson()
         path = '/%s/~%s/doesntexist/branchname' % (
             BRANCH_ALIAS_PREFIX, requester.name)
         self.assertNotFound(requester, path)
 
     def test_translatePath_branch_alias_no_such_distro(self):
+        # translatePath returns a not found when there's no such distro, given
+        # a unique name after +branch.
         requester = self.factory.makePerson()
         path = '/%s/~%s/doesntexist/lucid/openssh/branchname' % (
             BRANCH_ALIAS_PREFIX, requester.name)
         self.assertNotFound(requester, path)
 
     def test_translatePath_branch_alias_no_such_distroseries(self):
+        # translatePath returns a not found when there's no such distroseries,
+        # given a unique name after +branch.
         requester = self.factory.makePerson()
         distro = self.factory.makeDistribution()
         path = '/%s/~%s/%s/doesntexist/openssh/branchname' % (
@@ -812,12 +822,22 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertNotFound(requester, path)
 
     def test_translatePath_branch_alias_no_such_sourcepackagename(self):
+        # translatePath returns a not found when there's no such
+        # sourcepackagename, given a unique name after +branch.
         requester = self.factory.makePerson()
         distroseries = self.factory.makeDistroSeries()
         distro = distroseries.distribution
         path = '/%s/~%s/%s/%s/doesntexist/branchname' % (
             BRANCH_ALIAS_PREFIX, requester.name, distro.name,
             distroseries.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_product_with_no_branch(self):
+        # translatePath returns a not found when we look up a product that has
+        # no linked branch.
+        requester = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
         self.assertNotFound(requester, path)
 
     def assertTranslationIsControlDirectory(self, translation,
