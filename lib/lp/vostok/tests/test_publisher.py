@@ -8,7 +8,7 @@ __metaclass__ = type
 import unittest
 
 from canonical.config import config
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import FunctionalLayer
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 from lp.testing import TestCase
@@ -28,7 +28,7 @@ VOSTOK_ENVIRONMENT = {
 class TestRegistration(TestCase):
     """Vostok's publication customizations are installed correctly."""
 
-    layer = DatabaseFunctionalLayer
+    layer = FunctionalLayer
 
     def test_publication_factory_is_registered(self):
         # There is a vostok-specific request factory registered for the

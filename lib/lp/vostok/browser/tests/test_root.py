@@ -11,7 +11,7 @@ from zope.app.publisher.browser import getDefaultViewName
 from zope.component import getMultiAdapter
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import FunctionalLayer
 
 from lp.testing import TestCase
 from lp.vostok.browser.root import VostokRootView
@@ -20,7 +20,7 @@ from lp.vostok.publisher import VostokRoot
 
 class TestBrowseRoot(TestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = FunctionalLayer
 
     def test_root_default_view_name(self):
         # The default view for the vostok root object is called "+index".
