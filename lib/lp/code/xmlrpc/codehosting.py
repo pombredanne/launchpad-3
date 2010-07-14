@@ -149,6 +149,8 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             if not branch_path.startswith('/'):
                 return faults.InvalidPath(branch_path)
             escaped_path = unescape(branch_path.strip('/'))
+            if escaped_path.startswith(BRANCH_ALIAS_PREFIX + '/'):
+                escaped_path = escaped_path[len(BRANCH_ALIAS_PREFIX) + 1:]
             try:
                 namespace_name, branch_name = split_unique_name(escaped_path)
             except ValueError:

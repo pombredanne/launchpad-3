@@ -413,6 +413,17 @@ class CodehostingTest(TestCaseWithFactory):
         message = "No such source package: 'ningnangnong'."
         self.assertEqual(faults.NotFound(message), fault)
 
+    def test_createBranch_using_branch_alias(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch_name = self.factory.getUniqueString('branch-name')
+        unique_name = u'~%s/%s/%s' % (owner.name, product.name, branch_name)
+        path = u'/%s/%s' % (BRANCH_ALIAS_PREFIX, unique_name)
+        branch_id = self.codehosting_api.createBranch(owner.id, escape(path))
+        login(ANONYMOUS)
+        branch = self.branch_lookup.get(branch_id)
+        self.assertEqual(unique_name, branch.unique_name)
+
     def test_initialMirrorRequest(self):
         # The default 'next_mirror_time' for a newly created hosted branch
         # should be None.
