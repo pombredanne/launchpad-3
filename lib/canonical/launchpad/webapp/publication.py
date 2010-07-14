@@ -25,8 +25,7 @@ from storm.zope.interfaces import IZStorm
 from zc.zservertracelog.interfaces import ITraceLog
 import zope.app.publication.browser
 from zope.app import zapi  # used to get at the adapters service
-from zope.app.publication.interfaces import (
-    BeforeTraverseEvent, StartRequestEvent)
+from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility, queryMultiAdapter
 from zope.error.interfaces import IErrorReportingUtility
@@ -51,7 +50,7 @@ from lp.registry.interfaces.person import (
 from canonical.launchpad.webapp.interfaces import (
     IDatabasePolicy, ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
     IPlacelessAuthUtility, IPrimaryContext, IStoreSelector,
-    MASTER_FLAVOR, OffsiteFormPostError, NoReferrerError)
+    MASTER_FLAVOR, OffsiteFormPostError, NoReferrerError, StartRequestEvent)
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
@@ -750,4 +749,3 @@ def tracelog(request, prefix, msg):
     tracelog = ITraceLog(request, None)
     if tracelog is not None:
         tracelog.log('%s %s' % (prefix, msg.encode('US-ASCII')))
-

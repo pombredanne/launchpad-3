@@ -7,7 +7,7 @@
     xmlns:browser="http://namespaces.zope.org/browser">
 
     <subscriber
-        for="zope.app.publication.interfaces.IStartRequestEvent"
+        for="canonical.launchpad.webapp.interfaces.IStartRequestEvent"
         handler="lp.services.profile.profile.start_request"
         />
 

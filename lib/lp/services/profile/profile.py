@@ -11,7 +11,7 @@ from datetime import datetime
 import os
 import threading
 
-from bzrlib.lsprof import Profiler
+from bzrlib.lsprof import BzrProfiler
 from zope.error.interfaces import IErrorReportingUtility
 from zope.component import getUtility
 
@@ -34,7 +34,7 @@ def start_request(event):
     profiling is requested, save the VSS and RSS.
     """
     if config.profiling.profile_requests:
-        _profilers.profiler = Profiler()
+        _profilers.profiler = BzrProfiler()
         _profilers.profiler.start()
 
     if config.profiling.memory_profile_log:
@@ -84,4 +84,3 @@ def end_request(event):
             timestamp, pageid, oopsid, da.get_request_duration(),
             vss_start, rss_start, vss_end, rss_end))
         log.close()
-
