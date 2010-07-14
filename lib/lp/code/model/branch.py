@@ -535,13 +535,15 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
-        result = Store.of(self).using(BranchRevision, Revision).find(
-            BranchRevision,
+        result = Store.of(self).find(
+            (BranchRevision, Revision),
             Revision.id == BranchRevision.revision_id,
             BranchRevision.branch == self,
             BranchRevision.sequence != None,
             Revision.revision_date > timestamp)
-        return result.order_by(Desc(BranchRevision.sequence))
+        result = result.order_by(Desc(BranchRevision.sequence))
+        # Return BranchRevision but prejoin Revision as well.
+        return prejoin(result, slice(0, 1))
 
     def canBeDeleted(self):
         """See `IBranch`."""
