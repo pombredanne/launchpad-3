@@ -611,10 +611,10 @@ resetWatches() method.
     1 not now
 
 Calling resetWatches() on mozilla_bugzilla will set all its next_check
-times to datetime.now(). For testing purposes, we'll pass it a value to
-use in place of now().
+times. For testing purposes, we'll pass it a value to use in place of
+now().
 
-    >>> mozilla_bugzilla.resetWatches(now=definitely_now)
+    >>> mozilla_bugzilla.resetWatches(new_next_check=definitely_now)
     >>> transaction.commit()
     >>> print_tracker_watch_times(mozilla_bugzilla)
     2 now
@@ -622,7 +622,26 @@ use in place of now().
     1 now
     1 now
 
-resetWatches() also clears the last_error_type field of the watches.
+By default, the bug watches next_check times are set to a random time
+between one and seven days in the future so as to avoid big lumps of
+watches being checked at once. We can't test for randomness, but we can
+check that the times are roughly in the right ball park.
+
+    >>> mozilla_bugzilla.resetWatches()
+    >>> transaction.commit()
+    >>> for watch in mozilla_bugzilla.watches:
+    ...     one_day_hence = definitely_now + timedelta(days=1)
+    ...     one_week_hence = definitely_now + timedelta(days=7)
+    ...     print (
+    ...         watch.next_check >= one_day_hence and 
+    ...         watch.next_check <= one_week_hence)
+    True
+    True
+    True
+    True
+
+resetWatches() also clears the last_error_type and lastchecked fields of
+the watches.
 
     >>> from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
     >>> for watch in mozilla_bugzilla.watches:
@@ -632,8 +651,8 @@ resetWatches() also clears the last_error_type field of the watches.
     >>> mozilla_bugzilla.resetWatches()
     >>> txn.commit()
     >>> for watch in mozilla_bugzilla.watches:
-    ...     print watch.last_error_type
-    None
-    None
-    None
-    None
+    ...     print watch.last_error_type, watch.lastchecked
+    None None
+    None None
+    None None
+    None None

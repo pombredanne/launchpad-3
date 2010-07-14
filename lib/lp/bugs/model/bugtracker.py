@@ -26,7 +26,7 @@ from sqlobject import (
     BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
-from storm.expr import Count, Desc, Not
+from storm.expr import Count, Desc, Not, SQL
 from storm.locals import Bool
 from storm.store import Store
 
@@ -482,15 +482,20 @@ class BugTracker(SQLBase):
 
         return person
 
-    def resetWatches(self, now=None):
+    def resetWatches(self, new_next_check=None):
         """See `IBugTracker`."""
-        if now is None:
-            now = datetime.now(timezone('UTC'))
+        if new_next_check is None:
+            # Set the interval to 6 days + 1 hence. This is mostly for
+            # testing.
+            new_next_check = SQL(
+                "now() at time zone 'UTC') + (random() * interval '6 days') "
+                "+ interval '1 day'")
 
         store = Store.of(self)
-        store.execute(
-            "UPDATE BugWatch SET next_check = %s WHERE bugtracker = %s" %
-            sqlvalues(now, self))
+        self.next_check = new_next_check
+        self.lastchecked = None
+        self.last_error_type = None
+        store.flush()
 
 
 class BugTrackerSet:
