@@ -449,3 +449,23 @@ says that.
   1
   >>> print msgs[0]
   Upload ignored.  The tarball you uploaded did not contain...
+
+Bad filter_extension
+~~~~~~~~~~~~~~~~~~~~
+
+Very often robots attempt to request URLs with garbage appended to the end.
+Presumably they scraped these URLs from the web and couldn't quite tell where
+the query string ended and the surrounding text began.  Here we'll simulate
+such a request and show that the resulting unrecognized filter_extension values
+do not generate an error.  See bug 388997.
+
+  >>> post_data = urllib.urlencode(
+  ...     {
+  ...         'field.filter_target': 'all',
+  ...         'field.filter_status': 'all',
+  ...         'field.filter_extension': 'potlksajflkasj',
+  ...         'field.actions.change_status': 'Change status',
+  ...     })
+  >>> user_browser.open(
+  ...     'http://translations.launchpad.dev/+imports',
+  ...     data=post_data)
