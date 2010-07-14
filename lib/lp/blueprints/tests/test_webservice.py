@@ -277,3 +277,41 @@ class SpecificationAttributeWebserviceTests(TestCaseWithFactory):
         self.assertEqual(None, spec_object.milestone)
         spec = self.getResponse(spec_object)
         self.assertEqual(None, spec.milestone)
+
+
+class SpecificationTargetTests(TestCaseWithFactory):
+    """Tests for accessing specifications via their targets."""
+    layer = DatabaseFunctionalLayer
+
+    def getLaunchpadlib(self):
+        user = self.factory.makePerson()
+        return launchpadlib_for("testing", user)
+
+    def getPillarOnWebservice(self, pillar_obj):
+        launchpadlib = self.getLaunchpadlib()
+        return launchpadlib.load(
+            str(launchpadlib._root_uri) + '/' + pillar_obj.name)
+
+    def test_get_specification_on_product(self):
+        product = self.factory.makeProduct("fooix")
+        spec_object = self.factory.makeSpecification(
+            product=product, name="some-spec")
+        product_on_webservice = self.getPillarOnWebservice(product)
+        spec = product_on_webservice.getSpecification(name="some-spec")
+        self.assertEqual("some-spec", spec.name)
+        self.assertEqual("fooix", spec.project.name)
+
+    def test_get_specification_not_found(self):
+        product = self.factory.makeProduct("fooix")
+        product_on_webservice = self.getPillarOnWebservice(product)
+        spec = product_on_webservice.getSpecification(name="nonexistant")
+        self.assertEqual(None, spec)
+
+    def test_get_specification_on_distribution(self):
+        distribution = self.factory.makeDistribution("foobuntu")
+        spec_object = self.factory.makeSpecification(
+            distribution=distribution, name="some-spec")
+        distro_on_webservice = self.getPillarOnWebservice(distribution)
+        spec = distro_on_webservice.getSpecification(name="some-spec")
+        self.assertEqual("some-spec", spec.name)
+        self.assertEqual("foobuntu", spec.distribution.name)

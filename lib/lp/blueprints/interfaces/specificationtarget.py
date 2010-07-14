@@ -14,6 +14,11 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
+from zope.schema import TextLine
+
+from canonical.launchpad import _
+from lazr.restful.declarations import (
+    export_read_operation, operation_parameters, operation_returns_entry)
 
 
 class IHasSpecifications(Interface):
@@ -66,6 +71,11 @@ class ISpecificationTarget(IHasSpecifications):
     specifications directly attached to them.
     """
 
+    @operation_parameters(
+        name=TextLine(title=_('The name of the specification'))
+    )
+    @operation_returns_entry(Interface) # really ISpecification
+    @export_read_operation()
     def getSpecification(name):
         """Returns the specification with the given name, for this target,
         or None.

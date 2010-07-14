@@ -43,6 +43,8 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
+from lp.blueprints.interfaces.specificationtarget import (
+    ISpecificationTarget)
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -433,3 +435,7 @@ patch_collection_return_type(
 
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)
+
+# ISpecificationTarget
+patch_entry_return_type(
+    ISpecificationTarget, 'getSpecification', ISpecification)
