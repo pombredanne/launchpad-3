@@ -838,13 +838,15 @@ class SpecificationSet(HasSpecificationsMixin):
     def new(self, name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,
         drafter=None, whiteboard=None,
-        priority=SpecificationPriority.UNDEFINED):
+        priority=SpecificationPriority.UNDEFINED,
+        goalstatus=SpecificationGoalStatus.PROPOSED):
         """See ISpecificationSet."""
         return Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,
             approver=approver, product=product, distribution=distribution,
-            assignee=assignee, drafter=drafter, whiteboard=whiteboard)
+            assignee=assignee, drafter=drafter, whiteboard=whiteboard,
+            goalstatus=goalstatus)
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""

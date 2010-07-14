@@ -67,7 +67,8 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.interfaces.specification import (
-    ISpecificationSet, SpecificationDefinitionStatus)
+    ISpecificationSet, SpecificationDefinitionStatus, SpecificationGoalStatus,
+    SpecificationPriority)
 from lp.blueprints.interfaces.sprint import ISprintSet
 
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
@@ -1370,7 +1371,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         return mail
 
     def makeSpecification(self, product=None, title=None, distribution=None,
-            name=None, specurl=None, summary=None, definition_status=None):
+            name=None, specurl=None, summary=None, definition_status=None,
+            assignee=None, drafter=None, approver=None, priority=None,
+            owner=None, goalstatus=None, whiteboard=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -1386,15 +1389,28 @@ class LaunchpadObjectFactory(ObjectFactory):
             summary = self.getUniqueString('summary')
         if definition_status is None:
             definition_status = SpecificationDefinitionStatus.NEW
+        if priority is None:
+            priority = SpecificationPriority.LOW
+        if goalstatus is None:
+            goalstatus = SpecificationGoalStatus.PROPOSED
+        if owner is None:
+            owner = self.makePerson()
         return getUtility(ISpecificationSet).new(
             name=name,
             title=title,
             specurl=specurl,
             summary=summary,
             definition_status=definition_status,
-            owner=self.makePerson(),
+            owner=owner,
             product=product,
-            distribution=distribution)
+            distribution=distribution,
+            assignee=assignee,
+            drafter=drafter,
+            approver=approver,
+            priority=priority,
+            goalstatus=goalstatus,
+            whiteboard=whiteboard,
+            )
 
     def makeQuestion(self, target=None, title=None):
         """Create and return a new, arbitrary Question.

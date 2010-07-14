@@ -27,27 +27,31 @@ __all__ = [
 
 
 from lazr.restful.declarations import (
-    REQUEST_USER, call_with, exported, export_as_webservice_entry,
-    export_write_operation, operation_parameters, operation_returns_entry)
-from lazr.restful.fields import Reference
+    exported, export_as_webservice_entry)
+from lazr.restful.fields import ReferenceChoice
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.validators import LaunchpadValidationError
-from lp.registry.interfaces.role import IHasOwner
-from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.branchlink import IHasLinkedBranches
-from lp.registry.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.interfaces.validation import valid_webref
-from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications)
+from lp.code.interfaces.branchlink import IHasLinkedBranches
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.mentoringoffer import ICanBeMentored
+from lp.registry.interfaces.milestone import IMilestone
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IHasOwner
+
 
 from lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item)
@@ -673,39 +677,44 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
             default=SpecificationPriority.UNDEFINED, required=True))
     datecreated = exported(
         Datetime(
-            title=_('Date Created'), required=True, readonly=True))
-    owner = exported(PublicPersonChoice(
+            title=_('Date Created'), required=True, readonly=True),
+        exported_as='date_created')
+    owner = exported(
+        PublicPersonChoice(
             title=_('Owner'), required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
     # target
     product = exported(
-        Choice(title=_('Project'), required=False,
-               vocabulary='Product'))
+        ReferenceChoice(title=_('Project'), required=False,
+               vocabulary='Product', schema=IProduct))
     distribution = exported(
-        Choice(title=_('Distribution'), required=False,
-               vocabulary='Distribution'))
+        ReferenceChoice(title=_('Distribution'), required=False,
+               vocabulary='Distribution', schema=IDistribution))
 
     # series
     productseries = exported(
-        Choice(title=_('Series Goal'), required=False,
+        ReferenceChoice(title=_('Series Goal'), required=False,
                vocabulary='FilteredProductSeries',
                description=_(
                 "Choose a series in which you would like to deliver "
-                "this feature. Selecting '(no value)' will clear the goal.")))
+                "this feature. Selecting '(no value)' will clear the goal."),
+               schema=IProductSeries))
     distroseries = exported(
-        Choice(title=_('Series Goal'), required=False,
+        ReferenceChoice(title=_('Series Goal'), required=False,
                vocabulary='FilteredDistroSeries',
                description=_(
                 "Choose a series in which you would like to deliver "
-                "this feature. Selecting '(no value)' will clear the goal.")))
+                "this feature. Selecting '(no value)' will clear the goal."),
+               schema=IDistroSeries))
 
     # milestone
     milestone = exported(
-        Choice(
+        ReferenceChoice(
             title=_('Milestone'), required=False, vocabulary='Milestone',
             description=_(
                 "The milestone in which we would like this feature to be "
-                "delivered.")))
+                "delivered."),
+            schema=IMilestone))
 
     # nomination to a series for release management
     goal = Attribute("The series for which this feature is a goal.")
@@ -714,7 +723,8 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
             title=_('Goal Acceptance'), vocabulary=SpecificationGoalStatus,
             default=SpecificationGoalStatus.PROPOSED, description=_(
                 "Whether or not the drivers have accepted this feature as "
-                "a goal for the targeted series.")))
+                "a goal for the targeted series.")),
+        exported_as='goal_status')
     goal_proposer = Attribute("The person who nominated the spec for "
         "this series.")
     date_goal_proposed = Attribute("The date of the nomination.")
