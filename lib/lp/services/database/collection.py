@@ -10,7 +10,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from storm.expr import LeftJoin
+from storm.expr import Join, LeftJoin
 
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
@@ -22,16 +22,20 @@ class Collection(object):
     Works as a Storm wrapper: create a collection based on another
     collection, adding joins and select conditions to taste.
 
-    Since deserializing long strings can be very slow and isn't always
-    needed by the caller, you can select any mix of classes and
+    As in any Storm query, you can select any mix of classes and
     individual columns or other Storm expressions.
     """
 
-    def __init__(self, base, *conditions, **kwargs):
+    # Default table for this collection that will always be needed.
+    # Derived collection classes can use this to say what type they are
+    # a collection of.
+    starting_table = None
+
+    def __init__(self, *args, **kwargs):
         """Construct a collection, possibly based on another one.
 
-        :param base: The collection that this collection is based on.
-            The new collection will inherit its configuration.
+        :param base: Optional collection that this collection is based
+            on.  The new collection will inherit its configuration.
         :param conditions: Optional Storm select conditions, e.g.
             `MyClass.attribute > 2`.
         :param classes: A class, or tuple or list of classes, that
@@ -40,6 +44,21 @@ class Collection(object):
             base collection, or that are included as outer joins.
         :param store: Optional: Storm `Store` to use.
         """
+        starting_tables = []
+
+        if len(args) >= 1 and isinstance(args[0], Collection):
+            # There's a base collection.
+            base = args[0]
+            conditions = args[1:]
+        else:
+            # We're starting a fresh collection.
+            base = None
+            conditions = args
+            if self.starting_table is not None:
+                starting_tables = [self.starting_table]
+
+        self.base = base
+
         if base is None:
             base_conditions = (True, )
             base_tables = []
@@ -48,15 +67,21 @@ class Collection(object):
             base_conditions = base.conditions
             base_tables = list(base.tables)
 
-
         self.store = kwargs.get('store')
         if self.store is None:
             self.store = getUtility(IStoreSelector).get(
                 MAIN_STORE, DEFAULT_FLAVOR)
 
         self.tables = (
-            base_tables + self._parseTablesArg(kwargs.get('tables', [])))
+            starting_tables + base_tables +
+            self._parseTablesArg(kwargs.get('tables', [])))
+
         self.conditions = base_conditions + conditions
+
+    def refine(self, *args, **kwargs):
+        """Return a copy of self with further restrictions, tables etc."""
+        cls = self.__class__
+        return cls(self, *args, **kwargs)
 
     def _parseTablesArg(self, tables):
         """Turn tables argument into a list.
@@ -73,13 +98,19 @@ class Collection(object):
 
     def use(self, store):
         """Return a copy of this collection that uses the given store."""
-        return Collection(self, store=store)
+        return self.refine(store=store)
+
+    def joinInner(self, cls, *conditions):
+        """Convenience method: inner-join `cls` into the query.
+
+        This is equivalent to creating a `Collection` based on this one
+        but with `cls` and `conditions` added.
+        """
+        return self.refine(tables=[Join(cls, *conditions)])
 
     def joinOuter(self, cls, *conditions):
         """Outer-join `cls` into the query."""
-        join = LeftJoin(cls, *conditions)
-        tables = [join]
-        return Collection(self, tables=tables)
+        return self.refine(tables=[LeftJoin(cls, *conditions)])
 
     def select(self, *values):
         """Return a result set containing the requested `values`."""

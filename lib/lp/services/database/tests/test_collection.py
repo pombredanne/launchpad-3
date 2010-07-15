@@ -156,6 +156,16 @@ class CollectionTest(TestCaseWithFactory):
         result = collection.select(TestTable1.id)
         self.assertEqual([1], list(result))
 
+    def test_joinInner(self):
+        TestTable1 = make_table(1, 3, 'TestTable1')
+        TestTable2 = make_table(2, 4, 'TestTable2')
+
+        # Add a join table to the collection.
+        collection = Collection(None, tables=TestTable1).joinInner(
+            TestTable2, TestTable2.id == TestTable1.id)
+        result = collection.select(TestTable1.id, TestTable2.id)
+        self.assertContentEqual([(2, 2)], list(result))
+
     def test_joinOuter(self):
         TestTable1 = make_table(1, 3, 'TestTable1')
         TestTable2 = make_table(2, 4, 'TestTable2')
