@@ -8,6 +8,8 @@ Temporary TODO
     * Need to correctly handle bug activity/notify calls for
       dupes of dupe.
     * 502881  Clicking "Mark as duplicate" doesn't focus field
+    * 604419  changing the master bug of a duplicate bug will make a
+              second 'edit' button appear
 
   [TODO]
     * Extend JavaScript widget
@@ -15,5 +17,3 @@ Temporary TODO
         > Must update the UI if moving dupe of dupes
     * Fix small issues while working on widget
         > 355164  ajax duplicate marker not working on internet explorer 7
-        > 604419  changing the master bug of a duplicate bug will make a
-                  second 'edit' button appear
