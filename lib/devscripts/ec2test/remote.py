@@ -93,31 +93,27 @@ class FlagFallStream:
         self._stream.flush()
 
 
+# XXX: Define what these are and how they are used.
+LAUNCHPAD_DIR = '/var/launchpad'
+TMP_DIR = os.path.join(LAUNCHPAD_DIR, 'tmp')
+TEST_DIR = os.path.join(LAUNCHPAD_DIR, 'test')
+SOURCECODE_DIR = os.path.join(TEST_DIR, 'sourcecode')
+
+
 class TestOnMergeRunner:
 
-    def __init__(self, email=None, pqm_message=None, public_branch=None,
-                 public_branch_revno=None, test_options=None):
+    def __init__(self, logger, pid_filename, email=None, pqm_message=None,
+                 public_branch=None, public_branch_revno=None,
+                 test_options=None):
         self.email = email
         self.pqm_message = pqm_message
         self.public_branch = public_branch
         self.public_branch_revno = public_branch_revno
         self.test_options = test_options
-
-        # Configure paths.
-        self.lp_dir = os.path.join(os.path.sep, 'var', 'launchpad')
-        self.tmp_dir = os.path.join(self.lp_dir, 'tmp')
-        self.test_dir = os.path.join(self.lp_dir, 'test')
-        self.sourcecode_dir = os.path.join(self.test_dir, 'sourcecode')
-
-        # Set up logging.
-        self.logger = WebTestLogger(
-            self.test_dir,
-            self.public_branch,
-            self.public_branch_revno,
-            self.sourcecode_dir)
+        self.logger = logger
 
         # Daemonization options.
-        self.pid_filename = os.path.join(self.lp_dir, 'ec2test-remote.pid')
+        self.pid_filename = pid_filename
         self.daemonized = False
 
     def daemonize(self):
@@ -150,6 +146,20 @@ class TestOnMergeRunner:
         command = ['make', 'check', 'TESTOPTS=' + self.test_options]
         return command
 
+    def _handle_pqm_submission(self, exit_status, summary_file, config):
+        if self.pqm_message is not None:
+            subject = self.pqm_message.get('Subject')
+            if exit_status:
+                # failure
+                summary_file.write(
+                    '\n\n**NOT** submitted to PQM:\n%s\n' % (subject,))
+            else:
+                # success
+                conn = bzrlib.smtp_connection.SMTPConnection(config)
+                conn.send_email(self.pqm_message)
+                summary_file.write(
+                    '\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
+
     def test(self):
         """Run the tests, log the results.
 
@@ -161,12 +171,12 @@ class TestOnMergeRunner:
         # os.fork() may have tried to close them.
         self.logger.prepare()
 
-        out_file     = self.logger.out_file
+        out_file = self.logger.out_file
         # XXX: No tests!
         # XXX: String literal.
         summary_file = FlagFallStream(
             self.logger.summary_file, 'Running tests.\n')
-        config       = bzrlib.config.GlobalConfig()
+        config = bzrlib.config.GlobalConfig()
 
         call = self.build_test_command()
 
@@ -174,25 +184,14 @@ class TestOnMergeRunner:
             popen = subprocess.Popen(
                 call, bufsize=-1,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                cwd=self.test_dir)
+                cwd=TEST_DIR)
 
             self._gather_test_output(popen.stdout, summary_file, out_file)
 
             # Grab the testrunner exit status.
-            result = popen.wait()
+            exit_status = popen.wait()
 
-            if self.pqm_message is not None:
-                subject = self.pqm_message.get('Subject')
-                if result:
-                    # failure
-                    summary_file.write(
-                        '\n\n**NOT** submitted to PQM:\n%s\n' % (subject,))
-                else:
-                    # success
-                    conn = bzrlib.smtp_connection.SMTPConnection(config)
-                    conn.send_email(self.pqm_message)
-                    summary_file.write(
-                        '\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
+            self._handle_pqm_submission(exit_status, summary_file, config)
 
             summary_file.write(
                 '\n(See the attached file for the complete log)\n')
@@ -566,12 +565,19 @@ def main(argv):
     else:
         pqm_message = None
 
+    pid_filename = os.path.join(LAUNCHPAD_DIR, 'ec2test-remote.pid')
+    logger = WebTestLogger(
+        TEST_DIR, options.public_branch, options.public_branch_revno,
+        SOURCECODE_DIR)
+
     runner = TestOnMergeRunner(
-       options.email,
-       pqm_message,
-       options.public_branch,
-       options.public_branch_revno,
-       ' '.join(args))
+        logger,
+        pid_filename,
+        options.email,
+        pqm_message,
+        options.public_branch,
+        options.public_branch_revno,
+        ' '.join(args))
     runner.run(options.daemon, options.email, options.shutdown)
 
 
