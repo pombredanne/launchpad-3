@@ -69,3 +69,4 @@ lp.sfood
 apidocs
 twistd.pid
 lib/canonical/launchpad/apidoc
+*.prof
