@@ -4,9 +4,12 @@
 """Browser code for the Vostok root."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'VostokRootView',
+    ]
 
 from canonical.launchpad.webapp import LaunchpadView
+
 
 class VostokRootView(LaunchpadView):
     pass
