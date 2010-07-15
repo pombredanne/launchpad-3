@@ -2217,12 +2217,12 @@ class Person(
             by this person.
 
         :param ppa_only: controls if we are interested only in source
-            package releases targeted to any PPAs or, if False, sources targeted
-            to primary archives.
+            package releases targeted to any PPAs or, if False, sources
+            targeted to primary archives.
 
-        Active 'ppa_only' flag is usually associated with active 'uploader_only'
-        because there shouldn't be any sense of maintainership for packages
-        uploaded to PPAs by someone else than the user himself.
+        Active 'ppa_only' flag is usually associated with active
+        'uploader_only' because there shouldn't be any sense of maintainership
+        for packages uploaded to PPAs by someone else than the user himself.
         """
         clauses = ['sourcepackagerelease.upload_archive = archive.id']
 
@@ -2727,8 +2727,7 @@ class PersonSet:
             Not(Person.teamowner == None),
             Person.merged == None,
             EmailAddress.person == Person.id,
-            StartsWith(Lower(EmailAddress.email), text)
-            )
+            StartsWith(Lower(EmailAddress.email), text))
         return team_email_query
 
     def _teamNameQuery(self, text):

@@ -119,7 +119,8 @@ A team with Private visibility must be Restricted.
     >>> admin_browser.open('http://launchpad.dev/people/')
     >>> admin_browser.getLink('Register a team').click()
 
-    >>> admin_browser.getControl(name='field.name').value = 'super-duper-secret'
+    >>> admin_browser.getControl(name='field.name').value = (
+    ...     'super-duper-secret')
     >>> admin_browser.getControl('Display Name').value = 'Shhhh'
     >>> admin_browser.getControl(
     ...     'Team Description').value = 'my own team description'

@@ -270,7 +270,7 @@ those permitted by private teams.
     >>> def createTeamArtifacts(team, team_owner):
     ...     # A bug subscription.
     ...     bug = factory.makeBug()
-    ...     priv_subscription = bug.subscribe(team, team_owner)
+    ...     bug.subscribe(team, team_owner)
     ...     bugtask = bug.default_bugtask
     ...     bugtask.transitionToAssignee(team)
     ...     # A branch.
@@ -312,7 +312,7 @@ those permitted by private teams.
     ...         visibility=PersonVisibility.PRIVATE)
     ...     # We must login as the archive owner to add the subscription.
     ...     login_person(team_owner)
-    ...     subscription = private_archive.newSubscription(
+    ...     private_archive.newSubscription(
     ...         subscriber=another_team,
     ...         registrant=team_owner)
 
