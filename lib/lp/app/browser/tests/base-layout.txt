@@ -72,9 +72,6 @@ Body preamble.
           main_side
           public
           yui-skin-sam">
-             <script type="text/javascript">
-             ...google-analytics.com...
-             </script>
         <div class="yui-d0">
     <BLANKLINE>
           <div id="locationbar">
@@ -265,9 +262,6 @@ Body class.
           searchless
           public
           yui-skin-sam">
-             <script type="text/javascript">
-             ...google-analytics.com...
-             </script>
         <div class="yui-d0">
     ...
 
@@ -370,9 +364,6 @@ Body.
           locationless
           public
           yui-skin-sam">
-             <script type="text/javascript">
-             ...google-analytics.com...
-             </script>
         <div class="yui-d0">
     ...
 
@@ -450,20 +441,14 @@ Page Footers
     >>> footer = find_tag_by_id(html, 'footer')
     >>> for tag in footer.findAll('a'):
     ...     print tag.string, tag['href']
-    None
-      http://launchpad.dev/
-    Take the tour
-      http://launchpad.dev/+tour
-    Read the guide
-      https://help.launchpad.net/
-    Canonical&nbsp;Ltd.
-      http://canonical.com/
-    Terms of use
-      http://launchpad.dev/legal
-    Contact Launchpad Support
-      https://help.launchpad.net/Feedback
-    System status
-      http://identi.ca/launchpadstatus
+    None http://launchpad.dev/
+    Take the tour http://launchpad.dev/+tour
+    Read the guide https://help.launchpad.net/
+    Canonical&nbsp;Ltd. http://canonical.com/
+    Terms of use http://launchpad.dev/legal
+    Contact Launchpad Support https://help.launchpad.net/Feedback
+    System status http://identi.ca/launchpadstatus
+    None http://www.surveymonkey.com/s/launchpadsummer2010
 
 
 Page registering

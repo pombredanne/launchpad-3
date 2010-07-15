@@ -205,7 +205,7 @@ instead of OpenID. Launchpad will update the OpenID of the remaining account
 if needed.
 
     >>> print marilize.account.openid_identifier
-    merged-marilize_oid
+    merged-marilize_oid-1118028591.0
 
 An email is sent to the user informing him that he should review his email
 and mailing list subscription settings.

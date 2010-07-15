@@ -20,10 +20,10 @@ TOP = os.path.abspath(
 # JS_DIRSET is a tuple of the dir where the code exists, and the name of the
 # symlink it should be linked as in the icing build directory.
 JS_DIRSET = [
+    (os.path.join('lib', 'lp', 'bugs', 'javascript'), 'bugs'),
     (os.path.join('lib', 'lp', 'code', 'javascript'), 'code'),
     (os.path.join('lib', 'lp', 'registry', 'javascript'), 'registry'),
     (os.path.join('lib', 'lp', 'translations', 'javascript'), 'translations'),
-    (os.path.join('lib', 'lp', 'bugs', 'javascript'), 'bugs'),
     ]
 ICING_ROOT = os.path.join(TOP, 'lib', 'canonical', 'launchpad', 'icing')
 ICING_BUILD = os.path.join(ICING_ROOT, 'build')

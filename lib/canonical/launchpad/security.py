@@ -19,7 +19,7 @@ from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
 from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriber, IPersonalArchiveSubscription)
+    IArchiveSubscriber, IArchiveSubscriberSet, IPersonalArchiveSubscription)
 from lp.code.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import (
@@ -734,6 +734,19 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
         for invitee in self.obj.invited_members:
             if (invitee.is_team and
                 invitee in user.person.getAdministratedTeams()):
+                return True
+
+        if (self.obj.is_team
+            and self.obj.visibility == PersonVisibility.PRIVATE):
+            # Grant visibility to people with subscriptions on a private
+            # team's private PPA.
+            subscriptions = getUtility(
+                IArchiveSubscriberSet).getBySubscriber(user.person)
+            subscriber_archive_ids = set(
+                sub.archive.id for sub in subscriptions)
+            team_ppa_ids = set(
+                ppa.id for ppa in self.obj.ppas if ppa.private)
+            if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
                 return True
         return False
 
@@ -2040,6 +2053,17 @@ class ViewArchive(AuthorizationBase):
         if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
 
+        # Subscribers can view private PPAs.
+        if self.obj.is_ppa and self.obj.private:
+            archive_subs = getUtility(IArchiveSubscriberSet).getBySubscriber(
+                user.person, self.obj).any()
+            if archive_subs:
+                return True
+
+        # The software center agent can view commercial archives
+        if self.obj.commercial:
+            return user.in_software_center_agent
+
         return False
 
     def checkUnauthenticated(self):
@@ -2077,6 +2101,10 @@ class AppendArchive(AuthorizationBase):
             self.obj.distribution == celebrities.ubuntu and
             user.in_ubuntu_security):
             return True
+
+        # The software center agent can change commercial archives
+        if self.obj.commercial:
+            return user.in_software_center_agent
 
         return False
 

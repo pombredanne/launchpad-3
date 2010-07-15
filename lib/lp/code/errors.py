@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
+    'BuildAlreadyPending',
     'BranchMergeProposalExists',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
@@ -113,13 +114,33 @@ class TooNewRecipeFormat(Exception):
         self.newest_supported = newest_supported
 
 
-class TooManyBuilds(Exception):
-    """A build was requested that exceeded the quota."""
+class RecipeBuildException(Exception):
 
-    def __init__(self, recipe, distroseries):
+    def __init__(self, recipe, distroseries, template):
         self.recipe = recipe
         self.distroseries = distroseries
-        msg = (
-            'You have exceeded your quota for recipe %s for distroseries %s'
-            % (self.recipe, distroseries))
+        msg = template % {'recipe': recipe, 'distroseries': distroseries}
         Exception.__init__(self, msg)
+
+
+class TooManyBuilds(RecipeBuildException):
+    """A build was requested that exceeded the quota."""
+
+    webservice_error(400)
+
+    def __init__(self, recipe, distroseries):
+        RecipeBuildException.__init__(
+            self, recipe, distroseries,
+            'You have exceeded your quota for recipe %(recipe)s for'
+            ' distroseries %(distroseries)s')
+
+
+class BuildAlreadyPending(RecipeBuildException):
+    """A build was requested when an identical build was already pending."""
+
+    webservice_error(400)
+
+    def __init__(self, recipe, distroseries):
+        RecipeBuildException.__init__(
+            self, recipe, distroseries,
+            'An identical build of this recipe is already pending.')

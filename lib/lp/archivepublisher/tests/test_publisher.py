@@ -106,18 +106,41 @@ class TestPublisher(TestPublisherBase):
         # Create a file inside archiveroot to ensure we're recursive.
         open(os.path.join(
             publisher._config.archiveroot, 'test_file'), 'w').close()
+        # And a meta file
+        os.makedirs(publisher._config.metaroot)
+        open(os.path.join(publisher._config.metaroot, 'test'), 'w').close()
 
         publisher.deleteArchive()
         root_dir = os.path.join(
             publisher._config.distroroot, test_archive.owner.name,
             test_archive.name)
         self.assertFalse(os.path.exists(root_dir))
+        self.assertFalse(os.path.exists(publisher._config.metaroot))
         self.assertEqual(test_archive.status, ArchiveStatus.DELETED)
         self.assertEqual(test_archive.publish, False)
 
         # Trying to delete it again won't fail, in the corner case where
         # some admin manually deleted the repo.
         publisher.deleteArchive()
+
+    def testDeletingPPAWithoutMetaData(self):
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        test_archive = getUtility(IArchiveSet).new(
+            distribution=self.ubuntutest, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA)
+        publisher = getPublisher(test_archive, None, self.logger)
+
+        self.assertTrue(os.path.exists(publisher._config.archiveroot))
+
+        # Create a file inside archiveroot to ensure we're recursive.
+        open(os.path.join(
+            publisher._config.archiveroot, 'test_file'), 'w').close()
+
+        publisher.deleteArchive()
+        root_dir = os.path.join(
+            publisher._config.distroroot, test_archive.owner.name,
+            test_archive.name)
+        self.assertFalse(os.path.exists(root_dir))
 
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""

@@ -181,6 +181,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/mapping.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/bugs/bugtracker_overlay.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/milestoneoverlay.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/milestonetable.js"></script>
@@ -223,6 +225,8 @@
 
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/translations/importqueue.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/translations/importqueueentry.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/translations/languages.js"></script>
     <script type="text/javascript"
@@ -416,6 +420,9 @@
       &nbsp;&bull;&nbsp;
       <a href="http://identi.ca/launchpadstatus"
         >System status</a>
+      &nbsp;&bull;&nbsp;
+      <a href="http://www.surveymonkey.com/s/launchpadsummer2010"
+        ><strong>Take our survey!</strong></a>
       <span id="lp-version" tal:condition="not:is_lpnet">
       &nbsp;&bull;&nbsp;
         r<tal:revno replace="revno" />

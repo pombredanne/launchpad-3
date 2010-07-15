@@ -73,6 +73,11 @@ def extract_version(filename):
     # Remove processor and language flavors from the version:
     # eg. _de_DE, _all, _i386.
     version = flavor_pattern.sub('', version)
+    # Bug #599250. If there is no file extension after extracting
+    # the version number, we have added an unknown file extension to the
+    # version. Ignore this dud match.
+    if filename.endswith(version):
+        return None
     # Launchpad requires all versions to be lowercase. They may contain
     # letters, numbers, dots, underscores, and hyphens (a-z0-9._-).
     version = version.lower()

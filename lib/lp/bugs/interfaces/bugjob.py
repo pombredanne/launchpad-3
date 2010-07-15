@@ -8,8 +8,6 @@ __all__ = [
     'BugJobType',
     'IBugJob',
     'IBugJobSource',
-    'ICalculateBugHeatJob',
-    'ICalculateBugHeatJobSource',
     ]
 
 from zope.interface import Attribute, Interface
@@ -19,7 +17,7 @@ from canonical.launchpad import _
 
 from lazr.enum import DBEnumeratedType, DBItem
 from lp.bugs.interfaces.bug import IBug
-from lp.services.job.interfaces.job import IJob, IJobSource, IRunnableJob
+from lp.services.job.interfaces.job import IJob, IJobSource
 
 
 class BugJobType(DBEnumeratedType):
@@ -57,11 +55,3 @@ class IBugJobSource(IJobSource):
 
     def create(bug):
         """Create a new IBugJob for a bug."""
-
-
-class ICalculateBugHeatJob(IRunnableJob):
-    """A Job to calculate bug heat."""
-
-
-class ICalculateBugHeatJobSource(IBugJobSource):
-    """Interface for acquiring CalculateBugHeatJobs."""

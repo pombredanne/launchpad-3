@@ -161,6 +161,24 @@ The build for the ubuntu primary archive shows up again.
     >>> queue_sizes['nonvirt']['386']
     (1L, datetime.timedelta(0, 60))
 
+All job types are included. If we create a recipe build job, it will
+show up in the calculated queue size.
+
+    >>> recipe_bq = factory.makeSourcePackageRecipeBuildJob()
+    >>> # XXX wgrant 20100625 bug=598397: The factory erroneously creates
+    >>> # architecture-independent jobs.
+    >>> print recipe_bq.processor
+    None
+
+    >>> from lp.soyuz.interfaces.processor import IProcessorFamilySet
+    >>> i386_family = getUtility(IProcessorFamilySet).getByName('x86')
+    >>> recipe_bq.processor = i386_family.processors[0]
+    
+    >>> transaction.commit()
+    >>> queue_sizes = builderset.getBuildQueueSizes()
+    >>> print queue_sizes['virt']['386']
+    (1L, datetime.timedelta(0, 64))
+
 
 Resuming buildd slaves
 ======================
