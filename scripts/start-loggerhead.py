@@ -139,14 +139,13 @@ def log_request_start_and_stop(app):
         log.info("Starting to process %s", url)
         start_time = time.time()
         def request_done_ok():
-            log.info("Processed %s ok [%0.3f seconds]", url, time.time() -
+            log.info("Processed ok %s [%0.3f seconds]", url, time.time() -
                     start_time)
         def request_done_err(exc_info):
-            log.info("Processed %s err [%0.3f seconds]: %s", url, time.time() -
+            log.info("Processed err %s [%0.3f seconds]: %s", url, time.time() -
                     start_time, traceback.format_exception_only(*exc_info[:2]))
         return catch_errors(app, environ, start_response, request_done_err,
                 request_done_ok)
-        return app(environ, start_response)
     return wrapped
 app = log_request_start_and_stop(app)
 app = PrefixMiddleware(app)
