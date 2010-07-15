@@ -518,3 +518,22 @@ Finally, let's test the goldilocks message, where the date is just right:
     >>> print msg.datecreated
     2005-06-17 09:45:13+00:00
 
+
+== Unknown encoding ==
+
+Some mail clients (Pine, for example) send messages with the character set
+specified as x-unknown. Python's email package doesn't handle these well and
+raises a LookupError, but Message.fromEmail() tries parsing them as latin-1,
+which often works.
+
+    >>> import os.path
+    >>> msg_path = os.path.join(
+    ...     os.path.dirname(__file__),
+    ...     '../mail/ftests/emails/x-unknown-encoding.txt')
+    >>> raw_msg = open(msg_path).read()
+    >>> print raw_msg
+    MIME-Version: 1.0
+    ...
+    Content-Type: TEXT/PLAIN; charset=X-UNKNOWN; format=flowed...
+    >>> msg = msgset.fromEmail(raw_msg)
+

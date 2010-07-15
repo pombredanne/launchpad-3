@@ -361,11 +361,21 @@ menu though one of its links.
     ...         text = 'Edit ingredients'
     ...         return Link(target, text)
 
+Menus can provide extra attributes that are available to the TAL processing.
+These are defined by the attribute 'extra_attributes'.  When the MenuAPI is
+processing the menu, each of these attributes is also available in the
+generated dictionary.
+
     >>> class RecipeJournalMenu(NavigationMenu):
     ...     usedfor = IRecipeJournalMenuMarker
     ...     facet = 'cookery'
     ...     title = 'Journal'
     ...     links = ('read_journal', 'write_entry')
+    ...     extra_attributes = ('journal_entries',)
+    ...
+    ...     @property
+    ...     def journal_entries(self):
+    ...         return 42
     ...
     ...     def read_journal(self):
     ...         target = '+read-journal'
@@ -537,7 +547,7 @@ state of its links. Without a request, an error is raised.
     >>> summarise_links(RecipeMenu(recipe))
     Traceback (most recent call last):
      ...
-    AttributeError: 'NoneType' object has no attribute 'participations'
+    AttributeError: 'NoneType' object has no attribute 'getURL'
 
 
 == Registering menus as adapters for content objects and views ==
@@ -809,6 +819,59 @@ menu of the RecipeMenu will change the state of both menus.
         linked: True
 
 
+=== Absolute links ===
+
+Absolute urls can be made with a full url, including the host part, or
+as a url path beginning with '/'.
+
+Sometimes the target will be within Launchpad. Other times, the link
+will be to an external site.
+
+When the link is to a page in Launchpad, we need to treat it the same as
+a normal relative link.  That is, we need to compute 'linked' and
+'selected' as for relative links. The usual use-case is computing an
+absolute link to a page inside launchpad using canonical_url.  In this
+case, the host and protocol part of the url will be the same for the
+canonical_url as for the current request.  This is what we will use to
+see if we have a link to a page within Launchpad.
+
+    >>> class AbsoluteUrlTargetTestFacets(FacetMenu):
+    ...     links = ['foo', 'bar', 'baz', 'spoo']
+    ...
+    ...     def foo(self):
+    ...         target = ''
+    ...         text = 'Foo'
+    ...         return Link(target, text)
+    ...
+    ...     def bar(self):
+    ...         target = 'ftp://barlink.example.com/barbarbar'
+    ...         text = 'External bar'
+    ...         return Link(target, text)
+    ...
+    ...     def baz(self):
+    ...         target = 'http://launchpad.dev/joy-of-cooking/+baz'
+    ...         text = 'Baz'
+    ...         return Link(target, text)
+    ...
+    ...     def spoo(self):
+    ...         target = '/joy-of-cooking/+spoo'
+    ...         text = 'Spoo'
+    ...         return Link(target, text)
+
+    >>> print canonical_url(cookbook)
+    http://launchpad.dev/joy-of-cooking
+
+    >>> request_url = URI('http://launchpad.dev/joy-of-cooking')
+
+    >>> facets = AbsoluteUrlTargetTestFacets(cookbook)
+    >>> for link in facets.iterlinks(request_url):
+    ...     print link.url, link.linked
+    http://launchpad.dev/joy-of-cooking False
+    ftp://barlink.example.com/barbarbar True
+    http://launchpad.dev/joy-of-cooking/+baz True
+    http://launchpad.dev/joy-of-cooking/+spoo True
+
+
 ==== The current view's menu ====
 
 The linked state of a link may be determined from the menu adapted
@@ -900,6 +963,7 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     ...     'context/menu:navigation', context=recipe_journal_view,
     ...     request=request)
     >>> summarise_tal_links(links_dict)
+    attribute journal_entries: 42
     link read_journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal
         enabled: True
@@ -910,6 +974,12 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
         enabled: True
         menu: None
         linked: True
+
+The attributes of the menu can be accessed with the normal path method.
+
+    >>> print test_tales('context/menu:navigation/journal_entries',
+    ...     context=recipe_journal_view, request=request)
+    42
 
 
 == Looking up the nearest navigation menu ==
@@ -930,7 +1000,7 @@ that the comment refers to.
     ...     implements(IComment)
 
     # This is usually done in ZCML by browser:defaultView.
-    >>> from zope.component.bbb.interfaces import IDefaultViewName
+    >>> from zope.publisher.interfaces import IDefaultViewName
     >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
     >>> provideAdapter(
     ...     '+index',

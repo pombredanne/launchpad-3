@@ -38,7 +38,7 @@ These are parsed into webapp.vhost.allvhosts.
     althosts:
     ----
     api @ api.launchpad.dev
-    rooturl: http://api.launchpad.dev/beta/
+    rooturl: http://api.launchpad.dev/
     althosts:
     ----
     blueprints @ blueprints.launchpad.dev
@@ -55,10 +55,6 @@ These are parsed into webapp.vhost.allvhosts.
     ----
     feeds @ feeds.launchpad.dev
     rooturl: http://feeds.launchpad.dev/
-    althosts:
-    ----
-    id @ id.launchpad.dev
-    rooturl: http://id.launchpad.dev/
     althosts:
     ----
     mainsite @ launchpad.dev
@@ -81,8 +77,16 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://shipit.ubuntu.dev/
     althosts:
     ----
+    testopenid @ testopenid.dev
+    rooturl: http://testopenid.dev/
+    althosts:
+    ----
     translations @ translations.launchpad.dev
     rooturl: http://translations.launchpad.dev/
+    althosts:
+    ----
+    ubuntu_openid @ ubuntu-openid.launchpad.dev
+    rooturl: http://ubuntu-openid.launchpad.dev/
     althosts:
     ----
     xmlrpc @ xmlrpc.launchpad.dev
@@ -106,14 +110,15 @@ request is headed to one of the officialy-used Launchpad host names:
     bugs.launchpad.dev
     code.launchpad.dev
     feeds.launchpad.dev
-    id.launchpad.dev
     launchpad.dev
     localhost
     openid.launchpad.dev
     shipit.edubuntu.dev
     shipit.kubuntu.dev
     shipit.ubuntu.dev
+    testopenid.dev
     translations.launchpad.dev
+    ubuntu-openid.launchpad.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
 
@@ -335,48 +340,9 @@ the registered factories.)
     ...     register_launchpad_request_publication_factories)
     >>> register_launchpad_request_publication_factories()
 
-    # Z3 doesn't make this available as a utility.
-    >>> from zope.app.publication.requestpublicationregistry import (
-    ...     factoryRegistry)
+    >>> from lp.testing.publication import (
+    ...     get_request_and_publication, print_request_and_publication)
 
-    # Defines an helper function that returns the appropriate
-    # IRequest and IPublication.
-    >>> def get_request_and_publication(host='localhost', port=None,
-    ...                                 method='GET', mime_type='text/html',
-    ...                                 in_stream='', extra_environment=None):
-    ...     environment = {'HTTP_HOST': host,
-    ...                    'REQUEST_METHOD': method,
-    ...                    'SERVER_PORT': port,
-    ...                    'CONTENT_TYPE': mime_type}
-    ...     if extra_environment is not None:
-    ...         environment.update(extra_environment)
-    ...     launchpad_factory = factoryRegistry.lookup(
-    ...         method, mime_type, environment)
-    ...     request_factory, publication_factory = launchpad_factory()
-    ...     request = request_factory(StringIO(in_stream), environment)
-    ...     # Since Launchpad doesn't use ZODB, we use None here.
-    ...     publication = publication_factory(None)
-    ...     return request, publication
-
-    >>> from canonical.launchpad.webapp.servers import (
-    ...     ProtocolErrorPublication)
-    >>> def print_request_and_publication(host='localhost', port=None,
-    ...                                   method='GET',
-    ...                                   mime_type='text/html',
-    ...                                   extra_environment=None):
-    ...     """Helper giving short names for the request and publication."""
-    ...     request, publication = get_request_and_publication(
-    ...         host, port, method, mime_type,
-    ...         extra_environment=extra_environment)
-    ...     print type(request).__name__.split('.')[-1]
-    ...     publication_classname = type(publication).__name__.split('.')[-1]
-    ...     if isinstance(publication, ProtocolErrorPublication):
-    ...         print "%s: status=%d" % (
-    ...             publication_classname, publication.status)
-    ...         for name, value in publication.headers.items():
-    ...             print "  %s: %s" % (name, value)
-    ...     else:
-    ...         print publication_classname
     >>> print_request_and_publication('launchpad.dev')
     LaunchpadBrowserRequest
     MainLaunchpadPublication
@@ -414,25 +380,9 @@ the registered factories.)
     FeedsBrowserRequest
     FeedsPublication
 
-    >>> print_request_and_publication('openid.launchpad.dev')
-    OpenIDBrowserRequest
-    OpenIDPublication
-
     >>> print_request_and_publication('translations.launchpad.dev')
     TranslationsBrowserRequest
     TranslationsPublication
-
-    >>> print_request_and_publication('shipit.ubuntu.dev')
-    UbuntuShipItBrowserRequest
-    ShipItPublication
-
-    >>> print_request_and_publication('shipit.edubuntu.dev')
-    EdubuntuShipItBrowserRequest
-    ShipItPublication
-
-    >>> print_request_and_publication('shipit.kubuntu.dev')
-    KubuntuShipItBrowserRequest
-    ShipItPublication
 
 The web service RequestPublicationFactory responds to the six most
 common HTTP methods, but it will only accept a MIME type of
@@ -482,16 +432,14 @@ it is also handled by the web service request and publication:
     WebServiceClientRequest
     WebServicePublication
 
-Requests for '/api' on other hosts like feeds or xmlrpc are handled like
+Requests for '/api' on other hosts like feeds are handled like
 other requests on these hosts:
 
-    >>> for host in ['feeds.launchpad.dev', 'shipit.ubuntu.dev']:
-    ...     print_request_and_publication(
-    ...         host, method='GET', extra_environment={'PATH_INFO': '/api'})
+    >>> print_request_and_publication(
+    ...     'feeds.launchpad.dev', method='GET',
+    ...     extra_environment={'PATH_INFO': '/api'})
     FeedsBrowserRequest
     FeedsPublication
-    UbuntuShipItBrowserRequest
-    ShipItPublication
 
 The XML-RPC RequestPublicationFactory only responds to POST requests,
 and then only when the MIME type is text/xml.
@@ -821,8 +769,6 @@ the ticks for the traversal and not for the publication.
     >>> publication.beforeTraversal(request)
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=False)
-    ERROR:SiteError:http://localhost
-    ...
     >>> request._orig_env['launchpad.traversalticks'] < 200
     True
     >>> request._orig_env.has_key('launchpad.publicationticks')
@@ -839,8 +785,6 @@ the publication, up to the point where it was forcefully stopped.
     >>> set_request_started()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=False)
-    ERROR:SiteError:http://localhost
-    ...
     >>> request._orig_env['launchpad.traversalticks'] < 500
     True
     >>> request._orig_env['launchpad.publicationticks'] < 50
@@ -990,14 +934,17 @@ In the default implementation, the following database modification will
 be automatically reverted in a GET request.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.database import EmailAddress, Person
+    >>> from canonical.launchpad.database import EmailAddress
+    >>> from lp.registry.model.person import Person
     >>> from canonical.launchpad.interfaces import IMasterStore
     >>> login('foo.bar@canonical.com')
     >>> txn = transaction.begin()
-    >>> foo_bar = IMasterStore(Person).find(
-    ...     Person,
-    ...     Person.id == EmailAddress.personID,
-    ...     EmailAddress.email == 'foo.bar@canonical.com').one()
+    >>> def get_foo_bar_person():
+    ...     return IMasterStore(Person).find(
+    ...         Person,
+    ...         Person.id == EmailAddress.personID,
+    ...         EmailAddress.email == 'foo.bar@canonical.com').one()
+    >>> foo_bar = get_foo_bar_person()
     >>> print foo_bar.city
     None
     >>> foo_bar.city = 'Montreal'
@@ -1012,16 +959,14 @@ be automatically reverted in a GET request.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
     >>> txn = transaction.begin()
-    >>> foo_bar = IMasterStore(Person).find(
-    ...     Person,
-    ...     Person.id == EmailAddress.personID,
-    ...     EmailAddress.email == 'foo.bar@canonical.com').one()
+    >>> foo_bar = get_foo_bar_person()
     >>> print foo_bar.city
     None
 
 But not if the request uses POST, the changes will be preserved.
 
-    >>> foo_bar.city = 'Montreal'
+    >>> txn = transaction.begin()
+    >>> get_foo_bar_person().city = 'Darwin'
     >>> syncUpdate(foo_bar)
 
     >>> request, publication = get_request_and_publication(method='POST')
@@ -1033,9 +978,8 @@ But not if the request uses POST, the changes will be preserved.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
     >>> txn = transaction.begin()
-    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
-    >>> print foo_bar.city
-    Montreal
+    >>> print get_foo_bar_person().city
+    Darwin
 
 
 === GET requests on api.launchpad.net ===
@@ -1046,17 +990,20 @@ the OAuthNonce table.
 
     >>> import time
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 
-    >>> from canonical.launchpad.webapp.adapter import StoreSelector
-    >>> from canonical.launchpad.webapp.interfaces import DEFAULT_FLAVOR
-    >>> StoreSelector.setGlobalDefaultFlavor(DEFAULT_FLAVOR)
+    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from zope.component import getUtility
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
+
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
     >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
     >>> access_token = token.createAccessToken()
+    >>> policy = getUtility(IStoreSelector).pop()
     >>> transaction.commit()
     >>> form = dict(
     ...     oauth_consumer_key='foobar123451432',
@@ -1233,8 +1180,8 @@ associated with the access token specified in the request.  The
 principal's access_level and scope will match what was specified in the
 token.
 
-    >>> from canonical.launchpad.interfaces.product import IProductSet
-    >>> StoreSelector.setGlobalDefaultFlavor(DEFAULT_FLAVOR)
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
@@ -1249,6 +1196,7 @@ token.
     ...     oauth_signature="&".join([consumer.secret, access_token.secret]),
     ...     oauth_timestamp=time.time(),
     ...     oauth_nonce='4572616e48616d6d65724c61686176')
+    >>> policy = getUtility(IStoreSelector).pop()
     >>> test_request, publication = get_request_and_publication(
     ...     'api.launchpad.dev', 'GET',
     ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
@@ -1358,5 +1306,9 @@ defined by TIMESTAMP_SKEW_WINDOW.
 
 Close the bogus request that was started by the call to
 beforeTraversal, in order to ensure we leave our state sane.
+Also, pop all the database policies we have been accumulating.
 
     >>> publication.endRequest(request, None)
+    >>> store_selector = getUtility(IStoreSelector)
+    >>> while store_selector.get_current():
+    ...     db_policy = store_selector.pop()

@@ -1,4 +1,5 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -13,8 +14,8 @@ __all__ = [
 
 
 import binascii
+import hashlib
 import random
-import sha
 
 from contrib.oauth import OAuthRequest
 
@@ -32,7 +33,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.oauth import OAUTH_CHALLENGE
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, BasicAuthLoggedInEvent, CookieAuthPrincipalIdentifiedEvent,
     ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
@@ -77,8 +78,8 @@ class PlacelessAuthUtility:
             person_id = authdata.get('personid')
             if person_id is not None:
                 person = getUtility(IPersonSet).get(person_id)
-                if person is not None and person.account is not None:
-                    id = person.account.id
+                if person is not None and person.accountID is not None:
+                    id = person.accountID
 
         if id is None:
             return None
@@ -104,7 +105,7 @@ class PlacelessAuthUtility:
             return None
 
     def authenticate(self, request):
-        """See IAuthenticationUtility."""
+        """See IAuthentication."""
         # To avoid confusion (hopefully), basic auth trumps cookie auth
         # totally, and all the time.  If there is any basic auth at all,
         # then cookie auth won't even be considered.
@@ -126,20 +127,23 @@ class PlacelessAuthUtility:
                 return None
 
     def unauthenticatedPrincipal(self):
-        """See IAuthenticationUtility."""
+        """See IAuthentication."""
         return self.nobody
 
     def unauthorized(self, id, request):
-        """See IAuthenticationUtility."""
+        """See IAuthentication."""
         a = ILoginPassword(request)
         # TODO maybe configure the realm from zconfigure.
         a.needLogin(realm="launchpad")
 
     def getPrincipal(self, id):
-        """See IAuthenticationUtility."""
+        """See IAuthentication."""
         utility = getUtility(IPlacelessLoginSource)
         return utility.getPrincipal(id)
 
+    # XXX: This is part of IAuthenticationUtility, but that interface doesn't
+    # exist anymore and I'm not sure this is used anywhere.  Need to
+    # investigate further.
     def getPrincipals(self, name):
         """See IAuthenticationUtility."""
         utility = getUtility(IPlacelessLoginSource)
@@ -174,7 +178,7 @@ class SSHADigestEncryptor:
         plaintext = str(plaintext)
         if salt is None:
             salt = self.generate_salt()
-        v = binascii.b2a_base64(sha.new(plaintext + salt).digest() + salt)
+        v = binascii.b2a_base64(hashlib.sha1(plaintext + salt).digest() + salt)
         return v[:-1]
 
     def validate(self, plaintext, encrypted):
@@ -187,7 +191,7 @@ class SSHADigestEncryptor:
             return False
         salt = ref[20:]
         v = binascii.b2a_base64(
-            sha.new(plaintext + salt).digest() + salt)[:-1]
+            hashlib.sha1(plaintext + salt).digest() + salt)[:-1]
         pw1 = (v or '').strip()
         pw2 = (encrypted or '').strip()
         return pw1 == pw2
@@ -217,9 +221,9 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        account = getUtility(IAccountSet).get(id)
-
-        if account is None:
+        try:
+            account = getUtility(IAccountSet).get(id)
+        except LookupError:
             return None
 
         return self._principalForAccount(account, access_level, scope)
@@ -254,8 +258,9 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        account = getUtility(IAccountSet).getByEmail(login)
-        if account is None:
+        try:
+            account = getUtility(IAccountSet).getByEmail(login)
+        except LookupError:
             return None
         else:
             return self._principalForAccount(

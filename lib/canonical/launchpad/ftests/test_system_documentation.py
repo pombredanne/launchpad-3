@@ -1,9 +1,13 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Test the examples included in the system documentation in
 lib/canonical/launchpad/doc.
 """
 # pylint: disable-msg=C0103
+
+from __future__ import with_statement
 
 import logging
 import os
@@ -11,24 +15,25 @@ import unittest
 
 from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
+from zope.testing.cleanup import cleanUp
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-    commit, flush_database_updates, ISOLATION_LEVEL_READ_COMMITTED)
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.ftests import mailinglists_helper
+from canonical.database.sqlbase import commit
+from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
-    IPersonSet)
+    IDistributionSet, ILanguageSet, IPersonSet)
+from lp.bugs.interfaces.bug import CreateBugParams
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.testing import browser
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, setGlobs, tearDown)
-from canonical.launchpad.tests.mail_helpers import pop_notifications
+from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
-from canonical.testing import (
-    AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from canonical.testing.layers import (
+    AppServerLayer, BaseLayer, FunctionalLayer,
+    GoogleLaunchpadFunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -54,17 +59,6 @@ def lobotomize_stevea():
     stevea_emailaddress.status = EmailAddressStatus.NEW
     commit()
 
-
-def lobotomizeSteveASetUp(test):
-    """Call lobotomize_stevea() and standard setUp"""
-    lobotomize_stevea()
-    setUp(test)
-
-
-def checkwatchesSetUp(test):
-    """Setup the check watches script tests."""
-    setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
 def poExportSetUp(test):
     """Setup the PO export script tests."""
@@ -95,68 +89,16 @@ def archivepublisherSetUp(test):
     LaunchpadZopelessLayer.switchDbUser(config.archivepublisher.dbuser)
 
 
-def builddmasterSetUp(test):
-    """Setup the connection for the build master tests."""
-    test_dbuser = config.builddmaster.dbuser
-    test.globs['test_dbuser'] = test_dbuser
-    LaunchpadZopelessLayer.alterConnection(
-        dbuser=test_dbuser, isolation=ISOLATION_LEVEL_READ_COMMITTED)
-    setGlobs(test)
-
 def branchscannerSetUp(test):
     """Setup the user for the branch scanner tests."""
-    LaunchpadZopelessLayer.switchDbUser('branchscanner')
+    LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
     setUp(test)
+
 
 def branchscannerTearDown(test):
     """Tear down the branch scanner tests."""
     # XXX sinzui 2007-11-14:
     # This function is not needed. The test should be switched to tearDown.
-    tearDown(test)
-
-
-def peopleKarmaTearDown(test):
-    """Restore the database after testing karma."""
-    # We can't detect db changes made by the subprocess (yet).
-    DatabaseLayer.force_dirty_database()
-    tearDown(test)
-
-def bugNotificationSendingSetUp(test):
-    lobotomize_stevea()
-    LaunchpadZopelessLayer.switchDbUser(config.malone.bugnotification_dbuser)
-    setUp(test)
-
-def bugNotificationSendingTearDown(test):
-    tearDown(test)
-
-def cveSetUp(test):
-    lobotomize_stevea()
-    LaunchpadZopelessLayer.switchDbUser(config.cveupdater.dbuser)
-    setUp(test)
-
-def statisticianSetUp(test):
-    test_dbuser = config.statistician.dbuser
-    test.globs['test_dbuser'] = test_dbuser
-    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-    setUp(test)
-
-def statisticianTearDown(test):
-    tearDown(test)
-
-def distroseriesqueueSetUp(test):
-    setUp(test)
-    # The test requires that the umask be set to 022, and in fact this comment
-    # was made in irc on 13-Apr-2007:
-    #
-    # (04:29:18 PM) kiko: barry, cprov says that the local umask is controlled
-    # enough for us to rely on it
-    #
-    # Setting it here reproduces the environment that the doctest expects.
-    # Save the old umask so we can reset it in the tearDown().
-    test.old_umask = os.umask(022)
-
-def distroseriesqueueTearDown(test):
-    os.umask(test.old_umask)
     tearDown(test)
 
 def uploadQueueSetUp(test):
@@ -166,29 +108,10 @@ def uploadQueueSetUp(test):
     setUp(test)
     test.globs['test_dbuser'] = test_dbuser
 
-def uploaderBugsSetUp(test):
-    """Set up a test suite using the 'uploader' db user.
 
-    Some aspects of the bug tracker are being used by the Soyuz uploader.
-    In order to test that these functions work as expected from the uploader,
-    we run them using the same db user used by the uploader.
-    """
-    lobotomize_stevea()
-    test_dbuser = config.uploader.dbuser
-    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-    setUp(test)
-    test.globs['test_dbuser'] = test_dbuser
-
-def uploaderBugsTearDown(test):
-    logout()
-
-def uploadQueueTearDown(test):
-    logout()
-
-def noPrivSetUp(test):
-    """Set up a test logged in as no-priv."""
-    setUp(test)
-    login('no-priv@canonical.com')
+def layerlessTearDown(test):
+    """Clean up any Zope registrations."""
+    cleanUp()
 
 def _createUbuntuBugTaskLinkedToQuestion():
     """Get the id of an Ubuntu bugtask linked to a question.
@@ -213,8 +136,8 @@ def _createUbuntuBugTaskLinkedToQuestion():
     ubuntu_question.linkBug(bug)
     [ubuntu_bugtask] = bug.bugtasks
     login(ANONYMOUS)
-    # Remove the notifcations for the newly created question.
-    notifications = pop_notifications()
+    # Remove the notifications for the newly created question.
+    pop_notifications()
     return ubuntu_bugtask.id
 
 def bugLinkedToQuestionSetUp(test):
@@ -228,14 +151,6 @@ def bugLinkedToQuestionSetUp(test):
     # Log in here, since we don't want to set up an non-anonymous
     # interaction in the test.
     login('no-priv@canonical.com')
-
-
-def bugtaskExpirationSetUp(test):
-    """Setup globs for bug expiration."""
-    setUp(test)
-    test.globs['commit'] = commit
-    login('test@canonical.com')
-
 
 def uploaderBugLinkedToQuestionSetUp(test):
     LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -251,102 +166,6 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
     uploadQueueSetUp(test)
     login(ANONYMOUS)
 
-def manageChrootSetup(test):
-    """Set up the manage-chroot.txt test."""
-    setUp(test)
-    LaunchpadZopelessLayer.switchDbUser("fiera")
-
-
-# XXX BarryWarsaw 2007-08-15 bug=132784: as a placeholder for improving
-# the harness for the mailinglist-xmlrpc.txt tests, or improving things so
-# that all this cruft isn't necessary.
-
-def mailingListXMLRPCInternalSetUp(test):
-    setUp(test)
-    # Use the direct API view instance, not retrieved through the component
-    # architecture.  Don't use ServerProxy.  We do this because it's easier to
-    # debug because when things go horribly wrong, you see the errors on
-    # stdout instead of in an OOPS report living in some log file somewhere.
-    from canonical.launchpad.xmlrpc import MailingListAPIView
-    class ImpedenceMatchingView(MailingListAPIView):
-        @mailinglists_helper.fault_catcher
-        def getPendingActions(self):
-            return super(ImpedenceMatchingView, self).getPendingActions()
-        @mailinglists_helper.fault_catcher
-        def reportStatus(self, statuses):
-            return super(ImpedenceMatchingView, self).reportStatus(statuses)
-        @mailinglists_helper.fault_catcher
-        def getMembershipInformation(self, teams):
-            return super(
-                ImpedenceMatchingView, self).getMembershipInformation(teams)
-        @mailinglists_helper.fault_catcher
-        def isLaunchpadMember(self, address):
-            return super(ImpedenceMatchingView, self).isLaunchpadMember(
-                address)
-        @mailinglists_helper.fault_catcher
-        def isTeamPublic(self, team_name):
-            return super(ImpedenceMatchingView, self).isTeamPublic(team_name)
-    # Expose in the doctest's globals, the view as the thing with the
-    # IMailingListAPI interface.  Also expose the helper functions.
-    mailinglist_api = ImpedenceMatchingView(context=None, request=None)
-    test.globs['mailinglist_api'] = mailinglist_api
-    # Expose different commit() functions to handle the 'external' case below
-    # where there is more than one connection.  The 'internal' case here has
-    # just one coneection so the flush is all we need.
-    test.globs['commit'] = flush_database_updates
-
-
-def mailingListXMLRPCExternalSetUp(test):
-    setUp(test)
-    # Use a real XMLRPC server proxy so that the same test is run through the
-    # full security machinery.  This is more representative of the real-world,
-    # but more difficult to debug.
-    from canonical.functional import XMLRPCTestTransport
-    from xmlrpclib import ServerProxy
-    mailinglist_api = ServerProxy(
-        'http://xmlrpc-private.launchpad.dev:8087/mailinglists/',
-        transport=XMLRPCTestTransport())
-    test.globs['mailinglist_api'] = mailinglist_api
-    # See above; right now this is the same for both the internal and external
-    # tests, but if we're able to resolve the big XXX above the
-    # mailinglist-xmlrpc.txt-external declaration below, I suspect that these
-    # two globals will end up being different functions.
-    test.globs['mailinglist_api'] = mailinglist_api
-    test.globs['commit'] = flush_database_updates
-
-
-def zopelessLaunchpadSecuritySetUp(test):
-    """Set up a LaunchpadZopelessLayer test to use LaunchpadSecurityPolicy.
-
-    To be able to use LaunchpadZopelessLayer.switchDbUser in a test, we need
-    to run in the Zopeless environment. The Zopeless environment normally runs
-    using the PermissiveSecurityPolicy. If we want the test to cover
-    functionality used in the webapp, it needs to use the
-    LaunchpadSecurityPolicy.
-    """
-    setGlobs(test)
-    test.old_security_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
-
-
-def zopelessLaunchpadSecurityTearDown(test):
-    setSecurityPolicy(test.old_security_policy)
-
-
-def hwdbDeviceTablesSetup(test):
-    setUp(test)
-    LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
-
-
-def updateRemoteProductSetup(test):
-    """Setup to use the 'updateremoteproduct' db user."""
-    setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.updateremoteproduct.dbuser)
-
-def updateRemoteProductTeardown(test):
-    # Mark the DB as dirty, since we run a script in a sub process.
-    DatabaseLayer.force_dirty_database()
-    tearDown(test)
-
 
 # Files that have special needs can construct their own suite
 special = {
@@ -358,10 +177,6 @@ special = {
     'autodecorate.txt':
         LayeredDocFileSuite('../doc/autodecorate.txt', layer=BaseLayer),
 
-    'remove-upstream-translations-script.txt': LayeredDocFileSuite(
-            '../doc/remove-upstream-translations-script.txt',
-            setUp=setGlobs, stdout_logging=False, layer=None
-            ),
 
     # And this test want minimal environment too.
     'package-relationship.txt': LayeredDocFileSuite(
@@ -369,121 +184,22 @@ special = {
             stdout_logging=False, layer=None
             ),
 
+    'webservice-configuration.txt': LayeredDocFileSuite(
+            '../doc/webservice-configuration.txt',
+            setUp=setGlobs, tearDown=layerlessTearDown, layer=None
+            ),
+
+
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distroseries-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
-    'poexport-queue.txt': LayeredDocFileSuite(
-            '../doc/poexport-queue.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
     'message.txt': LayeredDocFileSuite(
             '../doc/message.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
-    'cve-update.txt': LayeredDocFileSuite(
-            '../doc/cve-update.txt',
-            setUp=cveSetUp, tearDown=tearDown, layer=LaunchpadZopelessLayer
-            ),
-    'nascentupload.txt': LayeredDocFileSuite(
-            '../doc/nascentupload.txt',
-            setUp=uploaderSetUp, tearDown=uploaderTearDown,
-            layer=LaunchpadZopelessLayer,
-            ),
-    'archive-signing.txt': LayeredDocFileSuite(
-            '../doc/archive-signing.txt',
-            setUp=archivepublisherSetUp, layer=LaunchpadZopelessLayer,
-            ),
-    'build-notification.txt': LayeredDocFileSuite(
-            '../doc/build-notification.txt',
-            setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer,
-            ),
-    'buildd-slavescanner.txt': LayeredDocFileSuite(
-            '../doc/buildd-slavescanner.txt',
-            setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer,
-            stdout_logging_level=logging.WARNING
-            ),
-    'buildd-slave.txt': LayeredDocFileSuite(
-            '../doc/buildd-slave.txt',
-            setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer,
-            stdout_logging_level=logging.WARNING
-            ),
-    'buildd-scoring.txt': LayeredDocFileSuite(
-            '../doc/buildd-scoring.txt',
-            setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer,
-            ),
-    'buildd-queuebuilder.txt': LayeredDocFileSuite(
-            '../doc/buildd-queuebuilder.txt',
-            setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer,
-            stdout_logging_level=logging.WARNING
-            ),
     'close-account.txt': LayeredDocFileSuite(
             '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
             layer=LaunchpadZopelessLayer
-            ),
-    'revision.txt': LayeredDocFileSuite(
-            '../doc/revision.txt',
-            setUp=branchscannerSetUp, tearDown=branchscannerTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'person-karma.txt': LayeredDocFileSuite(
-            '../doc/person-karma.txt',
-            setUp=setUp, tearDown=peopleKarmaTearDown,
-            layer=LaunchpadFunctionalLayer,
-            stdout_logging_level=logging.WARNING
-            ),
-    'bugnotificationrecipients.txt-uploader': LayeredDocFileSuite(
-            '../doc/bugnotificationrecipients.txt',
-            setUp=uploaderBugsSetUp,
-            tearDown=uploaderBugsTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'bugnotificationrecipients.txt-queued': LayeredDocFileSuite(
-            '../doc/bugnotificationrecipients.txt',
-            setUp=uploadQueueSetUp,
-            tearDown=uploadQueueTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'bugnotification-comment-syncing-team.txt': LayeredDocFileSuite(
-            '../doc/bugnotification-comment-syncing-team.txt',
-            layer=LaunchpadZopelessLayer, setUp=bugNotificationSendingSetUp,
-            tearDown=bugNotificationSendingTearDown
-            ),
-    'bugnotificationrecipients.txt': LayeredDocFileSuite(
-            '../doc/bugnotificationrecipients.txt',
-            setUp=lobotomizeSteveASetUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'bugnotification-threading.txt': LayeredDocFileSuite(
-            '../doc/bugnotification-threading.txt',
-            setUp=lobotomizeSteveASetUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'bugnotification-sending.txt': LayeredDocFileSuite(
-            '../doc/bugnotification-sending.txt',
-            layer=LaunchpadZopelessLayer, setUp=bugNotificationSendingSetUp,
-            tearDown=bugNotificationSendingTearDown
-            ),
-    'bugmail-headers.txt': LayeredDocFileSuite(
-            '../doc/bugmail-headers.txt',
-            layer=LaunchpadZopelessLayer,
-            setUp=bugNotificationSendingSetUp,
-            tearDown=bugNotificationSendingTearDown),
-    'translationimportqueue.txt': LayeredDocFileSuite(
-            '../doc/translationimportqueue.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'pofile-pages.txt': LayeredDocFileSuite(
-            '../doc/pofile-pages.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'rosetta-karma.txt': LayeredDocFileSuite(
-            '../doc/rosetta-karma.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'launchpadform.txt': LayeredDocFileSuite(
             '../doc/launchpadform.txt',
@@ -495,383 +211,16 @@ special = {
             setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer
             ),
-    'bugzilla-import.txt': LayeredDocFileSuite(
-            '../doc/bugzilla-import.txt',
-            setUp=setUp, tearDown=tearDown,
-            stdout_logging_level=logging.WARNING,
-            layer=LaunchpadZopelessLayer
-            ),
-    'bug-export.txt': LayeredDocFileSuite(
-            '../doc/bug-export.txt',
-            setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
-            ),
     'uri.txt': LayeredDocFileSuite(
             '../doc/uri.txt',
             setUp=setUp, tearDown=tearDown,
             layer=FunctionalLayer
-            ),
-    'package-cache.txt': LayeredDocFileSuite(
-            '../doc/package-cache.txt',
-            setUp=statisticianSetUp, tearDown=statisticianTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'distroarchseriesbinarypackage.txt': LayeredDocFileSuite(
-            '../doc/distroarchseriesbinarypackage.txt',
-            setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'script-monitoring.txt': LayeredDocFileSuite(
-            '../doc/script-monitoring.txt',
-            setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'distroseriesqueue-debian-installer.txt': LayeredDocFileSuite(
-            '../doc/distroseriesqueue-debian-installer.txt',
-            setUp=distroseriesqueueSetUp, tearDown=distroseriesqueueTearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'bug-set-status.txt': LayeredDocFileSuite(
-            '../doc/bug-set-status.txt',
-            setUp=uploadQueueSetUp,
-            tearDown=uploadQueueTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'bug-set-status.txt-uploader': LayeredDocFileSuite(
-            '../doc/bug-set-status.txt',
-            setUp=uploaderBugsSetUp,
-            tearDown=uploaderBugsTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'closing-bugs-from-changelogs.txt': LayeredDocFileSuite(
-            '../doc/closing-bugs-from-changelogs.txt',
-            setUp=uploadQueueSetUp,
-            tearDown=uploadQueueTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'closing-bugs-from-changelogs.txt-uploader': LayeredDocFileSuite(
-            '../doc/closing-bugs-from-changelogs.txt',
-            setUp=uploaderBugsSetUp,
-            tearDown=uploaderBugsTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'bugtask-expiration.txt': LayeredDocFileSuite(
-            '../doc/bugtask-expiration.txt',
-            setUp=bugtaskExpirationSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'bugmessage.txt': LayeredDocFileSuite(
-            '../doc/bugmessage.txt',
-            setUp=noPrivSetUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'bugmessage.txt-queued': LayeredDocFileSuite(
-            '../doc/bugmessage.txt',
-            setUp=uploadQueueSetUp,
-            tearDown=uploadQueueTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'bugmessage.txt-uploader': LayeredDocFileSuite(
-            '../doc/bugmessage.txt',
-            setUp=uploaderSetUp,
-            tearDown=uploaderTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'bugmessage.txt-checkwatches': LayeredDocFileSuite(
-            '../doc/bugmessage.txt',
-            setUp=checkwatchesSetUp,
-            tearDown=uploaderTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'bug-private-by-default.txt': LayeredDocFileSuite(
-            '../doc/bug-private-by-default.txt',
-            setUp=setUp,
-            tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'bugtracker-person.txt': LayeredDocFileSuite(
-            '../doc/bugtracker-person.txt',
-            setUp=checkwatchesSetUp,
-            tearDown=uploaderTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(
-            '../doc/answer-tracker-notifications-linked-bug.txt',
-            setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'answer-tracker-notifications-linked-bug.txt-uploader':
-            LayeredDocFileSuite(
-                '../doc/answer-tracker-notifications-linked-bug.txt',
-                setUp=uploaderBugLinkedToQuestionSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'answer-tracker-notifications-linked-bug.txt-queued': LayeredDocFileSuite(
-            '../doc/answer-tracker-notifications-linked-bug.txt',
-            setUp=uploadQueueBugLinkedToQuestionSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'mailinglist-xmlrpc.txt': LayeredDocFileSuite(
-            '../doc/mailinglist-xmlrpc.txt',
-            setUp=mailingListXMLRPCInternalSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'mailinglist-xmlrpc.txt-external': LayeredDocFileSuite(
-            '../doc/mailinglist-xmlrpc.txt',
-            setUp=mailingListXMLRPCExternalSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer,
-            ),
-    'checkwatches.txt':
-            LayeredDocFileSuite(
-                '../doc/checkwatches.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                stdout_logging_level=logging.WARNING,
-                layer=LaunchpadZopelessLayer
-                ),
-    'checkwatches-cli-switches.txt':
-            LayeredDocFileSuite(
-                '../doc/checkwatches-cli-switches.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'bugwatch.txt':
-            LayeredDocFileSuite(
-                '../doc/bugwatch.txt',
-                setUp=setUp, tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker.txt',
-                setUp=setUp, tearDown=tearDown,
-                stdout_logging_level=logging.WARNING,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-bug-imports.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-bug-imports.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-bugzilla.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-bugzilla.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-bugzilla-lp-plugin.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-bugzilla-lp-plugin.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-bugzilla-oddities.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-bugzilla-oddities.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-checkwatches.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-checkwatches.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-comment-imports.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-comment-imports.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-comment-pushing.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-comment-pushing.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-debbugs.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-debbugs.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-emailaddress.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-emailaddress.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-linking-back.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-linking-back.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                stdout_logging_level=logging.ERROR,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-mantis-csv.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-mantis-csv.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-mantis.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-mantis.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-roundup-python-bugs.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-roundup-python-bugs.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-roundup.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-roundup.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-rt.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-rt.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-sourceforge.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-sourceforge.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-trac.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-trac.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'externalbugtracker-trac-lp-plugin.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-trac-lp-plugin.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'mailinglist-subscriptions-xmlrpc.txt': LayeredDocFileSuite(
-            '../doc/mailinglist-subscriptions-xmlrpc.txt',
-            setUp=mailingListXMLRPCInternalSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'mailinglist-subscriptions-xmlrpc.txt-external': LayeredDocFileSuite(
-            '../doc/mailinglist-subscriptions-xmlrpc.txt',
-            setUp=mailingListXMLRPCExternalSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer,
-            ),
-    'message-holds-xmlrpc.txt': LayeredDocFileSuite(
-            '../doc/message-holds-xmlrpc.txt',
-            setUp=mailingListXMLRPCInternalSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'message-holds-xmlrpc.txt-external': LayeredDocFileSuite(
-            '../doc/message-holds-xmlrpc.txt',
-            setUp=mailingListXMLRPCExternalSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer,
-            ),
-    'codeimport-machine.txt': LayeredDocFileSuite(
-            '../doc/codeimport-machine.txt',
-            setUp=zopelessLaunchpadSecuritySetUp,
-            tearDown=zopelessLaunchpadSecurityTearDown,
-            layer=LaunchpadZopelessLayer,
-            ),
-    'openid-fetcher.txt': LayeredDocFileSuite(
-            '../doc/openid-fetcher.txt',
-            stdout_logging=False,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'branch-merge-proposals.txt': LayeredDocFileSuite(
-            '../doc/branch-merge-proposals.txt',
-            setUp=zopelessLaunchpadSecuritySetUp,
-            tearDown=zopelessLaunchpadSecurityTearDown,
-            layer=LaunchpadZopelessLayer,
-            ),
-    'soyuz-set-of-uploads.txt': LayeredDocFileSuite(
-            '../doc/soyuz-set-of-uploads.txt',
-            layer=LaunchpadZopelessLayer,
-            ),
-    'publishing.txt': LayeredDocFileSuite(
-            '../doc/publishing.txt',
-            setUp=setUp,
-            layer=LaunchpadZopelessLayer,
-            ),
-    'sourcepackagerelease-build-lookup.txt': LayeredDocFileSuite(
-            '../doc/sourcepackagerelease-build-lookup.txt',
-            layer=LaunchpadZopelessLayer,
             ),
     'notification-text-escape.txt': LayeredDocFileSuite(
             '../doc/notification-text-escape.txt',
             setUp=test_notifications.setUp,
             tearDown=test_notifications.tearDown,
             stdout_logging=False, layer=None
-            ),
-    'translationmessage-destroy.txt': LayeredDocFileSuite(
-            '../doc/translationmessage-destroy.txt',
-            layer=LaunchpadZopelessLayer
-            ),
-    'translationsoverview.txt': LayeredDocFileSuite(
-            '../doc/translationsoverview.txt',
-            layer=LaunchpadZopelessLayer
-            ),
-    'manage-chroot.txt': LayeredDocFileSuite(
-            '../doc/manage-chroot.txt',
-            setUp=manageChrootSetup,
-            layer=LaunchpadZopelessLayer,
-            ),
-    'build-estimated-dispatch-time.txt': LayeredDocFileSuite(
-            '../doc/build-estimated-dispatch-time.txt',
-            setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer,
-            ),
-    'hwdb-device-tables.txt': LayeredDocFileSuite(
-            '../doc/hwdb-device-tables.txt',
-            setUp=hwdbDeviceTablesSetup, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer,
-            ),
-    'standing.txt': LayeredDocFileSuite(
-            '../doc/standing.txt',
-            layer=LaunchpadZopelessLayer,
-            setUp=setUp, tearDown=tearDown,
-            ),
-    'sourceforge-remote-products.txt': LayeredDocFileSuite(
-            '../doc/sourceforge-remote-products.txt',
-            layer=LaunchpadZopelessLayer,
             ),
     # This test is actually run twice to prove that the AppServerLayer
     # properly isolates the database between tests.
@@ -891,23 +240,16 @@ special = {
     #         '../doc/google-service-stub.txt',
     #         layer=GoogleServiceLayer,
     #         ),
-    'karmacache.txt': LayeredDocFileSuite(
-        '../doc/karmacache.txt',
-        layer=LaunchpadZopelessLayer,
-        setUp=setUp, tearDown=tearDown),
-    'filebug-data-parser.txt': LayeredDocFileSuite(
-        '../doc/filebug-data-parser.txt'),
-    'product-update-remote-product.txt': LayeredDocFileSuite(
-            '../doc/product-update-remote-product.txt',
-            setUp=updateRemoteProductSetup,
-            tearDown=updateRemoteProductTeardown,
-            layer=LaunchpadZopelessLayer
+    'canonical_url.txt': LayeredDocFileSuite(
+            '../doc/canonical_url.txt',
+            setUp=setUp,
+            tearDown=tearDown,
+            layer=FunctionalLayer,
             ),
-    'product-update-remote-product-script.txt': LayeredDocFileSuite(
-            '../doc/product-update-remote-product-script.txt',
-            setUp=updateRemoteProductSetup,
-            tearDown=updateRemoteProductTeardown,
-            layer=LaunchpadZopelessLayer
+    'google-searchservice.txt': LayeredDocFileSuite(
+            '../doc/google-searchservice.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=GoogleLaunchpadFunctionalLayer,
             ),
     }
 
@@ -932,31 +274,32 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         setSecurityPolicy(cls._old_policy)
 
     doctests_without_logging = [
-        # XXX gary 2008-12-06 bug=305856: Spurious test failure discovered on
-        # buildbot, build 40.  Note that, to completely disable the test from
-        # running, the filename has been changed to
-        # answer-tracker-emailinterface.txt.disabled, so when this test is
+        # XXX gary 2008-12-06 bug=305856: Spurious test failure
+        # discovered on buildbot, build 40.  Note that, to completely
+        # disable the test from running, the filename has been changed
+        # to emailinterface.txt.disabled, so when this test is
         # reinstated it will be need to be changed back.
-        # 'answer-tracker-emailinterface.txt',
-        'bugs-emailinterface.txt',
-        'bugs-email-affects-path.txt',
-        'emailauthentication.txt',
+        # '../../../lp/answers/doc/emailinterface.txt',
+        '../../../lp/bugs/tests/bugs-emailinterface.txt',
+        '../../../lp/bugs/doc/bugs-email-affects-path.txt',
+        '../doc/emailauthentication.txt',
         ]
 
     doctests_with_logging = [
-        'incomingmail.txt',
-        'spec-mail-exploder.txt'
+        '../doc/incomingmail.txt',
         ]
 
     @classmethod
     def addTestsToSpecial(cls):
         """Adds all the tests related to process-mail.py to special"""
-        for filename in cls.doctests_without_logging:
-            special[filename] = cls.createLayeredDocFileSuite(filename)
+        for filepath in cls.doctests_without_logging:
+            filename = os.path.basename(filepath)
+            special[filename] = cls.createLayeredDocFileSuite(filepath)
 
-        for filename in cls.doctests_with_logging:
+        for filepath in cls.doctests_with_logging:
+            filename = os.path.basename(filepath)
             special[filename] = cls.createLayeredDocFileSuite(
-                filename, stdout_logging=True)
+                filepath, stdout_logging=True)
 
         # Adds a copy of some bug doctests that will be run with
         # the processmail user.
@@ -965,7 +308,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
             test.globs['test_dbuser'] = config.processmail.dbuser
 
         special['bug-set-status.txt-processmail'] = LayeredDocFileSuite(
-                '../doc/bug-set-status.txt',
+                '../../../lp/bugs/doc/bug-set-status.txt',
                 setUp=bugSetStatusSetUp, tearDown=tearDown,
                 layer=cls,
                 stdout_logging=False)
@@ -975,7 +318,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
             login('no-priv@canonical.com')
 
         special['bugmessage.txt-processmail'] = LayeredDocFileSuite(
-                '../doc/bugmessage.txt',
+                '../../../lp/bugs/doc/bugmessage.txt',
                 setUp=bugmessageSetUp, tearDown=tearDown,
                 layer=cls,
                 stdout_logging=False)
@@ -984,7 +327,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
     def createLayeredDocFileSuite(cls, filename, stdout_logging=False):
         """Helper to create a doctest using this layer."""
         return LayeredDocFileSuite(
-            "../doc/%s" % filename,
+            filename,
             setUp=setUp, tearDown=tearDown,
             layer=cls,
             stdout_logging=stdout_logging,
@@ -1024,6 +367,8 @@ def test_suite():
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
+            # 'icky way of running doctests with __future__ imports
+            globs={'with_statement': with_statement},
             stdout_logging_level=logging.WARNING
             )
         suite.addTest(one_test)

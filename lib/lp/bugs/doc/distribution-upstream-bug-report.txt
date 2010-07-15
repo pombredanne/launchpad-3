@@ -1,0 +1,609 @@
+Upstream Bug reports
+====================
+
+For a distribution's bug tracking process to be successful, it's vital
+that it is able to communicate upstream bugs to the relevant upstream
+project and monitor them as they change. Launchpad offers functionality
+to allow a distribution to focus on and improve this process.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> from lp.bugs.tests.bug import (
+    ...     create_bug_from_strings)
+    >>> from canonical.launchpad.ftests import sync
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.packaging import (
+    ...     IPackagingUtil, PackagingType)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet, BugTaskStatus
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+
+    >>> distroset = getUtility(IDistributionSet)
+    >>> ubuntu = distroset.getByName('ubuntu')
+    >>> debian = distroset.getByName('debian')
+    >>> kubuntu = distroset.getByName('kubuntu')
+
+
+The API
+-------
+
+IDistribution has a special API that allows you to assemble data for a
+bug report that associates packages with upstream information linked to
+them.
+
+    >>> def print_report(data):
+    ...     for dsp, product, open, triaged, upstream, watch, patch in data:
+    ...         print dsp.name, product and product.name or None
+    ...         print open, triaged, upstream, watch, patch
+
+A first set of reports, entirely based on sampledata. There are no
+triaged bugs, but there are some upstream ones with watches:
+
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts())
+    linux-source-2.6.15 None    1 0 0 0 0
+    mozilla-firefox     firefox 1 0 1 1 0
+    thunderbird         None    1 0 1 1 0
+
+    >>> print_report(debian.getPackagesAndPublicUpstreamBugCounts())
+    mozilla-firefox     None    3 0 2 1 0
+
+    >>> print_report(kubuntu.getPackagesAndPublicUpstreamBugCounts())
+
+getPackagesAndPublicUpstreamBugCounts() accepts an `exclude_packages`
+parameter. This is a list of the source packages that shouldn't be
+included in the report that getPackagesAndPublicUpstreamBugCounts()
+returns.
+
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(
+    ...     exclude_packages=['linux-source-2.6.15']))
+    mozilla-firefox     firefox 1 0 1 1 0
+    thunderbird         None    1 0 1 1 0
+
+To get the list of excluded packages for a distribution we can look at
+its `upstream_report_excluded_packages` property. For Kubuntu and
+Debian, this returns an empty list.
+
+    >>> debian.upstream_report_excluded_packages
+    []
+
+    >>> kubuntu.upstream_report_excluded_packages
+    []
+
+For Ubuntu, however, there is a list of excluded packages.
+
+    >>> ubuntu.upstream_report_excluded_packages
+    ['apport'...]
+
+If we triage a bugtask on firefox and thunderbird we'll see the count
+for triaged bugs updated:
+
+    >>> login('foo.bar@canonical.com')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> ls_bug = getUtility(IBugTaskSet).get(23)
+    >>> ls_bug.transitionToStatus(BugTaskStatus.TRIAGED, mark)
+    >>> sync(ls_bug)
+    >>> mf_bug = getUtility(IBugTaskSet).get(17)
+    >>> mf_bug.transitionToStatus(BugTaskStatus.TRIAGED, mark)
+    >>> sync(mf_bug)
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts())
+    linux-source-2.6.15 None    1 0 0 0 0
+    mozilla-firefox     firefox 1 1 1 1 0
+    thunderbird         None    1 1 1 1 0
+
+We add two new bugs to pmount in Ubuntu. From now on we'll limit the
+results to 3 packages (as a demonstration of the API) so thunderbird
+will be popped off the list:
+
+    >>> bug = create_bug_from_strings(distribution='ubuntu',
+    ...     sourcepackagename='pmount', owner='name12',
+    ...     summary='pmount used to work', description='fix it',
+    ...     status=BugTaskStatus.TRIAGED)
+    >>> bug = create_bug_from_strings(distribution='ubuntu',
+    ...     sourcepackagename='pmount', owner='name12',
+    ...     summary='pmount has issues', description='fix it again',
+    ...     status=BugTaskStatus.TRIAGED)
+    >>> ubuntu_pmount_task = bug.bugtasks[0]
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              None    2 2 0 0 0
+    linux-source-2.6.15 None    1 0 0 0 0
+    mozilla-firefox     firefox 1 1 1 1 0
+
+As you can see, there is no packaging data for pmount in Ubuntu, so no
+upstream is reported for it. Let's fix that:
+
+    >>> pmount_spn = getUtility(ISourcePackageNameSet).queryByName('pmount')
+    >>> name12 = getUtility(IPersonSet).getByName('name12')
+    >>> pmount = getUtility(IProductSet).createProduct(
+    ...     name12, 'pmount', 'pmount', 'pmount', 'pmount')
+    >>> getUtility(IPackagingUtil).createPackaging(
+    ...     pmount.getSeries('trunk'), pmount_spn,
+    ...     ubuntu.currentseries, PackagingType.PRIME, name12)
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              pmount  2 2 0 0 0
+    linux-source-2.6.15 None    1 0 0 0 0
+    mozilla-firefox     firefox 1 1 1 1 0
+
+We then add an upstream task to the second pmount bug:
+
+    >>> from storm.store import Store
+    >>> task = getUtility(IBugTaskSet).createTask(bug, name12, product=pmount)
+    >>> Store.of(task).flush()
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              pmount  2 2 1 0 0
+    linux-source-2.6.15 None    1 0 0 0 0
+    mozilla-firefox     firefox 1 1 1 1 0
+
+The last column counts those bugs with upstream tasks that have patches
+attached but which don't have an upstream bugwatch. If we add a ordinary
+attachment to our pmount bug, the value of the last column does not
+change...
+
+    >>> attachment = factory.makeBugAttachment(bug)
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              pmount  2 2 1 0 0
+    linux-source-2.6.15 None    1 0 0 0 0
+    mozilla-firefox     firefox 1 1 1 1 0
+
+...but when we make this attachment a patch, the value of the column
+increases.
+
+    >>> from lp.bugs.interfaces.bugattachment import BugAttachmentType
+    >>> attachment.type = BugAttachmentType.PATCH
+    >>> Store.of(attachment).flush()
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              pmount  2 2 1 0 1
+    linux-source-2.6.15 None    1 0 0 0 0
+    mozilla-firefox     firefox 1 1 1 1 0
+
+Note that we count only bugs with patches for products that do not
+use Malone officially.
+
+    >>> pmount.official_malone = True
+    >>> Store.of(pmount).flush()
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              pmount  2 2 1 1 0
+    linux-source-2.6.15 None    1 0 0 0 0
+    mozilla-firefox     firefox 1 1 1 1 0
+
+    >>> pmount.official_malone = False
+    >>> Store.of(pmount).flush()
+
+Linking that task to a bugwatch increases the watch counts and decreases
+the count of bugs having patches but no bug watch.
+
+    >>> url = "http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=666"
+    >>> [watch] = getUtility(IBugWatchSet).fromText(url, bug, name12)
+    >>> task.bugwatch = watch
+    >>> sync(task)
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              pmount  2 2 1 1 0
+    linux-source-2.6.15 None    1 0 0 0 0
+    mozilla-firefox     firefox 1 1 1 1 0
+
+
+Properties of BugReportData
+---------------------------
+
+The API listed above is based around BugReportData instances, each of
+which offers a set of properties that can be used to accessed data. Each
+row in the upstream report table is represented by an instance of
+PackageBugReportData, which sublcassess BugReportData. We'll create a
+BugReportData instance using some made up figures to demonstrate the
+properties offered by BugReportData.
+
+    >>> from lp.bugs.browser import distribution_upstream_bug_report
+    >>> bug_data = distribution_upstream_bug_report.BugReportData(
+    ...     open_bugs=90, triaged_bugs=50, upstream_bugs=70,
+    ...     watched_bugs=60)
+
+
+Percentages
+...........
+
+BugReportData offers a set of *_percentage properties.
+
+BugReportData.triaged_bugs_percentage is the percentage of open bugs
+that have been triaged.
+
+    >>> bug_data.triaged_bugs_percentage
+    55.555555555555557
+
+BugReportData.upstream_bugs_percentage is the percentage of open bugs
+that have been forwarded upstream.
+
+    >>> bug_data.upstream_bugs_percentage
+    77.777777777777771
+
+BugReportData.watched_bugs_percentage is the percentage of bugs
+forwarded upstream that have a bug watch against a remote bug.
+
+    >>> bug_data.watched_bugs_percentage
+    85.714285714285708
+
+
+Deltas
+......
+
+BugReportData also offers a set of of *_delta properties along with the
+*_percentage properties.
+
+BugReportData.triaged_bugs_delta is the difference between the number of
+open bugs and the number of triaged bugs.
+
+    >>> bug_data.triaged_bugs_delta
+    40
+
+BugReportData.upstream bugs_delta is the difference between the number
+of open bugs and the number of bugs forwarded upstream.
+
+    >>> bug_data.upstream_bugs_delta
+    20
+
+BugReportData.watched_bugs_delta is the difference between the number of
+upstream bugs and the number of bugs that have a bug watch against an
+upstream bug.
+
+    >>> bug_data.watched_bugs_delta
+    10
+
+
+Classes
+.......
+
+Finally, BugReportData offers a set of *_class properties. These provide
+the correct CSS class to use for rendering the data in a table. They
+return 'good' if the property that they represent is above a certain
+threshold or an empty string if not.
+
+BugReportData.triaged_bugs_class returns 'good' if the
+triaged_bugs_percentage is greater than BugReportData.TRIAGED_THRESHOLD.
+
+    >>> bug_data.TRIAGED_THRESHOLD
+    75
+
+    >>> bug_data.triaged_bugs_class
+    ''
+
+Increasing the number of triaged bugs will put the percentage over the
+threshold and so triaged_bugs_class will be 'good'.
+
+    >>> bug_data.triaged_bugs = 70
+    >>> bug_data.triaged_bugs_class
+    'good'
+
+BugReportData.upstream_bugs_class returns 'good' if the percentage of
+open bugs forwarded upstream is higher than
+BugReportData.UPSTREAM_THRESHOLD.
+
+    >>> bug_data.UPSTREAM_THRESHOLD
+    90
+
+    >>> bug_data.upstream_bugs_class
+    ''
+
+Increasing the number of upstream bugs will put the percentage over the
+threshold and make upstream_bugs_class 'good'.
+
+    >>> bug_data.upstream_bugs = 85
+    >>> bug_data.upstream_bugs_class
+    'good'
+
+BugReportData.watched_bugs_class returns 'good' if the percentage of
+upstream bugs that have a bug watch is greater than
+BugReportData.WATCH_THRESHOLD.
+
+    >>> bug_data.WATCH_THRESHOLD
+    90
+
+    >>> bug_data.watched_bugs_class
+    ''
+
+Increasing the number of watched bugs will put the percentage over the
+threshold and make watched_bugs_class 'good'.
+
+    >>> bug_data.watched_bugs = 80
+    >>> bug_data.watched_bugs_class
+    'good'
+
+There is also a row_class property, which is used to colour the entire
+table row. Its return value is based on the watched_bugs_percentage just
+like watched_bugs_class is above. However, it is kept separate since the
+behaviour for colouring the row differs from the behaviour for colouring
+the watched bugs cell.
+
+If the watched_bugs_percentage property is < 20%, the row is marked as
+'bad'.
+
+    >>> bug_data.open_bugs = 100
+    >>> bug_data.triaged_bugs = 100
+    >>> bug_data.upstream_bugs = 50
+    >>> bug_data.watched_bugs = 5
+    >>> print bug_data.row_class
+    bad
+
+If the watched_bugs_percentage property is > 90%, the row is marked as
+'good'.
+
+    >>> bug_data.watched_bugs = 46
+    >>> print bug_data.row_class
+    good
+
+Otherwise, row_class returns an empty string.
+
+    >>> bug_data.watched_bugs = 40
+    >>> bug_data.row_class
+    ''
+
+    >>> bug_data.watched_bugs = 11
+    >>> bug_data.row_class
+    ''
+
+
+The view
+--------
+
+We test that the view data is constructed sanely and without any hidden
+defects. Let's set up some helpers to make it easier for us to output
+them:
+
+    >>> from canonical.launchpad.testing.systemdocs import create_view
+
+    >>> def print_numbers(data):
+    ...     for f in ['open_bugs',
+    ...               'triaged_bugs',
+    ...               'upstream_bugs',
+    ...               'watched_bugs',
+    ...               'triaged_bugs_percentage',
+    ...               'upstream_bugs_percentage',
+    ...               'watched_bugs_percentage',
+    ...               'triaged_bugs_class',
+    ...               'upstream_bugs_class',
+    ...               'watched_bugs_class',
+    ...               'triaged_bugs_delta',
+    ...               'upstream_bugs_delta',
+    ...               'watched_bugs_delta']:
+    ...         print getattr(data, f),
+
+    >>> def print_helpers(data):
+    ...     print data.dsp.name, data.dsp.distribution.name,
+    ...     if data.dssp:
+    ...         print data.dssp.distroseries.name
+    ...     else:
+    ...         print "NO SERIES"
+    ...     if data.product:
+    ...         print data.product.name
+    ...     else:
+    ...         print "NO PRODUCT"
+    ...     for f in ['bug_supervisor_url', 'product_edit_url',
+    ...               'upstream_bugs_url', 'upstream_bugs_delta_url',
+    ...               'watched_bugs_delta_url']:
+    ...         t = getattr(data, f, "NO URL")
+    ...         print t.replace(
+    ...             "http://bugs.launchpad.dev/ubuntu/+source/", "**")
+    ...     print "--"
+
+Get an Ubuntu view:
+
+    >>> view = create_view(ubuntu, '+upstreamreport')
+    >>> view.initialize()
+
+Here are the helper URLs we construct:
+
+    >>> for item in view.data:
+    ...     print_helpers(item)
+    pmount ubuntu hoary
+    pmount
+    http://launchpad.dev/pmount/+bugsupervisor
+    http://launchpad.dev/pmount/+edit
+    **pmount/+bugs?search=Search&field.status_upstream=open_upstream
+    **pmount/+bugs?search=Search&field.status_upstream=hide_upstream
+    **pmount/+bugs?search=Search&field.status_upstream=pending_bugwatch
+    --
+    linux-source-2.6.15 ubuntu hoary
+    NO PRODUCT
+    NO URL
+    NO URL
+    **linux-source-2.6.15/+bugs?...&field.status_upstream=open_upstream
+    **linux-source-2.6.15/+bugs?...h&field.status_upstream=hide_upstream
+    **linux-source-2.6.15/+bugs?...&field.status_upstream=pending_bugwatch
+    --
+    mozilla-firefox ubuntu hoary
+    firefox
+    http://launchpad.dev/firefox/+bugsupervisor
+    http://launchpad.dev/firefox/+edit
+    **mozilla-firefox/+bugs?search=Search&field.status_upstream=open_upstream
+    **mozilla-firefox/+bugs?search=Search&field.status_upstream=hide_upstream
+    **mozilla-firefox/+bugs?...&field.status_upstream=pending_bugwatch
+    --
+    thunderbird ubuntu hoary
+    NO PRODUCT
+    NO URL
+    NO URL
+    **thunderbird/+bugs?search=Search&field.status_upstream=open_upstream
+    **thunderbird/+bugs?search=Search&field.status_upstream=hide_upstream
+    **thunderbird/+bugs?search=Search&field.status_upstream=pending_bugwatch
+    --
+
+Let's print out the counts and percentages:
+
+    >>> for item in view.data:
+    ...     print_numbers(item)
+    ...     print
+    2   2   1   1 100.0   50.0   100.0  good good      0  1  0
+    1   0   0   0   0.0    0.0     0.0                 1  1  0
+    1   1   1   1 100.0  100.0   100.0  good good good 0  0  0
+    1   1   1   1 100.0  100.0   100.0  good good good 0  0  0
+
+And the total line:
+
+    >>> print_numbers(view.total)
+    5   4   3   3  80.0   60.0   100.0  good       good 1  2  0
+
+A Kubuntu view is not nearly as interesting, though:
+
+    >>> view = create_view(kubuntu, '+upstreamreport')
+    >>> view.initialize()
+    >>> for item in view.data:
+    ...     print_helpers(item)
+
+    >>> for item in view.data:
+    ...     print_numbers(item)
+
+Nada!
+
+    >>> print_numbers(view.total)
+    0   0   0   0   0.0    0.0   0.0            0  0  0
+
+
+Sorting the report
+------------------
+
+The upstream report is sortable by each of the columns displayed. We'll
+demonstrate this using the Ubuntu report.
+
+    >>> view = create_view(ubuntu, '+upstreamreport')
+
+The view has a sort_order property. This returns a tuple of (sort_key,
+reversed), where sort_key is a string which can be mapped to one of the
+properties of PackageBugReportData and reversed is a boolean which
+indicates whether the current sort is ascending (reversed=False) or
+descending (reversed=True). By default, the sort_order for any report is
+number of open bugs, descending.
+
+    >>> view.sort_order
+    ('open_bugs', True)
+
+The sort order can be changed by altering the sort_by request parameter.
+
+    >>> form = {'sort_by': 'product'}
+
+    >>> view = create_view(ubuntu, '+upstreamreport', form)
+    >>> view.sort_order
+    ('product', False)
+
+Prepending a '-' to the sort_by parameter will cause the sort_order to
+be reversed.
+
+    >>> form = {'sort_by': '-product'}
+    >>> view = create_view(ubuntu, '+upstreamreport', form)
+
+    >>> view.sort_order
+    ('product', True)
+
+The DistributionUpstreamBugReport view has a list of valid sort keys. If
+we try to sort by a key that isn't in that list we'll get the default
+sort_order back. (See test_distribution_upstream_bug_report.py in
+browser/ftests for further testing of this).
+
+    >>> form = {'sort_by': 'ifthisisvalidilleatmyhat'}
+    >>> view = create_view(ubuntu, '+upstreamreport', form)
+
+    >>> view.sort_order
+    ('open_bugs', True)
+
+The DistributionUpstreamBugReport view also has a sort_order_links
+property. This is a dict of URLs which is used to create the links in
+the sortable table header on the +upstreamreport page for the
+distribution.
+
+The current sort_order is the default one.
+
+    >>> view.sort_order
+    ('open_bugs', True)
+
+All the links, by default will link to a standard forward sort for their
+particular sort_key. In this case, this is also true of the open_bugs
+key, since this is at the moment reverse-sorted.
+
+    >>> def print_sort_order_links(view, key='link'):
+    ...     for sort_key in sorted(view.sort_order_links):
+    ...         link_dict = view.sort_order_links[sort_key]
+    ...         print sort_key, link_dict[key]
+
+    >>> print_sort_order_links(view)
+    bug_supervisor_name http://...?sort_by=bug_supervisor_name
+    bugs_with_upstream_patches http:...?sort_by=bugs_with_upstream_patches
+    bugtracker_name http://...?sort_by=bugtracker_name
+    dsp http://...?sort_by=dsp
+    open_bugs http://...?sort_by=open_bugs
+    product http://...?sort_by=product
+    triaged_bugs http://...?sort_by=triaged_bugs
+    triaged_bugs_class http://...?sort_by=triaged_bugs_class
+    triaged_bugs_delta http://...?sort_by=triaged_bugs_delta
+    triaged_bugs_percentage http://...?sort_by=triaged_bugs_percentage
+    upstream_bugs http://...?sort_by=upstream_bugs
+    upstream_bugs_class http://...?sort_by=upstream_bugs_class
+    upstream_bugs_delta http://...?sort_by=upstream_bugs_delta
+    upstream_bugs_percentage http://...?sort_by=upstream_bugs_percentage
+    watched_bugs http://...?sort_by=watched_bugs
+    watched_bugs_class http://...?sort_by=watched_bugs_class
+    watched_bugs_delta http://...?sort_by=watched_bugs_delta
+    watched_bugs_percentage http://...?sort_by=watched_bugs_percentage
+
+Changing the sort_order to a forward sort of, say, bug_supervisor_name
+will change the link for that sort key. The others will remain
+unaffected.
+
+    >>> form = {'sort_by': 'bug_supervisor_name'}
+    >>> view = create_view(ubuntu, '+upstreamreport', form)
+
+    >>> view.sort_order
+    ('bug_supervisor_name', False)
+
+    >>> print_sort_order_links(view)
+    bug_supervisor_name http://...?sort_by=-bug_supervisor_name
+    bugs_with_upstream_patches http:...?sort_by=bugs_with_upstream_patches
+    bugtracker_name http://...?sort_by=bugtracker_name...
+
+Each sort_order_links dict has an 'arrow' key. This is the URL of the
+arrow icon to be displayed next to the link in the table header.
+
+    >>> print_sort_order_links(view, 'arrow')
+    bug_supervisor_name /@@/arrowUp
+    bugs_with_upstream_patches /@@/arrowBlank
+    bugtracker_name /@@/arrowBlank
+    dsp /@@/arrowBlank
+    open_bugs /@@/arrowBlank
+    product /@@/arrowBlank
+    triaged_bugs /@@/arrowBlank
+    triaged_bugs_class /@@/arrowBlank
+    triaged_bugs_delta /@@/arrowBlank
+    triaged_bugs_percentage /@@/arrowBlank
+    upstream_bugs /@@/arrowBlank
+    upstream_bugs_class /@@/arrowBlank
+    upstream_bugs_delta /@@/arrowBlank
+    upstream_bugs_percentage /@@/arrowBlank
+    watched_bugs /@@/arrowBlank
+    watched_bugs_class /@@/arrowBlank
+    watched_bugs_delta /@@/arrowBlank
+    watched_bugs_percentage /@@/arrowBlank
+
+Altering the sort order will change the arrow for the current sort order
+accordingly.
+
+    >>> form = {'sort_by': '-bug_supervisor_name'}
+    >>> view = create_view(ubuntu, '+upstreamreport', form)
+
+    >>> view.sort_order
+    ('bug_supervisor_name', True)
+
+    >>> print_sort_order_links(view, 'arrow')
+    bug_supervisor_name /@@/arrowDown
+    bugs_with_upstream_patches /@@/arrowBlank
+    bugtracker_name /@@/arrowBlank...
+
+    >>> form = {'sort_by': '-bugtracker_name'}
+    >>> view = create_view(ubuntu, '+upstreamreport', form)
+
+    >>> view.sort_order
+    ('bugtracker_name', True)
+
+    >>> print_sort_order_links(view, 'arrow')
+    bug_supervisor_name /@@/arrowBlank
+    bugs_with_upstream_patches /@@/arrowBlank
+    bugtracker_name /@@/arrowDown...
+
+PS: This page is actually browser-tested in pagetests.distribution-
+upstream-bug-report. Look there for more details.

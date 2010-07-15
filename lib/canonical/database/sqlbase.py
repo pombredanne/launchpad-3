@@ -1,11 +1,12 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import warnings
 from datetime import datetime
 import re
-
+from textwrap import dedent
 import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
@@ -13,6 +14,8 @@ from psycopg2.extensions import (
 import pytz
 import storm
 from storm.databases.postgres import compile as postgres_compile
+from storm.expr import State
+from storm.expr import compile as storm_compile
 from storm.locals import Storm, Store
 from storm.zope.interfaces import IZStorm
 
@@ -25,7 +28,9 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from lazr.restful.interfaces import IRepresentationCache
+
+from canonical.config import config, dbconfig
 from canonical.database.interfaces import ISQLBase
 
 
@@ -37,6 +42,7 @@ __all__ = [
     'commit',
     'ConflictingTransactionManagerError',
     'connect',
+    'convert_storm_clause_to_string',
     'cursor',
     'expire_from_cache',
     'flush_database_caches',
@@ -55,6 +61,7 @@ __all__ = [
     'rollback',
     'SQLBase',
     'sqlvalues',
+    'StupidCache',
     'ZopelessTransactionManager',]
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
@@ -103,11 +110,6 @@ class StupidCache:
 
     def get_cached(self):
         return self._cache.keys()
-
-
-# Monkey patch the cache into storm.store to override the standard
-# cache implementation for all stores.
-storm.store.Cache = StupidCache
 
 
 def _get_sqlobject_store():
@@ -166,7 +168,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
 
     def __init__(self, *args, **kwargs):
         """Extended version of the SQLObjectBase constructor.
-        
+
         We we force use of the the master Store.
 
         We refetch any parameters from different stores from the
@@ -195,7 +197,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
                 assert new_argument is not None, (
                     '%s not yet synced to this store' % repr(argument))
                 kwargs[key] = new_argument
-                
+
         store.add(self)
         try:
             self._create(None, **kwargs)
@@ -246,6 +248,11 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         """Inverse of __eq__."""
         return not (self == other)
 
+    def __storm_flushed__(self):
+        """Invalidate the web service cache."""
+        cache = getUtility(IRepresentationCache)
+        cache.delete(self)
+
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
 "already installed.  This is probably caused by calling initZopeless twice.")
 
@@ -265,43 +272,66 @@ class ZopelessTransactionManager(object):
                              "directly instantiated.")
 
     @classmethod
-    def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
-                     isolation=ISOLATION_LEVEL_DEFAULT):
-        # Get the existing connection info. We use the MAIN MASTER
-        # Store, as this is the only Store code still using this
-        # deprecated code interacts with.
-        connection_string = config.database.main_master
+    def _get_zopeless_connection_config(self, dbname, dbhost):
+        # This method exists for testability.
+
+        # This is only used by scripts, so we must connect to the read-write
+        # DB here -- that's why we use rw_main_master directly.
+        main_connection_string = dbconfig.rw_main_master
 
         # Override dbname and dbhost in the connection string if they
         # have been passed in.
         if dbname is not None:
-            connection_string = re.sub(
-                    r'dbname=\S*', r'dbname=%s' % dbname, connection_string)
+            main_connection_string = re.sub(
+                r'dbname=\S*', r'dbname=%s' % dbname, main_connection_string)
         else:
-            match = re.search(r'dbname=(\S*)', connection_string)
+            match = re.search(r'dbname=(\S*)', main_connection_string)
             if match is not None:
                 dbname = match.group(1)
 
         if dbhost is not None:
-            connection_string = re.sub(
-                    r'host=\S*', r'host=%s' % dbhost, connection_string)
+            main_connection_string = re.sub(
+                    r'host=\S*', r'host=%s' % dbhost, main_connection_string)
         else:
-            match = re.search(r'host=(\S*)', connection_string)
+            match = re.search(r'host=(\S*)', main_connection_string)
             if match is not None:
                 dbhost = match.group(1)
+        return main_connection_string, dbname, dbhost
 
-        if dbuser is None:
-            dbuser = config.launchpad.dbuser
+    @classmethod
+    def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
+                     isolation=ISOLATION_LEVEL_DEFAULT):
+        # Connect to the auth master store as well, as some scripts might need
+        # to create EmailAddresses and Accounts.
 
-        # Construct a config fragment:
-        overlay = '[database]\n'
-        overlay += 'main_master: %s\n' % connection_string
-        overlay += 'isolation_level: %s\n' % {
+        main_connection_string, dbname, dbhost = (
+            cls._get_zopeless_connection_config(dbname, dbhost))
+
+        assert dbuser is not None, '''
+            dbuser is now required. All scripts must connect as unique
+            database users.
+            '''
+
+        isolation_level = {
             ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
             ISOLATION_LEVEL_READ_COMMITTED: 'read_committed',
             ISOLATION_LEVEL_SERIALIZABLE: 'serializable'}[isolation]
+
+        # Construct a config fragment:
+        overlay = dedent("""\
+            [database]
+            rw_main_master: %(main_connection_string)s
+            isolation_level: %(isolation_level)s
+            """ % vars())
+
         if dbuser:
-            overlay += '\n[launchpad]\ndbuser: %s\n' % dbuser
+            # XXX 2009-05-07 stub bug=373252: Scripts should not be connecting
+            # as the launchpad_auth database user.
+            overlay += dedent("""\
+                [launchpad]
+                dbuser: %(dbuser)s
+                auth_dbuser: launchpad_auth
+                """ % vars())
 
         if cls._installed is not None:
             if cls._config_overlay != overlay:
@@ -318,26 +348,36 @@ class ZopelessTransactionManager(object):
             cls._dbhost = dbhost
             cls._dbuser = dbuser
             cls._isolation = isolation
-            cls._reset_store()
+            cls._reset_stores()
             cls._installed = cls
         return cls._installed
 
     @staticmethod
-    def _reset_store():
-        """Reset the MAIN DEFAULT store.
+    def _reset_stores():
+        """Reset the active stores.
 
         This is required for connection setting changes to be made visible.
-
-        Other stores do not need to be reset, as code using other stores
-        or explicit flavors isn't using this compatibility layer.
         """
-        store = _get_sqlobject_store()
-        connection = store._connection
-        if connection._state == storm.database.STATE_CONNECTED:
-            if connection._raw_connection is not None:
-                connection._raw_connection.close()
-            connection._raw_connection = None
-            connection._state = storm.database.STATE_DISCONNECTED
+        for name, store in getUtility(IZStorm).iterstores():
+            connection = store._connection
+            if connection._state == storm.database.STATE_CONNECTED:
+                if connection._raw_connection is not None:
+                    connection._raw_connection.close()
+
+                # This method assumes that calling transaction.abort() will
+                # call rollback() on the store, but this is no longer the
+                # case as of jamesh's fix for bug 230977; Stores are not
+                # registered with the transaction manager until they are
+                # used. While storm doesn't provide an API which does what
+                # we want, we'll go under the covers and emit the
+                # register-transaction event ourselves. This method is
+                # only called by the test suite to kill the existing
+                # connections so the Store's reconnect with updated
+                # connection settings.
+                store._event.emit('register-transaction')
+
+                connection._raw_connection = None
+                connection._state = storm.database.STATE_DISCONNECTED
         transaction.abort()
 
     @classmethod
@@ -349,7 +389,7 @@ class ZopelessTransactionManager(object):
         assert cls._installed is not None, (
             "ZopelessTransactionManager not installed")
         config.pop(cls._CONFIG_OVERLAY_NAME)
-        cls._reset_store()
+        cls._reset_stores()
         cls._installed = None
 
     @classmethod
@@ -391,6 +431,16 @@ class ZopelessTransactionManager(object):
     def abort():
         """Abort the current transaction."""
         transaction.abort()
+
+    @staticmethod
+    def registerSynch(synch):
+        """Register an ISynchronizer."""
+        transaction.manager.registerSynch(synch)
+
+    @staticmethod
+    def unregisterSynch(synch):
+        """Unregister an ISynchronizer."""
+        transaction.manager.unregisterSynch(synch)
 
 
 def clear_current_connection_cache():
@@ -551,9 +601,9 @@ def sqlvalues(*values, **kwvalues):
         raise TypeError(
             "Use either positional or keyword values with sqlvalue.")
     if values:
-        return tuple([quote(item) for item in values])
+        return tuple(quote(item) for item in values)
     elif kwvalues:
-        return dict([(key, quote(value)) for key, value in kwvalues.items()])
+        return dict((key, quote(value)) for key, value in kwvalues.items())
 
 
 def quote_identifier(identifier):
@@ -578,6 +628,51 @@ def quote_identifier(identifier):
 
 quoteIdentifier = quote_identifier # Backwards compatibility for now.
 
+
+def convert_storm_clause_to_string(storm_clause):
+    """Convert a Storm expression into a plain string.
+
+    :param storm_clause: A Storm expression
+
+    A helper function allowing to use a Storm expressions in old-style
+    code which builds for example WHERE expressions as plain strings.
+
+    >>> from lp.bugs.model.bug import Bug
+    >>> from lp.bugs.model.bugtask import BugTask
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
+    >>> from storm.expr import And, Or
+
+    >>> print convert_storm_clause_to_string(BugTask)
+    BugTask
+
+    >>> print convert_storm_clause_to_string(BugTask.id == 16)
+    BugTask.id = 16
+
+    >>> print convert_storm_clause_to_string(
+    ...     BugTask.importance == BugTaskImportance.UNKNOWN)
+    BugTask.importance = 999
+
+    >>> print convert_storm_clause_to_string(Bug.title == "foo'bar'")
+    Bug.title = 'foo''bar'''
+
+    >>> print convert_storm_clause_to_string(
+    ...     Or(BugTask.importance == BugTaskImportance.UNKNOWN,
+    ...        BugTask.importance == BugTaskImportance.HIGH))
+    BugTask.importance = 999 OR BugTask.importance = 40
+
+    >>> print convert_storm_clause_to_string(
+    ...    And(Bug.title == 'foo', BugTask.bug == Bug.id,
+    ...        Or(BugTask.importance == BugTaskImportance.UNKNOWN,
+    ...           BugTask.importance == BugTaskImportance.HIGH)))
+    Bug.title = 'foo' AND BugTask.bug = Bug.id AND
+    (BugTask.importance = 999 OR BugTask.importance = 40)
+    """
+    state = State()
+    clause = storm_compile(storm_clause, state)
+    if len(state.parameters):
+        parameters = [param.get(to_db=True) for param in state.parameters]
+        clause = clause.replace('?', '%s') % sqlvalues(*parameters)
+    return clause
 
 def flush_database_updates():
     """Flushes all pending database updates.
@@ -627,24 +722,28 @@ def flush_database_caches():
 
 def block_implicit_flushes(func):
     """A decorator that blocks implicit flushes on the main store."""
-    def wrapped(*args, **kwargs):
-        store = _get_sqlobject_store()
+    def block_implicit_flushes_decorator(*args, **kwargs):
+        from canonical.launchpad.webapp.interfaces import DisallowedStore
+        try:
+            store = _get_sqlobject_store()
+        except DisallowedStore:
+            return func(*args, **kwargs)
         store.block_implicit_flushes()
         try:
             return func(*args, **kwargs)
         finally:
             store.unblock_implicit_flushes()
-    return mergeFunctionMetadata(func, wrapped)
+    return mergeFunctionMetadata(func, block_implicit_flushes_decorator)
 
 
 def reset_store(func):
     """Function decorator that resets the main store."""
-    def wrapped(*args, **kwargs):
+    def reset_store_decorator(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         finally:
             _get_sqlobject_store().reset()
-    return mergeFunctionMetadata(func, wrapped)
+    return mergeFunctionMetadata(func, reset_store_decorator)
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid
@@ -673,20 +772,25 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
 
     Default database name is the one specified in the main configuration file.
     """
-    con_str = connect_string(user, dbname)
-    con = psycopg2.connect(con_str)
+    con = psycopg2.connect(connect_string(user, dbname))
     con.set_isolation_level(isolation)
     return con
 
 
 def connect_string(user, dbname=None):
-    """Return a PostgreSQL connection string."""
+    """Return a PostgreSQL connection string.
+
+    Allows you to pass the generated connection details to external
+    programs like pg_dump or embed in slonik scripts.
+    """
     from canonical import lp
     # We start with the config string from the config file, and overwrite
     # with the passed in dbname or modifications made by db_options()
     # command line arguments. This will do until db_options gets an overhaul.
-    con_str = config.database.main_master
     con_str_overrides = []
+    # We must connect to the read-write DB here, so we use rw_main_master
+    # directly.
+    con_str = dbconfig.rw_main_master
     assert 'user=' not in con_str, (
             'Connection string already contains username')
     if user is not None:
@@ -700,7 +804,8 @@ def connect_string(user, dbname=None):
         con_str = re.sub(r'dbname=\S*', '', con_str) # Remove if exists.
         con_str_overrides.append('dbname=%s' % dbname)
 
-    return ' '.join([con_str] + con_str_overrides)
+    con_str = ' '.join([con_str] + con_str_overrides)
+    return con_str
 
 
 class cursor:

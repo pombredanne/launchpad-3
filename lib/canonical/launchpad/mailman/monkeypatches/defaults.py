@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Pick up the standard Mailman defaults
 # pylint: disable-msg=W0401
@@ -40,6 +41,7 @@ DEFAULT_BOUNCE_NOTIFY_OWNER_ON_DISABLE = No
 DEFAULT_BOUNCE_NOTIFY_OWNER_ON_REMOVAL = No
 VERP_PERSONALIZED_DELIVERIES = Yes
 DEFAULT_FORWARD_AUTO_DISCARDS = No
+DEFAULT_BOUNCE_PROCESSING = No
 
 # Modify the global pipeline to add some handlers for Launchpad specific
 # functionality.

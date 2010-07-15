@@ -14,7 +14,7 @@ is thread safe (not that this will be a problem if we stick with
 simple configuration).
 
     >>> from canonical.config import config
-    >>> print config.database.main_master
+    >>> print config.database.rw_main_master
     dbname=launchpad_ftest
     >>> config.database.db_statement_timeout is None
     True
@@ -100,7 +100,7 @@ can be changed for a feature.
 And the test can remove the data when it is done to restore the config.
 
     >>> config.pop('test_data')
-    (<lazr.config.ConfigData ...>,)
+    (<lazr.config...ConfigData ...>,)
     >>> config.answertracker.email_domain
     'answers.launchpad.net'
 
@@ -117,9 +117,6 @@ no affect.
 Setting just the instance_name will change the directory from which the
 conf file is loaded.
 
-    # We must reset the lazr.config instance to test this.
-    >>> config._config = None
-
     >>> config.setInstance('development')
     >>> config.instance_name
     'development'
@@ -127,7 +124,7 @@ conf file is loaded.
     >>> config.filename
     '.../configs/development/launchpad-lazr.conf'
     >>> config.extends.filename
-    '.../canonical/config/schema-lazr.conf'
+    '.../config/schema-lazr.conf'
 
     >>> config.answertracker.days_before_expiration
     15
@@ -135,11 +132,12 @@ conf file is loaded.
 Changing the instance_name and process_name changes the directory and
 conf file name that is loaded.
 
-    >>> config._config = None
-
     >>> config.setInstance('testrunner')
     >>> config.instance_name
     'testrunner'
+
+    >>> config.answertracker.days_before_expiration
+    15
 
     >>> config.setProcess('test-process')
     >>> config.process_name
@@ -151,12 +149,10 @@ conf file name that is loaded.
     '.../configs/testrunner/launchpad-lazr.conf'
 
     >>> config.answertracker.days_before_expiration
-    30
+    300
 
 The default 'launchpad-lazr.conf' is loaded if no conf files match
 the process's name.
-
-    >>> config._config = None
 
     >>> config.setInstance('testrunner')
     >>> config.instance_name

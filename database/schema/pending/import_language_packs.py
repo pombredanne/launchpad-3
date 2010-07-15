@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2007 Canonical Ldt.  All rights reserved.
+#!/usr/bin/python
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Script to upload existing language packs into Launchpad."""
 

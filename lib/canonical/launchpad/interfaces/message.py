@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
@@ -25,14 +27,12 @@ from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
-from canonical.launchpad.interfaces.bugtask import IBugTask
-from canonical.launchpad.interfaces.job import IJob
+from lp.services.job.interfaces.job import IJob
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.launchpad.interfaces.person import IPerson
 
 from lazr.delegates import delegates
-from canonical.lazr.fields import CollectionField, Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 
 
@@ -55,7 +55,7 @@ class IMessage(Interface):
     # add form used by MessageAddView.
     content = Text(title=_("Message"), required=True, readonly=True)
     owner = exported(
-        Reference(title=_('Person'), schema=IPerson,
+        Reference(title=_('Person'), schema=Interface,
                   required=False, readonly=True))
 
     # Schema is really IMessage, but this cannot be declared here. It's
@@ -64,10 +64,6 @@ class IMessage(Interface):
         Reference(title=_('Parent'), schema=Interface,
                   required=False, readonly=True))
 
-    distribution = Reference(
-        title=_('Distribution'),
-        schema=Interface, # Redefined in distribution.py
-        required=False, readonly=True)
     rfc822msgid = TextLine(
         title=_('RFC822 Msg ID'), required=True, readonly=True)
     raw = Reference(title=_('Original unmodified email'),
@@ -183,7 +179,7 @@ class IMessageSet(Interface):
 
 class IIndexedMessage(Interface):
     """An `IMessage` decorated with its index and context."""
-    inside = Reference(title=_('Inside'), schema=IBugTask,
+    inside = Reference(title=_('Inside'), schema=Interface,
                        description=_("The bug task which is "
                                      "the context for this message."),
                        required=True, readonly=True)
@@ -191,15 +187,21 @@ class IIndexedMessage(Interface):
                 description=_("The index of this message in the list "
                               "of messages in its context."))
 
+
 class IndexedMessage:
     """Adds the `inside` and `index` attributes to an IMessage."""
     delegates(IMessage)
     implements(IIndexedMessage)
 
-    def __init__(self, context, inside, index):
+    def __init__(self, context, inside, index, parent=None):
         self.context = context
         self.inside = inside
         self.index = index
+        self._parent = parent
+
+    @property
+    def parent(self):
+        return self._parent
 
 
 class IMessageChunk(Interface):
@@ -223,12 +225,12 @@ class IUserToUserEmail(Interface):
     """User to user direct email communications."""
 
     sender = Object(
-        schema=IPerson,
+        schema=Interface,
         title=_("The message sender"),
         required=True, readonly=True)
 
     recipient = Object(
-        schema=IPerson,
+        schema=Interface,
         title=_("The message recipient"),
         required=True, readonly=True)
 

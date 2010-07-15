@@ -17,41 +17,44 @@
     <div id="container">
         <p class="page-number">3 of 11</p>
         <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="code-review" tabindex="1" accesskey="1">Next</a></li>
+            <li class="button-next"><a id="btnNext" href="translation" tabindex="1" accesskey="1"  title="Read about software translation in Launchpad">Next</a></li>
             <li class="home"><a href="index" accesskey="2">Launchpad tour home</a></li>
             <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
-            <li class="current"><a href="branch-hosting-tracking" accesskey="4">Code hosting and tracking</a></li>
-            <li><a href="code-review" accesskey="5">Code review</a></li>
-            <li><a href="translation" accesskey="6">Web-based translation</a></li>
-            <li><a href="community" accesskey="7">Community building</a></li>
-            <li><a href="ppa" accesskey="8">Software distribution</a></li>
-            <li><a href="community-support" accesskey="9">Community support</a></li>
-            <li><a href="api" accesskey="a">Beta: web services API</a></li>
-            <li><a href="feature-tracking" accesskey="b">Lightweight specifications</a></li>
-            <li><a href="release-management" accesskey="c">Release management</a></li>
-            
+            <li class="current"><a href="branch-hosting-tracking" accesskey="4">Code hosting and review</a></li>
+            <li><a href="translation" accesskey="5">Web-based translation</a></li>
+            <li><a href="community" accesskey="6">Mailing lists and teams</a></li>
+            <li><a href="ppa" accesskey="7">Software distribution</a></li>
+            <li><a href="community-support" accesskey="8">Community support</a></li>
+            <li><a href="api" accesskey="9">Beta: web services API</a></li>
+            <li><a href="feature-tracking" accesskey="a">Lightweight specifications</a></li>
+            <li><a href="release-management" accesskey="b">Release management</a></li>
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
-            <h1>Welcome to the Bazaar</h1>
+            <h1>Code hosting and review</h1>
             <p>
                 <img src="images/hosting/main-image.jpg" alt="Collaborate with free software communities." />
             </p>
             <p class="intro-text">
-                <strong>You want to ensure that anybody who is interested can contribute code to your project, in a simple way, with full version control.</strong> And of course, you also want to maintain strict control of who can actually land code in your development trunk.
+                <strong>Launchpad and Bazaar make it easy for anyone to get your project's code, make their own changes with full version control, and then propose their work for merging back into your trunk.</strong>
+            </p>
+
+            <p class="intro-text">
+                Full control of who can land code in your project's trunk remains with you. And thanks to public code reviews, you can share the work of vetting proposed changes.
             </p>
             <p class="intro-text">
-                With Launchpad and Bazaar, anyone can create their own line of development, with full version control, to be published alongside your official branches. From experimental lines of development by entirely new contributors, to work on the the next major release, all code related to your project - whether hosted on Launchpad or elsewhere - is catalogued and can be downloaded with just a few key strokes.
+                From experimental lines of development by entirely new contributors, to your official trunk, all code related to your project &mdash; whether hosted on Launchpad or elsewhere, even in Git, Subversion or CVS &mdash; is catalogued and can be downloaded with just a few key strokes.
             </p>
-            <p class="intro-text">
-               If your code's not in Bazaar, Launchpad will even run a continuous import of Subversion and CVS repositories directly into a Bazaar branch.
-            </p>
-            <div id="link-holder"><a href="https://code.launchpad.net/">Visit Launchpad Code &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            <div id="link-holder"><a href="https://code.launchpad.net/">Visit Launchpad Code &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
+            <li class="button-prev">
+                <a href="bugs" title="Back to the Bug Tracker page" accesskey="d" tabindex="2">Back</a>
+            </li>
             <li class="button-next">
-                <a href="code-review" accesskey="d" tabindex="2">Next</a>
+                <a href="translation" accesskey="e" tabindex="3" title="Read about software translation in Launchpad">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -64,16 +67,22 @@
                         <p class="screen-holder">
                             <img src="images/hosting/1.png" alt="Drive-by contributions" />                        </p>
                         <p>
-                            With Launchpad and Bazaar, contributors can create their own branch of your code, make their changes and then push it all back up to Launchpad to be listed right alongside your official branches. And because they never touch your trunk they don&rsquo;t need to ask for commit access.
-                        </p>
+                            With Launchpad and Bazaar, contributors can create their own branch of your code, make their changes and then push it all back up to Launchpad to be listed right alongside your official branches.</p><br />
+                       <p> And because they never touch your trunk they don&rsquo;t need to ask for commit access.</p><br />
+                        <p>So, with no extra effort on your part new contributors can submit code to your project and propose it for merging into your trunk.</p>
                     </div>
                     <div class="block odd">
-                        <h3>Merge flows</h3>
-                        <h4>Once a contributor is happy with their branch, they can propose it to be merged into your main line of development, or any other branch registered for your project.</h4>
-                        <p class="screen-holder"><img src="images/hosting/2.png" alt="Merge flows" " /></p>
-                        <p>
-Launchpad&rsquo;s <a href="code-review">code review</a> and Bazaar&rsquo;s superb support for merging make bringing the new code and its revision history back into your branch quick and easy.
-                        </p>
+                        <h3>Straightforward code review</h3>
+                        <h4>One place to discuss and vote on code contributions, whether by email or on the web.</h4>
+
+                        <p class="screen-holder"><img src="images/hosting/2.png" alt="Code review" /></p>
+
+                        <p>Don't lose code reviews in amongst a hundred mailing list threads. Use Launchpad and each review is instantly accessible from both the proposed and target branch.</p><br />
+                        <p>On one page, Launchpad gives you a diff of the proposed change, a threaded discussion and the clarity of standard voting options along with the flexibility of tags to add nuance to your selection.</p><br />
+                        <p>And each review becomes a mini-mailing list, automatically involving those most likely to have an interest in the change. <a href="https://help.launchpad.net/Code/Review">More about code review &gt;</a></p><br />
+                        <a href="https://code.launchpad.net/~tmaesaka/drizzle/drizzle-fix-drizzleslap/+merge/6668"><img src="images/see-it-action-button.png" alt="See it in action" Title="See a live code review on Launchpad" style="float: right;" /></a>
+
+
                     </div>
                     <div class="clear"></div>
                 </div>
@@ -111,11 +120,14 @@ Thanks to Bazaar&rsquo;s workflow flexibility, all team members can commit to a 
             </div>
         </div>
         <ul id="footer-navigation">
+            <li class="button-prev">
+                <a href="bugs" title="Back to the Bug Tracker page" accesskey="f" tabindex="4">Back</a>
+            </li>
             <li class="button-next">
-                <a href="code-review" accesskey="e" tabindex="3">Next</a>
+                <a href="translation" accesskey="g" tabindex="5" title="Read about software translation in Launchpad">Next</a>
             </li>
             <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="i" tabindex="7">Terms of Use</a> &#124; <a href="https://help.launchpad.net/Feedback" accesskey="j" tabindex="8">Feedback</a> &#124; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="k" tabindex="9">FAQ</a>
+                &copy; 2004-2010 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>

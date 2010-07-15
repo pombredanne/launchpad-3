@@ -53,11 +53,11 @@ branches.
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-       href="http://feeds.launchpad.dev/~stevea/branches.atom"
-       title="Latest Branches for Steve Alexander" />,
-    <link rel="alternate" type="application/atom+xml"
        href="http://feeds.launchpad.dev/~stevea/latest-bugs.atom"
        title="Latest Bugs for Steve Alexander" />,
+    <link rel="alternate" type="application/atom+xml"
+       href="http://feeds.launchpad.dev/~stevea/branches.atom"
+       title="Latest Branches for Steve Alexander" />,
     <link rel="alternate" type="application/atom+xml"
        href="http://feeds.launchpad.dev/~stevea/revisions.atom"
        title="Latest Revisions by Steve Alexander" />]
@@ -95,7 +95,7 @@ main product page.
         title="Latest Branches for Jokosher" />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/jokosher/revisions.atom"
-	title="Latest Revisions for Jokosher" />]
+        title="Latest Revisions for Jokosher" />]
 
 Only bug feeds should be linked to on bugs.launchpad.dev.
 
@@ -131,24 +131,24 @@ it must have quotes and html escaped.
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/bad-displayname/announcements.atom"
-        title="Announcements for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />,
+        title='Announcements for Bad displayname"&gt;&lt;script&gt;alert("h4x0r")&lt;/script&gt;' />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/bad-displayname/latest-bugs.atom"
-        title="Latest Bugs for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />,
+        title='Latest Bugs for Bad displayname"&gt;&lt;script&gt;alert("h4x0r")&lt;/script&gt;' />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/bad-displayname/branches.atom"
-        title="Latest Branches for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />,
+        title='Latest Branches for Bad displayname"&gt;&lt;script&gt;alert("h4x0r")&lt;/script&gt;' />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/bad-displayname/revisions.atom"
-        title="Latest Revisions for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />]
+        title='Latest Revisions for Bad displayname"&gt;&lt;script&gt;alert("h4x0r")&lt;/script&gt;' />]
 
-== Latest Bugs for a Project ==
+== Latest Bugs for a ProjectGroup ==
 
-On the project page on launchpad.dev and bugs.launchpad.dev, we should
-show a link to the atom feed for that project's latest bugs.
+On the project group page on launchpad.dev and bugs.launchpad.dev, we should
+show a link to the atom feed for that project group's latest bugs.
 
 Feed links for announcements and branches should also be shown
-on the main project page.
+on the main project group page.
 
     >>> browser.open('http://launchpad.dev/gnome')
     >>> soup = BeautifulSoup(browser.contents)
@@ -175,10 +175,10 @@ Only bug feeds should be linked to on bugs.launchpad.dev.
         href="http://feeds.launchpad.dev/gnome/latest-bugs.atom"
         title="Latest Bugs for GNOME" />]
 
-The default view for a project on bugs.launchpad.dev is +bugs. The
+The default view for a project group on bugs.launchpad.dev is +bugs. The
 default bug listing matches the latest-bugs atom feed, but any search
 parameters to this view class may cause them to differ. Since the
-project uses the same view class for both tasks, we should check
+project group uses the same view class for both tasks, we should check
 that the code does not display the atom feed link here inappropriately.
 
     >>> browser.open('http://bugs.launchpad.dev/gnome/+bugs?'
@@ -256,10 +256,10 @@ show a link to the atom feed for that source package's latest bugs.
         title="Latest Bugs for cnews in ubuntu" />]
 
 
-== Latest Branches for a Project ==
+== Latest Branches for a ProjectGroup ==
 
-On the project code page on code.launchpad.dev, we should show a link
-to the atom feed for that project's latest branches.
+On the project group code page on code.launchpad.dev, we should show a link
+to the atom feed for that project group's latest branches.
 
     >>> browser.open('http://code.launchpad.dev/mozilla')
     >>> soup = BeautifulSoup(browser.contents)
@@ -293,14 +293,14 @@ to the atom feed for that product's latest branches.
 On a person's code page on code.launchpad.dev, we should show a link
 to the atom feed for that person's latest branches.
 
-    >>> browser.open('http://code.launchpad.dev/~sabdfl')
+    >>> browser.open('http://code.launchpad.dev/~mark')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        href="http://feeds.launchpad.dev/~sabdfl/branches.atom"
+        href="http://feeds.launchpad.dev/~mark/branches.atom"
         title="Latest Branches for Mark Shuttleworth" />,
      <link rel="alternate" type="application/atom+xml"
-        href="http://feeds.launchpad.dev/~sabdfl/revisions.atom"
+        href="http://feeds.launchpad.dev/~mark/revisions.atom"
         title="Latest Revisions by Mark Shuttleworth" />]
 
 
@@ -309,10 +309,10 @@ to the atom feed for that person's latest branches.
 On a branch page on code.launchpad.dev, we should show a link to the
 atom feed for that branch's revisions.
 
-    >>> url = 'http://code.launchpad.dev/~sabdfl/firefox/release--0.9.1'
+    >>> url = 'http://code.launchpad.dev/~mark/firefox/release--0.9.1'
     >>> browser.open(url)
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        href="http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom"
-	title="Latest Revisions for Branch Mozilla Firefox 0.9.1" />]
+        href="http://feeds.launchpad.dev/~mark/firefox/release--0.9.1/branch.atom"
+	title="Latest Revisions for Branch lp://dev/~mark/firefox/release--0.9.1" />]

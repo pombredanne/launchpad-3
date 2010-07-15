@@ -1,156 +1,163 @@
-= Introduction =
+************
+Introduction
+************
 
 Some standard behavior is defined by the web service itself, not by
 the individual resources.
 
+Multiple versions
+=================
 
-== Authorization ==
+The Launchpad web service defines three versions: 'beta', '1.0', and
+'devel'.
 
-  # XXX leonardr 2008-05-22 spec=api-bugs-remote:
-  # Once we launch the web service this test will be removed
-  # because all users will have access to the web service.
+    >>> def me_link_for_version(version):
+    ...     response = webservice.get("/", api_version=version)
+    ...     print response.jsonBody()['me_link']
 
-In a development environment, any Launchpad person with an OAuth token
-can make a request of the web service. Here's the 'no-priv' user
-making a request.
+    >>> me_link_for_version('beta')
+    http://api.launchpad.dev/beta/people/+me
 
-  >>> print user_webservice.get("/~launchpad").getOutput()
-  HTTP/1.1 200 Ok
-  ...
+    >>> me_link_for_version('1.0')
+    http://api.launchpad.dev/1.0/people/+me
 
-But in production, only Launchpad people who belong to a particular
-team of beta testers are allowed to make requests. This code
-configures that team so that web service clients must be authorized as
-a member of the 'admins' team.
+    >>> me_link_for_version('devel')
+    http://api.launchpad.dev/devel/people/+me
 
-  >>> from canonical.config import config
-  >>> print config.vhost.api.beta_test_team
-  None
+No other versions are available.
 
-  >>> from textwrap import dedent
-  >>> test_data = dedent("""
-  ...     [vhost.api]
-  ...     beta_test_team: admins
-  ...     """)
-  >>> config.push('test', test_data)
-
-Now 'no-priv' can no longer make web service requests.
-
-  >>> print user_webservice.get("/~launchpad").getOutput()
-  HTTP/1.1 401 Unauthorized
-  ...
-  no-priv is not a member of the beta test team.
-  ...
-
-But 'salgado' belongs to the 'admins' team, and so can make web
-service requests.
-
-  >>> print webservice.get("/~launchpad").getOutput()
-  HTTP/1.1 200 Ok
-  ...
-
-If for some reason the variable's value is set to a nonsensical value,
-access to the web service will be cut off altogether.
-
-  >>> test_config = config.pop('test')
-  >>> from textwrap import dedent
-  >>> test_data = dedent("""
-  ...     [vhost.api]
-  ...     beta_test_team: nosuchteam
-  ...     """)
-  >>> config.push('test', test_data)
-
-  >>> print webservice.get("/~launchpad").getOutput()
-  HTTP/1.1 401 Unauthorized
-  ...
-  salgado is not a member of the beta test team.
-  ...
-
-  >>> test_config = config.pop('test')
-
-
-== Nonexistent resources ==
-
-An attempt to access a nonexistent resource yields a 404 error.
-
-  >>> print webservice.get("/no-such-resource")
-  HTTP/1.1 404 Not Found
-  ...
-
-An attempt to access an existing resource without versioning the URL
-yields a 404 error.
-
-  >>> print webservice.get("/people", api_version="/")
-  HTTP/1.1 404 Not Found
-  ...
-
-  >>> print webservice.get("/", api_version="/")
-  HTTP/1.1 404 Not Found
-  ...
-
-
-== Nonexistent methods ==
-
-An attempt to use an unsupported or nonexistent HTTP method on a
-resource yields a 405 error.
-
-  >>> print webservice("/", method="COPY")
-  HTTP/1.1 405 Method Not Allowed
-  Allow: GET HEAD POST PATCH PUT DELETE OPTIONS
-  ...
-
-  >>> print webservice.delete("/bugs")
-  HTTP/1.1 405 Method Not Allowed
-  Allow: GET
-  ...
-
-  >>> print webservice.delete("/people")
-  HTTP/1.1 405 Method Not Allowed
-  Allow: GET POST
-  ...
-
-  >>> print webservice.delete("/~salgado")
-  HTTP/1.1 405 Method Not Allowed
-  Allow: GET POST PUT PATCH
-  ...
-
-  >>> print webservice.delete("/debian/+source/mozilla-firefox/+bug/1")
-  HTTP/1.1 405 Method Not Allowed
-  Allow: GET POST PUT PATCH
-  ...
-
-
-== Inappropriate media types ==
-
-An attempt to PATCH a document with unsupported media type to a
-resource yields a 415 error.
-
-  >>> print webservice.patch("/~salgado", 'text/plain', "Foo")
-  HTTP/1.1 415 Unsupported Media Type
-  ...
-
-The only supported media types are ones that begin with 'application/json'.
-
-  >>> print webservice.patch("/~salgado", 'application/json', "{}")
-  HTTP/1.1 209 Content Returned
-  ...
-
-  >>> print webservice.patch(
-  ...     "/~salgado", 'application/json; charset=UTF-8', "{}")
-  HTTP/1.1 209 Content Returned
-  ...
-
-
-== Resources not exposed on the web service ==
-
-Soyuz build set (exposed on the web at +builds) are not available on the
-web service:
-
-    >>> print webservice.get("/+builds")
+    >>> print webservice.get("/", api_version="nosuchversion")
     HTTP/1.1 404 Not Found
     ...
 
-== API Requests to other hosts ==
+No beta team redirection
+========================
+
+Members of the beta team aren't redirected to the beta site on API call.
+
+(Enable beta redirection for demonstration purpose)
+
+    >>> from canonical.config import config
+    >>> beta_data = """
+    ...     [launchpad]
+    ...     beta_testers_redirection_host = beta.launchpad.dev
+    ...     """
+    >>> config.push('beta_data', beta_data)
+
+    >>> from lp.testing import ANONYMOUS, login, logout
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login(ANONYMOUS)
+    >>> beta_admin = getUtility(IPersonSet).getByEmail(
+    ...     'beta-admin@launchpad.net')
+    >>> beta_user = webservice_for_person(beta_admin)
+    >>> logout()
+
+A request to the web site is redirected:
+
+    >>> print http('GET /~launchpad-beta-owner HTTP/1.1\n'
+    ... 'Host: launchpad.dev\n'
+    ... 'Authorization: Basic %s\n' %
+    ...     "beta-admin@launchpad.net:test".encode('base64'))
+    HTTP/1.1 303 See Other
+    ...
+    Location: http://beta.launchpad.dev/~launchpad-beta-owner
+    ...
+
+But not a request to the web service:
+
+    >>> print beta_user.get("/~launchpad-beta-owner")
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> ignored = config.pop('beta_data')
+
+Resources not exposed on the web service
+========================================
+
+Soyuz build set (exposed on the web at /builders) are not available on the
+web service:
+
+    >>> print webservice.get("/builders")
+    HTTP/1.1 404 Not Found
+    ...
+
+Anonymous requests
+==================
+
+A properly signed web service request whose OAuth token key is empty
+is treated as an anonymous request.
+
+    >>> root = 'http://api.launchpad.dev/beta'
+    >>> body = anon_webservice.get(root).jsonBody()
+    >>> print body['projects_collection_link']
+    http://api.launchpad.dev/beta/projects
+    >>> print body['me_link']
+    http://api.launchpad.dev/beta/people/+me
+
+Normally, Launchpad will reject any call made with an unrecognized
+consumer key, because access tokens are registered with specific
+consumer keys.
+
+    >>> from canonical.launchpad.testing.pages import (
+    ...     LaunchpadWebServiceCaller)
+    >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
+
+    >>> caller = LaunchpadWebServiceCaller('new-consumer', 'access-key')
+    >>> response = caller.get(root)
+    >>> print response.getheader('status')
+    401 Unauthorized
+    >>> print response.body
+    Unknown consumer (new-consumer).
+    ...
+
+But with anonymous access there is no registration step. The first
+time Launchpad sees a consumer key might be during an
+anonymous request, and it can't reject that request just because it
+doesn't recognize the client.
+
+    >>> login(ANONYMOUS)
+    >>> consumer_set = getUtility(IOAuthConsumerSet)
+    >>> print consumer_set.getByKey('another-new-consumer')
+    None
+    >>> logout()
+
+    >>> caller = LaunchpadWebServiceCaller('another-new-consumer', '')
+    >>> response = caller.get(root)
+    >>> print response.getheader('status')
+    200 Ok
+
+Launchpad automatically adds new consumer keys it sees to its database.
+
+    >>> login(ANONYMOUS)
+    >>> print consumer_set.getByKey('another-new-consumer').key
+    another-new-consumer
+    >>> logout()
+
+Anonymous requests can't access certain data.
+
+    >>> response = anon_webservice.get(body['me_link'])
+    >>> print response.getheader('status')
+    401 Unauthorized
+    >>> print response.body
+    You need to be logged in to view this URL.
+    ...
+
+Anonymous requests can't change the dataset.
+
+    >>> import simplejson
+    >>> data = simplejson.dumps({'display_name' : "This won't work"})
+    >>> response = anon_webservice.patch(root + "/~salgado",
+    ...     'application/json', data)
+    >>> print response.getheader('status')
+    401 Unauthorized
+    >>> print response.body
+    (<Person at...>, 'displayname', 'launchpad.Edit')
+    ...
+
+API Requests to other hosts
+===========================
 
 JavaScript working with the API must deal with the browser's Same Origin
 Policy - requests may only be made to the host that the page was loaded
@@ -166,35 +173,61 @@ The URLs in the returned representations point to the current host,
 rather than the api host.  The canonical_url() function also returns
 links to the current host.
 
-The ServiceRoot for http://bugs.launchpad.dev/api/beta/ is the same as a
+The ServiceRoot for http://bugs.launchpad.dev/api/devel/ is the same as a
 request to http://api.launchpad.net/beta/, but with the links pointing
 to a different host.
 
+    >>> webservice.domain = 'bugs.launchpad.dev'
     >>> root = webservice.get(
-    ...     'http://bugs.launchpad.dev/api/beta/').jsonBody()
+    ...     'http://bugs.launchpad.dev/api/devel/').jsonBody()
     >>> print root['people_collection_link']
-    http://bugs.launchpad.dev/api/beta/people
+    http://bugs.launchpad.dev/api/devel/people
 
 Requests on these hosts also honor the standard Launchpad authorization
 scheme (and don't require OAuth).
 
-    >>> from canonical.launchpad.testing.pages import WebServiceCaller
-    >>> noauth_webservice = WebServiceCaller()
+    >>> from canonical.launchpad.testing.pages import (
+    ...     LaunchpadWebServiceCaller)
+    >>> noauth_webservice = LaunchpadWebServiceCaller(
+    ...     domain='bugs.launchpad.dev')
     >>> sample_auth = 'Basic %s' % 'test@canonical.com:test'.encode('base64')
     >>> print noauth_webservice.get(
-    ...     'http://bugs.launchpad.dev/api/beta/people/+me',
+    ...     'http://bugs.launchpad.dev/api/devel/people/+me',
     ...     headers={'Authorization': sample_auth})
     HTTP/1.1 303 See Other
     ...
-    Location: http://bugs.launchpad.dev/api/beta/~name12...
+    Location: http://bugs.launchpad.dev/api/devel/~name12...
     ...
 
 But the regular authentication still doesn't work on the normal API
 virtual host:
 
+    >>> noauth_webservice.domain = 'api.launchpad.dev'
     >>> print noauth_webservice.get(
     ...     'http://api.launchpad.dev/beta/people/+me',
     ...     headers={'Authorization': sample_auth})
     HTTP/1.1 401 Unauthorized
     ...
+    Request is missing an OAuth consumer key.
 
+
+The 'Vary' Header
+=================
+
+Launchpad's web service sets the Vary header differently from other
+parts of Launchpad.
+
+    >>> browser.open("http://launchpad.dev/")
+    >>> print browser.headers['Vary']
+    Cookie, Authorization
+
+    >>> response = webservice.get(
+    ...     'http://bugs.launchpad.dev/api/devel/')
+    >>> print response.getheader('Vary')
+    Accept
+
+The web service's Vary header does not mention the 'Cookie' header,
+because the web service doesn't use cookies. It doesn't mention the
+'Authorization' header, because every web service request has a
+distinct 'Authorization' header. It does mention the 'Accept' header,
+because the web service does use content negotiation.

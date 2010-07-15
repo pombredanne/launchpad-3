@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 
 """Check for invalid/missing TeamParticipation entries.
@@ -15,26 +18,26 @@ Ideally there should be database constraints to prevent this sort of
 situation, but that's not a simple thing and this should do for now.
 """
 
+import _pythonpath
+
 import optparse
 import sys
 
-import _pythonpath
-
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.database import Person
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.lp import initZopeless
 
 
 if __name__ == '__main__':
-    execute_zcml_for_scripts()
-    ztm = initZopeless(implicitBegin=False)
     parser = optparse.OptionParser(
         description="Check for invalid/missing TeamParticipation entries.")
     logger_options(parser)
     options, args = parser.parse_args(sys.argv[1:])
     log = logger(options, 'check-teamparticipation')
+
+    execute_zcml_for_scripts()
+    ztm = initZopeless(implicitBegin=False)
 
     # Check self-participation.
     query = """
@@ -78,6 +81,7 @@ if __name__ == '__main__':
                 participants.update(get_participants(member))
         return participants
 
+    from lp.registry.model.person import Person
     batch = team_ids[:50]
     team_ids = team_ids[50:]
     while batch:

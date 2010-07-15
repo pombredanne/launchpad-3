@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -33,6 +37,14 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
+        name="+validateemail"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.logintoken.ValidateEmailView"
+        template="../../launchpad/templates/logintoken-validateemail.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILoginToken"
         name="+validateteamemail"
         permission="zope.Public"
         class="canonical.launchpad.browser.logintoken.ValidateTeamEmailView"
@@ -62,13 +74,6 @@
         class="canonical.launchpad.browser.MergePeopleView"
         template="../templates/logintoken-mergepeople.pt"
         />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
-        name="+claimprofile"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ClaimProfileView"
-        template="../templates/logintoken-claimprofile.pt" />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"

@@ -1,5 +1,5 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import unittest
 
@@ -60,6 +60,93 @@ class TestTransactionDecorators(unittest.TestCase):
     def _getTestFileContent(self):
         """Return the file content object that created."""
         return self.store.find(LibraryFileContent, id=self.content_id).one()
+
+    def test_getAlias(self):
+        # Library.getAlias() returns the LibrarayFileAlias for a given
+        # LibrarayFileAlias ID.
+        library = db.Library(restricted=False)
+        alias = library.getAlias(1)
+        self.assertEqual(1, alias.id)
+
+    def test_getAlias_no_such_record(self):
+        # Library.getAlias() raises a LookupError, if no record with
+        # the given ID exists.
+        library = db.Library(restricted=False)
+        self.assertRaises(LookupError, library.getAlias, -1)
+
+    def test_getAlias_content_is_null(self):
+        # Library.getAlias() raises a LookupError, if no content
+        # record for the given alias exists.
+        library = db.Library(restricted=False)
+        alias = library.getAlias(1)
+        alias.content = None
+        self.assertRaises(LookupError, library.getAlias, 1)
+
+    def test_getAlias_content_is_none(self):
+        # Library.getAlias() raises a LookupError, if the matching
+        # record does not reference any LibraryFileContent record.
+        library = db.Library(restricted=False)
+        alias = library.getAlias(1)
+        alias.content = None
+        self.assertRaises(LookupError, library.getAlias, 1)
+
+    def test_getAlias_content_wrong_library(self):
+        # Library.getAlias() raises a LookupError, if a restricted
+        # library looks up a unrestricted LibraryFileAlias and
+        # vice versa.
+        restricted_library = db.Library(restricted=True)
+        self.assertRaises(LookupError, restricted_library.getAlias, 1)
+
+        unrestricted_library = db.Library(restricted=False)
+        alias = unrestricted_library.getAlias(1)
+        alias.restricted = True
+        self.assertRaises(LookupError, unrestricted_library.getAlias, 1)
+
+    def test_getAliases(self):
+        # Library.getAliases() returns a sequence
+        # [(LFA.id, LFA.filename, LFA.mimetype), ...] where LFA are
+        # LibrarayFileAlias records having the given LibraryFileContent
+        # ID.
+        library = db.Library(restricted=False)
+        aliases = library.getAliases(1)
+        expected_aliases = [
+            (1, u'netapplet-1.0.0.tar.gz', u'application/x-gtar'),
+            (2, u'netapplet_1.0.0.orig.tar.gz', u'application/x-gtar'),
+            ]
+        self.assertEqual(expected_aliases, aliases)
+
+    def test_getAliases_content_is_none(self):
+        # Library.getAliases() does not return records which do not
+        # reference any LibraryFileContent record.
+        library = db.Library(restricted=False)
+        alias = library.getAlias(1)
+        alias.content = None
+        aliases = library.getAliases(1)
+        expected_aliases = [
+            (2, u'netapplet_1.0.0.orig.tar.gz', u'application/x-gtar'),
+            ]
+        self.assertEqual(expected_aliases, aliases)
+
+    def test_getAliases_content_wrong_library(self):
+        # Library.getAliases() does not return data from restriceded
+        # LibrarayFileAlias records when called from a unrestricted
+        # library and vice versa.
+        unrestricted_library = db.Library(restricted=False)
+        alias = unrestricted_library.getAlias(1)
+        alias.restricted = True
+
+        aliases = unrestricted_library.getAliases(1)
+        expected_aliases = [
+            (2, u'netapplet_1.0.0.orig.tar.gz', u'application/x-gtar'),
+            ]
+        self.assertEqual(expected_aliases, aliases)
+
+        restricted_library = db.Library(restricted=True)
+        aliases = restricted_library.getAliases(1)
+        expected_aliases = [
+            (1, u'netapplet-1.0.0.tar.gz', u'application/x-gtar'),
+            ]
+        self.assertEqual(expected_aliases, aliases)
 
     def test_read_transaction_reset_store(self):
         """Make sure that the store is reset after the transaction."""

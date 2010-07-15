@@ -1,6 +1,8 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2005 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 
 # This script updates the cached source package information in the system.
@@ -13,7 +15,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class PackageCacheUpdater(LaunchpadCronScript):
@@ -45,7 +47,7 @@ class PackageCacheUpdater(LaunchpadCronScript):
         PPA archives caches are consolidated in a Archive row to optimize
         searches across PPAs.
         """
-        for distroseries in distribution.serieses:
+        for distroseries in distribution.series:
             self.updateDistroSeriesCache(distroseries, archive)
 
         distribution.removeOldCacheItems(archive, log=self.logger)
@@ -59,7 +61,8 @@ class PackageCacheUpdater(LaunchpadCronScript):
     def updateDistroSeriesCache(self, distroseries, archive):
         """Update package caches for the given location."""
         self.logger.info('%s %s %s starting' % (
-            distroseries.distribution.name, distroseries.name, archive.title))
+            distroseries.distribution.name, distroseries.name,
+            archive.displayname))
 
         distroseries.removeOldCacheItems(archive=archive, log=self.logger)
 
@@ -98,6 +101,6 @@ class PackageCacheUpdater(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = PackageCacheUpdater(
-        'update-cache', dbuser=config.statistician.dbuser)
+        'update-cache', dbuser="update-pkg-cache")
     script.lock_and_run()
 

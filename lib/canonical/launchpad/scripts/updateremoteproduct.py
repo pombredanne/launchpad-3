@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update Product.remote_product using BugWatch information."""
 
@@ -7,11 +8,11 @@ __all__ = ['RemoteProductUpdater']
 
 from zope.component import getUtility
 
-from canonical.launchpad.components.externalbugtracker import (
+from lp.bugs.externalbugtracker import (
     BugWatchUpdateError, BugWatchUpdateWarning, get_external_bugtracker)
-from canonical.launchpad.interfaces.bugtracker import (
+from lp.bugs.interfaces.bugtracker import (
     BugTrackerType, SINGLE_PRODUCT_BUGTRACKERTYPES)
-from canonical.launchpad.interfaces.product import IProductSet
+from lp.registry.interfaces.product import IProductSet
 
 
 class RemoteProductUpdater:

@@ -30,6 +30,8 @@ Iterating over this collection gives:
     branch
     bug
     mentoring
+    mergeproposal
+    patch
     private
     security
 
@@ -191,7 +193,7 @@ IHasBadges.  Here is the sample from the branch.zcml to illustrate.
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.webapp.badge.IHasBadges"
-      factory="canonical.launchpad.browser.BranchBadges"
+      factory="lp.code.browser.branchlisting.BranchBadges"
       />
 
 Luckily zope provides a way to do this in doctests:

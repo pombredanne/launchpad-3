@@ -1,4 +1,8 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Archive Override Check
 
 Given a distribution to run on, report any override inconsistence found.
@@ -15,11 +19,12 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.scripts.ftpmaster import  PubSourceChecker
-from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError, PackagePublishingStatus,
-    PackagePublishingPocket)
+from canonical.launchpad.interfaces import NotFoundError
 from canonical.lp import initZopeless
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.scripts.ftpmaster import PubSourceChecker
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 from contrib.glock import GlobalLock
 

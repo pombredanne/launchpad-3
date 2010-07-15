@@ -10,20 +10,22 @@ verify that links are disabled.
 <li tal:condition="not: context/enabled"
     style="display:none;">
   <strong
-    tal:attributes="class string:menu-link-${context/name}-disabled;"><tal:link-text
-    replace="structure context/escapedtext">Disabled text</tal:link-text>
+      tal:attributes="class string:menu-link-${context/name}-disabled;"><tal:link-text
+      replace="structure context/escapedtext">Disabled text</tal:link-text>
   (disabled)
   </strong>
 </li>
 <li tal:condition="context/enabled">
-  <a
-    tal:condition="context/linked"
-    tal:attributes="href context/url;
-                    title context/summary;
-                    class string:menu-link-${context/name};"
-    tal:content="structure context/escapedtext">link text</a><strong
-    tal:condition="not: context/linked"
-    tal:attributes="class string:menu-link-${context/name};"
-    tal:content="structure context/escapedtext">Unlinked text</strong>
+  <a href=""
+     class=""
+     title=""
+     tal:condition="context/linked"
+     tal:attributes="href context/url;
+		     title context/summary;
+		     class string:menu-link-${context/name};"
+     tal:content="structure context/escapedtext">link text</a><strong
+     tal:condition="not: context/linked"
+     tal:attributes="class string:menu-link-${context/name};"
+     tal:content="structure context/escapedtext">Unlinked text</strong>
 </li>
 </tal:block>

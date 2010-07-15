@@ -5,7 +5,7 @@
     <meta content="Your Personal Package Archive (PPA) simplifies publishing your software. There&rsquo;s no longer any need to ask testers on Ubuntu to compile your code from source. Just upload a source package and Launchpad will build and publish an installable binary in your own APT repository. Then publish the URL of the repository; users can install the latest version of your package with a single command, and automatically receive updates whenever you push a new version to the archive." name="description"/>
     <meta content="canonical, launchpad, tour" name="keywords"/>
     <meta content="en-US" name="language"/>
-    <title>Launchpad tour</title>
+    <title>Distribute software to Ubuntu users &mdash; Launchpad tour</title>
     <style media="all" type="text/css">
         @import "launchpad-tour.css";
     </style>
@@ -15,39 +15,44 @@
 </head>
 <body>
     <div id="container">
-        <p class="page-number">7 of 11</p>
+        <p class="page-number">6 of 11</p>
 <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="community-support" tabindex="1" accesskey="1">Next</a></li>
+            <li class="button-next"><a id="btnNext" href="community-support" tabindex="1" accesskey="1" title="Read about user support tracking in Launchpad">Next</a></li>
             <li class="home"><a href="index" accesskey="2">Launchpad tour home</a></li>
             <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
-            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and tracking</a></li>
-            <li><a href="code-review" accesskey="5">Code review</a></li>
-            <li><a href="translation" accesskey="6">Web-based translation</a></li>
-            <li><a href="community" accesskey="7">Community building</a></li>
-            <li class="current"><a href="ppa" accesskey="8">Software distribution</a></li>
-            <li><a href="community-support" accesskey="9">Community support</a></li>
-            <li><a href="api" accesskey="a">Beta: web services API</a></li>
-            <li><a href="feature-tracking" accesskey="b">Lightweight specifications</a></li>
-            <li><a href="release-management" accesskey="c">Release management</a></li>
-            
+            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and review</a></li>
+            <li><a href="translation" accesskey="5">Web-based translation</a></li>
+            <li><a href="community" accesskey="6">Mailing lists and teams</a></li>
+            <li class="current"><a href="ppa" accesskey="7">Software distribution</a></li>
+            <li><a href="community-support" accesskey="8">Community support</a></li>
+            <li><a href="api" accesskey="9">Beta: web services API</a></li>
+            <li><a href="feature-tracking" accesskey="a">Lightweight specifications</a></li>
+            <li><a href="release-management" accesskey="b">Release management</a></li>
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
-            <h1>Distribute software<br /> from your own APT repository</h1>
+            <h1>Distribute software with updates<br /> directly to Ubuntu users</h1>
             <p>
                 <img src="images/ppa/main-image.jpg" alt="Collaborate with free software communities." />
             </p>
             <p class="intro-text">
-                <strong>Your Personal Package Archive (&ldquo;PPA&rdquo;) simplifies publishing your software.</strong> Now you no longer need to ask testers on Ubuntu to compile your code from source. Instead, upload a source package to Launchpad and it will build then publish an installable binary in your own APT repository. 
-<br /><br />
-Installing your package is just as easy as with any other Ubuntu software and when you publish a new version your users receive automatic updates.
+                <strong>Publishing your software is simple with Launchpad's Personal Package Archives.</strong><br /><br />
+
+                Launchpad builds installable Ubuntu packages for multiple architectures and hosts them in your own software repository.
+                <br /><br />
+                Installing applications from a PPA is just as easy as standard Ubuntu software, with updates automatically pushed to your users.
             </p>
-            <div id="link-holder"><a href="https://launchpad.net/ubuntu/+ppas">Search PPAs &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            <div id="left-link-holder"><strong>Need a private PPA with restricted access?</strong><br /><a href="join-launchpad#commercial">Read about our beta for commercial subscribers &gt;</a></div>
+            <div id="link-holder"><a href="https://launchpad.net/ubuntu/+ppas"><img src="images/see-it-action-button.png" alt="See it in action" title="Click to browse PPAs" /></a><br /><a href="https://help.launchpad.net/PPA">Read our PPA user guide &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
+            <li class="button-prev">
+                <a href="community" accesskey="d" tabindex="2" title="Back to the mailing lists and teams page">Back</a>
+            </li>
             <li class="button-next">
-                <a href="community-support" accesskey="d" tabindex="2">Next</a>
+                <a href="community-support" accesskey="e" tabindex="3" title="Read about user support tracking in Launchpad">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -55,23 +60,28 @@ Installing your package is just as easy as with any other Ubuntu software and wh
                 <div class="furthur-information-block-top"></div>
                 <div class="furthur-information-block-mid">
                     <div class="block">
-                        <h3>Automatic software distribution - with updates&#33;</h3>
-                        <h4>Publishing your software into a PPA is the best way to make sure it will reach a wide audience of Ubuntu users.</h4>
+                        <h3>Automatic software distribution &mdash; with updates&#33;</h3>
+                        <h4>Publishing your software using a PPA is the easiest way to reach a wide audience of Ubuntu users.</h4>
                         <p class="screen-holder">
                             <img src="images/ppa/1.png" alt="Automatic software distribution - with updates!" />                        </p>
                         <p>
-                            Instead of downloading individual packages, the archive enables your users to retrieve all your packages and their dependencies from a single reliable source.
-</p><p>
-When you publish a new version of one of your packages, Ubuntu notifies all of your users that an update is available and it can even automatically install the updated version for them if they prefer. This helps to keep all your users up to date, especially if you want to push the latest code to beta testers.
+                            PPAs are the easiest and quickest way to get your software directly to Ubuntu users. Adding your PPA to an Ubuntu system takes just a few keystrokes &mdash; <code>add-apt-repository ppa:your-ppa</code> &mdash; and then all of your PPA's packages are just a few clicks away.
+                            <br /><br />
+                            Ubuntu and your PPA take care of any dependencies, either from the primary Ubuntu repositories or from other PPAs that you specify.
+                            <br /><br />
+                            And when you publish a new version of one of your packages, Ubuntu notifies all of your users of the update. It can even automatically install
+                            the updates if they prefer.
                         </p>
                     </div>
                     <div class="block odd">
-                        <h3>Team PPAs</h3>
-                        <h4>Teams can have their own package archives.</h4>
+                        <h3>Team and multiple PPAs</h3>
+                        <h4>Create multiple PPAs to serve different audiences. Use a team PPA to work with others.</h4>
                         <p class="screen-holder">
                             <img src="images/ppa/2.png" alt="Team PPAs" />                        </p>
                         <p>
-                            Any member of a team can upload new packages to its PPA, making it a great way for groups of people to publish software collectively. The Kubuntu project did just that to distribute their first builds of the KDE 4 environment. If you have a team of developers working on a set of related packages, consider setting up a team PPA as a way to simplify coordination across each of those pieces of software.
+                            Want to distribute nightly builds to your developer community, beta versions to your test team and backports to another group? No problem. Create separate PPAs to serve each group.<br /><br />
+                            Teams can also have one or many PPAs. With team PPAs, any member of that team can upload new packages, making it a great way for groups of people to publish software collectively.<br /><br />
+                            If you have a team of developers working on a set of related packages, consider setting up a team PPA as a way to simplify coordination across each of those pieces of software.
                         </p>
                     </div>
                     <div class="clear"></div>
@@ -87,20 +97,23 @@ When you publish a new version of one of your packages, Ubuntu notifies all of y
                         <p class="screen-holder">
                             <img src="images/ppa/3.png" alt="Multiple architectures"  />                        </p>
                         <p>
-                            Even if you don&rsquo;t have the hardware yourself, Launchpad will create binaries for x86, AMD64 and LPIA architectures, with more coming in the future.
+                            Even if you don&rsquo;t have the hardware yourself, Launchpad will create binaries for x86 and AMD64 architectures.
                         </p>
                     </div>
                     <div class="clear"></div>
                 <div class="furthur-information-block-bot"></div>
             </div>
         </div>
+        </div>
         <ul id="footer-navigation">
-            <li class="button-next">
-                <a href="community-support" accesskey="e" tabindex="3">Next</a>
+            <li class="button-prev">
+                <a href="community" title="Back to the mailing lists and teams page" accesskey="f" tabindex="4">Back</a>
             </li>
-             <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="h" tabindex="6">FAQ</a>
- 
+            <li class="button-next" title="Read about user support tracking in Launchpad">
+                <a href="community-support" accesskey="g" tabindex="5">Next</a>
+            </li>
+            <li class="copyright">
+                &copy; 2004-2010 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>

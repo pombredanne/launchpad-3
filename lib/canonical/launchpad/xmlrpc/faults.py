@@ -1,4 +1,5 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad XMLRPC faults."""
 
@@ -13,24 +14,25 @@ __all__ = [
     'BranchCreationForbidden',
     'BranchNameInUse',
     'BranchUniqueNameConflict',
-    'check_fault',
+    'CannotHaveLinkedBranch',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
     'InvalidBranchIdentifier',
     'InvalidBranchName',
+    'InvalidBranchUniqueName',
     'InvalidProductIdentifier',
     'InvalidBranchUrl',
-    'NoBranchForSeries',
     'NoBranchWithID',
-    'NoDefaultBranchForPillar',
+    'NoLinkedBranch',
     'NoSuchBranch',
     'NoSuchBug',
+    'NoSuchCodeImportJob',
     'NoSuchDistribution',
     'NoSuchPackage',
     'NoSuchPerson',
     'NoSuchPersonWithName',
     'NoSuchProduct',
-    'NoSuchSeries',
+    'NoSuchProductSeries',
     'NoSuchTeamMailingList',
     'NotInTeam',
     'NoUrlForBranch',
@@ -39,38 +41,8 @@ __all__ = [
     ]
 
 
-import xmlrpclib
-
-
-def check_fault(fault, *fault_classes):
-    """Check if 'fault's faultCode matches any of 'fault_classes'.
-
-    :param fault: An instance of `xmlrpclib.Fault`.
-    :param fault_classes: Any number of `LaunchpadFault` subclasses.
-    """
-    for cls in fault_classes:
-        if fault.faultCode == cls.error_code:
-            return True
-    return False
-
-
-class LaunchpadFault(xmlrpclib.Fault):
-    """Base class for a Launchpad XMLRPC fault.
-
-    Subclasses should define a unique error_code and a msg_template,
-    which will be interpolated with the given keyword arguments.
-    """
-
-    error_code = None
-    msg_template = None
-
-    def __init__(self, **kw):
-        assert self.error_code is not None, (
-            "Subclasses must define error_code.")
-        assert self.msg_template is not None, (
-            "Subclasses must define msg_template.")
-        msg = self.msg_template % kw
-        xmlrpclib.Fault.__init__(self, self.error_code, msg)
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.xmlrpc import LaunchpadFault
 
 
 class NoSuchProduct(LaunchpadFault):
@@ -244,20 +216,17 @@ class BadStatus(LaunchpadFault):
         LaunchpadFault.__init__(self, team_name=team_name, status=status)
 
 
-class NoBranchForSeries(LaunchpadFault):
-    """The series has no branch registered with it."""
+class NoLinkedBranch(LaunchpadFault):
+    """The object has no branch registered with it."""
 
     error_code = 170
-    msg_template = (
-        'Series %(series_name)s on %(product_name)s has no branch associated '
-        'with it')
+    msg_template = ('%(object_name)s has no default branch.')
 
-    def __init__(self, series):
-        LaunchpadFault.__init__(
-            self, series_name=series.name, product_name=series.product.name)
+    def __init__(self, component):
+        LaunchpadFault.__init__(self, object_name=component.displayname)
 
 
-class NoSuchSeries(LaunchpadFault):
+class NoSuchProductSeries(LaunchpadFault):
     """There is no such series on a particular project."""
 
     error_code = 180
@@ -300,8 +269,8 @@ class BranchNameInUse(LaunchpadFault):
         LaunchpadFault.__init__(self, error=error)
 
 
-class NoDefaultBranchForPillar(LaunchpadFault):
-    """Raised we try to get a default branch for a pillar that can't have any.
+class CannotHaveLinkedBranch(LaunchpadFault):
+    """Raised when we get a linked branch for a thing that can't have any.
 
     An example of this is trying to get lp:bazaar, where 'bazaar' is a project
     group, or lp:ubuntu, where 'ubuntu' is a distro.
@@ -309,12 +278,17 @@ class NoDefaultBranchForPillar(LaunchpadFault):
 
     error_code = 230
     msg_template = (
-        "%(pillar_name)s is a %(pillar_type)s, and a %(pillar_type)s doesn't "
-        "have a default branch.")
+        "%(component_name)s is a %(component_type)s, and a "
+        "%(component_type)s cannot have a default branch.")
 
-    def __init__(self, pillar_name, pillar_type):
+    def __init__(self, component):
+        if IProjectGroup.providedBy(component):
+            component_type = 'project group'
+        else:
+            component_type = component.__class__.__name__.lower()
         LaunchpadFault.__init__(
-            self, pillar_name=pillar_name, pillar_type=pillar_type)
+            self, component_name=component.displayname,
+            component_type=component_type)
 
 
 class InvalidProductIdentifier(LaunchpadFault):
@@ -428,3 +402,62 @@ class NotFound(LaunchpadFault):
 
     def __init__(self, message="Not found."):
         LaunchpadFault.__init__(self, message=message)
+
+
+class InvalidBranchUniqueName(LaunchpadFault):
+    """Raised when a user tries to resolve a unique name that's incomplete.
+    """
+
+    error_code = 330
+    msg_template = (
+        "~%(path)s is too short to be a branch name. Try "
+        "'~<owner>/+junk/<branch>', '~<owner>/<product>/<branch> or "
+        "'~<owner>/<distribution>/<series>/<sourcepackage>/<branch>'.")
+
+    def __init__(self, path):
+        self.path = path
+        LaunchpadFault.__init__(self, path=path)
+
+
+class NoSuchDistroSeries(LaunchpadFault):
+    """Raised when the user tries to get a distroseries that doesn't exist."""
+
+    error_code = 340
+    msg_template = "No such distribution series %(distroseries_name)s."
+
+    def __init__(self, distroseries_name):
+        self.distroseries_name = distroseries_name
+        LaunchpadFault.__init__(self, distroseries_name=distroseries_name)
+
+
+class NoSuchSourcePackageName(LaunchpadFault):
+    """Raised when the user tries to get a sourcepackage that doesn't exist.
+    """
+
+    error_code = 350
+    msg_template = "No such source package %(sourcepackagename)s."
+
+    def __init__(self, sourcepackagename):
+        self.sourcepackagename = sourcepackagename
+        LaunchpadFault.__init__(self, sourcepackagename=sourcepackagename)
+
+
+class NoSuchCodeImportJob(LaunchpadFault):
+    """Raised by `ICodeImportScheduler` methods when a job is not found."""
+
+    error_code = 360
+    msg_template = 'Job %(job_id)d not found.'
+
+    def __init__(self, job_id):
+        LaunchpadFault.__init__(self, job_id=job_id)
+
+
+class AccountSuspended(LaunchpadFault):
+    """Raised by `ISoftwareCenterAgentAPI` when an account is suspended."""
+
+    error_code = 370
+    msg_template = ('The openid_identifier \'%(openid_identifier)s\''
+                    ' is linked to a suspended account.')
+
+    def __init__(self, openid_identifier):
+        LaunchpadFault.__init__(self, openid_identifier=openid_identifier)

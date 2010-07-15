@@ -40,7 +40,7 @@ that takes care of profiling (among other things).
     # We need to close the default interaction.
     >>> logout()
 
-    >>> http = HTTPCaller(host='launchpad.dev')
+    >>> http = HTTPCaller()
     >>> response = http('GET / HTTP/1.0')
     >>> profile_count = len(PageTestLayer.profiler.getstats())
     >>> profile_count > 0
@@ -57,8 +57,8 @@ Requests made with a testbrowser will also be profiled.
 Once the layer finishes, it saves the profile data in the requested file.
 
     >>> PageTestLayer.tearDown()
-    >>> import pstats2
-    >>> stats = pstats2.Stats(pagetests_profile)
+    >>> import pstats
+    >>> stats = pstats.Stats(pagetests_profile)
     >>> os.remove(pagetests_profile)
 
 When the environment isn't set, no profile is created.
@@ -162,10 +162,10 @@ The OOPS id is referenced in the profiling log's filename.
     >>> profiling_oops_id == logged_oops.id
     True
 
-These profile can be loaded using the pstats2 module.
+These profile can be loaded using the pstats module.
 
-    >>> import pstats2
-    >>> stats = pstats2.Stats(
+    >>> import pstats
+    >>> stats = pstats.Stats(
     ...     os.path.join(profile_dir, os.listdir(profile_dir)[0]))
 
 Making another request will create another profile.
@@ -198,29 +198,6 @@ the retried request in the master store:
     ...
     URL: http://localhost/no-such-file
     ...
-
-
-== Profiling scripts ==
-
-All scripts derived from LaunchpadScript support a --profile option.
-The profile data is saved in the argument when the program exits.
-
-    >>> from canonical.launchpad.scripts.base import LaunchpadScript
-    >>> class ProfiledScript(LaunchpadScript):
-    ...     def main(self):
-    ...         pass
-    ...     def _init_zca(self, use_web_security):
-    ...         pass
-    ...     def _init_db(self, implicit_begin, isolation):
-    ...         pass
-
-    >>> profile_file = os.path.join(profile_dir, 'myscript.prof')
-    >>> script = ProfiledScript(
-    ...     'test-script.py', test_args=[
-    ...         'test-script.py', '--profile', profile_file])
-
-    >>> script.run()
-    >>> stats = pstats2.Stats(profile_file)
 
 
 == Memory profiling ==

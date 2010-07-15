@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Menus and facets."""
 
 __metaclass__ = type
@@ -8,7 +10,6 @@ __all__ = [
     'get_current_view',
     'get_facet',
     'structured',
-    'translate_if_msgid',
     'FacetMenu',
     'ApplicationMenu',
     'ContextMenu',
@@ -26,7 +27,7 @@ from zope.i18n import translate, Message
 from zope.interface import implements
 from zope.component import getMultiAdapter
 from zope.security.proxy import (
-    isinstance as zope_isinstance, ProxyFactory, removeSecurityProxy)
+    isinstance as zope_isinstance, removeSecurityProxy)
 
 from lazr.delegates import delegates
 
@@ -81,10 +82,10 @@ def get_current_view(request=None):
     # among the traversed_names. We need to get it from a private attribute.
     view = request._last_obj_traversed
     # Note: The last traversed object may be a view's instance method.
+    bare =  removeSecurityProxy(view)
     if zope_isinstance(view, types.MethodType):
-        bare =  removeSecurityProxy(view)
-        return ProxyFactory(bare.im_self)
-    return view
+        return bare.im_self
+    return bare
 
 
 def get_facet(view):
@@ -183,6 +184,11 @@ class MenuLink:
         return getMultiAdapter(
             (self, get_current_browser_request()), name="+inline")()
 
+    @property
+    def path(self):
+        """See `ILink`."""
+        return self.url.path
+
 
 class FacetLink(MenuLink):
     """Adapter from ILinkData to IFacetLink."""
@@ -195,6 +201,8 @@ class FacetLink(MenuLink):
 # Marker object that means 'all links are to be enabled'.
 ALL_LINKS = object()
 
+MENU_ANNOTATION_KEY = 'canonical.launchpad.webapp.menu.links'
+
 
 class MenuBase(UserAttributeCache):
     """Base class for facets and menus."""
@@ -202,12 +210,13 @@ class MenuBase(UserAttributeCache):
     implements(IMenuBase)
 
     links = None
+    extra_attributes = None
     enable_only = ALL_LINKS
     _baseclassname = 'MenuBase'
     _initialized = False
     _forbiddenlinknames = set(
         ['user', 'initialize', 'links', 'enable_only', 'isBetaUser',
-         'iterlinks'])
+         'iterlinks', 'extra_attributes'])
 
     def __init__(self, context):
         # The attribute self.context is defined in IMenuBase.
@@ -218,12 +227,33 @@ class MenuBase(UserAttributeCache):
         """Override this in subclasses to do initialization."""
         pass
 
-    def _get_link(self, name):
-        method = getattr(self, name)
+    def _buildLink(self, name):
+        method = getattr(self, name, None)
+        # Since Zope traversals hides the root cause of an AttributeError,
+        # an AssertionError is raised explaining what went wrong.
+        if method is None:
+            raise AssertionError(
+                '%r does not define %r method.' % (self, name))
         linkdata = method()
         # The link need only provide ILinkData.  We need an ILink so that
         # we can set attributes on it like 'name' and 'url' and 'linked'.
         return ILink(linkdata)
+
+    def _get_link(self, name):
+        request = get_current_browser_request()
+        if request is not None:
+            # We must not use a weak ref here because if we do so and
+            # templates do stuff like "context/menu:bugs/foo", then there
+            # would be no reference to the Link object, which would allow it
+            # to be garbage collected during the course of the request.
+            cache = request.annotations.setdefault(MENU_ANNOTATION_KEY, {})
+            key = (self.__class__, self.context, name)
+            link = cache.get(key)
+            if link is None:
+                link = self._buildLink(name)
+                cache[key] = link
+            return link
+        return self._buildLink(name)
 
     def _rootUrlForSite(self, site):
         """Return the root URL for the given site."""

@@ -160,7 +160,7 @@ GoogleSearchService to connect to the Custom Search Engine service.
     >>> config.google.client_id == google_search.client_id
     True
     >>> google_search.client_id
-    '011948274177882366108%3Aixpjdn21yfg'
+    'ABCDEF2323'
 
 Several default query parameters are constant. They are kept in the
 _default_values dict. All csbe clients must set the client param to
@@ -210,7 +210,7 @@ value for the 'q' (query) parameter.
 
     >>> google_search.create_search_url(terms='svg +bugs').replace('&', ' ')
     'http://launchpad.dev:.../cse?client=google-csbe
-    cx=011948274177882366108%3Aixpjdn21yfg
+    cx=ABCDEF2323
     ie=utf8
     num=20
     oe=utf8
@@ -232,7 +232,7 @@ The start parameter can be changed by passing a start int argument.
 == Google Search Protocol parsing ==
 
 The GoogleSearchService's _parse_google_search_protocol() requires a
-subset of the the GSP 3.2 markup to create the PageMatch and PageMatches
+subset of the GSP 3.2 markup to create the PageMatch and PageMatches
 objects. An error is raised when the XML document cannot be parsed into
 objects. The probable cause of an error is that Google returned a new
 and incompatible version of GSP.
@@ -551,10 +551,10 @@ is only run in one environment, so links to that site will be preserved.
 
     >>> page_match = PageMatch(
     ...     u'OpenID',
-    ...     'http://help.launchpad.net/OpenID',
+    ...     'https://help.launchpad.net/OpenID',
     ...     u'Launchpad uses OpenID.')
     >>> page_match.url
-    'http://help.launchpad.net/OpenID'
+    'https://help.launchpad.net/OpenID'
 
 
 === Graceful handling of timeouts ===

@@ -1,7 +1,8 @@
-# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 from cStringIO import StringIO
-import datetime
+from datetime import datetime
 import unittest
 from urllib2 import urlopen, HTTPError
 
@@ -11,13 +12,12 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import commit, flush_database_updates, cursor
+from canonical.database.sqlbase import flush_database_updates, cursor
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
-from canonical.config import config
-from canonical.database.sqlbase import commit
+from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 
 
@@ -55,7 +55,8 @@ class LibrarianWebTestCase(unittest.TestCase):
             # because the server has no idea what mime-type to send it as
             # (NB. This could be worked around if necessary by having the
             # librarian allow access to files that don't exist in the DB
-            # and spitting them out with an 'unknown' mime-type-- StuartBishop)
+            # and spitting them out with an 'unknown' mime-type
+            # -- StuartBishop)
             try:
                 urlopen(url)
                 self.fail('Should have raised a 404')
@@ -80,7 +81,6 @@ class LibrarianWebTestCase(unittest.TestCase):
         # displaying Ubuntu build logs in the browser.  The mimetype should be
         # "text/plain" for these files.
         client = LibrarianClient()
-        from cStringIO import StringIO
         contents = 'Build log...'
         build_log = StringIO(contents)
         alias_id = client.addFile(name="build_log.txt.gz",
@@ -102,7 +102,6 @@ class LibrarianWebTestCase(unittest.TestCase):
     def test_checkNoEncoding(self):
         # Other files should have no encoding.
         client = LibrarianClient()
-        from cStringIO import StringIO
         contents = 'Build log...'
         build_log = StringIO(contents)
         alias_id = client.addFile(name="build_log.tgz",
@@ -117,8 +116,9 @@ class LibrarianWebTestCase(unittest.TestCase):
         mimetype = fileObj.headers['content-type']
         self.assertRaises(KeyError, fileObj.headers.__getitem__,
                           'content-encoding')
-        self.failUnless(mimetype == "application/x-tar",
-                        "Wrong mimetype. %s != 'application/x-tar'." % mimetype)
+        self.failUnless(
+            mimetype == "application/x-tar",
+            "Wrong mimetype. %s != 'application/x-tar'." % mimetype)
 
     def test_aliasNotFound(self):
         client = LibrarianClient()
@@ -204,6 +204,39 @@ class LibrarianWebTestCase(unittest.TestCase):
         f = urlopen(url)
         self.failUnless('Disallow: /' in f.read())
 
+    def test_headers(self):
+        client = LibrarianClient()
+
+        # Upload a file so we can retrieve it.
+        sample_data = 'blah'
+        file_alias_id = client.addFile(
+            'sample', len(sample_data), StringIO(sample_data),
+            contentType='text/plain')
+        url = client.getURLForAlias(file_alias_id)
+
+        # Change the date_created to a known value that doesn't match
+        # the disk timestamp. The timestamp on disk cannot be trusted.
+        file_alias = IMasterStore(LibraryFileAlias).get(
+            LibraryFileAlias, file_alias_id)
+        file_alias.date_created = datetime(
+            2001, 01, 30, 13, 45, 59, tzinfo=pytz.utc)
+
+        # Commit so the file is available from the Librarian.
+        self.commit()
+
+        # Fetch the file via HTTP, recording the interesting headers
+        result = urlopen(url)
+        last_modified_header = result.info()['Last-Modified']
+        cache_control_header = result.info()['Cache-Control']
+
+        # URLs point to the same content for ever, so we have a hardcoded
+        # 1 year max-age cache policy.
+        self.failUnlessEqual(cache_control_header, 'max-age=31536000, public')
+
+        # And we should have a correct Last-Modified header too.
+        self.failUnlessEqual(
+            last_modified_header, 'Tue, 30 Jan 2001 13:45:59 GMT')
+
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     layer = LaunchpadZopelessLayer
@@ -230,16 +263,16 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
         id1 = client.addFile(filename, 6, StringIO('sample'), 'text/plain')
         self.commit()
 
-        # Manually force last accessed time to be some time way in the past, so
-        # that it'll be very clear if it's updated or not (otherwise, depending
-        # on the resolution of clocks and things, an immediate access might not
-        # look any newer).
-        LibraryFileAlias.get(id1).last_accessed = datetime.datetime(
+        # Manually force last accessed time to be some time way in the
+        # past, so that it'll be very clear if it's updated or not
+        # (otherwise, depending on the resolution of clocks and things,
+        # an immediate access might not look any newer).
+        LibraryFileAlias.get(id1).last_accessed = datetime(
             2004,1,1,12,0,0, tzinfo=pytz.timezone('Australia/Sydney'))
         self.commit()
 
-        # Check that last_accessed is updated when the file is accessed over the
-        # web.
+        # Check that last_accessed is updated when the file is accessed
+        # over the web.
         access_time_1 = LibraryFileAlias.get(id1).last_accessed
         client = LibrarianClient()
         url = client.getURLForAlias(id1)
@@ -285,8 +318,8 @@ class DeletedContentTestCase(unittest.TestCase):
         # But when we flag the content as deleted
         cur = cursor()
         cur.execute("""
-            UPDATE LibraryFileContent SET deleted=TRUE WHERE id=%s
-            """, (alias.content.id,)
+            UPDATE LibraryFileAlias SET content=NULL WHERE id=%s
+            """, (alias.id,)
             )
         transaction.commit()
 

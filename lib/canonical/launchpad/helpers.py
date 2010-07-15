@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Various functions and classes that are useful across different parts of
 launchpad.
 
@@ -8,25 +10,24 @@ be better as a method on an existing content object or IFooSet object.
 
 __metaclass__ = type
 
-import subprocess
+import hashlib
 import gettextpo
 import os
 import random
 import re
+import subprocess
 import tarfile
 import warnings
+
 from StringIO import StringIO
 from difflib import unified_diff
-import sha
 
 from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 
 import canonical
 from canonical.launchpad.interfaces import (
-    BinaryPackageFormat, BinaryPackageFileType, ILaunchBag,
-    IRequestPreferredLanguages, IRequestLocalLanguages,
-    SourcePackageFileType)
+    ILaunchBag, IRequestPreferredLanguages, IRequestLocalLanguages)
 
 
 # pylint: disable-msg=W0102
@@ -335,7 +336,7 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
     if hardlimit is not None:
         last = hardlimit + 1
     else:
-        last = longest_expected + 1
+        last = None
     try:
         results = list(sequence[:last])
     except (TypeError, ForbiddenAttribute):
@@ -462,68 +463,7 @@ def get_filename_from_message_id(message_id):
     """
     return '%s.msg' % (
             canonical.base.base(
-                long(sha.new(message_id).hexdigest(), 16), 62))
-
-
-def getFileType(fname):
-    if fname.endswith(".deb"):
-        return BinaryPackageFileType.DEB
-    if fname.endswith(".udeb"):
-        return BinaryPackageFileType.DEB
-    if fname.endswith(".dsc"):
-        return SourcePackageFileType.DSC
-    if fname.endswith(".diff.gz"):
-        return SourcePackageFileType.DIFF
-    if fname.endswith(".orig.tar.gz"):
-        return SourcePackageFileType.ORIG
-    if fname.endswith(".tar.gz"):
-        return SourcePackageFileType.TARBALL
-
-
-BINARYPACKAGE_EXTENSIONS = {
-    BinaryPackageFormat.DEB: '.deb',
-    BinaryPackageFormat.UDEB: '.udeb',
-    BinaryPackageFormat.RPM: '.rpm'}
-
-
-class UnrecognizedBinaryFormat(Exception):
-
-    def __init__(self, fname, *args):
-        Exception.__init__(self, *args)
-        self.fname = fname
-
-    def __str__(self):
-        return '%s is not recognized as a binary file.' % self.fname
-
-
-def getBinaryPackageFormat(fname):
-    """Return the BinaryPackageFormat for the given filename.
-
-    >>> getBinaryPackageFormat('mozilla-firefox_0.9_i386.deb').name
-    'DEB'
-    >>> getBinaryPackageFormat('debian-installer.9_all.udeb').name
-    'UDEB'
-    >>> getBinaryPackageFormat('network-manager.9_i386.rpm').name
-    'RPM'
-    """
-    for key, value in BINARYPACKAGE_EXTENSIONS.items():
-        if fname.endswith(value):
-            return key
-
-    raise UnrecognizedBinaryFormat(fname)
-
-
-def getBinaryPackageExtension(format):
-    """Return the file extension for the given BinaryPackageFormat.
-
-    >>> getBinaryPackageExtension(BinaryPackageFormat.DEB)
-    '.deb'
-    >>> getBinaryPackageExtension(BinaryPackageFormat.UDEB)
-    '.udeb'
-    >>> getBinaryPackageExtension(BinaryPackageFormat.RPM)
-    '.rpm'
-    """
-    return BINARYPACKAGE_EXTENSIONS[format]
+                long(hashlib.sha1(message_id).hexdigest(), 16), 62))
 
 
 def intOrZero(value):
@@ -572,13 +512,18 @@ def positiveIntOrZero(value):
     return value
 
 
-def get_email_template(filename):
+def get_email_template(filename, app=None):
     """Returns the email template with the given file name.
 
     The templates are located in 'lib/canonical/launchpad/emailtemplates'.
     """
-    base = os.path.dirname(canonical.launchpad.__file__)
-    fullpath = os.path.join(base, 'emailtemplates', filename)
+    if app is None:
+        base = os.path.dirname(canonical.launchpad.__file__)
+        fullpath = os.path.join(base, 'emailtemplates', filename)
+    else:
+        import lp
+        base = os.path.dirname(lp.__file__)
+        fullpath = os.path.join(base, app, 'emailtemplates', filename)
     return open(fullpath).read()
 
 

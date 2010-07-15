@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -21,13 +22,13 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, IMailHandler,
     IMessageSet, IQuestionSet, ISpecificationSet,
     QuestionStatus)
-from canonical.launchpad.mail.codehandler import CodeHandler
+from lp.code.mail.codehandler import CodeHandler
 from canonical.launchpad.mail.commands import (
     BugEmailCommands, get_error_message)
 from canonical.launchpad.mail.helpers import (
     ensure_not_weakly_authenticated, get_main_body, guess_bugtask,
     IncomingEmailError, parse_commands, reformat_wiki_text)
-from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
+from lp.services.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
     MailWrapper, send_process_error_notification)
@@ -103,7 +104,13 @@ class MaloneHandler:
                 try:
                     if IBugEmailCommand.providedBy(command):
                         if bug_event is not None:
-                            notify(bug_event)
+                            try:
+                                notify(bug_event)
+                            except CreatedBugWithNoBugTasksError:
+                                rollback()
+                                raise IncomingEmailError(
+                                    get_error_message(
+                                        'no-affects-target-on-submit.txt'))
                         if (bugtask_event is not None and
                             not IObjectCreatedEvent.providedBy(bug_event)):
                             notify(bugtask_event)
@@ -145,8 +152,7 @@ class MaloneHandler:
                         self.processAttachments(bug, message, signed_msg)
                     elif IBugTaskEmailCommand.providedBy(command):
                         if bugtask_event is not None:
-                            if not IObjectCreatedEvent.providedBy(
-                                bug_event):
+                            if not IObjectCreatedEvent.providedBy(bug_event):
                                 notify(bugtask_event)
                             bugtask_event = None
                         bugtask, bugtask_event = command.execute(bug)
@@ -154,6 +160,11 @@ class MaloneHandler:
                         bug, bug_event = command.execute(bug, bug_event)
                     elif IBugTaskEditEmailCommand.providedBy(command):
                         if bugtask is None:
+                            if len(bug.bugtasks) == 0:
+                                rollback()
+                                raise IncomingEmailError(
+                                    get_error_message(
+                                        'no-affects-target-on-submit.txt'))
                             bugtask = guess_bugtask(
                                 bug, getUtility(ILaunchBag).user)
                             if bugtask is None:

@@ -116,7 +116,7 @@ message.
     ...     msg.signedContent, msg.signature)
     Traceback (most recent call last):
     ...
-    GPGVerificationError: (7, 8, 'Bad signature')
+    GPGVerificationError: (7, 8, u'Bad signature')
 
     >>> getUtility(IGPGHandler).getVerifiedSignature(
     ...     msg.signedContent.replace('\n', '\r\n'), msg.signature)
@@ -137,7 +137,10 @@ authenticateEmail() doesn't have any problems verifying the signature:
 
 Python's email library unfolds the headers, which means that we have to
 be careful when extracting the signed content when folded headers are
-signed.
+signed. This is done by manually parsing boundaries in
+SignedMessage._getSignatureAndSignedContent. If the second test here
+starts failing, Python is probably fixed, so the manual boundary parsing
+hack can be removed.
 
     >>> msg = read_test_message('signed_folded_header.txt')
     >>> print msg.parsed_string #doctest: -NORMALIZE_WHITESPACE
@@ -147,9 +150,7 @@ signed.
      boundary="--------------------EuxKj2iCbKjpUGkD"
     ...
 
-    >>> print msg.as_string() #doctest: -NORMALIZE_WHITESPACE
-    Date:...
-    ...
+    >>> print msg.get_payload(i=0).as_string() #doctest: -NORMALIZE_WHITESPACE
     Content-Type: multipart/mixed; boundary="--------------------EuxKj2iCbKjpUGkD"
     ...
 

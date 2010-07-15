@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This script runs the mirror prober scripts as the
 # launchpad user every two hours. Typically the output
@@ -36,10 +39,10 @@ fi
 cd /srv/launchpad.net/production/launchpad/cronscripts
 
 echo '== Distribution mirror prober (archive)' `date` ==
-python2.4 distributionmirror-prober.py --content-type=archive --max-mirrors=20
+python -S distributionmirror-prober.py --content-type=archive --max-mirrors=20
 
 echo '== Distribution mirror prober (cdimage)' `date` ==
-python2.4 distributionmirror-prober.py --content-type=cdimage --max-mirrors=30
+python -S distributionmirror-prober.py --content-type=cdimage --max-mirrors=30
 
 rm -f $LOCK
 

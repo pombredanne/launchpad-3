@@ -1,14 +1,21 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
-# Remove all translations from upstream. This script is useful to recover from
-# breakages after importing bad .po files like the one reported at #32610
-#
-# Copyright 2006 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=W0403
+"""Remove all translations from upstream.
+
+This script is useful to recover from breakages after importing bad
+.po files like the one reported at #32610.
+"""
+
+import _pythonpath
 
 import sys
 import logging
 from optparse import OptionParser
+
 from zope.component import getUtility
 
 from canonical.config import config
@@ -16,9 +23,17 @@ from canonical.database.constants import UTC_NOW
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.interfaces import (
-    IProductSet, IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet,
-    IPOTemplateSet, ILaunchpadCelebrities, RosettaTranslationOrigin)
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin)
+
+
 
 logger_name = 'remove-upstream-translations'
 

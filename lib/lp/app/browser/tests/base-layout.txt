@@ -1,0 +1,525 @@
+===============================
+The base-layout master template
+===============================
+
+The base-layout master template defines macros that control the layout
+of the page. Any page can use these layout options by including
+
+    metal:use-macro="view/macro:page/<layout>"
+
+in the root element of the page template. The base layout template uses the
+YUI grid classes for positioning.
+
+    >>> from z3c.ptcompat import ViewPageTemplateFile
+    >>> from canonical.launchpad.webapp.publisher import LaunchpadView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> user = factory.makePerson(name='waffles')
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://launchpad.dev',
+    ...     PATH_INFO='/~waffles/+layout')
+    >>> request.setPrincipal(user)
+
+The view can define the template's title in the page_title property, or
+define it in the pagetitles module (this latter is deprecated).
+
+    >>> class MainSideView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/main-side.pt')
+    ...     page_title = 'Test base-layout: main_side'
+
+The main_side layout uses all the defined features of the base-layout
+template. The example template uses the epilogue, main, and side
+slots. The global search and the applications tabs are present. The
+main and side content are positioned using the "yui-t4", "yui-main",
+"yui-b", and "yui-b side" classes.
+
+Header.
+
+    >>> view = MainSideView(user, request)
+    >>> html = view.render()
+    >>> print html
+    <!DOCTYPE html ...
+    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+          lang="en" dir="ltr">
+      <head>
+        <title>Test base-layout: main_side</title>
+        <link rel="shortcut icon" href="/@@/launchpad.png" />
+    ...
+
+Standard Javascript functions.
+
+    >>> print html
+    <!DOCTYPE html ...
+    ...
+            sortables_init();
+            initInlineHelp();
+            Y.lp.activate_collapsibles();
+            activateFoldables();
+            activateConstrainBugExpiration();
+    ...
+
+Body preamble.
+
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+
+    >>> body_tag = find_tag_by_id(html, 'document')
+    >>> body = str(body_tag)
+    >>> print body
+    <body id="document"
+            class="tab-overview
+          main_side
+          public
+          yui-skin-sam">
+        <div class="yui-d0">
+    <BLANKLINE>
+          <div id="locationbar">
+    ...
+
+Watermark and breadcrumbs.
+
+    >>> print body
+    <body ...
+    ...
+          <div class="watermark-apps-portlet top-portlet">
+            <img alt="" width="64" height="64" src="/@@/person-logo" />
+            <h2>Waffles</h2>
+    ...
+      <!-- Application Menu -->
+      <ul class="facetmenu">
+    <BLANKLINE>
+          <li class="overview active"
+              title="General information about Waffles"><a
+        href="http://launchpad.dev/~waffles">Overview</a></li>
+    ...
+              <div class="yui-b" dir="ltr">
+                <div>
+                  <h2>Heading</h2>
+                  <ol class="breadcrumbs">
+    ...
+
+Top portlet.
+
+    >>> print body
+    <body ...
+          <div class="top-portlet">
+            <p class="registered">
+              Registered on 2005-09-16
+              by <a class="sprite team" href="#">Illuminati team</a>
+            </p>
+            <p>
+              Main content of the page.
+            </p>
+          </div>
+    ...
+
+Help pane.
+
+    >>> print str(find_tag_by_id(body_tag, 'help-pane'))
+    <div id="help-pane" class="invisible">
+          <div id="help-body">
+            <iframe id="help-pane-content" class="invisible" ...
+            </div>
+          <div id="help-footer">
+            <span id="help-close"></span>
+          </div>
+        </div>
+
+Footer.
+
+    >>> print html
+    <!DOCTYPE html ...
+      <!--
+        Facet name: overview
+        Page type: main_side
+        Has global search: True
+        Has application tabs: True
+        Has side portlets: True
+    ...
+
+The main_only layout excludes the side slot, the main and epilogue slots are
+rendered. The global search and the applications tabs are present. The
+YUI Grid "yui-t4" and "yui-b side" divs are not rendered, allowing the main
+content to take up all the horizontal space.
+
+    >>> class MainOnlyView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/main-only.pt')
+    ...     page_title = 'Test base-layout: main_only'
+
+    >>> view = MainOnlyView(user, request)
+    >>> html = view.render()
+
+Heading.
+
+    >>> print html
+    <!DOCTYPE html ...
+    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+          lang="en" dir="ltr">
+      <head>
+        <title>Test base-layout: main_only</title>
+        <link rel="shortcut icon" href="/@@/launchpad.png" />
+    ...
+
+Watermark.
+
+    >>> body_tag = find_tag_by_id(html, 'document')
+    >>> body = str(body_tag)
+    >>> print body
+    <body ...
+          <div class="watermark-apps-portlet top-portlet">
+            <img alt="" width="64" height="64" src="/@@/person-logo" />
+            <h2>Waffles</h2>
+    ...
+
+Main content.
+
+    >>> print str(find_tag_by_id(body_tag, 'maincontent'))
+    <div id="maincontent" class="yui-main">
+              <div class="yui-b" dir="ltr">
+                <div>
+    <BLANKLINE>
+                  <ol class="breadcrumbs">
+    <BLANKLINE>
+    </ol>
+    <BLANKLINE>
+                </div>
+    <BLANKLINE>
+    <BLANKLINE>
+    <BLANKLINE>
+          <div class="top-portlet">
+            <h1>Heading</h1>
+            <p class="registered">
+              Registered on 2005-09-16
+              by <a class="sprite team" href="#">Illuminati team</a>
+            </p>
+            <p>
+              Main content of the page.
+            </p>
+          </div>
+        </div><!-- yui-b -->
+    </div>
+
+Global search.
+
+    >>> print body
+    <body ...
+      <form id="globalsearch" method="get"
+            accept-charset="UTF-8"
+            action="http://launchpad.dev/+search">
+        <input type="search" id="search-text" name="field.text" />
+        <input type="submit" value="" class="icon-only sprite search-icon" />
+      </form>
+    </div>
+    ...
+
+Footer.
+
+    >>> print html
+    <!DOCTYPE html ...
+    ...
+      <!--
+        Facet name: overview
+        Page type: main_only
+        Has global search: True
+        Has application tabs: True
+        Has side portlets: False
+    ...
+
+The searchless template is intended for pages that provide search in the main
+content area, so the global search is not needed. The epilogue and main
+slots are rendered, as are the application tabs.
+
+    >>> class SearchlessView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/searchless.pt')
+    ...     page_title = 'Test base-layout: searchless'
+
+    >>> view = SearchlessView(user, request)
+    >>> html = view.render()
+
+Heading.
+
+    >>> print html
+    <!DOCTYPE html ...
+    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+          lang="en" dir="ltr">
+      <head>
+        <title>Test base-layout: searchless</title>
+        <link rel="shortcut icon" href="/@@/launchpad.png" />
+    ...
+
+Body class.
+
+    >>> body_tag = find_tag_by_id(html, 'document')
+    >>> body = str(body_tag)
+    >>> print body
+    <body id="document"
+            class="tab-overview
+          searchless
+          public
+          yui-skin-sam">
+        <div class="yui-d0">
+    ...
+
+Watermarks.
+
+    >>> print body
+    <body ...
+          <div class="watermark-apps-portlet top-portlet">
+            <img alt="" width="64" height="64" src="/@@/person-logo" />
+            <h2>Waffles</h2>
+            <div id="registration" class="registering">
+            </div>
+    <BLANKLINE>
+      <!-- Application Menu -->
+      <ul class="facetmenu">
+    <BLANKLINE>
+          <li class="overview active"
+              title="General information about Waffles"><a
+        href="http://launchpad.dev/~waffles">Overview</a></li>
+    ...
+
+Main content.
+
+    >>> print str(find_tag_by_id(body_tag, 'maincontent'))
+    <div id="maincontent" class="yui-main">
+              <div class="yui-b" dir="ltr">
+                <div>
+    <BLANKLINE>
+                  <ol class="breadcrumbs">
+    <BLANKLINE>
+    </ol>
+    ...
+
+Top portlet.
+
+    >>> print body
+    <body ...
+          <div class="top-portlet">
+            <h1>Heading</h1>
+            <p class="registered">
+              Registered on 2005-09-16
+              by <a class="sprite team" href="#">Illuminati team</a>
+            </p>
+            <p>
+              Main content of the page.
+            </p>
+          </div>
+          </div><!-- yui-b -->
+          </div><!-- yui-main -->
+          <!-- yui-b side -->
+          <!-- yui-t4 -->
+    ...
+
+Footer.
+
+    >>> print html
+    <!DOCTYPE html ...
+    ...
+      <!--
+        Facet name: overview
+        Page type: searchless
+        Has global search: False
+        Has application tabs: True
+        Has side portlets: False
+    ...
+
+The locationless template is intended for pages that provide content outside
+of normal application use. It is for exceptions. The epilogue and main
+slots are rendered. Global search and the application tabs are not included
+in the header. The layout does not have a heading slot to provide the h1
+or breadcrumbs; the template must provide its own h1 element.
+
+    >>> class LocationlessView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/locationless.pt')
+    ...     page_title = 'Test base-layout: locationless'
+
+    >>> view = LocationlessView(user, request)
+    >>> html = view.render()
+
+Heading.
+
+    >>> print html
+    <!DOCTYPE html ...
+    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+          lang="en" dir="ltr">
+      <head>
+        <title>Test base-layout: locationless</title>
+        <link rel="shortcut icon" href="/@@/launchpad.png" />
+    ...
+
+Body.
+
+    >>> body_tag = find_tag_by_id(html, 'document')
+    >>> body = str(body_tag)
+    >>> print body
+    <body id="document"
+            class="tab-overview
+          locationless
+          public
+          yui-skin-sam">
+        <div class="yui-d0">
+    ...
+
+Main content.
+
+    >>> print str(find_tag_by_id(body_tag, 'maincontent'))
+    <div id="maincontent" class="yui-main">
+        <div class="yui-b" dir="ltr">
+          <div class="top-portlet">
+            <h1>Heading</h1>
+            <p class="registered">
+              Registered on 2005-09-16
+              by <a class="sprite team" href="#">Illuminati team</a>
+            </p>
+            <p>
+              Main content of the page.
+            </p>
+          </div>
+        </div><!-- yui-b -->
+    </div>
+
+Footer.
+
+    >>> print html
+    <!DOCTYPE html ...
+    ...
+      <!--
+        Facet name: overview
+        Page type: locationless
+        Has global search: False
+        Has application tabs: False
+        Has side portlets: False
+    ...
+
+
+Page Diagnostics
+----------------
+
+The page includes a comment after the document with diagnostic information.
+
+    >>> print html[html.index('</html>') + 7:]
+    <!--
+      Facet name: overview
+      Page type: locationless
+      Has global search: False
+      Has application tabs: False
+      Has side portlets: False
+      At least ... queries issued in ... seconds
+      r...
+    -->
+
+
+Page Headings
+-------------
+
+The example layouts all used the heading slot to define a heading for their
+test. The template controlled the heading.
+
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print content.h1
+    <h1>Heading</h1>
+
+
+Page Footers
+------------
+
+    >>> class BugsMainSideView(MainSideView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'bugs'
+    >>> bugs_request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://bugs.launchpad.dev',
+    ...     PATH_INFO='/~waffles/+layout')
+    >>> bugs_request.setPrincipal(user)
+    >>> view = BugsMainSideView(user, bugs_request)
+    >>> footer = find_tag_by_id(html, 'footer')
+    >>> for tag in footer.findAll('a'):
+    ...     print tag.string, tag['href']
+    None http://launchpad.dev/
+    Take the tour http://launchpad.dev/+tour
+    Read the guide https://help.launchpad.net/
+    Canonical&nbsp;Ltd. http://canonical.com/
+    Terms of use http://launchpad.dev/legal
+    Contact Launchpad Support https://help.launchpad.net/Feedback
+    System status http://identi.ca/launchpadstatus
+    None http://www.surveymonkey.com/s/launchpadsummer2010
+
+
+Page registering
+----------------
+
+The 'registering' slot is presented on the right side of the 'heading'
+and can be filled with the context registering information (registrant
+and date_created, normally).
+
+    >>> class RegisteringView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/main-registering.pt')
+    ...     page_title = 'Test base-layout: main_registering'
+
+    >>> view = RegisteringView(user, request)
+    >>> html = view.render()
+
+    >>> from canonical.launchpad.testing.pages import (
+    ...     first_tag_by_class)
+
+    >>> print first_tag_by_class(html, 'registering')
+    <div id="registration" class="registering">
+    <p>something nice about the context registering.</p>
+    </div>
+
+Note that the slot itself will be already 'styled' and it rarely has
+to be changed.
+
+
+Public and private presentation
+-------------------------------
+
+The base-layout master templates uses the fmt:public-private-css formatter to
+add the 'public' or 'private' CSS class to the body tag. When the context is
+private, the 'private' class is added to the body's class attribute.
+
+    >>> from lp.registry.interfaces.person import PersonVisibility
+
+    >>> login('admin@canonical.com')
+    >>> team = factory.makeTeam(
+    ...     owner=user, name='a-private-team',
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> view = LocationlessView(team, request)
+    >>> body = find_tag_by_id(view.render(), 'document')
+    >>> print body['class']
+    tab-overview locationless private yui-skin-sam
+
+When the context is public, the 'public' class is in the class attribute.
+
+    >>> login(ANONYMOUS)
+    >>> team = factory.makeTeam(owner=user, name='a-public-team')
+    >>> view = LocationlessView(team, request)
+    >>> body = find_tag_by_id(view.render(), 'document')
+    >>> print body['class']
+    tab-overview locationless public yui-skin-sam
+
+
+Notifications
+-------------
+
+Notifications are diplayed between the breadcrumbs and the page content.
+
+    >>> request.response.addInfoNotification('I cannot do that Dave.')
+    >>> view = MainOnlyView(user, request)
+    >>> body_tag = find_tag_by_id(view.render(), 'maincontent')
+    >>> print str(body_tag)
+    <div id="maincontent" ...
+      <ol class="breadcrumbs">
+      </ol>
+      ...
+      <div class="informational message">I cannot do that Dave.</div>
+      <div class="top-portlet">
+      ...

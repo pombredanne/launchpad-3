@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for the sfremoteproductfinder cronscript"""
 
@@ -7,7 +8,6 @@ __all__ = [
     'SourceForgeRemoteProductFinder',
     ]
 
-import re
 import urllib
 
 from BeautifulSoup import BeautifulSoup
@@ -15,7 +15,7 @@ from urllib2 import HTTPError, urlopen
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.product import IProductSet
+from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities)
 from canonical.launchpad.scripts.logger import log as default_log

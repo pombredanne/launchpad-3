@@ -1,11 +1,18 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['LoginToken', 'LoginTokenSet']
 
+from itertools import chain
+
 from zope.interface import implements
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
+import pytz
 
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
 from storm.expr import And
@@ -23,12 +30,14 @@ from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet,
     LoginTokenType)
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+from lp.registry.interfaces.gpg import IGPGKeySet
 
 
 class LoginToken(SQLBase):
@@ -53,7 +62,7 @@ class LoginToken(SQLBase):
     @property
     def requester_account(self):
         """See `ILoginToken`."""
-        if self.requester is None:
+        if self.requester is None or self.requester.account is None:
             return None
         return IMasterObject(self.requester.account)
 
@@ -88,7 +97,7 @@ class LoginToken(SQLBase):
         """See ILoginToken."""
         template = get_email_template('validate-email.txt')
         replacements = {'token_url': canonical_url(self),
-                        'requester': self.requester.browsername,
+                        'requester': self.requester.displayname,
                         'requesteremail': self.requesteremail,
                         'toaddress': self.email}
         message = template % replacements
@@ -114,7 +123,7 @@ class LoginToken(SQLBase):
 
         # Here are the instructions that need to be encrypted.
         template = get_email_template('validate-gpg.txt')
-        replacements = {'requester': self.requester.browsername,
+        replacements = {'requester': self.requester.displayname,
                         'requesteremail': self.requesteremail,
                         'displayname': key.displayname,
                         'fingerprint': key.fingerprint,
@@ -143,28 +152,11 @@ class LoginToken(SQLBase):
         subject = 'Launchpad: Confirm your OpenPGP Key'
         self._send_email(from_name, subject, text)
 
-    def sendPasswordResetEmail(self):
-        """See ILoginToken."""
-        template = get_email_template('forgottenpassword.txt')
-        from_name = "Launchpad"
-        message = template % dict(token_url=canonical_url(self))
-        subject = "Launchpad: Forgotten Password"
-        self._send_email(from_name, subject, message)
-
-    def sendNewUserEmail(self):
-        """See ILoginToken."""
-        template = get_email_template('newuser-email.txt')
-        message = template % dict(token_url=canonical_url(self))
-
-        from_name = "Launchpad"
-        subject = "Launchpad: complete your registration"
-        self._send_email(from_name, subject, message)
-
     def sendProfileCreatedEmail(self, profile, comment):
         """See ILoginToken."""
         template = get_email_template('profile-created.txt')
         replacements = {'token_url': canonical_url(self),
-                        'requester': self.requester.browsername,
+                        'requester': self.requester.displayname,
                         'comment': comment,
                         'profile_url': canonical_url(profile)}
         message = template % replacements
@@ -180,7 +172,7 @@ class LoginToken(SQLBase):
         from_name = "Launchpad Account Merge"
 
         dupe = getUtility(IPersonSet).getByEmail(self.email)
-        replacements = {'dupename': "%s (%s)" % (dupe.browsername, dupe.name),
+        replacements = {'dupename': "%s (%s)" % (dupe.displayname, dupe.name),
                         'requester': self.requester.name,
                         'requesteremail': self.requesteremail,
                         'toaddress': self.email,
@@ -196,9 +188,9 @@ class LoginToken(SQLBase):
 
         from_name = "Launchpad Email Validator"
         subject = "Launchpad: Validate your team's contact email address"
-        replacements = {'team': self.requester.browsername,
+        replacements = {'team': self.requester.displayname,
                         'requester': '%s (%s)' % (
-                            user.browsername, user.name),
+                            user.displayname, user.name),
                         'toaddress': self.email,
                         'admin_email': config.canonical.admin_address,
                         'token_url': canonical_url(self)}
@@ -211,7 +203,7 @@ class LoginToken(SQLBase):
         from_name = "Launchpad"
         profile = getUtility(IPersonSet).getByEmail(self.email)
         replacements = {'profile_name': (
-                            "%s (%s)" % (profile.browsername, profile.name)),
+                            "%s (%s)" % (profile.displayname, profile.name)),
                         'email': self.email,
                         'token_url': canonical_url(self)}
         message = template % replacements
@@ -225,15 +217,78 @@ class LoginToken(SQLBase):
         from_name = "Launchpad"
         profile = getUtility(IPersonSet).getByEmail(self.email)
         replacements = {'profile_name': (
-                            "%s (%s)" % (profile.browsername, profile.name)),
+                            "%s (%s)" % (profile.displayname, profile.name)),
                         'requester_name': (
-                            "%s (%s)" % (self.requester.browsername,
+                            "%s (%s)" % (self.requester.displayname,
                                          self.requester.name)),
                         'email': self.email,
                         'token_url': canonical_url(self)}
         message = template % replacements
         subject = "Launchpad: Claim existing team"
         self._send_email(from_name, subject, message)
+
+    @property
+    def validation_phrase(self):
+        """The phrase used to validate sign-only GPG keys"""
+        utctime = self.date_created.astimezone(pytz.UTC)
+        return 'Please register %s to the\nLaunchpad user %s.  %s UTC' % (
+            self.fingerprint, self.requester.name,
+            utctime.strftime('%Y-%m-%d %H:%M:%S'))
+
+    def activateGPGKey(self, key, can_encrypt):
+        """See `ILoginToken`."""
+        gpgkeyset = getUtility(IGPGKeySet)
+        requester = self.requester
+        lpkey, new = gpgkeyset.activate(requester, key, can_encrypt)
+
+        self.consume()
+
+        if not new:
+            return lpkey, new, [], []
+
+        created, owned_by_others = self.createEmailAddresses(key.emails)
+        return lpkey, new, created, owned_by_others
+
+    def createEmailAddresses(self, uids):
+        """Create EmailAddresses for the GPG UIDs that do not exist yet.
+
+        For each of the given UIDs, check if it is already registered and, if
+        not, register it.
+
+        Return a tuple containing the list of newly created emails (as
+        strings) and the emails that exist and are already assigned to another
+        person (also as strings).
+        """
+        emailset = getUtility(IEmailAddressSet)
+        requester = self.requester
+        account = self.requester_account
+        emails = chain(requester.validatedemails, [requester.preferredemail])
+        # Must remove the security proxy because the user may not be logged in
+        # and thus won't be allowed to view the requester's email addresses.
+        emails = [
+            removeSecurityProxy(email).email.lower() for email in emails]
+
+        created = []
+        existing_and_owned_by_others = []
+        for uid in uids:
+            # Here we use .lower() because the case of email addresses's chars
+            # don't matter to us (e.g. 'foo@baz.com' is the same as
+            # 'Foo@Baz.com').  However, note that we use the original form
+            # when creating a new email.
+            if uid.lower() not in emails:
+                # EmailAddressSet.getByEmail() is not case-sensitive, so
+                # there's no need to do uid.lower() here.
+                if emailset.getByEmail(uid) is not None:
+                    # This email address is registered but does not belong to
+                    # our user.
+                    existing_and_owned_by_others.append(uid)
+                else:
+                    # The email is not yet registered, so we register it for
+                    # our user.
+                    email = emailset.new(uid, requester, account=account)
+                    created.append(uid)
+
+        return created, existing_and_owned_by_others
 
 
 class LoginTokenSet:

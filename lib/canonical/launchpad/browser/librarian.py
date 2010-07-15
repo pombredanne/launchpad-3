@@ -1,13 +1,16 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser file for LibraryFileAlias."""
 
 __metaclass__ = type
 
 __all__ = [
-    'LibraryFileAliasView',
-    'LibraryFileAliasMD5View',
+    'DeletedProxiedLibraryFileAlias',
     'FileNavigationMixin',
+    'LibraryFileAliasMD5View',
+    'LibraryFileAliasView',
+    'ProxiedLibraryFileAlias',
     'StreamOrRedirectLibraryFileAliasView',
     ]
 
@@ -21,10 +24,18 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import ILibraryFileAlias
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.publisher import (
-    LaunchpadView, RedirectionView, stepthrough)
+    LaunchpadView, RedirectionView, canonical_url, stepthrough)
+from canonical.launchpad.webapp.interfaces import (
+    IWebBrowserOriginatingRequest)
+from canonical.launchpad.webapp.url import urlappend
+from canonical.lazr.utils import get_current_browser_request
+from canonical.librarian.interfaces import LibrarianServerError
 from canonical.librarian.utils import filechunks, guess_librarian_encoding
+
+from lazr.delegates import delegates
 
 
 class LibraryFileAliasView(LaunchpadView):
@@ -59,7 +70,7 @@ class LibraryFileAliasMD5View(LaunchpadView):
     def render(self):
         """Return the plain text MD5 signature"""
         self.request.response.setHeader('Content-type', 'text/plain')
-        return self.context.content.md5
+        return '%s %s' % (self.context.content.md5, self.context.filename)
 
 
 class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
@@ -72,18 +83,7 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
 
     __used_for__ = ILibraryFileAlias
 
-    def __call__(self):
-        """Streams the contents of the context `ILibraryFileAlias`.
-
-        The file content is downloaded in chunks directly to a
-        `tempfile.TemporaryFile` avoiding using large amount of memory.
-
-        The temporary file is returned to the zope publishing machinery as
-        documented in lib/zope/publisher/httpresults.txt, after adjusting
-        the response 'Content-Type' appropriately.
-
-        This method explicit ignores the local 'http_proxy' settings.
-        """
+    def getFileContents(self):
         # Reset system proxy setting if it exists. The urllib2 default
         # opener is cached that's why it has to be re-installed after
         # the shell environment changes. Download the library file
@@ -103,6 +103,27 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
             if original_proxy is not None:
                 os.environ['http_proxy'] = original_proxy
                 urllib2.install_opener(urllib2.build_opener())
+        return tmp_file
+
+    def __call__(self):
+        """Streams the contents of the context `ILibraryFileAlias`.
+
+        The file content is downloaded in chunks directly to a
+        `tempfile.TemporaryFile` avoiding using large amount of memory.
+
+        The temporary file is returned to the zope publishing machinery as
+        documented in lib/zope/publisher/httpresults.txt, after adjusting
+        the response 'Content-Type' appropriately.
+
+        This method explicit ignores the local 'http_proxy' settings.
+        """
+        try:
+            tmp_file = self.getFileContents()
+        except LibrarianServerError:
+            self.request.response.setHeader('Content-Type', 'text/plain')
+            self.request.response.setStatus(503)
+            return (u'There was a problem fetching the contents of this '
+                     'file. Please try again in a few minutes.')
 
         # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
         # stored as part of a file's metadata this logic will be replaced.
@@ -120,6 +141,10 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         chain with this view. If the context file is public return the
         appropriate `RedirectionView` for its HTTP url.
         """
+        assert not self.context.deleted, (
+            "StreamOrRedirectLibraryFileAliasView can not operate on "
+            "deleted librarian files, since their URL is undefined.")
+
         if self.context.restricted:
             return self, ()
 
@@ -128,6 +153,10 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
     def publishTraverse(self, request, name):
         """See `IBrowserPublisher`."""
         raise NotFound(name, self.context)
+
+
+class DeletedProxiedLibraryFileAlias(NotFound):
+    """Raised when a deleted `ProxiedLibraryFileAlias` is accessed."""
 
 
 class FileNavigationMixin:
@@ -150,5 +179,45 @@ class FileNavigationMixin:
         if not check_permission('launchpad.View', self.context):
             raise Unauthorized()
         library_file  = self.context.getFileByName(filename)
+
+        # Deleted library files result in NotFound-like error.
+        if library_file.deleted:
+            raise DeletedProxiedLibraryFileAlias(filename, self.context)
+
         return StreamOrRedirectLibraryFileAliasView(
             library_file, self.request)
+
+
+class ProxiedLibraryFileAlias:
+    """A `LibraryFileAlias` proxied via webapp.
+
+    Overrides `ILibraryFileAlias.http_url` to always point to the webapp URL,
+    even when called from the webservice domain.
+    """
+    delegates(ILibraryFileAlias)
+
+    def __init__(self, context, parent):
+        self.context = context
+        self.parent = parent
+
+    @property
+    def http_url(self):
+        """Return the webapp URL for the context `LibraryFileAlias`.
+
+        Preserve the `LibraryFileAlias.http_url` behavior for deleted
+        files, returning None.
+
+        Mask webservice requests if it's the case, so the returned URL will
+        be always relative to the parent webapp URL.
+        """
+        if self.context.deleted:
+            return None
+
+        request = get_current_browser_request()
+        if WebServiceLayer.providedBy(request):
+            request = IWebBrowserOriginatingRequest(request)
+
+        parent_url = canonical_url(self.parent, request=request)
+        traversal_url = urlappend(parent_url, '+files')
+        url = urlappend(traversal_url, self.context.filename)
+        return url

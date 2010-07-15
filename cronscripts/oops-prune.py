@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 
 """Cronscript to prune old and unreferenced OOPS reports from the archive."""
@@ -11,7 +14,7 @@ import os
 
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.scripts.oops import (
     unwanted_oops_files, prune_empty_oops_directories)

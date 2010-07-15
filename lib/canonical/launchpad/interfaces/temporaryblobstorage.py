@@ -1,4 +1,6 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Temporary blob storage interfaces."""
@@ -15,6 +17,14 @@ from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Text, Bytes
 from canonical.launchpad import _
 
+from lazr.restful.declarations import (
+    collection_default_content, exported,
+    export_as_webservice_collection, export_as_webservice_entry,
+    export_read_operation, operation_parameters, rename_parameters_as,
+    REQUEST_USER)
+from lazr.restful.interface import copy_field
+
+
 class BlobTooLarge(Exception):
     """Raised if attempting to create a blob larger than the maximum
        allowed size.
@@ -24,16 +34,29 @@ class BlobTooLarge(Exception):
 
 class ITemporaryBlobStorage(Interface):
     """A blob which we will store in the database temporarily."""
+    export_as_webservice_entry(
+        singular_name='temporary_blob', plural_name='temporary_blobs')
 
-    uuid = Text(title=_('UUID'), required=True, readonly=True)
+    uuid = exported(
+        Text(title=_('UUID'), required=True, readonly=True),
+        exported_as='token')
     blob = Bytes(title=_('BLOB'), required=True, readonly=True)
     date_created = Datetime(title=_('Date created'),
         required=True, readonly=True)
     file_alias = Attribute("Link to actual storage of blob")
 
+    @export_read_operation()
+    def hasBeenProcessed():
+        """Return True if this blob has been processed."""
+
+    @export_read_operation()
+    def getProcessedData():
+        """Returns a dict containing the processed blob data."""
+
 
 class ITemporaryStorageManager(Interface):
     """A tool to create temporary blobs."""
+    export_as_webservice_collection(ITemporaryBlobStorage)
 
     def new(blob, expires=None):
         """Create a new blob for storage in the database, returning the
@@ -45,9 +68,19 @@ class ITemporaryStorageManager(Interface):
         config.launchpad.default_blob_expiry
         """
 
+    @rename_parameters_as(uuid='token')
+    @operation_parameters(uuid=copy_field(ITemporaryBlobStorage['uuid']))
+    @export_read_operation()
     def fetch(uuid):
         """Retrieve a TemporaryBlobStorage by uuid."""
 
     def delete(uuid):
         """Delete a TemporaryBlobStorage by uuid."""
 
+    @collection_default_content()
+    def default_temporary_blob_storage_list():
+        """Return the default list of `ITemporaryBlobStorage` objects.
+
+        :returns: All the the `ITemporaryBlobStorage` blobs whose file
+                  aliases have not expired.
+        """

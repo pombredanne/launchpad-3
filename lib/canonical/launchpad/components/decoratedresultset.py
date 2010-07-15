@@ -1,10 +1,14 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
     'DecoratedResultSet',
     ]
+
+from zope.security.proxy import removeSecurityProxy
 
 from storm.expr import Column
 from storm.zope.interfaces import IResultSet
@@ -34,22 +38,27 @@ class DecoratedResultSet(object):
     """
     delegates(IResultSet, context='result_set')
 
-    def __init__(self, result_set, result_decorator):
+    def __init__(self, result_set, result_decorator=None, pre_iter_hook=None):
         """
         :param result_set: The original result set to be decorated.
         :param result_decorator: The method with which individual results
-                                 will be passed through before being
-                                 returned.
+            will be passed through before being returned.
+        :param pre_iter_hook: The method to be called (with the 'result_set')
+            immediately before iteration starts.
         """
         self.result_set = result_set
         self.result_decorator = result_decorator
+        self.pre_iter_hook = pre_iter_hook
 
     def decorate_or_none(self, result):
         """Decorate a result or return None if the result is itself None"""
         if result is None:
             return None
         else:
-            return self.result_decorator(result)
+            if self.result_decorator is None:
+                return result
+            else:
+                return self.result_decorator(result)
 
     def copy(self, *args, **kwargs):
         """See `IResultSet`.
@@ -57,7 +66,8 @@ class DecoratedResultSet(object):
         :return: The decorated version of the returned result set.
         """
         new_result_set = self.result_set.copy(*args, **kwargs)
-        return DecoratedResultSet(new_result_set, self.result_decorator)
+        return DecoratedResultSet(
+            new_result_set, self.result_decorator, self.pre_iter_hook)
 
     def config(self, *args, **kwargs):
         """See `IResultSet`.
@@ -72,7 +82,11 @@ class DecoratedResultSet(object):
 
         Yield a decorated version of the returned value.
         """
-        for value in self.result_set.__iter__(*args, **kwargs):
+        # Execute/evaluate the result set query.
+        results = list(self.result_set.__iter__(*args, **kwargs))
+        if self.pre_iter_hook is not None:
+            self.pre_iter_hook(results)
+        for value in results:
             yield self.decorate_or_none(value)
 
     def __getitem__(self, *args, **kwargs):
@@ -82,8 +96,10 @@ class DecoratedResultSet(object):
         """
         # Can be a value or result set...
         value = self.result_set.__getitem__(*args, **kwargs)
-        if isinstance(value, type(self.result_set)):
-            return DecoratedResultSet(value, self.result_decorator)
+        naked_value = removeSecurityProxy(value)
+        if IResultSet.providedBy(naked_value):
+            return DecoratedResultSet(
+                value, self.result_decorator, self.pre_iter_hook)
         else:
             return self.decorate_or_none(value)
 
@@ -125,30 +141,5 @@ class DecoratedResultSet(object):
         :return: The decorated version of the returned result set.
         """
         new_result_set = self.result_set.order_by(*args, **kwargs)
-        return DecoratedResultSet(new_result_set, self.result_decorator)
-
-    def count(self, *args, **kwargs):
-        """See `IResultSet`.
-
-        Decorated to fix bug 217644
-
-        Currently Storm.store.ResultSet has a bug where aggregate
-        methods do not respect the distinct config option. This
-        decorated version ensures that the count method *does* respect
-        the distinct config option when called without args/kwargs.
-        """
-        # Only override the method call if
-        #  1) The result set has the distinct config set
-        #  2) count was called without any args or kwargs
-        if self.result_set._distinct and len(args) == 0 and len(kwargs) == 0:
-            spec = self.result_set._find_spec
-            columns, tables = spec.get_columns_and_tables()
-
-            # Note: The following looks a bit suspect because it will only
-            # work if the original result set includes an id column. But this
-            # should always be the case when using a DecoratedResultSet as
-            # we're decorating content classes.
-            main_id_column = Column('id', tables[0])
-            return self.result_set.count(expr=main_id_column, distinct=True)
-        else:
-            return self.result_set.count(*args, **kwargs)
+        return DecoratedResultSet(
+            new_result_set, self.result_decorator, self.pre_iter_hook)

@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test EntitlementExchange and EntitlementImporter."""
 
@@ -11,8 +12,7 @@ from cStringIO import StringIO
 from zope.testing.loghandler import Handler
 
 from canonical.testing import LaunchpadZopelessLayer
-from canonical.launchpad import scripts
-from canonical.launchpad.scripts.entitlement import (
+from lp.registry.scripts.entitlement import (
     EntitlementExchange, EntitlementImporter,
     InvalidFormat, UnsupportedVersion)
 

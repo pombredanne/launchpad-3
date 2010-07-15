@@ -1,4 +1,5 @@
-# Copyright 2004-2007, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bazaar plugin to run the smart server on Launchpad.
 
@@ -10,17 +11,15 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
+import resource
 import sys
-import xmlrpclib
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
-from bzrlib import lockdir, urlutils, ui
+from bzrlib import lockdir, ui
 
 from bzrlib.smart import medium, server
-from bzrlib.transport import get_transport, remote
-
-from canonical.config import config
+from bzrlib.transport import get_transport
 
 
 class cmd_launchpad_server(Command):
@@ -46,9 +45,9 @@ class cmd_launchpad_server(Command):
         Option('mirror-directory',
                help='serve branches from this directory. Defaults to '
                     'config.codehosting.mirrored_branches_root.'),
-        Option('branchfs-endpoint',
+        Option('codehosting-endpoint',
                help='the url of the internal XML-RPC server. Defaults to '
-                    'config.codehosting.branchfs_endpoint.',
+                    'config.codehosting.codehosting_endpoint.',
                type=unicode),
         ]
 
@@ -60,9 +59,9 @@ class cmd_launchpad_server(Command):
             smart_server = medium.SmartServerPipeStreamMedium(
                 sys.stdin, sys.stdout, transport)
         else:
-            host = remote.BZR_DEFAULT_INTERFACE
+            host = medium.BZR_DEFAULT_INTERFACE
             if port is None:
-                port = remote.BZR_DEFAULT_PORT
+                port = medium.BZR_DEFAULT_PORT
             else:
                 if ':' in port:
                     host, port = port.split(':')
@@ -86,23 +85,18 @@ class cmd_launchpad_server(Command):
         finally:
             ui.ui_factory = old_factory
 
-    def run(self, user_id, port=None, upload_directory=None,
-            mirror_directory=None, branchfs_endpoint_url=None, inet=False):
-        if upload_directory is None:
-            upload_directory = config.codehosting.hosted_branches_root
-        if mirror_directory is None:
-            mirror_directory = config.codehosting.mirrored_branches_root
-        if branchfs_endpoint_url is None:
-            branchfs_endpoint_url = config.codehosting.branchfs_endpoint
-
-        upload_url = urlutils.local_path_to_url(upload_directory)
-        mirror_url = urlutils.local_path_to_url(mirror_directory)
-        branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
-
-        from canonical.codehosting.vfs import get_lp_server
+    def run(self, user_id, port=None, branch_directory=None,
+            codehosting_endpoint_url=None, inet=False):
+        from lp.codehosting.bzrutils import install_oops_handler
+        from lp.codehosting.vfs import get_lp_server, hooks
+        install_oops_handler(user_id)
+        four_gig = int(4e9)
+        resource.setrlimit(resource.RLIMIT_AS, (four_gig, four_gig))
+        seen_new_branch = hooks.SetProcTitleHook()
         lp_server = get_lp_server(
-            branchfs_client, int(user_id), upload_url, mirror_url)
-        lp_server.setUp()
+            int(user_id), codehosting_endpoint_url, branch_directory,
+            seen_new_branch.seen)
+        lp_server.start_server()
 
         old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS
         try:
@@ -112,7 +106,7 @@ class cmd_launchpad_server(Command):
             self.run_server(smart_server)
         finally:
             lockdir._DEFAULT_TIMEOUT_SECONDS = old_lockdir_timeout
-            lp_server.tearDown()
+            lp_server.stop_server()
 
 
 register_command(cmd_launchpad_server)

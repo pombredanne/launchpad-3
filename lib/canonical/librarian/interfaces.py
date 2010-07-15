@@ -1,9 +1,17 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # PyLint doesn't grok Zope interfaces.
 # pylint: disable-msg=E0213
 __metaclass__ = type
 
+import signal
+
 from zope.interface import Interface
+
+
+SIGDUMPMEM = signal.SIGRTMIN + 10
+DUMP_FILE = '/tmp/librarian-memory.dump'
 
 
 class LibrarianFailure(Exception):
@@ -17,6 +25,15 @@ class UploadFailed(LibrarianFailure):
 class DownloadFailed(LibrarianFailure):
     pass
 
+
+class LibrarianServerError(Exception):
+    """An error indicating that the Librarian server is not responding."""
+
+
+# the default time in seconds FileUploadClient.getByFileAlias() will
+# retry to open a connection to the Librarain server before raising
+# LibrarianServerError.
+LIBRARIAN_SERVER_DEFAULT_TIMEOUT = 5
 
 class IFileUploadClient(Interface):
     def addFile(name, size, file, contentType, expires=None):
@@ -60,10 +77,18 @@ class IFileDownloadClient(Interface):
     def getURLForAlias(aliasID):
         """Returns the URL to the given file"""
 
-    def getFileByAlias(aliasID):
+    def getFileByAlias(aliasID, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """Returns a file-like object to read the file contents from.
 
+        :param aliasID: The alias ID identifying the file.
+        :param timeout: The number of seconds the method retries to open
+            a connection to the Librarian server. If the connection
+            cannot be established in the given time, a
+            LibrarianServerError is raised.
+        :return: A file-like object to read the file contents from.
         :raises DownloadFailed: If the alias is not found.
+        :raises LibrarianServerError: If the librarain server is
+            unreachable or returns an 5xx HTTPError.
         """
 
 

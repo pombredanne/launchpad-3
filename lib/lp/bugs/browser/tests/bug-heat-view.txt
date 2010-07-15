@@ -1,0 +1,119 @@
+= Bug heat view =
+
+Bug heat is represented as four flame icons. The quantity of flames that are
+coloured is dependent on the value of the heat field. The function
+bugtask_heat_html is used to render the flames.
+
+    >>> MAX_HEAT = 5000.0
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> from lp.bugs.browser.bugtask import bugtask_heat_html
+    >>> def print_flames(bugtask, target=None):
+    ...     html = bugtask_heat_html(bugtask, target=target)
+    ...     soup = BeautifulSoup(html)
+    ...     for img in soup.span.a.contents:
+    ...         print img['src']
+    ...         print img['alt']
+    ...         print img['title']
+    >>> login('foo.bar@canonical.com')
+    >>> bug = factory.makeBug()
+
+The maximum heat is defined as a constant in browser/bug.py. A bug with
+a heat of half the maximum will result in a display of two coloured flames
+and two black-and-white flames.
+
+    >>> removeSecurityProxy(bug.default_bugtask.target).max_bug_heat = MAX_HEAT
+    >>> removeSecurityProxy(bug).heat = MAX_HEAT / 2
+    >>> print_flames(bug.default_bugtask)
+    /@@/bug-heat-2.png
+    2 out of 4 heat flames
+    Heat: 2500
+
+A bug with a maximum heat will display all four flames coloured.
+
+    >>> removeSecurityProxy(bug).heat = MAX_HEAT
+    >>> print_flames(bug.default_bugtask)
+    /@@/bug-heat-4.png
+    4 out of 4 heat flames
+    Heat: 5000
+
+A heat of less than a quarter of the maximum will display no coloured flames.
+
+    >>> removeSecurityProxy(bug).heat = 0.1 * MAX_HEAT
+    >>> print_flames(bug.default_bugtask)
+    /@@/bug-heat-0.png
+    0 out of 4 heat flames
+    Heat: 500
+
+
+== Specifying the target ==
+
+Some bugs can be viewed in a context different from their task's target. For
+example, bugs with tasks on packages can be viewed in the context of the entire
+distribution. In such cases, we want to explicitly specify the target, rather
+than use the bugtask's. We can do that by passing the target as a keyword
+parameter.
+
+    >>> bug = factory.makeBug()
+    >>> distro = factory.makeDistribution()
+    >>> dsp = factory.makeDistributionSourcePackage(distribution=distro)
+    >>> dsp_task = bug.addTask(bug.owner, dsp)
+    >>> removeSecurityProxy(distro).max_bug_heat = MAX_HEAT
+    >>> removeSecurityProxy(dsp).max_bug_heat = MAX_HEAT / 2
+    >>> removeSecurityProxy(bug).heat = MAX_HEAT / 4
+    >>> print_flames(dsp_task)
+    /@@/bug-heat-2.png
+    2 out of 4 heat flames
+    Heat: 1250
+    >>> print_flames(dsp_task, target=distro)
+    /@@/bug-heat-0.png
+    0 out of 4 heat flames
+    Heat: 1250
+
+    >>> logout()
+
+
+== Scaling Bug Heat ==
+
+To ensure a reasonable proportion of cold and hot bugs, the number used to
+calculate the number of flames to display is not a straight-forward ratio.
+Instead, we transform it by forcing low heat bugs to produce no flames and
+scaling the hottest bugs logarithmically.
+
+    >>> from lp.bugs.browser.bugtask import calculate_heat_display
+    >>> from math import floor
+
+Heat values less than a third of the maximum heat don't produce any flames.
+
+    >>> print int(floor((300.0 / 1000.0) * 4))
+    1
+    >>> print calculate_heat_display(300.0, 1000.0)
+    0
+
+Heat values higher than a third of the max but lower than two thirds are treated
+as a straightforward ratio.
+
+    >>> print int(floor((500.0 / 1000.0) * 4))
+    2
+    >>> print calculate_heat_display(500.0, 1000.0)
+    2
+
+Heat values higher than two thirds of the maximum heat are scaled upwards.
+
+    >>> print int(floor((700.0 / 1000.0) * 4))
+    2
+    >>> print calculate_heat_display(800.0, 1000.0)
+    3
+
+A max heat value of 1 works too, because we don't divide by
+log(max_heat) in this case.
+
+    >>> print calculate_heat_display(1, 1)
+    4
+
+Even if the max heat value is smaller than the heat value itself,
+calculate_heat_display() does not return a value greater than 4.
+
+    >>> print calculate_heat_display(2000, 1000)
+    4

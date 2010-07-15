@@ -1,0 +1,17 @@
+<?xml version="1.0"?><!--*- mode: nxml -*-->
+<participants xmlns:tal="http://xml.zope.org/namespaces/tal"
+  tal:content="cache:public, 30 minute">
+  <!--
+    This collection of team location data is (c) Canonical Ltd and
+    contributors, and the format may be changed at any time.
+  -->
+  <participant tal:repeat="participant view/mapped_participants"
+          tal:attributes="
+    lat participant/latitude;
+    lng participant/longitude;
+    displayname participant/fmt:displayname/fmt:escape;
+    local_time participant/fmt:local-time;
+    logo_html participant/image:logo;
+    url participant/fmt:url;
+    name participant/name" />
+</participants>

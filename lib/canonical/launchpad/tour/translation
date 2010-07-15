@@ -15,37 +15,39 @@
 </head>
 <body>
     <div id="container">
-        <p class="page-number">5 of 11</p>
+        <p class="page-number">4 of 11</p>
         <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="community" tabindex="1" accesskey="1">Next</a></li>
+            <li class="button-next"><a id="btnNext" href="community" tabindex="1" accesskey="1" title="Read about mailing lists and teams in Launchpad">Next</a></li>
             <li class="home"><a href="index" accesskey="2">Launchpad tour home</a></li>
             <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
-            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and tracking</a></li>
-            <li><a href="code-review" accesskey="5">Code review</a></li>
-            <li class="current"><a href="translation" accesskey="6">Web-based translation</a></li>
-            <li><a href="community" accesskey="7">Community building</a></li>
-            <li><a href="ppa" accesskey="8">Software distribution</a></li>
-            <li><a href="community-support" accesskey="9">Community support</a></li>
-            <li><a href="api" accesskey="a">Beta: web services API</a></li>
-            <li><a href="feature-tracking" accesskey="b">Lightweight specifications</a></li>
-            <li><a href="release-management" accesskey="c">Release management</a></li>
-            
+            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and review</a></li>
+            <li class="current"><a href="translation" accesskey="5">Web-based translation</a></li>
+            <li><a href="community" accesskey="6">Mailing lists and teams</a></li>
+            <li><a href="ppa" accesskey="7">Software distribution</a></li>
+            <li><a href="community-support" accesskey="8">Community support</a></li>
+            <li><a href="api" accesskey="9">Beta: web services API</a></li>
+            <li><a href="feature-tracking" accesskey="a">Lightweight specifications</a></li>
+            <li><a href="release-management" accesskey="b">Release management</a></li>
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
-            <h1>Take freedom global<br /> with web-based translation</h1>
+            <h1>Crowd-sourced translation<br /> for your software</h1>
             <p>
                 <img src="images/translation/main-image.jpg" alt="Collaborate with free software communities." />
             </p>
             <p class="intro-text">
                 <strong>Build an open community to translate your software into almost any language.</strong> Simple web-based translation and review, GNU GetText support and automatic suggestions from a library of sixteen million translated strings.
             </p>
-            <div id="link-holder"><a href="https://translations.launchpad.net/">Visit Launchpad Translations &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            <div id="link-holder"><a href="https://translations.launchpad.net/">Visit Launchpad Translations &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
+            <li class="button-prev">
+                <a href="branch-hosting-tracking" accesskey="d" tabindex="2" title="Back to the code hosting and review page">Back</a>
+            </li>
             <li class="button-next">
-                <a href="community" accesskey="d" tabindex="2">Next</a>
+                <a href="community" accesskey="e" tabindex="3" title="Read about mailing lists and teams in Launchpad">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -104,11 +106,14 @@
             </div>
         </div>
         <ul id="footer-navigation">
+            <li class="button-prev">
+                <a href="branch-hosting-tracking" accesskey="f" tabindex="4" title="Back to the code hosting and review page">Back</a>
+            </li>
             <li class="button-next">
-                <a href="community" accesskey="e" tabindex="3">Next</a>
+                <a href="community" accesskey="g" tabindex="5" title="Read about mailing lists and teams in Launchpad">Next</a>
             </li>
             <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="i" tabindex="7">Terms of Use</a> &#124; <a href="https://help.launchpad.net/Feedback" accesskey="j" tabindex="8">Feedback</a> &#124; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="k" tabindex="9">FAQ</a>
+                &copy; 2004-2010 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>

@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 
 """Librarian garbage collector.
@@ -17,7 +20,7 @@ import logging
 from canonical.librarian import librariangc
 from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class LibrarianGC(LaunchpadCronScript):
@@ -43,16 +46,17 @@ class LibrarianGC(LaunchpadCronScript):
                 help="Skip removing expired TemporaryBlobStorage rows"
                 )
         self.parser.add_option(
-                '', "--skip-expired", action="store_true", default=False,
-                dest="skip_expired",
-                help="Skip flagging expired files for deletion."
-                )
-        self.parser.add_option(
                 '', "--skip-files", action="store_true", default=False,
                 dest="skip_files",
                 help="Skip removing files on disk with no database references"
                      " or flagged for deletion."
                 )
+        self.parser.add_option(
+                '', "--skip-expiry", action="store_true", default=False,
+                dest="skip_expiry",
+                help="Skip expiring aliases with an expiry date in the past."
+                )
+
 
     def main(self):
         librariangc.log = self.logger
@@ -68,6 +72,8 @@ class LibrarianGC(LaunchpadCronScript):
 
         # Note that each of these next steps will issue commit commands
         # as appropriate to make this script transaction friendly
+        if not self.options.skip_expiry:
+            librariangc.expire_aliases(conn)
         if not self.options.skip_content:
             librariangc.delete_unreferenced_content(conn) # first sweep
         if not self.options.skip_blobs:
@@ -78,8 +84,6 @@ class LibrarianGC(LaunchpadCronScript):
             librariangc.delete_unreferenced_aliases(conn)
         if not self.options.skip_content:
             librariangc.delete_unreferenced_content(conn) # second sweep
-        if not self.options.skip_expired:
-            librariangc.flag_expired_files(conn)
         if not self.options.skip_files:
             librariangc.delete_unwanted_files(conn)
 

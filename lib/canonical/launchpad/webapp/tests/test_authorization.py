@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `canonical.launchpad.webapp.authorization`."""
 
@@ -9,20 +10,27 @@ import unittest
 
 import transaction
 
-from zope.app.testing import ztapi
-from zope.interface import implements, classProvides
+from zope.component import provideAdapter, provideUtility
+from zope.interface import classProvides, implements, Interface
 from zope.testing.cleanup import CleanUp
 
 from canonical.lazr.interfaces import IObjectPrivacy
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.security import AuthorizationBase
-from canonical.launchpad.testing import ObjectFactory
-from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
+from canonical.launchpad.webapp.authorization import (
+    check_permission, LaunchpadSecurityPolicy,
+    precache_permission_for_objects)
 from canonical.launchpad.webapp.interfaces import (
-    IAuthorization, IStoreSelector, ILaunchpadPrincipal)
+    AccessLevel, IAuthorization, ILaunchpadPrincipal, ILaunchpadContainer,
+    IStoreSelector)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
-from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
+from canonical.launchpad.webapp.servers import (
+    LaunchpadBrowserRequest, LaunchpadTestRequest)
+from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import ANONYMOUS, login, TestCase
+from lp.testing.factory import ObjectFactory
 
 
 class Checker(AuthorizationBase):
@@ -112,6 +120,12 @@ class FakeStoreSelector:
     @staticmethod
     def get(name, flavor):
         return FakeStore()
+    @staticmethod
+    def push(dbpolicy):
+        pass
+    @staticmethod
+    def pop():
+        pass
 
 
 class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
@@ -121,7 +135,7 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         """Register a new permission and a fake store selector."""
         super(TestCheckPermissionCaching, self).setUp()
         self.factory = ObjectFactory()
-        ztapi.provideUtility(IStoreSelector, FakeStoreSelector)
+        provideUtility(FakeStoreSelector, IStoreSelector)
 
     def makeRequest(self):
         """Construct an arbitrary `LaunchpadBrowserRequest` object."""
@@ -137,11 +151,11 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
             `Checker` created by ``checker_factory``.
         """
         permission = self.factory.getUniqueString()
-        ztapi.provideUtility(
-            ILaunchpadPermission, PermissionAccessLevel(), permission)
+        provideUtility(
+            PermissionAccessLevel(), ILaunchpadPermission, permission)
         checker_factory = CheckerFactory()
-        ztapi.provideAdapter(
-            Object, IAuthorization, checker_factory, name=permission)
+        provideAdapter(
+            checker_factory, [Object], IAuthorization, name=permission)
         return Object(), permission, checker_factory
 
     def test_checkPermission_cache_unauthenticated(self):
@@ -241,6 +255,91 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         self.assertEqual(
             ['checkUnauthenticated', 'checkUnauthenticated'],
             checker_factory.calls)
+
+
+class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(
+    CleanUp, unittest.TestCase):
+
+    def setUp(self):
+        self.principal = LaunchpadPrincipal(
+            'foo.bar@canonical.com', 'foo', 'foo', object())
+        self.security = LaunchpadSecurityPolicy()
+        provideAdapter(
+            adapt_loneobject_to_container, [ILoneObject], ILaunchpadContainer)
+
+    def test_no_scope(self):
+        """Principal's access level is used when no scope is given."""
+        self.principal.access_level = AccessLevel.WRITE_PUBLIC
+        self.principal.scope = None
+        self.failUnlessEqual(
+            self.security._getPrincipalsAccessLevel(
+                self.principal, LoneObject()),
+            self.principal.access_level)
+
+    def test_object_within_scope(self):
+        """Principal's access level is used when object is within scope."""
+        obj = LoneObject()
+        self.principal.access_level = AccessLevel.WRITE_PUBLIC
+        self.principal.scope = obj
+        self.failUnlessEqual(
+            self.security._getPrincipalsAccessLevel(self.principal, obj),
+            self.principal.access_level)
+
+    def test_object_not_within_scope(self):
+        """READ_PUBLIC is used when object is /not/ within scope."""
+        obj = LoneObject()
+        obj2 = LoneObject()  # This is out of obj's scope.
+        self.principal.scope = obj
+
+        self.principal.access_level = AccessLevel.WRITE_PUBLIC
+        self.failUnlessEqual(
+            self.security._getPrincipalsAccessLevel(self.principal, obj2),
+            AccessLevel.READ_PUBLIC)
+
+        self.principal.access_level = AccessLevel.READ_PRIVATE
+        self.failUnlessEqual(
+            self.security._getPrincipalsAccessLevel(self.principal, obj2),
+            AccessLevel.READ_PUBLIC)
+
+        self.principal.access_level = AccessLevel.WRITE_PRIVATE
+        self.failUnlessEqual(
+            self.security._getPrincipalsAccessLevel(self.principal, obj2),
+            AccessLevel.READ_PUBLIC)
+
+
+class ILoneObject(Interface):
+    """A marker interface for objects that only contain themselves."""
+
+
+class LoneObject:
+    implements(ILoneObject, ILaunchpadContainer)
+
+    def isWithin(self, context):
+        return self == context
+
+
+def adapt_loneobject_to_container(loneobj):
+    """Adapt a LoneObject to an `ILaunchpadContainer`."""
+    return loneobj
+
+
+class TestPrecachePermissionForObjects(TestCase):
+    """Test the precaching of permissions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_precaching_permissions(self):
+        # The precache_permission_for_objects function updates the security
+        # policy cache for the permission specified.
+        class Boring(object):
+            """A boring, but weakref-able object."""
+        objects = [Boring(), Boring()]
+        request = LaunchpadTestRequest()
+        login(ANONYMOUS, request)
+        precache_permission_for_objects(request, 'launchpad.View', objects)
+        # Confirm that the objects have the permission set.
+        self.assertTrue(check_permission('launchpad.View', objects[0]))
+        self.assertTrue(check_permission('launchpad.View', objects[1]))
 
 
 def test_suite():

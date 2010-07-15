@@ -1,6 +1,6 @@
 = Launchpad Celebrities =
 
-https://launchpad.canonical.com/LaunchpadCelebrities
+https://dev.launchpad.net/LaunchpadCelebrities
 
 There are a number of special objects, some of which exist in the
 database, which we want to give easy access to in the code. To this end,
@@ -8,7 +8,8 @@ there is an ILaunchpadCelebrities utility available that gives access
 to these well-known objects through attributes.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import ILanguageSet, IPersonSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.registry.interfaces.person import IPerson, IPersonSet
     >>> celebs = getUtility(ILaunchpadCelebrities)
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -132,9 +133,19 @@ The Launchpad Administrators team is a member of that team.
     True
 
 
+== obsolete_junk ==
+
+The 'Obsolete Junk' project is used to hold undeletable objects like
+productseries that other projects no longer want.
+
+    >>> obsolete_junk = getUtility(IProductSet).getByName('obsolete-junk')
+    >>> celebs.obsolete_junk == obsolete_junk
+    True
+
+
 == commercial_admin ==
 
-There is a 'Commercial Subscrpition Admins' team that has 
+There is a 'Commercial Subscription Admins' team that has
 administrative power over the license review process and
 has the ability to de-activate projects.
 
@@ -180,3 +191,83 @@ There is a 'PPA key guard' celebrity which owns all PPA
     >>> ppa_key_guard = personset.getByName('ppa-key-guard')
     >>> celebs.ppa_key_guard == ppa_key_guard
     True
+
+
+== Ubuntu branches ==
+
+There's a celebrity that is the only Person allowed to set the official branch
+for a source package. It's called ubuntu-branches.
+
+    >>> ubuntu_branches = personset.getByName('ubuntu-branches')
+    >>> celebs.ubuntu_branches == ubuntu_branches
+    True
+
+
+== Ubuntu security team ==
+
+There is a celebrity representing the 'ubuntu-security' team, which is
+mainly used for granting special permissions on the ubuntu primary
+archive.
+
+    >>> ubuntu_security = personset.getByName('ubuntu-security')
+    >>> celebs.ubuntu_security == ubuntu_security
+    True
+
+
+== Ubuntu technical board ==
+
+There's a celebrity for the Ubuntu technical board, the 'techboard' team. It's
+used for determining who is allowed to create new package sets.
+
+    >>> ubuntu_techboard = personset.getByName('techboard')
+    >>> print ubuntu_techboard.name
+    techboard
+    >>> celebs.ubuntu_techboard == ubuntu_techboard
+    True
+
+
+== Person celebrities ==
+
+Each person celebrity has a corresponding "in_" attribute in IPersonRoles, to
+check if a person has that role. If the attributes differ, IPersonRoles needs
+to be synced to ILaunchpadCelebrities by adding/removing the appropriate
+"in_" attribute(s).
+
+    >>> from canonical.launchpad.interfaces.launchpad import IPersonRoles
+    >>> def get_person_celebrity_names():
+    ...     for name in ILaunchpadCelebrities.names():
+    ...         if IPerson.providedBy(getattr(celebs, name)):
+    ...             yield "in_" + name
+    >>> def get_person_roles_names():
+    ...     for name in IPersonRoles.names():
+    ...         if name.startswith("in_"):
+    ...             yield name
+
+Treating the lists as sets and determining their difference gives us a clear
+picture of what is missing where.
+
+    >>> person_celebrity_names = set(get_person_celebrity_names())
+    >>> person_roles_names = set(get_person_roles_names())
+    >>> print "Please add to IPersonRoles: " + (
+    ...       ", ".join(list(person_celebrity_names - person_roles_names)))
+    Please add to IPersonRoles:
+    >>> print "Please remove from IPersonRoles: " + (
+    ...       ", ".join(list(person_roles_names - person_celebrity_names)))
+    Please remove from IPersonRoles:
+
+
+== Detecting if a person is a celebrity ==
+
+We can ask if a person has celebrity status.
+
+    >>> celebs.isCelebrityPerson(ubuntu_techboard.name)
+    True
+    >>> celebs.isCelebrityPerson(obsolete_junk.name)
+    False
+    >>> celebs.isCelebrityPerson('admins')
+    True
+    >>> celebs.isCelebrityPerson('admin')
+    False
+    >>> celebs.isCelebrityPerson('janitor')
+    True
+

@@ -1,0 +1,82 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="heading">
+  <h1 tal:content="view/page_title"/>
+</div>
+
+<div metal:fill-slot="main">
+  <div class="top-portlet">
+    <tal:navlinks replace="structure context/@@+related-software-navlinks"/>
+  </div>
+
+
+  <div id="projects" class="top-portlet">
+    <a name="projects" />
+
+    <tal:navigation_top
+         replace="structure view/batchnav/@@+navigation-links-upper" />
+
+    <tal:maintained-packages
+      define="projects view/batch">
+
+    <table id="related-projects" class="listing"
+      tal:condition="projects"
+      tal:content="cache:public, 60 minute">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Bugs</th>
+          <th>Blueprints</th>
+          <th>Questions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr tal:repeat="project projects">
+          <td>
+            <a tal:attributes="href project/url"
+               tal:content="project/title">
+            </a>
+          </td>
+          <td style="text-align: right">
+            <a tal:attributes="href string:${project/url}/+bugs"
+               tal:content="project/bug_count">
+            </a>
+          </td>
+          <td style="text-align: right">
+            <a tal:attributes="href string:${project/url}/+specs"
+               tal:content="project/spec_count">
+            </a>
+          </td>
+          <td style="text-align: right">
+            <a tal:attributes="href string:${project/url}/+questions"
+               tal:content="project/question_count">
+            </a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <tal:navigation_bottom
+         replace="structure view/batchnav/@@+navigation-links-lower" />
+
+    <p tal:condition="not: projects">
+      <span tal:replace="context/title">Foo Bar</span>
+      doesn't own or drive any projects.
+    </p>
+    </tal:maintained-packages>
+  </div>
+
+</div>
+
+</body>
+</html>

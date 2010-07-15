@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import sys
 import logging
@@ -13,8 +15,7 @@ from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
-from canonical.launchpad.ftests import login
-from canonical.launchpad.webapp.interaction import Participation
+from canonical.launchpad.webapp.interaction import setupInteractionByEmail
 
 from canonical.launchpad.scripts import bugzilla
 
@@ -79,11 +80,7 @@ def main(argv):
 
     execute_zcml_for_scripts()
     ztm = initZopeless()
-    # XXX gary 21-Oct-2008 bug 285808
-    # We should reconsider using a ftest helper for production code.  For now,
-    # we explicitly keep the code from using a test request by using a basic
-    # participation.
-    login('bug-importer@launchpad.net', Participation())
+    setupInteractionByEmail('bug-importer@launchpad.net')
 
     db = make_connection(options)
     bz = bugzilla.Bugzilla(db)

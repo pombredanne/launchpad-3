@@ -67,8 +67,6 @@ status is returned.
 >>> check_redirect("/+index", host='feeds.launchpad.dev', status=301)
 >>> check("/+graphics")
 
->>> check("/translations/+about")
-
 >>> check("/+imports", host='translations.launchpad.dev')
 >>> check("/+imports/1/+index", auth=True, host='translations.launchpad.dev')
 >>> check_not_found("/+imports/foo", host='translations.launchpad.dev')
@@ -96,18 +94,13 @@ status is returned.
 >>> check_not_found("/+groups/foos",
 ...                 host='translations.launchpad.dev')
 
->>> check("robots.txt", host="shipit.ubuntu.dev")
-
->>> check("/bounties")
->>> check("/bounties/foomatic-widgets")
 
 >>> check("/codeofconduct")
->>> check("/codeofconduct/1.0")
->>> check("/codeofconduct/1.0/+download")
+>>> check("/codeofconduct/1.1")
+>>> check("/codeofconduct/1.1/+download")
 
 >>> check("/projectgroups", auth=True)
 >>> check("/projectgroups/+all", auth=True)
->>> check("/projectgroups/+review", auth=True)
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
 >>> check("/mozilla/+branches")
@@ -121,7 +114,6 @@ status is returned.
 >>> check("/firefox")
 >>> check("/firefox/+series")
 >>> check("/firefox/1.0")
->>> check("/firefox/1.0/+addpackage", auth=True)
 >>> check("/firefox/1.0/+ubuntupkg", auth=True)
 >>> check("/firefox/1.0/+edit", auth=True)
 >>> check("/firefox/1.0/+specs")
@@ -149,7 +141,6 @@ status is returned.
 >>> check("/distros/+add", auth=True)
 
 >>> check("/ubuntu")
->>> check("/ubuntu/+bounties")
 >>> check("/ubuntu/+bugs")
 >>> check("/ubuntu/+specs")
 >>> check("/ubuntu/+cve")
@@ -158,11 +149,9 @@ status is returned.
 >>> check("/ubuntu/+edit", auth=True)
 >>> check("/ubuntu/+reassign", auth=True)
 >>> check("/ubuntu/+selectmemberteam", auth=True)
->>> check("/ubuntu/+changetranslators", host='translations.launchpad.dev',
+>>> check("/ubuntu/+settings", host='translations.launchpad.dev',
 ...       auth=True)
 >>> check("/ubuntu/hoary/+addmilestone", auth=True)
->>> check("/ubuntu/+linkbounty", auth=True)
->>> check("/ubuntu/+addbounty", auth=True)
 >>> check("/ubuntu/+addspec", auth=True)
 >>> check("/ubuntu/+imports", host='translations.launchpad.dev')
 >>> check("/debian/+milestone/3.1")
@@ -201,7 +190,6 @@ Test the DARBPR page for a REMOVED package:
 ...                 host='translations.launchpad.dev')
 
 >>> check("/ubuntu/hoary/+source/evolution/+changelog")
->>> check("/ubuntu/hoary/+source/evolution/+packaging")
 >>> check("/ubuntu/hoary/+source/evolution/+edit-packaging", auth=True)
 >>> check("/ubuntu/hoary/+source/evolution/+gethelp")
 
@@ -210,10 +198,6 @@ translations site. This way, we don't break existing links to it. Before
 removing this, you must be completely sure that no supported Ubuntu release
 is still pointing to this old URL (see bug #138090).
 
->>> check_redirect("/ubuntu/hoary/+source/evolution/+translate",
-...     host="launchpad.dev", status=301)
->>> check("/ubuntu/hoary/+source/evolution/+translate",
-...       host='translations.launchpad.dev' )
 >>> check_redirect("/ubuntu/hoary/+source/evolution/+translations", status=301)
 >>> check("/ubuntu/hoary/+source/evolution/+translations",
 ...       host='translations.launchpad.dev')
@@ -245,7 +229,6 @@ is still pointing to this old URL (see bug #138090).
 >>> check("/ubuntu/hoary/+bugs")
 
 >>> check("/ubuntu/hoary/i386")
->>> check("/ubuntu/hoary/i386/+search")
 
 >>> check("/bugs")
 >>> check_redirect("/bugs/assigned")
@@ -312,13 +295,6 @@ form, a 404 will be issued immediately; no redirect will be sent.
 >>> check_not_found("/bugs/2/attachments/1")
 >>> check_not_found("/bugs/2/+attachment/1")
 
-Viewing a bug in the context of an upstream where the bug has not yet
-been reported.
-
->>> check("/netapplet/+bug/1")
->>> check_not_found("/netapplet/+bug/1/+viewstatus")
->>> check_not_found("/netapplet/+bug/1/+editstatus")
-
 Check a bug is traversable by nickname:
 
 >>> check_redirect("/bugs/blackhole")
@@ -327,45 +303,15 @@ Check a bug is traversable by nickname:
 >>> check_not_found("/bugs/invalid-nickname")
 >>> check_not_found("bugs/invalid-nickname")
 
-Viewing a bug in the context of a distribution where the bug has not
-yet been reported.
-
->>> check_redirect("/ubuntu/+bug")
->>> check_not_found("/ubuntu/+bug/3/+viewstatus")
->>> check_not_found("/ubuntu/+bug/3/+editstatus")
-
-Viewing a bug in the context of a distorelease where the bug has not
-yet been reported.
-
->>> check_redirect("/ubuntu/warty/+bug")
->>> check("/ubuntu/warty/+bug/3")
->>> check_not_found("/ubuntu/warty/+bug/3/+viewstatus")
->>> check_not_found("/ubuntu/warty/+bug/3/+editstatus")
-
 Viewing a bug in the context of a distro source package in which it's
 already been reported.
 
 >>> check("/ubuntu/+source/mozilla-firefox/+bug/1")
 
-Viewing a bug in the context of a distro source package in which it's
-not yet been reported.
-
->>> check_redirect("/ubuntu/+source/thunderbird/+bug")
->>> check("/ubuntu/+source/thunderbird/+bug/1")
->>> check_not_found("/ubuntu/+source/thunderbird/+bug/1/+viewstatus")
->>> check_not_found("/ubuntu/+source/thunderbird/+bug/1/+editstatus")
-
 Viewing the bug in the context of a distro series source package in
 which the bug has already been reported.
 
 >>> check("/ubuntu/warty/+source/mozilla-firefox/+bug/5")
-
-Viewing the bug in the context of a distro series source package in
-which the bug has not yet been reported.
-
->>> check("/ubuntu/warty/+source/mozilla-firefox/+bug/1")
->>> check_not_found("/ubuntu/warty/+source/mozilla-firefox/+bug/1/+viewstatus")
->>> check_not_found("/ubuntu/warty/+source/mozilla-firefox/+bug/1/+editstatus")
 
 Viewing a bug in a distribution that doesn't use Bugs officially, where the
 bugtask is also assigned to a milestone (a corner case, but one that was causing
@@ -379,10 +325,6 @@ The bug filing pages.
 >>> check("/ubuntu/+filebug", auth=True)
 >>> check("/ubuntu/+source/mozilla-firefox/+filebug", auth=True)
 
->>> check("/firefox/+filebug-advanced", auth=True)
->>> check("/ubuntu/+filebug-advanced", auth=True)
->>> check("/ubuntu/+source/mozilla-firefox/+filebug-advanced", auth=True)
-
 Note that you should not be able to directly file a bug on a
 distroseries or sourcepackage; an IBugTask reported against a
 distroseries or sourcepackage is *targeted* to be fixed in that
@@ -392,6 +334,14 @@ or distrosourcepackage filebug page.
 >>> check_redirect("/ubuntu/warty/+filebug", auth=True)
 >>> check_redirect(
 ...     "/ubuntu/warty/+source/mozilla-firefox/+filebug", auth=True)
+
+The old +filebug-advanced form now redirects to the +filebug form.
+
+>>> check_redirect("/firefox/+filebug-advanced", auth=True, status=301)
+>>> check_redirect("/ubuntu/+filebug-advanced", auth=True, status=301)
+>>> check_redirect(
+...     "/ubuntu/+source/mozilla-firefox/+filebug-advanced", auth=True,
+...     status=301)
 
 Approving/declining a bug nomination.
 
@@ -403,7 +353,6 @@ Test /people traversals.
 >>> check("/people/")
 >>> check("/people/+requestmerge", auth=True)
 >>> check_redirect("/people/+mergerequest-sent", auth=True)
->>> check("/people/+portlet-about")
 
 This is for a team:
 
@@ -417,7 +366,6 @@ This is for a team:
 >>> check("/~name18/+reassign", auth=True)
 >>> check("/~name18/+review", auth=True)
 >>> check("/~name18/+specs")
->>> check("/~name18/+bounties")
 >>> check_redirect("/~name18/+translations", status=301)
 >>> check("/~name18/+translations", host='translations.launchpad.dev')
 >>> check("/~name18/+imports", host='translations.launchpad.dev')
@@ -451,22 +399,21 @@ And this is for a person:
 >>> check("/~name16/+codesofconduct", auth=True)
 >>> check("/~name16/+edithomepage", auth=True)
 >>> check("/~name16/+review", auth=True)
->>> check("/~name16/+portlet-emails")
->>> check("/~name16/+portlet-details")
 >>> check("/~name16/+portlet-team-assignedbugs")
 >>> check("/~name16/+specworkload")
 >>> check("/~name16/+imports", host='translations.launchpad.dev')
 
-sabdfl owns many packages, so he's a better test for some pages:
+mark owns many packages, so he's a better test for some pages:
 
->>> check("/~sabdfl/+packagebugs")
->>> check("/~sabdfl/+related-software")
+>>> check("/~mark/+packagebugs")
+>>> check("/~mark/+related-software")
 
 >>> check("/+code")
 
->>> check("/+builds/bob/")
+>>> check("/builders")
+>>> check("/builders/bob/")
+>>> check_redirect("/+builds", status=301)
 >>> check("/ubuntu/+source/pmount/0.1-1/+build/7/")
->>> check("/ubuntu/+source/pmount/0.1-1/+build/7/pmount/")
 
 >>> check_redirect("/support/", status=301)
 
@@ -510,11 +457,6 @@ Icing resources.
 >>> check("/+icing/lazr/build/lazr.js")
 >>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
 >>> check("/+icing-contrib/rev%s/json2.js" % revno)
->>> check("/+icing-kubuntu/rev%s/kubuntu-masthead2.css" % revno,
-...       host="shipit.kubuntu.dev")
->>> check("/+icing-edubuntu/rev%s/edubuntu.css" % revno,
-...       host="shipit.edubuntu.dev")
-
 
 Image resources are available from all the virtual hosts.
 
@@ -522,4 +464,3 @@ Image resources are available from all the virtual hosts.
 >>> check('/@@/add', host='bugs.launchpad.dev')
 >>> check('/@@/add', host='answers.launchpad.dev')
 >>> check('/@@/add', host='code.launchpad.dev')
-

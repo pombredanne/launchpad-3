@@ -1,24 +1,37 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for TemporaryBlobStorage."""
 
 __metaclass__ = type
 __all__ = [
     'TemporaryBlobStorageAddView',
+    'TemporaryBlobStorageNavigation',
+    'TemporaryBlobStorageURL',
     ]
 
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
 
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     BlobTooLarge, ITemporaryBlobStorage, ITemporaryStorageManager)
+from canonical.launchpad.webapp import GetitemNavigation
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.librarian.interfaces import UploadFailed
+
+from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 
 
 class TemporaryBlobStorageAddView(LaunchpadFormView):
+    # XXX: gary 2009-09-18 bug=31358
+    # This page might be able to be removed after the referenced bug is
+    # fixed and apport (Ubuntu's bug reporting tool) has been changed to use
+    # it.
     schema = ITemporaryBlobStorage
     label = 'Store BLOB'
+    page_title = 'Store a BLOB temporarily in Launchpad'
     field_names = ['blob']
     for_input = True
 
@@ -34,13 +47,49 @@ class TemporaryBlobStorageAddView(LaunchpadFormView):
     # being named like that.
     @action('Continue', name='FORM_SUBMIT')
     def continue_action(self, action, data):
-        try:
-            uuid = getUtility(ITemporaryStorageManager).new(data['blob'])
+        uuid = self.store_blob(data['blob'])
+        if uuid is not None:
             self.request.response.setHeader('X-Launchpad-Blob-Token', uuid)
             self.request.response.addInfoNotification(
                 'Your ticket is "%s"' % uuid)
+
+    def store_blob(self, blob):
+        """Store a blob and return its UUID."""
+        try:
+            uuid = getUtility(ITemporaryStorageManager).new(blob)
         except BlobTooLarge:
             self.addError('Uploaded file was too large.')
-        except UploadFailed:
+            return None
+        except UploadFailed, e:
             self.addError('File storage unavailable - try again later.')
+            return None
+        else:
+            # Create ProcessApportBlobJob for the BLOB.
+            blob = getUtility(ITemporaryStorageManager).fetch(uuid)
+            getUtility(IProcessApportBlobJobSource).create(blob)
+            return uuid
 
+
+class TemporaryBlobStorageURL:
+    """Bug URL creation rules."""
+    implements(ICanonicalUrlData)
+
+    inside = None
+    rootsite = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def path(self):
+        """Return the path component of the URL."""
+        return u'temporary-blobs/%s' % self.context.uuid
+
+
+class TemporaryBlobStorageNavigation(GetitemNavigation):
+    """Navigation for temporary blobs."""
+
+    usedfor = ITemporaryStorageManager
+
+    def traverse(self, name):
+        return getUtility(ITemporaryStorageManager).fetch(name)

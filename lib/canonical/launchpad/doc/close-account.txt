@@ -8,10 +8,9 @@ See Bug #120506 for more details.
 
 
 Get Mark's account and person entries.
->>> from canonical.launchpad.interfaces.account import IAccountSet
->>> from canonical.launchpad.interfaces.person import IPersonSet
+>>> from lp.registry.interfaces.person import IPersonSet
 >>> from zope.security.proxy import removeSecurityProxy
->>> mark_person = getUtility(IPersonSet).getByEmail('mark@hbd.com')
+>>> mark_person = getUtility(IPersonSet).getByEmail('mark@example.com')
 >>> mark_account = removeSecurityProxy(mark_person.account)
 
 
@@ -22,7 +21,7 @@ ACTIVE
 >>> print mark_account.displayname
 Mark Shuttleworth
 >>> print mark_person.name
-sabdfl
+mark
 >>> print mark_person.displayname
 Mark Shuttleworth
 
@@ -39,12 +38,12 @@ Lets close his account.
 >>> from canonical.config import config
 >>> from canonical.launchpad.ftests.script import run_script
 >>> script = os.path.join(config.root, 'scripts', 'close-account.py')
->>> (result, out, err) = run_script(script, args=['mark@hbd.com'])
+>>> (result, out, err) = run_script(script, args=['mark@example.com'])
 >>> print result
 0
 >>> print out
 >>> print err
-INFO...Closing sabdfl's account
+INFO...Closing mark's account
 
 
 Now, start a new transaction so we can see the changes the script made.
@@ -67,7 +66,7 @@ SQLObjectNotFound: ...
 The Person record still exists to maintain links with information that won't
 be removed, such as bug comments, but has been anonymized.
 
->>> from canonical.launchpad.database.person import Person
+>>> from lp.registry.model.person import Person
 >>> mark_person = Person.get(mark_person_id)
 >>> print mark_person.name
 removed...

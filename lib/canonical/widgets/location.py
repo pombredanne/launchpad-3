@@ -1,5 +1,7 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0706
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=E0702
 
 __metaclass__ = type
 __all__ = [
@@ -11,17 +13,19 @@ from zope.app.form import InputWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
 from zope.app.form.browser.widget import BrowserWidget
 from zope.app.form.interfaces import IInputWidget, WidgetInputError
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice, Float
 
+from z3c.ptcompat import ViewPageTemplateFile
+
 from canonical.lazr.utils import safe_js_escape
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.geoip import IGeoIPRecord
-from canonical.launchpad.interfaces.location import IObjectWithLocation
+from lp.registry.interfaces.location import IObjectWithLocation
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IMultiLineWidgetLayout)
@@ -53,7 +57,7 @@ class LocationWidget(BrowserWidget, InputWidget):
     def __init__(self, context, request):
         # This widget makes use of javascript for googlemaps and
         # json-handling, so we flag that in the request so that our
-        # main-template includes the necessary javascript files.
+        # base-layout includes the necessary javascript files.
         request.needs_json = True
         request.needs_gmap2 = True
         super(LocationWidget, self).__init__(context, request)
@@ -114,6 +118,7 @@ class LocationWidget(BrowserWidget, InputWidget):
             displayname=safe_js_escape(person.displayname),
             name=person.name,
             logo_html=ObjectImageDisplayAPI(person).logo(),
+            geoname=config.launchpad.geonames_identity,
             lat_name=self.latitude_widget.name,
             lng_name=self.longitude_widget.name,
             tz_name=self.time_zone_widget.name,
@@ -125,9 +130,9 @@ class LocationWidget(BrowserWidget, InputWidget):
                     function renderMap() {
                         Y.lp.mapping.renderPersonMap(
                             %(center_lat)s, %(center_lng)s, %(displayname)s,
-                            '%(name)s', '%(logo_html)s', '%(lat_name)s',
-                            '%(lng_name)s', '%(tz_name)s', %(zoom)s,
-                            %(show_marker)s);
+                            '%(name)s', '%(logo_html)s', '%(geoname)s',
+                            '%(lat_name)s', '%(lng_name)s', '%(tz_name)s',
+                            %(zoom)s, %(show_marker)s);
                      }
                      Y.on("domready", renderMap);
                 });

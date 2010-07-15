@@ -57,8 +57,9 @@ happily without generating
 >>> admin_browser.getLink('Change details').click()
 >>> admin_browser.getControl('Display Name').value = 'Different'
 >>> admin_browser.getControl('Save').click()
->>> 'error' in admin_browser.contents
-False
+
+>>> print get_feedback_messages(admin_browser.contents)
+[]
 >>> "has been blocked" in admin_browser.contents
 False
 

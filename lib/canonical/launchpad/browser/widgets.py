@@ -1,6 +1,11 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Customized widgets used in Launchpad."""
+
+# XXX sinzui 2009-05-15 bug=377095: This module should be broken up and
+# moved into canonical.widgets.
+
 
 __metaclass__ = type
 
@@ -8,16 +13,8 @@ __all__ = [
     'AlreadyRegisteredError',
     'BranchPopupWidget',
     'DescriptionWidget',
+    'NoneableDescriptionWidget',
     'NoProductError',
-    'ShipItAddressline1Widget',
-    'ShipItAddressline2Widget',
-    'ShipItCityWidget',
-    'ShipItOrganizationWidget',
-    'ShipItPhoneWidget',
-    'ShipItProvinceWidget',
-    'ShipItQuantityWidget',
-    'ShipItReasonWidget',
-    'ShipItRecipientDisplaynameWidget',
     'SummaryWidget',
     'TitleWidget',
     'WhiteboardWidget',
@@ -25,19 +22,22 @@ __all__ = [
 
 import sys
 
-from zope.app.form.browser import TextAreaWidget, TextWidget, IntWidget
+from zope.app.form.browser import TextAreaWidget
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import BranchType, IBranch, IBranchSet
-from canonical.launchpad.interfaces.branchnamespace import (
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import BranchFormatterAPI
 from lazr.uri import InvalidURIError, URI
-from canonical.widgets import SinglePopupWidget, StrippedTextWidget
+from canonical.widgets import StrippedTextWidget
+from canonical.widgets.popup import VocabularyPickerWidget
 
 
 class AlreadyRegisteredError(Exception):
@@ -65,61 +65,25 @@ class DescriptionWidget(TextAreaWidget):
     height = 5
 
 
+class NoneableDescriptionWidget(DescriptionWidget):
+    """A widget that is None if it's value is empty or whitespace.."""
+
+    def _toFieldValue(self, input):
+        value = super(
+            NoneableDescriptionWidget, self)._toFieldValue(input.strip())
+        if value == '':
+            return None
+        else:
+            return value
+
+
 class WhiteboardWidget(TextAreaWidget):
     """A widget to capture a whiteboard."""
     width = 44
     height = 5
 
 
-class ShipItRecipientDisplaynameWidget(TextWidget):
-    """See IShipItRecipientDisplayname"""
-    displayWidth = displayMaxWidth = 20
-
-
-class ShipItOrganizationWidget(TextWidget):
-    """See IShipItOrganization"""
-    displayWidth = displayMaxWidth = 30
-
-
-class ShipItCityWidget(TextWidget):
-    """See IShipItCity"""
-    displayWidth = displayMaxWidth = 30
-
-
-class ShipItProvinceWidget(TextWidget):
-    """See IShipItProvince"""
-    displayWidth = displayMaxWidth = 30
-
-
-class ShipItAddressline1Widget(TextWidget):
-    """See IShipItAddressline1"""
-    displayWidth = displayMaxWidth = 30
-
-
-class ShipItAddressline2Widget(TextWidget):
-    """See IShipItAddressline2"""
-    displayWidth = displayMaxWidth = 30
-
-
-class ShipItPhoneWidget(TextWidget):
-    """See IShipItPhone"""
-    displayWidth = displayMaxWidth = 16
-
-
-class ShipItReasonWidget(TextAreaWidget):
-    """See IShipItReason"""
-    width = 40
-    height = 4
-
-
-class ShipItQuantityWidget(IntWidget):
-    """See IShipItQuantity"""
-    displayWidth = 4
-    displayMaxWidth = 3
-    style = 'text-align: right'
-
-
-class BranchPopupWidget(SinglePopupWidget):
+class BranchPopupWidget(VocabularyPickerWidget):
     """Custom popup widget for choosing branches."""
 
     displayWidth = '35'
@@ -155,7 +119,7 @@ class BranchPopupWidget(SinglePopupWidget):
         # needs to be rewritten to get the sourcepackage and distroseries out
         # of the launch bag.
         url = unicode(URI(url).ensureNoSlash())
-        if getUtility(IBranchSet).getByUrl(url) is not None:
+        if getUtility(IBranchLookup).getByUrl(url) is not None:
             raise AlreadyRegisteredError('Already a branch for %r' % (url,))
         # Make sure the URL is valid.
         IBranch['url'].validate(url)

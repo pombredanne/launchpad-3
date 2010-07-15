@@ -17,19 +17,18 @@
     <div id="container">
         <p class="page-number">1 of 11</p>
           <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="bugs" tabindex="1" accesskey="1">Next</a></li>
+            <li class="button-next"><a id="btnNext" href="bugs" tabindex="1" accesskey="1" title="Read about bug tracking in Launchpad">Next</a></li>
             <li class="home current"><a href="index" accesskey="2">Launchpad tour home</a></li>
             <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
-            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and tracking</a></li>
-            <li><a href="code-review" accesskey="5">Code review</a></li>
-            <li><a href="translation" accesskey="6">Web-based translation</a></li>
-            <li><a href="community" accesskey="7">Community building</a></li>
-            <li><a href="ppa" accesskey="8">Software distribution</a></li>
-            <li><a href="community-support" accesskey="9">Community support</a></li>
-            <li><a href="api" accesskey="a">Beta: web services API</a></li>
-            <li><a href="feature-tracking" accesskey="b">Lightweight specifications</a></li>
-            <li><a href="release-management" accesskey="c">Release management</a></li>
-            
+            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and review</a></li>
+            <li><a href="translation" accesskey="5">Web-based translation</a></li>
+            <li><a href="community" accesskey="6">Mailing lists and teams</a></li>
+            <li><a href="ppa" accesskey="7">Software distribution</a></li>
+            <li><a href="community-support" accesskey="8">Community support</a></li>
+            <li><a href="api" accesskey="9">Beta: web services API</a></li>
+            <li><a href="feature-tracking" accesskey="a">Lightweight specifications</a></li>
+            <li><a href="release-management" accesskey="b">Release management</a></li>
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -46,18 +45,19 @@
                 <li>Develop, promote and <br />publish your software.</li>
                 <li>Encourage contributions to <br />your project.</li>
                 <li>Improve collaboration with <br />other projects and developers.</li>
-                <li>Build communities using <br />teams and mailing lists.</li>            
+                <li>Build communities using <br />teams and mailing lists.</li>
             </ul>
 
             <div class="clear"></div>
-            <div id="left-link-holder"><strong>Need Launchpad for a commercial project?</strong><br /><a href="mailto:feedback@launchpad.net">Talk to us about our commercial services &gt;</a></div>
-            <div id="link-holder"><a href="https://launchpad.net/+login">Create your Launchpad account &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
-            
+            <div id="left-link-holder"><strong>Need Launchpad for a commercial project?</strong><br /><a href="join-launchpad#commercial">Read about commercial subscriptions &gt;</a></div>
+            <div id="link-holder"><a href="https://launchpad.net/+login">Create your Launchpad account &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
+
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
+
             <li class="button-next">
-                <a href="bugs" accesskey="d" tabindex="2">Next</a>
+                <a href="bugs" accesskey="d" tabindex="2"  title="Read about bug tracking in Launchpad">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -65,38 +65,34 @@
                 <div class="furthur-information-block-top"></div>
                 <div class="furthur-information-block-mid">
                     <div class="block">
-                        <h3>Bug tracking</h3>
+                        <h3><a href="bugs">Bug tracking</a></h3>
                         <h4>Sharing code means sharing bugs.</h4>
                         <p class="screen-holder">
-                            <img src="images/home/screens/bugs.jpg" alt="Bug tracking" />
+                            <img src="images/bugs-screenshot.png" alt="Bug tracking" />
                         </p>
                         <p>Free software communities often share code, meaning the same bugs can crop up in different contexts.<br /><br />
-                        
+
                          With Launchpad, you can share bug reports, statuses, patches and comments across project boundaries. You can even share bug data with other trackers, such as Bugzilla and Trac.<br /><br />
-                         
+
                          There's also everything else you need in a bug tracker: web, email and API interfaces, links between bugs and fixes, team-based delegation and more.
                         </p>
-                        <ul class="further-links">
-                            <li><a href="bugs" accesskey="e" tabindex="3">More about bug tracking</a></li>
-                        </ul>
+                        <p style="float: right;"><a href="bugs" accesskey="e" tabindex="3">More about bug tracking &gt;</a></p>
                     </div>
                     <div class="block odd">
-                        <h3>Code hosting and review</h3>
+                        <h3><a href="branch-hosting-tracking">Code hosting and review</a></h3>
                         <h4>Democratise your code using Bazaar with Launchpad.</h4>
                         <p class="screen-holder">
-                            <img src="images/home/screens/tracking.jpg" alt="Code hosting and tracking" />
+                            <img src="images/code-screenshot.png" alt="Code hosting and tracking" />
                         </p>
                         <p>
-                            
-                         Launchpad and the <a href="http://bazaar-vcs.org/">Bazaar</a> distributed versional control system strip away the barriers to contributing to your project. In just a few key strokes anyone can create their own local branch of your trunk with full version control.<br /><br />
-                         
+
+                         Launchpad and <a href="http://bazaar-vcs.org/">Bazaar</a> distributed versional control strip away the barriers to contributing to your project. In just a few key strokes anyone can create their own local branch of your trunk with full version control.<br /><br />
+
                          When they're ready, they can upload their branch to Launchpad and propose it for merging back into your trunk. Code review &mdash; by web and email &mdash; gives you a public forum to discuss and approve or reject the merge.<br /><br />
-                         
-                         You can even use Launchpad to import CVS and Subversion repositories into Bazaar branches.
+
+                         You can even use Launchpad to import Git, CVS and Subversion repositories into Bazaar branches.
                         </p>
-                        <ul class="further-links">
-                            <li><a href="branch-hosting-tracking" accesskey="f" tabindex="4">More about code hosting and tracking</a></li>
-                            <li><a href="code-review" accesskey="g" tabindex="5">More about code review</a></li>
+                        <p style="float: right;"><a href="branch-hosting-tracking" accesskey="f" tabindex="4">More about code hosting and review &gt;</a></p>
                         </ul>
                     </div>
                     <div class="clear"></div>
@@ -107,37 +103,33 @@
                 <div class="furthur-information-block-top"></div>
                 <div class="furthur-information-block-mid">
                     <div class="block">
-                        <h3>Translations</h3>
+                        <h3><a href="translation">Translations</a></h3>
                         <h4>Translators shouldn&rsquo;t have to be software engineers.</h4>
                         <p class="screen-holder">
-                            <img src="images/home/screens/translations.jpg" alt="Translations" />
+                            <img src="images/trans-screenshot.png" alt="Translations" />
                         </p>
                         <p>
-                            See your software translated by a community of over 40,000 working in 272 languages.<br /><br />
-                            
+                            See your software translated by a community of over 47,000 people working in 293 languages.<br /><br />
+
                             Launchpad makes translation easy for everyone. Translators get a simple web interface, with automatic suggestions from a library of more than 16 million strings.<br /><br />
                             You, as project owner, decide the balance between openness and quality. And you get standard GNU GetText files for integration with your software.<br /><br />
-                            
 
-                        </p>
-                        <ul class="further-links">
-                            <li><a href="translation" accesskey="h" tabindex="6">More about translations</a></li>
-                        </ul>
+
+                        </p><br />
+                        <p style="float: right;"><a href="translation" accesskey="h" tabindex="5">More about translations &gt;</a></p>
                     </div>
                     <div class="block odd">
-                        <h3>Ubuntu package building and hosting</h3>
+                        <h3><a href="ppa">Ubuntu package building and hosting</a></h3>
                         <h4>Distribute software to Ubuntu users.</h4>
                         <p class="screen-holder">
-                            <img src="images/home/screens/hosting.jpg" alt="Package building and hosting" />
+                            <img src="images/ppa-screenshot.png" alt="Package building and hosting" />
                         </p>
                         <p>
                             Build and distribute Ubuntu packages using your own personal APT repository, hosted by Launchpad.<br /><br />
-                            
+
                             Whether you're publishing experimental builds, backports or betas, your Personal Package Archive lets end-users install your packages using the tools they already know and with automatic updates.
                         </p>
-                        <ul class="further-links">
-                            <li><a href="ppa" accesskey="i" tabindex="7">More about package hosting</a></li>
-                        </ul>
+                        <p style="float: right;"><a href="ppa" accesskey="i" tabindex="6">More about package hosting &gt;</a></p>
                     </div>
                     <div class="clear"></div>
                 </div>
@@ -147,34 +139,30 @@
                 <div class="furthur-information-block-top"></div>
                 <div class="furthur-information-block-mid">
                     <div class="block">
-                        <h3>Blueprint &ndash; specification tracking</h3>
+                        <h3><a href="feature-tracking">Blueprint &ndash; specification tracking</a></h3>
                         <h4>Track new features from idea to implementation.</h4>
                         <p class="screen-holder">
-                            <img src="images/home/screens/blueprints.jpg" alt="Blueprint - specification tracking" />
+                            <img src="images/blueprint-screenshot.png" alt="Blueprint - specification tracking" />
                         </p>
                         <p>
                             Community planning for your project's road map. Anyone can use Launchpad to register a blueprint for your project, while you decide the priority and time-scales.<br /><br />
-                            
+
                             Target chunks of work to forthcoming releases, see who&rsquo;s working on them and track their progress.
                         </p>
-                        <ul class="further-links">
-                            <li><a href="feature-tracking" accesskey="j" tabindex="8">More about specification tracking</a></li>
-                        </ul>
+                        <p style="float: right;"><a href="feature-tracking" accesskey="j" tabindex="7">More about specification tracking &gt;</a></p>
                     </div>
                     <div class="block odd">
-                        <h3>Answers &ndash; community support</h3>
+                        <h3><a href="community-support">Answers &ndash; community support</a></h3>
                         <h4>Help your users to help themselves.</h4>
                         <p class="screen-holder">
-                            <img src="images/home/screens/answers.jpg" alt="Answers - community support" />
+                            <img src="images/answers-screenshot.png" alt="Answers - community support" />
                         </p>
                         <p>
                             Track help requests just like bug reports, with community support contacts, statuses and email notifications.<br /><br />
-                            
+
                             When you come across common questions add them to your FAQ library and you get a searchable knowledge base for free. If a support request is actually a bug, no problem: one click and it becomes a bug report.
                         </p>
-                        <ul class="further-links">
-                            <li><a href="community-support" accesskey="k" tabindex="9">More about community support</a></li>
-                        </ul>
+                       <p style="float: right;"><a href="community-support" accesskey="k" tabindex="9">More about community support &gt;</a></p>
                     </div>
                     <div class="clear"></div>
                 </div>
@@ -183,10 +171,10 @@
         </div>
         <ul id="footer-navigation">
             <li class="button-next">
-                <a href="bugs" accesskey="l" tabindex="10">Next</a>
+                <a href="bugs" accesskey="l" tabindex="10"  title="Read about bug tracking in Launchpad">Next</a>
             </li>
             <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="i" tabindex="7">Terms of Use</a> &#124; <a href="https://help.launchpad.net/Feedback" accesskey="j" tabindex="8">Feedback</a> &#124; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="k" tabindex="9">FAQ</a>
+                &copy; 2004-2010 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="i" tabindex="7">Terms of Use</a> &#124; <a href="https://help.launchpad.net/Feedback" accesskey="j" tabindex="8">Feedback</a> &#124; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="k" tabindex="9">FAQ</a>
             </li>
         </ul>
     </div>

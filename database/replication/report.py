@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Generate a report on the replication setup.
 
@@ -37,7 +39,7 @@ class Table:
             self.labels = labels[:]
         self.rows = []
 
-    
+
 class HtmlReport:
 
     def alert(self, text):
@@ -155,10 +157,11 @@ def listen_report(cur, options):
 
     cur.execute("""
         SELECT li_receiver, li_origin, li_provider
-        FROM sl_listen ORDER BY li_receiver
+        FROM sl_listen
+        ORDER BY li_receiver, li_origin, li_provider
         """)
     for row in cur.fetchall():
-        table.rows.append('Node %s' % node for node in row)
+        table.rows.append(['Node %s' % node for node in row])
     return report.table(table)
 
 

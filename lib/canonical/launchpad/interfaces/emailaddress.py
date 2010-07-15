@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """EmailAddress interfaces."""
@@ -17,10 +19,10 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.launchpad import IHasOwner
-from canonical.lazr.rest.declarations import (
+from lp.registry.interfaces.role import IHasOwner
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 
 class InvalidEmailAddress(Exception):

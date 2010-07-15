@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -36,7 +38,7 @@ import pytz
 from canonical.config import config
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
-from canonical.launchpad.database.job import Job
+from lp.services.job.model.job import Job
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IPersonSet, NotFoundError, PersonCreationRationale,
     UnknownSender)
@@ -44,7 +46,7 @@ from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, IMessage, IMessageChunk, IMessageJob,
     IMessageSet, IUserToUserEmail, InvalidEmailMessage)
 from canonical.launchpad.mail import signed_message_from_string
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from lazr.config import as_timedelta
 
 from canonical.database.sqlbase import SQLBase
@@ -89,8 +91,6 @@ class Message(SQLBase):
         storm_validator=validate_public_person, notNull=False)
     parent = ForeignKey(foreignKey='Message', dbName='parent',
         notNull=False, default=None)
-    distribution = ForeignKey(foreignKey='Distribution',
-        dbName='distribution', notNull=False, default=None)
     rfc822msgid = StringCol(notNull=True)
     bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
@@ -230,9 +230,8 @@ class MessageSet:
         return unicode(email.Header.make_header(re_encoded_bits))
 
     def fromEmail(self, email_message, owner=None, filealias=None,
-            parsed_message=None, distribution=None,
-            create_missing_persons=False, fallback_parent=None,
-            date_created=None):
+                  parsed_message=None, create_missing_persons=False,
+                  fallback_parent=None, date_created=None):
         """See IMessageSet.fromEmail."""
         # It does not make sense to handle Unicode strings, as email
         # messages may contain chunks encoded in differing character sets.
@@ -364,8 +363,7 @@ class MessageSet:
         # DOIT
         message = Message(subject=subject, owner=owner,
             rfc822msgid=rfc822msgid, parent=parent,
-            raw=raw_email_message, datecreated=datecreated,
-            distribution=distribution)
+            raw=raw_email_message, datecreated=datecreated)
 
         sequence = 1
 
@@ -426,7 +424,7 @@ class MessageSet:
                 # specified, default to latin-1 to prevent
                 # UnicodeDecodeErrors.
                 charset = part.get_content_charset()
-                if charset is None:
+                if charset is None or str(charset).lower() == 'x-unknown':
                     charset = 'latin-1'
 
                 content = content.decode(charset, 'replace')

@@ -1,6 +1,8 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 
 """A cron script that generate missing PPA signing keys."""
@@ -10,7 +12,7 @@ __metaclass__ = type
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.ppakeygenerator import PPAKeyGenerator
+from lp.soyuz.scripts.ppakeygenerator import PPAKeyGenerator
 
 
 if __name__ == '__main__':

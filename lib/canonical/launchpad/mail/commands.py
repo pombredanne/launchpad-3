@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -18,10 +19,10 @@ from canonical.launchpad.interfaces import (
         BugTaskImportance, IProduct, IDistribution, IDistroSeries, IBug,
         IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
         IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
-        IBugTaskSet, IMessageSet, IDistroBugTask,
+        IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError,
         NotFoundError, CreateBugParams, IPillarNameSet,
-        BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
+        BugTargetNotFound, IProjectGroup, ISourcePackage, IProductSeries,
         BugTaskStatus)
 from lazr.lifecycle.event import (
     ObjectModifiedEvent, ObjectCreatedEvent)
@@ -32,6 +33,8 @@ from canonical.launchpad.mail.helpers import (
     get_error_message, get_person_or_team)
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
+
+from lp.app.errors import UserCannotUnsubscribePerson
 
 
 def normalize_arguments(string_args):
@@ -135,8 +138,7 @@ class BugEmailCommand(EmailCommand):
             params = CreateBugParams(
                 msg=message, title=message.title,
                 owner=getUtility(ILaunchBag).user)
-            bug = getUtility(IBugSet).createBug(params)
-            return bug, ObjectCreatedEvent(bug)
+            return getUtility(IBugSet).createBugWithoutTarget(params)
         else:
             try:
                 bugid = int(bugid)
@@ -279,7 +281,7 @@ class SecurityEmailCommand(EmailCommand):
                 edited = True
                 edited_fields.add('private')
         if context.security_related != security_related:
-            context.security_related = security_related
+            context.setSecurityRelated(security_related)
             edited = True
             edited_fields.add('security_related')
 
@@ -346,9 +348,15 @@ class UnsubscribeEmailCommand(EmailCommand):
                 get_error_message('unsubscribe-too-many-arguments.txt'))
 
         if bug.isSubscribed(person):
-            bug.unsubscribe(person)
+            try:
+                bug.unsubscribe(person, getUtility(ILaunchBag).user)
+            except UserCannotUnsubscribePerson:
+                raise EmailProcessingError(
+                    get_error_message(
+                        'user-cannot-unsubscribe.txt',
+                        person=person.displayname))
         if bug.isSubscribedToDupes(person):
-            bug.unsubscribeFromDupes(person)
+            bug.unsubscribeFromDupes(person, person)
 
         return bug, current_event
 
@@ -490,9 +498,9 @@ class AffectsEmailCommand(EmailCommand):
                 "There is no project named '%s' registered in Launchpad." %
                     name)
 
-        # We can't check for IBugTarget, since Project is an IBugTarget
+        # We can't check for IBugTarget, since ProjectGroup is an IBugTarget
         # we don't allow bugs to be filed against.
-        if IProject.providedBy(pillar):
+        if IProjectGroup.providedBy(pillar):
             products = ", ".join(product.name for product in pillar.products)
             raise BugTargetNotFound(
                 "%s is a group of projects. To report a bug, you need to"
@@ -572,7 +580,7 @@ class AffectsEmailCommand(EmailCommand):
         return bugtask, event
 
     def _targetBug(self, user, bug, series, sourcepackagename=None):
-        """Try to target the bug the the given distroseries.
+        """Try to target the bug the given distroseries.
 
         If the user doesn't have permission to target the bug directly,
         only a nomination will be created.
@@ -597,18 +605,20 @@ class AffectsEmailCommand(EmailCommand):
         if general_task is None:
             # A series task has to have a corresponding
             # distribution/product task.
-            general_task = getUtility(IBugTaskSet).createTask(
-                bug, user, distribution=distribution,
-                product=product, sourcepackagename=sourcepackagename)
+            general_task = bug.addTask(user, general_target)
+
+        # We know the target is of the right type, and we just created
+        # a pillar task, so if canBeNominatedFor == False then a task or
+        # nomination must already exist.
         if not bug.canBeNominatedFor(series):
             # A nomination has already been created.
             nomination = bug.getNominationFor(series)
-            # Automatically approve an existing nomination if a series
-            # manager targets it.
-            if not nomination.isApproved() and nomination.canApprove(user):
-                nomination.approve(user)
         else:
             nomination = bug.addNomination(target=series, owner=user)
+
+        # Automatically approve an existing or new nomination if possible.
+        if not nomination.isApproved() and nomination.canApprove(user):
+            nomination.approve(user)
 
         if nomination.isApproved():
             if sourcepackagename:
@@ -623,29 +633,16 @@ class AffectsEmailCommand(EmailCommand):
 
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
-        # XXX kiko 2005-09-05 bug=1690:
-        # We could fix this by making createTask be a method on
-        # IBugTarget, but I'm not going to do this now.
-        bugtaskset = getUtility(IBugTaskSet)
         user = getUtility(ILaunchBag).user
-        if IProduct.providedBy(bug_target):
-            return bugtaskset.createTask(bug, user, product=bug_target)
-        elif IProductSeries.providedBy(bug_target):
-            return self._targetBug(user, bug, bug_target)
-        elif IDistribution.providedBy(bug_target):
-            return bugtaskset.createTask(bug, user, distribution=bug_target)
-        elif IDistroSeries.providedBy(bug_target):
+        if (IProductSeries.providedBy(bug_target) or
+            IDistroSeries.providedBy(bug_target)):
             return self._targetBug(user, bug, bug_target)
         elif ISourcePackage.providedBy(bug_target):
             return self._targetBug(
                 user, bug, bug_target.distroseries,
                 bug_target.sourcepackagename)
-        elif IDistributionSourcePackage.providedBy(bug_target):
-            return bugtaskset.createTask(
-                bug, user, distribution=bug_target.distribution,
-                sourcepackagename=bug_target.sourcepackagename)
         else:
-            assert False, "Not a valid bug target: %r" % bug_target
+            return bug.addTask(user, bug_target)
 
 
 class AssigneeEmailCommand(EditEmailCommand):

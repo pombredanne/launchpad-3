@@ -2,12 +2,7 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
+  metal:use-macro="view/macro:page/main_only"
 >
   <body>
 
@@ -64,7 +59,7 @@
             class="documentDescription"
             tal:replace="nothing">
             This is where a document heading paragraph can be inserted. In
-            your actual customised editform, you can fill-slot this with 
+            your actual customised editform, you can fill-slot this with
             a descriptive paragraph.
           </div>
 
@@ -73,11 +68,11 @@
             <div>Extra top</div>
             <div class="field"><input type="text" style="width:100%" /></div>
           </div>
-        
+
           <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
-        
+
           <div class="separator"></div>
-        
+
           <div class="row"
                metal:define-slot="extra_bottom" tal:replace="nothing">
             <div>Extra bottom</div>
@@ -91,7 +86,6 @@
             type="submit"
             name="UPDATE_SUBMIT"
             value="Change"
-            i18n:attributes="value submit-button"
           />
         </div>
 

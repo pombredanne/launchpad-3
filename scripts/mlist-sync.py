@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sync Mailman data from one Launchpad to another."""
 
@@ -22,14 +24,14 @@
 #   Not doing this means that some of the links in staging's MHonArc archive
 #   will point to production archives.
 
+# pylint: disable-msg=W0403
+import _pythonpath
+
 import os
 import sys
 import logging
 import textwrap
 import subprocess
-
-# pylint: disable-msg=W0403
-import _pythonpath
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -38,7 +40,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, IMailingListSet, IPersonSet)
 from canonical.launchpad.mailman.config import configure_prefix
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 RSYNC_OPTIONS = ('-avz', '--delete')

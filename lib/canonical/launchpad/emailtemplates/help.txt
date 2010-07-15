@@ -62,9 +62,12 @@ new@bugs.launchpad.net and describe the problem you're having.
 Tell Launchpad which project, distribution or distribution
 package the bug affects by using the "affects" command.
 
+Important: "affects" must be the first command you give in the
+email when reporting a new bug.
+
 Here's an example bug report email:
 
-From: im-in-yr-emailz@gmail.com
+From: you@example.com
 To: new@bugs.launchpad.net
 Subject: Bug tracker email interface needs a screen cast
 
@@ -108,13 +111,13 @@ Subject: Neat idea
 Body:
 
 What a neat idea! Matt R: can you schedule some time to create a
- screen cast?
+screen cast?
 
 We should put the screen cast directly in the bug tracker's
 interface.
 
- status confirmed
  affects malone
+ status confirmed
 
 Joey has also marked the bug as affecting the Launchpad bug
 tracker itself, using its project name "malone".
@@ -137,9 +140,9 @@ Body:
 
 Yeah, this is a great idea. I'll have time for this in September.
 
+ affects launchpad-documentation
  assignee matthew.revell
  milestone 1.2.9
- affects launchpad-documentation
 
 Note that Matthew used the "affects" command. Earlier, Joey
 marked the bug as also affecting another project. Here, "affects"

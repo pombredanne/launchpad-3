@@ -249,8 +249,8 @@ The zcml processor `browser:navigation` processes navigation classes.
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
-    ...   <include file="lib/zope/app/zcmlfiles/meta.zcml" />
+    ...   <include package="canonical.launchpad.webapp" file="meta.zcml" />
+    ...   <include package="zope.app.zcmlfiles" file="meta.zcml" />
     ...   <browser:navigation
     ...       module="canonical.launchpad.ftests"
     ...       classes="ThingSetNavigation"
@@ -635,11 +635,11 @@ Check those from ThingSetNavigation4:
     >>> class DupeNames(Navigation):
     ...
     ...     @stepto('foo')
-    ...     def doit(self):
+    ...     def doit_foo(self):
     ...         return 'foo'
     ...
     ...     @stepto('bar')
-    ...     def doit(self):
+    ...     def doit_bar(self):
     ...         return 'bar'
 
     >>> instance_of_dupenames = DupeNames(thingset, request)
@@ -648,89 +648,7 @@ Check those from ThingSetNavigation4:
     >>> instance_of_dupenames.publishTraverse(request, 'bar')
     'bar'
 
-The doit() method still works though.
+The doit_*() methods still work though.
 
-    >>> instance_of_dupenames.doit()
+    >>> instance_of_dupenames.doit_bar()
     'bar'
-
-
-== Inspecting the traversed objects ==
-
-As the object heirarchy is traversed, a list of the traversed objects
-is built up in the request.
-
-Create a navigation class for IThing's:
-
-    >>> class ThingNavigation(Navigation):
-    ...     usedfor = IThing
-    ...
-    ...     @stepto('foo')
-    ...     def traverse_foo(self):
-    ...         return 'bar'
-    ...
-    ...     @stepto('something')
-    ...     def traverse_something(self):
-    ...         return Thing('something')
-
-
-Traverse from the thingset to a particular thing:
-
-    >>> request = Request()
-    >>> navigation = ThingSetNavigation(thingset, request)
-    >>> thing = navigation.publishTraverse(request, 'ttt')
-    >>> navigation2 = ThingNavigation(thing, request)
-    >>> navigation2.publishTraverse(request, 'foo')
-    'bar'
-
-
-The traversed objects are available, in the order they were traversed:
-
-    >>> request.traversed_objects
-    [<ThingSet>, <Thing 'TTT'>]
-
-We can ask the request for the nearest traversed object that
-implements a particular interface:
-
-    >>> request.getNearest(IThingSet)
-    (<ThingSet>, <InterfaceClass __builtin__.IThingSet>)
-    >>> request.getNearest(IThing)
-    (<Thing 'TTT'>, <InterfaceClass __builtin__.IThing>)
-
-The second argument is the matched interface.  This is useful when
-multiple interfaces are passed to getNearest():
-
-    >>> request.getNearest(IThingSet, IThing)
-    (<Thing 'TTT'>, <InterfaceClass __builtin__.IThing>)
-
-If more than one object of a particular interface type has been
-traversed, the most recently traversed one is returned:
-
-    >>> request = Request()
-    >>> navigation = ThingSetNavigation(thingset, request)
-    >>> thing = navigation.publishTraverse(request, 'ttt')
-    >>> navigation2 = ThingNavigation(thing, request)
-    >>> thing2 = navigation2.publishTraverse(request, 'something')
-    >>> navigation3 = ThingNavigation(thing2, request)
-    >>> navigation3.publishTraverse(request, 'foo')
-    'bar'
-
-    >>> request.traversed_objects
-    [<ThingSet>, <Thing 'TTT'>, <Thing 'something'>]
-    >>> request.getNearest(IThing)
-    (<Thing 'something'>, <InterfaceClass __builtin__.IThing>)
-
-If a particular interface has not been traversed, the tuple
-(None, None) is returned:
-
-    >>> request = Request()
-    >>> navigation = ThingSetNavigation(thingset, request)
-    >>> thing = navigation.publishTraverse(request, 'xyz')
-    Traceback (most recent call last):
-    ...
-    NotFound: ...ThingSet..., name: 'xyz'
-    >>> request.getNearest(IThing)
-    (None, None)
-
-Note that a tuple is returned in the error case so that the result can
-unpacked unconditionally, rather than needing to check for an error
-return before unpacking.

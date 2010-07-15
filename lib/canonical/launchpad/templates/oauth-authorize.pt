@@ -3,16 +3,11 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/freeform"
+  metal:use-macro="view/macro:page/locationless"
   i18n:domain="launchpad"
 >
 <body>
-  <metal:portlets fill-slot="portlets" />
-
-  <div metal:fill-slot="main" id="maincontent" tal:define="token view/token">
+  <div class="top-portlet" metal:fill-slot="main" tal:define="token view/token">
     <tal:no-token condition="not:token">
       <h1>Unable to identify application</h1>
       <p>
@@ -38,7 +33,7 @@
               do you want to grant?</p>
 
             <table>
-              <tr tal:repeat="action view/actions">
+              <tr tal:repeat="action view/visible_actions">
                 <td style="text-align: right">
                   <tal:action replace="structure action/render" />
                 </td>

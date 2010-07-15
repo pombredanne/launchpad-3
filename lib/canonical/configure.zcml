@@ -1,6 +1,11 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:zcml="http://namespaces.zope.org/zcml"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="canonical">
 
@@ -9,7 +14,15 @@
         file="meta-overrides.zcml" />
     <include package="canonical.launchpad" file="permissions.zcml" />
     <include package="canonical.launchpad.webapp" file="meta.zcml" />
-    <include package="canonical.lazr.rest" file="meta.zcml" />
+    <include package="lazr.restful" file="meta.zcml" />
+    <include package="lp.services.database" />
+    <include package="lp.services.inlinehelp" file="meta.zcml" />
+    <include package="lp.services.openid" />
+    <include package="lp.services.job" />
+    <include package="lp.services.memcache" />
+    <include package="lp.services.scripts" />
+    <include package="lp.services.worlddata" />
+    <include package="lp.services.salesforce" />
     <include package="lazr.uri" />
     <include package="canonical.librarian" />
 
@@ -36,6 +49,17 @@
         factory="zope.app.publication.traversers.SimpleComponentTraverser"
         permission="zope.Public"
         />
+    <!-- We don't include zope.app.publication (see zopeapp.zcml in the
+         top level), so we lose the default registration that makes our
+         private XMLRPC server work.  Copy that from Zope into here.
+         -->
+    <view
+        for="zope.interface.Interface"
+        type="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
+        provides="zope.publisher.interfaces.xmlrpc.IXMLRPCPublisher"
+        factory="zope.app.publication.traversers.SimpleComponentTraverser"
+        permission="zope.Public"
+        />
 
     <!-- Protocol errors (eg. HTTP 405 or 415 errors) should be published
          with a minimalist template. -->
@@ -48,31 +72,11 @@
         />
 
 
-    <!-- This is an index.html view on the root object.
-        The root object is not ever published itself.  Only its views are.
-        -->
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.LaunchpadRootIndexView"
-        name="index.html"
-        template="launchpad/templates/root-index.pt"
-        permission="zope.Public"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.FeaturedProjectsView"
-        name="+featuredprojects"
-        template="launchpad/templates/root-featuredprojects.pt"
-        permission="launchpad.Admin"
-        />
-
     <!-- The following directives set up root front pages for the different
          virtual host layers.  The directives come in pairs.
          The separate registration for the resources namespace (@@) is needed
          because otherwise the lookup for /@@/ will fail because the
-         layer-specifif defaultView directive also registers the 
+         layer-specific defaultView directive also registers the
          default view name as an unnamed adapter.
          -->
       -->
@@ -146,27 +150,10 @@
         layer="canonical.launchpad.layers.AnswersLayer"
         />
 
-    <!-- virtual host: openid -->
-    <browser:page
-        name=""
-        for="canonical.launchpad.interfaces.IOpenIDApplication"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
-        permission="zope.Public"
-        layer="canonical.launchpad.layers.OpenIDLayer"
-        />
-
-    <!-- This should really be on ILaunchpadRoot for all layers, and we should
-         be registering views on the launchpad main side front page object
-         thing on ILaunchpadApplication. -->
-    <browser:page
-        name=""
-        for="canonical.launchpad.interfaces.IShipItApplication"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
-        permission="zope.Public"
-        />
-
     <include package="canonical.widgets" />
     <include package="canonical.launchpad" />
     <include package="canonical.lazr" />
+    <include zcml:condition="installed canonical.shipit"
+             package="canonical.shipit" />
 
 </configure>

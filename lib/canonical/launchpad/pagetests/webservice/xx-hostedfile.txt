@@ -1,104 +1,13 @@
 = Hosted files =
 
-Some resources have binary files, usually images, associated with
-them. These binary files are managed by the Launchpad library. The
-Launchpad web service exposes these files as resources that respond to
-GET, PUT, and DELETE.
+In Launchpad, hosted file resources are managed by the Launchpad
+library. This test illustrates the Launchpad-specific behavior of
+hosted file resources.
 
 
-== Person mugshot ==
+== The librarian manages hosted files ==
 
-Salgado starts out with a link to a mugshot, but no actual mugshot.
-
-    >>> salgado = webservice.get('/~salgado').jsonBody()
-    >>> salgado['mugshot_link']
-    u'http://.../~salgado/mugshot'
-
-    >>> salgado_mugshot = '/~salgado/mugshot'
-    >>> print webservice.get(salgado_mugshot)
-    HTTP/1.1 404 Not Found
-    ...
-
-We can upload a mugshot for salgado with PUT.
-
-    >>> import os
-    >>> import canonical
-    >>> def load_image(filename):
-    ...     image_file = os.path.join(
-    ...         os.path.dirname(canonical.launchpad.__file__),
-    ...         'images', filename)
-    ...     return open(image_file).read()
-
-    >>> print webservice.put(salgado_mugshot, 'image/png',
-    ...                      load_image('nyet-mugshot.png'))
-    HTTP/1.1 200 Ok
-    ...
-
-Once the mugshot has been uploaded, we can GET it. The resource acts
-as a dispatcher pointing to the library-managed mugshot on the public
-Internet.
-
-    >>> result = webservice.get(salgado_mugshot)
-    >>> print result
-    HTTP/1.1 303 See Other
-    ...
-    Location: http://localhost:58000/.../mugshot
-    ...
-
-Note that the name of the file is "mugshot", the same as the field
-whose value we set to the file. This is because we didn't specify a
-Content-Disposition header.
-
-PUT is also used to modify a mugshot. Here's one that provides a
-filename as part of Content-Disposition.
-
-    >>> print webservice.put(salgado_mugshot, 'image/png',
-    ...                      load_image('person-mugshot.png'),
-    ...                      {'Content-Disposition':
-    ...                       'attachment; filename="person-mugshot.png"'})
-    HTTP/1.1 200 Ok
-    ...
-
-The new mugshot is available at a different URL, and it's got the
-filename obtained from Content-Disposition:
-
-    >>> result = webservice.get(salgado_mugshot)
-    >>> print result
-    HTTP/1.1 303 See Other
-    ...
-    Location: http://localhost:58000/.../person-mugshot.png
-    ...
-
-If a file has a custom filename (set through the website or a previous
-request that included Content-Disposition), and you modify it without
-specifying a value for Content-Disposition, it retains its old value.
-
-    >>> print webservice.put(salgado_mugshot, 'image/png',
-    ...                      load_image('nyet-mugshot.png'))
-    HTTP/1.1 200 Ok
-    ...
-
-    >>> result = webservice.get(salgado_mugshot)
-    >>> print result
-    HTTP/1.1 303 See Other
-    ...
-    Location: http://localhost:58000/.../person-mugshot.png
-    ...
-
-Deleting a mugshot (with DELETE) disables the redirect.
-
-    >>> print webservice.delete(salgado_mugshot)
-    HTTP/1.1 200 Ok
-    ...
-
-    >>> print webservice.get(salgado_mugshot)
-    HTTP/1.1 404 Not Found
-    ...
-
-
-== Project branding ==
-
-Firefox starts out with a links to branding images, but no actual images.
+Firefox starts out with a link to branding images, but no actual images.
 
     >>> project = webservice.get('/firefox').jsonBody()
     >>> project['icon_link']
@@ -119,6 +28,14 @@ Firefox starts out with a links to branding images, but no actual images.
     ...
 
 We can upload branding images with PUT.
+
+    >>> import os
+    >>> import canonical
+    >>> def load_image(filename):
+    ...     image_file = os.path.join(
+    ...         os.path.dirname(canonical.launchpad.__file__),
+    ...         'images', filename)
+    ...     return open(image_file).read()
 
     >>> print webservice.put(project['icon_link'], 'image/png',
     ...                      load_image('nyet-icon.png'))
@@ -160,9 +77,11 @@ by the librarian.
 
 == Error handling ==
 
-You can't upload an image that's the wrong type.
+Launchpad's ImageUpload classes enforce restrictions on uploaded
+images. You can't upload an image that's the wrong type.
 
-    >>> print webservice.put(salgado_mugshot, 'image/png', 'Not an image')
+    >>> print webservice.put(
+    ...     project['brand_link'], 'image/png', 'Not an image')
     HTTP/1.1 400 Bad Request
     ...
     The file uploaded was not recognized as an image; please check it
@@ -170,35 +89,9 @@ You can't upload an image that's the wrong type.
 
 You also can't upload an image that's the wrong size.
 
-    >>> print webservice.put(salgado_mugshot, 'image/png',
-    ...                      load_image('nyet-icon.png'))
+    >>> print webservice.put(project['brand_link'], 'image/png',
+    ...                      load_image('nyet-logo.png'))
     HTTP/1.1 400 Bad Request
     ...
     This image is not exactly 192x192 pixels in size.
 
-Nor can you change a person's mugshot by PUTting to that person's URI.
-
-    >>> salgado = webservice.get('/~salgado').jsonBody()
-    >>> salgado['mugshot_link'] = 'http://google.com/logo.png'
-
-    >>> import simplejson
-    >>> print webservice('/~salgado', 'PUT', simplejson.dumps(salgado),
-    ...                  {'Content-type': 'application/json'})
-    HTTP/1.1 400 Bad Request
-    ...
-    mugshot_link: To modify this field you need to send a PUT request to its
-    URI (http://.../~salgado/mugshot).
-
-If a hosted file is read-only, the client won't be able to modify or
-delete it.
-
-   >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
-   >>> print webservice.put(url, 'application/x-tar-gz', 'fakefiledata')
-   HTTP/1.1 405 Method Not Allowed
-   Allow: GET
-   ...
-
-   >>> print webservice.delete(url)
-   HTTP/1.1 405 Method Not Allowed
-   Allow: GET
-   ...

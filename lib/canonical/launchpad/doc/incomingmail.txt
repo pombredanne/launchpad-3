@@ -82,10 +82,6 @@ The test mails are now in Launchpad's mail box, so now we can call
 handleMail, so that every mail gets handled by the correct handler.
 
     >>> handleMail(zopeless_transaction)
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present ...
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present ...
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present ...
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present ...
 
 Now we can see that each handler handled the emails sent to its domain:
 
@@ -101,7 +97,7 @@ So, what happened to the message that got sent to baz.com? Since there
 wasn't a handler registered for that domain, an OOPS was recorded with
 a link to the original message.
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> print stub.test_emails[-1][2]
     Content-Type: multipart/mixed...
     ...
@@ -144,7 +140,7 @@ However, bar_handler specifies that it can handle such emails:
 
 So if we send the mail to bar.com, bar_handler will handle the mail:
 
-    >>> moin_change.replace_header('X-Original-To', '123@bar.com')
+    >>> moin_change.replace_header('To', '123@bar.com')
     >>> msgid = "<%s>" % sendmail(moin_change)
     >>> handleMail(zopeless_transaction)
     >>> msgid in bar_handler.handledMails
@@ -179,23 +175,11 @@ silently rejected.
 
 == X-Original-To ==
 
-If available, the X-Original-To header is used to determine to which
-address the email was sent to:
+Ideally, we would use X-Original-To, as this reflects the actual address
+that the mail was sent to.  Unfortunately, due to mail configuration issues,
+X-Original-To is very wrong, so we must rely on To and Cc, even though these
+may be inaccurate.
 
-    >>> msg = read_test_message('signed_detached.txt')
-    >>> msg.replace_header('To', '123@foo.com')
-    >>> msg['CC'] = '123@foo.com'
-    >>> msg['X-Original-To'] = '123@bar.com'
-    >>> msgid = '<%s>' % sendmail (msg, ['123@bar.com'])
-    >>> handleMail(zopeless_transaction)
-    >>> msgid in bar_handler.handledMails
-    True
-
-Only the address in X-Original-To header will be used. The addresses in
-the To and CC headers will be ignored:
-
-    >>> msgid in foo_handler.handledMails
-    False
 
 == OOPSes processing incoming mail ==
 
@@ -344,7 +328,6 @@ out:
     ...
     DataError: division by zero
     <BLANKLINE>
-    WARNING...
 
 The second mail we sent got handled despite the exception:
 
@@ -361,7 +344,7 @@ the user reporting the error:
 == Librarian not running ==
 
 If for some reason the Librarian isn't up and running, we shouldn't
-loose any emails. All that should happen is that an error should get
+lose any emails. All that should happen is that an error should get
 logged.
 
 
@@ -377,7 +360,7 @@ logged.
     >>> handleMail(transaction)
     ERROR:...:Upload to Librarian failed...
     ...
-    UploadFailed: [...]: (111, 'Connection refused')
+    UploadFailed: ...Connection refused...
 
     >>> len(stub.test_emails)
     2

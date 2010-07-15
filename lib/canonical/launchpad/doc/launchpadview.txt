@@ -2,8 +2,9 @@
 
 This is the base-class we should use for all View classes in Launchpad.
 
-    >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.webapp import LaunchpadView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
     >>> class MyView(LaunchpadView):
     ...
     ...     def initialize(self):
@@ -13,7 +14,7 @@ This is the base-class we should use for all View classes in Launchpad.
     ...         return "rendered content"
 
     >>> context = object()
-    >>> request = TestRequest()
+    >>> request = LaunchpadTestRequest()
 
 Note that constructing a view does not initialize().
 
@@ -45,11 +46,11 @@ A new view should have the new user.
     >>> print view.account
     <...launchpad.database.account.Account instance ...>
     >>> print view.user
-    <...launchpad.database.person.Person instance ...>
+    <...lp.registry.model.person.Person instance ...>
     >>> print view.user.name
     name16
 
-When the initialize method does a redirection, the render method should 
+When the initialize method does a redirection, the render method should
 not be called.
 
     >>> class MyRedirectView(LaunchpadView):
@@ -61,7 +62,7 @@ not be called.
     ...     def render(self):
     ...         return "Should not be called."
     ...
-    >>> request = TestRequest()
+    >>> request = LaunchpadTestRequest()
     >>> view = MyRedirectView(context, request)
     >>> result = view()
     Redirecting...

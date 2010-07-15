@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -9,8 +11,9 @@ __all__ = [
     'UndeletableEmailAddress',
     ]
 
+
+import hashlib
 import operator
-import sha
 
 from zope.interface import implements
 
@@ -55,18 +58,21 @@ class EmailAddress(SQLBase, HasOwnerMixin):
     def destroySelf(self):
         """See `IEmailAddress`."""
         # Import this here to avoid circular references.
-        from canonical.launchpad.database.mailinglist import (
+        from lp.registry.model.mailinglist import (
             MailingListSubscription)
 
         if self.status == EmailAddressStatus.PREFERRED:
             raise UndeletableEmailAddress(
                 "This is a person's preferred email, so it can't be deleted.")
-        mailing_list = self.person.mailing_list
+        mailing_list = self.person and self.person.mailing_list
         if mailing_list is not None and mailing_list.address == self.email:
             raise UndeletableEmailAddress(
                 "This is the email address of a team's mailing list, so it "
                 "can't be deleted.")
 
+        # XXX 2009-05-04 jamesh bug=371567: This function should not
+        # be responsible for removing subscriptions, since the SSO
+        # server can't write to that table.
         for subscription in MailingListSubscription.selectBy(
             email_address=self):
             subscription.destroySelf()
@@ -75,7 +81,7 @@ class EmailAddress(SQLBase, HasOwnerMixin):
     @property
     def rdf_sha1(self):
         """See `IEmailAddress`."""
-        return sha.new('mailto:' + self.email).hexdigest().upper()
+        return hashlib.sha1('mailto:' + self.email).hexdigest().upper()
 
 
 class EmailAddressSet:
@@ -111,15 +117,24 @@ class EmailAddressSet:
             raise EmailAddressAlreadyTaken(
                 "The email address '%s' is already registered." % email)
         assert status in EmailAddressStatus.items
+        if person is None:
+            personID = None
+        else:
+            personID = person.id
+            accountID = account and account.id
+            assert person.accountID == accountID, (
+                "Email address '%s' must be linked to same account as "
+                "person '%s'.  Expected %r (%s), got %r (%s)" % (
+                    email, person.name, person.account, person.accountID,
+                    account, accountID))
         # We use personID instead of just person, as in some cases the
         # Person record will not yet be replicated from the main
         # Store to the auth master Store.
-        if person is None:
-            return EmailAddress(email=email, status=status, account=account)
-        else:
-            return EmailAddress(
-                email=email, status=status,
-                account=account, personID=person.id)
+        return EmailAddress(
+            email=email,
+            status=status,
+            personID=personID,
+            account=account)
 
 
 class UndeletableEmailAddress(Exception):

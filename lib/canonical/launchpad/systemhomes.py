@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
 
@@ -11,7 +12,7 @@ __all__ = [
     'MaloneApplication',
     'PrivateMaloneApplication',
     'RosettaApplication',
-    'ShipItApplication',
+    'TestOpenIDApplication',
     ]
 
 __metaclass__ = type
@@ -23,27 +24,33 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.bug import (
-    CreateBugParams, IBugSet, InvalidBugTargetType)
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
+    IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication, IOpenIDApplication,
+    IMailingListApplication, IMaloneApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
-    IShipItApplication, ITranslationGroupSet, ITranslationsOverview,
     IWebServiceApplication)
-from canonical.launchpad.interfaces.codehosting import (
-    IBranchFileSystemApplication, IBranchPullerApplication)
-from canonical.launchpad.interfaces.hwdb import (
-    IHWDeviceSet, IHWDriverSet, IHWVendorIDSet)
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationsoverview import (
+    ITranslationsOverview)
+from lp.hardwaredb.interfaces.hwdb import (
+    IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
+    IHWVendorIDSet, ParameterError)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.lazr.rest import ServiceRootResource
+from lp.bugs.interfaces.bug import (
+    CreateBugParams, IBugSet, InvalidBugTargetType)
+from lp.code.interfaces.codehosting import ICodehostingApplication
+from lp.code.interfaces.codeimportscheduler import (
+    ICodeImportSchedulerApplication)
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from lazr.restful import ServiceRootResource
+from lazr.restful.interfaces import ITopLevelEntryLink
 
 
 class AuthServerApplication:
@@ -53,18 +60,11 @@ class AuthServerApplication:
     title = "Auth Server"
 
 
-class BranchFileSystemApplication:
-    """BranchFileSystem End-Point."""
-    implements(IBranchFileSystemApplication)
+class CodehostingApplication:
+    """Codehosting End-Point."""
+    implements(ICodehostingApplication)
 
-    title = "Branch File System"
-
-
-class BranchPullerApplication:
-    """BranchPuller End-Point."""
-    implements(IBranchPullerApplication)
-
-    title = "Puller API"
+    title = "Codehosting API"
 
 
 class CodeImportSchedulerApplication:
@@ -79,10 +79,6 @@ class PrivateMaloneApplication:
     implements(IPrivateMaloneApplication)
 
     title = "Launchpad Bugs."
-
-
-class ShipItApplication:
-    implements(IShipItApplication)
 
 
 class MailingListApplication:
@@ -139,7 +135,7 @@ class MaloneApplication:
 
     @property
     def bugtracker_count(self):
-        return getUtility(IBugTrackerSet).search().count()
+        return getUtility(IBugTrackerSet).count
 
     @property
     def projects_with_bugs_count(self):
@@ -157,7 +153,7 @@ class MaloneApplication:
     def latest_bugs(self):
         user = getUtility(ILaunchBag).user
         return getUtility(IBugSet).searchAsUser(
-            user=user, orderBy='-datecreated', limit=5)
+            user=user, orderBy=['-datecreated'], limit=5)
 
     def default_bug_list(self, user=None):
         return getUtility(IBugSet).searchAsUser(user)
@@ -168,12 +164,6 @@ class BazaarApplication:
 
     def __init__(self):
         self.title = 'The Open Source Bazaar'
-
-
-class OpenIDApplication:
-    implements(IOpenIDApplication)
-
-    title = 'Launchpad Login Service'
 
 
 class RosettaApplication:
@@ -244,7 +234,7 @@ class RosettaApplication:
 
 class HWDBApplication:
     """See `IHWDBApplication`."""
-    implements(IHWDBApplication)
+    implements(IHWDBApplication, ITopLevelEntryLink)
 
     link_name = 'hwdb'
     entry_type = IHWDBApplication
@@ -262,23 +252,91 @@ class HWDBApplication:
         return getUtility(IHWVendorIDSet).idsForBus(bus)
 
     @property
+    def driver_names(self):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWDriverSet).all_driver_names()
+
+    @property
     def package_names(self):
         """See `IHWDBApplication`."""
-        return getUtility(IHWDriverSet).package_names
+        return getUtility(IHWDriverSet).all_package_names()
+
+    def getDistroTarget(self, distribution, distroseries, distroarchseries):
+        distro_targets = [
+            target for target in (
+                distribution, distroseries, distroarchseries)
+            if target is not None]
+        if len(distro_targets) == 0:
+            return None
+        elif len(distro_targets) == 1:
+            return distro_targets[0]
+        else:
+            raise ParameterError(
+                'Only one of `distribution`, `distroseries` or '
+                '`distroarchseries` can be present.')
+
+    def numSubmissionsWithDevice(
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
+        """See `IHWDBApplication`."""
+        submissions_with_device, all_submissions = (
+            getUtility(IHWSubmissionSet).numSubmissionsWithDevice(
+                bus, vendor_id, product_id, driver_name, package_name,
+                distro_target=self.getDistroTarget(
+                    distribution, distroseries, distroarchseries)))
+        return {
+            'submissions_with_device': submissions_with_device,
+            'all_submissions': all_submissions,
+            }
+
+    def numOwnersOfDevice(
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
+        """See `IHWDBApplication`."""
+        owners, all_submitters = (
+            getUtility(IHWSubmissionSet).numOwnersOfDevice(
+                bus, vendor_id, product_id, driver_name, package_name,
+                distro_target=self.getDistroTarget(
+                    distribution, distroseries, distroarchseries)))
+        return {
+            'owners': owners,
+            'all_submitters': all_submitters,
+            }
+
+    def numDevicesInSubmissions(
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, distribution=None, distroseries=None,
+        distroarchseries=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWSubmissionDeviceSet).numDevicesInSubmissions(
+                bus, vendor_id, product_id, driver_name, package_name,
+                distro_target=self.getDistroTarget(
+                    distribution, distroseries, distroarchseries))
+
+    def deviceDriverOwnersAffectedByBugs(
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWSubmissionSet).deviceDriverOwnersAffectedByBugs(
+            bus, vendor_id, product_id, driver_name, package_name, bug_ids,
+            bug_tags, affected_by_bug, subscribed_to_bug, user)
+
+    def hwInfoByBugRelatedUsers(
+        self, bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWSubmissionSet).hwInfoByBugRelatedUsers(
+            bug_ids, bug_tags, affected_by_bug, subscribed_to_bug, user)
 
 
 class WebServiceApplication(ServiceRootResource):
     """See `IWebServiceApplication`.
 
-    This implementation adds a 'cached_wadl' attribute.  If set, it will be
-    served by `toWADL` rather than calculating the toWADL result.
-
-    On import, the class tries to load a file to populate this attribute.  By
-    doing it on import, this makes it easy to clear, as is needed by
-    utilities/create-lp-wadl.py.
-
-    If the attribute is not set, toWADL will set the attribute on the class
-    once it is calculated.
+    This implementation adds a 'cached_wadl' attribute, which starts
+    out as an empty dict and is populated as needed.
     """
     implements(IWebServiceApplication, ICanonicalUrlData)
 
@@ -286,28 +344,47 @@ class WebServiceApplication(ServiceRootResource):
     path = ''
     rootsite = None
 
-    _wadl_filename = os.path.join(
-        os.path.dirname(os.path.normpath(__file__)),
-        'apidoc', 'wadl-%s.xml' % config.instance_name)
+    cached_wadl = {}
 
-    cached_wadl = None
-
-    # Attempt to load the WADL.
-    _wadl_fd = None
-    try:
-        _wadl_fd = codecs.open(_wadl_filename, encoding='UTF-8')
-        try:
-            cached_wadl = _wadl_fd.read()
-        finally:
-            _wadl_fd.close()
-    except IOError:
-        pass
-    del _wadl_fd
+    @classmethod
+    def cachedWADLPath(cls, instance_name, version):
+        """Helper method to calculate the path to a cached WADL file."""
+        return os.path.join(
+            os.path.dirname(os.path.normpath(__file__)),
+            'apidoc', 'wadl-%s-%s.xml' % (instance_name, version))
 
     def toWADL(self):
-        """See `IWebServiceApplication`."""
-        if self.cached_wadl is not None:
-            return self.cached_wadl
-        wadl = super(WebServiceApplication, self).toWADL()
-        self.__class__.cached_wadl = wadl
-        return wadl
+        """See `IWebServiceApplication`.
+
+        Look for a cached WADL file for the request version at the
+        location used by the script
+        utilities/create-launchpad-wadl.py. If the file is present,
+        load the file and cache its contents rather than generating
+        new WADL. Otherwise, generate new WADL and cache it.
+        """
+        version = self.request.version
+        if self.__class__.cached_wadl is None:
+            # The cache has been disabled for testing
+            # purposes. Generate the WADL.
+            return super(WebServiceApplication, self).toWADL()
+        if  version not in self.__class__.cached_wadl:
+            # It's not cached. Look for it on disk.
+            _wadl_filename = self.cachedWADLPath(
+                config.instance_name, version)
+            _wadl_fd = None
+            try:
+                _wadl_fd = codecs.open(_wadl_filename, encoding='UTF-8')
+                try:
+                    wadl = _wadl_fd.read()
+                finally:
+                    _wadl_fd.close()
+            except IOError:
+                # It's not on disk; generate it.
+                wadl = super(WebServiceApplication, self).toWADL()
+            del _wadl_fd
+            self.__class__.cached_wadl[version] = wadl
+        return self.__class__.cached_wadl[version]
+
+
+class TestOpenIDApplication:
+    implements(ITestOpenIDApplication)

@@ -1,6 +1,9 @@
 /*
    SOYUZ SAMPLE DATA
-   
+
+   Copyright 2009 Canonical Ltd.  This software is licensed under the
+   GNU Affero General Public License version 3 (see the file LICENSE).
+
    This is some sample data for the Soyuz App components.  
    This requires the default data to be inserted first.
 */

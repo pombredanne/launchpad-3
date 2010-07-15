@@ -3,7 +3,7 @@
 [chroot]
 # What distroarchrelease are we after
 distribution=ubuntu
-distrorelease=breezy
+distroseries=breezy
 # Specify "host" to build for this host, otherwise try specifying an archtag
 architecture=host
 
@@ -30,11 +30,11 @@ signingdisabled=1
 # Information for setting up the buildd configuration inside the chroot
 user=buildd
 group=buildd
-paths=/build /build/buildd /home/buildd /home/buildd/.ccache /var/debbuild /var/debbuild/srcdep-lock
+paths=/build /build/buildd /home/buildd /var/debbuild /var/debbuild/srcdep-lock
 touchfiles=/var/debbuild/avg-build-times /var/debbuild/avg-build-space /CurrentlyBuilding
 
 # Extra packages we should install for the buildd
-extrapkgs=build-essential fakeroot ccache
+extrapkgs=build-essential fakeroot
 
 [intervention]
 # At what stages would you like to intervene in the process?

@@ -57,6 +57,11 @@ Login should be set back to None on a logout.
 >>> print launchbag.login
 None
 
+'user' will also be set to None:
+
+>>> print launchbag.user
+None
+
 Let's do a cookie auth principal identification.  In this case, the login
 will be cookie@example.com.
 
@@ -71,7 +76,7 @@ cookie@example.com
 
 The time_zone attribute gives the user's time zone, as an pytz object.
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> person = factory.makePerson()
     >>> login_person(person)

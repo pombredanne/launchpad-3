@@ -1,7 +1,11 @@
-#!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Archive Cruft checker
+# pylint: disable-msg=W0403
+
+"""Archive Cruft checker.
 
 A kind of archive garbage collector, supersede NBS binaries (not build
 from source).
@@ -13,7 +17,7 @@ import sys
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.scripts.ftpmaster import (
+from lp.soyuz.scripts.ftpmaster import (
     ArchiveCruftChecker, ArchiveCruftCheckerError)
 from canonical.lp import initZopeless
 from contrib.glock import GlobalLock

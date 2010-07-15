@@ -1,7 +1,12 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Twisted Application Configuration file.
 # Use with "twistd2.4 -y <file.tac>", e.g. "twistd -noy server.tac"
+
+import signal
+
+from meliae import scanner
 
 from twisted.application import service, strports
 from twisted.web import server
@@ -10,6 +15,7 @@ from canonical.config import config, dbconfig
 from canonical.launchpad.daemons import tachandler
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
+from canonical.librarian.interfaces import DUMP_FILE, SIGDUMPMEM
 from canonical.librarian.libraryprotocol import FileUploadFactory
 from canonical.librarian import storage, db
 from canonical.librarian import web as fatweb
@@ -63,3 +69,9 @@ setUpListener(uploadPort, webPort, restricted=False)
 webPort = config.librarian.restricted_download_port
 uploadPort = config.librarian.restricted_upload_port
 setUpListener(uploadPort, webPort, restricted=True)
+
+# Setup a signal handler to dump the process' memory upon 'kill -44'.
+def sigdumpmem_handler(signum, frame):
+    scanner.dump_all_objects(DUMP_FILE)
+
+signal.signal(SIGDUMPMEM, sigdumpmem_handler)

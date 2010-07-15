@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
     'GeoIP',
@@ -16,15 +17,14 @@ from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request)
-from canonical.launchpad.interfaces.country import ICountrySet
+from lp.services.worlddata.interfaces.country import ICountrySet
 from canonical.launchpad.interfaces.geoip import (
     IGeoIP, IGeoIPRecord, IRequestLocalLanguages, IRequestPreferredLanguages)
-from canonical.launchpad.interfaces.language import ILanguageSet
-
-GEOIP_CITY_DB = '/usr/share/GeoIP/GeoIPCity.dat'
+from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
 class GeoIP:
@@ -33,10 +33,11 @@ class GeoIP:
 
     @cachedproperty
     def _gi(self):
-        if not os.path.exists(GEOIP_CITY_DB):
+        if not os.path.exists(config.launchpad.geoip_database):
             raise NoGeoIPDatabaseFound(
                 "No GeoIP DB found. Please install launchpad-dependencies.")
-        return libGeoIP.open(GEOIP_CITY_DB, libGeoIP.GEOIP_MEMORY_CACHE)
+        return libGeoIP.open(
+            config.launchpad.geoip_database, libGeoIP.GEOIP_MEMORY_CACHE)
 
     def getRecordByAddress(self, ip_address):
         """See `IGeoIP`."""

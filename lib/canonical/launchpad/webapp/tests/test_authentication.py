@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Tests authentication.py"""
 
 __metaclass__ = type
@@ -12,12 +14,11 @@ from canonical.config import config
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from canonical.launchpad.ftests import login
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
-from canonical.launchpad.webapp.servers import (
-    IdPublication, LaunchpadTestRequest, OpenIDPublication)
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 
@@ -46,32 +47,6 @@ class TestAuthenticationOfPersonlessAccounts(TestCaseWithFactory):
         publication = LaunchpadBrowserPublication(None)
         principal = publication.getPrincipal(self.request)
         self.failUnless(isinstance(principal, UnauthenticatedPrincipal))
-
-    def test_navigate_logged_in_on_id_dot_launchpad_dot_net(self):
-        # A user with the credentials of a personless account will browse
-        # login.launchpad.net logged in as that account.
-        logInPrincipal(self.request, self.principal, self.email)
-        self.request.response.setCookie(
-            config.launchpad_session.cookie, 'xxx')
-
-        publication = IdPublication(None)
-        principal = publication.getPrincipal(self.request)
-        self.failUnless(isinstance(principal, LaunchpadPrincipal),
-                        "%r should be a LaunchpadPrincipal" % (principal,))
-        self.failUnlessEqual(principal.id, self.account.id)
-
-    def test_navigate_logged_in_on_login_dot_launchpad_dot_net(self):
-        # A user with the credentials of a personless account will browse
-        # login.launchpad.net logged in as that account.
-        logInPrincipal(self.request, self.principal, self.email)
-        self.request.response.setCookie(
-            config.launchpad_session.cookie, 'xxx')
-
-        publication = OpenIDPublication(None)
-        principal = publication.getPrincipal(self.request)
-        self.failUnless(isinstance(principal, LaunchpadPrincipal),
-                        "%r should be a LaunchpadPrincipal" % (principal,))
-        self.failUnlessEqual(principal.id, self.account.id)
 
 
 def test_suite():

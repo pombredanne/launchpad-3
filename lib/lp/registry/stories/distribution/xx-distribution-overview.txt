@@ -1,0 +1,128 @@
+= Distributions =
+
+Launchpad can be used by both upstream projects and distributions - the
+system understands the intrinsic differences between those kinds of
+organisation. This test just ensures we can view the distributions in the
+system.
+
+
+== Distribution listings ==
+
+There is a listing of all distributions at /distributions/:
+
+    >>> anon_browser.open('http://launchpad.dev/distros/')
+    >>> print anon_browser.title
+    Distributions registered in Launchpad
+
+
+== Distribution home pages ==
+
+Each distribution has a home page in the system.  The page will show a
+consolidated view of series and milestones of that series.
+
+Some distributions have listings of major versions, for example Debian:
+
+    >>> anon_browser.open('http://launchpad.dev/debian')
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'sandm'))
+    Series and milestones
+    3.1 &#8220;Sarge&#8221; series - frozen
+    3.0 &#8220;Woody&#8221; series - current
+        Milestones: 3.1 and 3.1-rc1
+    All series
+    All milestones
+
+If we add another milestone the list is well formatted using English grammar
+rules.
+
+    >>> from canonical.testing.layers import MemcachedLayer
+
+    >>> admin_browser.open("http://launchpad.dev/debian/woody/+addmilestone")
+    >>> admin_browser.getControl("Name:").value = "testmilestone"
+    >>> admin_browser.getControl("Register Milestone").click()
+
+    # When the cache regenerated, all users will see the change.
+    >>> MemcachedLayer.purge()
+    >>> anon_browser.open('http://launchpad.dev/debian')
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'sandm'))
+    Series and milestones
+    ...
+        Milestones: testmilestone, 3.1, and 3.1-rc1
+    ...
+
+Each series and milestone are links that take you to that
+series and milestone page.
+
+    >>> anon_browser.getLink(url='/debian/sarge').text
+    '3.1 \xe2\x80\x9cSarge\xe2\x80\x9d series'
+
+    >>> anon_browser.getLink(url='/debian/woody').text
+    '3.0 \xe2\x80\x9cWoody\xe2\x80\x9d series'
+
+    >>> anon_browser.getLink(url='/debian/+milestone/3.1').text
+    '3.1'
+
+    >>> anon_browser.getLink(url='/debian/+milestone/3.1-rc1').text
+    '3.1-rc1'
+
+There are also two links "All series" and "All milestones" that take you
+to the distribution series and milestones pages respectively.
+
+    >>> anon_browser.getLink('All series').url
+    'http://launchpad.dev/debian/+series'
+
+    >>> anon_browser.getLink('All milestones').url
+    'http://launchpad.dev/debian/+milestones'
+
+Others do not have any series so the portlet is not shown.
+
+    >>> anon_browser.open('http://launchpad.dev/gentoo')
+    >>> print find_tag_by_id(anon_browser.contents, 'sandm')
+    None
+
+
+== Registration information ==
+
+The distroseries pages presents the registeration information besides
+its main 'heading'.
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu')
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'registration'))
+    registered by Ubuntu Team on 2006-10-16
+
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Ubuntu Linux
+    ...
+
+    >>> print anon_browser.getLink('Ubuntu Team').url
+    http://launchpad.dev/~ubuntu-team
+
+
+== Redirection for webservice URLs ==
+
+The webservice exposes a URL for the archive associated with the distribution.
+Displaying the page for that URL is nonsensical (it looks like the PPA
+index page), so the view redirect it to the distribution index page.
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+archive/primary")
+    >>> print anon_browser.url
+    http://launchpad.dev/ubuntu
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+archive/partner")
+    >>> print anon_browser.url
+    http://launchpad.dev/ubuntu
+
+Any attempt to access an incomplete URL (missing the archive name
+term) or an unavailable name (only 'primary' and 'partner' exist)
+results in a NotFound error.
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+archive")
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <Distribution ...>, name: u'+archive'
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+archive/boing")
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <Distribution ...>, name: u'boing'

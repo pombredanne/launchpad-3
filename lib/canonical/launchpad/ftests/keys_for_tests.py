@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """OpenPGP keys used for testing.
 
 There are two GPG keys located in the 'gpgkeys' sub directory, one for
@@ -51,7 +53,7 @@ def import_public_key(email_addr):
     if not person:
         return
 
-    for gpgkey in person.gpgkeys:
+    for gpgkey in person.gpg_keys:
         if gpgkey.fingerprint == key.fingerprint:
             # If the key's already added to the database, do nothing.
             return
@@ -83,7 +85,7 @@ def import_secret_test_key(keyfile='test@canonical.com.sec'):
     """
     gpghandler = getUtility(IGPGHandler)
     seckey = open(os.path.join(gpgkeysdir, keyfile)).read()
-    key = gpghandler.importSecretKey(seckey)
+    return gpghandler.importSecretKey(seckey)
 
 def test_pubkey_file_from_email(email_addr):
     """Get the file name for a test pubkey by email address."""

@@ -1,15 +1,57 @@
 #! /bin/bash
-
-# This script will setup a brand new Ubuntu machine as a LP developer
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
+# This script will set up a brand new Ubuntu machine as a LP developer
 # workstation, from scratch. The script lives in the LP codebase itself,
 # as utilities/rocketfuel-setup
+
+# We require Bazaar 1.16.1 or higher.
+# So first, grab the output of 'bzr --version' and transform the
+# version line, like "Bazaar (bzr) 1.16.1", into "1 16 1":
+VER_RAW=`bzr --version | head -1 | sed -e 's/Bazaar (bzr) //g'`
+VER_NUMS=`echo -n ${VER_RAW} | sed -e 's/[^.0-9]//g' | sed -e 's/[.]/ /g'`
+# Now stuff each component into its own variable, so we can check sanely.
+MAJOR=0
+MINOR=0
+MICRO=0
+ITER=0
+for VER_COMPONENT in ${VER_NUMS}; do
+  if [ ${ITER} -eq 0 ]; then
+    MAJOR=${VER_COMPONENT}
+  elif [ ${ITER} -eq 1 ]; then
+    MINOR=${VER_COMPONENT}
+  elif [ ${ITER} -eq 2 ]; then
+    MICRO=${VER_COMPONENT}
+  # Ignore anything beyond micro -- nanoversions are irrelevant here.
+  fi
+  ITER=`expr ${ITER} + 1`
+done
+# Check that the version is high enough.
+BAZAAR_BAIL=0
+if [ ${MAJOR} -lt 2 ]; then
+  if [ ${MAJOR} -lt 1 ]; then
+    BAZAAR_BAIL=1
+  elif [ ${MINOR} -lt 16 ]; then
+    BAZAAR_BAIL=1
+  elif [ ${MINOR} -eq 16 -a ${MICRO} -lt 1 ]; then
+    BAZAAR_BAIL=1
+  fi
+fi
+if [ ${BAZAAR_BAIL} -ne 0 ]; then
+  echo "ERROR: You don't have a high enough version of Bazaar:"
+  echo "  rocketfuel-setup requires bzr 1.16.1 or higher, but you have bzr ${VER_RAW}."
+  echo "  Please see http://bazaar-vcs.org/Download to get a newer version."
+  exit 1
+fi
 
 if [ ! -e "$HOME/.rocketfuel-env.sh" ]; then
   echo "# Common environment variables for the rocketfuel-* scripts.
 #
 # The ones you can set are:
 #
-# LP_PROJECT_ROOT - The root directory of all your Canonical stuff.  Your
+# LP_PROJECT_ROOT - The root directory of all your Launchpad stuff.  Your
 #                   Launchpad shared repository will live in a child directory
 #                   of this directory.
 # LP_SHARED_REPO  - Your Launchpad shared repository directory.  All of your
@@ -22,10 +64,10 @@ if [ ! -e "$HOME/.rocketfuel-env.sh" ]; then
 #                   path appended to it, since this is automatically added by
 #                   the scripts.
 
-LP_PROJECT_ROOT=\${LP_PROJECT_ROOT:=~/canonical}
+LP_PROJECT_ROOT=\${LP_PROJECT_ROOT:=~/launchpad}
 LP_SHARED_REPO=\${LP_SHARED_REPO:=lp-branches}
 LP_PROJECT_PATH=\$LP_PROJECT_ROOT/\$LP_SHARED_REPO
-LP_TRUNK_NAME=\${LP_TRUNK_NAME:=trunk}
+LP_TRUNK_NAME=\${LP_TRUNK_NAME:=devel}
 LP_TRUNK_PATH=\$LP_PROJECT_PATH/\$LP_TRUNK_NAME
 
 LP_SOURCEDEPS_DIR=\${LP_SOURCEDEPS_DIR:=lp-sourcedeps}
@@ -45,25 +87,8 @@ fi
 # load up Ubuntu release details so we know which repos to enable
 source /etc/lsb-release
 
-# Establish Canonical username
-whoami=`whoami`
-printf "What is your username on Canonical servers? [$whoami] "
-read canusrname
-if [ ! -z ${canusrname} ]; then
-  whoami=${canusrname};
-fi
-
-# Test that we can access Canonical servers
-ssh ${whoami}@chinstrap.canonical.com pwd > /dev/null
-if [ $? -ne 0 ]; then
-  echo "
-ERROR: Unable to login to chinstrap, please check your Canonical account
-details.
-"
-  exit 1
-fi
-
 # Establish LP username
+whoami=`whoami`
 printf "What is your Launchpad username? [$whoami] "
 read lpusername
 if [ -z ${lpusername} ]; then
@@ -93,6 +118,7 @@ fi
 declare -a hostnames
 hostnames=$(cat <<EOF
     answers.launchpad.dev
+    archive.launchpad.dev
     api.launchpad.dev
     bazaar-internal.launchpad.dev
     beta.launchpad.dev
@@ -101,10 +127,16 @@ hostnames=$(cat <<EOF
     code.launchpad.dev
     feeds.launchpad.dev
     id.launchpad.dev
+    keyserver.launchpad.dev
+    lists.launchpad.dev
     openid.launchpad.dev
+    ubuntu-openid.launchpad.dev
+    ppa.launchpad.dev
+    private-ppa.launchpad.dev
     shipit.edubuntu.dev
     shipit.kubuntu.dev
     shipit.ubuntu.dev
+    testopenid.dev
     translations.launchpad.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
@@ -135,147 +167,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-if [ ! -e ~/.ssh/config ]; then
-    touch ~/.ssh/config
-fi
-
-ssh_config_mod=0
-grep -q "^GSSAPIAuthentication" ~/.ssh/config
-if [ $? -ne 0 ]; then
-  ssh_config_mod=1
-  echo "Please add the following directive to your ~/.ssh/config:
-------------------------------------------------------------
-GSSAPIAuthentication no
-------------------------------------------------------------
-
-"
-fi
-if [ "$whoami" != "$lpusername" ]; then
-  if [ "$ssh_config_mod" -ne "0" ]
-  then
-    intro="Also ensure"
-  else
-    ssh_config_mod=1
-    intro="Ensure"
-  fi
-  echo "$intro the following directive is in your ~/.ssh/config:
-------------------------------------------------------------
-Host bazaar.launchpad.net
-    User $lpusername
-------------------------------------------------------------
-"
-fi
-
-if [ "$ssh_config_mod" -ne "0" ]; then
-  read
-fi
-
-grep -q "^Host .*chinstrap" ~/.ssh/config
-if [ $? -ne 0 ]; then
-  echo "Please add the following directives to your ~/.ssh/config:
-------------------------------------------------------------
-Host chinstrap chinstrap.canonical.com chinstrap.ubuntu.com
-    ForwardAgent yes
-    Hostname chinstrap.canonical.com
-    ProxyCommand none
-    User ${whoami}
-------------------------------------------------------------
-"
-  read
-fi
-
-grep -q "^Host.*\*\.canonical.com" ~/.ssh/config
-if [ $? -ne 0 ]; then
-  echo "Please add the following directives to your ~/.ssh/config:
-------------------------------------------------------------
-Host *.canonical.com *.ubuntu.com
-    ForwardAgent yes
-    ProxyCommand ssh chinstrap.canonical.com nc -q0 %h %p
-    User ${whoami}
-------------------------------------------------------------
-"
-  read
-fi
-
-grep -q "^Host .*devpad" ~/.ssh/config
-if [ $? -ne 0 ]; then
-  echo "Please add the following directives to your ~/.ssh/config:
-------------------------------------------------------------
-Host devpad devpad.canonical.com
-    ForwardAgent yes
-    Hostname devpad.canonical.com
-    ProxyCommand ssh chinstrap.canonical.com nc -q0 %h %p
-    User ${whoami}
-------------------------------------------------------------
-"
-  read
-fi
-
-grep -q "^Host .*bazaar.launchpad.dev" ~/.ssh/config
-if [ $? -ne 0 ]; then
-  echo "Please add the following directives to your ~/.ssh/config:
-------------------------------------------------------------
-Host bazaar.launchpad.dev
-    Hostname launchpad.dev
-    HostKeyAlias bazaar.launchpad.dev
-    User sabdfl
-    Port 5022
-    IdentityFile ~/.ssh/launchpad_id_dsa
-------------------------------------------------------------
-"
-  read
-fi
-
-# This is not strictly needed for bzr versions >= 1.9 but it's included
-# here for backwards compatibility.
-grep -q "^Host .*bazaar.launchpad.net" ~/.ssh/config
-if [ $? -ne 0 ]; then
-  echo "Please add the following directives to your ~/.ssh/config:
-------------------------------------------------------------
-Host bazaar.launchpad.net
-    User ${lpusername}
-------------------------------------------------------------
-"
-  read
-fi
-
-
-echo "Testing ssh to devpad..."
-ssh devpad.canonical.com pwd > /dev/null
-if [ $? -ne 0 ]; then
-  echo "
-ERROR: Unable to verify capability to ssh to devpad. Please check
-~/.ssh/config and check the User configuration item.  ['${whoami}']"
-  exit 1
-fi
-
-sudo apt-key list | grep -q "2048g/CA6E8A17"
-if [ $? -ne 0 ]; then
-  echo "Retrieving signing-key for LP package repository."
-  scp devpad.canonical.com:/code/lp-maintainers.pub /tmp/
-  if [ $? -ne 0 ]; then
-    echo "Unable to fetch key for LP package repository"
-    exit 1
-  fi
-  [ `sha1sum /tmp/lp-maintainers.pub | cut -d " " -f 1` = \
-     f1714a57bd8c481f45b2a64e2eb9131176c8922e ] \
-  && sudo apt-key add /tmp/lp-maintainers.pub
-  if [ $? -ne 0 ]; then
-    echo "Unable to add key for LP package repository"
-    exit 1
-  fi
-fi
-
 LPDEV_SOURCES="/etc/apt/sources.list.d/launchpad-dev.list"
 if [ ! -e $LPDEV_SOURCES ]; then
   sudo touch $LPDEV_SOURCES
-fi
-
-LP_DEBS="deb http://lpdebs.canonical.com/${DISTRIB_CODENAME} ./"
-grep -q "^${LP_DEBS}" $LPDEV_SOURCES
-if [ $? -ne 0 ]; then
-  echo "Adding lpdebs package repository to package source list."
-  echo "$LP_DEBS" | sudo tee -a $LPDEV_SOURCES
 fi
 
 LP_PPA="deb http://ppa.launchpad.net/launchpad/ppa/ubuntu ${DISTRIB_CODENAME} main"
@@ -373,10 +267,10 @@ fi
 mkdir -p $LP_PROJECT_ROOT
 cd $LP_PROJECT_ROOT
 if [ ! -d $LP_SHARED_REPO ]; then
-  # 1.6 format needed for stacking on Launchpad.
-  bzr init-repo --1.6 $LP_SHARED_REPO
+  # 2a format (a.k.a. "brisbane-core") needed for stacking on Launchpad.
+  bzr init-repo --2a $LP_SHARED_REPO
   if [ $? -ne 0 ]; then
-    echo "ERROR: Unable to setup local LP repository"
+    echo "ERROR: Unable to set up local LP repository"
     exit 1
   fi
 fi
@@ -385,15 +279,20 @@ if [ ! -d $LP_SHARED_REPO/.bzr -a -d $LP_SHARED_REPO/.bzr/repository ]; then
   exit 1
 fi
 
-echo "Logging bzr into Launchpad ..."
+echo "Logging bzr into Launchpad (it's okay if this errors)..."
 bzr launchpad-login $lpusername
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "You can ignore any error above about not registering an SSH key"
+  echo "with Launchpad.  Registering an SSH key is only important if you"
+  echo "are writing data to Launchpad, or trying to access private data."
+  echo ""
+fi
 
 cd $LP_SHARED_REPO
 if [ ! -d $LP_TRUNK_NAME ]; then
   echo "Making local branch of Launchpad trunk, this may take a while..."
-  # bzr up to 1.6b2 has a bug that causes this to oom, but since 1.10 is
-  # released now I hope nobody is using it.
-  bzr branch bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/ $LP_TRUNK_NAME
+  bzr branch lp:~launchpad-pqm/launchpad/devel $LP_TRUNK_NAME
   if [ $? -ne 0 ]; then
     echo "ERROR: Unable to create local copy of Rocketfuel trunk"
     exit 1
@@ -401,8 +300,14 @@ if [ ! -d $LP_TRUNK_NAME ]; then
 fi
 
 cd $LP_TRUNK_NAME
+bzr st -q
+if [ $? -ne 0 ]; then
+  echo "ERROR: Your trunk branch in $LP_TRUNK_PATH is corrupted.
+       Please delete $LP_TRUNK_PATH and run rocketfuel-setup again."
+       exit 1
+fi
 if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
-  "//bazaar.launchpad.net/%7Elaunchpad-pqm/launchpad/devel/" ]; then
+  "//bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/" ]; then
   echo "ERROR: Your trunk branch in $LP_TRUNK_PATH has an
        incorrect pull location, correcting now..."
   bzr pull --remember bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/
@@ -412,6 +317,8 @@ if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
   fi
 fi
 
+# Call the newly minted Launchpad branch's 'make install' target to do some
+# more apache setup.
 sudo make install > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to install apache config appropriately"
@@ -419,7 +326,7 @@ if [ $? -ne 0 ]; then
 fi
 
 
-# Setup Bazaar locations configuration
+# Set up Bazaar locations configuration
 if [ ! -d ~/.bazaar ]; then
   mkdir ~/.bazaar
   if [ $? -ne 0 ]; then
@@ -436,13 +343,11 @@ grep -q "\[${LP_PROJECT_PATH}\]" ~/.bazaar/locations.conf
 if [ $? -ne 0 ]; then
   cat >> ~/.bazaar/locations.conf << EOF
 [$LP_PROJECT_PATH]
-pqm_email = Launchpad PQM <launchpad@pqm.canonical.com>
 submit_branch = ${LP_TRUNK_PATH}
 public_branch = bzr+ssh://bazaar.launchpad.net/~${lpusername}/launchpad
 public_branch:policy = appendpath
 push_location = lp:~${lpusername}/launchpad
 push_location:policy = appendpath
-review_list = Launchpad Reviews <launchpad-reviews@lists.canonical.com>
 merge_target = ${LP_TRUNK_PATH}
 submit_to = merge@code.launchpad.net
 EOF
@@ -455,36 +360,11 @@ public_branch = bzr+ssh://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel\
 " | tee -a ~/.bazaar/locations.conf > /dev/null
 fi
 
-if [ ! -e ~/.bazaar/bazaar.conf ]; then
-  touch ~/.bazaar/bazaar.conf
-fi
-grep -q "smtp_username" ~/.bazaar/bazaar.conf
-if [ $? -ne 0 ]; then
-  cat >> ~/.bazaar/bazaar.conf << EOF
-smtp_server = smtp.canonical.com:587
-smtp_username = canonical
-smtp_password = <find me at https://wiki.canonical.com/EmailSetup>
-EOF
-fi
-
-  echo "Bazaar branch configuration updated. You may need to set smtp_server in ~/.bazaar/locations.conf to something else if email to PQM does not work."
+echo "Bazaar branch configuration updated."
 
 fi
 
-# Setup access to the local supermirror
-if [ ! -e ~/.ssh/launchpad_id_dsa ]; then
-  cp $LP_TRUNK_PATH/lib/canonical/codehosting/tests/id_dsa ~/.ssh/launchpad_id_dsa
-  chmod 600 ~/.ssh/launchpad_id_dsa
-  echo "Setup ssh key for local supermirror ssh access."
-fi
-
-# Setup environment variables in a ~ dot file
-cd $HOME
-if [ ! -e $HOME/.rocketfuel-env.sh ]; then
-  ln -s $LP_TRUNK_PATH/utilities/rocketfuel-env.sh .rocketfuel-env.sh
-fi
-
-# Setup scripts in /usr/local/bin
+# Set up scripts in /usr/local/bin
 cd /usr/local/bin
 if [ ! -e rocketfuel-get ]; then
   sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-get
@@ -540,30 +420,29 @@ fi
 /usr/local/bin/rocketfuel-get
 
 echo "
-Thank you for using this script. You can improve it for everyone by
-committing changes to LP in utilities/rocketfuel-setup.
+Thank you for using this script.  You can improve it for everyone by
+committing changes to Launchpad in utilities/rocketfuel-setup.
 
-Before you can submit branches to PQM, you need to visit:
-https://wiki.canonical.com/EmailSetup and find the current SMTP server
-password and enter it in the appropriate place in
-HOME/.bazaar/bazaar.conf.  Alternatively, configure it to use your own
-SMTP server locally.
+Please see http://dev.launchpad.net/ for more information on
+developing and testing Launchpad, and on submitting changes.
 
-You should use the following commands to manage your Rocketfuel:
+You can use the following commands to manage your Launchpad
+development environment:
 
  rocketfuel-get
-    Update your copy of trunk and the necessary source dependencies, and
-    make sure all source dependencies are properly linked in to all the
-    branches you are working on.
+    Update your copy of $LP_TRUNK_NAME and the necessary source
+    dependencies, and make sure all source dependencies are properly
+    linked in to all the branches you are working on.
 
  rocketfuel-branch foo
-    Create a new branch of LP called "foo" in $LP_PROJECT_PATH/foo,
+    Create a new branch of LP called \"foo\" in
+    $LP_PROJECT_PATH/foo,
     with all the source dependencies properly linked in.
 
  rocketfuel-status
-    Check each of the branches in $LP_PROJECT_PATH and show which of them have
-    uncommitted changes, also check which ones have revisions that have not
-    yet landed on trunk.
+    Check each of the branches in $LP_PROJECT_PATH
+    and show which of them have uncommitted changes; also check which ones
+    have revisions that have not yet landed on trunk.
 
  rocketfuel-push
     Push all of your branches to Launchpad, so that you have a server-side

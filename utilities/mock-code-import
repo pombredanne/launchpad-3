@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Make a Subversion repostiory and then make a CodeImportJob for it.
 
@@ -25,10 +27,10 @@ from subprocess import PIPE, Popen
 import tempfile
 import transaction
 
-from canonical.codehosting.codeimport.tests.test_foreigntree import (
+from lp.codehosting.codeimport.tests.test_foreigntree import (
     SubversionServer)
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp import canonical_url
 
 

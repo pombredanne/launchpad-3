@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
 import unittest
@@ -9,7 +10,7 @@ from zope.component import getUtility
 from canonical.launchpad.ftests import keys_for_tests
 from canonical.launchpad.interfaces import (
     IGPGHandler, IPersonSet, IEmailAddressSet, EmailAddressStatus)
-from canonical.launchpad.scripts.keyringtrustanalyser import (
+from lp.registry.scripts.keyringtrustanalyser import (
     addTrustedKeyring, addOtherKeyring, getValidUids, findEmailClusters,
     mergeClusters)
 from canonical.testing import LaunchpadZopelessLayer

@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -16,7 +17,8 @@ def test_simple_sendmail():
     >>> import email
     >>> from email.MIMEText import MIMEText
     >>> import transaction
-    >>> from canonical.launchpad.mail import stub, simple_sendmail
+    >>> from lp.services.mail import stub
+    >>> from lp.services.mail.sendmail import simple_sendmail
 
     >>> body = 'The email body'
     >>> subject = 'The email subject'

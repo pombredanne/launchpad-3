@@ -1,10 +1,12 @@
 #!/usr/bin/python
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2008 Canonical Ltd.  All rights reserved.
 """Print the YUI modules we are using.
 
-It looks into the main-template.pt file for the yui modules included. It
-prints the path to the minified version of these modules.
+It looks into the base-layout-macros.pt file for the yui modules included.
+It prints the path to the minified version of these modules.
 
 The output of this script is meant to be given to the lazr-js build.py script
 so that they are included in the launchpad.js file.
@@ -21,13 +23,13 @@ TOP = os.path.normpath(
     os.path.join(os.path.dirname(__file__), '..'))
 ICING_ROOT = os.path.join(TOP, 'lib', 'canonical', 'launchpad', 'icing')
 MAIN_TEMPLATE = os.path.join(
-    TOP, 'lib', 'canonical', 'launchpad', 'templates', 'main-template.pt')
+    TOP, 'lib', 'lp', 'app', 'templates', 'base-layout-macros.pt')
 
 YUI_ROOT_RE = re.compile('yui string:\${icingroot}/(.*);')
 YUI_MOD_RE = re.compile('\${yui}/(.*?)\.js')
 
 
-yui_root = None;
+yui_root = None
 template = open(MAIN_TEMPLATE, 'r')
 for line in template:
     if yui_root is None:

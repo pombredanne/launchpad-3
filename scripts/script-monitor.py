@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Monitor scripts."""
 
@@ -21,7 +23,7 @@ from canonical.launchpad.scripts.scriptmonitor import check_script
 
 
 def main():
-    # XXX: Tom Haddon 2007-07-12 
+    # XXX: Tom Haddon 2007-07-12
     # There's a lot of untested stuff here: parsing options and sending
     # emails - this should be moved into a testable location.
     # Also duplicated code in scripts/script-monitor-nagios.py
@@ -66,7 +68,7 @@ def main():
         error_found = False
         msg, subj = [], []
         for hostname, scriptname in hosts_scripts:
-            failure_msg = check_script(con, log, hostname, 
+            failure_msg = check_script(con, log, hostname,
                 scriptname, completed_from, completed_to)
             if failure_msg is not None:
                 msg.append(failure_msg)
@@ -79,7 +81,7 @@ def main():
             msg['From'] = 'script-failures@launchpad.net'
             msg['Reply-To'] = 'launchpad@lists.canonical.com'
             msg['To'] = 'launchpad@lists.canonical.com'
-            
+
             # Send out the email
             smtp = smtplib.SMTP()
             smtp.connect()

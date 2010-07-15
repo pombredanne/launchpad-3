@@ -1,4 +1,6 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
@@ -6,14 +8,13 @@ __metaclass__ = type
 import logging
 
 import zope.app.publication.interfaces
+from zope.component.interfaces import IObjectEvent
 from zope.interface import Interface, Attribute, implements
-from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
-from zope.app.pluggableauth.interfaces import IPrincipalSource
+from zope.app.security.interfaces import (
+    IAuthentication, IPrincipal, IPrincipalSource)
 from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
-from lazr.batchnavigator.interfaces import (
-    # InvalidBatchSizeError is a reimport for convenience
-    IBatchNavigator, InvalidBatchSizeError)
+from lazr.batchnavigator.interfaces import IBatchNavigator
 from lazr.enum import DBEnumeratedType, DBItem, use_template
 
 from canonical.launchpad import _
@@ -25,6 +26,10 @@ class TranslationUnavailable(Exception):
 
 class NotFoundError(KeyError):
     """Launchpad object not found."""
+
+
+class GoneError(KeyError):
+    """Launchpad object is gone."""
 
 
 class NameLookupFailed(NotFoundError):
@@ -58,13 +63,6 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
 
     One example would be a URL containing uppercase letters.
     """
-
-# annotate external interface
-# XXX flacoste 2008/05/09 bug=185958:
-# Ideally, we would use error_status, to set this up and
-# register the view, but cyclic imports prevents us from doing
-# so. This should be fixed once we move webapp stuff into LAZR.
-InvalidBatchSizeError.__lazr_webservice_error__ = 400
 
 
 class ILaunchpadContainer(Interface):
@@ -110,6 +108,10 @@ class IAuthorization(Interface):
 
 class OffsiteFormPostError(Exception):
     """An attempt was made to post a form from a remote site."""
+
+
+class NoReferrerError(Exception):
+    """At attempt was made to post a form without a REFERER header."""
 
 
 class UnsafeFormGetSubmissionError(Exception):
@@ -217,6 +219,8 @@ class ILink(ILinkData):
         "The full url this link points to.  Set by the menus infrastructure. "
         "None before it is set.")
 
+    path = Attribute("The path portion of the URL.")
+
     linked = Attribute(
         "A boolean value saying whether this link should appear as a "
         "clickable link in the UI.  The general rule is that a link to "
@@ -261,16 +265,6 @@ class IBreadcrumb(Interface):
 
     text = Attribute('Text of this breadcrumb.')
 
-    icon = Attribute("An <img> tag showing this breadcrumb's 14x14 icon.")
-
-
-class IBreadcrumbBuilder(IBreadcrumb):
-    """An object that builds `IBreadcrumb` objects."""
-    # We subclass IBreadcrumb to minimize interface drift.
-
-    def make_breadcrumb():
-        """Return an object implementing the `IBreadcrumb` interface."""
-
 
 #
 # Canonical URLs
@@ -300,54 +294,6 @@ class NoCanonicalUrl(TypeError):
             (object_url_requested_for, broken_link_in_chain)
             )
 
-#
-# DBSchema
-#
-
-
-# XXX kiko 2007-02-08: this is currently unused. We need somebody to come
-# in and set up interfaces for the enums.
-class IDBSchema(Interface):
-    """A DBSchema enumeration."""
-
-    name = Attribute("Lower-cased-spaces-inserted class name of this schema.")
-
-    title = Attribute("Title of this schema.")
-
-    description = Attribute("Description of this schema.")
-
-    items = Attribute("A mapping of [name or value] -> dbschema item.")
-
-
-class IDBSchemaItem(Interface):
-    """An Item in a DBSchema enumeration."""
-
-    value = Attribute("Integer value of this enum item.")
-
-    name = Attribute("Symbolic name of this item.")
-
-    title = Attribute("Title text of this item.")
-
-    description = Attribute("Description text of this item.")
-
-    def __sqlrepr__(dbname):
-        """Return an SQL representation of this item.
-
-        The dbname attribute is required as part of the sqlobject
-        interface, but it not used in this case.
-        """
-
-    def __eq__(other):
-        """An item is equal if it is from the same DBSchema and has the same
-        value.
-        """
-
-    def __ne__(other):
-        """not __eq__"""
-
-    def __hash__():
-        """Returns a hash value."""
-
 # XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly
 # generic thing. The problem lies in the fact that half of this (user, login,
 # time zone, developer) is actually useful inside webapp/, and the other half
@@ -356,7 +302,7 @@ class IDBSchemaItem(Interface):
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
-    project = Attribute('IProject, or None')
+    project = Attribute('IProjectGroup, or None')
     product = Attribute('IProduct, or None')
     distribution = Attribute('IDistribution, or None')
     distroseries = Attribute('IDistroSeries, or None')
@@ -409,6 +355,13 @@ class IBasicLaunchpadRequest(Interface):
     query_string_params = Attribute(
         'A dictionary of the query string parameters.')
 
+    def getRootURL(rootsite):
+        """Return this request's root URL.
+
+        If rootsite is not None, then return the root URL for that rootsite,
+        looked up from our config.
+        """
+
     def getNearest(*some_interfaces):
         """Searches for the last traversed object to implement one of
         the given interfaces.
@@ -438,7 +391,7 @@ class IBrowserFormNG(Interface):
         """
 
     def getAll(name, default=None):
-        """Return the the list of values submitted under field name.
+        """Return the list of values submitted under field name.
 
         If the field wasn't submitted return the default value. (If default
         is None, an empty list will be returned. It is an error to use
@@ -458,26 +411,6 @@ class ILaunchpadBrowserApplicationRequest(
         title=u'IBrowserFormNG object containing the submitted form data',
         schema=IBrowserFormNG)
 
-
-# XXX SteveAlexander 2005-09-14: These need making into a launchpad version
-#     rather than the zope versions for the publisher simplification work.
-# class IEndRequestEvent(Interface):
-#     """An event which gets sent when the publication is ended"""
-#
-# # called in zopepublication's endRequest method, after ending
-# # the interaction.  it is used only by local sites, to clean
-# # up per-thread state.
-# class EndRequestEvent(object):
-#     """An event which gets sent when the publication is ended"""
-#     implements(IEndRequestEvent)
-#     def __init__(self, ob, request):
-#         self.object = ob
-#         self.request = request
-
-
-#
-#
-#
 
 class IPrincipalIdentifiedEvent(Interface):
     """An event that is sent after a principal has been recovered from the
@@ -536,7 +469,7 @@ class LoggedOutEvent:
         self.request = request
 
 
-class IPlacelessAuthUtility(IAuthenticationUtility):
+class IPlacelessAuthUtility(IAuthentication):
     """This is a marker interface for a utility that supplies the interface
     of the authentication service placelessly, with the addition of
     a method to allow the acquisition of a principal using his
@@ -687,7 +620,7 @@ class INotificationRequest(Interface):
 
 
 class INotificationResponse(Interface):
-    """This class is responsible for propogating any notifications that
+    """This class is responsible for propagating any notifications that
     have been set when redirect() is called.
     """
 
@@ -700,11 +633,11 @@ class INotificationResponse(Interface):
         instance of a Zope internationalized message will cause the
         message to be translated, then CGI escaped.
 
-        :param msg: This may be a string, an instance of
-        	`zope.i18n.Message`, , or an instance of `IStructuredString`.
+        :param msg: This may be a string, an instance of `zope.i18n.Message`,
+            or an instance of `IStructuredString`.
 
         :param level: One of the `BrowserNotificationLevel` values: DEBUG,
-        	INFO, NOTICE, WARNING, ERROR.
+            INFO, NOTICE, WARNING, ERROR.
         """
 
     def removeAllNotifications():
@@ -733,10 +666,17 @@ class INotificationResponse(Interface):
     def addErrorNotification(msg):
         """Shortcut to addNotification(msg, ERROR)."""
 
-    def redirect(location, status=None):
-        """As per IHTTPApplicationResponse.redirect, except notifications
-        are preserved.
+    def redirect(location, status=None, trusted=True):
+        """Like IHTTPApplicationResponse.redirect, preserving notifications.
+
+        Also, for convenience we use trusted=True here, so that our callsites
+        that redirect from lp.net to vhost.lp.net don't have to pass
+        trusted=True explicitly.
         """
+
+
+class IErrorReportEvent(IObjectEvent):
+    """A new error report has been created."""
 
 
 class IErrorReport(Interface):
@@ -808,38 +748,81 @@ class IPrimaryContext(Interface):
 #
 # Database policies
 #
-class IDatabasePolicy(Interface):
-    """Implement database policy based on the request.
-
-    The publisher adapts the request to `IDatabasePolicy` to
-    instantiate the policy for the current request.
-    """
-    def beforeTraversal():
-        """Install the database policy into the current thread."""
-
-    def afterCall():
-        """Perform any necessary cleanup of the database policy."""
-
-
-class MasterUnavailable(Exception):
-    """A master (writable replica) database was requested but not available.
-    """
 
 MAIN_STORE = 'main' # The main database.
-AUTH_STORE = 'auth' # The authentication database.
-
-ALL_STORES = frozenset([MAIN_STORE, AUTH_STORE])
+ALL_STORES = frozenset([MAIN_STORE])
 
 DEFAULT_FLAVOR = 'default' # Default flavor for current state.
 MASTER_FLAVOR = 'master' # The master database.
 SLAVE_FLAVOR = 'slave' # A slave database.
 
 
+class IDatabasePolicy(Interface):
+    """Implement database policy based on the request.
+
+    The publisher adapts the request to `IDatabasePolicy` to
+    instantiate the policy for the current request.
+    """
+    def __enter__():
+        """Standard Python context manager interface.
+
+        The IDatabasePolicy will install itself using the IStoreSelector
+        utility.
+        """
+
+    def __exit__(exc_type, exc_value, traceback):
+        """Standard Python context manager interface.
+
+        The IDatabasePolicy will uninstall itself using the IStoreSelector
+        utility.
+        """
+
+    def getStore(name, flavor):
+        """Retrieve a Store.
+
+        :param name: one of ALL_STORES.
+
+        :param flavor: MASTER_FLAVOR, SLAVE_FLAVOR, or DEFAULT_FLAVOR.
+        """
+
+    def install():
+        """Hook called when policy is pushed onto the `IStoreSelector`."""
+
+    def uninstall():
+        """Hook called when policy is popped from the `IStoreSelector`."""
+
+
+class MasterUnavailable(Exception):
+    """A master (writable replica) database was requested but not available.
+    """
+
+
+class DisallowedStore(Exception):
+    """A request was made to access a Store that has been disabled
+    by the current policy.
+    """
+
+
+class ReadOnlyModeViolation(Exception):
+    """An attempt was made to write to a slave Store in read-only mode.
+
+    This can happen in legacy code where writes are being made to an
+    object retrieved from the default Store rather than casting the
+    object to a writable version using IMasterObject(obj).
+    """
+
+
+class ReadOnlyModeDisallowedStore(DisallowedStore, ReadOnlyModeViolation):
+    """A request was made to access a Store that cannot be granted
+    because we are running in read-only mode.
+    """
+
+
 class IStoreSelector(Interface):
     """Get a Storm store with a desired flavor.
 
     Stores come in two flavors - MASTER_FLAVOR and SLAVE_FLAVOR.
- 
+
     The master is writable and up to date, but we should not use it
     whenever possible because there is only one master and we don't want
     it to be overloaded.
@@ -850,6 +833,19 @@ class IStoreSelector(Interface):
     databases as we are prepared to pay for, so they will perform better
     because they are less loaded.
     """
+    def push(dbpolicy):
+        """Install an `IDatabasePolicy` as the default for this thread."""
+
+    def pop():
+        """Uninstall the most recently pushed `IDatabasePolicy` from
+        this thread.
+
+        Returns the `IDatabasePolicy` removed.
+        """
+
+    def get_current():
+        """Return the currently installed `IDatabasePolicy`."""
+
     def get(name, flavor):
         """Retrieve a Storm Store.
 
@@ -868,7 +864,15 @@ class IStoreSelector(Interface):
         for backwards compatibility, and new code should explicitly state
         if they want a master or a slave.
 
-        :raises MasterUnavailable: A master database was requested but
-            it is not available.
+        :raises MasterUnavailable:
+
+        :raises DisallowedStore:
         """
 
+
+class IWebBrowserOriginatingRequest(Interface):
+    """Marker interface for converting webservice requests into webapp ones.
+
+    It's used in the webservice domain for calculating webapp URLs, for
+    instance, `ProxiedLibraryFileAlias`.
+    """

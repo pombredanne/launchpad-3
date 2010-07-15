@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Process LinkChecker .csv results for the staging server, stuff them into
 a database and generate a report suitable for spamming developers with.
@@ -197,7 +200,7 @@ if __name__ == '__main__':
             "-t", "--to", dest="email", help="Email to ADDRESS",
             metavar="ADDRESS", default=None
             )
-    
+
     options, args = parser.parse_args()
 
     log = logger(options)

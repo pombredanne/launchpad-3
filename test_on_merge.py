@@ -1,7 +1,10 @@
-#!/usr/bin/python2.4
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests that get run automatically on a merge."""
+import _pythonpath
 
 import sys, time
 import os, errno
@@ -21,7 +24,7 @@ from select import select
 TIMEOUT = 60 * 15
 
 def main():
-    """Call test.py with whatever arguments this script was run with.
+    """Call bin/test with whatever arguments this script was run with.
 
     If the tests ran ok (last line of stderr is 'OK<return>') then suppress
     output and exit(0).
@@ -32,7 +35,7 @@ def main():
 
     # Tabnanny
     # NB. If tabnanny raises an exception, run
-    # python /usr/lib/python2.4/tabnanny.py -vv lib/canonical
+    # python /usr/lib/python2.5/tabnanny.py -vv lib/canonical
     # for more detailed output.
     org_stdout = sys.stdout
     sys.stdout = StringIO()
@@ -90,8 +93,7 @@ def main():
     # Build the template database. Tests duplicate this.
     here = os.path.dirname(os.path.realpath(__file__))
     schema_dir = os.path.join(here, 'database', 'schema')
-    if os.system('cd %s; make test PYTHON=%s > /dev/null' % (
-        schema_dir, sys.executable)) != 0:
+    if os.system('cd %s; make test > /dev/null' % (schema_dir)) != 0:
         print 'Failed to create database or load sampledata.'
         return 1
 
@@ -134,13 +136,19 @@ def main():
 
     print 'Running tests.'
     os.chdir(here)
-    cmd = [sys.executable, 'test.py'] + sys.argv[1:]
-    print ' '.join(cmd)
+    cmd = [
+        'xvfb-run',
+        '-s',
+        "'-screen 0 1024x768x24'",
+        os.path.join(here, 'bin', 'test')] + sys.argv[1:]
+    command_line = ' '.join(cmd)
+    print command_line
 
     # Run the test suite and return the error code
     #return call(cmd)
 
-    proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+    proc = Popen(
+        command_line, stdin=PIPE, stdout=PIPE, stderr=STDOUT, shell=True)
     proc.stdin.close()
 
     # Do proc.communicate(), but timeout if there's no activity on stdout or
@@ -181,7 +189,7 @@ def main():
 def killem(pid, signal):
     """Kill the process group leader identified by pid and other group members
 
-    Note that test.py sets its process to a process group leader.
+    Note that bin/test sets its process to a process group leader.
     """
     try:
         os.killpg(os.getpgid(pid), signal)

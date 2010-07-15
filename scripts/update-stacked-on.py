@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
 
 """Update stacked_on_location for all Bazaar branches.
@@ -19,48 +22,14 @@ __metaclass__ = type
 
 import _pythonpath
 import sys
-import xmlrpclib
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.config import TransportConfig
 from bzrlib import errors
 
-from canonical.codehosting.branchfs import LaunchpadInternalServer
-from canonical.codehosting.vfs import BlockingProxy
-from canonical.codehosting.vfs.transport import (
-    get_chrooted_transport, get_readonly_transport, _MultiServer)
-from canonical.codehosting.bzrutils import get_branch_stacked_on_url
-from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
-
-
-def get_server(read_only):
-    """Get a server that can write to both hosted and mirrored areas."""
-    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-    authserver = BlockingProxy(proxy)
-    hosted_transport = get_chrooted_transport(
-        config.codehosting.hosted_branches_root)
-    if read_only:
-        hosted_transport = get_readonly_transport(hosted_transport)
-    mirrored_transport = get_chrooted_transport(
-        config.codehosting.mirrored_branches_root)
-    if read_only:
-        mirrored_transport = get_readonly_transport(mirrored_transport)
-    hosted_server = LaunchpadInternalServer(
-        'lp-hosted:///', authserver, hosted_transport)
-    mirrored_server = LaunchpadInternalServer(
-        'lp-mirrored:///', authserver, mirrored_transport)
-    return _MultiServer(hosted_server, mirrored_server)
-
-
-def get_hosted_url(unique_name):
-    """Return the hosted URL for the branch with 'unique_name'."""
-    return 'lp-hosted:///%s' % unique_name
-
-
-def get_mirrored_url(unique_name):
-    """Return the mirrored URL for the branch with 'unique_name'."""
-    return 'lp-mirrored:///%s' % unique_name
+from lp.codehosting.vfs import get_rw_server, get_ro_server
+from lp.codehosting.bzrutils import get_branch_stacked_on_url
+from lp.services.scripts.base import LaunchpadScript
 
 
 def set_branch_stacked_on_url(bzrdir, stacked_on_url):
@@ -90,15 +59,18 @@ class UpdateStackedBranches(LaunchpadScript):
                   "motions."))
 
     def main(self):
-        server = get_server(self.options.dry_run)
-        server.setUp()
+        if self.options.dry_run:
+            server = get_ro_server()
+        else:
+            server = get_rw_server()
+        server.start_server()
         if self.options.dry_run:
             self.logger.debug('Running read-only')
         self.logger.debug('Beginning processing')
         try:
             self.updateBranches(self.parseFromStream(sys.stdin))
         finally:
-            server.tearDown()
+            server.stop_server()
         self.logger.info('Done')
 
     def updateStackedOn(self, branch_id, bzr_branch_url, stacked_on_location):
@@ -106,8 +78,7 @@ class UpdateStackedBranches(LaunchpadScript):
 
         :param branch_id: The database ID of the branch. This is only used for
             logging.
-        :param bzr_branch_url: The URL of the Bazaar branch. Normally this is
-            of the form lp-mirrored:/// or lp-hosted:///.
+        :param bzr_branch_url: The lp-internal:/// URL of the Bazaar branch.
         :param stacked_on_location: The location to store in the branch's
             stacked_on_location configuration variable.
         """
@@ -162,12 +133,9 @@ class UpdateStackedBranches(LaunchpadScript):
             (branch_id, branch_type, unique_name,
              stacked_on_name) = branch_info
             stacked_on_location = '/' + stacked_on_name
-            if branch_type == 'HOSTED':
-                self.updateStackedOn(
-                    branch_id, get_hosted_url(unique_name),
-                    stacked_on_location)
             self.updateStackedOn(
-                branch_id, get_mirrored_url(unique_name), stacked_on_location)
+                branch_id, 'lp-internal:///' + unique_name,
+                stacked_on_location)
 
 
 if __name__ == '__main__':

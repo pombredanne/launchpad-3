@@ -15,20 +15,20 @@
 </head>
 <body>
     <div id="container">
-        <p class="page-number">11 of 11</p>
+        <p class="page-number">10 of 11</p>
         <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="index" taborder="1" accesskey="1">Start</a></li>
+            <li class="button-next"><a id="btnNext" href="join-launchpad" taborder="1" accesskey="1" title="Read about commercial subscriptions and free access to Launchpad">Next</a></li>
             <li class="home"><a href="index" accesskey="2">Launchpad tour home</a></li>
             <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
-            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and tracking</a></li>
-            <li><a href="code-review" accesskey="5">Code review</a></li>
-            <li><a href="translation" accesskey="6">Web-based translation</a></li>
-            <li><a href="community" accesskey="7">Community building</a></li>
-            <li><a href="ppa" accesskey="8">Software distribution</a></li>
-            <li><a href="community-support" accesskey="9">Community support</a></li>
-            <li><a href="api" accesskey="a">Beta: web services API</a></li>
-            <li><a href="feature-tracking" accesskey="b">Light-weight specifications</a></li>
-            <li class="current"><a href="release-management" accesskey="c">Release management</a></li>
+            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and review</a></li>
+            <li><a href="translation" accesskey="5">Web-based translation</a></li>
+            <li><a href="community" accesskey="6">Community building</a></li>
+            <li><a href="ppa" accesskey="7">Software distribution</a></li>
+            <li><a href="community-support" accesskey="8">Community support</a></li>
+            <li><a href="api" accesskey="9">Beta: web services API</a></li>
+            <li><a href="feature-tracking" accesskey="a">Light-weight specifications</a></li>
+            <li class="current"><a href="release-management" accesskey="b">Release management</a></li>
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>                        
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -46,12 +46,15 @@ Free software community members and other projects can use Launchpad
 to either directly learn information about your project or use
 Launchpad&rsquo;s extensive search to discover your work.
             </p>
-            <div id="link-holder"><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            <div id="link-holder"><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
+            <li class="button-prev">
+                <a title="Back to the spec tracking page" href="feature-tracking" accesskey="d" tabindex="2">Back</a>
+            </li>        
             <li class="button-next">
-                <a href="index" accesskey="d" tabindex="2">Start</a>
+                <a href="join-launchpad" title="Read about commercial subscriptions and free access to Launchpad" accesskey="e" tabindex="3">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -83,35 +86,17 @@ Launchpad calls these <em>series</em> and helps you to organise your work &mdash
                 </div>
                 <div class="furthur-information-block-bot"></div>
             </div>
-            <div class="furthur-information-block singular">
-                <div class="furthur-information-block-top"></div>
-                <div class="furthur-information-block-mid">
-                    <div class="block">
-                        <h3>Join Launchpad</h3>
-                        <h4>Create your own user account and add your project to Launchpad.</h4>
-                        <p class="screen-holder">
-                            <img src="images/rm/lp-diamond.png" alt="Launchpad diamond logo" />
-                        </p>
-                        <p>
-                        <a href="https://launchpad.net/projects/+new-guided">Registering your project</a> with Launchpad gives you access to a community of thousands, as well as six applications that will help you plan, develop, improve and distribute your software<br />
-                        <br />It's free for open source projects. You can also <a href="mailto:feedback@launchpad.net">talk to us about commercial subscriptions</a>.<br />
-                        <br />You can pick and choose which of Launchpad's tools are most appropriate for you. Even if you're not planning to use Launchpad directly, registering can help you find new contributors and users. Launchpad is free of charge for free software projects (<a href="https://help.launchpad.net/Legal/ProjectLicensing">find out more about our licensing policy</a>).<br />
-                        <br />If you haven't already, <a href="https://launchpad.net/+login">create a Launchpad user account</a> and take a look around.<br />
-                        <br />To find out more about how Launchpad can be useful to you, <a href="mailto:feedback@launchpad.net">get in touch</a> and we'll be glad to talk.</p>
-<ul class="further-links">
-                        </ul>
-                    </div>
-                    <div class="clear"></div>
-                </div>
-                <div class="furthur-information-block-bot"></div>
-            </div>
+         
         </div>
         <ul id="footer-navigation">
+            <li class="button-prev">
+                <a title="Back to the spec tracking page" href="feature-tracking" accesskey="f" tabindex="4">Back</a>
+            </li> 
             <li class="button-next">
-                <a href="index" accesskey="e" tabindex="3">Start</a>
+                <a href="join-launchpad" title="Read about commercial subscriptions and free access to Launchpad" accesskey="g" tabindex="5" title="Read about commercial subscriptions and free access to Launchpad">Next</a>
             </li>
              <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="h" tabindex="6">FAQ</a>
+                &copy; 2004-2010 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>

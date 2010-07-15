@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the oops-prune.py cronscript and methods in the
    canonical.launchpad.scripts.oops module.
@@ -16,6 +17,7 @@ import tempfile
 import unittest
 
 from pytz import UTC
+import transaction
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
@@ -24,7 +26,7 @@ from canonical.launchpad.scripts.oops import (
         referenced_oops, old_oops_files, unwanted_oops_files,
         path_to_oopsid, prune_empty_oops_directories
         )
-from canonical.launchpad.webapp import errorlog
+from lp.services.log import uniquefileallocator
 
 class TestOopsPrune(unittest.TestCase):
     layer = LaunchpadZopelessLayer
@@ -35,9 +37,11 @@ class TestOopsPrune(unittest.TestCase):
         # whole path rather than the path's basename.
         self.oops_dir = tempfile.mkdtemp('.directory.with.dots')
 
+        # TODO: This should be in the errorlog tests, and calling into errorlog
+        # methods.
         # Create some fake OOPS files
         self.today = datetime.now(tz=UTC)
-        self.ages_ago = errorlog.epoch + timedelta(days=1)
+        self.ages_ago = uniquefileallocator.epoch + timedelta(days=1)
         self.awhile_ago = self.ages_ago + timedelta(days=1)
 
         for some_date in [self.today, self.ages_ago, self.awhile_ago]:
@@ -57,9 +61,16 @@ class TestOopsPrune(unittest.TestCase):
             INSERT INTO MessageChunk(message, sequence, content)
             VALUES (1, 99, 'OOPS-%s')
             """ % self.referenced_oops_code)
+        if not os.path.exists(config.error_reports.error_dir):
+            os.mkdir(config.error_reports.error_dir)
+
+        # Need to commit or the changes are not visible on the slave.
+        transaction.commit()
+
 
     def tearDown(self):
         shutil.rmtree(self.oops_dir)
+        shutil.rmtree(config.error_reports.error_dir)
 
     def test_referenced_oops(self):
         self.failUnlessEqual(
@@ -95,6 +106,10 @@ class TestOopsPrune(unittest.TestCase):
                 whiteboard=NULL
                 WHERE id=2
             """)
+
+        # Need to commit or the changes are not visible on the slave.
+        transaction.commit()
+
         self.failUnlessEqual(
                 set([
                     self.referenced_oops_code,
@@ -172,7 +187,7 @@ class TestOopsPrune(unittest.TestCase):
                 found_oops_files.add(
                         path_to_oopsid(os.path.join(dirpath,filename))
                         )
-        today_day_count = (self.today - errorlog.epoch).days + 1
+        today_day_count = (self.today - uniquefileallocator.epoch).days + 1
         self.failUnlessEqual(
                 found_oops_files,
                 set([

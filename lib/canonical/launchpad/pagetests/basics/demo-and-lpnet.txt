@@ -22,29 +22,42 @@ instance-specific customizations much easier.)
 When you are on a demo site, the is_demo setting is advertised by both
 the page background, and the text "demo site" in the page footer.
 
+Note: during the transition to 3.0 we test a non-3-0 page as well as
+a 3-0 page to ensure that both display the correct demo/lp-net
+information and styles.
+
     # Set config to pretend we're on a demo site:
     >>> from textwrap import dedent
+    >>> site_message = ('This is a demo site mmk. '
+    ...                 '<a href="http://example.com">File a bug</a>.')
     >>> test_data = dedent("""
     ...     [launchpad]
     ...     is_demo: True
-    ...     site_message: This is a demo site mmk
-    ...     """)
+    ...     site_message: %s
+    ...     """ % site_message)
     >>> config.push('test_data', test_data)
     >>> print config.launchpad.is_demo
     True
 
-    >>> browser.open('http://launchpad.dev/')
+The demo style is applied and the site_message is also included as part
+of the header. The site-message is structured so that any links will not
+be escaped.
+
+For a 3-0 page:
+
+    >>> browser.open('http://launchpad.dev/ubuntu')
     >>> print browser.contents
     <...
     <style...url(/@@/demo)...</style>
     ...
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
-    |...Launchpad...) devmode demo site
+    &bull; r... devmode demo site
 
-The site_message is also included as part of the header:
-
-    >>> print extract_text(find_tag_by_id(browser.contents, 'globalheader'))
-    This is a demo site mmk
+    >>> print extract_text(find_tags_by_class(
+    ...     browser.contents, 'sitemessage')[0])
+    This is a demo site mmk. File a bug.
+    >>> print browser.getLink(url="http://example.com").text
+    File a bug
 
 When you are not on a demo site, the text no longer appears.
 
@@ -53,26 +66,85 @@ When you are not on a demo site, the text no longer appears.
     >>> print config.launchpad.is_demo
     False
 
-    >>> browser.open('http://launchpad.dev')
+First for a 3-0 page:
+
+    >>> browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
-    |...Launchpad...) devmode
-    >>> print find_tag_by_id(browser.contents, 'globalheader')
-    None
+    &bull; r... devmode
+    >>> len(find_tags_by_class(browser.contents, 'sitemessage'))
+    0
+
+
+== Launchpad Edge ==
+
+Additionally, when a server is running as an edge server, the site-message
+is appended with a link to disable edge redirects.
+
+In addition to this prominent display on the root page, most pages will
+also include the disable-redirect link in the site_message - if the
+user is a member of the beta group and has not already disabled
+the redirects.
+
+    # Now setup an edge site-message config and re-check.
+    >>> edge_config_data = """
+    ...     [launchpad]
+    ...     site_message: This is a beta site.
+    ...     is_edge: True
+    ...     """
+    >>> config.push('edge_config_data', edge_config_data)
+    >>> beta_browser = setupBrowser(
+    ...     auth='Basic beta-admin@launchpad.net:test')
+    >>> beta_browser.open('http://launchpad.dev/ubuntu')
+    >>> site_message = find_tags_by_class(
+    ...     beta_browser.contents, 'sitemessage')[0]
+    >>> print extract_text(site_message)
+    This is a beta site. Disable edge redirect.
+    >>> print extract_text(site_message.find(
+    ...     'a', onclick="setBetaRedirect(false)"))
+    Disable edge redirect.
+
+The disable-redirect link will also appear in the site_message when browsed by
+non-beta/anonymous users. This is to reduce the annoyance when users are
+logged into launchpad.net but haven't noticed yet that they need to log into
+edge as well (https://launchpad.net/bugs/160191).
+
+    >>> browser.open('http://launchpad.dev/ubuntu')
+    >>> print extract_text(find_tags_by_class(
+    ...     browser.contents, 'sitemessage')[0])
+    This is a beta site. Disable edge redirect.
+
+Once the redirection has been inhibited, the link changes to enable
+redirects.
+
+    # Workaround bug in mechanize where you cannot use the Cookie
+    # header with the CookieJar
+    >>> from mechanize._clientcookie import Cookie
+    >>> cookiejar = (
+    ...     beta_browser.mech_browser._ua_handlers['_cookies'].cookiejar)
+    >>> cookiejar.set_cookie(
+    ...     Cookie(
+    ...         version=0, name='inhibit_beta_redirect', value='1', port=None,
+    ...         port_specified=False, domain='.launchpad.dev',
+    ...         domain_specified=True, domain_initial_dot=True, path='/',
+    ...         path_specified=True, secure=False, expires=None,
+    ...         discard=None, comment=None, comment_url=None, rest={}))
+    >>> beta_browser.open('http://launchpad.dev/ubuntu')
+    >>> site_message = find_tags_by_class(
+    ...     beta_browser.contents, 'sitemessage')[0]
+    >>> print extract_text(site_message)
+    This is a beta site. Enable edge redirect.
+    >>> print extract_text(site_message.find(
+    ...     'a', onclick="setBetaRedirect(true)"))
+    Enable edge redirect.
+
+    # Remove the specific site-message config data before continuing.
+    >>> dummy = config.pop('edge_config_data')
 
 
 == Launchpad.net ==
 
-On every instance except launchpad.net, Launchpad's version and
-revision numbers are displayed in the page footer.
-
-    >>> print config.launchpad.is_lpnet
-    False
-    >>> browser.open('http://launchpad.dev/')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
-    |...Launchpad ... (r...)...
-
-On launchpad.net, however, the version and revision numbers are
-presented only in an HTML comment.
+On launchpad.net, the version and revision numbers are presented only in an
+HTML comment.
 
     >>> # Pretend that we're on launchpad.net:
     >>> test_data = dedent("""
@@ -81,12 +153,9 @@ presented only in an HTML comment.
     ...     """)
     >>> config.push('test_data', test_data)
 
-    >>> browser.open('http://launchpad.dev/')
+    >>> browser.open('http://launchpad.dev/ubuntu')
     >>> print find_tag_by_id(browser.contents, 'lp-version')
     None
-    >>> print browser.contents
-    <...
-    <!-- Launchpad ... (r...) -->
 
     >>> # Restore the previous config:
     >>> config_data = config.pop('test_data')

@@ -1,11 +1,14 @@
-#!/usr/bin/python2.4
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+# pylint: disable-msg=W0403
+import _pythonpath
+
 import psycopg, sys, os, re
-from sets import Set
-from fti import quote_identifier
 from security import DbSchema, CursorWrapper
 from ConfigParser import SafeConfigParser, NoOptionError
 
@@ -47,8 +50,8 @@ class Universe:
         '''The universe contains everything'''
         return True
 
-all_tables = Set()
-graphed_tables = Set()
+all_tables = set()
+graphed_tables = set()
 
 def tartup(filename, outfile, section):
     dot = open(filename).read()
@@ -95,7 +98,7 @@ def tartup(filename, outfile, section):
 
     for i in xrange(0, len(lines)):
         line = lines[i]
-        
+
         # Trim tables we don't want to see
         m = re.search(r'^\s* "(.+?)" \s+ \[shape', line, re.X)
         if m is not None:
@@ -124,17 +127,17 @@ def tartup(filename, outfile, section):
         if t1 not in wanted_tables:
             lines[i] = ''
             continue
-        
+
         # Links to ourself are fine, unless the table is not wanted
         if t1 == t2:
             continue
-        
+
         # Get allowed links
         allowed_link = True
         if t2 not in wanted_tables:
             allowed_link = False
         else:
-            for source, end in [ (t1,t2), (t2,t1) ]:
+            for source, end in [(t1, t2), (t2, t1)]:
                 try:
                     allowed = config.get(section, source)
                 except NoOptionError:
@@ -180,7 +183,7 @@ def explode(table, two_way=False):
             rv.append(dst)
     return rv
 
-        
+
 def main(filetypes):
 
     print filetypes
@@ -248,7 +251,4 @@ if __name__ == '__main__':
         ft = filetypes
 
     main(ft)
-
-# List all foreign key constraints
-# select pg_namespace.nspname as ns,src.relname as src,dst.relname as dst from pg_constraint,pg_namespace,pg_class as src,pg_class as dst where pg_namespace.oid = connamespace and src.oid = conrelid and dst.oid = confrelid;
 

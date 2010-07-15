@@ -1,0 +1,68 @@
+<div
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only">
+
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript"
+            tal:condition="devmode"
+            tal:content="string:var yui_base='${yui}';"></script>
+    <script type="text/javascript"
+            tal:condition="devmode"
+            tal:define="lp_js string:${icingroot}/build"
+            tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js"></script>
+    <script type="text/javascript">
+      LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
+      function(Y) {
+          Y.on('domready', function() {
+              Y.lp.bugs.filebug_dupefinder.setup_dupes();
+          });
+      });
+    </script>
+  </metal:block>
+
+  <div metal:fill-slot="heading">
+    <div tal:condition="view/isPrivate" id="privacy" class="aside private">
+      This report will be private, though you can disclose it later.
+    </div>
+    <h1>Report a bug</h1>
+  </div>
+
+  <div metal:fill-slot="main">
+    <div class="yui-g">
+      <tal:does-not-use-malone condition="not: view/contextUsesMalone">
+        <div class="top-portlet">
+          <metal:not_uses_malone
+              use-macro="context/@@+filebug-macros/not_uses_malone" />
+        </div>
+      </tal:does-not-use-malone>
+      <tal:uses-malone tal:condition="view/contextUsesMalone">
+        <div class="top-portlet">
+          <p tal:condition="not: view/similar_bugs">
+            No similar bug reports were found.
+          </p>
+          <div id="bug_reporting_form" tal:condition="not: view/similar_bugs">
+            <metal:form use-macro="context/@@launchpad_form/form">
+              <metal:widgets metal:fill-slot="widgets">
+                <table class="form">
+                  <metal:basic_filebug_widgets
+                      metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+                </table>
+              </metal:widgets>
+              <div class="actions" metal:fill-slot="buttons">
+                <input tal:replace="structure view/submit_bug_action/render" />
+              </div>
+            </metal:form>
+          </div>
+          <div tal:condition="view/similar_bugs">
+            <metal:display-similar-bugs
+                use-macro="context/@@+filebug-macros/show-similar-bugs-and-filebug-form" />
+          </div>
+        </div>
+      </tal:uses-malone>
+    </div>
+  </div>
+
+</div>

@@ -39,7 +39,7 @@ result in an error.
     Traceback (most recent call last):
     ...
     TypeError: <EnumeratedType 'PlainFooType'> must be a
-      DBEnumeratedType: <class 'lazr.enum.MetaEnum'>
+      DBEnumeratedType: <class 'lazr.enum...MetaEnum'>
 
     >>> from lazr.enum import DBEnumeratedType, DBItem
     >>> class FooType(DBEnumeratedType):

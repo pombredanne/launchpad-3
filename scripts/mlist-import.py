@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Import a mailing list (well, parts of it)."""
 
@@ -14,15 +16,15 @@ __all__ = [
     ]
 
 
+# pylint: disable-msg=W0403
+import _pythonpath
+
 import sys
 import logging
 import textwrap
 
-# pylint: disable-msg=W0403
-import _pythonpath
-
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 from canonical.launchpad.scripts.mlistimport import Importer
 
 

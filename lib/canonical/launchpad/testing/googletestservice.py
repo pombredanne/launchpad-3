@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 This script runs a simple HTTP server. The server returns XML files
 when given certain user-configurable URLs.
@@ -105,7 +108,7 @@ def service_is_available(timeout=2.0):
         sock.close() # Clean up.
 
 
-def wait_for_service(timeout=10.0):
+def wait_for_service(timeout=15.0):
     """Poll the service and BLOCK until we can connect to it.
 
     :param timeout: The socket should timeout after this many seconds.
@@ -122,7 +125,7 @@ def wait_for_service(timeout=10.0):
             try:
                 sock.connect((host, port))
             except socket.error, err:
-                if err.args[0] == errno.ECONNREFUSED:
+                if err.args[0] in [errno.ECONNREFUSED, errno.ECONNABORTED]:
                     elapsed = (time.time() - start)
                     if elapsed > timeout:
                         raise RuntimeError("Socket poll time exceeded.")
@@ -185,11 +188,10 @@ def start_as_process():
     Returns a subprocess.Popen object. (See the `subprocess` module in
     the Python Standard Library for details.)
     """
-    script = __file__
-    if not script.endswith('.py'):
-        # Make sure we run the .py file, not the .pyc.
-        head, _ = os.path.splitext(script)
-        script = head + '.py'
+    script = os.path.join(
+        os.path.dirname(__file__),
+        os.pardir, os.pardir, os.pardir, os.pardir, 'bin',
+        'googletestservice')
     # Make sure we aren't using the parent stdin and stdout to avoid spam
     # and have fewer things that can go wrong shutting down the process.
     proc = subprocess.Popen(
@@ -260,7 +262,3 @@ def main():
 
     log.info("Starting HTTP Google webservice server on port %s", port)
     server.serve_forever()
-
-
-if __name__ == '__main__':
-    main()

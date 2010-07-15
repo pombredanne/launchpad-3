@@ -1,5 +1,8 @@
-#! /usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
 
 """Populate schema additions for Translations Message Sharing.
@@ -25,8 +28,8 @@ from zope.interface import implements
 from canonical.database.postgresql import drop_tables
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.scripts.base import LaunchpadScript
-from canonical.launchpad.utilities.looptuner import LoopTuner
+from lp.services.scripts.base import LaunchpadScript
+from canonical.launchpad.utilities.looptuner import DBLoopTuner
 
 
 class PopulateTranslationMessage:
@@ -193,11 +196,11 @@ class PopulateMessageSharingSchema(LaunchpadScript):
     def main(self):
         self.logger.info("Populating new TranslationMessage columns.")
         tm_loop = PopulateTranslationMessage(self.txn, self.logger)
-        LoopTuner(tm_loop, 2).run()
+        DBLoopTuner(tm_loop, 2, log=self.logger).run()
 
         self.logger.info("Populating TranslationTemplateItem.")
         tti_loop = PopulateTranslationTemplateItem(self.txn, self.logger)
-        LoopTuner(tti_loop, 2).run()
+        DBLoopTuner(tti_loop, 2, log=self.logger).run()
 
 
 if __name__ == '__main__':

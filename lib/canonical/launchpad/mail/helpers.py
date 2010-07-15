@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -12,10 +13,11 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask)
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
-from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.interaction import get_current_principal
+
+from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
 
 class IncomingEmailError(Exception):
@@ -42,7 +44,7 @@ def get_main_body(signed_msg):
 
 
 def get_bugtask_type(bugtask):
-    """Returns the specific IBugTask interface the the bugtask provides.
+    """Returns the specific IBugTask interface the bugtask provides.
 
         >>> from canonical.launchpad.interfaces import (
         ...     IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask)

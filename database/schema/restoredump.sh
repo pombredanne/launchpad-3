@@ -1,5 +1,7 @@
-# This shell script can be used to restore a production database dump
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 #
+# This shell script can be used to restore a production database dump
 
 DMP=launchpad_prod.20050207.pg_dump
 DBNAME=rest

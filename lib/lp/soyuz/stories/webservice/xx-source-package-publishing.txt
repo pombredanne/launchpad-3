@@ -1,0 +1,380 @@
+===========================
+Finding source publications
+===========================
+
+Source package publishing details are available via a custom operation on
+archives, getPublishedSources().
+
+We need to insert some dependent fake data before continuing.
+
+    >>> login("foo.bar@canonical.com")
+    >>> from lp.archiveuploader.tests import (
+    ...     insertFakeChangesFileForAllPackageUploads)
+    >>> insertFakeChangesFileForAllPackageUploads()
+    >>> from lp.registry.model.gpgkey import GPGKey
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> name16 = getUtility(IPersonSet).getByName('name16')
+    >>> fake_signer = GPGKey.selectOneBy(owner=name16)
+    >>> ppa = getUtility(IPersonSet).getByName('cprov').archive
+    >>> for pub in ppa.getPublishedSources():
+    ...     pub = removeSecurityProxy(pub)
+    ...     pub.sourcepackagerelease.dscsigningkey = fake_signer
+    >>> logout()
+
+    >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
+    >>> cprov_srcs_response = pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources')
+    >>> pubs = cprov_srcs_response.jsonBody()
+
+    >>> def print_publications(pubs):
+    ...     for display_name in sorted(
+    ...         entry['display_name'] for entry in pubs['entries']):
+    ...         print display_name
+
+    >>> print_publications(pubs)
+    cdrkit 1.0 in breezy-autotest
+    iceweasel 1.0 in warty
+    pmount 0.1-1 in warty
+
+getPublishedSources() can accept some optional filtering parameters to reduce
+the number of returned publications.
+
+Search by name and version using an exact match:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     source_name="iceweasel", version="1.0", exact_match=True).jsonBody()
+    >>> print_publications(pubs)
+    iceweasel 1.0 in warty
+
+Search by date created:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     created_since_date='2007-01-01 00:00:00+00:00').jsonBody()
+    >>> print_publications(pubs)
+    cdrkit 1.0 in breezy-autotest
+    iceweasel 1.0 in warty
+    pmount 0.1-1 in warty
+
+Search by publishing status:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     status="Published").jsonBody()
+    >>> print_publications(pubs)
+    cdrkit 1.0 in breezy-autotest
+    iceweasel 1.0 in warty
+    pmount 0.1-1 in warty
+
+Search by distroseries and pocket:
+
+    >>> distros = webservice.get("/distros").jsonBody()
+    >>> ubuntu = distros['entries'][0]
+    >>> warty = webservice.named_get(
+    ...     ubuntu['self_link'], 'getSeries',
+    ...     name_or_version='warty').jsonBody()
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     distro_series=warty['self_link'], pocket="Release").jsonBody()
+    >>> print_publications(pubs)
+    iceweasel 1.0 in warty
+    pmount 0.1-1 in warty
+
+Each source publication exposes a number of properties.  We'll create a new
+publication to play with first.
+
+    >>> login("foo.bar@canonical.com")
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> stp = SoyuzTestPublisher()
+    >>> stp.prepareBreezyAutotest()
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> warty_series = ubuntu.getSeries('warty')
+    >>> cprov_ppa = getUtility(IPersonSet).getByName("cprov").archive
+    >>> discard = stp.getPubSource(
+    ...     archive=cprov_ppa, sourcename="testwebservice",
+    ...     distroseries=warty_series)
+    >>> logout()
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     distro_series=warty['self_link'],
+    ...     source_name="testwebservice").jsonBody()
+
+    >>> from lazr.restful.testing.webservice import pprint_entry
+    >>> pprint_entry(pubs['entries'][0])
+    archive_link: u'http://.../~cprov/+archive/ppa'
+    component_name: u'main'
+    date_created: ...
+    date_made_pending: None
+    date_published: None
+    date_removed: None
+    date_superseded: None
+    display_name: u'testwebservice 666 in warty'
+    distro_series_link: u'http://.../ubuntu/warty'
+    package_creator_link: u'http://.../beta/~name16'
+    package_maintainer_link: u'http://.../beta/~name16'
+    package_signer_link: u'http://.../beta/~name16'
+    pocket: u'Release'
+    removal_comment: None
+    removed_by_link: None
+    resource_type_link: u'http://.../#source_package_publishing_history'
+    scheduled_deletion_date: None
+    section_name: u'base'
+    self_link: u'http://.../~cprov/+archive/ppa/+sourcepub/...'
+    source_package_name: u'testwebservice'
+    source_package_version: u'666'
+    status: u'Pending'
+
+    >>> webservice.named_get(
+    ...     pubs['entries'][0]['self_link'], 'changesFileUrl').jsonBody()
+    u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666_source.changes'
+
+
+Unsigned sources
+================
+
+For packages synced from another distribution, the source is likely to
+be unsigned.  In this case, the package_signer_link will be None.
+
+Make cprov's PPA packages unsigned:
+
+    >>> login("foo.bar@canonical.com")
+    >>> for pub in ppa.getPublishedSources():
+    ...     pub = removeSecurityProxy(pub)
+    ...     pub.sourcepackagerelease.dscsigningkey = None
+    >>> logout()
+
+    >>> ws_uncache(pub)
+
+Query the source again:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     distro_series=warty['self_link'],
+    ...     source_name="testwebservice").jsonBody()
+
+    >>> print pubs['entries'][0]['package_signer_link']
+    None
+
+Package deletion
+================
+
+A user can request a package to be deleted:
+
+    >>> cprov = webservice.get("/~cprov").jsonBody()
+    >>> cprov_link = cprov['self_link']
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     source_name="testwebservice", version="666",
+    ...     exact_match=True).jsonBody()
+    >>> print pubs['total_size']
+    1
+    >>> package = pubs['entries'][0]['self_link']
+
+Anonymous users can't remove packages.
+
+    >>> response = webservice.named_post(
+    ...     package, 'requestDeletion',
+    ...     removal_comment="No longer needed")
+    >>> print response
+    HTTP/1.1 401 Unauthorized
+    ...
+
+The owner of a PPA can delete packages.
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> logout()
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> cprov_webservice = webservice_for_person(cprov,
+    ...     permission=OAuthPermission.WRITE_PUBLIC)
+    >>> response = cprov_webservice.named_post(
+    ...     package, 'requestDeletion',
+    ...     removal_comment="No longer needed")
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+
+After removal, the package is marked as such:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     source_name="testwebservice", version="666",
+    ...     exact_match=True).jsonBody()
+    >>> print pubs['entries'][0]['removal_comment']
+    No longer needed
+
+Privacy
+=======
+
+Create a private PPA for Celso with some binaries.
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     PackagePublishingStatus)
+    >>> cprov_db = getUtility(IPersonSet).getByName('cprov')
+    >>> ubuntu_db = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> cprov_private_ppa_db = factory.makeArchive(
+    ...     private=True, owner=cprov_db, name="p3a",
+    ...     distribution=ubuntu_db)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> private_source_pub = test_publisher.getPubBinaries(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     binaryname='privacy-test-bin',
+    ...     archive=cprov_private_ppa_db)
+    >>> logout()
+
+
+Only Celso (or anyone who participates on the PPA owner team) has
+access to the PPA publications.
+
+    >>> cprov_private_ppa = webservice.get(
+    ...     "/~cprov/+archive/p3a").jsonBody()
+    >>> cprov_srcs_response_private = webservice.named_get(
+    ...     cprov_private_ppa['self_link'], 'getPublishedSources')
+    >>> print cprov_srcs_response_private
+    HTTP/1.1 200 Ok
+    ...
+
+Any other user attempt would result in a 401 error.
+
+    >>> response = user_webservice.named_get(
+    ...     cprov_private_ppa['self_link'], 'getPublishedSources')
+    >>> print response
+    HTTP/1.1 401 Unauthorized
+    ...
+
+If the user attempts to access the publication URL directly they will
+also fail in their quest.
+
+    >>> pubs = cprov_srcs_response_private.jsonBody()
+    >>> private_publication_url = pubs['entries'][0]['self_link']
+    >>> response = user_webservice.get(private_publication_url)
+    >>> print response
+    HTTP/1.1 401 Unauthorized
+    ...
+
+
+Finding related Builds
+======================
+
+The source publication object has a custom operation called 'getBuilds' and
+it returns the build records for builds that were built in the same context
+archive as the publication, or builds from other archives but where the
+binaries have been copied and published in the same context archive.
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     source_name="pmount", version="0.1-1",
+    ...     exact_match=True).jsonBody()
+    >>> source_pub = pubs['entries'][0]
+    >>> builds = webservice.named_get(
+    ...     source_pub['self_link'], 'getBuilds').jsonBody()
+    >>> for entry in sorted(builds['entries']):
+    ...     print entry['title']
+    i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+
+
+Finding related Binary publications
+===================================
+
+The source publication object has a custom operation called
+'getPublishedBinaries', it returns the binaries built in the context
+of that publication.
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     source_name="pmount", exact_match=True).jsonBody()
+    >>> source_pub = pubs['entries'][0]
+    >>> builds = webservice.named_get(
+    ...     source_pub['self_link'], 'getPublishedBinaries').jsonBody()
+    >>> for entry in sorted(builds['entries']):
+    ...     print entry['display_name']
+    pmount 0.1-1 in warty hppa
+    pmount 0.1-1 in warty i386
+
+
+Build status summaries
+======================
+
+A summary of the build statuses for source packages in an archive is
+available via a custom operation on IArchive,
+getBuildSummariesForSourceIds().
+
+First, we grab the ids of two source package publishing records from
+cprov's ppa:
+
+    >>> source_ids = []
+    >>> cprov_srcs = cprov_srcs_response.jsonBody()
+    >>> src_link = cprov_srcs['entries'][0]['self_link']
+
+The src_link will be of the form:
+u'http://api.launchpad.dev/beta/~cprov/+archive/ppa/+sourcepub/27'
+so:
+
+    >>> source_id = int(src_link.split('/')[-1])
+    >>> source_ids.append(source_id)
+    >>> src_link = cprov_srcs['entries'][1]['self_link']
+    >>> source_id = int(src_link.split('/')[-1])
+    >>> source_ids.append(source_id)
+
+Now use the source ids to call the getBuildSummariesForSourceIds web
+service:
+
+    >>> build_summaries = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getBuildSummariesForSourceIds',
+    ...     source_ids=source_ids).jsonBody()
+
+Create a helper function to print the results:
+
+    >>> def print_build_summaries(summaries):
+    ...     for id, summary in summaries.items():
+    ...         arch_tags = [build['arch_tag'] for build in summary['builds']]
+    ...         print "Source ID %s: %s (%s)" % (id, summary['status'],
+    ...                                          arch_tags)
+
+The results contain an entry for each source ID, with the summary status
+and a list of all the relevant builds for the summary:
+
+    >>> print_build_summaries(build_summaries)
+    Source ID 27: FAILEDTOBUILD ([u'i386'])
+    Source ID 28: FULLYBUILT_PENDING ([u'i386'])
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
+    >>> for pub_link in sorted(
+    ...     entry['self_link'] for entry in pubs['entries']):
+    ...     source_urls = webservice.named_get(
+    ...         pub_link, 'sourceFileUrls').jsonBody()
+    ...     print source_urls
+    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/foobar-1.0.dsc']
+    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/firefox_0.9.2.orig.tar.gz', u'http://launchpad.dev/~cprov/+archive/ppa/+files/iceweasel-1.0.dsc']
+    []
+    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666.dsc']
+
+    >>> for pub_link in sorted(
+    ...     entry['self_link'] for entry in pubs['entries']):
+    ...     binary_urls = webservice.named_get(
+    ...         pub_link, 'binaryFileUrls').jsonBody()
+    ...     print binary_urls
+    []
+    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/mozilla-firefox_0.9_i386.deb']
+    []
+    []
+

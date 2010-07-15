@@ -1,6 +1,9 @@
-#! /usr/bin/python2.4
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
-# Copyright 2009 Canonical Ltd.  All rights reserved.
 
 """Run gettext consistency checks on messages in the database.
 
@@ -19,7 +22,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.launchpad.scripts.gettext_check_messages import (
+from lp.translations.scripts.gettext_check_messages import (
     GettextCheckMessages)
 
 

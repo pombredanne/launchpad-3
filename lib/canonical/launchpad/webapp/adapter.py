@@ -1,10 +1,13 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # We use global in this module.
 # pylint: disable-msg=W0602
 
 __metaclass__ = type
 
 import os
+import re
 import sys
 import thread
 import threading
@@ -12,12 +15,14 @@ import traceback
 from time import time
 import warnings
 
+import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
     ISOLATION_LEVEL_SERIALIZABLE, QueryCanceledError)
 
 from storm.database import register_scheme
-from storm.databases.postgres import Postgres, PostgresTimeoutTracer
+from storm.databases.postgres import (
+    Postgres, PostgresConnection, PostgresTimeoutTracer)
 from storm.exceptions import TimeoutError
 from storm.store import Store
 from storm.tracer import install_tracer
@@ -27,21 +32,21 @@ import transaction
 from zope.component import getUtility
 from zope.interface import (
     classImplements, classProvides, alsoProvides, implements)
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config, dbconfig, DatabaseConfig
 from canonical.database.interfaces import IRequestExpired
-from canonical.lazr.utils import safe_hasattr
-from canonical.launchpad.interfaces import (
-    IMasterObject, IMasterStore, ISlaveStore)
+from canonical.launchpad.interfaces import IMasterObject, IMasterStore
+from canonical.launchpad.readonly import is_read_only
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
-    ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
-    MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR,
+    ReadOnlyModeViolation, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.lazr.utils import safe_hasattr
 
 
 __all__ = [
-    'DisconnectionError',
     'RequestExpired',
     'set_request_started',
     'clear_request_started',
@@ -57,6 +62,18 @@ __all__ = [
 
 classImplements(TimeoutError, IRequestExpired)
 
+
+class LaunchpadTimeoutError(TimeoutError):
+    """A variant of TimeoutError that reports the original PostgreSQL error.
+    """
+
+    def __init__(self, statement, params, original_error):
+        super(LaunchpadTimeoutError, self).__init__(statement, params)
+        self.original_error = original_error
+
+    def __str__(self):
+        return ('Statement: %r\nParameters:%r\nOriginal error: %r'
+                % (self.statement, self.params, self.original_error))
 
 def _get_dirty_commit_flags():
     """Return the current dirty commit status"""
@@ -74,13 +91,38 @@ def _reset_dirty_commit_flags(previous_committed, previous_dirty):
 
 _local = threading.local()
 
-def set_request_started(starttime=None):
+
+class CommitLogger:
+    def __init__(self, txn):
+        self.txn = txn
+
+    def newTransaction(self, txn):
+        pass
+
+    def beforeCompletion(self, txn):
+        pass
+
+    def afterCompletion(self, txn):
+        now = time()
+        _log_statement(
+            now, now, None, 'Transaction completed, status: %s' % txn.status)
+
+
+def set_request_started(
+    starttime=None, request_statements=None, txn=None, enable_timeout=True):
     """Set the start time for the request being served by the current
     thread.
 
-    If the argument is given, it is used as the start time for the
-    request, as returned by time().  If it is not given, the
-    current time is used.
+    :param start_time: The start time of the request. If given, it is used as
+        the start time for the request, as returned by time().  If it is not
+        given, the current time is used.
+    :param request_statements; The sequence used to store the logged SQL
+        statements.
+    :type request_statements: mutable sequence.
+    :param txn: The current transaction manager. If given, txn.commit() and
+        txn.abort() calls are logged too.
+    :param enable_timeout: If True, a timeout error is raised if the request
+        runs for a longer time than the configured timeout.
     """
     if getattr(_local, 'request_start_time', None) is not None:
         warnings.warn('set_request_started() called before previous request '
@@ -89,9 +131,15 @@ def set_request_started(starttime=None):
     if starttime is None:
         starttime = time()
     _local.request_start_time = starttime
-    _local.request_statements = []
+    if request_statements is None:
+        _local.request_statements = []
+    else:
+        _local.request_statements = request_statements
     _local.current_statement_timeout = None
-
+    _local.enable_timeout = enable_timeout
+    if txn is not None:
+        _local.commit_logger = CommitLogger(txn)
+        txn.registerSynch(_local.commit_logger)
 
 def clear_request_started():
     """Clear the request timer.  This function should be called when
@@ -102,13 +150,25 @@ def clear_request_started():
 
     _local.request_start_time = None
     _local.request_statements = []
+    commit_logger = getattr(_local, 'commit_logger', None)
+    if commit_logger is not None:
+        _local.commit_logger.txn.unregisterSynch(_local.commit_logger)
+        del _local.commit_logger
 
 
 def summarize_requests():
     """Produce human-readable summary of requests issued so far."""
     secs = get_request_duration()
     statements = getattr(_local, 'request_statements', [])
-    log = "%s queries issued in %.2f seconds" % (len(statements), secs)
+    from canonical.launchpad.webapp.errorlog import (
+        maybe_record_user_requested_oops)
+    oopsid = maybe_record_user_requested_oops()
+    if oopsid is None:
+        oops_str = ""
+    else:
+        oops_str = " %s" % oopsid
+    log = "%s queries issued in %.2f seconds%s" % (
+        len(statements), secs, oops_str)
     return log
 
 
@@ -122,7 +182,7 @@ def store_sql_statements_and_request_duration(event):
 def get_request_statements():
     """Get the list of executed statements in the request.
 
-    The list is composed of (starttime, endtime, statement) tuples.
+    The list is composed of (starttime, endtime, db_id, statement) tuples.
     Times are given in milliseconds since the start of the request.
     """
     return getattr(_local, 'request_statements', [])
@@ -153,7 +213,14 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
     # convert times to integer millisecond values
     starttime = int((starttime - request_starttime) * 1000)
     endtime = int((endtime - request_starttime) * 1000)
-    _local.request_statements.append((starttime, endtime, statement))
+    # A string containing no whitespace that lets us identify which Store
+    # is being used.
+    if connection_wrapper is not None:
+        database_identifier = connection_wrapper._database.name
+    else:
+        database_identifier = None
+    _local.request_statements.append(
+        (starttime, endtime, database_identifier, statement))
 
     # store the last executed statement as an attribute on the current
     # thread
@@ -162,8 +229,8 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
 
 def _check_expired(timeout):
     """Checks whether the current request has passed the given timeout."""
-    if timeout is None:
-        return False # no timeout configured
+    if timeout is None or not getattr(_local, 'enable_timeout', True):
+        return False # no timeout configured or timeout disabled.
 
     starttime = getattr(_local, 'request_start_time', None)
     if starttime is None:
@@ -237,15 +304,42 @@ isolation_level_map = {
     }
 
 
+class ReadOnlyModeConnection(PostgresConnection):
+    """storm.database.Connection for read-only mode Launchpad."""
+    def execute(self, statement, params=None, noresult=False):
+        """See storm.database.Connection."""
+        try:
+            return super(ReadOnlyModeConnection, self).execute(
+                statement, params, noresult)
+        except psycopg2.InternalError, exception:
+            # Error 25006 is 'ERROR:  transaction is read-only'. This
+            # is raised when an attempt is made to make changes when
+            # the connection has been put in read-only mode.
+            if exception.pgcode == '25006':
+                raise ReadOnlyModeViolation(None, sys.exc_info()[2])
+            raise
+
+
 class LaunchpadDatabase(Postgres):
+
+    _dsn_user_re = re.compile('user=[^ ]*')
 
     def __init__(self, uri):
         # The uri is just a property name in the config, such as main_master
-        # or auth_slave.
+        # or main_slave.
         # We don't invoke the superclass constructor as it has a very limited
         # opinion on what uri is.
         # pylint: disable-msg=W0231
         self._uri = uri
+        # A unique name for this database connection.
+        self.name = uri.database
+
+    @property
+    def dsn_without_user(self):
+        """This database's dsn without the 'user=...' bit."""
+        assert self._dsn is not None, (
+            'Must not be called before self._dsn has been set.')
+        return self._dsn_user_re.sub('', self._dsn)
 
     def raw_connect(self):
         # Prevent database connections from the main thread if
@@ -261,7 +355,7 @@ class LaunchpadDatabase(Postgres):
                 'Connection uri %s does not match section-realm-flavor format'
                 % repr(self._uri.database))
 
-        assert realm in ('main', 'auth'), 'Unknown realm %s' % realm
+        assert realm == 'main', 'Unknown realm %s' % realm
         assert flavor in ('master', 'slave'), 'Unknown flavor %s' % flavor
 
         my_dbconfig = DatabaseConfig()
@@ -282,13 +376,13 @@ class LaunchpadDatabase(Postgres):
         self._dsn = "%s user=%s" % (connection_string, dbuser)
 
         flags = _get_dirty_commit_flags()
-        raw_connection = super(LaunchpadDatabase, self).raw_connect()
 
         if my_dbconfig.isolation_level is None:
-            isolation_level = ISOLATION_LEVEL_SERIALIZABLE
+            self._isolation = ISOLATION_LEVEL_SERIALIZABLE
         else:
-            isolation_level = isolation_level_map[my_dbconfig.isolation_level]
-        raw_connection.set_isolation_level(isolation_level)
+            self._isolation = isolation_level_map[my_dbconfig.isolation_level]
+
+        raw_connection = super(LaunchpadDatabase, self).raw_connect()
 
         # Set read only mode for the session.
         # An alternative would be to use the _ro users generated by
@@ -306,8 +400,22 @@ class LaunchpadDatabase(Postgres):
         _reset_dirty_commit_flags(*flags)
         return raw_connection
 
+    @property
+    def connection_factory(self):
+        """Return the correct connection factory for the current mode.
+
+        If we are running in read-only mode, returns a
+        ReadOnlyModeConnection. Otherwise it returns the Storm default.
+        """
+        if is_read_only():
+            return ReadOnlyModeConnection
+        return super(LaunchpadDatabase, self).connection_factory
+
 
 class LaunchpadSessionDatabase(Postgres):
+
+    # A unique name for this database connection.
+    name = 'session'
 
     def raw_connect(self):
         self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
@@ -372,11 +480,12 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
             return
         if isinstance(error, QueryCanceledError):
             OpStats.stats['timeouts'] += 1
-            raise TimeoutError(statement, params)
+            raise LaunchpadTimeoutError(statement, params, error)
 
     def get_remaining_time(self):
         """See `TimeoutTracer`"""
-        if not dbconfig.db_statement_timeout:
+        if (not dbconfig.db_statement_timeout or
+            not getattr(_local, 'enable_timeout', True)):
             return None
         start_time = getattr(_local, 'request_start_time', None)
         if start_time is None:
@@ -419,116 +528,47 @@ class LaunchpadStatementTracer:
             connection, raw_cursor, statement, params)
 
 
-install_tracer(LaunchpadTimeoutTracer())
+# The LaunchpadTimeoutTracer needs to be installed last, as it raises
+# TimeoutError exceptions. When this happens, tracers installed later
+# are not invoked.
 install_tracer(LaunchpadStatementTracer())
-
-
-class DisallowedStoreError(Exception):
-    """Raised when a request was made to access a Store that has been
-    blocked by the current policy.
-    """
+install_tracer(LaunchpadTimeoutTracer())
 
 
 class StoreSelector:
+    """See `canonical.launchpad.webapp.interfaces.IStoreSelector`."""
     classProvides(IStoreSelector)
 
     @staticmethod
-    def setDefaultFlavor(name, flavor):
-        """Change what the DEFAULT_FLAVOR is for the current thread."""
-        if flavor is DEFAULT_FLAVOR:
-            flavor = MASTER_FLAVOR
+    def push(db_policy):
+        """See `IStoreSelector`."""
+        if not safe_hasattr(_local, 'db_policies'):
+            _local.db_policies = []
+        db_policy.install()
+        _local.db_policies.append(db_policy)
+
+    @staticmethod
+    def pop():
+        """See `IStoreSelector`."""
+        db_policy = _local.db_policies.pop()
+        db_policy.uninstall()
+        return db_policy
+
+    @staticmethod
+    def get_current():
+        """See `IStoreSelector`."""
         try:
-            _local.store_default_flavor[name] = flavor
-        except AttributeError:
-            _local.store_default_flavor = {}
-            _local.store_default_flavor[name] = flavor
-
-    @staticmethod
-    def setGlobalDefaultFlavor(flavor):
-        """Change what the DEFAULT_FLAVOR is for the current thread
-        for all Stores.
-        """
-        for store in ALL_STORES:
-            StoreSelector.setDefaultFlavor(store, flavor)
-
-    @staticmethod
-    def getDefaultFlavor(name):
-        """Get the DEFAULT_FLAVOR for the current thread."""
-        try:
-            return _local.store_default_flavor[name]
-        except (AttributeError, KeyError):
-            return MASTER_FLAVOR
-
-    @staticmethod
-    def setConfigSectionName(section):
-        """Change the section in the config file used to lookup database
-        connection details.
-
-        Pass None to reset to the default.
-        """
-        _local.store_dbconfig_section = section
-
-    @staticmethod
-    def getConfigSectionName():
-        """Return the section in the config file to use to lookup
-        database connection details.
-        """
-        try:
-            return _local.store_dbconfig_section or dbconfig.getSectionName()
-        except AttributeError:
-            return dbconfig.getSectionName()
-
-    @staticmethod
-    def setAllowedStores(allowed_stores):
-        """Specify which Stores may be accessed. Attempting to retrieve
-        Stores not on this whitelist will raise a DisallowedStoreError.
-
-        allowed_stores is a list of (store, flavor) tuples, such as
-        [(MAIN_STORE, SLAVE_FLAVOR), (AUTH_STORE, SLAVE_FLAVOR)].
-
-        Pass None to allow access to all Stores.
-        """
-        _local.allowed_stores = allowed_stores
-
-    @staticmethod
-    def getAllowedStores():
-        """Return the Store whitelist, as per `setAllowedStores`."""
-        return getattr(_local, 'allowed_stores', None)
+            return _local.db_policies[-1]
+        except (AttributeError, IndexError):
+            return None
 
     @staticmethod
     def get(name, flavor):
         """See `IStoreSelector`."""
-        assert flavor in (MASTER_FLAVOR, SLAVE_FLAVOR, DEFAULT_FLAVOR), (
-            'Invalid flavor %s' % flavor)
-
-        if flavor == DEFAULT_FLAVOR:
-            flavor = StoreSelector.getDefaultFlavor(name)
-
-        allowed_stores = StoreSelector.getAllowedStores()
-        if allowed_stores is not None and (name, flavor) not in allowed_stores:
-            raise DisallowedStoreError(name, flavor)
-
-        section = StoreSelector.getConfigSectionName()
-
-        store = getUtility(IZStorm).get(
-            '%s-%s-%s' % (section, name, flavor),
-            'launchpad:%s-%s-%s' % (section, name, flavor))
-
-        # Attach our marker interfaces
-        if flavor == MASTER_FLAVOR:
-            alsoProvides(store, IMasterStore)
-        else:
-            alsoProvides(store, ISlaveStore)
-
-        return store
-
-
-# There are not many tables outside of the main replication set, so we
-# can just maintain a hardcoded list of what isn't in there for now.
-_auth_store_tables = frozenset([
-    'Account', 'AccountPassword', 'AuthToken', 'EmailAddress',
-    'OpenIDAssociations', 'OpenIDAuthorization', 'OpenIDRPSummary',
-    'OpenIDAuthorization'])
+        db_policy = StoreSelector.get_current()
+        if db_policy is None:
+            db_policy = MasterDatabasePolicy(None)
+        return db_policy.getStore(name, flavor)
 
 
 # We want to be able to adapt a Storm class to an IStore, IMasterStore or
@@ -539,9 +579,7 @@ _auth_store_tables = frozenset([
 def get_store(storm_class, flavor=DEFAULT_FLAVOR):
     """Return a flavored Store for the given database class."""
     table = getattr(removeSecurityProxy(storm_class), '__storm_table__', None)
-    if table in _auth_store_tables:
-        return getUtility(IStoreSelector).get(AUTH_STORE, flavor)
-    elif table is not None:
+    if table is not None:
         return getUtility(IStoreSelector).get(MAIN_STORE, flavor)
     else:
         return None

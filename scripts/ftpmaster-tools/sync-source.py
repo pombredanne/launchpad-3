@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright (C) 2005, 2008  Canonical Software Ltd.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # <james.troup@canonical.com>
 # pylint: disable-msg=W0403
 
@@ -11,9 +14,11 @@ Long term once soyuz is monitoring other archives regularly, syncing
 will become a matter of simply 'publishing' source from Debian unstable
 wherever) into Ubuntu dapper and the whole fake upload trick can go away.
 """
+import _pythonpath
 
 import apt_pkg
 import commands
+from debian_bundle.deb822 import Dsc
 import errno
 import optparse
 import os
@@ -21,26 +26,25 @@ import re
 import shutil
 import stat
 import string
-import sys
 import tempfile
 import time
 import urllib
 
-import _pythonpath
 import dak_utils
-from syncorigins import origins
+from _syncorigins import origins
 
 from zope.component import getUtility
 from contrib.glock import GlobalLock
 
 from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, PackagePublishingStatus,
-    PackagePublishingPocket)
+    IDistributionSet, IPersonSet, PackagePublishingStatus)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.librarian.client import LibrarianClient
 from canonical.lp import initZopeless
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.scripts.ftpmaster import SyncSource, SyncSourceError
 
 
 reject_message = ""
@@ -127,7 +131,7 @@ def sign_changes(changes, dsc):
 
 def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
                      lp_closes, section, priority, description,
-                     have_orig_tar_gz, requested_by, origin):
+                     files_from_librarian, requested_by, origin):
     """Generate a .changes as a string"""
 
     # XXX cprov 2007-07-03:
@@ -161,7 +165,7 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
     changes += changelog
     changes += "Files: \n"
     for filename in dsc_files:
-        if filename.endswith(".orig.tar.gz") and have_orig_tar_gz:
+        if filename in files_from_librarian:
             continue
         changes += " %s %s %s %s %s\n" % (dsc_files[filename]["md5sum"],
                                           dsc_files[filename]["size"],
@@ -262,11 +266,13 @@ def parse_control(control_filename):
         section = Control.Section.Find("Section")
         priority = Control.Section.Find("Priority")
         description = Control.Section.Find("Description")
-        if source:
-            source_section = section
-            source_priority = priority
+        if source is not None:
+            if section is not None:
+                source_section = section
+            if priority is not None:
+                source_priority = priority
             source_name = source
-        if package and package == source_name:
+        if package is not None and package == source_name:
             source_description = (
                 "%-10s - %-.65s" % (package, description.split("\n")[0]))
     control_filehandle.close()
@@ -358,13 +364,91 @@ def check_dsc(dsc, current_sources, current_binaries):
                 source, source_component, binary, current_version,
                 current_component)
 
+def split_gpg_and_payload(sequence):
+    """Return a (gpg_pre, payload, gpg_post) tuple
+
+    Each element of the returned tuple is a list of lines (with trailing
+    whitespace stripped).
+    """
+    # XXX JRV 20100211: Copied from deb822.py in python-debian. When 
+    # Launchpad switches to Lucid this copy should be removed.
+    # bug=520508
+
+    gpg_pre_lines = []
+    lines = []
+    gpg_post_lines = []
+    state = 'SAFE'
+    gpgre = re.compile(r'^-----(?P<action>BEGIN|END) PGP (?P<what>[^-]+)-----$')
+    blank_line = re.compile('^$')
+    first_line = True
+
+    for line in sequence:
+        line = line.strip('\r\n')
+
+        # skip initial blank lines, if any
+        if first_line:
+            if blank_line.match(line):
+                continue
+            else:
+                first_line = False
+
+        m = gpgre.match(line)
+
+        if not m:
+            if state == 'SAFE':
+                if not blank_line.match(line):
+                    lines.append(line)
+                else:
+                    if not gpg_pre_lines:
+                        # There's no gpg signature, so we should stop at
+                        # this blank line
+                        break
+            elif state == 'SIGNED MESSAGE':
+                if blank_line.match(line):
+                    state = 'SAFE'
+                else:
+                    gpg_pre_lines.append(line)
+            elif state == 'SIGNATURE':
+                gpg_post_lines.append(line)
+        else:
+            if m.group('action') == 'BEGIN':
+                state = m.group('what')
+            elif m.group('action') == 'END':
+                gpg_post_lines.append(line)
+                break
+            if not blank_line.match(line):
+                if not lines:
+                    gpg_pre_lines.append(line)
+                else:
+                    gpg_post_lines.append(line)
+
+    if len(lines):
+        return (gpg_pre_lines, lines, gpg_post_lines)
+    else:
+        raise EOFError('only blank lines found in input')
+
 
 def import_dsc(dsc_filename, suite, previous_version, signing_rules,
-               have_orig_tar_gz, requested_by, origin, current_sources,
+               files_from_librarian, requested_by, origin, current_sources,
                current_binaries):
-    dsc = dak_utils.parse_changes(dsc_filename, signing_rules)
-    dsc_files = dak_utils.build_file_list(dsc, is_a_dsc=1)\
+    dsc_file = open(dsc_filename, 'r')
+    dsc = Dsc(dsc_file)
 
+    if signing_rules.startswith("must be signed"):
+        dsc_file.seek(0)
+        # XXX JRV 20100211: When Launchpad starts depending on Lucid,
+        # use dsc.split_gpg_and_payload() instead. 
+        # bug=520508
+        (gpg_pre, payload, gpg_post) = split_gpg_and_payload(dsc_file)
+        if gpg_pre == [] and gpg_post == []:
+            dak_utils.fubar("signature required for %s but not present" 
+                % dsc_filename)
+        if signing_rules == "must be signed and valid":
+            if (gpg_pre[0] != "-----BEGIN PGP SIGNED MESSAGE-----" or
+                gpg_post[0] != "-----BEGIN PGP SIGNATURE-----"):
+                dak_utils.fubar("signature for %s invalid %r %r" % (dsc_filename, gpg_pre, gpg_post))
+
+    dsc_files = dict((entry['name'], entry) for entry in dsc['files'])
     check_dsc(dsc, current_sources, current_binaries)
 
     # Add the .dsc itself to dsc_files so it's listed in the Files: field
@@ -397,7 +481,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
 
     changes = generate_changes(
         dsc, dsc_files, suite, changelog, urgency, closes, lp_closes,
-        section, priority, description, have_orig_tar_gz, requested_by,
+        section, priority, description, files_from_librarian, requested_by,
         origin)
 
     # XXX cprov 2007-07-03: Soyuz wants an unsigned changes
@@ -493,7 +577,7 @@ def read_current_binaries(distro_series):
     query = """
     SELECT bpn.name, bpr.version, c.name
     FROM binarypackagerelease bpr, binarypackagename bpn, component c,
-        securebinarypackagepublishinghistory sbpph, distroarchseries dar
+        binarypackagepublishinghistory sbpph, distroarchseries dar
     WHERE
         bpr.binarypackagename = bpn.id AND
              sbpph.binarypackagerelease = bpr.id AND
@@ -562,86 +646,21 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     if not Sources.has_key(pkg):
         dak_utils.fubar("%s doesn't exist in the Sources file." % (pkg))
 
-    have_orig_tar_gz = False
+    syncsource = SyncSource(Sources[pkg]["files"], origin, Log,
+        urllib.urlretrieve, Options.todistro)
+    try:
+        files_from_librarian = syncsource.fetchLibrarianFiles()
+        dsc_filename = syncsource.fetchSyncFiles()
+        syncsource.checkDownloadedFiles()
+    except SyncSourceError, e:
+        dak_utils.fubar("Fetching files failed: %s" % (str(e),))
 
-    # Fetch the source
-    files = Sources[pkg]["files"]
-    for filename in files:
-        # First see if we can find the source in the librarian
-        archive_ids = [a.id for a in Options.todistro.all_distro_archives]
-        query = """
-        SELECT DISTINCT ON (LibraryFileContent.sha1, LibraryFileContent.filesize)
-            LibraryFileAlias.id
-        FROM SourcePackageFilePublishing, LibraryFileAlias, LibraryFileContent
-        WHERE
-          LibraryFileAlias.id = SourcePackageFilePublishing.libraryfilealias AND
-          LibraryFileContent.id = LibraryFileAlias.content AND
-          SourcePackageFilePublishing.libraryfilealiasfilename = %s AND
-          SourcePackageFilePublishing.archive IN %s
-        """ % sqlvalues(filename, archive_ids)
-        cur = cursor()
-        cur.execute(query)
-        results = cur.fetchall()
-        if results:
-            if not filename.endswith("orig.tar.gz"):
-                dak_utils.fubar(
-                    "%s (from %s) is in the DB but isn't an orig.tar.gz.  "
-                    "(Probably published in an older release)"
-                    % (filename, pkg))
-            if len(results) > 1:
-                dak_utils.fubar(
-                    "%s (from %s) returns multiple IDs (%s) for "
-                    "orig.tar.gz.  Help?" % (filename, pkg, results))
-            have_orig_tar_gz = filename
-            print ("  - <%s: already in distro - downloading from librarian>"
-                   % (filename))
-            output_file = open(filename, 'w')
-            librarian_input = Library.getFileByAlias(results[0][0])
-            output_file.write(librarian_input.read())
-            output_file.close()
-            continue
+    if dsc_filename is None:
+        dak_utils.fubar("No dsc filename in %r" % Sources[pkg]["files"].keys())
 
-        # Download the file
-        download_f = (
-            "%s%s" % (origin["url"], files[filename]["remote filename"]))
-        if not os.path.exists(filename):
-            print "  - <%s: downloading from %s>" % (filename, origin["url"])
-            sys.stdout.flush()
-            urllib.urlretrieve(download_f, filename)
-        else:
-            print "  - <%s: cached>" % (filename)
-
-        # Check md5sum and size match Source
-        actual_md5sum = md5sum_file(filename)
-        expected_md5sum = files[filename]["md5sum"]
-        if actual_md5sum != expected_md5sum:
-            dak_utils.fubar(
-                "%s: md5sum check failed (%s [actual] vs. %s [expected])."
-                % (filename, actual_md5sum, expected_md5sum))
-        actual_size = os.stat(filename)[stat.ST_SIZE]
-        expected_size = int(files[filename]["size"])
-        if actual_size != expected_size:
-            dak_utils.fubar(
-                "%s: size mismatch (%s [actual] vs. %s [expected])."
-                % (filename, actual_size, expected_size))
-
-        # Remember the name of the .dsc file
-        if filename.endswith(".dsc"):
-            dsc_filename = os.path.abspath(filename)
-
-    if origin["dsc"] == "must be signed and valid":
-        signing_rules = 1
-    elif origin["dsc"] == "must be signed":
-        signing_rules = 0
-    else:
-        signing_rules = -1
-
-    import_dsc(dsc_filename, suite, previous_version, signing_rules,
-               have_orig_tar_gz, requested_by, origin, current_sources,
-               current_binaries)
-
-    if have_orig_tar_gz:
-        os.unlink(have_orig_tar_gz)
+    import_dsc(os.path.abspath(dsc_filename), suite, previous_version,
+               origin["dsc"], files_from_librarian, requested_by, origin,
+               current_sources, current_binaries)
 
 
 def do_diff(Sources, Suite, origin, arguments, current_binaries):
@@ -661,7 +680,7 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
     packages.sort()
     for pkg in packages:
         stat_count += 1
-        dest_version = Suite.get(pkg, ["0", ""])[0]
+        dest_version = Suite.get(pkg, [None, ""])[0]
 
         if not Sources.has_key(pkg):
             if not Options.all:
@@ -677,8 +696,11 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
             continue
 
         source_version = Sources[pkg]["version"]
-        if apt_pkg.VersionCompare(dest_version, source_version) < 0:
-            if  not Options.force and dest_version.find("ubuntu") != -1:
+        if (dest_version is None
+                or apt_pkg.VersionCompare(dest_version, source_version) < 0):
+            if (dest_version is not None
+                    and (not Options.force
+                        and dest_version.find("ubuntu") != -1)):
                 stat_cant_update += 1
                 print ("[NOT Updating - Modified] %s_%s (vs %s)"
                        % (pkg, dest_version, source_version))
@@ -694,12 +716,12 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
         else:
             if dest_version.find("ubuntu") != -1:
                 stat_uptodate_modified += 1
-                if Options.moreverbose:
+                if Options.moreverbose or not Options.all:
                     print ("[Nothing to update (Modified)] %s_%s (vs %s)"
                            % (pkg, dest_version, source_version))
             else:
                 stat_uptodate += 1
-                if Options.moreverbose:
+                if Options.moreverbose or not Options.all:
                     print (
                         "[Nothing to update] %s (%s [ubuntu] >= %s [debian])"
                         % (pkg, dest_version, source_version))

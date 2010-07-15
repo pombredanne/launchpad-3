@@ -26,7 +26,7 @@ disabling, installing and uninstalling tracers.
 
 Even though the tracer is installed, it won't get called until it's enabled.
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> person = person_set.getByName('name12')
     >>> len(messages)

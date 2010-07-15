@@ -1,0 +1,39 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  id="involvement" class="portlet"
+  tal:condition="view/has_involvement"
+  >
+  <h2>Get Involved</h2>
+
+  <ul class="involvement">
+    <li tal:repeat="link view/enabled_links">
+      <a tal:replace="structure link/fmt:link" />
+    </li>
+    <tal:disabled repeat="link view/visible_disabled_links">
+      <li tal:condition="not: link/enabled"
+          tal:attributes="title string:Launchpad needs to know where the user can ${link/text/lower}"
+          class="disabled">
+        <div style="padding: 0.3em 0 0.3em 0.3em">
+          <div style="display: inline-block"
+               class="sprite icon-only warning-icon"></div>
+
+          <div style="height: 1.2em; float: right">
+            <img src="/@@/gray-arrow-right.png"
+                style="top: 50%; bottom: 50%; margin-top: -5px;
+                       position: relative;
+                       height: 9px; width: 14px; padding: 0"/>
+          </div>
+
+          <span tal:content="link/text"/>
+        </div>
+      </li>
+    </tal:disabled>
+  </ul>
+
+  <ul tal:condition="view/configuration_links" style="padding-top: 1em">
+    <li tal:repeat="link view/configuration_links">
+      <a tal:replace="structure link/fmt:link" />
+    </li>
+  </ul>
+</div>

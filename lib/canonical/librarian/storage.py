@@ -1,12 +1,12 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import os
-import md5
-import sha
 import errno
+import hashlib
+import shutil
 import tempfile
 
 from zope.component import getUtility
@@ -88,8 +88,8 @@ class LibraryFileUpload(object):
         tmpfile, tmpfilepath = tempfile.mkstemp(dir=self.storage.incoming)
         self.tmpfile = os.fdopen(tmpfile, 'w')
         self.tmpfilepath = tmpfilepath
-        self.shaDigester = sha.new()
-        self.md5Digester = md5.new()
+        self.shaDigester = hashlib.sha1()
+        self.md5Digester = hashlib.md5()
 
     def append(self, data):
         self.tmpfile.write(data)
@@ -171,7 +171,7 @@ class LibraryFileUpload(object):
             # If the directory already exists, that's ok.
             if e.errno != errno.EEXIST:
                 raise
-        os.rename(self.tmpfilepath, location)
+        shutil.move(self.tmpfilepath, location)
 
 
 def _sameFile(path1, path2):

@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Launchpad-specific widgets."""
 
@@ -16,8 +17,9 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.widgets import (
     BranchPopupWidget, NoProductError)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.interfaces import BranchType, IBranchSet
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.code.enums import BranchType
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.vocabularies import (
     BranchRestrictedOnProductVocabulary, BranchVocabulary)
 from canonical.testing import LaunchpadFunctionalLayer
@@ -157,7 +159,7 @@ class TestBranchPopupWidget(unittest.TestCase):
         """_toFieldValue falls back to making a branch if it's given a URL."""
         url = self.factory.getUniqueURL()
         # Check that there's no branch with this URL.
-        self.assertIs(None, getUtility(IBranchSet).getByUrl(url))
+        self.assertIs(None, getUtility(IBranchLookup).getByUrl(url))
 
         branch = self.popup._toFieldValue(url)
         self.assertEqual(url, branch.url)

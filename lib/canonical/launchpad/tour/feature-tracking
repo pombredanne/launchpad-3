@@ -15,21 +15,20 @@
 </head>
 <body>
     <div id="container">
-        <p class="page-number">10 of 11</p>
+        <p class="page-number">9 of 11</p>
         <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="release-management" accesskey="1" tabindex="1">Next</a></li>
+            <li class="button-next"><a id="btnNext" href="release-management" accesskey="1" tabindex="1" title="Read about managing software releases">Next</a></li>
             <li class="home"><a href="index" accesskey="2">Launchpad tour home</a></li>
             <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
-            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and tracking</a></li>
-            <li><a href="code-review" accesskey="5">Code review</a></li>
-            <li><a href="translation" accesskey="6">Web-based translation</a></li>
-            <li><a href="community" accesskey="7">Community building</a></li>
-            <li><a href="ppa" accesskey="8">Software distribution</a></li>
-            <li><a href="community-support" accesskey="9">Community support</a></li>
-            <li><a href="api" accesskey="a">Beta: web services API</a></li>
-            <li class="current"><a href="feature-tracking" accesskey="b">Light-weight specifications</a></li>
-            <li><a href="release-management" accesskey="c">Release management</a></li>
-            
+            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and review</a></li>
+            <li><a href="translation" accesskey="5">Web-based translation</a></li>
+            <li><a href="community" accesskey="6">Mailing lists and teams</a></li>
+            <li><a href="ppa" accesskey="7">Software distribution</a></li>
+            <li><a href="community-support" accesskey="8">Community support</a></li>
+            <li><a href="api" accesskey="9">Beta: web services API</a></li>
+            <li class="current"><a href="feature-tracking" accesskey="a">Light-weight specifications</a></li>
+            <li><a href="release-management" accesskey="b">Release management</a></li>
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -40,12 +39,15 @@
             <p class="intro-text">
                 <strong>Track ideas and chunks of work as &ldquo;blueprints&rdquo;&#58;</strong> lightweight specifications that help everyone know who&rsquo;s involved and how they&rsquo;re doing. Anyone can create a blueprint, while you retain control over which of them are officially targeted for inclusion in your project&rsquo;s future releases.
             </p>
-            <div id="link-holder"><a href="https://blueprints.launchpad.net/">Visit Launchpad Blueprint &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            <div id="link-holder"><a href="https://blueprints.launchpad.net/">Visit Launchpad Blueprint &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
+            <li class="button-prev">
+                <a title="Back to the API page" href="api" accesskey="d" tabindex="2">Back</a>
+            </li>
             <li class="button-next">
-                <a href="release-management" accesskey="d" tabindex="2">Next</a>
+                <a href="release-management" accesskey="e" tabindex="3" title="Read about managing software releases">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -59,7 +61,7 @@
                             <img src="images/blueprints/1.png" alt="People, status and priority" />
                         </p>
                         <p>
-                            Each blueprint has three roles&#58; drafter, assignee and approver. They form an ad-hoc team to ensure the blueprint is well drafted and implemented. They can also set the blueprint&rsquo;s priority to reflect its importance to the wider project. The outside world can watch the blueprint&rsquo;s progress through its &ldquo;drafting&rdquo; and &ldquo;implementation&rdquo; statuses. 
+                            Each blueprint has three roles&#58; drafter, assignee and approver. They form an ad-hoc team to ensure the blueprint is well drafted and implemented. They can also set the blueprint&rsquo;s priority to reflect its importance to the wider project. The outside world can watch the blueprint&rsquo;s progress through its &ldquo;drafting&rdquo; and &ldquo;implementation&rdquo; statuses.
                         </p>
                     </div>
                     <div class="block odd">
@@ -76,30 +78,17 @@
                 </div>
                 <div class="furthur-information-block-bot"></div>
             </div>
-            <div class="furthur-information-block singular">
-                <div class="furthur-information-block-top"></div>
-                <div class="furthur-information-block-mid">
-                    <div class="block">
-                        <h3>Sprint planning</h3>
-                        <h4>Face to face meetings are a great way to discuss ideas and make decisions in free software projects.</h4>
-                        <p class="screen-holder">
-                            <img src="images/blueprints/3.png" alt="Sprint planning" />
-                        </p>
-                        <p>
-                            With Launchpad&rsquo;s meeting planner you can organise development sprints, track who is attending and create an agenda from your project&rsquo;s blueprints.
-                        </p>
-                    </div>
-                    <div class="clear"></div>
-                </div>
-                <div class="furthur-information-block-bot"></div>
-            </div>
+
         </div>
         <ul id="footer-navigation">
+            <li class="button-prev">
+                <a title="Back to the API page" href="api" accesskey="f" tabindex="4">Back</a>
+            </li>
             <li class="button-next">
-                <a href="release-management" accesskey="e" tabindex="3">Next</a>
+                <a href="release-management" accesskey="g" tabindex="5" title="Read about managing software releases">Next</a>
             </li>
             <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" tabindex="4" accesskey="f">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" tabindex="5" accesskey="g">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" tabindex="6" accesskey="h">FAQ</a>
+                &copy; 2004-2010 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>

@@ -1,21 +1,24 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+import re
 
 
-from contrib import apachelog
+DBUSER = 'librarianlogparser'
 
 
-parser = apachelog.parser(apachelog.formats['extended'])
+# Regexp used to match paths to LibraryFileAliases.
+lfa_path_re = re.compile('^/[0-9]+/')
+multi_slashes_re = re.compile('/+')
 
 
-def get_date_status_and_request(line):
-    """Extract the date, status and request from the given line of log."""
-    # The keys in the 'data' dictionary below are the Apache log format codes.
-    data = parser.parse(line)
-    return data['%t'], data['%>s'], data['%r']
+def get_library_file_id(path):
+    path = multi_slashes_re.sub('/', path)
+    if not lfa_path_re.match(path):
+        # We only count downloads of LibraryFileAliases, and this is
+        # not one of them.
+        return None
 
-
-def get_method_and_file_id(request):
-    """Extract the method of the request and the ID of the requested file."""
-    method, path, protocol = request.split(' ')
     file_id = path.split('/')[1]
-    return method, file_id
+    assert file_id.isdigit(), ('File ID is not a digit: %s' % path)
+    return file_id

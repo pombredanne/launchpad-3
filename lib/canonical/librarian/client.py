@@ -1,5 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -10,26 +10,27 @@ __all__ = [
     'RestrictedLibrarianClient',
     ]
 
-import md5
+
+import hashlib
 import re
-import sha
 import socket
-from socket import SOCK_STREAM, AF_INET
-from select import select
 import time
 import threading
 import urllib
 import urllib2
+
+from select import select
+from socket import SOCK_STREAM, AF_INET
 from urlparse import urljoin
 
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.database.sqlbase import cursor
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
-    UploadFailed)
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT, LibrarianServerError, UploadFailed)
 
 
 class FileUploadClient:
@@ -130,8 +131,8 @@ class FileUploadClient:
             self._sendLine('')
 
             # Prepare to the upload the file
-            shaDigester = sha.sha()
-            md5Digester = md5.md5()
+            shaDigester = hashlib.sha1()
+            md5Digester = hashlib.md5()
             bytesWritten = 0
 
             # Read in and upload the file 64kb at a time, by using the two-arg
@@ -158,7 +159,7 @@ class FileUploadClient:
                 id=contentID, filesize=size,
                 sha1=shaDigester.hexdigest(),
                 md5=md5Digester.hexdigest())
-            alias = LibraryFileAlias(
+            LibraryFileAlias(
                 id=aliasID, content=content, filename=name.decode('UTF-8'),
                 mimetype=contentType, expires=expires,
                 restricted=self.restricted)
@@ -186,9 +187,11 @@ class FileUploadClient:
             name = name.encode('utf-8')
         self._connect()
         try:
-            # Send command
+            # Use dbconfig.rw_main_master directly here because it doesn't
+            # make sense to try and use ro_main_master (which might be
+            # returned if we use dbconfig.main_master).
             database_name = re.search(
-                    r"dbname=(\S*)", config.database.main_master).group(1)
+                r"dbname=(\S*)", dbconfig.rw_main_master).group(1)
             self._sendLine('STORE %d %s' % (size, name))
             self._sendHeader('Database-Name', database_name)
             self._sendHeader('Content-Type', str(contentType))
@@ -294,7 +297,7 @@ class FileDownloadClient:
         if self.restricted != lfa.restricted:
             raise DownloadFailed(
                 'Alias %d cannot be downloaded from this client.' % aliasID)
-        if lfa.content.deleted:
+        if lfa.deleted:
             return None
         return '/%d/%s' % (aliasID, quote(lfa.filename.encode('utf-8')))
 
@@ -325,25 +328,42 @@ class FileDownloadClient:
         base = self._internal_download_url
         return urljoin(base, path)
 
-    def getFileByAlias(self, aliasID):
-        """Returns a fd to read the file from
-
-        :param aliasID: A unique ID for the alias
-
-        :returns: file-like object, or None if the file has expired and
-                  been deleted.
-        """
+    def getFileByAlias(
+        self, aliasID, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
+        """See `IFileDownloadClient`."""
         url = self._getURLForDownload(aliasID)
         if url is None:
             # File has been deleted
             return None
-        try:
-            return _File(urllib2.urlopen(url))
-        except urllib2.HTTPError, x:
-            if x.code == 404:
-                raise LookupError, aliasID
-            else:
-                raise
+        try_until = time.time() + timeout
+        while 1:
+            try:
+                return _File(urllib2.urlopen(url))
+            except urllib2.URLError, error:
+                # 404 errors indicate a data inconsistency: more than one
+                # attempt to open the file is pointless.
+                #
+                # Note that URLError is a base class of HTTPError.
+                if isinstance(error, urllib2.HTTPError) and error.code == 404:
+                    raise LookupError, aliasID
+                # HTTPErrors with a 5xx error code ("server problem")
+                # are a reason to retry the access again, as well as
+                # generic, non-HTTP, URLErrors like "connection refused".
+                if (isinstance(error, urllib2.HTTPError)
+                    and 500 <= error.code <= 599
+                    or isinstance(error, urllib2.URLError) and
+                        not isinstance(error, urllib2.HTTPError)):
+                    if  time.time() <= try_until:
+                        time.sleep(1)
+                    else:
+                        # There's a test (in
+                        # lib/c/l/browser/tests/test_librarian.py) which 
+                        # simulates a librarian server error by raising this
+                        # exception, so if you change the exception raised
+                        # here, make sure you update the test.
+                        raise LibrarianServerError(str(error))
+                else:
+                    raise
 
 
 class LibrarianClient(FileUploadClient, FileDownloadClient):

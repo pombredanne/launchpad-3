@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
 # This modules uses relative imports.
 # pylint: disable-msg=W0403
 
@@ -10,10 +13,11 @@ __metaclass__ = type
 
 import _pythonpath
 
-import sys
+from distutils.version import LooseVersion
 import os.path
 from optparse import OptionParser
-import popen2
+import subprocess
+import sys
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 import time
@@ -284,9 +288,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
     """Setup and install tsearch2 if isn't already"""
 
     # tsearch2 is out-of-the-box in 8.3+
-    v83 = get_pgversion(con).startswith('8.3')
-
-    assert v83, 'This script only supports PostgreSQL 8.3'
+    required = LooseVersion('8.3.0')
+    assert get_pgversion(con) >= required, (
+        'This script only supports PostgreSQL 8.3+')
 
     schema_exists = bool(execute(
         con, "SELECT COUNT(*) FROM pg_namespace WHERE nspname='ts2'",
@@ -315,18 +319,15 @@ def setup(con, configuration=DEFAULT_CONFIG):
             cmd += ' -h %s' % lp.dbhost
         if options.dbuser:
             cmd += ' -U %s' % options.dbuser
-        p = popen2.Popen4(cmd)
-        c = p.tochild
-        print >> c, "SET client_min_messages=ERROR;"
-        print >> c, "CREATE SCHEMA ts2;"
-        print >> c, open(tsearch2_sql_path).read().replace(
-                'public;','ts2, public;'
-                )
-        p.tochild.close()
-        rv = p.wait()
-        if rv != 0:
+        p = subprocess.Popen(
+            cmd.split(' '), stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        out, err = p.communicate(
+            "SET client_min_messages=ERROR; CREATE SCHEMA ts2;"
+            + open(tsearch2_sql_path).read().replace('public;','ts2, public;'))
+        if p.returncode != 0:
             log.fatal('Error executing %s:', cmd)
-            log.debug(p.fromchild.read())
+            log.debug(out)
             sys.exit(rv)
 
     # Create ftq helper and its sibling _ftq.
@@ -605,18 +606,13 @@ def needs_refresh(con, table, columns):
 
 def get_pgversion(con):
     rows = execute(con, r"show server_version", results=True)
-    return rows[0][0]
+    return LooseVersion(rows[0][0])
 
 
 def get_tsearch2_sql_path(con):
-    pgversion = get_pgversion(con)
-    if pgversion.startswith('8.2.'):
-        path = os.path.join(PGSQL_BASE, '8.2', 'contrib', 'tsearch2.sql')
-    elif pgversion.startswith('8.3.'):
-        path = os.path.join(PGSQL_BASE, '8.3', 'contrib', 'tsearch2.sql')
-    else:
-        raise RuntimeError('Unknown version %s' % pgversion)
-
+    major, minor = get_pgversion(con).version[:2]
+    path = os.path.join(
+        PGSQL_BASE, '%d.%d' % (major, minor), 'contrib', 'tsearch2.sql')
     assert os.path.exists(path), '%s does not exist' % path
     return path
 

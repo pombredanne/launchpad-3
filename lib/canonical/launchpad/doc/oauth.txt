@@ -1,8 +1,11 @@
-= OAuth (http://oauth.net/core/1.0/) =
+=====
+OAuth
+=====
 
 This is a mechanism for allowing a third party application to access
 Launchpad on a user's behalf.  These applications are identified by a
-unique key and are stored as OAuthConsumers.
+unique key and are stored as OAuthConsumers.  The OAuth specification is
+defined in <http://oauth.net/core/1.0/>.
 
 These applications (also called consumers) are managed by the
 OAuthConsumerSet utility.
@@ -36,16 +39,19 @@ Consumer with the same key.
     AssertionError: ...
 
 
-== Request tokens ==
+Request tokens
+==============
 
 When a consumer wants to access protected resources on Launchpad, it
 must first ask for an OAuthRequestToken, which is then used when the
 consumer sends the user to the Launchpad authorization page.
 
 
-=== Creating request tokens ===
+Creating request tokens
+-----------------------
 
 The request tokens are created using IOAuthConsumer.newRequestToken().
+
     # XXX EdwinGrubbs 2008-10-03 bug=277756
     # Tests could be simplified with helper methods for creating tokens
     # in different states.
@@ -65,9 +71,8 @@ Newly created tokens have no context associated with.
     >>> print request_token.context
     None
 
-Initially, a token does not have a person or permission associated with
-it as the consumer doesn't know what the user's identity is on
-Launchpad.
+Initially, a token does not have a person or permission associated with it as
+the consumer doesn't know the user's identity on Launchpad.
 
     >>> print request_token.person
     None
@@ -96,37 +101,42 @@ token is considered used and can only be exchanged for an access token
     >>> request_token.is_reviewed
     True
 
-When reviewing a token we can also change the context associated with
+When reviewing a token, we can also change the context associated with
 it, which means the consumer using that token will only have access
-to things linked to that context (Product, Project, Distribution,
+to things linked to that context (Product, ProjectGroup, Distribution,
 DistroSourcePackage).
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProductSet, IProjectSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> request_token2 = consumer.newRequestToken()
     >>> request_token2.review(
     ...     salgado, OAuthPermission.WRITE_PRIVATE, context=firefox)
-    >>> request_token2.context.title
-    u'Mozilla Firefox'
+    >>> print request_token2.context.title
+    Mozilla Firefox
 
-    >>> mozilla = getUtility(IProjectSet)['mozilla']
+    >>> mozilla = getUtility(IProjectGroupSet)['mozilla']
     >>> request_token2 = consumer.newRequestToken()
     >>> request_token2.review(
     ...     salgado, OAuthPermission.WRITE_PRIVATE, context=mozilla)
-    >>> request_token2.context.title
-    u'The Mozilla Project'
+    >>> print request_token2.context.title
+    The Mozilla Project
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> evolution = ubuntu.getSourcePackage('evolution')
     >>> request_token2 = consumer.newRequestToken()
     >>> request_token2.review(
     ...     salgado, OAuthPermission.WRITE_PRIVATE, context=evolution)
-    >>> request_token2.context.title
-    u'\u201cevolution\u201d source package in Ubuntu'
+
+    >>> from canonical.encoding import ascii_smash
+    >>> print ascii_smash(request_token2.context.title)
+    evolution package in Ubuntu
 
 
-=== Retrieving request tokens ===
+Retrieving request tokens
+-------------------------
 
 Any consumer can retrieve its request tokens as long as it knows their
 keys.
@@ -160,7 +170,8 @@ with it.
     None
 
 
-=== Exchanging request tokens for access tokens ===
+Exchanging request tokens for access tokens
+-------------------------------------------
 
 Once a request token has been reviewed it may be exchanged for an access
 token. That may happen only if the user actually granted some sort of
@@ -197,8 +208,8 @@ Access tokens will also inherit the context from the request token.
     >>> request_token2.review(
     ...     salgado, OAuthPermission.WRITE_PRIVATE, context=firefox)
     >>> access_token2 = request_token2.createAccessToken()
-    >>> access_token2.context.title
-    u'Mozilla Firefox'
+    >>> print access_token2.context.title
+    Mozilla Firefox
 
 If the request token hasn't been reviewed yet, it can't be used to
 create an access token.
@@ -223,7 +234,8 @@ permission.
     AssertionError: ...
 
 
-== Access tokens ==
+Access tokens
+=============
 
 As shown above, access tokens can be created from any reviewed (and
 authorized) request tokens. These tokens are then stored by the consumer
@@ -265,8 +277,19 @@ It's also possible to retrieve the user's non-expired request tokens.
     >>> salgado.oauth_request_tokens.count()
     4
 
+A user has edit permission over his own access tokens, he can expire them.
 
-== Nonces and timestamps ==
+    >>> api_user = factory.makePerson()
+    >>> login_person(api_user)
+    >>> api_request_token = consumer.newRequestToken()
+    >>> api_request_token.review(api_user, OAuthPermission.WRITE_PUBLIC)
+    >>> api_access_token = api_request_token.createAccessToken()
+    >>> api_access_token.date_expires = (
+    ...     datetime.now(pytz.timezone('UTC')) - timedelta(hours=1))
+
+
+Nonces and timestamps
+=====================
 
 A nonce is a random string, generated by the client for each request.
 
@@ -312,7 +335,7 @@ Here's a quick demonstration of the behavior.
     ...
     NonceAlreadyUsed: ...
 
-According to the oauth specification (http://oauth.net/core/1.0/#nonce), for a
+According to the oauth specification <http://oauth.net/core/1.0/#nonce>, for a
 given client, an application should not accept a timestamp older than the most
 recent timestamp received.
 
@@ -327,7 +350,7 @@ channel such as HTTP.
 
 Launchpad relaxes the constraint on the timestamp. Rather than accepting any
 request within the same second, Launchpad accepts any request within the past
-60 seconds (or, as defined by the code, withing the past number of seconds
+60 seconds (or, as defined by the code, within the past number of seconds
 specified by canonical.launchpad.database.oauth.TIMESTAMP_ACCEPTANCE_WINDOW).
 
 For instance, in Launchpad, if a client sends a timestamp of
@@ -366,13 +389,13 @@ and other situations can cause timestamps to get out of order (see
 http://groups.google.com/group/oauth/msg/387fdafcf0be322a and LP bug 319710
 for more background).
 
-The code also raises a ClockSkew error if the timestamp is more
-than TIMESTAMP_SKEW_WINDOW seconds away from the server's clock (ahead or
+The code also raises a ClockSkew error if the timestamp is more than
+TIMESTAMP_SKEW_WINDOW seconds away from the server's clock (ahead or
 behind). This number of seconds is currently equal to one hour (60*60). The
-primary reason for behavior is so that a clock skew too far in the future does
-not essentially make the authentication tokens useless once the client's clock
-is corrected. In addition, it gives us a constraint within which we can reason
-about clock-related errors reported by customers.
+primary reason for this behavior is so that a clock skew too far in the future
+does not essentially make the authentication tokens useless once the client's
+clock is corrected. In addition, it gives us a constraint within which we can
+reason about clock-related errors reported by customers.
 
 Here's a quick demonstration of the behavior.
 
@@ -407,3 +430,57 @@ Here's a quick demonstration of the behavior.
     Traceback (most recent call last):
     ...
     TimestampOrderingError: ...
+
+
+Helper methods
+==============
+
+The oauth_access_token_for() helper function makes it easy to get an
+access token for any user, consumer key, permission, and context.
+
+If the user already has an access token that does what you need,
+oauth_access_token_for() returns the existing token.
+
+    >>> from lp.testing import oauth_access_token_for
+    >>> existing_token = salgado.oauth_access_tokens[0]
+    >>> token = oauth_access_token_for(
+    ...     existing_token.consumer.key, existing_token.person,
+    ...     existing_token.permission, existing_token.context)
+
+    >>> from zope.proxy import sameProxiedObjects
+    >>> sameProxiedObjects(token, existing_token)
+    True
+
+If the user does not already have an access token that matches your
+requirements, oauth_access_token_for() creates a request token and
+automatically authorizes it. Here, we create a brand new token for a
+never-before-seen consumer.
+
+    >>> new_consumer = 'new consumer key to test oauth_access_token_for'
+    >>> token = oauth_access_token_for(
+    ...     new_consumer, salgado, 'WRITE_PRIVATE', firefox)
+
+    >>> print token.consumer.key
+    new consumer key to test oauth_access_token_for
+
+    >>> print token.person.name
+    salgado
+
+    >>> token.permission
+    <DBItem AccessLevel.WRITE_PRIVATE...>
+
+    >>> print token.context.name
+    firefox
+
+    >>> print token.date_expires
+    None
+
+You can use the token identifying one of Launchpad's OAuth permission
+levels instead of the constant itself, but if you specify a
+nonexistent permission you'll get an error.
+
+    >>> oauth_access_token_for(
+    ...     new_consumer, salgado, 'NO_SUCH_PERMISSION', firefox)
+    Traceback (most recent call last):
+    ...
+    KeyError: 'NO_SUCH_PERMISSION'

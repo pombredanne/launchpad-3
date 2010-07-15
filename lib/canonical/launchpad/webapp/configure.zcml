@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -16,8 +20,6 @@
           canonical.launchpad.webapp.interfaces.ILaunchpadBrowserApplicationRequest"
         attributes="response locale __str__"
         />
-      <allow
-        interface="zope.component.interfaces.IPresentationRequest" />
     </class>
 
     <class class="canonical.launchpad.webapp.publisher.RedirectionView">
@@ -34,7 +36,7 @@
     <adapter
         for="zope.publisher.interfaces.http.IHTTPRequest"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicyFactory"
         />
     <adapter
         for="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
@@ -44,18 +46,23 @@
     <adapter
         for="canonical.launchpad.layers.WebServiceLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.MasterDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.WebServiceDatabasePolicyFactory"
         />
     <adapter
         for="canonical.launchpad.layers.FeedsLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.SlaveDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.SlaveOnlyDatabasePolicy"
+        />
+    <adapter
+        for="canonical.launchpad.layers.WebServiceLayer"
+        provides="canonical.launchpad.webapp.interfaces.IWebBrowserOriginatingRequest"
+        factory="canonical.launchpad.webapp.servers.web_service_request_to_browser_request"
         />
 
     <!-- lazr.batchnavigator hook -->
     <adapter
         factory='.batching.FiniteSequenceAdapter' />
-    
+
     <adapter
         factory='.batching.FiniteSequenceAdapter'
         for='storm.zope.interfaces.ISQLObjectResultSet' />
@@ -195,7 +202,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.browser.BugTaskListingItem"
+        for="lp.bugs.browser.bugtask.BugTaskListingItem"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTaskListingItemImageDisplayAPI"
         name="image"
@@ -209,9 +216,16 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="lp.soyuz.interfaces.archive.IArchive"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ArchiveImageDisplayAPI"
         name="image"
         />
 
@@ -237,6 +251,13 @@
          want it to apply to the page template's CONTEXTS dict.
       -->
     <adapter
+        for="canonical.launchpad.interfaces.IPPA"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PPAFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="dict"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PageTemplateContextsAPI"
@@ -261,13 +282,6 @@
         for="datetime.timedelta"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.DurationFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="basestring"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.FormattersAPI"
         name="fmt"
         />
 
@@ -328,7 +342,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IProject"
+        for="canonical.launchpad.interfaces.IProjectGroup"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
         name="fmt"
@@ -342,6 +356,13 @@
         />
 
     <adapter
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.DistroSeriesFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBug"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugFormatterAPI"
@@ -349,7 +370,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBranch"
+        for="lp.code.interfaces.branch.IBranch"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BranchFormatterAPI"
         name="fmt"
@@ -370,35 +391,42 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBranchSubscription"
+        for="lp.code.interfaces.branchsubscription.IBranchSubscription"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BranchSubscriptionFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBranchMergeProposal"
+        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BranchMergeProposalFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.diff.IPreviewDiff"
+        for="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"
         provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
+        factory="canonical.launchpad.webapp.tales.SeriesSourcePackageBranchFormatter"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.ICodeImport"
+        for="lp.code.interfaces.codeimport.ICodeImport"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.ICodeImportMachine"
+        for="lp.buildmaster.interfaces.packagebuild.IPackageBuild"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PackageBuildFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeImportMachineFormatterAPI"
         name="fmt"
@@ -408,6 +436,18 @@
         for="canonical.launchpad.interfaces.IMilestone"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="canonical.launchpad.interfaces.IProductRelease"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ProductReleaseFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.registry.interfaces.productrelease.IProductReleaseFile"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ProductReleaseFileFormatterAPI"
         name="fmt"
         />
     <adapter
@@ -423,6 +463,18 @@
         name="fmt"
         />
     <adapter
+        for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageRecipeFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageRecipeBuildFormatterAPI"
+        name="fmt"
+        />
+    <adapter
         for="canonical.launchpad.interfaces.ISpecification"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SpecificationFormatterAPI"
@@ -435,12 +487,23 @@
         name="fmt"
         />
     <adapter
-        for="canonical.launchpad.interfaces.ICodeReviewComment"
+        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeReviewCommentFormatterAPI"
         name="fmt"
         />
-
+    <adapter
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageReleaseFormatterAPI"
+        name="fmt"
+        />
     <adapter
         for="canonical.launchpad.interfaces.IBugTracker"
         provides="zope.traversing.interfaces.IPathAdapter"
@@ -457,6 +520,30 @@
         for="canonical.launchpad.webapp.interfaces.ILink"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.LinkFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.translations.interfaces.translationgroup.ITranslationGroup"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.TranslationGroupFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.services.worlddata.interfaces.language.ILanguage"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.LanguageFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.translations.interfaces.pofile.IPOFile"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.POFileFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.soyuz.interfaces.packagediff.IPackageDiff"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PackageDiffFormatterAPI"
         name="fmt"
         />
     <adapter
@@ -544,9 +631,12 @@
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_slave_store"
         />
+    <!-- Universal adapter needed here per Bug #591841.
+         We have no way of specifying that all subclasses of
+         storm.locals.Storm implement an Interface. -->
     <adapter
         provides="canonical.launchpad.interfaces.IMasterObject"
-        for="canonical.launchpad.interfaces.IDBObject"
+        for="zope.interface.Interface"
         trusted="yes"
         factory="canonical.launchpad.webapp.adapter.get_object_from_master_store"
         />
@@ -615,6 +705,12 @@
         />
 
     <adapter
+        for="canonical.launchpad.webapp.servers.LaunchpadTestRequest"
+        provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
+        factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
+        />
+
+    <adapter
         factory="canonical.launchpad.webapp.snapshot.snapshot_sql_result" />
     <!-- It also works for the legacy SQLObject interface. -->
     <adapter
@@ -655,12 +751,20 @@
         class="canonical.launchpad.webapp.notifications.NotificationTestView4"
         />
 
-    <!-- the SIGUSR1 handler -->
-
+    <!-- Signal handlers -->
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.sigusr1.setup_sigusr1"
         />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sigusr2.setup_sigusr2"
+        />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sigdumpmem.setup_sigdumpmem"
+        />
+
 
     <!-- Confirm the database is the correct revision level -->
     <subscriber
@@ -672,12 +776,6 @@
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.adapter.break_main_thread_db_access"
-        />
-
-    <!-- Make sure that the config is sane for references debugging. -->
-    <subscriber
-        for="zope.app.appsetup.IProcessStartingEvent"
-        handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
         />
 
     <!-- Set the default timeout function. -->
@@ -708,11 +806,21 @@
       for="zope.schema.interfaces.IChoice
         canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
       provides="zope.app.form.interfaces.IInputWidget"
-      factory="canonical.widgets.SinglePopupWidget"
+      factory="canonical.widgets.popup.VocabularyPickerWidget"
       permission="zope.Public"
       />
 
-    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <!-- Define the widget used by PublicPersonChoice fields. -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="canonical.launchpad.fields.PublicPersonChoice
+        canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.widgets.popup.PersonPickerWidget"
+      permission="zope.Public"
+      />
+
+    <!-- Define the widget used by fields that use BranchVocabularyBase. -->
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="zope.schema.interfaces.IChoice

@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Badges are shown to indicate either content state or links.
 
@@ -77,6 +78,11 @@ STANDARD_BADGES = {
     'mentoring': Badge('/@@/mentoring', '/@@/mentoring-large',
                        '(Mentoring available)', 'Mentoring available',
                        'mentoringbadge'),
+    'mergeproposal': Badge('/@@/merge-proposal-icon',
+                           '/@@/merge-proposal-large',
+                           '(Has a merge proposal)', 'Has a merge proposal',
+                           'mpbadge'),
+    'patch': Badge(None, None, '(Has a patch)', 'Has a patch', 'haspatch'),
     }
 
 

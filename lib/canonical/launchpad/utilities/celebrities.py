@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Classes that implement ICelebrity interfaces."""
 
 __metaclass__ = type
@@ -86,6 +88,19 @@ class CelebrityDescriptor:
         return celebrity
 
 
+class PersonCelebrityDescriptor(CelebrityDescriptor):
+    """A `CelebrityDescriptor` for celebrities that are people.
+
+    This descriptor maintains a list of names so code can detect
+    if a given person is a celebrity for special handling.
+    """
+    names = set() # Populated by the constructor.
+
+    def __init__(self, name):
+        PersonCelebrityDescriptor.names.add(name)
+        super(PersonCelebrityDescriptor, self).__init__(IPersonSet, name)
+
+
 class LanguageCelebrityDescriptor(CelebrityDescriptor):
     """A `CelebrityDescriptor` for celebrities that are languages.
 
@@ -104,34 +119,40 @@ class LaunchpadCelebrities:
     """See `ILaunchpadCelebrities`."""
     implements(ILaunchpadCelebrities)
 
-    admin = CelebrityDescriptor(IPersonSet, 'admins')
-    ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
+    admin = PersonCelebrityDescriptor('admins')
+    bazaar_experts = PersonCelebrityDescriptor('bazaar-experts')
+    software_center_agent = PersonCelebrityDescriptor(
+        'software-center-agent')
+    bug_importer = PersonCelebrityDescriptor('bug-importer')
+    bug_watch_updater = PersonCelebrityDescriptor('bug-watch-updater')
+    buildd_admin = PersonCelebrityDescriptor('launchpad-buildd-admins')
+    commercial_admin = PersonCelebrityDescriptor('commercial-admins')
+    debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
     debian = CelebrityDescriptor(IDistributionSet, 'debian')
     english = LanguageCelebrityDescriptor(ILanguageSet, 'en')
-    rosetta_experts = CelebrityDescriptor(IPersonSet, 'rosetta-admins')
-    bazaar_experts = CelebrityDescriptor(IPersonSet, 'bazaar-experts')
-    vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
-    debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
     gnome_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'gnome-bugs')
-    savannah_tracker = CelebrityDescriptor(IBugTrackerSet, 'savannah')
-    sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
-    shipit_admin = CelebrityDescriptor(IPersonSet, 'shipit-admins')
-    buildd_admin = CelebrityDescriptor(IPersonSet, 'launchpad-buildd-admins')
-    launchpad_developers = CelebrityDescriptor(IPersonSet, 'launchpad')
-    ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
-    registry_experts = CelebrityDescriptor(IPersonSet, 'registry')
-    bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
-    bug_importer = CelebrityDescriptor(IPersonSet, 'bug-importer')
+    hwdb_team = PersonCelebrityDescriptor('hwdb-team')
+    janitor = PersonCelebrityDescriptor('janitor')
+    katie = PersonCelebrityDescriptor('katie')
     launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
-    launchpad_beta_testers = CelebrityDescriptor(
-        IPersonSet, 'launchpad-beta-testers')
-    janitor = CelebrityDescriptor(IPersonSet, 'janitor')
-    mailing_list_experts = CelebrityDescriptor(
-        IPersonSet, 'mailing-list-experts')
-    katie = CelebrityDescriptor(IPersonSet, 'katie')
-    commercial_admin = CelebrityDescriptor(IPersonSet, 'commercial-admins')
+    launchpad_beta_testers = PersonCelebrityDescriptor(
+        'launchpad-beta-testers')
+    launchpad_developers = PersonCelebrityDescriptor('launchpad')
     lp_translations = CelebrityDescriptor(IProductSet, 'rosetta')
-    ppa_key_guard = CelebrityDescriptor(IPersonSet, 'ppa-key-guard')
+    mailing_list_experts = PersonCelebrityDescriptor('mailing-list-experts')
+    obsolete_junk = CelebrityDescriptor(IProductSet, 'obsolete-junk')
+    ppa_key_guard = PersonCelebrityDescriptor('ppa-key-guard')
+    registry_experts = PersonCelebrityDescriptor('registry')
+    rosetta_experts = PersonCelebrityDescriptor('rosetta-admins')
+    savannah_tracker = CelebrityDescriptor(IBugTrackerSet, 'savannah')
+    shipit_admin = PersonCelebrityDescriptor('shipit-admins')
+    sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
+    ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
+    ubuntu_branches = PersonCelebrityDescriptor('ubuntu-branches')
+    ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
+    ubuntu_security = PersonCelebrityDescriptor('ubuntu-security')
+    ubuntu_techboard = PersonCelebrityDescriptor('techboard')
+    vcs_imports = PersonCelebrityDescriptor('vcs-imports')
 
     @property
     def ubuntu_archive_mirror(self):
@@ -153,3 +174,5 @@ class LaunchpadCelebrities:
         assert mirror.isOfficial(), "Main mirror must be an official one."
         return mirror
 
+    def isCelebrityPerson(self, name):
+        return str(name) in PersonCelebrityDescriptor.names

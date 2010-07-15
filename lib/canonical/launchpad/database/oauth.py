@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -26,10 +27,10 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.components.tokens import (
     create_token, create_unique_token_for_table)
 
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces import (
     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet, IOAuthNonce,
@@ -133,7 +134,8 @@ class OAuthAccessToken(OAuthBase):
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False, default=None)
     project = ForeignKey(
-        dbName='project', foreignKey='Project', notNull=False, default=None)
+        dbName='project', foreignKey='ProjectGroup', notNull=False,
+        default=None)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
@@ -209,7 +211,8 @@ class OAuthRequestToken(OAuthBase):
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False, default=None)
     project = ForeignKey(
-        dbName='project', foreignKey='Project', notNull=False, default=None)
+        dbName='project', foreignKey='ProjectGroup', notNull=False,
+        default=None)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
@@ -242,7 +245,7 @@ class OAuthRequestToken(OAuthBase):
         self.permission = permission
         if IProduct.providedBy(context):
             self.product = context
-        elif IProject.providedBy(context):
+        elif IProjectGroup.providedBy(context):
             self.project = context
         elif IDistribution.providedBy(context):
             self.distribution = context

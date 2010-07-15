@@ -1,4 +1,5 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import datetime
 import pytz
@@ -44,6 +45,17 @@ class TokensTextWidget(StrippedTextWidget):
         """
         normalised_text = re.sub(r'[^\w-]+', ' ', input)
         return super(TokensTextWidget, self)._toFieldValue(normalised_text)
+
+
+class NoneableTextWidget(StrippedTextWidget):
+    """A widget that that is None if it's value is empty or whitespace."""
+
+    def _toFieldValue(self, input):
+        value = super(NoneableTextWidget, self)._toFieldValue(input)
+        if value == '':
+            return None
+        else:
+            return value
 
 
 class LocalDateTimeWidget(TextWidget):

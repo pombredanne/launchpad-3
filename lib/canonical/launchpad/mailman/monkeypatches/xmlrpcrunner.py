@@ -1,4 +1,5 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """XMLRPC runner for querying Launchpad."""
 
@@ -16,6 +17,7 @@ import traceback
 import xmlrpclib
 
 from cStringIO import StringIO
+from random import shuffle
 
 # pylint: disable-msg=F0401
 from Mailman import Errors
@@ -195,6 +197,7 @@ class XMLRPCRunner(Runner):
             real name, flags, and status of each person in the list's
             subscribers.
         """
+        ## syslog('xmlrpc', '%s subinfo: %s', list_name, subscription_info)
         # Start with an unlocked list.
         mlist = MailList(list_name, lock=False)
         # Create a mapping of email address to the member's real name,
@@ -246,6 +249,8 @@ class XMLRPCRunner(Runner):
             return
         try:
             # Handle additions first.
+            if len(additions) > 0:
+                syslog('xmlrpc', 'Adding to %s: %s', list_name, additions)
             for address in additions:
                 # When adding the new member, be sure to use the
                 # case-preserved email address.
@@ -254,11 +259,13 @@ class XMLRPCRunner(Runner):
                 mlist.addNewMember(original_address, realname=realname)
                 mlist.setDeliveryStatus(original_address, status)
             # Handle deletions next.
+            if len(deletions) > 0:
+                syslog('xmlrpc', 'Removing from %s: %s', list_name, deletions)
             for address in deletions:
                 mlist.removeMember(address)
             # Updates can be either a settings update, a change in the
             # case of the subscribed address, or both.
-            found_updates = False
+            found_updates = []
             for address in updates:
                 # See if the case is changing.
                 current_address = mlist.getMemberCPAddress(address)
@@ -266,19 +273,23 @@ class XMLRPCRunner(Runner):
                 # pylint: disable-msg=W0331
                 if current_address <> future_address:
                     mlist.changeMemberAddress(address, future_address)
-                    found_updates = True
+                    found_updates.append('%s -> %s' %
+                                         (address, future_address))
                 # flags are ignored for now.
                 realname, flags, status = member_map[future_address]
                 # pylint: disable-msg=W0331
                 if realname <> mlist.getMemberName(address):
                     mlist.setMemberName(address, realname)
-                    found_updates = True
+                    found_updates.append('%s new name: %s' %
+                                         (address, realname))
                 # pylint: disable-msg=W0331
                 if status <> mlist.getDeliveryStatus(address):
                     mlist.setDeliveryStatus(address, status)
-                    found_updates = True
-            if found_updates:
-                syslog('xmlrpc', 'Membership updates for: %s', list_name)
+                    found_updates.append('%s new status: %s' %
+                                         (address, status))
+            if len(found_updates) > 0:
+                syslog('xmlrpc', 'Membership updates for %s: %s',
+                       list_name, found_updates)
             # We're done, so flush the changes for this mailing list.
             mlist.Save()
         finally:
@@ -288,25 +299,43 @@ class XMLRPCRunner(Runner):
         """Get the latest subscription information."""
         # First, calculate the names of the active mailing lists.
         # pylint: disable-msg=W0331
-        lists = [list_name
-                 for list_name in Utils.list_names()
-                 if list_name <> mm_cfg.MAILMAN_SITE_LIST]
+        lists = sorted(list_name
+                       for list_name in Utils.list_names()
+                       if list_name <> mm_cfg.MAILMAN_SITE_LIST)
         # Batch the subscription requests in order to reduce the possibility
-        # of timeouts in the XMLRPC server.
+        # of timeouts in the XMLRPC server.  Note that we cannot eliminate
+        # timeouts, which will cause an entire batch to fail.  To reduce the
+        # possibility that the same batch of teams will always fail, we
+        # shuffle the list of team names so the batches will always be
+        # different.
+        shuffle(lists)
         while lists:
             batch = lists[:mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE]
             lists = lists[mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE:]
+            ## syslog('xmlrpc', 'batch: %s', batch)
+            ## syslog('xmlrpc', 'lists: %s', lists)
             # Get the information for this batch of mailing lists.
             try:
                 info = self._proxy.getMembershipInformation(batch)
             except (xmlrpclib.ProtocolError, socket.error), error:
                 log_exception('Cannot talk to Launchpad: %s', error)
-                return
+                syslog('xmlrpc', 'batch: %s', batch)
+                continue
             except xmlrpclib.Fault, error:
                 log_exception('Launchpad exception: %s', error)
-                return
+                syslog('xmlrpc', 'batch: %s', batch)
+                continue
             for list_name in info:
-                self._update_list_subscriptions(list_name, info[list_name])
+                subscription_info = info[list_name]
+                # The subscription info for a mailing list can be None,
+                # meaning that there are no subscribers or allowed posters.
+                # The latter can only happen if there are no active team
+                # members, and that can only happen when the owner has been
+                # specifically deactivate for some reason.  This is not an
+                # error condition.
+                if subscription_info is not None:
+                    self._update_list_subscriptions(
+                        list_name, subscription_info)
 
     def _create_or_reactivate(self, actions, statuses):
         """Process mailing list creation and reactivation actions.

@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initialize the cluster.
 
@@ -39,9 +41,9 @@ def duplicate_schema():
     """Duplicate the master schema into the slaves."""
     log.info('Duplicating database schema')
 
-    master_cs = ConnectionString(config.database.main_master)
+    master_cs = ConnectionString(config.database.rw_main_master)
     master_cs.user = options.dbuser
-    slave1_cs = ConnectionString(config.database.main_slave)
+    slave1_cs = ConnectionString(config.database.rw_main_slave)
     slave1_cs.user = options.dbuser
 
     # We can't use pg_dump to replicate security as not all of the roles
@@ -67,32 +69,18 @@ def duplicate_schema():
 def initialize_cluster():
     """Initialize the cluster."""
     log.info('Initializing Slony-I cluster')
+    master_connection_string = ConnectionString(
+        config.database.rw_main_master)
+    master_connection_string.user = 'slony'
     helpers.execute_slonik("""
+        node 1 admin conninfo = '%s';
         try {
             echo 'Initializing cluster and Master node.';
-            init cluster (id=@master_node, comment='Master Node');
+            init cluster (id=1, comment='Master Node');
             }
         on success { echo 'Cluster initialized.'; }
         on error { echo 'Cluster initialization failed.'; exit 1; }
-        """)
-    helpers.execute_slonik("""
-        try {
-            echo 'Initializing Slave#1 node.';
-            store node (id=@slave1_node, comment='Slave Node #1');
-
-            echo 'Storing Master -> Slave#1 path.';
-            store path (
-                server=@master_node, client=@slave1_node,
-                conninfo=@master_conninfo);
-
-            echo 'Storing Slave#1 -> Master path.';
-            store path (
-                server=@slave1_node, client=@master_node,
-                conninfo=@slave1_conninfo);
-            }
-        on success { echo 'Slave#1 initialized.'; }
-        on error { echo 'Slave#1 initialization failed.'; exit 1; }
-        """)
+        """ % master_connection_string)
 
 
 def ensure_live():
@@ -100,43 +88,13 @@ def ensure_live():
     helpers.sync(120) # Will exit on failure.
 
 
-def create_replication_sets(
-    authdb_tables, authdb_sequences, lpmain_tables, lpmain_sequences):
+def create_replication_sets(lpmain_tables, lpmain_sequences):
     """Create the replication sets."""
     log.info('Creating Slony-I replication sets.')
-    script = ["try {"]
-    # script,append("""
-    #     echo 'Creating AuthDB replication set (@authdb_set)';
-    #     create set (
-    #         id=@authdb_set, origin=@master_node,
-    #         comment='AuthDB tables and sequences');
-    #     """)
 
-    # entry_id = 1
-    # for table in sorted(authdb_tables):
-    #     script.append("""
-    #         echo 'Adding %(table)s to replication set @authdb_set';
-    #         set add table (
-    #             set id=@authdb_set,
-    #             origin=@master_node,
-    #             id=%(entry_id)d,
-    #             fully qualified name='%(table)s');
-    #         """ % vars())
-    #     entry_id += 1
-    # entry_id = 1
-    # for sequence in sorted(authdb_sequences):
-    #     script.append("""
-    #         echo 'Adding %(sequence)s to replication set @authdb_set';
-    #         set add sequence (
-    #             set id=@authdb_set,
-    #             origin=@master_node,
-    #             id=%(entry_id)d,
-    #             fully qualified name='%(sequence)s');
-    #         """ % vars())
-    #     entry_id += 1
-    #
-    # assert entry_id < 200, 'authdb replcation set has > 200 objects???'
-    entry_id = 200
+    script = ["try {"]
+
+    entry_id = 1
 
     script.append("""
         echo 'Creating LPMain replication set (@lpmain_set)';
@@ -145,9 +103,11 @@ def create_replication_sets(
             comment='Launchpad tables and sequences');
         """)
 
+    script.append(
+        "echo 'Adding %d tables to replication set @lpmain_set';"
+        % len(lpmain_tables))
     for table in sorted(lpmain_tables):
         script.append("""
-            echo 'Adding %(table)s to replication set @lpmain_set';
             set add table (
                 set id=@lpmain_set,
                 origin=@master_node,
@@ -156,10 +116,12 @@ def create_replication_sets(
             """ % vars())
         entry_id += 1
 
-    entry_id = 200
+    entry_id = 1
+    script.append(
+        "echo 'Adding %d sequences to replication set @lpmain_set';"
+        % len(lpmain_sequences))
     for sequence in sorted(lpmain_sequences):
         script.append("""
-            echo 'Adding %(sequence)s to replication set @lpmain_set';
             set add sequence (
                 set id=@lpmain_set,
                 origin=@master_node,
@@ -177,34 +139,6 @@ def create_replication_sets(
     helpers.validate_replication(cur) # Explode now if we have messed up.
 
 
-def subscribe_slaves():
-    """Generate and run a slonik script subscribing the slave databases
-    to replication set #1.
-    """
-    log.info('Subscribing slaves to replication sets.')
-    # Note that direct subscribers to the master
-    # always need forward=yes as per Slony-I docs.
-    helpers.execute_slonik("""
-        # subscribe set (
-        #     id=@authdb_set,
-        #     provider=@master_node, receiver=@slave1_node,
-        #     forward=yes);
-        subscribe set (
-            id=@lpmain_set,
-            provider=@master_node, receiver=@slave1_node,
-            forward=yes);
-        """)
-    helpers.validate_replication(cur) # Explode now if we have messed up.
-    log.info(
-        'Sets subscribed. Master usable but slaves still being populated.')
-
-    log.info('Waiting for synchronization.')
-    helpers.sync(0)
-    log.info('Synchronized. Both master & slave usable.')
-
-    helpers.validate_replication(cur) # Explode now if we have messed up.
-
-
 def main():
     parser = OptionParser()
     db_options(parser)
@@ -218,27 +152,23 @@ def main():
     global log
     log = logger(options)
 
-    # Prepare the empty tables in the destination database.
-    duplicate_schema()
-
     # Generate lists of sequences and tables for our replication sets.
     log.debug("Connecting as %s" % options.dbuser)
     con = connect(options.dbuser)
     con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     global cur
     cur = con.cursor()
-    authdb_tables, authdb_sequences = helpers.calculate_replication_set(
-        cur, helpers.AUTHDB_SEED)
+    log.debug("Calculating lpmain replication set.")
     lpmain_tables, lpmain_sequences = helpers.calculate_replication_set(
         cur, helpers.LPMAIN_SEED)
 
     # Sanity check these lists - we want all objects in the public
     # schema to be in one and only one replication set.
+    log.debug("Performing sanity checks.")
     fails = 0
     for table in all_tables_in_schema(cur, 'public'):
         times_seen = 0
-        for table_set in [
-            authdb_tables, lpmain_tables, helpers.IGNORED_TABLES]:
+        for table_set in [lpmain_tables, helpers.IGNORED_TABLES]:
             if table in table_set:
                 times_seen += 1
         if times_seen == 0:
@@ -249,7 +179,7 @@ def main():
             fails += 1
     for sequence in all_sequences_in_schema(cur, 'public'):
         times_seen = 0
-        for sequence_set in [authdb_sequences, lpmain_sequences]:
+        for sequence_set in [lpmain_sequences, helpers.IGNORED_SEQUENCES]:
             if sequence in sequence_set:
                 times_seen += 1
         if times_seen == 0:
@@ -266,10 +196,9 @@ def main():
 
     ensure_live()
 
-    create_replication_sets(
-        authdb_tables, authdb_sequences, lpmain_tables, lpmain_sequences)
+    create_replication_sets(lpmain_tables, lpmain_sequences)
 
-    subscribe_slaves()
+    helpers.sync(0)
 
 
 if __name__ == '__main__':

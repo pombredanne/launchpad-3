@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure xmlns="http://namespaces.zope.org/zope">
 
     <class class="canonical.launchpad.database.Account">
@@ -11,8 +15,11 @@
             permission="launchpad.Special"
             interface="canonical.launchpad.interfaces.IAccountSpecialRestricted" />
         <require
+            permission="launchpad.Moderate"
+            set_attributes="status date_status_set status_comment" />
+        <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IAccount" />
+            set_attributes="displayname password" />
     </class>
 
     <securedutility

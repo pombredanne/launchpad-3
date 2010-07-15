@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This script munges the partner component into a commercial pocket arrangement
 # for backwards compatibility with dapper, edgy and feisty.
@@ -22,7 +25,7 @@ fi
 set -e
 
 # Config goes here.
-PRODUCTION_CONFIG=ftpmaster
+PRODUCTION_CONFIG=ftpmaster-publish
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     archiveurl=/srv/launchpad.net/ubuntu-archive/ubuntu-partner
 else

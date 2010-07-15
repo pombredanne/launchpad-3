@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Buildd Slave tests.
 
 This file contains the follwoing tests:
@@ -18,8 +20,10 @@ import os
 import shutil
 import urllib2
 import unittest
+import xmlrpclib
 
-from canonical.buildd.tests.harness import BuilddTestCase
+from canonical.buildd.tests.harness import (
+    BuilddSlaveTestSetup, BuilddTestCase)
 
 
 def read_file(path):
@@ -166,6 +170,31 @@ class LaunchpadBuilddSlaveTests(BuilddTestCase):
         # Instead of shocking the getLogTail call, return an empty string.
         log_tail = self.slave.getLogTail()
         self.assertEqual(len(log_tail), 0)
+
+
+class XMLRPCBuildDSlaveTests(unittest.TestCase):
+
+    def setUp(self):
+        super(XMLRPCBuildDSlaveTests, self).setUp()
+        BuilddSlaveTestSetup().setUp()
+        self.server = xmlrpclib.Server('http://localhost:8221/rpc/')
+
+    def tearDown(self):
+        BuilddSlaveTestSetup().tearDown()
+        super(XMLRPCBuildDSlaveTests, self).tearDown()
+
+    def test_build_unknown_builder(self):
+        # If a bogus builder name is passed into build, it returns an
+        # appropriate error message and not just 'None'.
+        buildername = 'nonexistentbuilder'
+        status, info = self.server.build('foo', buildername, 'sha1', {}, {})
+
+        self.assertEqual('BuilderStatus.UNKNOWNBUILDER', status)
+        self.assertTrue(
+            info is not None, "UNKNOWNBUILDER returns 'None' info.")
+        self.assertTrue(
+            info.startswith("%s not in [" % buildername),
+            'UNKNOWNBUILDER info is "%s"' % info)
 
 
 def test_suite():

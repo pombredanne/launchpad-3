@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 
 """Script to export a tarball of translations for a distro series."""
@@ -8,9 +11,9 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
-from canonical.launchpad.scripts.language_pack import export_language_pack
+from lp.translations.scripts.language_pack import export_language_pack
 
 
 class RosettaLangPackExporter(LaunchpadCronScript):

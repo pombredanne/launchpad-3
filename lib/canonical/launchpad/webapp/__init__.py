@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The webapp package contains infrastructure that is common across Launchpad
 that is to do with aspects such as security, menus, zcml, tales and so on.
@@ -120,15 +121,9 @@ class StandardLaunchpadFacets(FacetMenu):
         summary = 'Blueprints and specifications'
         return Link('', text, summary)
 
-    def bounties(self):
-        target = '+bounties'
-        text = 'Bounties'
-        summary = 'View related bounty offers'
-        return Link(target, text, summary)
-
     def branches(self):
         # this is disabled by default, because relatively few objects have
         # branch views
         text = 'Code'
-        summary = 'View related branches of code'
+        summary = 'View related code'
         return Link('', text, summary=summary)

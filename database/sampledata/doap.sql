@@ -1,7 +1,8 @@
 /*
+   CREATE SAMPLE PROJECTS AND PRODUCTS
 
-  CREATE SAMPLE PROJECTS AND PRODUCTS
-
+   Copyright 2009 Canonical Ltd.  This software is licensed under the
+   GNU Affero General Public License version 3 (see the file LICENSE).
 */
 INSERT INTO Project (owner, name, displayname, title, shortdesc, 
 description, homepageurl)

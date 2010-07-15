@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View support classes for feeds."""
 
@@ -14,7 +15,6 @@ __all__ = [
     'FeedsNavigation',
     'FeedsRootUrlData',
     'PersonBranchesFeedLink',
-    'PersonLatestBugsFeedLink',
     'PersonRevisionsFeedLink',
     'ProductBranchesFeedLink',
     'ProductRevisionsFeedLink',
@@ -30,11 +30,10 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IAnnouncementSet, IBranch, IBugSet, IBugTaskSet, IFeedsApplication,
-    IPersonSet, IPillarNameSet, NotFoundError)
+    IAnnouncementSet, IBugSet, IBugTaskSet, IFeedsApplication,
+    IPillarNameSet, NotFoundError)
 from canonical.launchpad.interfaces import (
-    IBugTask, IHasAnnouncements, IHasBugs, ILaunchpadRoot, IPerson, IProduct,
-    IProject)
+    IBugTask, IHasAnnouncements, IHasBugs, ILaunchpadRoot)
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
     Navigation, canonical_name, canonical_url, stepto)
@@ -42,6 +41,10 @@ from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.url import urlappend
+from lp.code.interfaces.branch import IBranch
+from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 class FeedsRootUrlData:
@@ -183,15 +186,6 @@ class BugTargetLatestBugsFeedLink(FeedLinkBase):
                          'latest-bugs.atom')
 
 
-class PersonLatestBugsFeedLink(BugTargetLatestBugsFeedLink):
-    """Child class of BugTargetLatestBugsFeedLink.
-
-    This uses the same title and href attributes as the superclass.
-    The canonical_url takes care of the differences between the classes.
-    """
-    usedfor = IPerson
-
-
 class AnnouncementsFeedLink(FeedLinkBase):
     usedfor = IHasAnnouncements
 
@@ -237,7 +231,7 @@ class BranchesFeedLinkBase(FeedLinkBase):
 
 class ProjectBranchesFeedLink(BranchesFeedLinkBase):
     """Feed links for branches on a project."""
-    usedfor = IProject
+    usedfor = IProjectGroup
 
 
 class ProductBranchesFeedLink(BranchesFeedLinkBase):
@@ -269,7 +263,7 @@ class RevisionsFeedLinkBase(FeedLinkBase):
 
 class ProjectRevisionsFeedLink(RevisionsFeedLinkBase):
     """Feed links for revisions on a project."""
-    usedfor = IProject
+    usedfor = IProjectGroup
 
 
 class ProductRevisionsFeedLink(RevisionsFeedLinkBase):
@@ -322,7 +316,6 @@ class FeedsMixin:
         BugFeedLink,
         BugTargetLatestBugsFeedLink,
         PersonBranchesFeedLink,
-        PersonLatestBugsFeedLink,
         PersonRevisionsFeedLink,
         ProductBranchesFeedLink,
         ProductRevisionsFeedLink,

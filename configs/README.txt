@@ -303,7 +303,7 @@ Launchpad schema. This is a general outline of inheritance:
         |    |
         |    + lpnet<1-8>/launchpad-lazr.conf
         |    |
-        |    + hackberry/launchpad-lazr.conf
+        |    + wildcherry/launchpad-lazr.conf
         |    |
         |    + librarian/launchpad-lazr.conf
         |    |

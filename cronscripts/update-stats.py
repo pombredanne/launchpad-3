@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 
 # This script updates the cached stats in the system
@@ -8,7 +11,7 @@ import _pythonpath
 
 from zope.component import getUtility
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILaunchpadStatisticSet, IPersonSet
     )
@@ -25,7 +28,7 @@ class StatUpdater(LaunchpadCronScript):
         # objects are responsible for committing.
         distroset = getUtility(IDistributionSet)
         for distro in distroset:
-            for distroseries in distro.serieses:
+            for distroseries in distro.series:
                 distroseries.updateStatistics(self.txn)
 
         launchpad_stats = getUtility(ILaunchpadStatisticSet)
