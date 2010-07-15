@@ -19,7 +19,10 @@ __all__ = [
     'launchpadlib_for',
     'launchpadlib_credentials_for',
     'login',
+    'login_as',
+    'login_celebrity',
     'login_person',
+    'login_team',
     'logout',
     'map_branch_contents',
     'normalize_whitespace',
@@ -33,9 +36,6 @@ __all__ = [
     'test_tales',
     'time_counter',
     'unlink_source_packages',
-    # XXX: This really shouldn't be exported from here. People should import
-    # it from Zope.
-    'verifyObject',
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
@@ -92,7 +92,8 @@ from lp.registry.interfaces.packaging import IPackagingUtil
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
-    is_logged_in, login, login_person, logout)
+    is_logged_in, login, login_as, login_celebrity, login_person, login_team,
+    logout)
 # canonical.launchpad.ftests expects test_tales to be imported from here.
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
@@ -253,11 +254,18 @@ class TestCase(testtools.TestCase):
         """
         return self.id()
 
+    def useContext(self, context):
+        """Use the supplied context in this test.
+
+        The context will be cleaned via addCleanup.
+        """
+        retval = context.__enter__()
+        self.addCleanup(context.__exit__, None, None, None)
+        return retval
+
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
-        tempdir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, tempdir)
-        return tempdir
+        return self.useContext(temp_dir())
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
@@ -433,6 +441,7 @@ class TestCase(testtools.TestCase):
         cwd = os.getcwd()
         os.chdir(tempdir)
         self.addCleanup(os.chdir, cwd)
+        return tempdir
 
     def _unfoldEmailHeader(self, header):
         """Unfold a multiline e-mail header."""
@@ -610,6 +619,13 @@ class BrowserTestCase(TestCaseWithFactory):
         login(ANONYMOUS)
         url = canonical_url(context, view_name=view_name)
         return self.getUserBrowser(url, self.user)
+
+    def getMainText(self, context, view_name=None):
+        """Return the main text of a context's page."""
+        from canonical.launchpad.testing.pages import (
+            extract_text, find_main_content)
+        browser = self.getViewBrowser(context, view_name)
+        return extract_text(find_main_content(browser.contents))
 
 
 class WindmillTestCase(TestCaseWithFactory):
@@ -989,6 +1005,15 @@ def ws_object(launchpad, obj):
     return launchpad.load(
         obj_url.replace('http://api.launchpad.dev/',
         str(launchpad._root_uri)))
+
+
+@contextmanager
+def temp_dir():
+    """Provide a temporary directory as a ContextManager."""
+    tempdir = tempfile.mkdtemp()
+    yield tempdir
+    shutil.rmtree(tempdir)
+
 
 def unlink_source_packages(product):
     """Remove all links between the product and source packages.

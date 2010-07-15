@@ -79,19 +79,6 @@ class BugRoleMixin:
 
     def changeBugSupervisor(self, bug_supervisor):
         self.context.setBugSupervisor(bug_supervisor, self.user)
-        if bug_supervisor is not None:
-            self.request.response.addNotification(structured(
-                'Successfully changed the bug supervisor to '
-                '<a href="%(supervisor_url)s">%(displayname)s</a>.'
-                '<br /><a href="%(supervisor_url)s">%(displayname)s</a> '
-                'has also been subscribed to bug notifications for '
-                '%(targetname)s.<br />You can '
-                '<a href="%(targeturl)s/+subscribe">change the '
-                'subscriptions</a> for %(targetname)s at any time.',
-                supervisor_url=canonical_url(bug_supervisor),
-                displayname=bug_supervisor.displayname,
-                targetname=self.context.displayname,
-                targeturl=canonical_url(self.context)))
 
     def validateSecurityContact(self, data):
         """Validates the new security contact.

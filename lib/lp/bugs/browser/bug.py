@@ -58,9 +58,10 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
 from lp.bugs.interfaces.bugnomination import IBugNominationSet
+from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
 
 from canonical.launchpad.mailnotification import (
-    MailWrapper, format_rfc2822_date)
+    MailWrapper)
 from canonical.launchpad.searchbuilder import any, greater_than
 from canonical.launchpad.webapp import (
     ContextMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,

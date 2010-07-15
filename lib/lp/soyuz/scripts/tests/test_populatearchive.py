@@ -114,7 +114,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             '--to-distribution', distro_name, '--to-suite', 'hoary',
             '--to-archive', archive_name, '--to-user', 'salgado', '--reason',
             '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '--component', 'main'
             ]
 
         # Start archive population now!
@@ -149,7 +148,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self, archive_name=None, suite='hoary', user='salgado',
         exists_before=None, exists_after=None, exception_type=None,
         exception_text=None, extra_args=None, copy_archive_name=None,
-        reason=None, output_substr=None):
+        reason=None, output_substr=None, nonvirtualized=False):
         """Run the script to test.
 
         :type archive_name: `str`
@@ -222,6 +221,9 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         elif reason is None:
             reason = "copy archive, %s" % datetime.ctime(datetime.utcnow())
             script_args.extend(['--reason', reason])
+
+        if nonvirtualized:
+            script_args.append('--nonvirtualized')
 
         if extra_args is not None:
             script_args.extend(extra_args)
@@ -321,6 +323,14 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             exception_type=PackageLocationError,
             exception_text="Could not find packageset No such package set"
             " (in the specified distro series): '%s'." % unknown_packageset)
+
+    def testNonvirtualized(self):
+        """--nonvirtualized means the archive won't require virtualization."""
+        copy_archive = self.runScript(
+            archive_name="copy-archive-test", exists_before=False,
+            exists_after=True, nonvirtualized=True,
+            extra_args=['-a', '386'])
+        self.assertFalse(copy_archive.require_virtualized)
 
     def testPackagesetDelta(self):
         """Try to calculate the delta between two source package sets."""

@@ -126,6 +126,20 @@
    Universal presentation
    Block elements.
 */
+/* XXX EdwinGrubbs 2010-06-18 bug=570354
+ * The PrettyOverlay css uses static values for the width, but
+ * the overlay needs to stretch for forms with wide input fields.
+ */
+.yui-pretty-overlay {
+    width: auto !important;
+    min-width: 402px;
+    }
+
+.yui-pretty-overlay #yui-pretty-overlay-modal {
+    width: auto !important;
+    min-width: 340px;
+    }
+
 html, body {
     font-family: "dejavu sans", "bitstream vera sans", verdana, sans-serif;
     font-size: 93%;
@@ -716,6 +730,12 @@ form table tbody th {
 form table label {
     font-weight: bold;
     }
+.compound {
+    margin-bottom: .5em;
+    }
+.field.subordinate label {
+    font-weight: normal;
+    }
 fieldset {
     border-width: 2px 0 0;
     margin: 1em 0;
@@ -746,6 +766,9 @@ button {
     }
 .fieldRequired, .fieldOptional {
     color: #999;
+    }
+.field.subordinate {
+    margin-left: 2.6em;
     }
 .formHelp {
     margin: 0.2em 0 0.5em 0.2em;
@@ -1390,6 +1413,11 @@ span.help {
    Universal presentation
    Colors and fonts
 */
+pre .highlighted {
+    border: none;
+    padding: 0em;
+    margin: 0em;
+    }
 .answers-stat {
     color: #3840BE;
     }
@@ -1963,6 +1991,10 @@ body.tab-bugs #portlet-subscribers .sprite {
     background-repeat: no-repeat;
     }
 .undecided {
+    background-image: url(/@@/maybe.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
+.maybe {
     background-image: url(/@@/maybe.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }

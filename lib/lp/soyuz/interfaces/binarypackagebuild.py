@@ -75,7 +75,6 @@ class IBinaryPackageBuildView(IPackageBuild):
             description=_("The current source publication for this build.")))
 
     distro_series = Attribute("Direct parent needed by CanonicalURL")
-    was_built = Attribute("Whether or not modified by the builddfarm.")
     arch_tag = exported(
         Text(title=_("Architecture tag"), required=False))
     distributionsourcepackagerelease = Attribute("The page showing the "

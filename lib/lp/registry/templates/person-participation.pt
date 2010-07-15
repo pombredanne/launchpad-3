@@ -32,7 +32,7 @@
             tal:condition="not: context/teamowner">Mailing List</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody tal:content="cache:private, 30 minute">
         <tr tal:repeat="participation view/active_participations">
           <td>
             <a tal:replace="structure participation/team/fmt:link">name</a>

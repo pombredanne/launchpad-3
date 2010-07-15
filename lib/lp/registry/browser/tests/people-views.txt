@@ -16,6 +16,38 @@ view knows how many people and teams are currently registered in Launchpad.
     17
 
 
+Search state
+============
+
+The view can state if the view is a teams only or people only search.
+
+    >>> view.is_teams_only
+    False
+
+    >>> view.is_people_only
+    False
+
+The property is_teams_only is true when the searchfor field is teamsonly.
+
+    >>> form = dict(searchfor='teamsonly')
+    >>> view = create_initialized_view(person_set, '+index', form=form)
+    >>> view.is_teams_only
+    True
+
+    >>> view.is_people_only
+    False
+
+The property is_people_only is true when the searchfor field is peopleonly.
+
+    >>> form = dict(searchfor='peopleonly')
+    >>> view = create_initialized_view(person_set, '+index', form=form)
+    >>> view.is_teams_only
+    False
+
+    >>> view.is_people_only
+    True
+
+
 Batch navigator
 ===============
 

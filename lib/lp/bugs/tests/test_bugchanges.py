@@ -1044,8 +1044,8 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=expected_notification)
 
     def test_unassign_bugtask(self):
-        # Unassigning a bug task to someone adds entries to the bug
-        # activity and notifications sets.
+        # Unassigning a bug task assigned to someone adds entries to the
+        # bug activity and notifications sets.
         old_assignee = self.factory.makePerson()
         self.bug_task.transitionToAssignee(old_assignee)
         self.saveOldChanges()

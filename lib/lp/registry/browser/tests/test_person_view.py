@@ -292,7 +292,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('Subscribed', participation['subscribed'])
 
-    def test_active_participations_with_private_team(self):
+    def test_active_participations_with_direct_private_team(self):
         # Users cannot see private teams that they are not members of.
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
         login_person(team.teamowner)
@@ -308,6 +308,25 @@ class TestPersonParticipationView(TestCaseWithFactory):
         view = create_view(
             self.user, name='+participation', principal=observer)
         self.assertEqual(0, len(view.active_participations))
+
+    def test_active_participations_with_indirect_private_team(self):
+        # Users cannot see private teams that they are not members of.
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        direct_team = self.factory.makeTeam(owner=team.teamowner)
+        login_person(team.teamowner)
+        direct_team.addMember(self.user, team.teamowner)
+        team.addMember(direct_team, team.teamowner)
+        # The team is included in active_participations.
+        login_person(self.user)
+        view = create_view(
+            self.user, name='+participation', principal=self.user)
+        self.assertEqual(2, len(view.active_participations))
+        # The team is not included in active_participations.
+        observer = self.factory.makePerson()
+        login_person(observer)
+        view = create_view(
+            self.user, name='+participation', principal=observer)
+        self.assertEqual(1, len(view.active_participations))
 
     def test_active_participations_indirect_membership(self):
         # Verify the path of indirect membership.

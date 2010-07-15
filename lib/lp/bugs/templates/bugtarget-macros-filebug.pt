@@ -353,7 +353,7 @@
       tal:condition="guidelines">
     <td colspan="2" id="bug-reporting-guidelines">
       <tal:guidelines repeat="guideline guidelines">
-        <h3><span tal:replace="guideline/source" /> guidelines:</h3>
+        <h3><span tal:replace="guideline/source" /> bug reporting guidelines:</h3>
         <div tal:content="structure guideline/content/fmt:text-to-html" />
       </tal:guidelines>
     </td>
@@ -422,7 +422,8 @@
                       content="bug/date_last_updated/fmt:approximatedate">
                     2007-07-03
                   </tal:last-updated>
-                  <a class="view-bug-link" tal:attributes="href bug/fmt:url"
+                  <a class="view-bug-link" target="_blank"
+		      tal:attributes="href bug/fmt:url"
                   >view this bug</a>
                 </span>
               </div>
