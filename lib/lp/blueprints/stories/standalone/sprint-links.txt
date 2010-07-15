@@ -13,10 +13,6 @@ sample data. We will use Sample Person, who has no special privileges.
   >>> browser.open('http://blueprints.launchpad.dev/firefox/+spec/canvas')
   >>> browser.isHtml
   True
-  >>> 'Accepted' in browser.contents # make sure the page is not polluted
-  False
-  >>> 'Proposed' in browser.contents # make sure the page is not polluted
-  False
 
 Then we are going to propose it for the meeting agenda:
 
