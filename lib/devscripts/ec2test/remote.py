@@ -114,8 +114,7 @@ class BaseTestRunner:
             self.test_dir,
             self.public_branch,
             self.public_branch_revno,
-            self.sourcecode_dir
-        )
+            self.sourcecode_dir)
 
         # Daemonization options.
         self.pid_filename = os.path.join(self.lp_dir, 'ec2test-remote.pid')
@@ -162,7 +161,10 @@ class BaseTestRunner:
         self.logger.prepare()
 
         out_file     = self.logger.out_file
-        summary_file = self.logger.summary_file
+        # XXX: No tests!
+        # XXX: String literal.
+        summary_file = FlagFallStream(
+            self.logger.summary_file, 'Running tests.\n')
         config       = bzrlib.config.GlobalConfig()
 
         call = self.build_test_command()
@@ -461,7 +463,9 @@ def write_pidfile(pid_filename):
     pid_file.close()
 
 
-if __name__ == '__main__':
+def parse_options(argv):
+    """Make an `optparse.OptionParser` for running the tests remotely.
+    """
     parser = optparse.OptionParser(
         usage="%prog [options] [-- test options]",
         description=("Build and run tests for an instance."))
@@ -494,7 +498,12 @@ if __name__ == '__main__':
         type="int", default=None,
         help=('The revision number of the public branch being tested.'))
 
-    options, args = parser.parse_args()
+    return parser.parse_args(argv)
+
+
+# XXX: Move the entire __main__ clause into a separate function.
+if __name__ == '__main__':
+    options, args = parse_options(sys.argv)
 
     if options.debug:
         import pdb; pdb.set_trace()
@@ -512,21 +521,20 @@ if __name__ == '__main__':
        ' '.join(args))
 
     try:
-        try:
-            if options.daemon:
-                print 'Starting testrunner daemon...'
-                runner.daemonize()
+        if options.daemon:
+            print 'Starting testrunner daemon...'
+            runner.daemonize()
 
-            runner.test()
-        except:
-            config = bzrlib.config.GlobalConfig()
-            # Handle exceptions thrown by the test() or daemonize() methods.
-            if options.email:
-                bzrlib.email_message.EmailMessage.send(
-                    config, config.username(),
-                    options.email,
-                    'Test Runner FAILED', traceback.format_exc())
-            raise
+        runner.test()
+    except:
+        config = bzrlib.config.GlobalConfig()
+        # Handle exceptions thrown by the test() or daemonize() methods.
+        if options.email:
+            bzrlib.email_message.EmailMessage.send(
+                config, config.username(),
+                options.email,
+                'Test Runner FAILED', traceback.format_exc())
+        raise
     finally:
 
         # When everything is over, if we've been ask to shut down, then
