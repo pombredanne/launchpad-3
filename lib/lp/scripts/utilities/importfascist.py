@@ -37,6 +37,7 @@ permitted_database_imports = text_lines_to_set("""
     lp.registry.vocabularies
     canonical.librarian.client
     canonical.librarian.db
+    doctest
     """)
 
 
