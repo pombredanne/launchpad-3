@@ -336,7 +336,7 @@ the map_portlet_html can be called.
     True
     >>> print person_view.map_portlet_html
     <script type="text/javascript">
-      YUI().use('node', 'lp.mapping', function(Y) { ...
+      YUI().use('node', 'lp.app.mapping', function(Y) { ...
 
 The small_maps key in the launchpad_views cookie can be set of the viewing
 user to 'false' to indicate that small maps are not wanted. While needs_gmap2
@@ -350,7 +350,7 @@ the 'Show maps' checkbox.
     False
     >>> print person_view.map_portlet_html
     <script type="text/javascript">
-      YUI().use('node', 'lp.mapping', function(Y) { ...
+      YUI().use('node', 'lp.app.mapping', function(Y) { ...
 
 The map portlet is shown if the user has not set his location and is
 viewing his own page.

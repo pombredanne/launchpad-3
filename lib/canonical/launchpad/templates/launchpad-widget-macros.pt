@@ -117,7 +117,7 @@
 
     <script type="text/javascript">
         YUI().use('node', 'lp.app.calendar', function(Y) {
-            Y.lp.setup_calendar_widgets();
+            Y.lp.app.calendar.setup_calendar_widgets();
         });
     </script>
 </metal:yui2calendar-dependencies>
