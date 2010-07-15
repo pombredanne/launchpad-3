@@ -253,7 +253,7 @@ a.help {
 a.help:hover, a.help:hover {
     text-decoration: none;
     }
-a.help.icon, a.sprite.maybe.help, a.help invisible-link {
+a.help.icon, a.sprite.maybe.help {
     border: none;
 }
 img, a img {
