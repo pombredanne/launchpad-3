@@ -673,12 +673,14 @@ class Bug(SQLBase):
         if self.private:
             return []
 
-        dupe_subscribers = set(
-            Person.select("""
-                Person.id = BugSubscription.person AND
-                BugSubscription.bug = Bug.id AND
-                Bug.duplicateof = %d""" % self.id,
-                clauseTables=["Bug", "BugSubscription"]))
+        dupe_details = dict(
+            Store.of(self).find(
+                (Person, Bug),
+                BugSubscription.person == Person.id,
+                BugSubscription.bug == Bug.id,
+                Bug.duplicateof == self.id))
+
+        dupe_subscribers = set([person for person in dupe_details.keys()])
 
         # Direct and "also notified" subscribers take precedence over
         # subscribers from dupes. Note that we don't supply recipients
@@ -688,7 +690,7 @@ class Bug(SQLBase):
 
         if recipients is not None:
             for subscriber in dupe_subscribers:
-                recipients.addDupeSubscriber(subscriber)
+                recipients.addDupeSubscriber(subscriber, dupe_details[subscriber])
 
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
