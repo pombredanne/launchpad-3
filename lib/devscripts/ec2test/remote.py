@@ -93,7 +93,7 @@ class FlagFallStream:
         self._stream.flush()
 
 
-class BaseTestRunner:
+class TestOnMergeRunner:
 
     def __init__(self, email=None, pqm_message=None, public_branch=None,
                  public_branch_revno=None, test_options=None):
@@ -147,7 +147,8 @@ class BaseTestRunner:
 
         Subclasses must provide their own implementation of this method.
         """
-        raise NotImplementedError
+        command = ['make', 'check', 'TESTOPTS=' + self.test_options]
+        return command
 
     def test(self):
         """Run the tests, log the results.
@@ -273,14 +274,67 @@ class BaseTestRunner:
                 sys.stdout.write(line)
                 sys.stdout.flush()
 
+    def run(self, daemon, email, shutdown):
+        """Run the tests.
 
-class TestOnMergeRunner(BaseTestRunner):
-    """Executes the Launchpad test_on_merge.py test suite."""
+        :param daemon: Whether or not we will daemonize.
+        :param email: The email address(es) to send catastrophic failure
+            messages to.
+        :param shutdown: Whether or not to shut down when the tests are done.
+        """
+        try:
+            if daemon:
+                print 'Starting testrunner daemon...'
+                self.daemonize()
 
-    def build_test_command(self):
-        """See BaseTestRunner.build_test_command()."""
-        command = ['make', 'check', 'TESTOPTS=' + self.test_options]
-        return command
+            self.test()
+        except:
+            config = bzrlib.config.GlobalConfig()
+            # Handle exceptions thrown by the test() or daemonize() methods.
+            if email:
+                bzrlib.email_message.EmailMessage.send(
+                    config, config.username(),
+                    email, 'Test Runner FAILED', traceback.format_exc())
+            raise
+        finally:
+
+            # When everything is over, if we've been ask to shut down, then
+            # make sure we're daemonized, then shutdown.  Otherwise, if we're
+            # daemonized, just clean up the pidfile.
+            if shutdown:
+                # Make sure our process is daemonized, and has therefore
+                # disconnected the controlling terminal.  This also disconnects
+                # the ec2test.py SSH connection, thus signalling ec2test.py
+                # that it may now try to take control of the server.
+                if not self.daemonized:
+                    # We only want to do this if we haven't already been
+                    # daemonized.  Nesting daemons is bad.
+                    self.daemonize()
+
+                # Give the script 60 seconds to clean itself up, and 60 seconds
+                # for the ec2test.py --postmortem option to grab control if
+                # needed.  If we don't give --postmortem enough time to log
+                # in via SSH and take control, then this server will begin to
+                # shutdown on it's own.
+                #
+                # (FWIW, "grab control" means sending SIGTERM to this script's
+                # process id, thus preventing fail-safe shutdown.)
+                time.sleep(60)
+
+                # We'll only get here if --postmortem didn't kill us.  This is
+                # our fail-safe shutdown, in case the user got disconnected
+                # or suffered some other mishap that would prevent them from
+                # shutting down this server on their own.
+                subprocess.call(['sudo', 'shutdown', '-P', 'now'])
+            elif self.daemonized:
+                # It would be nice to clean up after ourselves, since we won't
+                # be shutting down.
+                self.remove_pidfile()
+            else:
+                # We're not a daemon, and we're not shutting down.  The user most
+                # likely started this script manually, from a shell running on the
+                # instance itself.
+                pass
 
 
 class WebTestLogger:
@@ -501,9 +555,8 @@ def parse_options(argv):
     return parser.parse_args(argv)
 
 
-# XXX: Move the entire __main__ clause into a separate function.
-if __name__ == '__main__':
-    options, args = parse_options(sys.argv)
+def main(argv):
+    options, args = parse_options(argv)
 
     if options.debug:
         import pdb; pdb.set_trace()
@@ -519,58 +572,8 @@ if __name__ == '__main__':
        options.public_branch,
        options.public_branch_revno,
        ' '.join(args))
+    runner.run(options.daemon, options.email, options.shutdown)
 
-    try:
-        if options.daemon:
-            print 'Starting testrunner daemon...'
-            runner.daemonize()
 
-        runner.test()
-    except:
-        config = bzrlib.config.GlobalConfig()
-        # Handle exceptions thrown by the test() or daemonize() methods.
-        if options.email:
-            bzrlib.email_message.EmailMessage.send(
-                config, config.username(),
-                options.email,
-                'Test Runner FAILED', traceback.format_exc())
-        raise
-    finally:
-
-        # When everything is over, if we've been ask to shut down, then
-        # make sure we're daemonized, then shutdown.  Otherwise, if we're
-        # daemonized, just clean up the pidfile.
-        if options.shutdown:
-            # Make sure our process is daemonized, and has therefore
-            # disconnected the controlling terminal.  This also disconnects
-            # the ec2test.py SSH connection, thus signalling ec2test.py
-            # that it may now try to take control of the server.
-            if not runner.daemonized:
-                # We only want to do this if we haven't already been
-                # daemonized.  Nesting daemons is bad.
-                runner.daemonize()
-
-            # Give the script 60 seconds to clean itself up, and 60 seconds
-            # for the ec2test.py --postmortem option to grab control if
-            # needed.  If we don't give --postmortem enough time to log
-            # in via SSH and take control, then this server will begin to
-            # shutdown on it's own.
-            #
-            # (FWIW, "grab control" means sending SIGTERM to this script's
-            # process id, thus preventing fail-safe shutdown.)
-            time.sleep(60)
-
-            # We'll only get here if --postmortem didn't kill us.  This is
-            # our fail-safe shutdown, in case the user got disconnected
-            # or suffered some other mishap that would prevent them from
-            # shutting down this server on their own.
-            subprocess.call(['sudo', 'shutdown', '-P', 'now'])
-        elif runner.daemonized:
-            # It would be nice to clean up after ourselves, since we won't
-            # be shutting down.
-            runner.remove_pidfile()
-        else:
-            # We're not a daemon, and we're not shutting down.  The user most
-            # likely started this script manually, from a shell running on the
-            # instance itself.
-            pass
+if __name__ == '__main__':
+    main(sys.argv)
