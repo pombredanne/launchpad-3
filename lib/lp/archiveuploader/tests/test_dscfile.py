@@ -12,7 +12,7 @@ from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.dscfile import (
-    DSCFile, findAndMoveChangelog, findCopyright)
+    DSCFile, findChangelog, findCopyright)
 from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.archiveuploader.tests import mock_logger_quiet
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
@@ -31,7 +31,6 @@ class TestDscFile(TestCase):
         os.makedirs(self.dir_path)
         self.copyright_path = os.path.join(self.dir_path, "copyright")
         self.changelog_path = os.path.join(self.dir_path, "changelog")
-        self.changelog_dest = os.path.join(self.tmpdir, "changelog")
         self.dsc_file = self.MockDSCFile()
 
     def testBadDebianCopyright(self):
@@ -70,8 +69,8 @@ class TestDscFile(TestCase):
         dangling symlink in an attempt to try and access files on the system
         processing the source packages."""
         os.symlink("/etc/passwd", self.changelog_path)
-        errors = list(findAndMoveChangelog(
-            self.dsc_file, self.tmpdir, self.tmpdir, mock_logger_quiet))
+        errors = list(findChangelog(
+            self.dsc_file, self.tmpdir, mock_logger_quiet))
 
         self.assertEqual(len(errors), 1)
         self.assertIsInstance(errors[0], UploadError)
@@ -86,12 +85,12 @@ class TestDscFile(TestCase):
         file.write(changelog)
         file.close()
 
-        errors = list(findAndMoveChangelog(
-            self.dsc_file, self.tmpdir, self.tmpdir, mock_logger_quiet))
+        errors = list(findChangelog(
+            self.dsc_file, self.tmpdir, mock_logger_quiet))
 
         self.assertEqual(len(errors), 0)
         self.assertEqual(self.dsc_file.changelog_path,
-                         self.changelog_dest)
+                         self.changelog_path)
 
 
     def testOversizedFile(self):
@@ -111,8 +110,8 @@ class TestDscFile(TestCase):
         file.write(empty_file)
         file.close()
 
-        errors = list(findAndMoveChangelog(
-            self.dsc_file, self.tmpdir, self.tmpdir, mock_logger_quiet))
+        errors = list(findChangelog(
+            self.dsc_file, self.tmpdir, mock_logger_quiet))
 
         self.assertIsInstance(errors[0], UploadError)
         self.assertEqual(
@@ -143,7 +142,11 @@ class TestDscFileLibrarian(TestCaseWithFactory):
         tempdir = self.useTempDir()
         os.chmod(tempdir, 0555)
         try:
-            list(self.getDscFile('bar_1.0-1').verify())
+            dsc_file = self.getDscFile('bar_1.0-1')
+            try:
+                list(dsc_file.verify())
+            finally:
+                dsc_file.cleanUp()
         finally:
             os.chmod(tempdir, 0755)
 
