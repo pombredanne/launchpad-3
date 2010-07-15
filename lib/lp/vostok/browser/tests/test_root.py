@@ -8,6 +8,7 @@ __metaclass__ = type
 import unittest
 
 from zope.app.publisher.browser import getDefaultViewName
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getMultiAdapter
 
 from canonical.testing.layers import FunctionalLayer
@@ -17,7 +18,7 @@ from lp.vostok.browser.root import VostokRootView
 from lp.vostok.browser.tests.request import VostokTestRequest
 from lp.vostok.publisher import VostokRoot
 
-class TestBrowseRoot(TestCase):
+class TestRootRegistrations(TestCase):
 
     layer = FunctionalLayer
 
@@ -32,6 +33,30 @@ class TestBrowseRoot(TestCase):
             (VostokRoot(), VostokTestRequest()), name='+index')
         view.initialize()
         self.assertIsInstance(view, VostokRootView)
+
+
+class FakeDistribution:
+    pass
+
+
+class FakeRootView:
+
+    page = ViewPageTemplateFile('../../templates/root.pt')
+
+    @property
+    def distributions(self):
+        return [FakeDistribution()]
+
+
+class TestRootTemplate(TestCase):
+
+    layer = FunctionalLayer
+
+    def test_render(self):
+        view = FakeRootView()
+        view.request = VostokTestRequest()
+        view.context = VostokRoot()
+        print view.page()
 
 
 def test_suite():
