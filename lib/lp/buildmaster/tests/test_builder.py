@@ -249,7 +249,8 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         self.assertEqual(self.gedit_build.buildqueue_record.lastscore, 2505)
         self.assertEqual(self.firefox_build.buildqueue_record.lastscore, 2505)
 
-        recipe_build_job = self.factory.makeSourcePackageRecipeBuildJob(9999)
+        recipe_build_job = self.factory.makeSourcePackageRecipeBuildJob(
+            score=9999)
 
         self.assertEqual(recipe_build_job.lastscore, 9999)
 

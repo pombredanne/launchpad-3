@@ -1846,6 +1846,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         bq = SourcePackageRecipeBuild.queueBuild(recipe_build)
+        bq.lastscore = score
         store.add(bq)
         return bq
 
