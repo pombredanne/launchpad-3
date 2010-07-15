@@ -11,4 +11,4 @@ ALTER TABLE Person
     DROP COLUMN phone;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 34, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 70, 0);
