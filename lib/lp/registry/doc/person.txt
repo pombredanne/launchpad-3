@@ -1132,25 +1132,22 @@ project groups and projects.
     ...     elif IProduct.providedBy(pillar):
     ...         pillar_type = 'project'
     ...     print "%s: %s (%s)" % (
-    ...         pillar_type, pillar.title, pillar.name)
+    ...         pillar_type, pillar.displayname, pillar.name)
 
     >>> for pillarname in mark.getOwnedOrDrivenPillars():
     ...     print_pillar(pillarname)
-    distribution: Ubuntu Linux (ubuntu)
-    distribution: Redhat Advanced Server (redhat)
-    distribution: Debian GNU/Linux (debian)
-    distribution: The Gentoo Linux (gentoo)
-    distribution: Kubuntu - Free KDE-based Linux (kubuntu)
-    distribution: Ubuntu Test (ubuntutest)
+    distribution: Debian (debian)
+    distribution: Gentoo (gentoo)
+    distribution: Kubuntu (kubuntu)
+    distribution: Red Hat (redhat)
     project group: Apache (apache)
-    project: Tomcat (tomcat)
-    project: ALSA utilities (alsa-utils)
-    project: Derby - Java Database (derby)
+    project: Derby (derby)
+    project: alsa-utils (alsa-utils)
 
     >>> for pillarname in ubuntu_team.getOwnedOrDrivenPillars():
     ...     print_pillar(pillarname)
-    distribution: Ubuntu Linux (ubuntu)
-    distribution: Ubuntu Test (ubuntutest)
+    distribution: Ubuntu (ubuntu)
+    distribution: ubuntutest (ubuntutest)
     project: Tomcat (tomcat)
 
 

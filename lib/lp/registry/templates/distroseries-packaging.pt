@@ -31,6 +31,7 @@
         </ul>
       </div>
 
+      <tal:cache content="cache:public, 30 minute">
       <div tal:condition="packagings/batch">
         <h2>All upstream links</h2>
 
@@ -81,6 +82,7 @@
         <div class="results"
           tal:content="structure packagings/@@+navigation-links-lower" />
       </div>
+      </tal:cache>
     </div>
   </body>
 </html>

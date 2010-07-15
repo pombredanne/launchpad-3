@@ -113,7 +113,7 @@ And then we need a way to process the uploads from the queue
 
   >>> import logging
   >>> from canonical.config import config
-  >>> from canonical.launchpad.ftests.logger import MockLogger
+  >>> from lp.testing.logger import MockLogger
   >>> from lp.soyuz.scripts.soyuz_process_upload import (
   ...     ProcessUpload)
   >>> from canonical.testing import LaunchpadZopelessLayer
