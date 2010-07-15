@@ -73,6 +73,8 @@ class SummaryResult(unittest.TestResult):
                 'FAILURE', test, self._exc_info_to_string(error, test)))
 
     def stopTestRun(self):
+        # XXX: What we *actually* want is for a list of failing tests to be
+        # written before the summary.
         self.stream.write(self._buffered_results.getvalue())
 
 
@@ -199,7 +201,9 @@ class TestOnMergeRunner:
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 cwd=TEST_DIR)
 
-            self._gather_test_output(popen.stdout, summary_file, out_file)
+            # Only write to stdout if we are running as the foreground process.
+            self._gather_test_output(
+                popen.stdout, summary_file, out_file, not self.daemonized)
 
             # Grab the testrunner exit status.
             exit_status = popen.wait()
@@ -272,10 +276,9 @@ class TestOnMergeRunner:
         """Return the nick name of the branch that we are testing."""
         return self.public_branch.strip('/').split('/')[-1]
 
-    def _gather_test_output(self, input_stream, summary_file, out_file):
+    def _gather_test_output(self, input_stream, summary_file, out_file,
+                            echo_to_stdout):
         """Write the testrunner output to the logs."""
-        # Only write to stdout if we are running as the foreground process.
-        echo_to_stdout = not self.daemonized
         result = SummaryResult(summary_file)
         subunit_server = subunit.TestProtocolServer(result, summary_file)
         for line in input_stream:
