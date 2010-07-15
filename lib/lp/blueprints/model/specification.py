@@ -229,7 +229,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
             # and make sure there is no leftover distroseries goal
             self.productseries = None
         else:
-            raise AssertionError, 'Inappropriate goal.'
+            raise AssertionError('Inappropriate goal.')
         # record who made the proposal, and when
         self.goal_proposer = proposer
         self.date_goal_proposed = UTC_NOW
@@ -798,7 +798,7 @@ class SpecificationSet(HasSpecificationsMixin):
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -877,7 +877,8 @@ class SpecificationSet(HasSpecificationsMixin):
             FROM SpecificationDependency, Specification
             WHERE SpecificationDependency.specification IN %s
             AND SpecificationDependency.dependency = Specification.id
-            ORDER BY Specification.priority DESC, Specification.name, Specification.id
+            ORDER BY Specification.priority DESC, Specification.name,
+                    Specification.id
         """ % sqlvalues(specification_ids)).get_all()
 
         dependencies = {}

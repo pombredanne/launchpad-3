@@ -22,7 +22,7 @@ __all__ = [
     'SpecificationImplementationStatus',
     'SpecificationLifecycleStatus',
     'SpecificationPriority',
-    'SpecificationSort'
+    'SpecificationSort',
     ]
 
 
@@ -129,7 +129,8 @@ class SpecificationImplementationStatus(DBEnumeratedType):
     GOOD = DBItem(70, """
         Good progress
 
-        The feature is considered on track for delivery in the targeted release.
+        The feature is considered on track for delivery in the targeted
+        release.
         """)
 
     BETA = DBItem(75, """
@@ -152,8 +153,8 @@ class SpecificationImplementationStatus(DBEnumeratedType):
     AWAITINGDEPLOYMENT = DBItem(85, """
         Deployment
 
-        The implementation has been done, and can be deployed in the production
-        environment, but this has not yet been done by the system
+        The implementation has been done, and can be deployed in the
+        production environment, but this has not yet been done by the system
         administrators. (This status is typically used for Web services where
         code is not released but instead is pushed into production.
         """)
@@ -445,8 +446,8 @@ class SpecificationDefinitionStatus(DBEnumeratedType):
     NEW = DBItem(40, """
         New
 
-        No thought has yet been given to implementation strategy, dependencies,
-        or presentation/UI issues.
+        No thought has yet been given to implementation strategy,
+        dependencies, or presentation/UI issues.
         """)
 
     SUPERSEDED = DBItem(60, """
@@ -738,8 +739,8 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     whiteboard = exported(
         Text(title=_('Status Whiteboard'), required=False,
              description=_(
-                "Any notes on the status of this spec you would like to make. "
-                "Your changes will override the current text.")))
+                "Any notes on the status of this spec you would like to "
+                "make. Your changes will override the current text.")))
     direction_approved = Bool(title=_('Basic direction approved?'),
         required=False, default=False, description=_("Check this to "
         "indicate that the drafter and assignee have satisfied the "
@@ -913,7 +914,6 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         """Return the SpecificationBranch link for the branch, or None."""
 
 
-# Interfaces for containers
 class ISpecificationSet(IHasSpecifications):
     """A container for specifications."""
 

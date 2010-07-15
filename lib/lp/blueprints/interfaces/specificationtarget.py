@@ -82,8 +82,7 @@ class ISpecificationTarget(IHasSpecifications):
     """
 
     @operation_parameters(
-        name=TextLine(title=_('The name of the specification'))
-    )
+        name=TextLine(title=_('The name of the specification')))
     @operation_returns_entry(Interface) # really ISpecification
     @export_read_operation()
     def getSpecification(name):
