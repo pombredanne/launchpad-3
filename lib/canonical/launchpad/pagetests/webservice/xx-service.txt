@@ -156,6 +156,58 @@ Anonymous requests can't change the dataset.
     (<Person at...>, 'displayname', 'launchpad.Edit')
     ...
 
+A completely unsigned web service request is treated as an anonymous
+request, with the OAuth consumer name being equal to the User-Agent.
+
+    >>> login(ANONYMOUS)
+    >>> print consumer_set.getByKey('unsigned-user-agent')
+    None
+    >>> logout()
+
+Make a dummy request to set up the 'headers' object so that we can
+make a request with custom headers. This is necessary due to a bug in
+Zope testbrowser.
+
+Now make a real unsigned request.
+
+    >>> from zope.app.testing.functional import HTTPCaller
+    >>> def request_root_with_user_agent(agent):
+    ...     if agent is None:
+    ...         agent_string = ''
+    ...     else:
+    ...         agent_string = '\nUser-Agent: %s' % agent
+    ...     http = HTTPCaller()
+    ...     request = ("GET /devel HTTP/1.1\n"
+    ...                "Host: api.launchpad.dev"
+    ...                "%s\n\n") % agent_string
+    ...     import pdb; pdb.set_trace(); return http(request)
+
+    >>> response = request_root_with_user_agent('unsigned agent')
+    >>> import pdb; pdb.set_trace()
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    {...}
+
+Here, too, the OAuth consumer name is automatically registered if it
+doesn't exist.
+
+    >>> login(ANONYMOUS)
+    >>> print consumer_set.getByKey('unsigned agent').key
+    unsigned agent
+    >>> logout()
+
+An empty or missing user agent results in an error.
+
+    >>> response = request_root_with_user_agent('')
+    >>> print response.getOutput()
+    HTTP/1.1 401 Unauthorized
+
+    >>> response = request_root_with_user_agent(None)
+    >>> print response.getOutput()
+    HTTP/1.1 401 Unauthorized
+
+
 API Requests to other hosts
 ===========================
 
