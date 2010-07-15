@@ -90,7 +90,7 @@
             <tr tal:define="
                   inactive_css_class python:view.rowCSSClass(template);
                   template_url template/fmt:url"
-                tal:condition="python: view.isVisible(template)"
+                tal:condition="python: view.can_edit or template.iscurrent"
                 tal:attributes="
                   class string: template_row ${inactive_css_class}">
               <td class="priority_column"
@@ -128,14 +128,21 @@
               <td class="actions_column"
                   tal:condition="context/required:launchpad.AnyPerson">
               <div class="template_links">
-                <a class="sprite edit" tal:attributes="
-                    href string: ${template_url}/+edit">Edit</a>
-                <a class="sprite add" tal:attributes="
-                    href string: ${template_url}/+upload">Upload</a>
-                <a class="sprite download" tal:attributes="
-                    href string: ${template_url}/+export">Download</a>
-                <a class="sprite edit" tal:attributes="
-                    href string: ${template_url}/+admin">Administer</a>
+                <a class="sprite edit"
+                    tal:condition="view/can_edit"
+                    tal:attributes="
+                        href string: ${template_url}/+edit">Edit</a>
+                <a class="sprite add"
+                    tal:condition="view/can_edit"
+                    tal:attributes="
+                        href string: ${template_url}/+upload">Upload</a>
+                <a class="sprite download"
+                    tal:attributes="
+                        href string: ${template_url}/+export">Download</a>
+                <a class="sprite edit"
+                    tal:condition="view/can_admin"
+                    tal:attributes="
+                        href string: ${template_url}/+admin">Administer</a>
               </div>
               </td>
             </tr>

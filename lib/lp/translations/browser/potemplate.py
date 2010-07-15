@@ -806,7 +806,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
     productseries = None
     label = "Translation templates"
     page_title = "All templates"
-    template_edit_permission = None
+    can_edit = None
+    can_admin = None
 
     def initialize(self, series, is_distroseries=True):
         self.is_distroseries = is_distroseries
@@ -814,6 +815,10 @@ class BaseSeriesTemplatesView(LaunchpadView):
             self.distroseries = series
         else:
             self.productseries = series
+        self.can_admin = check_permission(
+            'launchpad.TranslationsAdmin', series)
+        self.can_edit = (
+            self.can_admin or check_permission('launchpad.Edit', series))
 
     def iter_templates(self):
         potemplateset = getUtility(IPOTemplateSet)
@@ -827,18 +832,3 @@ class BaseSeriesTemplatesView(LaunchpadView):
             return "active-template"
         else:
             return "inactive-template"
-
-    def isVisible(self, template):
-        '''Returns True if the template should be display to users.
-        
-        Since all templates from a distroseries have the same permissions,
-        security checking is cached and the condition is based on `iscurrent`
-        attribute.
-        '''
-        if self.template_edit_permission is None:
-            self.template_edit_permission = (
-                check_permission('launchpad.Edit', template))
-        if (template.iscurrent or self.template_edit_permission):
-            return True
-        else:
-            return False
