@@ -317,14 +317,121 @@ class IBranchNavigationMenu(Interface):
     """A marker interface to indicate the need to show the branch menu."""
 
 
-class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
-              IHasRecipes):
-    """A Bazaar branch."""
+class IBranchPublic(Interface):
+    """Public attributes for a branch."""
 
-    # Mark branches as exported entries for the Launchpad API.
-    export_as_webservice_entry(plural_name='branches')
+    date_last_modified = exported(
+        Datetime(
+            title=_('Date Last Modified'),
+            required=True,
+            readonly=False))
 
-    id = Int(title=_('ID'), readonly=True, required=True)
+class IBranchAnyone(Interface):
+    """Attributes of IBranch that can be changed by launchpad.AnyPerson."""
+
+    whiteboard = exported(
+        Whiteboard(
+            title=_('Whiteboard'), required=False,
+            description=_('Notes on the current status of the branch.')))
+
+
+class IBranchView(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
+                  IHasRecipes):
+    """IBranch attributes that require launchpad.View permission."""
+
+    @operation_parameters(
+        scheme=TextLine(title=_("URL scheme"), default=u'http'))
+    @export_read_operation()
+    def composePublicURL(scheme='http'):
+        """Return a public URL for the branch using the given protocol.
+
+        :param scheme: a protocol name accepted by the public
+            code-hosting API.  (As a legacy issue, 'sftp' is also
+            accepted).
+        """
+
+    last_mirrored = exported(
+        Datetime(
+            title=_("Last time this branch was successfully mirrored."),
+            required=False, readonly=True))
+    last_mirrored_id = Text(
+        title=_("Last mirrored revision ID"), required=False, readonly=True,
+        description=_("The head revision ID of the branch when last "
+                      "successfully mirrored."))
+    last_mirror_attempt = exported(
+        Datetime(
+            title=_("Last time a mirror of this branch was attempted."),
+            required=False, readonly=True))
+
+    mirror_failures = Attribute(
+        "Number of failed mirror attempts since the last successful mirror.")
+
+    next_mirror_time = Datetime(
+        title=_("If this value is more recent than the last mirror attempt, "
+                "then the branch will be mirrored on the next mirror run."),
+        required=False)
+    # Scanning attributes
+    last_scanned = exported(
+        Datetime(
+            title=_("Last time this branch was successfully scanned."),
+            required=False, readonly=True))
+    last_scanned_id = exported(
+        TextLine(
+            title=_("Last scanned revision ID"),
+            required=False, readonly=True,
+            description=_("The head revision ID of the branch when last "
+                          "successfully scanned.")))
+
+    revision_count = exported(
+        Int(
+            title=_("Revision count"), readonly=True,
+            description=_("The revision number of the tip of the branch.")))
+
+    stacked_on = Attribute('Stacked-on branch')
+
+    merge_queue = Attribute(
+        "The queue that contains the QUEUED proposals for this branch.")
+
+
+class IBranchEditableAttributes(Interface):
+    """IBranch attributes that can be edited.
+
+    These attributes need launchpad.View to see, and launchpad.Edit to change.
+    """
+
+    name = exported(
+        TextLine(
+            title=_('Name'), required=True, constraint=branch_name_validator,
+            description=_(
+                "Keep very short, unique, and descriptive, because it will "
+                "be used in URLs.  "
+                "Examples: main, devel, release-1.0, gnome-vfs.")))
+
+    reviewer = exported(
+        PublicPersonChoice(
+            title=_('Review Team'),
+            required=False,
+            vocabulary='ValidPersonOrTeam',
+            description=_("The reviewer of a branch is the person or team "
+                          "that is responsible for reviewing proposals and "
+                          "merging into this branch.")))
+
+    url = exported(
+        BranchURIField(
+            title=_('Branch URL'), required=False,
+            allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
+            allow_userinfo=False,
+            allow_query=False,
+            allow_fragment=False,
+            trailing_slash=False,
+            description=_(
+                "This is the external location where the Bazaar "
+                "branch is hosted.")))
+
+    mirror_status_message = exported(
+        Text(
+            title=_('The last message we got when mirroring this branch.'),
+            required=False, readonly=True))
 
     # XXX: TimPenhey 2007-08-31
     # The vocabulary set for branch_type is only used for the creation
@@ -341,42 +448,16 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
             title=_("Branch Type"), required=True, readonly=True,
             vocabulary=UICreatableBranchType))
 
-    name = exported(
-        TextLine(
-            title=_('Name'), required=True, constraint=branch_name_validator,
-            description=_(
-                "Keep very short, unique, and descriptive, because it will "
-                "be used in URLs.  "
-                "Examples: main, devel, release-1.0, gnome-vfs.")))
-
-    url = exported(
-        BranchURIField(
-            title=_('Branch URL'), required=False,
-            allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
-            allow_userinfo=False,
-            allow_query=False,
-            allow_fragment=False,
-            trailing_slash=False,
-            description=_(
-                "This is the external location where the Bazaar "
-                "branch is hosted.")))
-
-    @operation_parameters(
-        scheme=TextLine(title=_("URL scheme"), default=u'http'))
-    @export_read_operation()
-    def composePublicURL(scheme='http'):
-        """Return a public URL for the branch using the given protocol.
-
-        :param scheme: a protocol name accepted by the public
-            code-hosting API.  (As a legacy issue, 'sftp' is also
-            accepted).
-        """
-
     description = exported(
         Text(
             title=_('Description'), required=False,
             description=_(
                 'A short description of the changes in this branch.')))
+
+    lifecycle_status = exported(
+        Choice(
+            title=_('Status'), vocabulary=BranchLifecycleStatus,
+            default=BranchLifecycleStatus.DEVELOPMENT))
 
     branch_format = exported(
         Choice(
@@ -396,47 +477,14 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
             required=False, readonly=True,
             vocabulary=ControlFormat))
 
-    whiteboard = exported(
-        Whiteboard(
-            title=_('Whiteboard'), required=False,
-            description=_('Notes on the current status of the branch.')))
+    merge_control_status = Choice(
+        title=_('Merge Control Status'), required=True,
+        vocabulary=BranchMergeControlStatus,
+        default=BranchMergeControlStatus.NO_QUEUE)
 
-    mirror_status_message = exported(
-        Text(
-            title=_('The last message we got when mirroring this branch.'),
-            required=False, readonly=True))
 
-    # This is redefined from IPrivacy.private because the attribute is
-    # read-only. The value is guarded by setPrivate().
-    private = exported(
-        Bool(
-            title=_("Keep branch confidential"), required=False,
-            readonly=True, default=False,
-            description=_(
-                "Make this branch visible only to its subscribers.")))
-
-    @mutator_for(private)
-    @call_with(user=REQUEST_USER)
-    @operation_parameters(
-        private=Bool(title=_("Keep branch confidential")))
-    @export_write_operation()
-    def setPrivate(private, user):
-        """Set the branch privacy for this branch."""
-
-    # People attributes
-    registrant = exported(
-        PublicPersonChoice(
-            title=_("The user that registered the branch."),
-            required=True, readonly=True,
-            vocabulary='ValidPersonOrTeam'))
-
-    owner = exported(
-        ParticipatingPersonChoice(
-            title=_('Owner'),
-            required=True, readonly=True,
-            vocabulary='UserTeamsParticipationPlusSelf',
-            description=_("Either yourself or a team you are a member of. "
-                          "This controls who can modify the branch.")))
+class IBranchEdit(Interface):
+    """IBranch attributes that require launchpad.Edit permission."""
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(
@@ -468,14 +516,88 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
           IBranchTarget.
         """
 
-    reviewer = exported(
+    def requestUpgrade():
+        """Create an IBranchUpgradeJob to upgrade this branch."""
+
+    def branchChanged(stacked_on_url, last_revision_id, control_format,
+                      branch_format, repository_format):
+        """Record that a branch has been changed.
+
+        This method records the stacked on branch tip revision id and format
+        or the branch and creates a scan job if the tip revision id has
+        changed.
+
+        :param stacked_on_url: The unique name of the branch this branch is
+            stacked on, or '' if this branch is not stacked.
+        :param last_revision_id: The tip revision ID of the branch.
+        :param control_format: The entry from ControlFormat for the branch.
+        :param branch_format: The entry from BranchFormat for the branch.
+        :param repository_format: The entry from RepositoryFormat for the
+            branch.
+        """
+
+    @export_destructor_operation()
+    def destroySelfBreakReferences():
+        """Delete the specified branch.
+
+        BranchRevisions associated with this branch will also be deleted as
+        well as any items with mandatory references.
+        """
+
+    def destroySelf(break_references=False):
+        """Delete the specified branch.
+
+        BranchRevisions associated with this branch will also be deleted.
+
+        :param break_references: If supplied, break any references to this
+            branch by deleting items with mandatory references and
+            NULLing other references.
+        :raise: CannotDeleteBranch if the branch cannot be deleted.
+        """
+
+
+class IBranch(IBranchPublic, IBranchView, IBranchEdit,
+              IBranchEditableAttributes, IBranchAnyone):
+    """A Bazaar branch."""
+
+    # Mark branches as exported entries for the Launchpad API.
+    export_as_webservice_entry(plural_name='branches')
+
+    id = Int(title=_('ID'), readonly=True, required=True)
+
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is guarded by setPrivate().
+    private = exported(
+        Bool(
+            title=_("Keep branch confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "Make this branch visible only to its subscribers.")))
+
+    @mutator_for(private)
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        private=Bool(title=_("Keep branch confidential")))
+    @export_write_operation()
+    def setPrivate(private, user):
+        """Set the branch privacy for this branch."""
+
+
+    # People attributes
+    registrant = exported(
         PublicPersonChoice(
-            title=_('Review Team'),
-            required=False,
-            vocabulary='ValidPersonOrTeam',
-            description=_("The reviewer of a branch is the person or team "
-                          "that is responsible for reviewing proposals and "
-                          "merging into this branch.")))
+            title=_("The user that registered the branch."),
+            required=True, readonly=True,
+            vocabulary='ValidPersonOrTeam'))
+
+    owner = exported(
+        ParticipatingPersonChoice(
+            title=_('Owner'),
+            required=True, readonly=True,
+            vocabulary='UserTeamsParticipationPlusSelf',
+            description=_("Either yourself or a team you are a member of. "
+                          "This controls who can modify the branch.")))
+
 
     # Distroseries and sourcepackagename are exported together as
     # the sourcepackage.
@@ -548,53 +670,6 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
              description=_(
                 "The branch unique_name.")),
         exported_as='display_name')
-
-    # Stats and status attributes
-    lifecycle_status = exported(
-        Choice(
-            title=_('Status'), vocabulary=BranchLifecycleStatus,
-            default=BranchLifecycleStatus.DEVELOPMENT))
-
-    # Mirroring attributes. For more information about how these all relate to
-    # each other, look at
-    # 'lib/canonical/launchpad/doc/puller-state-table.ods'.
-    last_mirrored = exported(
-        Datetime(
-            title=_("Last time this branch was successfully mirrored."),
-            required=False, readonly=True))
-    last_mirrored_id = Text(
-        title=_("Last mirrored revision ID"), required=False,
-        description=_("The head revision ID of the branch when last "
-                      "successfully mirrored."))
-    last_mirror_attempt = exported(
-        Datetime(
-            title=_("Last time a mirror of this branch was attempted."),
-            required=False, readonly=True))
-    mirror_failures = Attribute(
-        "Number of failed mirror attempts since the last successful mirror.")
-    next_mirror_time = Datetime(
-        title=_("If this value is more recent than the last mirror attempt, "
-                "then the branch will be mirrored on the next mirror run."),
-        required=False)
-
-    # Scanning attributes
-    last_scanned = exported(
-        Datetime(
-            title=_("Last time this branch was successfully scanned."),
-            required=False, readonly=True))
-    last_scanned_id = exported(
-        TextLine(
-            title=_("Last scanned revision ID"),
-            required=False, readonly=True,
-            description=_("The head revision ID of the branch when last "
-                          "successfully scanned.")))
-
-    revision_count = exported(
-        Int(
-            title=_("Revision count"), readonly=True,
-            description=_("The revision number of the tip of the branch.")))
-
-    stacked_on = Attribute('Stacked-on branch')
 
     # Bug attributes
     bug_branches = CollectionField(
@@ -693,31 +768,6 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
             required=True,
             readonly=True))
 
-    date_last_modified = exported(
-        Datetime(
-            title=_('Date Last Modified'),
-            required=True,
-            readonly=False))
-
-    @export_destructor_operation()
-    def destroySelfBreakReferences():
-        """Delete the specified branch.
-
-        BranchRevisions associated with this branch will also be deleted as 
-        well as any items with mandatory references.
-        """
-
-    def destroySelf(break_references=False):
-        """Delete the specified branch.
-
-        BranchRevisions associated with this branch will also be deleted.
-
-        :param break_references: If supplied, break any references to this
-            branch by deleting items with mandatory references and
-            NULLing other references.
-        :raise: CannotDeleteBranch if the branch cannot be deleted.
-        """
-
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
@@ -814,14 +864,6 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
 
     def getStackedBranches():
         """The branches that are stacked on this one."""
-
-    merge_queue = Attribute(
-        "The queue that contains the QUEUED proposals for this branch.")
-
-    merge_control_status = Choice(
-        title=_('Merge Control Status'), required=True,
-        vocabulary=BranchMergeControlStatus,
-        default=BranchMergeControlStatus.NO_QUEUE)
 
     def getMergeQueue():
         """The proposals that are QUEUED to land on this branch."""
@@ -1111,23 +1153,6 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
     def startMirroring():
         """Signal that this branch is being mirrored."""
 
-    def branchChanged(stacked_on_url, last_revision_id, control_format,
-                      branch_format, repository_format):
-        """Record that a branch has been changed.
-
-        This method records the stacked on branch tip revision id and format
-        or the branch and creates a scan job if the tip revision id has
-        changed.
-
-        :param stacked_on_url: The unique name of the branch this branch is
-            stacked on, or '' if this branch is not stacked.
-        :param last_revision_id: The tip revision ID of the branch.
-        :param control_format: The entry from ControlFormat for the branch.
-        :param branch_format: The entry from BranchFormat for the branch.
-        :param repository_format: The entry from RepositoryFormat for the
-            branch.
-        """
-
     def mirrorFailed(reason):
         """Signal that a mirror attempt failed.
 
@@ -1147,9 +1172,6 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
     needs_upgrading = Attribute("Whether the branch needs to be upgraded.")
     upgrade_pending = Attribute(
         "Whether a branch has had an upgrade requested.")
-
-    def requestUpgrade():
-        """Create an IBranchUpgradeJob to upgrade this branch."""
 
     def visibleByUser(user):
         """Can the specified user see this branch?"""
