@@ -15,5 +15,3 @@ Temporary TODO
     * Extend JavaScript widget
         > Must warn if moving dupe of dupes
         > Must update the UI if moving dupe of dupes
-    * Fix small issues while working on widget
-        > 355164  ajax duplicate marker not working on internet explorer 7
