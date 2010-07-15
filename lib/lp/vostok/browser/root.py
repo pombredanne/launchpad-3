@@ -8,8 +8,15 @@ __all__ = [
     'VostokRootView',
     ]
 
+from zope.component import getUtility
+
 from canonical.launchpad.webapp import LaunchpadView
+
+from lp.registry.interfaces.distribution import IDistributionSet
 
 
 class VostokRootView(LaunchpadView):
-    pass
+
+    @property
+    def distributions(self):
+        return getUtility(IDistributionSet)

@@ -8,12 +8,10 @@ __all__ = [
     'VostokTestRequest',
     ]
 
-from zope.interface import implements
-
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-from lp.vostok.publisher import VostokLayer
+from lp.vostok.publisher import VostokRequestMixin
 
 
-class VostokTestRequest(LaunchpadTestRequest):
-    implements(VostokLayer)
+class VostokTestRequest(VostokRequestMixin, LaunchpadTestRequest):
+    pass

@@ -8,12 +8,13 @@ __metaclass__ = type
 import unittest
 
 from zope.app.publisher.browser import getDefaultViewName
-from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getMultiAdapter
 
-from canonical.testing.layers import FunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer, FunctionalLayer
+from canonical.launchpad.testing.pages import (
+    extract_text, find_tag_by_id, setupBrowser)
 
-from lp.testing import TestCase
+from lp.testing import TestCase, TestCaseWithFactory
 from lp.vostok.browser.root import VostokRootView
 from lp.vostok.browser.tests.request import VostokTestRequest
 from lp.vostok.publisher import VostokRoot
@@ -35,28 +36,31 @@ class TestRootRegistrations(TestCase):
         self.assertIsInstance(view, VostokRootView)
 
 
-class FakeDistribution:
-    pass
+class TestRootView(TestCaseWithFactory):
 
+    layer = DatabaseFunctionalLayer
 
-class FakeRootView:
+    def view(self):
+        return getMultiAdapter(
+            (VostokRoot(), VostokTestRequest()), name='+index')
 
-    page = ViewPageTemplateFile('../../templates/root.pt')
-
-    @property
-    def distributions(self):
-        return [FakeDistribution()]
+    def test_distributions(self):
+        # VostokRootView.distributions is an iterable of all registered
+        # distributions.
+        root_view = self.view()
+        new_distro = self.factory.makeDistribution()
+        self.assertIn(new_distro, list(root_view.distributions))
 
 
 class TestRootTemplate(TestCase):
 
-    layer = FunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_render(self):
-        view = FakeRootView()
-        view.request = VostokTestRequest()
-        view.context = VostokRoot()
-        print view.page()
+        browser = setupBrowser()
+        browser.open('http://vostok.dev')
+        text = find_tag_by_id(browser.contents, 'distro-list')
+        print text
 
 
 def test_suite():

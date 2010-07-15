@@ -18,14 +18,24 @@ from zope.publisher.interfaces.browser import (
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
     LaunchpadBrowserRequest, VirtualHostRequestPublicationFactory)
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class VostokLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The Vostok layer."""
 
 
-class VostokBrowserRequest(LaunchpadBrowserRequest):
+class VostokRequestMixin:
+
     implements(VostokLayer)
+
+    def getRootURL(self, rootsite):
+        """See `IBasicLaunchpadRequest`."""
+        return allvhosts.configs['vostok'].rooturl
+
+
+class VostokBrowserRequest(VostokRequestMixin, LaunchpadBrowserRequest):
+    pass
 
 
 class IVostokRoot(Interface): # might need to inherit from some IRoot thing
