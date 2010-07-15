@@ -11,10 +11,11 @@
         tal:define="link context_menu/markduplicate"
         tal:condition="python: link.enabled and not
                       context.duplicateof"
+        class="sprite bug-dupe"
     >
     <a
       tal:attributes="href link/path"
-      class="menu-link-mark-dupe sprite bug-dupe">Mark as duplicate</a>
+      class="menu-link-mark-dupe">Mark as duplicate</a>
     </span>
     <tal:block
       tal:condition="context/duplicates"
