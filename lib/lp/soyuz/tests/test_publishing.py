@@ -19,7 +19,8 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
 from lp.archivepublisher.config import Config
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -977,7 +978,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
 
 class PublishingSetTests(TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(PublishingSetTests, self).setUp()
@@ -1004,20 +1005,30 @@ class PublishingSetTests(TestCaseWithFactory):
             self.publishing.id, wrong_archive)
         self.assertEqual(None, record)
 
+    def makeBinaryPublishing(self):
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=self.distroseries)
+        binary_publishing = self.factory.makeBinaryPackagePublishingHistory(
+            archive=self.archive, distroarchseries=distroarchseries)
+        return binary_publishing
+
     def test_getByIdAndArchive_wrong_type(self):
+        self.makeBinaryPublishing()
         record = self.publishing_set.getByIdAndArchive(
             self.publishing.id, self.archive, source=False)
         self.assertEqual(None, record)
 
     def test_getByIdAndArchive_finds_binary(self):
+        binary_publishing = self.makeBinaryPublishing()
         record = self.publishing_set.getByIdAndArchive(
-            self.publishing.id, self.archive, source=False)
-        self.assertEqual(self.publishing, record)
+            binary_publishing.id, self.archive, source=False)
+        self.assertEqual(binary_publishing, record)
 
     def test_getByIdAndArchive_binary_wrong_archive(self):
+        binary_publishing = self.makeBinaryPublishing()
         wrong_archive = self.factory.makeArchive()
         record = self.publishing_set.getByIdAndArchive(
-            self.publishing.id, wrong_archive, source=False)
+            binary_publishing.id, wrong_archive, source=False)
         self.assertEqual(None, record)
 
 
