@@ -1472,6 +1472,7 @@ class EditPackageBuild(EditBuildFarmJob):
         return (self.obj.archive.owner and
                 user.inTeam(self.obj.archive.owner))
 
+
 class EditBinaryPackageBuild(EditPackageBuild):
     permission = 'launchpad.Edit'
     usedfor = IBinaryPackageBuild

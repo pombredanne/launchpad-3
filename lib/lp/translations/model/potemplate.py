@@ -98,8 +98,7 @@ standardTemplateHeader = (
 "Language-Team: %(languagename)s <%(languagecode)s@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-)
+"Content-Transfer-Encoding: 8bit\n")
 
 
 standardPOFileHeader = (standardTemplateHeader +
@@ -460,7 +459,7 @@ class POTemplate(SQLBase, RosettaStats):
                                "POFile.potemplate = %d AND "
                                "POFile.variant IS NULL" % self.id,
                                clauseTables=['POFile', 'Language'],
-                               distinct=True
+                               distinct=True,
                                )
 
     def getPOFileByPath(self, path):
@@ -1377,7 +1376,6 @@ class POTemplateSharingSubset(object):
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
         self.product = product
-
 
     def _get_potemplate_equivalence_class(self, template):
         """Return whatever we group `POTemplate`s by for sharing purposes."""
