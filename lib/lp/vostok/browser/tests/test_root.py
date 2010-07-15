@@ -11,10 +11,9 @@ from zope.app.publisher.browser import getDefaultViewName
 from zope.component import getMultiAdapter
 
 from canonical.testing.layers import DatabaseFunctionalLayer, FunctionalLayer
-from canonical.launchpad.testing.pages import (
-    extract_text, find_tag_by_id, setupBrowser)
+from canonical.launchpad.testing.pages import extract_text, find_tag_by_id
 
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import TestCase, TestCaseWithFactory, with_anonymous_login
 from lp.vostok.browser.root import VostokRootView
 from lp.vostok.browser.tests.request import VostokTestRequest
 from lp.vostok.publisher import VostokRoot
@@ -52,15 +51,22 @@ class TestRootView(TestCaseWithFactory):
         self.assertIn(new_distro, list(root_view.distributions))
 
 
-class TestRootTemplate(TestCase):
+class TestRootTemplate(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_render(self):
-        browser = setupBrowser()
-        browser.open('http://vostok.dev')
-        text = find_tag_by_id(browser.contents, 'distro-list')
-        print text
+    def test_distribution_list(self):
+        # The element with id 'distro-list' on the root page contains a list
+        # of links to all registered distributions.
+        v = getMultiAdapter(
+            (VostokRoot(), VostokTestRequest()), name='+index')
+        v.initialize()
+        contents = v.render()
+        link_list = find_tag_by_id(contents, 'distro-list')('a')
+        distro_list = list(v.distributions)
+        self.assertEqual(len(link_list), len(distro_list))
+        for distro, link in zip(distro_list, link_list):
+            self.assertEqual(distro.displayname, extract_text(link))
 
 
 def test_suite():
