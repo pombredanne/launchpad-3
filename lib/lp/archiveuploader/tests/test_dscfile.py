@@ -8,11 +8,14 @@ __metaclass__ = type
 import os
 import unittest
 
+from canonical.config import config
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.dscfile import (
-    findAndMoveChangelog, findCopyright)
+    DSCFile, findAndMoveChangelog, findCopyright)
 from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.archiveuploader.tests import mock_logger_quiet
+from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.testing import TestCase, TestCaseWithFactory
 
 
@@ -122,13 +125,25 @@ class TestDscFileLibrarian(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    def getDscFile(self, name):
+        dsc_path = os.path.join(config.root,
+            "lib/lp/archiveuploader/tests/data/suite", name, name + '.dsc')
+        class Changes:
+            architectures = ['source']
+        logger = QuietFakeLogger()
+        policy = BuildDaemonUploadPolicy()
+        policy.distroseries = self.factory.makeDistroSeries()
+        policy.archive = self.factory.makeArchive()
+        policy.distro = policy.distroseries.distribution
+        return DSCFile(dsc_path, 'digest', 0, 'main/editors',
+            'priority', 'package', 'version', Changes, policy, logger)
+
     def test_ReadOnlyCWD(self):
         """Processing a file should work when cwd is read-only."""
         tempdir = self.useTempDir()
-        dsc_file = self.factory.makeDscFile(tempdir)
         os.chmod(tempdir, 0555)
         try:
-            list(dsc_file.unpackAndCheckSource())
+            list(self.getDscFile('bar_1.0-1').verify())
         finally:
             os.chmod(tempdir, 0755)
 
