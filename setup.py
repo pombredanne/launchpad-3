@@ -100,6 +100,7 @@ setup(
         'zope.hookable', # indirect, via zope.app.component
         'zope.lifecycleevent',
         'zope.location',
+        'zope.login',
         'zope.pagetemplate',
         'zope.publisher',
         'zope.proxy',

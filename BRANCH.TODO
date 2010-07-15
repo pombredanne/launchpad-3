@@ -2,8 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-Need zope.login.http as BasicAuthAdapter is now there and not in
-zope.app.security.basicauthadapter as it used to be. This is needed because
-we're using a newer version of zope.app.security.
-  - I'm not sure this is true anymore.
