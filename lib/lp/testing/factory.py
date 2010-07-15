@@ -1819,9 +1819,14 @@ class LaunchpadObjectFactory(ObjectFactory):
         if distroseries.nominatedarchindep is None:
             # Recipe builds need to target a specific nominatedarchindep
             # because we don't want to use the ARM or lpia builders.
-            distroseries.nominatedarchindep = distroseries.newArch(
-                'i386', ProcessorFamily.get(1), False, recipe.owner,
-                supports_virtualized=True)
+            arch = self.makeDistroArchSeries(
+                distroseries=distroseries,
+                processorfamily=ProcessorFamily.get(2),
+                official=False,
+                owner=recipe.owner,
+                supports_virtualized=True,
+                )
+            distroseries.nominatedarchindep = arch
 
         if requester is None:
             requester = self.makePerson()
