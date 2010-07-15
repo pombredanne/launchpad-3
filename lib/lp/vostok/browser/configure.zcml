@@ -1,21 +1,22 @@
 <configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:i18n="http://namespaces.zope.org/i18n"
-    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
-    i18n_domain="launchpad">
+   xmlns="http://namespaces.zope.org/zope"
+   xmlns:browser="http://namespaces.zope.org/browser"
+   xmlns:i18n="http://namespaces.zope.org/i18n"
+   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+   i18n_domain="launchpad">
 
-    <browser:defaultView
-        for="lp.vostok.publisher.IVostokRoot"
-        name="+index"
-        />
+  <browser:defaultView
+     for="lp.vostok.publisher.IVostokRoot"
+     name="+index"
+     />
 
-    <browser:page
-        for="lp.vostok.publisher.IVostokRoot"
-        name="+index"
-        class="lp.vostok.browser.root.VostokRootView"
-        template="../templates/root.pt"
-        permission="zope.Public"
-        />
+  <browser:page
+     for="lp.vostok.publisher.IVostokRoot"
+     name="+index"
+     class="lp.vostok.browser.root.VostokRootView"
+     template="../templates/root.pt"
+     permission="zope.Public"
+     layer="lp.vostok.publisher.VostokLayer"
+     />
 
 </configure>
