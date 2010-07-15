@@ -435,83 +435,10 @@
   <class class="lp.code.model.branch.Branch">
     <require
         permission="launchpad.View"
-        attributes="id
-                    registrant
-                    code_reviewer
-                    isPersonTrustedReviewer
-                    product
-                    unique_name
-                    displayname
-                    bug_branches
-                    linked_bugs
-                    getLinkedBugsAndTasks
-                    linkBug
-                    unlinkBug
-                    spec_links
-                    linkSpecification
-                    unlinkSpecification
-                    revision_history
-                    subscriptions
-                    subscribers
-                    date_created
-                    date_last_modified
-                    latest_revisions
-                    landing_targets
-                    landing_candidates
-                    dependent_branches
-                    _createMergeProposal
-                    addLandingTarget
-                    scheduleDiffUpdates
-                    getMergeQueue
-                    getRevisionsSince
-                    code_is_browseable
-                    browse_source_url
-                    code_import
-                    bzr_identity
-                    canBeDeleted
-                    deletionRequirements
-                    associatedProductSeries
-                    getProductSeriesPushingTranslations
-                    associatedSuiteSourcePackages
-                    branchIdentities
-                    branchLinks
-                    subscribe
-                    getSubscription
-                    hasSubscription
-                    unsubscribe
-                    getSubscriptionsByLevel
-                    getBranchRevision
-                    getMainlineBranchRevisions
-                    getStackedBranches
-                    createBranchRevision
-                    getTipRevision
-                    updateScannedDetails
-                    getNotificationRecipients
-                    getScannerData
-                    getPullURL
-                    getInternalBzrUrl
-                    getBzrBranch
-                    requestMirror
-                    startMirroring
-                    mirrorFailed
-                    createBranchRevisionFromIDs
-                    distroseries
-                    sourcepackagename
-                    addToLaunchBag
-                    distribution
-                    sourcepackage
-                    codebrowse_url
-                    namespace
-                    pending_writes
-                    commitsForDays
-                    needs_upgrading
-                    upgrade_pending
-                    getUpgradeFormat
-                    isBranchMergeable
-                    visibleByUser
-                    "
-        interface="lp.code.interfaces.branch.IBranchAnyone
+        interface="canonical.launchpad.interfaces.launchpad.IPrivacy
+                   lp.code.interfaces.branch.IBranchAnyone
                    lp.code.interfaces.branch.IBranchEditableAttributes
+                   lp.code.interfaces.branch.IBranchPublic
                    lp.code.interfaces.branch.IBranchView
                    "/>
     <require
@@ -524,7 +451,7 @@
         set_schema="lp.code.interfaces.branch.IBranchAnyone"/>
     <require
         permission="zope.Public"
-        set_attributes="date_last_modified"/>
+        set_schema="lp.code.interfaces.branch.IBranchPublic"/>
   </class>
   <adapter
       for="lp.code.interfaces.branch.IBranch"
