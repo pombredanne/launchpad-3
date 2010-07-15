@@ -1542,7 +1542,7 @@ class HasTranslationTemplatesMixin:
         """
         collection = self.getTemplatesCollection()
 
-        # XXX JeroenVermeulen 2010-07-15 bug=??????: Move the
+        # XXX JeroenVermeulen 2010-07-15 bug=605924: Move the
         # official_rosetta distinction into browser code.
         if collection.target_pillar.official_rosetta:
             return collection.restrictCurrent(current_value)
@@ -1580,7 +1580,7 @@ class HasTranslationTemplatesMixin:
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
-        # XXX JeroenVermeulen 2010-07-15 bug=??????: This returns a list
+        # XXX JeroenVermeulen 2010-07-15 bug=605924: This returns a list
         # whereas the analogous method for current template returns a
         # result set.  Clean up this mess.
         return list(self.getCurrentTranslationTemplates(current_value=False))
