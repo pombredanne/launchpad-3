@@ -883,6 +883,7 @@ class IWebBrowserOriginatingRequest(Interface):
 # land in the Zope mainline.
 #
 # See bug 598816 for the details.
+
 try:
     from zope.publisher.interfaces import StartRequestEvent
 except:
