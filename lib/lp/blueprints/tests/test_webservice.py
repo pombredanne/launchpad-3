@@ -478,3 +478,73 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
         self.assertNamesOfSpecificationsAre(
             ["spec1", "spec2", "spec3"],
             series_on_webservice.getAllSpecifications())
+
+    def test_projectgroup_getAllSpecifications(self):
+        productgroup = self.factory.makeProject()
+        other_productgroup = self.factory.makeProject()
+        product1 = self.factory.makeProduct(project=productgroup)
+        product2 = self.factory.makeProduct(project=productgroup)
+        product3 = self.factory.makeProduct(project=other_productgroup)
+        self.factory.makeSpecification(
+            product=product1, name="spec1")
+        self.factory.makeSpecification(
+            product=product2, name="spec2",
+            definition_status=SpecificationDefinitionStatus.OBSOLETE)
+        self.factory.makeSpecification(
+            product=product3, name="spec3")
+        product_on_webservice = self.getPillarOnWebservice(productgroup)
+        # Should this be different to the results for distroseries?
+        self.assertNamesOfSpecificationsAre(
+            ["spec1", "spec2"],
+            product_on_webservice.getAllSpecifications())
+
+    def test_projectgroup_getValidSpecifications(self):
+        productgroup = self.factory.makeProject()
+        other_productgroup = self.factory.makeProject()
+        product1 = self.factory.makeProduct(project=productgroup)
+        product2 = self.factory.makeProduct(project=productgroup)
+        product3 = self.factory.makeProduct(project=other_productgroup)
+        self.factory.makeSpecification(
+            product=product1, name="spec1")
+        self.factory.makeSpecification(
+            product=product2, name="spec2",
+            definition_status=SpecificationDefinitionStatus.OBSOLETE)
+        self.factory.makeSpecification(
+            product=product3, name="spec3")
+        product_on_webservice = self.getPillarOnWebservice(productgroup)
+        # Should this be different to the results for distroseries?
+        self.assertNamesOfSpecificationsAre(
+            ["spec1", "spec2"],
+            product_on_webservice.getValidSpecifications())
+
+    def test_person_getAllSpecifications(self):
+        person = self.factory.makePerson(name="james-w")
+        product = self.factory.makeProduct()
+        self.factory.makeSpecification(
+            product=product, name="spec1", drafter=person)
+        self.factory.makeSpecification(
+            product=product, name="spec2", approver=person,
+            definition_status=SpecificationDefinitionStatus.OBSOLETE)
+        self.factory.makeSpecification(
+            product=product, name="spec3")
+        launchpadlib = self.getLaunchpadlib()
+        person_on_webservice = launchpadlib.load(
+            str(launchpadlib._root_uri) + '/~james-w')
+        self.assertNamesOfSpecificationsAre(
+            ["spec1", "spec2"], person_on_webservice.getAllSpecifications())
+
+    def test_person_getValidSpecifications(self):
+        person = self.factory.makePerson(name="james-w")
+        product = self.factory.makeProduct()
+        self.factory.makeSpecification(
+            product=product, name="spec1", drafter=person)
+        self.factory.makeSpecification(
+            product=product, name="spec2", approver=person,
+            definition_status=SpecificationDefinitionStatus.OBSOLETE)
+        self.factory.makeSpecification(
+            product=product, name="spec3")
+        launchpadlib = self.getLaunchpadlib()
+        person_on_webservice = launchpadlib.load(
+            str(launchpadlib._root_uri) + '/~james-w')
+        self.assertNamesOfSpecificationsAre(
+            ["spec1", "spec2"], person_on_webservice.getAllSpecifications())
