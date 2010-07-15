@@ -19,7 +19,8 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
 from lp.archivepublisher.config import Config
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -38,7 +39,7 @@ from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority, PackagePublishingStatus)
+    IPublishingSet, PackagePublishingPriority, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.scripts import FakeLogger
 from lp.testing import TestCaseWithFactory
@@ -973,6 +974,62 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEquals(2, len(builds))
         self.assertEquals(self.avr_distroarch, builds[0].distro_arch_series)
         self.assertEquals(self.sparc_distroarch, builds[1].distro_arch_series)
+
+
+class PublishingSetTests(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(PublishingSetTests, self).setUp()
+        self.distroseries = self.factory.makeDistroSeries()
+        self.archive = self.factory.makeArchive(
+            distribution=self.distroseries.distribution)
+        self.publishing = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.distroseries, archive=self.archive)
+        self.publishing_set = getUtility(IPublishingSet)
+
+    def test_getByIdAndArchive_finds_record(self):
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, self.archive)
+        self.assertEqual(self.publishing, record)
+
+    def test_getByIdAndArchive_finds_record_explicit_source(self):
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, self.archive, source=True)
+        self.assertEqual(self.publishing, record)
+
+    def test_getByIdAndArchive_wrong_archive(self):
+        wrong_archive = self.factory.makeArchive()
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, wrong_archive)
+        self.assertEqual(None, record)
+
+    def makeBinaryPublishing(self):
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=self.distroseries)
+        binary_publishing = self.factory.makeBinaryPackagePublishingHistory(
+            archive=self.archive, distroarchseries=distroarchseries)
+        return binary_publishing
+
+    def test_getByIdAndArchive_wrong_type(self):
+        self.makeBinaryPublishing()
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, self.archive, source=False)
+        self.assertEqual(None, record)
+
+    def test_getByIdAndArchive_finds_binary(self):
+        binary_publishing = self.makeBinaryPublishing()
+        record = self.publishing_set.getByIdAndArchive(
+            binary_publishing.id, self.archive, source=False)
+        self.assertEqual(binary_publishing, record)
+
+    def test_getByIdAndArchive_binary_wrong_archive(self):
+        binary_publishing = self.makeBinaryPublishing()
+        wrong_archive = self.factory.makeArchive()
+        record = self.publishing_set.getByIdAndArchive(
+            binary_publishing.id, wrong_archive, source=False)
+        self.assertEqual(None, record)
 
 
 def test_suite():
