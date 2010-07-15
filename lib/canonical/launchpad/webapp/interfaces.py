@@ -877,6 +877,7 @@ class IWebBrowserOriginatingRequest(Interface):
     instance, `ProxiedLibraryFileAlias`.
     """
 
+
 # XXX mars 2010-07-14 bug=598816
 #
 # We need a conditional import of the request events until the real events
