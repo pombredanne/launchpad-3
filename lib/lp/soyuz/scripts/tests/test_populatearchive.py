@@ -44,11 +44,13 @@ def get_spn(build):
 class PackageInfo:
 
     def __init__(self, name, version,
-                 status=PackagePublishingStatus.PUBLISHED, component="main"):
+                 status=PackagePublishingStatus.PUBLISHED, component="main",
+                 arch_hint=None):
         self.name = name
         self.version = version
         self.status = status
         self.component = component
+        self.arch_hint = arch_hint
 
 
 class TestPopulateArchiveScript(TestCaseWithFactory):
@@ -119,7 +121,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             '--to-distribution', distro_name, '--to-suite', 'hoary',
             '--to-archive', archive_name, '--to-user', 'salgado', '--reason',
             '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '--component', 'main'
             ]
 
         # Start archive population now!
@@ -189,12 +190,17 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
     def createSourcePublication(self, info, distroseries):
         """Create a SourcePackagePublishingHistory based on a PackageInfo."""
+        if info.arch_hint is None:
+            arch_hint = "any"
+        else:
+            arch_hint = info.arch_hint
+
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=self.factory.getOrMakeSourcePackageName(
                 name=info.name),
             distroseries=distroseries, component=self.factory.makeComponent(
                 info.component),
-            version=info.version, architecturehintlist='any',
+            version=info.version, architecturehintlist=arch_hint,
             archive=distroseries.distribution.main_archive,
             status=info.status, pocket=PackagePublishingPocket.RELEASE)
 
@@ -206,7 +212,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
     def getScript(self, test_args=None):
         """Return an ArchivePopulator instance."""
         if test_args is None:
-           test_args = []
+            test_args = []
         script = ArchivePopulator("test copy archives", test_args=test_args)
         script.logger = QuietFakeLogger()
         script.txn = self.layer.txn
@@ -214,7 +220,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
     def copyArchive(self, distroseries, archive_name, owner,
         architectures=None, component="main", from_user=None,
-        from_archive=None):
+        from_archive=None, packageset_names=None, nonvirtualized=False):
         """Run the copy-archive script."""
         extra_args = [
             '--from-distribution', distroseries.distribution.name,
@@ -237,8 +243,17 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         if architectures is None:
             architectures = ["386"]
 
+        if nonvirtualized:
+            extra_args.extend(["--nonvirtualized"])
+
         for architecture in architectures:
             extra_args.extend(['-a', architecture])
+
+        if packageset_names is None:
+            packageset_names = []
+
+        for packageset_name in packageset_names:
+            extra_args.extend(['--package-set', packageset_name])
 
         script = self.getScript(test_args=extra_args)
         script.mainTask()
@@ -253,9 +268,9 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # flag turned off.
         self.assertFalse(copy_archive.enabled)
 
-        # Also, make sure that the builds for the new copy archive will be
-        # carried out on non-virtual builders.
-        self.assertTrue(copy_archive.require_virtualized)
+        # Assert the virtualization is correct.
+        virtual = not nonvirtualized
+        self.assertEqual(copy_archive.require_virtualized, virtual)
 
         return copy_archive
 
@@ -282,13 +297,15 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.createSourcePublications(package_infos, distroseries)
         return distroseries
 
-    def makeCopyArchive(self, package_infos, component="main"):
+    def makeCopyArchive(self, package_infos, component="main",
+                        nonvirtualized=False):
         """Make a copy archive based on a new distribution."""
         owner = self.createTargetOwner()
         distroseries = self.createSourceDistribution(package_infos)
         archive_name = self.getTargetArchiveName(distroseries.distribution)
         copy_archive = self.copyArchive(
-            distroseries, archive_name, owner, component=component)
+            distroseries, archive_name, owner, component=component,
+            nonvirtualized=nonvirtualized)
         return (copy_archive, distroseries)
 
     def checkBuilds(self, archive, package_infos):
@@ -482,6 +499,30 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # amd64 too
         self.checkBuilds(copy_archive, [package_info])
 
+    def testNoBuildsForArchAll(self):
+        # If we have a copy for an architecture that is not the
+        # nominatedarchindep architecture, then we don't want to create
+        # builds for arch-all packages, as they can't be built at all
+        # and createMissingBuilds blows up when it checks that.
+        package_info = PackageInfo(
+            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED,
+            arch_hint="all")
+        owner = self.createTargetOwner()
+        distroseries = self.createSourceDistribution([package_info])
+        self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="amd64",
+            processorfamily=ProcessorFamilySet().getByName("amd64"),
+            supports_virtualized=True)
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner,
+            architectures=["amd64"])
+        # We don't get any builds since amd64 is not the
+        # nomindatedarchindep, i386 is.
+        self.assertEqual(
+            distroseries.nominatedarchindep.architecturetag, "i386")
+        self.checkBuilds(copy_archive, [])
+
     def testMultipleArchTags(self):
         """Test copying an archive with multiple architectures.
 
@@ -502,24 +543,104 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             architectures=["386", "amd64"])
         self.checkBuilds(copy_archive, [package_info, package_info])
 
-    def testCopyArchiveCopiesAllComponents(self):
-        """Test that packages from all components are copied.
+    def testCopyArchiveCopiesRightComponents(self):
+        """Test that packages from the right components are copied.
 
-        When copying you specify a component, but that component doesn't
+        When copying you specify a component, that component should
         limit the packages copied. We create a source in main and one in
         universe, and then copy with --component main, and expect to see
-        both sources in the copy.
+        only main in the copy.
         """
+        package_info_universe = PackageInfo(
+                "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED,
+                component="universe")
+        package_info_main = PackageInfo(
+                "apt", "2.2", status=PackagePublishingStatus.PUBLISHED,
+                component="main")
+        package_infos_both = [package_info_universe, package_info_main]
+        copy_archive, distroseries = self.makeCopyArchive(
+            package_infos_both, component="main")
+        self.checkBuilds(copy_archive, [package_info_main])
+
+    def testCopyArchiveSubsetsBasedOnPackageset(self):
+        """Test that --package-set limits the sources copied."""
         package_infos = [
             PackageInfo(
-                "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED,
-                component="universe"),
+                "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
             PackageInfo(
-                "apt", "2.2", status=PackagePublishingStatus.PUBLISHED,
-                component="main")]
-        copy_archive, distroseries = self.makeCopyArchive(package_infos,
-            component="main")
-        self.checkBuilds(copy_archive, package_infos)
+                "apt", "2.2", status=PackagePublishingStatus.PUBLISHED),
+            ]
+        owner = self.createTargetOwner()
+        distroseries = self.createSourceDistribution(package_infos)
+        packageset_name = u"apt-packageset"
+        spn = self.factory.getOrMakeSourcePackageName(name="apt")
+        self.factory.makePackageset(
+            name=packageset_name, distroseries=distroseries, packages=(spn,))
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner,
+            packageset_names=[packageset_name])
+        self.checkCopiedSources(
+            copy_archive, distroseries, [package_infos[1]])
+
+    def testCopyArchiveUnionsPackagesets(self):
+        """Test that package sets are unioned when copying archives."""
+        package_infos = [
+            PackageInfo(
+                "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+                "apt", "2.2", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+                "gcc", "4.5", status=PackagePublishingStatus.PUBLISHED),
+            ]
+        owner = self.createTargetOwner()
+        distroseries = self.createSourceDistribution(package_infos)
+        apt_packageset_name = u"apt-packageset"
+        apt_spn = self.factory.getOrMakeSourcePackageName(name="apt")
+        gcc_packageset_name = u"gcc-packageset"
+        gcc_spn = self.factory.getOrMakeSourcePackageName(name="gcc")
+        self.factory.makePackageset(
+            name=apt_packageset_name, distroseries=distroseries,
+            packages=(apt_spn,))
+        self.factory.makePackageset(
+            name=gcc_packageset_name, distroseries=distroseries,
+            packages=(gcc_spn,))
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner,
+            packageset_names=[apt_packageset_name, gcc_packageset_name])
+        self.checkCopiedSources(
+            copy_archive, distroseries, package_infos[1:])
+
+    def testCopyArchiveRecursivelyCopiesPackagesets(self):
+        """Test that package set copies include subsets."""
+        package_infos = [
+            PackageInfo(
+                "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+                "apt", "2.2", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+                "gcc", "4.5", status=PackagePublishingStatus.PUBLISHED),
+            ]
+        owner = self.createTargetOwner()
+        distroseries = self.createSourceDistribution(package_infos)
+        apt_packageset_name = u"apt-packageset"
+        apt_spn = self.factory.getOrMakeSourcePackageName(name="apt")
+        gcc_packageset_name = u"gcc-packageset"
+        gcc_spn = self.factory.getOrMakeSourcePackageName(name="gcc")
+        apt_packageset = self.factory.makePackageset(
+            name=apt_packageset_name, distroseries=distroseries,
+            packages=(apt_spn,))
+        gcc_packageset = self.factory.makePackageset(
+            name=gcc_packageset_name, distroseries=distroseries,
+            packages=(gcc_spn,))
+        apt_packageset.add((gcc_packageset,))
+        archive_name = self.getTargetArchiveName(distroseries.distribution)
+        copy_archive = self.copyArchive(
+            distroseries, archive_name, owner,
+            packageset_names=[apt_packageset_name])
+        self.checkCopiedSources(
+            copy_archive, distroseries, package_infos[1:])
 
     def testCopyFromPPA(self):
         """Test we can create a copy archive with a PPA as the source."""
@@ -545,7 +666,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         archive_name = self.getTargetArchiveName(distroseries.distribution)
         copy_archive = self.copyArchive(
             distroseries, archive_name, owner, from_user=ppa_owner_name,
-            from_archive=ppa_name)
+            from_archive=ppa_name, component=package_info.component)
         self.checkCopiedSources(
             copy_archive, distroseries, [package_info])
 
@@ -711,6 +832,20 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             user=invalid_user,
             exception_type=SoyuzScriptError,
             exception_text="Invalid user name: '%s'" % invalid_user)
+
+    def testUnknownPackagesetName(self):
+        """Try copy archive population with an unknown packageset name.
+
+        The caller can request copying specific packagesets. We test
+        what happens if they request a packageset that doesn't exist.
+        """
+        unknown_packageset = "unknown"
+        extra_args = ['-a', '386', "--package-set", unknown_packageset]
+        self.runScript(
+            extra_args=extra_args,
+            exception_type=PackageLocationError,
+            exception_text="Could not find packageset No such package set"
+            " (in the specified distro series): '%s'." % unknown_packageset)
 
     def testPackagesetDelta(self):
         """Try to calculate the delta between two source package sets."""
