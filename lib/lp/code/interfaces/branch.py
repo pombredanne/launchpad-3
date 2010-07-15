@@ -326,6 +326,7 @@ class IBranchPublic(Interface):
             required=True,
             readonly=False))
 
+
 class IBranchAnyone(Interface):
     """Attributes of IBranch that can be changed by launchpad.AnyPerson."""
 
@@ -460,6 +461,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         title=_("If this value is more recent than the last mirror attempt, "
                 "then the branch will be mirrored on the next mirror run."),
         required=False)
+
     # Scanning attributes
     last_scanned = exported(
         Datetime(
