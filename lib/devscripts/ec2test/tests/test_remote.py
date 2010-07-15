@@ -10,9 +10,10 @@ import sys
 import unittest
 
 from devscripts.ec2test.remote import SummaryResult
+from testtools import TestCase
 
 
-class TestSummaryResult(unittest.TestCase):
+class TestSummaryResult(TestCase):
     """Tests for `SummaryResult`."""
 
     def makeException(self, factory=None, *args, **kwargs):
@@ -23,17 +24,16 @@ class TestSummaryResult(unittest.TestCase):
         except:
             return sys.exc_info()
 
-    def test_printError(self):
-        # SummaryResult.printError() prints out the name of the test, the kind
+    def test_formatError(self):
+        # SummaryResult._formatError() combines the name of the test, the kind
         # of error and the details of the error in a nicely-formatted way.
-        stream = StringIO()
-        result = SummaryResult(stream)
-        result.printError('FOO', 'test', 'error')
-        expected = '%sFOO: test\n%serror\n' % (
+        result = SummaryResult(None)
+        output = result._formatError('FOO', 'test', 'error')
+        expected = '%s\nFOO: test\n%s\nerror\n' % (
             result.double_line, result.single_line)
-        self.assertEqual(expected, stream.getvalue())
+        self.assertEqual(expected, output)
 
-    def test_addError(self):
+    def test_addError_writes_at_end_of_run(self):
         # SummaryResult.addError() prints a nicely-formatted error.
         #
         # First, use printError to build the error text we expect.
@@ -48,9 +48,11 @@ class TestSummaryResult(unittest.TestCase):
         stream = StringIO()
         result = SummaryResult(stream)
         result.addError(test, error)
+        self.assertEqual('', stream.getvalue())
+        result.stopTestRun()
         self.assertEqual(expected, stream.getvalue())
 
-    def test_addFailure(self):
+    def test_addFailure_writes_at_end_of_run(self):
         # SummaryResult.addFailure() prints a nicely-formatted error.
         #
         # First, use printError to build the error text we expect.
@@ -65,6 +67,8 @@ class TestSummaryResult(unittest.TestCase):
         stream = StringIO()
         result = SummaryResult(stream)
         result.addFailure(test, error)
+        self.assertEqual('', stream.getvalue())
+        result.stopTestRun()
         self.assertEqual(expected, stream.getvalue())
 
 

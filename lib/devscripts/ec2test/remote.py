@@ -15,6 +15,7 @@ import gzip
 import optparse
 import os
 import pickle
+from StringIO import StringIO
 import subprocess
 import sys
 import tempfile
@@ -38,29 +39,41 @@ import subunit
 class SummaryResult(unittest.TestResult):
     """Test result object used to generate the summary."""
 
-    double_line = '=' * 70 + '\n'
-    single_line = '-' * 70 + '\n'
+    double_line = '=' * 70
+    single_line = '-' * 70
 
     def __init__(self, output_stream):
         super(SummaryResult, self).__init__()
         self.stream = output_stream
+        self._buffered_results = StringIO()
+
+    def _formatError(self, flavor, test, error):
+        return '\n'.join(
+            [self.double_line,
+             '%s: %s' % (flavor, test),
+             self.single_line,
+             error,
+             ''])
 
     def printError(self, flavor, test, error):
         """Print an error to the output stream."""
-        self.stream.write(self.double_line)
-        self.stream.write('%s: %s\n' % (flavor, test))
-        self.stream.write(self.single_line)
-        self.stream.write('%s\n' % (error,))
+        self.stream.write(self._formatError(flavor, test, error))
         self.stream.flush()
 
     def addError(self, test, error):
         super(SummaryResult, self).addError(test, error)
-        self.printError('ERROR', test, self._exc_info_to_string(error, test))
+        self._buffered_results.write(
+            self._formatError(
+                'ERROR', test, self._exc_info_to_string(error, test)))
 
     def addFailure(self, test, error):
         super(SummaryResult, self).addFailure(test, error)
-        self.printError(
-            'FAILURE', test, self._exc_info_to_string(error, test))
+        self._buffered_results.write(
+            self._formatError(
+                'FAILURE', test, self._exc_info_to_string(error, test)))
+
+    def stopTestRun(self):
+        self.stream.write(self._buffered_results.getvalue())
 
 
 class FlagFallStream:
