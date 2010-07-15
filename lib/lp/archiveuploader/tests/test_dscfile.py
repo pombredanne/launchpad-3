@@ -14,7 +14,7 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.dscfile import (
     DSCFile, findChangelog, findCopyright)
 from lp.archiveuploader.nascentuploadfile import UploadError
-from lp.archiveuploader.tests import mock_logger_quiet
+from lp.archiveuploader.tests import datadir, mock_logger_quiet
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.testing import TestCase, TestCaseWithFactory
 
@@ -125,8 +125,7 @@ class TestDscFileLibrarian(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def getDscFile(self, name):
-        dsc_path = os.path.join(config.root,
-            "lib/lp/archiveuploader/tests/data/suite", name, name + '.dsc')
+        dsc_path = datadir(os.path.join('suite', name, name + '.dsc'))
         class Changes:
             architectures = ['source']
         logger = QuietFakeLogger()

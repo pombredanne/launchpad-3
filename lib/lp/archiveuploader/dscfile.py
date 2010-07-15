@@ -495,9 +495,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         package_files = self.files + [self]
         try:
             for source_file in package_files:
-                os.symlink(source_file.filepath,
-                           os.path.join(self.unpacked_dir,
-                           source_file.filename))
+                os.symlink(
+                    source_file.filepath,
+                    os.path.join(self.unpacked_dir, source_file.filename))
             args = ["dpkg-source", "-sn", "-x", dsc_in_tmpdir]
             dpkg_source = subprocess.Popen(args, stdout=subprocess.PIPE,
                                            stderr=subprocess.PIPE)
