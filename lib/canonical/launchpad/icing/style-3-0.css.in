@@ -1413,6 +1413,11 @@ span.help {
    Universal presentation
    Colors and fonts
 */
+pre .highlighted {
+    border: none;
+    padding: 0em;
+    margin: 0em;
+    }
 .answers-stat {
     color: #3840BE;
     }
@@ -1986,6 +1991,10 @@ body.tab-bugs #portlet-subscribers .sprite {
     background-repeat: no-repeat;
     }
 .undecided {
+    background-image: url(/@@/maybe.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
+.maybe {
     background-image: url(/@@/maybe.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }

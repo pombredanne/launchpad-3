@@ -620,12 +620,14 @@ class Publisher(object):
             "Attempting to delete archive '%s/%s' at '%s'." % (
                 self.archive.owner.name, self.archive.name, root_dir))
 
-        try:
-            shutil.rmtree(root_dir)
-        except (shutil.Error, OSError), e:
-            self.log.warning(
-                "Failed to delete directory '%s' for archive '%s/%s'\n%s" % (
-                    root_dir, self.archive.owner.name, 
+        for directory in (root_dir, self._config.metaroot):
+            try:
+                shutil.rmtree(directory)
+            except (shutil.Error, OSError), e:
+                self.log.warning(
+                    "Failed to delete directory '%s' for archive "
+                    "'%s/%s'\n%s" % (
+                    directory, self.archive.owner.name, 
                     self.archive.name, e))
 
         self.archive.status = ArchiveStatus.DELETED
