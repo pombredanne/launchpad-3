@@ -1127,7 +1127,7 @@ p.search-results {
     vertical-align: top;
     }
 div.watermark-apps-portlet {
-    clear:both;
+    clear: both;
     white-space: no-wrap;
     }
 div.watermark-apps-portlet .wide {
