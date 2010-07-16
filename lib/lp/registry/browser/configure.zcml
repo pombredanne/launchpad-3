@@ -298,7 +298,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"/>
+        layer="lp.code.publisher.BlueprintsLayer"/>
     <browser:defaultView
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         name="+questions"
@@ -408,7 +408,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.projectgroup.IProjectGroupSeries"
         name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"/>
+        layer="lp.code.publisher.BlueprintsLayer"/>
     <browser:menus
         classes="
             ProjectActionMenu
@@ -762,7 +762,7 @@
             name="+index"/>
         <browser:defaultView
             for="lp.registry.interfaces.person.IPerson"
-            layer="canonical.launchpad.layers.BlueprintLayer"
+            layer="lp.code.publisher.BlueprintsLayer"
             name="+specs"/>
         <browser:defaultView
             for="lp.registry.interfaces.person.IPerson"
@@ -1353,7 +1353,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.product.IProduct"
         name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"/>
+        layer="lp.code.publisher.BlueprintsLayer"/>
     <browser:defaultView
         for="lp.registry.interfaces.product.IProduct"
         name="+code-index"
@@ -1596,7 +1596,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"/>
+        layer="lp.code.publisher.BlueprintsLayer"/>
     <browser:defaultView
         for="lp.registry.interfaces.productseries.IProductSeries"
         layer="lp.code.publisher.BugsLayer"
@@ -1739,7 +1739,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
         name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"/>
+        layer="lp.code.publisher.BlueprintsLayer"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
         layer="lp.code.publisher.BugsLayer"

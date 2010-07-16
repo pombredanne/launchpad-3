@@ -13,7 +13,7 @@
         package=".browser"/>
 
     <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.BlueprintsLayer" />
+        folder="help" type="lp.code.publisher.BlueprintsLayer" />
 
     <!-- Sprint -->
 

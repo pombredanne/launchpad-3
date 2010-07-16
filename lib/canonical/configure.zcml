@@ -84,14 +84,14 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="specs"
-        layer="canonical.launchpad.layers.BlueprintsLayer"
+        layer="lp.code.publisher.BlueprintsLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.BlueprintsLayer"
+        layer="lp.code.publisher.BlueprintsLayer"
         />
 
     <!-- virtual host: code -->

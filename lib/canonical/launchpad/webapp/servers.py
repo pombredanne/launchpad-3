@@ -1015,14 +1015,6 @@ privatexmlrpc = wsgi.ServerType(
 class MainLaunchpadPublication(LaunchpadBrowserPublication):
     """The publication used for the main Launchpad site."""
 
-# ---- blueprint
-
-class BlueprintBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.BlueprintLayer)
-
-class BlueprintPublication(LaunchpadBrowserPublication):
-    """The publication used for the Blueprint site."""
-
 # ---- translations
 
 class TranslationsPublication(LaunchpadBrowserPublication):
