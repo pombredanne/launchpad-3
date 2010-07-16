@@ -709,6 +709,13 @@ table.summary ul, table.summary ul li {
 .batch-navigation-links .next {
     margin-right: 0.25em;
     }
+.flowed-block {
+    display: table-cell;
+    display: inline-table;
+    display: inline-block;
+    text-align: left;
+    vertical-align: top;
+    }
 
 
 /* =========================
@@ -1110,21 +1117,6 @@ p.search-results {
 */
 .demo {
     background-color: #fee;
-    }
-#locationbar {
-    /* The following style works around the fact that the locationbar, which
-    is only used of the Login/Register links in 3.0 UI, is accessible on
-    "locationless" pages. It adds extra space at the top of every page in
-    Launchpad but that does actually look quite good ... ;-).*/
-    height: 1em;
-    z-index: 1000;
-    }
-.flowed-block {
-    display: table-cell;
-    display: inline-table;
-    display: inline-block;
-    text-align: left;
-    vertical-align: top;
     }
 div.watermark-apps-portlet {
     clear: both;
