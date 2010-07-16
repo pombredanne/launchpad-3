@@ -28,25 +28,41 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         self.productseries.product.official_rosetta = True
         self.parent = self.productseries
         self.psl_set = getUtility(IProductSeriesLanguageSet)
+        self.language = self.factory.makeLanguage('sr@test')
 
     def getTranslatedLanguage(self, language):
         return self.psl_set.getProductSeriesLanguage(self.productseries,
                                                      language)
 
+    def addPOTemplate(self, number_of_potmsgsets=5):
+        potemplate = self.factory.makePOTemplate(
+            productseries=self.productseries)
+        for sequence in range(number_of_potmsgsets):
+            self.factory.makePOTMsgSet(potemplate, sequence=sequence+1)
+        removeSecurityProxy(potemplate).messagecount = number_of_potmsgsets
+        return potemplate
+
     def test_interface(self):
-        language = self.factory.makeLanguage('sr@test')
-        dummy_translated_language = self.getTranslatedLanguage(language)
+        translated_language = self.getTranslatedLanguage(self.language)
         self.assertTrue(verifyObject(ITranslatedLanguage,
-                                     dummy_translated_language))
+                                     translated_language))
 
     def test_language(self):
-        language = self.factory.makeLanguage('sr@test')
-        dummy_translated_language = self.getTranslatedLanguage(language)
-        self.assertEqual(language,
-                         dummy_translated_language.language)
+        translated_language = self.getTranslatedLanguage(self.language)
+        self.assertEqual(self.language,
+                         translated_language.language)
 
     def test_parent(self):
-        language = self.factory.makeLanguage('sr@test')
-        dummy_translated_language = self.getTranslatedLanguage(language)
+        translated_language = self.getTranslatedLanguage(self.language)
         self.assertEqual(self.parent,
-                         dummy_translated_language.parent)
+                         translated_language.parent)
+
+    def test_pofiles_notemplates(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        self.assertEqual([], list(translated_language.pofiles))
+
+    def test_pofiles_template_with_pofiles(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        potemplate = self.addPOTemplate()
+        pofile = self.factory.makePOFile(self.language.code, potemplate)
+        self.assertEqual([pofile], list(translated_language.pofiles))

@@ -1668,4 +1668,4 @@ class TranslationTemplatesCollection(Collection):
         :return: A `TranslationTemplatesCollection` with an added outer
             join to `POFile`.
         """
-        return self.joinOuter(POFile, POFile.id == POTemplate.pofileID)
+        return self.joinOuter(POFile, POTemplate.id == POFile.potemplateID)

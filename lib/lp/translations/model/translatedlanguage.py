@@ -5,7 +5,12 @@ __all__ = ['TranslatedLanguageMixin']
 
 from zope.interface import implements
 
+from storm.expr import Desc
+
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.translations.interfaces.translations import ITranslatedLanguage
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import POTemplate
 
 class TranslatedLanguageMixin(object):
     """See `ITranslatedLanguage`."""
@@ -14,7 +19,16 @@ class TranslatedLanguageMixin(object):
     language = None
     parent = None
 
-    pofiles = None
+    @property
+    def pofiles(self):
+        """See `ITranslatedLanguage`."""
+        assert IHasTranslationTemplates.providedBy(self.parent), (
+            "Parent object should implement `IHasTranslationTemplates`.")
+        current_templates = self.parent.getCurrentTemplatesCollection()
+        pofiles = current_templates.joinPOFile()
+        return pofiles.select(POFile).order_by(
+            Desc(POTemplate.priority), POTemplate.name)
+
     translation_statistics = None
 
     def setCounts(self, total, imported, changed, new,

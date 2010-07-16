@@ -122,19 +122,6 @@ class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
         """See `IProductSeriesLanguage`."""
         return self._last_changed_date
 
-    @property
-    def pofiles(self):
-        """See `IProductSeriesLanguage`."""
-        store = Store.of(self.language)
-        result = store.find(
-            POFile,
-            POFile.language==self.language,
-            POFile.variant==self.variant,
-            POFile.potemplate==POTemplate.id,
-            POTemplate.productseries==self.productseries,
-            POTemplate.iscurrent==True)
-        return result.order_by(['-priority'])
-
     def getPOFilesFor(self, potemplates):
         """See `IProductSeriesLanguage`."""
         return get_pofiles_for(potemplates, self.language, self.variant)
