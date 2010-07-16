@@ -153,7 +153,10 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
         FeedParser takes care of sanitizing the HTML contained in the feed.
         """
         # Use urlfetch which supports timeout
-        data = urlfetch(config.launchpad.homepage_recent_posts_feed)
+        try:
+            data = urlfetch(config.launchpad.homepage_recent_posts_feed)
+        except IOError:
+            return []
         feed = feedparser.parse(data)
         posts = []
         max_count = config.launchpad.homepage_recent_posts_count
