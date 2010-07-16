@@ -5,7 +5,7 @@ __all__ = ['TranslatedLanguageMixin']
 
 from zope.interface import implements
 
-from storm.expr import Desc
+from storm.expr import Coalesce, Desc, Sum
 
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.translations.interfaces.translations import ITranslatedLanguage
@@ -50,7 +50,19 @@ class TranslatedLanguageMixin(object):
 
     def recalculateCounts(self):
         """See `ITranslatedLanguage`."""
-        pass
+        templates = self.parent.getCurrentTemplatesCollection()
+        pofiles = templates.joinPOFile()
+        total_count_results = list(
+            pofiles.select(Coalesce(Sum(POTemplate.messagecount), 0),
+                           Coalesce(Sum(POFile.currentcount), 0),
+                           Coalesce(Sum(POFile.updatescount), 0),
+                           Coalesce(Sum(POFile.rosettacount), 0),
+                           Coalesce(Sum(POFile.unreviewed_count), 0))
+            )
+        total, imported, changed, rosetta, unreviewed = total_count_results[0]
+        translated = imported + rosetta
+        new = rosetta - changed
+        self.setCounts(total, translated, new, changed, unreviewed)
 
     last_changed_date = None
     last_translator = None

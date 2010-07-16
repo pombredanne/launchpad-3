@@ -66,27 +66,6 @@ class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
             total = 0
         return total
 
-    def recalculateCounts(self):
-        """See `IProductSeriesLanguage`."""
-        store = Store.of(self.language)
-        query = store.find(
-            (Sum(POFile.currentcount),
-              Sum(POFile.updatescount),
-              Sum(POFile.rosettacount),
-              Sum(POFile.unreviewed_count)),
-            POFile.language==self.language,
-            POFile.variant==None,
-            POFile.potemplate==POTemplate.id,
-            POTemplate.productseries==self.productseries,
-            POTemplate.iscurrent==True)
-        imported, changed, new, unreviewed = query[0]
-        if (imported is None or changed is None or
-            new is None or unreviewed is None):
-            # Set all counts to zero.
-            imported = changed = new = unreviewed = 0
-        self.setCounts(self._getMessageCount(), imported, changed,
-                       new, unreviewed)
-
     @property
     def title(self):
         """See `IProductSeriesLanguage`."""
