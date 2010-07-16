@@ -378,8 +378,9 @@ class BugTrackerEditView(LaunchpadEditFormView):
     @property
     def user_can_reset_watches(self):
         lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
-        if (not check_permission("launchpad.Admin", self.user) and
-            not self.user.inTeam(lp_developers)):
+        return (
+            check_permission("launchpad.Admin", self.user) or
+            self.user.inTeam(lp_developers))
 
     def resetBugTrackerWatches(self):
         """Call the resetWatches() method of the current context.
