@@ -13,8 +13,8 @@ from lp.services.mime import customizeMimetypes
 from zope.security import checker
 
 
-# XXX matsubara bug=XXXX NullHandler class is available on python 2.7 so when
-# LP is running with it, we can remove this class.
+# XXX matsubara 2010-07-16 bug=606303: NullHandler class is available on
+# python 2.7 so when LP is running with it, this class can be removed.
 class NullHandler(logging.Handler):
     def emit(self, record):
         pass
