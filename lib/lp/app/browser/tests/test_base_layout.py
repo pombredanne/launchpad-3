@@ -61,8 +61,17 @@ class TestBaseLayout(TestCaseWithFactory):
         # Verfify the common markup provided to all tremplates
         view = self.makeTemplateView('main_side')
         content = BeautifulSoup(view())
+        # The html element states the namespace and language information.
         self.assertEqual(
-            'Test base-layout: main_side', content.title.string)
+            'http://www.w3.org/1999/xhtml', content.html['xmlns'])
+        self.assertEqual('en', content.html['xml:lang'])
+        self.assertEqual('en', content.html['lang'])
+        self.assertEqual('ltr', content.html['dir'])
+        # The page's title starts with the view's page_title.
+        self.assertTrue(content.title.string.startswith(view.page_title))
+        # The shortcut icon for the browser chrome is provided.
+        self.assertEqual('shortcut icon', content.link['rel'])
+        self.assertEqual('/@@/launchpad.png', content.link['href'])
 
     def test_main_side(self):
         view = self.makeTemplateView('main_side')
