@@ -381,7 +381,9 @@ class BugTrackerEditView(LaunchpadEditFormView):
         :raises `UserCannotResetWatchesError` if the user isn't an admin
                 or a member of the Launchpad Developers team.
         """
-        if not check_permission("launchpad.Admin", self.user):
+        lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
+        if (not check_permission("launchpad.Admin", self.user) and
+            not self.user.inTeam(lp_developers)):
             raise UserCannotResetWatchesError
 
         self.context.resetWatches()

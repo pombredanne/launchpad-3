@@ -390,7 +390,8 @@
                 attributes="
                     destroySelf
                     ensurePersonForSelf
-                    linkPersonToSelf"
+                    linkPersonToSelf
+                    resetWatches"
                 set_attributes="
                     aliases
                     baseurl
@@ -404,7 +405,6 @@
                     "/>
             <require
                 permission="launchpad.Admin"
-                attributes="resetWatches"
                 set_attributes="active"/>
         </class>
         <adapter

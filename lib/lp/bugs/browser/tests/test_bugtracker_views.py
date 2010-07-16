@@ -10,10 +10,14 @@ import unittest
 from datetime import datetime, timedelta
 from pytz import utc
 
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.bugs.browser.bugtracker import (
     BugTrackerEditView, UserCannotResetWatchesError)
+from lp.registry.interfaces.person import IPersonSet
 from lp.testing import login, TestCaseWithFactory
 from lp.testing.sampledata import ADMIN_EMAIL, NO_PRIVILEGE_EMAIL
 from lp.testing.views import create_initialized_view
@@ -71,6 +75,21 @@ class BugTrackerEditViewTestCase(TestCaseWithFactory):
     def test_admin_can_reset_watches(self):
         # Launchpad admins can reset the watches on a bugtracker.
         login(ADMIN_EMAIL)
+        view = create_initialized_view(self.bug_tracker, '+edit')
+        view.resetBugTrackerWatches()
+        self._assertBugWatchesAreCheckedInTheFuture()
+
+    def test_lp_dev_can_reset_watches(self):
+        # Launchpad developers can reset the watches on a bugtracker.
+        login(ADMIN_EMAIL)
+        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        launchpad_developers = getUtility(
+            ILaunchpadCelebrities).launchpad_developers
+
+        lp_dev = self.factory.makePerson()
+        launchpad_developers.addMember(lp_dev, admin)
+
+        login(lp_dev.preferredemail.email)
         view = create_initialized_view(self.bug_tracker, '+edit')
         view.resetBugTrackerWatches()
         self._assertBugWatchesAreCheckedInTheFuture()
