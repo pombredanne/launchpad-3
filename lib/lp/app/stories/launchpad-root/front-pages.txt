@@ -40,6 +40,20 @@ The footer doesn't contain the links that are already present on the page.
     >>> print find_tags_by_class(browser.contents, 'lp-arcana')
     []
 
+The front page also lists the recent blog posts published on the Launchpad
+blog:
+
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'homepage-blogposts'))
+    Recent Launchpad blog posts
+    Launchpad EPIC 2010 photo
+    &ndash; 16 Jul 2010
+    The Launchpad and Bazaar teams have been in Prague this week...
+    Three tips for faster launchpadlib api clients
+    &ndash; 14 Jul 2010
+    Three tips from Leonard...
+    New Launchpad Bugs Status: Opinion...
+
 The homepage looks different when the use is logged in:
 
   >>> user_browser = setupBrowser(auth="Basic test@canonical.com:test")
