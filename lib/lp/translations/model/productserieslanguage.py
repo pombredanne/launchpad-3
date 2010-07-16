@@ -32,6 +32,7 @@ class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
         assert 'en' != language.code, (
             'English is not a translatable language.')
         RosettaStats.__init__(self)
+        TranslatedLanguageMixin.__init__(self)
         self.productseries = productseries
         self.parent = productseries
         self.language = language
@@ -40,10 +41,7 @@ class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
         self.id = 0
         self._last_changed_date = None
 
-        # Reset all cached counts.
-        self.setCounts()
-
-    def setCounts(self, total=None, imported=None, changed=None, new=None,
+    def _setCounts(self, total=None, imported=None, changed=None, new=None,
                   unreviewed=None, last_changed=None):
         """See `IProductSeriesLanguage`."""
         self._messagecount = total

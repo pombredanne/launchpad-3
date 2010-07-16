@@ -80,7 +80,7 @@ class ITranslatedLanguage(Interface):
     translation_statistics = Attribute(
         _('A dict containing relevant aggregated statistics counts.'))
 
-    def setCounts(total, imported, changed, new, unreviewed, last_changed):
+    def setCounts(total, translated, new, changed, unreviewed):
         """Set aggregated message counts for ITranslatedLanguage."""
 
     def recalculateCounts():

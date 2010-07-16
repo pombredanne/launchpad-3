@@ -19,6 +19,9 @@ class TranslatedLanguageMixin(object):
     language = None
     parent = None
 
+    def __init__(self):
+        self.setCounts(total=0, translated=0, new=0, changed=0, unreviewed=0)
+
     @property
     def pofiles(self):
         """See `ITranslatedLanguage`."""
@@ -29,12 +32,21 @@ class TranslatedLanguageMixin(object):
         return pofiles.select(POFile).order_by(
             Desc(POTemplate.priority), POTemplate.name)
 
-    translation_statistics = None
+    @property
+    def translation_statistics(self):
+        return self._translation_statistics
 
-    def setCounts(self, total, imported, changed, new,
-                  unreviewed, last_changed):
+    def setCounts(self, total, translated, new, changed, unreviewed):
         """See `ITranslatedLanguage`."""
-        pass
+        untranslated = total - translated
+        self._translation_statistics = {
+            'total_count' : total,
+            'translated_count' : translated,
+            'new_count' : new,
+            'changed_count' : changed,
+            'unreviewed_count' : unreviewed,
+            'untranslated_count' : untranslated,
+            }
 
     def recalculateCounts(self):
         """See `ITranslatedLanguage`."""

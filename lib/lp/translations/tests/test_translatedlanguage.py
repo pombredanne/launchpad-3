@@ -66,3 +66,41 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         potemplate = self.addPOTemplate()
         pofile = self.factory.makePOFile(self.language.code, potemplate)
         self.assertEqual([pofile], list(translated_language.pofiles))
+
+    def test_statistics_empty(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+
+        expected = {
+            'total_count' : 0,
+            'translated_count' : 0,
+            'new_count' : 0,
+            'changed_count' : 0,
+            'unreviewed_count' : 0,
+            'untranslated_count' : 0,
+            }
+        self.assertEqual(expected,
+                         translated_language.translation_statistics)
+
+    def test_setCounts_statistics(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+
+        total = 5
+        translated = 4
+        new = 3
+        changed = 2
+        unreviewed = 1
+        untranslated = total - translated
+
+        translated_language.setCounts(
+            total, translated, new, changed, unreviewed)
+
+        expected = {
+            'total_count' : total,
+            'translated_count' : translated,
+            'new_count' : new,
+            'changed_count' : changed,
+            'unreviewed_count' : unreviewed,
+            'untranslated_count' : untranslated,
+            }
+        self.assertEqual(expected,
+                         translated_language.translation_statistics)
