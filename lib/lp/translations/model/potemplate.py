@@ -1586,8 +1586,7 @@ class HasTranslationTemplatesMixin:
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
-        return self._orderTemplates(
-            self.getTemplatesCollection().select(POTemplate))
+        return self._orderTemplates(self.getTemplatesCollection().select())
 
     def getTranslationTemplateFormats(self):
         """See `IHasTranslationTemplates`."""
