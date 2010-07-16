@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for accessing the external Salesforce proxy."""
@@ -20,7 +20,7 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.salesforce import (
+from lp.services.salesforce.interfaces import (
     ISalesforceVoucher, ISalesforceVoucherProxy, SFDCError,
     SVPAlreadyRedeemedException, SVPNotAllowedException, SVPNotFoundException,
     SalesforceVoucherProxyException)
@@ -110,6 +110,9 @@ class SalesforceVoucherProxy:
         """See `ISalesforceVoucherProxy`."""
         identifier = self._getUserIdentitifier(user)
         vouchers = self.server.getUnredeemedVouchers(identifier)
+        # Force the return value to be a list of dicts.
+        if isinstance(vouchers, dict):
+            vouchers = [vouchers]
         return [Voucher(voucher) for voucher in vouchers]
 
     @fault_mapper
@@ -117,6 +120,9 @@ class SalesforceVoucherProxy:
         """See `ISalesforceVoucherProxy`."""
         identifier = self._getUserIdentitifier(user)
         vouchers = self.server.getAllVouchers(identifier)
+        # Force the return value to be a list of dicts.
+        if isinstance(vouchers, dict):
+            vouchers = [vouchers]
         return [Voucher(voucher) for voucher in vouchers]
 
     @fault_mapper
@@ -140,7 +146,7 @@ class SalesforceVoucherProxy:
         status = self.server.redeemVoucher(voucher_id,
                                            identifier,
                                            project.id,
-                                           project.name)
+                                           project.displayname)
         return status
 
     @fault_mapper

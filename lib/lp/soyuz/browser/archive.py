@@ -1873,7 +1873,7 @@ class ArchiveEditView(BaseArchiveEditView):
 
 class ArchiveAdminView(BaseArchiveEditView):
 
-    field_names = ['enabled', 'private', 'require_virtualized',
+    field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
                    'buildd_secret', 'authorized_size', 'relative_build_score',
                    'external_dependencies']
 
@@ -1918,6 +1918,11 @@ class ArchiveAdminView(BaseArchiveEditView):
             if len(errors) != 0:
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
+
+        if data.get('commercial') is True and not data['private']:
+            self.setFieldError(
+                'commercial',
+                'Can only set commericial for private archives.')
 
     def validate_external_dependencies(self, ext_deps):
         """Validate the external_dependencies field.

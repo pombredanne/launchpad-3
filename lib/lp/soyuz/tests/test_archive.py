@@ -8,6 +8,7 @@ import pytz
 import unittest
 
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import sqlvalues
@@ -34,7 +35,7 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import login, login_person, TestCaseWithFactory
 
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
@@ -739,7 +740,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
 
 
 class TestEnabledRestrictedBuilds(TestCaseWithFactory):
-    """Ensure that restricted architecture family builds can be allowed and 
+    """Ensure that restricted architecture family builds can be allowed and
     disallowed correctly."""
 
     layer = LaunchpadZopelessLayer
@@ -781,11 +782,11 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         enable enabled_restricted_families for arm for that archive."""
         self.assertContentEqual([], self.archive.enabled_restricted_families)
         self.archive_arch_set.new(self.archive, self.arm)
-        self.assertContentEqual([self.arm], 
-                self.archive.enabled_restricted_families)
+        self.assertEquals([self.arm],
+                list(self.archive.enabled_restricted_families))
 
     def test_get_returns_restricted_only(self):
-        """Adding an entry to ArchiveArch for something that is not 
+        """Adding an entry to ArchiveArch for something that is not
         restricted does not make it show up in enabled_restricted_families.
         """
         self.assertContentEqual([], self.archive.enabled_restricted_families)
@@ -829,8 +830,8 @@ class TestArchiveTokens(TestCaseWithFactory):
         token = self.private_ppa.newAuthToken(self.joe)
         self.assertEqual(self.private_ppa.getAuthToken(self.joe), token)
 
-    def test_getPrivateSourcesList(self):
-        url = self.private_ppa.getPrivateSourcesList(self.joe)
+    def test_getArchiveSubscriptionURL(self):
+        url = self.joe.getArchiveSubscriptionURL(self.joe, self.private_ppa)
         token = self.private_ppa.getAuthToken(self.joe)
         self.assertEqual(token.archive_url, url)
 
@@ -1069,6 +1070,36 @@ class TestArchiveDelete(TestCaseWithFactory):
         self.archive.disable()
         self.archive.delete(deleted_by=self.archive.owner)
         self.failUnlessEqual(ArchiveStatus.DELETING, self.archive.status)
+
+
+class TestCommercialArchive(TestCaseWithFactory):
+    """Tests relating to commercial archives."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestCommercialArchive, self).setUp()
+        self.archive = self.factory.makeArchive()
+
+    def setCommercial(self, archive, commercial):
+        """Helper function."""
+        archive.commercial = commercial
+
+    def test_set_and_get_commercial(self):
+        # Basic set and get of the commercial property.  Anyone can read
+        # it and it defaults to False.
+        login_person(self.archive.owner)
+        self.assertFalse(self.archive.commercial)
+
+        # The archive owner can't change the value.
+        self.assertRaises(
+            Unauthorized, self.setCommercial, self.archive, True)
+
+        # Commercial admins can change it.
+        login("commercial-member@canonical.com")
+        self.setCommercial(self.archive, True)
+        self.assertTrue(self.archive.commercial)
+        
 
 
 def test_suite():

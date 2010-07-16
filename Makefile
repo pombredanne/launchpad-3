@@ -249,7 +249,7 @@ run_codehosting: check_schema inplace stop hosted_branches
 	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
 
 
-start_librarian: build
+start_librarian: compile
 	bin/start_librarian
 
 stop_librarian:

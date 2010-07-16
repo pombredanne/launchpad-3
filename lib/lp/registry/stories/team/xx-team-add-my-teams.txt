@@ -62,7 +62,7 @@ of trying to propose the membership, which is an invalid status change.
     >>> print user_browser.title
     Super Team in Launchpad
     >>> print get_feedback_messages(user_browser.contents)
-    [u'Sub Team has been added to this team.']
+    [u'Sub Team has been added to this team because of an existing invite.']
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'recently-approved'))
     Latest members
@@ -146,7 +146,7 @@ anymore of the Hoary Gnome Team:
     ...     'guadamen', 'ubuntu-security']
     >>> browser.getControl('Continue').click()
     >>> print "\n".join(get_feedback_messages(browser.contents))
-    GuadaMen, Ubuntu Security Team have been added to this team.
+    GuadaMen and Ubuntu Security Team have been added to this team.
 
 And when no teams can be added, a message is displayed:
 

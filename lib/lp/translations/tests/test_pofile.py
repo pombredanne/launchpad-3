@@ -11,6 +11,7 @@ from textwrap import dedent
 from unittest import TestLoader
 
 from zope.component import getAdapter, getUtility
+from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.interfaces.pofile import IPOFileSet
@@ -20,7 +21,7 @@ from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus)
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
-from lp.testing import TestCaseWithFactory, verifyObject
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 from canonical.launchpad.webapp.publisher import canonical_url
 

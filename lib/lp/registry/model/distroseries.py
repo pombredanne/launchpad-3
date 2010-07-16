@@ -48,7 +48,6 @@ from lp.bugs.model.bug import (
 from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries, DistroArchSeriesSet, PocketChroot)
@@ -326,9 +325,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         find_spec = (
             SourcePackageName,
             SQL("""
-                coalesce(total_heat, 0) + coalesce(po_messages, 0) +
+                coalesce(total_bug_heat, 0) + coalesce(po_messages, 0) +
                 CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END AS score"""),
-            SQL("coalesce(total_bugs, 0) AS total_bugs"),
+            SQL("coalesce(bug_count, 0) AS bug_count"),
             SQL("coalesce(total_messages, 0) AS total_messages"))
         joins, conditions = self._current_sourcepackage_joins_and_conditions
         origin = SQL(joins)
@@ -338,9 +337,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return [{
                  'package': SourcePackage(
                     sourcepackagename=spn, distroseries=self),
-                 'total_bugs': total_bugs,
+                 'bug_count': bug_count,
                  'total_messages': total_messages}
-                for (spn, score, total_bugs, total_messages) in results]
+                for (spn, score, bug_count, total_messages) in results]
 
     def getPrioritizedlPackagings(self):
         """See `IDistroSeries`.
@@ -359,7 +358,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SQL("""
                 CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END +
                     CASE WHEN Product.bugtracker IS NULL
-                        THEN coalesce(total_heat, 10) ELSE 0 END +
+                        THEN coalesce(total_bug_heat, 10) ELSE 0 END +
                     CASE WHEN ProductSeries.translations_autoimport_mode = 1
                         THEN coalesce(po_messages, 10) ELSE 0 END +
                     CASE WHEN ProductSeries.branch IS NULL THEN 500
@@ -383,29 +382,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Bugs and PO messages are heuristically scored. These queries
         # can easily timeout so filters and weights are used to create
         # an acceptable prioritization of packages that is fast to excecute.
-        bug_heat_filter = 200
         po_message_weight = .5
-        heat_score = ("""
-            LEFT JOIN (
-                SELECT
-                    BugTask.sourcepackagename,
-                    sum(Bug.heat) AS total_heat,
-                    count(Bug.id) AS total_bugs
-                FROM BugTask
-                    JOIN Bug
-                        ON bugtask.bug = Bug.id
-                WHERE
-                    BugTask.sourcepackagename is not NULL
-                    AND BugTask.distribution = %(distribution)s
-                    AND BugTask.status in %(statuses)s
-                    AND Bug.heat > %(bug_heat_filter)s
-                GROUP BY BugTask.sourcepackagename
-                ) bugs
-                ON SourcePackageName.id = bugs.sourcepackagename
-            """ % sqlvalues(
-                distribution=self.distribution,
-                statuses=UNRESOLVED_BUGTASK_STATUSES,
-                bug_heat_filter=bug_heat_filter))
         message_score = ("""
             LEFT JOIN (
                 SELECT
@@ -442,7 +419,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             LEFT JOIN Packaging
                 ON SourcePackageName.id = Packaging.sourcepackagename
                 AND Packaging.distroseries = DistroSeries.id
-            """ + heat_score + message_score)
+            LEFT JOIN DistributionSourcePackage dsp
+                ON dsp.sourcepackagename = spr.sourcepackagename
+                    AND dsp.distribution = DistroSeries.distribution
+            """ + message_score)
         conditions = ("""
             DistroSeries.id = %(distroseries)s
             AND spph.status IN %(active_status)s
