@@ -97,7 +97,7 @@ list of emails to send:
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -111,7 +111,7 @@ list of emails to send:
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a direct subscriber
-    of the bug.
+    to the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -182,7 +182,7 @@ subject, though, which is often the case when someone replies via email.
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -224,7 +224,7 @@ Let's add a few changes and see how it looks like:
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -278,7 +278,7 @@ in the order they were added:
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
@@ -321,7 +321,7 @@ If we insert yet another comment, it will be sent as a separate email.
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -341,7 +341,7 @@ If we insert yet another comment, it will be sent as a separate email.
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -387,7 +387,7 @@ If we add three comments, three notifications will be sent:
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -407,7 +407,7 @@ If we add three comments, three notifications will be sent:
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -427,7 +427,7 @@ If we add three comments, three notifications will be sent:
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -475,7 +475,7 @@ change in between, three notifications will be sent:
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -495,7 +495,7 @@ change in between, three notifications will be sent:
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -515,7 +515,7 @@ change in between, three notifications will be sent:
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -690,7 +690,7 @@ a trailing space.
      'Firefox does not support SVG',
      'http://bugs.launchpad.dev/bugs/1',
      'You received this bug notification because you are a direct subscriber',
-     'of the bug.']
+     'to the bug.']
 
     >>> flush_notifications()
 
@@ -792,7 +792,7 @@ top of the email:
     new bug
     http://bugs.launchpad.dev/bugs/16
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -809,7 +809,7 @@ top of the email:
     new bug
     http://bugs.launchpad.dev/bugs/16
     You received this bug notification because you are a direct subscriber
-    of the bug.
+    to the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -1321,7 +1321,7 @@ We can see that Concise Person doesn't receive verbose notifications:
     Foo is broken
     http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a direct subscriber
-    of the bug.
+    to the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -1340,7 +1340,7 @@ he wants concise ones.
     Foo is broken
     http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a member of Verbose
-    Team, which is a direct subscriber.
+    Team, which is a direct subscriber to the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -1358,7 +1358,7 @@ Whereas Verbose Person does get the description and task status:
     Foo is broken
     http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a direct subscriber
-    of the bug.
+    to the bug.
     <BLANKLINE>
     Status in Foo: New
     <BLANKLINE>
@@ -1384,7 +1384,7 @@ And Concise Team Person does too, even though his team doesn't want them:
     Foo is broken
     http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a member of Concise
-    Team, which is a direct subscriber.
+    Team, which is a direct subscriber to the bug.
     <BLANKLINE>
     Status in Foo: New
     <BLANKLINE>
@@ -1438,7 +1438,7 @@ these notifications.
     To: marilize@hbd.com
     ...
     You received this bug notification because you are a member of ShipIt
-    Administrators, which is a direct subscriber.
+    Administrators, which is a direct subscriber to the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
@@ -1463,13 +1463,13 @@ these notifications.
     To: support@ubuntu.com
     ...
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
     You received this bug notification because you are a direct subscriber
-    of the bug.
+    to the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -1509,7 +1509,7 @@ no comment notifications.
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of ShipIt
-    Administrators, which is a direct subscriber.
+    Administrators, which is a direct subscriber to the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
@@ -1520,13 +1520,13 @@ no comment notifications.
     To: support@ubuntu.com
     ...
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
     You received this bug notification because you are a direct subscriber
-    of the bug.
+    to the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -1552,7 +1552,7 @@ receives these notifications.
     To: marilize@hbd.com
     ...
     You received this bug notification because you are a member of ShipIt
-    Administrators, which is a direct subscriber.
+    Administrators, which is a direct subscriber to the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
@@ -1579,13 +1579,13 @@ receives these notifications.
     To: support@ubuntu.com
     ...
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
     You received this bug notification because you are a direct subscriber
-    of the bug.
+    to the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -1623,7 +1623,7 @@ no notifications created by addChangeNotification().
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a member of ShipIt
-    Administrators, which is a direct subscriber.
+    Administrators, which is a direct subscriber to the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
@@ -1634,12 +1634,12 @@ no notifications created by addChangeNotification().
     To: support@ubuntu.com
     ...
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant of Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
     You received this bug notification because you are a direct subscriber
-    of the bug.
+    to the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
