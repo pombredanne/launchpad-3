@@ -26,6 +26,22 @@ import sys
 sys.path.insert(0, ${scripts:parts-directory|path-repr})
 import site
 
+
+# Fix doctest so that it can handle mixed unicode and encoded output.
+import doctest
+
+_RealSpoofOut = doctest._SpoofOut
+
+class _SpoofOut(doctest._SpoofOut):
+
+    def write(self, value):
+        if isinstance(value, unicode):
+            value = value.encode('utf8')
+        _RealSpoofOut.write(self, value)
+
+doctest._SpoofOut = _SpoofOut
+
+
 BUILD_DIR = ${buildout:directory|path-repr}
 CUSTOM_SITE_DIR = ${scripts:parts-directory|path-repr}
 
