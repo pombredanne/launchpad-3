@@ -1118,12 +1118,19 @@ p.search-results {
 .demo {
     background-color: #fee;
     }
+.login-logout {
+    position: absolute;
+    top: .5em;
+    right: 1.5em;
+    }
 div.watermark-apps-portlet {
     clear: both;
     white-space: no-wrap;
     }
 div.watermark-apps-portlet .wide {
-    width: 75%
+    width: 75%;
+    vertical-align: bottom;
+    margin-bottom: 0.3em;
     }
 div.watermark-apps-portlet img {
     margin: 0 1.5em 0 0;
@@ -1182,7 +1189,7 @@ div.watermark-apps-portlet span img {
 .registering {
     /* Registered slot */
     float: right;
-    margin: -1em 0 0 0;
+    margin: -0.5em 0 0 0;
     font-size: 85%;
     color: #666;
     }

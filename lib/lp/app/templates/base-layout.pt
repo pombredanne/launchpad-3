@@ -83,7 +83,7 @@
           })();
         </script>
     <div class="yui-d0">
-      <div id="locationbar">
+      <div id="locationbar" class="login-logout">
         <tal:login replace="structure context/@@login_status" />
       </div><!--id="locationbar"-->
 
