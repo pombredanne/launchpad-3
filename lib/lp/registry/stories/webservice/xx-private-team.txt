@@ -1,36 +1,52 @@
-= Private memberships =
+= Private teams =
 
-Some teams may have private memberships, meaning that only the team
-members (and LP admins) can see who are the other members of the team.
+Some teams may be private, meaning that only the team members (and LP
+admins) can see the team and who are the other members of the team.
 
-'myteam' is a team with private memberships, so someone who's not a
-team member can't see, for instance, the membership of a person on that
-team.
+A regular user cannot get information about a private team and
+Launchpad returns a NotFound error to disguise the fact that the team
+even exists.
+
+    >>> login('test@canonical.com')
+    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> team_owner = factory.makePerson(name="private-team-owner")
+    >>> logout()
+    >>> login_person(team_owner)
+    >>> member1 = factory.makePerson(name='member-one')
+    >>> private_team = factory.makeTeam(
+    ...     owner=team_owner,
+    ...     name="private-team",
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> response = private_team.addMember(member1, team_owner)
+    >>> import transaction
+    >>> transaction.commit()
+    >>> logout()
 
     # XXX: 2008-08-01, salgado: Notice how the total_size is incorrect here.
     # That ought to be fixed at some point.
-    >>> member = user_webservice.get("/~member").jsonBody()
+    >>> member = user_webservice.get("/~private-team-owner").jsonBody()
     >>> response = user_webservice.get(
     ...     member['memberships_details_collection_link'])
     >>> print sorted(response.jsonBody().items())
-    [(u'entries', [{...}]),
+    [(u'entries', []),
      (u'resource_type_link',
       u'http://.../#team_membership-page-resource'),
      (u'start', 0),
-     (u'total_size', 2)]
+     (u'total_size', 1)]
 
-Salgado can, though, because he's a Launchpad admin.
+    Salgado can see the team since he's a Launchpad admin.
 
+    >>> member = webservice.get("/~private-team-owner").jsonBody()
     >>> response = webservice.get(
     ...     member['memberships_details_collection_link'])
     >>> print sorted(response.jsonBody().items())
     [(u'entries',
-      [{u'status': u'Approved',...
-        u'team_link': u'http://.../~myteam'...
+      [{u'status': u'Administrator',...
+        u'team_link': u'http://.../~private-team'...
      (u'resource_type_link',
       u'http://.../#team_membership-page-resource'),
      (u'start', 0),
-     (u'total_size', 2)]
+     (u'total_size', 1)]
 
 Similarly, when a public team is a sub-team of a private team, non-members
 cannot see the private team in the public team's super_team's attribute.
@@ -103,7 +119,7 @@ method to do it, but it can be changed via a patch.
     ...                    headers)
 
     >>> print modify_team(
-    ...     '/~my-new-team', {'visibility' : 'Private Membership'},
+    ...     '/~my-new-team', {'visibility' : 'Private'},
     ...     'PATCH', comm_webservice)
     HTTP/1.1 209 Content Returned
     ...
@@ -114,12 +130,25 @@ method to do it, but it can be changed via a patch.
 
     >>> team = webservice.get('/~my-new-team').jsonBody()
     >>> print team['visibility']
-    Private Membership
+    Private
 
-As an admin, Salgado can also change the team's visibility.
+As an admin, Salgado can also change a team's visibility.
+
+    >>> print user_webservice.named_post(
+    ...    "/people", "newTeam", {},
+    ...    name='my-new-team-2', display_name="My New Team 2")
+    HTTP/1.1 201 Created
+    ...
+    Location: http://.../~my-new-team-2
+    ...
+    >>> team = user_webservice.get('/~my-new-team-2').jsonBody()
+    >>> print team['self_link']
+    http://api.launchpad.dev/.../~my-new-team-2
+    >>> print team['visibility']
+    Public
 
     >>> print modify_team(
-    ...     '/~my-new-team', {'visibility' : 'Public'},
+    ...     '/~my-new-team-2', {'visibility' : 'Private'},
     ...     'PATCH', webservice)
     HTTP/1.1 209 Content Returned
     ...
@@ -128,13 +157,26 @@ As an admin, Salgado can also change the team's visibility.
     <BLANKLINE>
     {...}
 
-    >>> team = webservice.get('/~my-new-team').jsonBody()
+    >>> team = webservice.get('/~my-new-team-2').jsonBody()
     >>> print team['visibility']
-    Public
+    Private
 
 An unprivileged user is not able to change the visibility.
 
-    >>> print modify_team('/~my-new-team', {'visibility' : 'Private Membership'},
+    >>> print user_webservice.named_post(
+    ...    "/people", "newTeam", {},
+    ...    name='my-new-team-3', display_name="My New Team 3")
+    HTTP/1.1 201 Created
+    ...
+    Location: http://.../~my-new-team-3
+    ...
+    >>> team = user_webservice.get('/~my-new-team-3').jsonBody()
+    >>> print team['self_link']
+    http://api.launchpad.dev/.../~my-new-team-3
+    >>> print team['visibility']
+    Public
+
+    >>> print modify_team('/~my-new-team-3', {'visibility' : 'Private'},
     ...     'PATCH', user_webservice)
     HTTP/1.1 401 Unauthorized
     ...
