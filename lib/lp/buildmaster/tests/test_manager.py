@@ -248,52 +248,6 @@ class TestSlaveScanner(TrialTestCase):
         self._realwaitOnDeferredList = self.manager.waitOnDeferredList
         self.manager.waitOnDeferredList = testwaitOnDeferredList
 
-    def test_waitOnDeferredList(self):
-        """Check if the chain is terminated and database updates are done.
-
-        'SlaveScanner.waitOnDeferredList' verifies the number of active
-        deferreds and once they cease it performs all needed database
-        updates (builder reset or failure) synchronously and calls
-        `SlaveScanner.scheduleNextScanCycle`.
-        """
-        # There are no active deferreds in a just instantiated
-        # SlaveScanner.
-        self.assertEqual(0, len(self.manager._deferreds))
-
-        # Fill the deferred list with events we can check later.
-        reset_me = TestingResetDispatchResult(
-            RecordingSlave('foo', 'http://foo', 'foo.host'))
-        fail_me = TestingFailDispatchResult(
-            RecordingSlave('bar', 'http://bar', 'bar.host'), 'boingo')
-        self.manager._deferreds.extend(
-            [defer.succeed(reset_me), defer.succeed(fail_me), defer.fail()])
-
-        # When `finishCycle` is called, and it is called after all build
-        # slave interaction, active deferreds are consumed.
-        events = self.manager.finishCycle()
-        def check_events(results):
-            # The cycle was stopped (and in the production the next cycle
-            # would have being scheduled).
-            self.assertTrue(self.stopped)
-
-            # The stored list of events from this cycle was consumed.
-            self.assertEqual(0, len(self.manager._deferreds))
-
-            # We have exactly 2 BaseDispatchResult events.
-            [reset, fail] = [
-                r for s, r in results if isinstance(r, BaseDispatchResult)]
-
-            # They corresponds to the ones created above and were already
-            # processed.
-            self.assertEqual(
-                '<foo:http://foo> reset failure', repr(reset))
-            self.assertTrue(reset.processed)
-            self.assertEqual(
-                '<bar:http://bar> failure (boingo)', repr(fail))
-            self.assertTrue(fail.processed)
-
-        events.addCallback(check_events)
-        return events
 
     def assertIsDispatchReset(self, result):
         self.assertTrue(
@@ -478,6 +432,26 @@ class TestSlaveScanner(TrialTestCase):
         On slave call failure the chain is stopped immediately and an
         FailDispatchResult is collected while finishing the cycle.
         """
+        def check_no_events(results):
+            errors = [
+                r for s, r in results if isinstance(r, BaseDispatchResult)]
+            self.assertEqual(0, len(errors))
+
+        def check_events(results):
+            [error] = [r for s, r in results if r is not None]
+            self.assertEqual(
+                '<foo:http://foo.buildd:8221/> failure (very broken slave)',
+                repr(error))
+            self.assertTrue(error.processed)
+
+        def _wait_on_deferreds_then_check_no_events():
+            dl = self._realwaitOnDeferredList()
+            dl.addCallback(check_no_events)
+
+        def _wait_on_deferreds_then_check_events():
+            dl = self._realwaitOnDeferredList()
+            dl.addCallback(check_events)
+
         # A functional slave charged with some interactions.
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
         slave.ensurepresent('arg1', 'arg2', 'arg3')
@@ -502,12 +476,11 @@ class TestSlaveScanner(TrialTestCase):
             self.test_proxy.calls)
         self.assertEqual(2, len(self.manager._deferred_list))
 
-        events = self.manager.finishCycle()
-        def check_no_events(results):
-            errors = [
-                r for s, r in results if isinstance(r, BaseDispatchResult)]
-            self.assertEqual(0, len(errors))
-        events.addCallback(check_no_events)
+        # Monkey patch the waitOnDeferredList method so we can chain a
+        # callback to check the end of the result chain.
+        self.manager.waitOnDeferredList = \
+            _wait_on_deferreds_then_check_no_events
+        events = self.manager.waitOnDeferredList()
 
         # Create a broken slave and insert interaction that will
         # cause the builder to be marked as fail.
@@ -518,20 +491,16 @@ class TestSlaveScanner(TrialTestCase):
 
         result = self.manager.initiateDispatch(None, slave)
         self.assertEqual(None, result)
-        self.assertEqual(1, len(self.manager._deferred_list))
+        self.assertEqual(3, len(self.manager._deferred_list))
         self.assertEqual(
             [('ensurepresent', 'arg1', 'arg2', 'arg3')],
             self.test_proxy.calls)
 
-        events = self.manager.finishCycle()
-        def check_events(results):
-            [error] = [r for s, r in results if r is not None]
-            self.assertEqual(
-                '<foo:http://foo.buildd:8221/> failure (very broken slave)',
-                repr(error))
-            self.assertTrue(error.processed)
-
-        events.addCallback(check_events)
+        # Monkey patch the waitOnDeferredList method so we can chain a
+        # callback to check the end of the result chain.
+        self.manager.waitOnDeferredList = \
+            _wait_on_deferreds_then_check_events
+        events = self.manager.waitOnDeferredList()
 
         return events
 

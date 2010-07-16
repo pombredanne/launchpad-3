@@ -421,6 +421,9 @@ class SlaveScanner:
         # next scan cycle.
         self.scheduleNextScanCycle()
 
+        # For the test suite so that it can chain callback results.
+        return deferred_list_results
+
     def checkResume(self, response, slave):
         """Check the result of resuming a slave.
 
