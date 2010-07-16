@@ -1117,12 +1117,23 @@ p.search-results {
     "locationless" pages. It adds extra space at the top of every page in
     Launchpad but that does actually look quite good ... ;-).*/
     height: 1em;
+    z-index: 1000;
+    }
+.flowed-block {
+    display: table-cell;
+    display: inline-table;
+    display: inline-block;
+    text-align: left;
+    vertical-align: top;
     }
 div.watermark-apps-portlet {
-    padding-bottom:1em;
+    clear:both;
+    white-space: no-wrap;
+    }
+div.watermark-apps-portlet .wide {
+    width: 75%
     }
 div.watermark-apps-portlet img {
-    float: left;
     margin: 0 1.5em 0 0;
     }
 div.watermark-apps-portlet h1, div.watermark-apps-portlet h2 {
@@ -1179,10 +1190,9 @@ div.watermark-apps-portlet span img {
 .registering {
     /* Registered slot */
     float: right;
+    margin: -1em 0 0 0;
     font-size: 85%;
     color: #666;
-    position: relative;
-    top: 2em;
     }
 .breadcrumbs {
     margin-left: 0;
@@ -1216,6 +1226,9 @@ div.watermark-apps-portlet span img {
 #logincontrol img {
     /* align the image with the text */
     margin-bottom: -2px;
+    }
+#logincontrol form {
+    margin: 0;
     }
 #logincontrol input[type='submit'] {
     /* The button lacks the right margin that buttons usually have: */

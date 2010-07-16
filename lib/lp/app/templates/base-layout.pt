@@ -87,21 +87,25 @@
         <tal:login replace="structure context/@@login_status" />
       </div><!--id="locationbar"-->
 
-      <div class="watermark-apps-portlet top-portlet"
+      <div class="watermark-apps-portlet"
            tal:condition="view/macro:pagehas/applicationtabs">
-        <span tal:replace="structure view/watermark:logo"></span>
-        <h2 tal:replace="structure view/watermark:heading">
-          Celso Providelo
-        </h2>
-        <div id="registration" class="registering">
-          <metal:registering define-slot="registering" />
+        <div class="flowed-block">
+          <span tal:replace="structure view/watermark:logo"></span>
         </div>
-        <metal:heading_nav
-          use-macro="context/@@+base-layout-macros/application-buttons"/>
+        <div class="flowed-block wide">
+          <h2 tal:replace="structure view/watermark:heading">
+            Celso Providelo
+          </h2>
+          <metal:heading_nav
+            use-macro="context/@@+base-layout-macros/application-buttons"/>
+        </div>
       </div>
 
       <div class="yui-t4"
         tal:omit-tag="not: view/macro:pagehas/portlets">
+        <div id="registration" class="registering">
+          <metal:registering define-slot="registering" />
+        </div>
         <div id="maincontent" class="yui-main">
           <div class="yui-b"
             tal:attributes="
