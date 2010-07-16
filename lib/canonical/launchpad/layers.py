@@ -28,10 +28,6 @@ class LaunchpadLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The `LaunchpadLayer` layer."""
 
 
-class TranslationsLayer(LaunchpadLayer):
-    """The `TranslationsLayer` layer."""
-
-
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
 

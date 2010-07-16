@@ -119,14 +119,14 @@
     <!-- Marketing material for Translations. -->
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.code.publisher.TranslationsLayer"
         name="+about"
         new_name="+tour/translation"
         rootsite="mainsite"
         />
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.code.publisher.TranslationsLayer"
         name="+faq"
         new_name="+tour/translation"
         rootsite="mainsite"
@@ -134,7 +134,7 @@
     <browser:renamed-page
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.code.publisher.TranslationsLayer"
         new_name="+tour/translation"
         rootsite="mainsite"
         />

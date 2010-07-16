@@ -112,14 +112,14 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.code.publisher.TranslationsLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.code.publisher.TranslationsLayer"
         />
 
     <!-- virtual host: bugs -->

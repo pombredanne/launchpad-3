@@ -9,7 +9,7 @@ ITranslationImportQueueEntry object.
     ...     ITranslationImportQueue)
     >>> from lp.translations.browser.translationimportqueue import (
     ...     TranslationImportQueueEntryView)
-    >>> from canonical.launchpad.layers import TranslationsLayer, setFirstLayer
+    >>> from lp.translations.publisher import TranslationsLayer, setFirstLayer
 
 This view is only accessible for administrators.
 

@@ -15,7 +15,7 @@ First, we need some imports.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
-    >>> from canonical.launchpad.layers import TranslationsLayer
+    >>> from lp.translations.publisher import TranslationsLayer
 
 All the tests will be submitted as coming from the No Privilege person.
 

@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadFunctionalLayer
 
-from canonical.launchpad.layers import TranslationsLayer, setFirstLayer
+from lp.translations.publisher import TranslationsLayer, setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory

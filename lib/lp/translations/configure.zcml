@@ -13,8 +13,12 @@
     <include
         package=".browser"/>
 
+    <publisher
+       name="translations"
+       factory="lp.translations.publisher.translations_request_publication_factory"/>
+
     <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.TranslationsLayer" />
+        folder="help" type="lp.code.publisher.TranslationsLayer" />
 
     <class
         class="lp.translations.model.vpotexport.VPOTExport">

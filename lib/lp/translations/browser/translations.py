@@ -27,7 +27,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from lp.registry.interfaces.product import IProductSet
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.layers import TranslationsLayer
+from lp.translations.publisher import TranslationsLayer
 from canonical.launchpad.webapp import (
     LaunchpadView, Navigation, stepto, canonical_url)
 from canonical.launchpad.webapp.batching import BatchNavigator
