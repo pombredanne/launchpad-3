@@ -186,7 +186,3 @@ class CollectionTest(TestCaseWithFactory):
         self.assertEqual(store, collection_with_store.store)
 
         self.assertEqual([], collection_with_store.select())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
