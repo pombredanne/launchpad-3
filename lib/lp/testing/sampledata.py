@@ -14,5 +14,6 @@ __all__ = [
     ]
 
 
+ADMIN_EMAIL = 'foo.bar@canonical.com'
 NO_PRIVILEGE_EMAIL = 'no-priv@canonical.com'
 VCS_IMPORTS_MEMBER_EMAIL = 'david.allouche@canonical.com'

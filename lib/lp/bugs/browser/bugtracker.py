@@ -61,6 +61,10 @@ NO_DIRECT_CREATION_TRACKERS = (
         BugTrackerType.EMAILADDRESS,))
 
 
+class UserCannotResetWatchesError(Exception):
+    """Raised when a user cannot reset a bug tracker's watches."""
+
+
 class BugTrackerSetNavigation(GetitemNavigation):
 
     usedfor = IBugTrackerSet
@@ -370,6 +374,17 @@ class BugTrackerEditView(LaunchpadEditFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+    def resetBugTrackerWatches(self):
+        """Call the resetWatches() method of the current context.
+
+        :raises `UserCannotResetWatchesError` if the user isn't an admin
+                or a member of the Launchpad Developers team.
+        """
+        if not check_permission("launchpad.Admin", self.user):
+            raise UserCannotResetWatchesError
+
+        self.context.resetWatches()
 
 
 class BugTrackerNavigation(Navigation):
