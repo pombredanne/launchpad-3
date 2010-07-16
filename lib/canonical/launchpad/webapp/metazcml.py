@@ -21,7 +21,7 @@ from zope.interface import Interface, implements
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
-from zope.schema import TextLine
+from zope.schema import Int, TextLine
 from zope.security.checker import Checker, CheckerPublic
 from zope.security.interfaces import IPermission
 from zope.security.permission import Permission
@@ -657,9 +657,16 @@ def definePermission(_context, id, title, access_level="write",
 
 
 class ILaunchpadPublicationDirective(IRequestPublicationDirective):
-    pass
+
+    priorty = Int(required=False)
+
+_arbitrary_priority = 12
 
 
 def launchpadPublisher(_context, name, factory, methods=['*'],
-                       mimetypes=['*'], priority=0):
+                       mimetypes=['*'], priority=None):
+    global _arbitrary_priority
+    if priority is None:
+        _arbitrary_priority += 1
+        priority = _arbitrary_priority
     publisher(_context, name, factory, methods, mimetypes, priority)
