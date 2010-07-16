@@ -21,7 +21,8 @@ UPDATE SourcePackageRecipebuild
 
 ALTER TABLE SourcePackageRecipeBuild
   ALTER COLUMN package_build SET NOT NULL, DROP COLUMN date_created,
-  DROP COLUMN build_duration, DROP COLUMN date_built, DROP COLUMN builder,
+  DROP COLUMN build_duration, DROP COLUMN date_built,
+  DROP COLUMN date_first_dispatched, DROP COLUMN builder,
   DROP COLUMN build_state, DROP COLUMN build_log, DROP COLUMN archive,
   DROP COLUMN pocket, DROP COLUMN upload_log, DROP COLUMN dependencies;
 

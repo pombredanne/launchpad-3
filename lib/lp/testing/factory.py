@@ -1841,7 +1841,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             requester=requester,
             pocket=pocket,
             date_created=date_created)
-        removeSecurityProxy(spr_build).buildstate = status
+        removeSecurityProxy(spr_build).status = status
         return spr_build
 
     def makeSourcePackageRecipeBuildJob(

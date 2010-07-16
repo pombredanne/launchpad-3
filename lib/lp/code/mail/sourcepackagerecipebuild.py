@@ -50,7 +50,7 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
         params = super(
             SourcePackageRecipeBuildMailer, self)._getTemplateParams(email)
         params.update({
-            'status': self.build.buildstate.title,
+            'status': self.build.status.title,
             'distroseries': self.build.distroseries.name,
             'recipe': self.build.recipe.name,
             'recipe_owner': self.build.recipe.owner.name,

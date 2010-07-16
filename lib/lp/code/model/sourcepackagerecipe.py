@@ -25,6 +25,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.errors import BuildAlreadyPending, TooManyBuilds
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
@@ -197,14 +199,16 @@ class SourcePackageRecipe(Storm):
         pending = IStore(self).find(SourcePackageRecipeBuild,
             SourcePackageRecipeBuild.recipe_id == self.id,
             SourcePackageRecipeBuild.distroseries_id == distroseries.id,
-            SourcePackageRecipeBuild.archive_id == archive.id,
-            SourcePackageRecipeBuild.buildstate == BuildStatus.NEEDSBUILD)
+            PackageBuild.archive_id == archive.id,
+            PackageBuild.id == SourcePackageRecipeBuild.package_build_id,
+            BuildFarmJob.id == PackageBuild.build_farm_job_id,
+            BuildFarmJob.status == BuildStatus.NEEDSBUILD)
         if pending.any() is not None:
             raise BuildAlreadyPending(self, distroseries)
 
         build = getUtility(ISourcePackageRecipeBuildSource).new(distroseries,
             self, requester, archive)
-        build.queueBuild(build)
+        build.queueBuild()
         if manual:
             build.buildqueue_record.manualScore(1000)
         return build
@@ -212,32 +216,41 @@ class SourcePackageRecipe(Storm):
     def getBuilds(self, pending=False):
         """See `ISourcePackageRecipe`."""
         if pending:
-            clauses = [SourcePackageRecipeBuild.datebuilt == None]
+            clauses = [BuildFarmJob.date_finished == None]
         else:
-            clauses = [SourcePackageRecipeBuild.datebuilt != None]
+            clauses = [BuildFarmJob.date_finished != None]
         result = Store.of(self).find(
-            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe==self,
+            SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.recipe==self,
+            SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
+            PackageBuild.build_farm_job_id == BuildFarmJob.id,
             *clauses)
-        result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
+        result.order_by(Desc(BuildFarmJob.date_finished))
         return result
 
     def getLastBuild(self):
         """See `ISourcePackageRecipeBuild`."""
         store = Store.of(self)
         result = store.find(
-            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe == self)
-        result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
+            (SourcePackageRecipeBuild),
+            SourcePackageRecipeBuild.recipe == self,
+            SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
+            PackageBuild.build_farm_job_id == BuildFarmJob.id)
+        result.order_by(Desc(BuildFarmJob.date_finished))
         return result.first()
 
     def getMedianBuildDuration(self):
         """Return the median duration of builds of this recipe."""
         store = IStore(self)
         result = store.find(
-            SourcePackageRecipeBuild.buildduration,
-            SourcePackageRecipeBuild.recipe==self.id,
-            SourcePackageRecipeBuild.buildduration != None)
-        result.order_by(Desc(SourcePackageRecipeBuild.buildduration))
-        count = result.count()
-        if count == 0:
+            BuildFarmJob,
+            SourcePackageRecipeBuild.recipe == self.id,
+            BuildFarmJob.date_finished != None,
+            BuildFarmJob.id == PackageBuild.build_farm_job_id,
+            SourcePackageRecipeBuild.package_build_id == PackageBuild.id)
+        durations = [build.date_finished - build.date_started for build in
+                     result]
+        if len(durations) == 0:
             return None
-        return result[count/2]
+        durations.sort(reverse=True)
+        return durations[len(durations) / 2]

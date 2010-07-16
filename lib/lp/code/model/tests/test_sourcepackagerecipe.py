@@ -300,7 +300,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         def request_build():
             build = recipe.requestBuild(archive, requester, series,
                     PackagePublishingPocket.RELEASE)
-            removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
+            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
         [request_build() for num in range(5)]
         e = self.assertRaises(TooManyBuilds, request_build)
         self.assertIn(
@@ -329,7 +329,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.requestBuild(archive, recipe.owner,
             new_distroseries, PackagePublishingPocket.RELEASE)
         # Changing status of old build allows new build.
-        removeSecurityProxy(old_build).buildstate = BuildStatus.FULLYBUILT
+        removeSecurityProxy(old_build).status = BuildStatus.FULLYBUILT
         recipe.requestBuild(archive, recipe.owner, series,
                 PackagePublishingPocket.RELEASE)
 
@@ -423,17 +423,20 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             SourcePackageRecipe.findStaleDailyBuilds())
 
     def test_getMedianBuildDuration(self):
+        def set_duration(build, minutes):
+            duration = timedelta( minutes=minutes)
+            build = removeSecurityProxy(build)
+            build.date_started = self.factory.getUniqueDate()
+            build.date_finished = build.date_started + duration
         recipe = removeSecurityProxy(self.factory.makeSourcePackageRecipe())
         self.assertIs(None, recipe.getMedianBuildDuration())
-        build = removeSecurityProxy(
-            self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
-        build.buildduration = timedelta(minutes=10)
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        set_duration(build, 10)
         self.assertEqual(
             timedelta(minutes=10), recipe.getMedianBuildDuration())
         def addBuild(minutes):
-            build = removeSecurityProxy(
-                self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
-            build.buildduration = timedelta(minutes=minutes)
+            build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+            set_duration(build, minutes)
         addBuild(20)
         self.assertEqual(
             timedelta(minutes=10), recipe.getMedianBuildDuration())

@@ -21,7 +21,7 @@ from zope.schema import Bool, Datetime, Int, Object
 
 from canonical.launchpad import _
 
-from lp.buildmaster.interfaces.buildbase import IBuildBase
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.code.interfaces.sourcepackagerecipe import (
@@ -32,7 +32,7 @@ from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
-class ISourcePackageRecipeBuild(IBuildBase):
+class ISourcePackageRecipeBuild(IPackageBuild):
     """A build of a source package."""
     export_as_webservice_entry()
 
@@ -42,15 +42,9 @@ class ISourcePackageRecipeBuild(IBuildBase):
         Reference(IBinaryPackageBuild),
         title=_("The binary builds that resulted from this."), readonly=True)
 
-    datestarted = Datetime(title=u'The time the build started.')
-
     distroseries = Reference(
         IDistroSeries, title=_("The distroseries being built for"),
         readonly=True)
-    # XXX michaeln 2010-05-18 bug=567922
-    # Temporarily alias distro_series until SPRecipeBuild is
-    # implementing IPackageBuild.
-    distro_series = distroseries
 
     requester = Object(
         schema=IPerson, required=False,
