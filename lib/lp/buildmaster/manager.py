@@ -214,11 +214,11 @@ class ResetDispatchResult(BaseDispatchResult):
 class SlaveScanner:
     """A manager for a single builder."""
 
-    # XXX before instantiating one of these objects, something should
-    # call IBuilderSet.scanActiveBuilders() which would detect builders
-    # forgetting about jobs, and reset the jobs.
-
     SCAN_INTERVAL = 5
+
+    # These are for the benefit of tests, it seems.
+    reset_result = ResetDispatchResult
+    fail_result = FailDispatchResult
 
     def __init__(self, builder_name, logger):
         # XXX in the original code, it doesn't set the slave as as
@@ -228,7 +228,7 @@ class SlaveScanner:
         # should use it exclusively and remove the wrapper hack.
         self.builder_name = builder_name
         self.logger = logger
-        self.scheduleNextScanCycle()
+        self._deferred_list = []
 
     def scheduleNextScanCycle(self):
         self._deferred_list = []
@@ -238,14 +238,6 @@ class SlaveScanner:
         """Main entry point for each scan cycle on this builder."""
         self.logger.debug("Scanning builder: %s" % self.builder_name)
 
-        # We need to re-fetch the builder object on each cycle as the
-        # Storm store is invalidated over transaction boundaries.
-
-        # Avoid circular import.
-        from lp.buildmaster.interfaces.builder import IBuilderSet
-        builder_set = getUtility(IBuilderSet)
-        self.builder = builder_set[self.builder_name]
-        
         d = defer.maybeDeferred(self.scan)
         d.addCallback(self.resumeAndDispatch)
         d.addErrback(self.scanFailed)
@@ -257,6 +249,14 @@ class SlaveScanner:
         The whole method is wrapped in a transaction, but we do partial
         commits to avoid holding locks on tables.
         """
+        # We need to re-fetch the builder object on each cycle as the
+        # Storm store is invalidated over transaction boundaries.
+
+        # Avoid circular import.
+        from lp.buildmaster.interfaces.builder import IBuilderSet
+        builder_set = getUtility(IBuilderSet)
+        self.builder = builder_set[self.builder_name]
+        
         if self.builder.builderok:
             self.builder.updateStatus(self.logger)
             transaction.commit()
@@ -316,7 +316,10 @@ class SlaveScanner:
         self.scheduleNextScanCycle()
 
     def resumeAndDispatch(self, slave):
-        """Chain the resume and dispatching Deferreds."""
+        """Chain the resume and dispatching Deferreds.
+        
+        `extra_callback` is only set by the test suite.
+        """
         if slave is not None:
             if slave.resume_requested:
                 # The slave needs to be reset before we can dispatch to
@@ -389,20 +392,30 @@ class SlaveScanner:
         dl.addBoth(self.evaluateDispatchResult)
         return dl
 
-    def evaluateDispatchResult(self, dispatch_result):
+    def evaluateDispatchResult(self, deferred_list_results):
         """Process the DispatchResult for this dispatch chain.
 
         After waiting for the Deferred chain to finish, we'll have a
         DispatchResult to evaluate, which deals with the result of
         dispatching.
         """
+        # The `deferred_list_results` is what we get when waiting on a
+        # DeferredList.  It's a list of tuples of (status, result) where
+        # result is what the last callback in that chain returned.
+
         # If the result is an instance of BaseDispatchResult we need to
         # evaluate it, as there's further action required at the end of
-        # the dispatch chain.
-        if isinstance(dispatch_result, BaseDispatchResult):
-            status, result = dispatch_result
-            self.logger.info("%r" % result)
-            result()
+        # the dispatch chain.  None, resulting from successful chains,
+        # are discarded.
+
+        dispatch_results = [
+            result for status, result in deferred_list_results
+            if isinstance(result, BaseDispatchResult)]
+
+        for result in dispatch_results:
+            if isinstance(result, BaseDispatchResult):
+                self.logger.info("%r" % result)
+                result()
 
         # At this point, we're done dispatching, so we can schedule the
         # next scan cycle.
@@ -446,7 +459,7 @@ class SlaveScanner:
                 '%s communication failed (%s)' %
                 (slave, response.getErrorMessage()))
             self.waitOnDeferredList()
-            return ResetDispatchResult(slave)
+            return self.reset_result(slave)
 
         if isinstance(response, list) and len(response) == 2 :
             if method in buildd_success_result_map.keys():
@@ -464,7 +477,7 @@ class SlaveScanner:
             '%s failed to dispatch (%s)' % (slave, info))
 
         self.waitOnDeferredList()
-        return FailDispatchResult(slave, info)
+        return self.fail_result(slave, info)
 
 
 class BuilddManager(service.Service):
@@ -505,6 +518,7 @@ class BuilddManager(service.Service):
         for builder in builder_set:
             slave_scanner = SlaveScanner(builder.name, self.logger)
             self.builder_slaves.append(slave_scanner)
+            slave_scanner.scheduleNextScanCycle()
 
         # Events will now fire in the SlaveScanner objects to scan each
         # builder.

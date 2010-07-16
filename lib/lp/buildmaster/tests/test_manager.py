@@ -8,9 +8,9 @@ import signal
 import transaction
 import unittest
 
-from twisted.internet import defer
+from twisted.internet import defer, reactor
 from twisted.internet.error import ConnectionClosed
-from twisted.internet.task import Clock
+from twisted.internet.task import Clock, deferLater
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -27,7 +27,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
-    BaseDispatchResult, BuilddManager, FailDispatchResult, RecordingSlave,
+    BaseDispatchResult, SlaveScanner, FailDispatchResult, RecordingSlave,
     ResetDispatchResult, buildd_success_result_map)
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -207,30 +207,29 @@ class TestingFailDispatchResult(FailDispatchResult):
         self.processed = True
 
 
-class TestingBuilddManager(BuilddManager):
+class TestingSlaveScanner(SlaveScanner):
     """Override the dispatch result factories """
 
     reset_result = TestingResetDispatchResult
     fail_result = TestingFailDispatchResult
 
 
-class TestBuilddManager(TrialTestCase):
+class TestSlaveScanner(TrialTestCase):
     """Tests for the actual build slave manager."""
     layer = TwistedLayer
 
     def setUp(self):
         TrialTestCase.setUp(self)
-        self.manager = TestingBuilddManager()
-        self.manager.logger = BufferLogger()
+        self.manager = TestingSlaveScanner("bob", BufferLogger())
 
-        # We will use an instrumented BuilddManager instance for tests in
+        # We will use an instrumented SlaveScanner instance for tests in
         # this context.
 
         # Stop cyclic execution and record the end of the cycle.
         self.stopped = False
         def testNextCycle():
             self.stopped = True
-        self.manager.nextCycle = testNextCycle
+        self.manager.scheduleNextScanCycle = testNextCycle
 
         # Return the testing Proxy version.
         self.test_proxy = TestingXMLRPCProxy()
@@ -244,19 +243,21 @@ class TestBuilddManager(TrialTestCase):
         self.manager.scan = testScan
 
         # Stop automatic collection of dispatching results.
-        def testSlaveDone(slave):
+        def testwaitOnDeferredList():
             pass
-        self._realSlaveDone = self.manager.slaveDone
-        self.manager.slaveDone = testSlaveDone
+        self._realwaitOnDeferredList = self.manager.waitOnDeferredList
+        self.manager.waitOnDeferredList = testwaitOnDeferredList
 
-    def testFinishCycle(self):
+    def test_waitOnDeferredList(self):
         """Check if the chain is terminated and database updates are done.
 
-        'BuilddManager.finishCycle' verifies the number of active deferreds
-        and once they cease it performs all needed database updates (builder
-        reset or failure) synchronously and call `BuilddManager.nextCycle`.
+        'SlaveScanner.waitOnDeferredList' verifies the number of active
+        deferreds and once they cease it performs all needed database
+        updates (builder reset or failure) synchronously and calls
+        `SlaveScanner.scheduleNextScanCycle`.
         """
-        # There are no active deferreds in a just instantiated BuilddManager.
+        # There are no active deferreds in a just instantiated
+        # SlaveScanner.
         self.assertEqual(0, len(self.manager._deferreds))
 
         # Fill the deferred list with events we can check later.
@@ -305,7 +306,7 @@ class TestBuilddManager(TrialTestCase):
             'Dispatch failure did not result in a FailBuildResult object')
 
     def test_checkResume(self):
-        """`BuilddManager.checkResume` is chained after resume requests.
+        """`SlaveScanner.checkResume` is chained after resume requests.
 
         If the resume request succeed it returns None, otherwise it returns
         a `ResetBuildResult` (the one in the test context) that will be
@@ -348,24 +349,26 @@ class TestBuilddManager(TrialTestCase):
         # Make a failing slave that is requesting a resume.
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
         slave.resume_requested = True
-        slave.resumeSlave = lambda: defer.fail(Failure(('out', 'err', 1)))
+        slave.resumeSlave = lambda: deferLater(
+            reactor, 0, defer.fail, Failure(('out', 'err', 1)))
 
         # Make the manager log the reset result calls.
         self.manager.reset_result = LoggingResetResult
-        # Restore the slaveDone method. It's very relevant to this test.
-        self.manager.slaveDone = self._realSlaveDone
+
         # We only care about this one slave. Reset the list of manager
         # deferreds in case setUp did something unexpected.
-        self.manager._deferreds = []
+        self.manager._deferred_list = []
 
-        self.manager.resumeAndDispatch([slave])
-        # Note: finishCycle isn't generally called by external users, normally
-        # resumeAndDispatch or slaveDone calls it. However, these calls
-        # swallow the Deferred that finishCycle returns, and we need that
-        # Deferred to make sure this test completes properly.
-        d = self.manager.finishCycle()
-        return d.addCallback(
-            lambda ignored: self.assertEqual([slave], reset_result_calls))
+        # Here, we're patching the waitOnDeferredList method so we can
+        # get an extra callback at the end of it, so we can
+        # verify that the reset_result was really called.
+        def _waitOnDeferredList():
+            d = self._realwaitOnDeferredList()
+            return d.addCallback(
+                lambda ignored: self.assertEqual([slave], reset_result_calls))
+        self.manager.waitOnDeferredList = _waitOnDeferredList
+
+        self.manager.resumeAndDispatch(slave)
 
     def test_failed_to_resume_slave_ready_for_reset(self):
         # When a slave fails to resume, the manager has a Deferred in its
@@ -378,11 +381,12 @@ class TestBuilddManager(TrialTestCase):
 
         # We only care about this one slave. Reset the list of manager
         # deferreds in case setUp did something unexpected.
-        self.manager._deferreds = []
-        # Restore the slaveDone method. It's very relevant to this test.
-        self.manager.slaveDone = self._realSlaveDone
-        self.manager.resumeAndDispatch([slave])
-        [d] = self.manager._deferreds
+        self.manager._deferred_list = []
+        # Restore the waitOnDeferredList method. It's very relevant to
+        # this test.
+        self.manager.waitOnDeferredList = self._realwaitOnDeferredList
+        self.manager.resumeAndDispatch(slave)
+        [d] = self.manager._deferred_list
 
         # The Deferred for our failing slave should be ready to fire
         # successfully with a ResetDispatchResult.
@@ -393,7 +397,7 @@ class TestBuilddManager(TrialTestCase):
         return d.addCallback(check_result)
 
     def testCheckDispatch(self):
-        """`BuilddManager.checkDispatch` is chained after dispatch requests.
+        """`SlaveScanner.checkDispatch` is chained after dispatch requests.
 
         If the dispatch request fails or a unknown method is given, it
         returns a `FailDispatchResult` (in the test context) that will
@@ -461,7 +465,7 @@ class TestBuilddManager(TrialTestCase):
             '<foo:http://foo.buildd:8221/> failure '
             '(Unknown slave method: unknown-method)', repr(result))
 
-    def testDispatchBuild(self):
+    def test_initiateDispatch(self):
         """Check `dispatchBuild` in various scenarios.
 
         When there are no recording slaves (i.e. no build got dispatched
@@ -481,22 +485,22 @@ class TestBuilddManager(TrialTestCase):
 
         # If the previous step (resuming) has failed nothing gets dispatched.
         reset_result = ResetDispatchResult(slave)
-        result = self.manager.dispatchBuild(reset_result, slave)
+        result = self.manager.initiateDispatch(reset_result, slave)
         self.assertTrue(result is reset_result)
         self.assertFalse(slave.resume_requested)
-        self.assertEqual(0, len(self.manager._deferreds))
+        self.assertEqual(0, len(self.manager._deferred_list))
 
         # Operation with the default (funcional slave), no resets or
         # failures results are triggered.
         slave.resume()
-        result = self.manager.dispatchBuild(None, slave)
+        result = self.manager.initiateDispatch(None, slave)
         self.assertEqual(None, result)
         self.assertTrue(slave.resume_requested)
         self.assertEqual(
             [('ensurepresent', 'arg1', 'arg2', 'arg3'),
              ('build', 'arg1', 'arg2', 'arg3')],
             self.test_proxy.calls)
-        self.assertEqual(2, len(self.manager._deferreds))
+        self.assertEqual(2, len(self.manager._deferred_list))
 
         events = self.manager.finishCycle()
         def check_no_events(results):
@@ -512,9 +516,9 @@ class TestBuilddManager(TrialTestCase):
         slave.ensurepresent('arg1', 'arg2', 'arg3')
         slave.build('arg1', 'arg2', 'arg3')
 
-        result = self.manager.dispatchBuild(None, slave)
+        result = self.manager.initiateDispatch(None, slave)
         self.assertEqual(None, result)
-        self.assertEqual(1, len(self.manager._deferreds))
+        self.assertEqual(1, len(self.manager._deferred_list))
         self.assertEqual(
             [('ensurepresent', 'arg1', 'arg2', 'arg3')],
             self.test_proxy.calls)
@@ -532,8 +536,8 @@ class TestBuilddManager(TrialTestCase):
         return events
 
 
-class TestBuilddManagerScan(TrialTestCase):
-    """Tests `BuilddManager.scan` method.
+class TestSlaveScannerScan(TrialTestCase):
+    """Tests `SlaveScanner.scan` method.
 
     This method uses the old framework for scanning and dispatching builds.
     """
@@ -590,29 +594,29 @@ class TestBuilddManagerScan(TrialTestCase):
         self.assertEqual(job.logtail, logtail)
 
     def _getManager(self):
-        """Instantiate a BuilddManager object.
+        """Instantiate a SlaveScanner object.
 
         Replace its default logging handler by a testing version.
         """
-        manager = BuilddManager()
+        manager = SlaveScanner("bob", BufferLogger())
 
-        for handler in manager.logger.handlers:
-            manager.logger.removeHandler(handler)
-        manager.logger = BufferLogger()
+        # XXX
+        #for handler in manager.logger.handlers:
+        #    manager.logger.removeHandler(handler)
+        #manager.logger = BufferLogger()
         manager.logger.name = 'slave-scanner'
 
         return manager
 
-    def _checkDispatch(self, recording_slaves, builder):
-        """`BuilddManager.scan` return a list of `RecordingSlaves`.
+    def _checkDispatch(self, slave, builder):
+        """`SlaveScanner.scan` returns a `RecordingSlave`.
 
         The single slave returned should match the given builder and
         contain interactions that should be performed asynchronously for
         properly dispatching the sampledata job.
         """
-        self.assertEqual(
-            len(recording_slaves), 1, "Unexpected recording_slaves.")
-        [slave] = recording_slaves
+        self.assertFalse(
+            slave is None, "Unexpected recording_slaves.")
 
         self.assertEqual(slave.name, builder.name)
         self.assertEqual(slave.url, builder.url)
@@ -655,15 +659,15 @@ class TestBuilddManagerScan(TrialTestCase):
         d.addCallback(self._checkDispatch, builder)
         return d
 
-    def _checkNoDispatch(self, recording_slaves, builder):
+    def _checkNoDispatch(self, recording_slave, builder):
         """Assert that no dispatch has occurred.
 
-        'recording_slaves' is empty, so no interations would be passed
+        'recording_slave' is None, so no interations would be passed
         to the asynchonous dispatcher and the builder remained active
         and IDLE.
         """
-        self.assertEqual(
-            len(recording_slaves), 0, "Unexpected recording_slaves.")
+        self.assertTrue(
+            recording_slave is None, "Unexpected recording_slave.")
 
         builder = getUtility(IBuilderSet).get(builder.id)
         self.assertTrue(builder.builderok)
@@ -694,14 +698,14 @@ class TestBuilddManagerScan(TrialTestCase):
         d.addCallback(self._checkNoDispatch, builder)
         return d
 
-    def _checkJobRescued(self, recording_slaves, builder, job):
-        """`BuilddManager.scan` rescued the job.
+    def _checkJobRescued(self, slave, builder, job):
+        """`SlaveScanner.scan` rescued the job.
 
         Nothing gets dispatched,  the 'broken' builder remained disabled
         and the 'rescued' job is ready to be dispatched.
         """
-        self.assertEqual(
-            len(recording_slaves), 0, "Unexpected recording_slaves.")
+        self.assertTrue(
+            slave is None, "Unexpected slave.")
 
         builder = getUtility(IBuilderSet).get(builder.id)
         self.assertFalse(builder.builderok)
@@ -734,14 +738,13 @@ class TestBuilddManagerScan(TrialTestCase):
         d.addCallback(self._checkJobRescued, builder, job)
         return d
 
-    def _checkJobUpdated(self, recording_slaves, builder, job):
-        """`BuilddManager.scan` updates legitimate jobs.
+    def _checkJobUpdated(self, slave, builder, job):
+        """`SlaveScanner.scan` updates legitimate jobs.
 
         Job is kept assigned to the active builder and its 'logtail' is
         updated.
         """
-        self.assertEqual(
-            len(recording_slaves), 0, "Unexpected recording_slaves.")
+        self.assertTrue(slave is None, "Unexpected slave.")
 
         builder = getUtility(IBuilderSet).get(builder.id)
         self.assertTrue(builder.builderok)
