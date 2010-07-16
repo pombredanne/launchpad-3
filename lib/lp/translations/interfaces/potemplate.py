@@ -714,13 +714,36 @@ class IHasTranslationTemplates(Interface):
         title=_("Does this object have current translation templates?"),
         readonly=True)
 
+    def getTemplatesCollection():
+        """Return templates as a `TranslationTemplatesCollection`.
+
+        The collection selects all `POTemplate`s attached to the
+        translation target that implements this interface.
+        """
+
+    def getCurrentTemplatesCollection():
+        """Return `TranslationTemplatesCollection` of current templates.
+
+        A translation template is considered active when both
+        `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
+        containing `Product` or `Distribution` are set to True.
+        """
+        # XXX JeroenVermeulen 2010-07-16 bug=605924: Move the
+        # official_rosetta distinction into browser code.
+
     def getCurrentTranslationTemplates(just_ids=False):
         """Return an iterator over all active translation templates.
 
+        :param just_ids: If True, return only the `POTemplate.id` rather
+            than the full `POTemplate`.  Used to save time on retrieving
+            and deserializing the objects from the database.
+
         A translation template is considered active when both
-        `IPOTemplate`.iscurrent and parent official_rosetta flags
-        are set to True.
+        `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
+        containing `Product` or `Distribution` are set to True.
         """
+        # XXX JeroenVermeulen 2010-07-16 bug=605924: Move the
+        # official_rosetta distinction into browser code.
 
     def getCurrentTranslationFiles(just_ids=False):
         """Return an iterator over all active translation files.

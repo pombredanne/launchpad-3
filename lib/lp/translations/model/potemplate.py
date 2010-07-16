@@ -1535,11 +1535,7 @@ class HasTranslationTemplatesMixin:
         return result.order_by(Desc(POTemplate.priority), POTemplate.name)
 
     def getCurrentTemplatesCollection(self, current_value=True):
-        """Get collection of current templates.
-
-        Ignores current templates on products or distributions that have
-        not enabled translation.
-        """
+        """See `IHasTranslationTemplates`."""
         collection = self.getTemplatesCollection()
 
         # XXX JeroenVermeulen 2010-07-15 bug=605924: Move the
