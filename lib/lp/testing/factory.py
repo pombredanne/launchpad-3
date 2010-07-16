@@ -99,7 +99,6 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
 from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
-from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -1833,13 +1832,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroSeries(
                 distribution=archive.distribution)
-        if distroseries.nominatedarchindep is None:
-            # Recipe builds need to target a specific nominatedarchindep
-            # because we don't want to use the ARM or lpia builders.
-            distroseries.nominatedarchindep = distroseries.newArch(
-                'i386', ProcessorFamily.get(1), False, recipe.owner,
-                supports_virtualized=True)
-
         if requester is None:
             requester = self.makePerson()
         spr_build = getUtility(ISourcePackageRecipeBuildSource).new(
@@ -1860,9 +1852,14 @@ class LaunchpadObjectFactory(ObjectFactory):
         if recipe_build is None:
             recipe_build = self.makeSourcePackageRecipeBuild(
                 sourcename=sourcename)
+        recipe_build_job = recipe_build.makeJob()
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        bq = SourcePackageRecipeBuild.queueBuild(recipe_build)
+        bq = BuildQueue(
+            job=recipe_build_job.job, lastscore=score,
+            job_type=BuildFarmJobType.RECIPEBRANCHBUILD,
+            estimated_duration = timedelta(seconds=estimated_duration),
+            virtualized=virtualized)
         store.add(bq)
         return bq
 
