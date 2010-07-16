@@ -375,15 +375,19 @@ class BugTrackerEditView(LaunchpadEditFormView):
     def cancel_url(self):
         return canonical_url(self.context)
 
+    @property
+    def user_can_reset_watches(self):
+        lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
+        if (not check_permission("launchpad.Admin", self.user) and
+            not self.user.inTeam(lp_developers)):
+
     def resetBugTrackerWatches(self):
         """Call the resetWatches() method of the current context.
 
         :raises `UserCannotResetWatchesError` if the user isn't an admin
                 or a member of the Launchpad Developers team.
         """
-        lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
-        if (not check_permission("launchpad.Admin", self.user) and
-            not self.user.inTeam(lp_developers)):
+        if not self.user_can_reset_watches:
             raise UserCannotResetWatchesError
 
         self.context.resetWatches()
