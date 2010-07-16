@@ -258,9 +258,9 @@ The PersonActiveMembership vocabulary only shows teams where the
 membership is public.
 
     >>> from canonical.launchpad.interfaces import PersonVisibility
-    >>> otherteam = person_set.getByName('otherteam')
-    >>> ignored = otherteam.addMember(foo_bar, foo_bar)
-    >>> otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> pubteam = factory.makeTeam(owner=foo_bar, name='public-team',
+    ...                            displayname="Public Team",
+    ...                            visibility=PersonVisibility.PUBLIC)
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
     canonical-partner-dev Canonical Partner Developers
@@ -270,13 +270,13 @@ membership is public.
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
     launchpad Launchpad Developers Launchpad Developers
+    public-team Public Team Public Team
     testing-spanish-team testing Spanish team testing Spanish team
     name18 Ubuntu Gnome Team Ubuntu Gnome Team
     ubuntu-team Ubuntu Team Ubuntu Team
     vcs-imports VCS imports VCS imports
 
-
-    >>> otherteam.visibility = PersonVisibility.PUBLIC
+    >>> pubteam.visibility = PersonVisibility.PRIVATE
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
     canonical-partner-dev Canonical Partner Developers
@@ -286,7 +286,6 @@ membership is public.
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
     launchpad Launchpad Developers Launchpad Developers
-    otherteam Other Team Other Team
     testing-spanish-team testing Spanish team testing Spanish team
     name18 Ubuntu Gnome Team Ubuntu Gnome Team
     ubuntu-team Ubuntu Team Ubuntu Team
@@ -727,7 +726,8 @@ as teams:
     >>> [(p.name, p.is_valid_person) for p in vocab.search('matsubara')]
     [(u'matsubara', False)]
 
-    >>> [(p.name, p.is_valid_person) for p in vocab.search('mark@example.com')]
+    >>> [(p.name, p.is_valid_person)
+    ...  for p in vocab.search('mark@example.com')]
     [(u'mark', True)]
 
     >>> [(p.name, getattr(p.teamowner, 'name', None))
@@ -812,15 +812,15 @@ A PRIVATE team is displayed when the logged in user is a member of the team.
      u'simple-team', u'testing-spanish-team', u'ubuntu-security',
      u'ubuntu-team', u'warty-gnome']
 
-The PRIVATE team is also displayed for Launchpad admins, as is the
-PRIVATE_MEMBERSHIP team 'myteam'.
+The PRIVATE team is also displayed for Launchpad admins.
 
     >>> login('foo.bar@canonical.com')
     >>> sorted(person.name for person in vocab.search('team'))
     [u'hwdb-team', u'myteam', u'name18', u'name20', u'name21',
      u'no-team-memberships', u'otherteam',
-     u'private-team', u'simple-team', u'testing-spanish-team',
-     u'ubuntu-security', u'ubuntu-team', u'warty-gnome']
+     u'private-team', u'public-team', u'simple-team',
+     u'testing-spanish-team', u'ubuntu-security', u'ubuntu-team',
+     u'warty-gnome']
 
 The PRIVATE team can be looked up via getTermByToken for a member of the team.
 
@@ -1159,7 +1159,8 @@ All 'valid' persons who are not a team.
     >>> people = vocab.search(None)
     >>> people.count() > 0
     True
-    >>> invalid_people = [person for person in people if not person.is_valid_person]
+    >>> invalid_people = [
+    ...     person for person in people if not person.is_valid_person]
     >>> print len(invalid_people)
     0
 
@@ -1168,7 +1169,8 @@ There are two 'Carlos' in the sample data but only one is a valid person.
     >>> carlos_people = vocab.search('Carlos')
     >>> print len(list(carlos_people))
     1
-    >>> invalid_carlos = [person for person in carlos_people if not person.is_valid_person]
+    >>> invalid_carlos = [
+    ...     person for person in carlos_people if not person.is_valid_person]
     >>> print len(invalid_carlos)
     0
 
@@ -1409,7 +1411,8 @@ projects are returned.
     >>> check_permission('launchpad.ProjectReview', product_set)
     True
 
-    >>> comm_proj_vocab = get_naked_vocab(registry_member, "CommercialProjects")
+    >>> comm_proj_vocab = get_naked_vocab(registry_member,
+    ...                                   "CommercialProjects")
     >>> print comm_proj_vocab.displayname
     Select a commercial project
 
