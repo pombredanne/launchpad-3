@@ -171,19 +171,18 @@ Zope testbrowser.
 Now make a real unsigned request.
 
     >>> from zope.app.testing.functional import HTTPCaller
-    >>> def request_root_with_user_agent(agent):
+    >>> def request_with_user_agent(agent, url="/devel"):
     ...     if agent is None:
     ...         agent_string = ''
     ...     else:
     ...         agent_string = '\nUser-Agent: %s' % agent
     ...     http = HTTPCaller()
-    ...     request = ("GET /devel HTTP/1.1\n"
+    ...     request = ("GET %s HTTP/1.1\n"
     ...                "Host: api.launchpad.dev"
-    ...                "%s\n\n") % agent_string
-    ...     import pdb; pdb.set_trace(); return http(request)
+    ...                "%s\n\n") % (url, agent_string)
+    ...     return http(request)
 
-    >>> response = request_root_with_user_agent('unsigned agent')
-    >>> import pdb; pdb.set_trace()
+    >>> response = request_with_user_agent('unsigned agent')
     >>> print response.getOutput()
     HTTP/1.1 200 Ok
     ...
@@ -197,16 +196,28 @@ doesn't exist.
     unsigned agent
     >>> logout()
 
+An unsigned request, like a request signed with the empty string,
+isn't logged in as any particular user:
+
+    >>> response = request_with_user_agent("user-agent", "/devel/people/+me")
+    >>> print response.getOutput()
+    HTTP/1.1 401 Unauthorized
+    ...
+    Unauthorized: You need to be logged in to view this URL.
+
 An empty or missing user agent results in an error.
 
-    >>> response = request_root_with_user_agent('')
+    >>> response = request_with_user_agent(' ')
     >>> print response.getOutput()
     HTTP/1.1 401 Unauthorized
+    ...
+    Unauthorized: Anonymous requests must provide a User-Agent.
 
-    >>> response = request_root_with_user_agent(None)
+    >>> response = request_with_user_agent(None)
     >>> print response.getOutput()
     HTTP/1.1 401 Unauthorized
-
+    ...
+    Unauthorized: Anonymous requests must provide a User-Agent.
 
 API Requests to other hosts
 ===========================
@@ -252,7 +263,8 @@ scheme (and don't require OAuth).
     ...
 
 But the regular authentication still doesn't work on the normal API
-virtual host:
+virtual host: an attempt to do HTTP Basic Auth will be treated as an
+anonymous request.
 
     >>> noauth_webservice.domain = 'api.launchpad.dev'
     >>> print noauth_webservice.get(
@@ -260,7 +272,7 @@ virtual host:
     ...     headers={'Authorization': sample_auth})
     HTTP/1.1 401 Unauthorized
     ...
-    Request is missing an OAuth consumer key.
+    Unauthorized: Anonymous requests must provide a User-Agent.
 
 
 The 'Vary' Header
