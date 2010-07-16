@@ -1125,6 +1125,7 @@ p.search-results {
     }
 div.watermark-apps-portlet {
     clear: both;
+    margin-bottom: .5em;
     white-space: no-wrap;
     }
 div.watermark-apps-portlet .wide {
@@ -1189,7 +1190,7 @@ div.watermark-apps-portlet span img {
 .registering {
     /* Registered slot */
     float: right;
-    margin: -0.5em 0 0 0;
+    margin: -0.3em 0 0 0;
     font-size: 85%;
     color: #666;
     }

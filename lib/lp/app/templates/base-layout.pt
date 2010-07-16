@@ -99,13 +99,13 @@
           <metal:heading_nav
             use-macro="context/@@+base-layout-macros/application-buttons"/>
         </div>
+        <div id="registration" class="registering">
+          <metal:registering define-slot="registering" />
+        </div>
       </div>
 
       <div class="yui-t4"
         tal:omit-tag="not: view/macro:pagehas/portlets">
-        <div id="registration" class="registering">
-          <metal:registering define-slot="registering" />
-        </div>
         <div id="maincontent" class="yui-main">
           <div class="yui-b"
             tal:attributes="
