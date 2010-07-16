@@ -17,7 +17,7 @@
        factory="lp.blueprints.publisher.blueprints_request_publication_factory"/>
 
     <lp:help-folder
-        folder="help" type="lp.code.publisher.BlueprintsLayer" />
+        folder="help" type="lp.blueprints.publisher.BlueprintsLayer" />
 
     <!-- Sprint -->
 

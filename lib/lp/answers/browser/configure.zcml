@@ -14,7 +14,7 @@
        IQuestionCollection. -->
   <browser:defaultView
     for="lp.answers.interfaces.questioncollection.IQuestionCollection"
-    layer="lp.code.publisher.AnswersLayer"
+    layer="lp.answers.publisher.AnswersLayer"
     name="+tickets"
     />
   <browser:page
@@ -351,7 +351,7 @@
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPerson"
-    layer="lp.code.publisher.AnswersLayer"
+    layer="lp.answers.publisher.AnswersLayer"
     name="+questions"
     />
 

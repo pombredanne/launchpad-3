@@ -35,4 +35,4 @@ class BlueprintsBrowserRequest(BlueprintsRequestMixin, LaunchpadBrowserRequest):
 
 def blueprints_request_publication_factory():
     return VirtualHostRequestPublicationFactory(
-        'Blueprints', BlueprintsBrowserRequest, LaunchpadBrowserPublication)
+        'blueprints', BlueprintsBrowserRequest, LaunchpadBrowserPublication)

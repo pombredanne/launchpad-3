@@ -17,7 +17,7 @@
        factory="lp.bugs.publisher.bugs_request_publication_factory"/>
 
     <lp:help-folder
-        folder="help" type="lp.code.publisher.BugsLayer" />
+        folder="help" type="lp.bugs.publisher.BugsLayer" />
 
     <class
         class="canonical.launchpad.database.BugActivity">

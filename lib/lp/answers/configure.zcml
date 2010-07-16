@@ -239,7 +239,7 @@
 
 
   <lp:help-folder
-      folder="help" type="lp.code.publisher.AnswersLayer" />
+      folder="help" type="lp.answers.publisher.AnswersLayer" />
   <adapter
       name="answers"
       provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

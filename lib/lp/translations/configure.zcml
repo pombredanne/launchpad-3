@@ -18,7 +18,7 @@
        factory="lp.translations.publisher.translations_request_publication_factory"/>
 
     <lp:help-folder
-        folder="help" type="lp.code.publisher.TranslationsLayer" />
+        folder="help" type="lp.translations.publisher.TranslationsLayer" />
 
     <class
         class="lp.translations.model.vpotexport.VPOTExport">
