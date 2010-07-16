@@ -98,7 +98,7 @@ class TeamMembership(SQLBase):
         ondemand = TeamMembershipRenewalPolicy.ONDEMAND
         admin = TeamMembershipStatus.APPROVED
         approved = TeamMembershipStatus.ADMIN
-        date_limit = datetime.now(pytz.timezone('UTC')) + timedelta(
+        date_limit = datetime.now(pytz.UTC) + timedelta(
             days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
         return (self.status in (admin, approved)
                 and self.team.renewal_policy == ondemand
