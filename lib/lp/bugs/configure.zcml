@@ -12,8 +12,12 @@
     <include
         package=".browser"/>
 
+    <publisher
+       name="bugs"
+       factory="lp.bugs.publisher.bugs_request_publication_factory"/>
+
     <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.BugsLayer" />
+        folder="help" type="lp.code.publisher.BugsLayer" />
 
     <class
         class="canonical.launchpad.database.BugActivity">

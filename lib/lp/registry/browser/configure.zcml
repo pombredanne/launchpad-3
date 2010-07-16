@@ -57,7 +57,7 @@
         name="+index"/>
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.code.publisher.BugsLayer"
         name="+bugs-index"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -294,7 +294,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         name="+bugs"
-        layer="canonical.launchpad.layers.BugsLayer"/>
+        layer="lp.code.publisher.BugsLayer"/>
     <browser:defaultView
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         name="+specs"
@@ -432,7 +432,7 @@
         name="+questions"/>
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.code.publisher.BugsLayer"
         name="+bugs"/>
     <browser:url
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -766,7 +766,7 @@
             name="+specs"/>
         <browser:defaultView
             for="lp.registry.interfaces.person.IPerson"
-            layer="canonical.launchpad.layers.BugsLayer"
+            layer="lp.code.publisher.BugsLayer"
             name="+bugs"/>
         <adapter
           factory="lp.registry.browser.person.PersonXHTMLRepresentation"
@@ -1364,7 +1364,7 @@
         name="+questions"/>
     <browser:defaultView
         for="lp.registry.interfaces.product.IProduct"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.code.publisher.BugsLayer"
         name="+bugs-index"/>
     <browser:navigation
         module="lp.registry.browser.product"
@@ -1599,7 +1599,7 @@
         layer="canonical.launchpad.layers.BlueprintLayer"/>
     <browser:defaultView
         for="lp.registry.interfaces.productseries.IProductSeries"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.code.publisher.BugsLayer"
         name="+bugs-index"/>
     <browser:page
         name="+get-involved"
@@ -1742,7 +1742,7 @@
         layer="canonical.launchpad.layers.BlueprintLayer"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.code.publisher.BugsLayer"
         name="+bugs-index"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -1946,7 +1946,7 @@
         name="+index"/>
     <browser:defaultView
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.code.publisher.BugsLayer"
         name="+bugs"/>
     <browser:defaultView
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"

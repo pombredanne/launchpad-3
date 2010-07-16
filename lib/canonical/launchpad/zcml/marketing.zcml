@@ -72,14 +72,14 @@
     <!-- Marketing material for Bugs. -->
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.code.publisher.BugsLayer"
         name="+about"
         new_name="+tour/bugs"
         rootsite="mainsite"
         />
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.code.publisher.BugsLayer"
         name="+faq"
         new_name="+tour/bugs"
         rootsite="mainsite"
@@ -87,7 +87,7 @@
     <browser:renamed-page
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.code.publisher.BugsLayer"
         new_name="+tour/bugs"
         rootsite="mainsite"
         />

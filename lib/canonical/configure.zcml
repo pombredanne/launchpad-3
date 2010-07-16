@@ -126,14 +126,14 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="bugs"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.code.publisher.BugsLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.code.publisher.BugsLayer"
         />
 
     <!-- virtual host: answers -->

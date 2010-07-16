@@ -1038,14 +1038,6 @@ class TranslationsBrowserRequest(LaunchpadBrowserRequest):
         self.response.setHeader(
             'Vary', 'Cookie, Authorization, Accept-Language')
 
-# ---- bugs
-
-class BugsPublication(LaunchpadBrowserPublication):
-    """The publication used for the Bugs site."""
-
-class BugsBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.BugsLayer)
-
 
 class AccountPrincipalMixin:
     """Mixin for publication that works with person-less accounts."""
@@ -1452,7 +1444,6 @@ def register_launchpad_request_publication_factories():
         VWSHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication),
         VWSHRP('translations', TranslationsBrowserRequest,
                TranslationsPublication),
-        VWSHRP('bugs', BugsBrowserRequest, BugsPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
         WebServiceRequestPublicationFactory(
             'api', WebServiceClientRequest, WebServicePublication),
