@@ -1023,14 +1023,6 @@ class BlueprintBrowserRequest(LaunchpadBrowserRequest):
 class BlueprintPublication(LaunchpadBrowserPublication):
     """The publication used for the Blueprint site."""
 
-# ---- code
-
-class CodePublication(LaunchpadBrowserPublication):
-    """The publication used for the Code site."""
-
-class CodeBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.CodeLayer)
-
 # ---- translations
 
 class TranslationsPublication(LaunchpadBrowserPublication):
@@ -1473,7 +1465,6 @@ def register_launchpad_request_publication_factories():
         VWSHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication,
                handle_default_host=True),
         VWSHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication),
-        VWSHRP('code', CodeBrowserRequest, CodePublication),
         VWSHRP('translations', TranslationsBrowserRequest,
                TranslationsPublication),
         VWSHRP('bugs', BugsBrowserRequest, BugsPublication),
