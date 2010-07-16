@@ -1418,9 +1418,6 @@ def register_launchpad_request_publication_factories():
     factories = [
         VWSHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication,
                handle_default_host=True),
-        VWSHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication),
-        VWSHRP('translations', TranslationsBrowserRequest,
-               TranslationsPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
         WebServiceRequestPublicationFactory(
             'api', WebServiceClientRequest, WebServicePublication),
