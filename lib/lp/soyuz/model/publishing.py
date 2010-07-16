@@ -49,12 +49,12 @@ from lp.services.worlddata.model.country import Country
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (BinaryPackageRelease,
     BinaryPackageReleaseDownloadCount)
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus, IBinaryPackageBuildSet)
@@ -1161,7 +1161,10 @@ class PublishingSet:
             section=section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW)
-
+        # Import here to prevent import loop.
+        from lp.registry.model.distributionsourcepackage import (
+            DistributionSourcePackage)
+        DistributionSourcePackage.ensure(pub)
         return pub
 
     def getBuildsForSourceIds(
@@ -1263,7 +1266,7 @@ class PublishingSet:
         return Store.of(archive).find(
             baseclass,
             baseclass.id == id,
-            baseclass.archive == archive.id)
+            baseclass.archive == archive.id).one()
 
     def _extractIDs(self, one_or_more_source_publications):
         """Return a list of database IDs for the given list or single object.

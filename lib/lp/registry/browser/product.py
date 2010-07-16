@@ -965,9 +965,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
 
-    def getLatestBranches(self):
-        return self.context.getLatestBranches(visible_by_user=self.user)
-
     @property
     def requires_commercial_subscription(self):
         """Whether to display notice to purchase a commercial subscription."""

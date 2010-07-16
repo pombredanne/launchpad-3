@@ -225,7 +225,7 @@ class IBuildBase(Interface):
 
     title = exported(TextLine(title=_("Title"), required=False))
 
-    def getUploaderCommand(upload_leaf, uploader_logfilename):
+    def getUploaderCommand(build, upload_leaf, uploader_logfilename):
         """Get the command to run as the uploader.
 
         :return: A list of command line arguments, beginning with the
@@ -240,14 +240,14 @@ class IBuildBase(Interface):
         :return: Contents of log file or message saying no log file was found.
         """
 
-    def handleStatus(build, status, librarian, slave_status):
+    def handleStatus(status, librarian, slave_status):
         """Handle a finished build status from a slave.
 
         :param status: Slave build status string with 'BuildStatus.' stripped.
         :param slave_status: A dict as returned by IBuilder.slaveStatus
         """
 
-    def getLogFromSlave():
+    def getLogFromSlave(build):
         """Get last buildlog from slave.
 
         Invoke getFileFromSlave method with 'buildlog' identifier.

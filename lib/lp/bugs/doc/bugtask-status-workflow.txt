@@ -145,7 +145,7 @@ date_inprogress is set to None, similar to the logic behind date_confirmed:
     >>> ubuntu_firefox_task.date_inprogress is None
     True
 
-Marking the bug Triaged sets `date_triged`.
+Marking the bug Triaged sets `date_triaged`.
 
     >>> print ubuntu_firefox_task.date_triaged
     None
@@ -183,6 +183,16 @@ date_inprogress is also set, when it had previously been None.
 
     >>> ubuntu_firefox_task.transitionToStatus(
     ...     BugTaskStatus.EXPIRED, getUtility(ILaunchBag).user)
+    >>> ubuntu_firefox_task.date_closed
+    datetime.datetime...
+
+    >>> ubuntu_firefox_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
+    >>> ubuntu_firefox_task.date_closed is None
+    True
+
+    >>> ubuntu_firefox_task.transitionToStatus(
+    ...     BugTaskStatus.OPINION, getUtility(ILaunchBag).user)
     >>> ubuntu_firefox_task.date_closed
     datetime.datetime...
 

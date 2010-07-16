@@ -863,17 +863,6 @@
             permission="zope.Public"/>
     </facet>
 
-    <browser:pages
-        for="lp.registry.interfaces.product.IProduct"
-        permission="zope.Public"
-        class="lp.registry.browser.product.ProductView">
-
-      <browser:page
-            name="+portlet-latestbranches"
-            template="../templates/product-portlet-latestbranches.pt"/>
-
-    </browser:pages>
-
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.code.browser.branchlisting.ProductBranchesView"

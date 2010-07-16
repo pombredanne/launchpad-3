@@ -8,10 +8,12 @@ __metaclass__ = type
 import os
 import unittest
 
-from lp.archiveuploader.dscfile import findAndMoveChangelog, findCopyright
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.archiveuploader.dscfile import (
+    findAndMoveChangelog, findCopyright)
 from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.archiveuploader.tests import mock_logger_quiet
-from lp.testing import TestCase
+from lp.testing import TestCase, TestCaseWithFactory
 
 
 class TestDscFile(TestCase):
@@ -113,6 +115,23 @@ class TestDscFile(TestCase):
         self.assertEqual(
             errors[0].args[0],
             "debian/changelog file too large, 10MiB max")
+
+
+class TestDscFileLibrarian(TestCaseWithFactory):
+    """Tests for DscFile that may use the Librarian."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_ReadOnlyCWD(self):
+        """Processing a file should work when cwd is read-only."""
+        tempdir = self.useTempDir()
+        dsc_file = self.factory.makeDscFile(tempdir)
+        os.chmod(tempdir, 0555)
+        try:
+            list(dsc_file.unpackAndCheckSource())
+        finally:
+            os.chmod(tempdir, 0755)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
