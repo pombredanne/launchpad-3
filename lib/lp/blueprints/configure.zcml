@@ -12,6 +12,10 @@
     <include
         package=".browser"/>
 
+    <publisher
+       name="blueprints"
+       factory="lp.blueprints.publisher.blueprints_request_publication_factory"/>
+
     <lp:help-folder
         folder="help" type="lp.code.publisher.BlueprintsLayer" />
 
