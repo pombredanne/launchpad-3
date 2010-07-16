@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -71,7 +71,8 @@ from lp.registry.model.person import Person
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
-    POTemplate)
+    POTemplate,
+    TranslationTemplatesCollection)
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from lp.soyuz.model.queue import PackageUpload, PackageUploadQueue
@@ -1871,40 +1872,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def main_archive(self):
         return self.distribution.main_archive
 
-    def getTranslationTemplates(self):
+    def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(distroseries=self,
-                                     orderBy=['-priority', 'name'])
-        return result
-
-    def getCurrentTranslationTemplates(self, just_ids=False):
-        """See `IHasTranslationTemplates`."""
-        store = Store.of(self)
-        if just_ids:
-            looking_for = POTemplate.id
-        else:
-            looking_for = POTemplate
-
-        # Select all current templates for this series, if the Product
-        # actually uses Launchpad Translations.  Otherwise, return an
-        # empty result.
-        result = store.find(looking_for, And(
-            self.distribution.official_rosetta == True,
-            POTemplate.iscurrent == True,
-            POTemplate.distroseries == self))
-        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
-
-    def getObsoleteTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            distroseries = %s AND
-            distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
-            ''' % sqlvalues(self),
-            clauseTables = ['DistroSeries', 'Distribution'],
-            orderBy=['-priority', 'name'])
-        return shortlist(result, 300)
+        return TranslationTemplatesCollection().restrictDistroSeries(self)
 
     def getSuite(self, pocket):
         """See `IDistroSeries`."""

@@ -745,5 +745,12 @@ class IHasTranslationTemplates(Interface):
         """A list of native formats for all current translation templates.
         """
 
+    def getTemplatesAndLanguageCounts():
+        """List tuples of `POTemplate` and its language count.
+
+        A template's language count is the number of `POFile`s that
+        exist for it.
+        """
+
 # Monkey patch for circular import avoidance done in
 # _schema_circular_imports.py
