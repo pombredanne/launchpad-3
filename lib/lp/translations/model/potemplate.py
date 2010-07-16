@@ -1564,9 +1564,14 @@ class HasTranslationTemplatesMixin:
         return self._orderTemplates(collection.select(selection))
 
     @property
+    def has_translation_templates(self):
+        """See `IHasTranslationTemplates`."""
+        return bool(self.getTranslationTemplates().any())
+
+    @property
     def has_current_translation_templates(self):
         """See `IHasTranslationTemplates`."""
-        return bool(self.getCurrentTranslationTemplates().any())
+        return bool(self.getCurrentTranslationTemplates(just_ids=True).any())
 
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
