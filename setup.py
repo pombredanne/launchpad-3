@@ -25,7 +25,6 @@ setup(
     # used in zcml.
     install_requires=[
         'ampoule',
-        'amqplib',
         'bzr',
         'chameleon.core',
         'chameleon.zpt',
