@@ -24,10 +24,6 @@ __all__ = [
 class IProductSeriesLanguage(IRosettaStats):
     """Per-language statistics for a product series."""
 
-    language = Choice(
-        title=_('Language to gather statistics for.'),
-        vocabulary='Language', required=True, readonly=True)
-
     pofile = Reference(
         title=_("A POFile if there is only one POTemplate for the series."),
         schema=IPOFile, required=False, readonly=True)
@@ -41,27 +37,12 @@ class IProductSeriesLanguage(IRosettaStats):
         title=_("Title for the per-language per-series page."),
         required=False)
 
-    pofiles = Attribute("The set of pofiles in this distroseries for this "
-        "language. This includes only the real pofiles where translations "
-        "exist.")
-
-
-    last_changed_date = Datetime(
-        title=_('When this file was last changed.'))
-
-
     def getPOFilesFor(potemplates):
         """Return `POFiles` for each of `potemplates`, in the same order.
 
         For any `POTemplate` that does not have a translation to the
         required language, a `DummyPOFile` is provided.
         """
-
-    def setCounts(total, imported, changed, new, unreviewed, last_changed):
-        """Set aggregated message counts for ProductSeriesLanguage."""
-
-    def recalculateCounts(total, imported, changed, new, unreviewed):
-        """Recalculate message counts for this ProductSeriesLanguage."""
 
 
 class IProductSeriesLanguageSet(Interface):

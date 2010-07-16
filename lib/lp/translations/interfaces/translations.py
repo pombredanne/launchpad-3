@@ -3,11 +3,20 @@
 
 # pylint: disable-msg=E0211,E0213
 
+from zope.interface import Attribute, Interface
+from zope.schema import (
+    Choice, Datetime, Object)
+
 from lazr.enum import DBEnumeratedType, DBItem
+
+from canonical.launchpad import _
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.registry.interfaces.person import IPerson
 
 __metaclass__ = type
 
 __all__ = (
+    'ITranslatedLanguage',
     'TranslationConstants',
     'TranslationsBranchImportMode',
     )
@@ -52,3 +61,35 @@ class TranslationsBranchImportMode(DBEnumeratedType):
         """)
 
 
+class ITranslatedLanguage(Interface):
+    """Interface for providing translations for context by language.
+
+    It expects `parent` to provide `IHasTranslationTemplates`."""
+
+    language = Choice(
+        title=_('Language to gather statistics and POFiles for.'),
+        vocabulary='Language', required=True)
+
+    parent = Object(
+        title=_('A parent with translation templates.'),
+        schema=IHasTranslationTemplates)
+
+    pofiles = Attribute(
+        'Iterator over all POFiles for this context and language.')
+
+    translation_statistics = Attribute(
+        _('A dict containing relevant aggregated statistics counts.'))
+
+    def setCounts(total, imported, changed, new, unreviewed, last_changed):
+        """Set aggregated message counts for ITranslatedLanguage."""
+
+    def recalculateCounts():
+        """Recalculate message counts for this ITranslatedLanguage."""
+
+    last_changed_date = Datetime(
+        title=_('When was this translation last changed.'),
+        readonly=False, required=True)
+
+    last_translator = Object(
+        title=_('Last person that translated something in this context.'),
+        schema=IPerson)

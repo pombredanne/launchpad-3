@@ -19,11 +19,12 @@ from storm.store import Store
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.model.pofile import DummyPOFile, POFile
 from lp.translations.model.potemplate import get_pofiles_for, POTemplate
+from lp.translations.model.translatedlanguage import TranslatedLanguageMixin
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage, IProductSeriesLanguageSet)
 
 
-class ProductSeriesLanguage(RosettaStats):
+class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
     """See `IProductSeriesLanguage`."""
     implements(IProductSeriesLanguage)
 
@@ -32,6 +33,7 @@ class ProductSeriesLanguage(RosettaStats):
             'English is not a translatable language.')
         RosettaStats.__init__(self)
         self.productseries = productseries
+        self.parent = productseries
         self.language = language
         self.variant = variant
         self.pofile = pofile

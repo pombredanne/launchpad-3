@@ -383,7 +383,9 @@
     <class
         class="lp.translations.model.productserieslanguage.ProductSeriesLanguage">
         <allow
-            interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"/>
+            interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage" />
+        <allow
+            interface="lp.translations.interfaces.translations.ITranslatedLanguage"/>
     </class>
     <class
         class="lp.translations.model.productserieslanguage.DummyProductSeriesLanguage">
