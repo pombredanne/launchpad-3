@@ -92,16 +92,15 @@ standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
 '''
 
 standardTemplateHeader = (
-"Project-Id-Version: %(origin)s\n"
-"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: %(templatedate)s\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: %(languagename)s <%(languagecode)s@li.org>\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-)
+    "Project-Id-Version: %(origin)s\n"
+    "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+    "POT-Creation-Date: %(templatedate)s\n"
+    "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+    "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+    "Language-Team: %(languagename)s <%(languagecode)s@li.org>\n"
+    "MIME-Version: 1.0\n"
+    "Content-Type: text/plain; charset=UTF-8\n"
+    "Content-Transfer-Encoding: 8bit\n")
 
 
 standardPOFileHeader = (standardTemplateHeader +
@@ -1379,7 +1378,6 @@ class POTemplateSharingSubset(object):
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
         self.product = product
-
 
     def _get_potemplate_equivalence_class(self, template):
         """Return whatever we group `POTemplate`s by for sharing purposes."""

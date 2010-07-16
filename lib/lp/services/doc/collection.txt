@@ -16,7 +16,7 @@ them.
     >>> from storm.locals import Count, Int, Storm
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
- 
+
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
     >>> ok = store.execute("CREATE TEMP TABLE Kumquat(id integer UNIQUE)")
     >>> class Kumquat(Storm):
