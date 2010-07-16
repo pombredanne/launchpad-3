@@ -985,7 +985,7 @@
   <adapter factory="lp.code.model.linkedbranch.DistributionPackageLinkedBranch" />
 
   <lp:help-folder
-      folder="help" type="canonical.launchpad.layers.CodeLayer" />
+      folder="help" type="lp.code.publisher.CodeLayer" />
 
   <!-- Diffs -->
   <class class="lp.code.model.diff.Diff">
