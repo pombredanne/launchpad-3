@@ -26,7 +26,7 @@ class Collection(object):
     individual columns or other Storm expressions.
     """
 
-    # Default table for this collection that will always be needed.
+    # Default table for this collection that will always be included.
     # Derived collection classes can use this to say what type they are
     # a collection of.
     starting_table = None
@@ -113,13 +113,27 @@ class Collection(object):
         return self.refine(tables=[LeftJoin(cls, *conditions)])
 
     def select(self, *values):
-        """Return a result set containing the requested `values`."""
+        """Return a result set containing the requested `values`.
+
+        If no values are requested, this selects the type of object that
+        the Collection is a collection of.
+        """
         if len(self.tables) == 0:
             source = self.store
         else:
             source = self.store.using(*self.tables)
 
-        if len(values) == 1:
+        if len(values) > 1:
+            # Selecting a tuple of values.  Pass it to Storm unchanged.
+            pass
+        elif len(values) == 1:
+            # One value requested.  Unpack for convenience.
             values = values[0]
+        else:
+            # Select the starting table by default.
+            assert self.starting_table is not None, (
+                "Collection %s does not define a starting table." %
+                    self.__class__.__name__)
+            values = self.starting_table
 
         return source.find(values, *self.conditions)
