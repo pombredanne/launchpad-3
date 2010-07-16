@@ -1,0 +1,40 @@
+#!/usr/bin/python
+
+from bzrlib import branch, errors
+import commands
+from launchpadlib.launchpad import Launchpad
+import os
+import sys
+
+_launchpad = Launchpad.login_with('rocketfuel-mp-status', 'edge')
+trunk = commands.getoutput(
+    '. ~/.rocketfuel-env.sh && echo $LP_TRUNK_NAME')
+projpath = commands.getoutput(
+    '. ~/.rocketfuel-env.sh && echo $LP_PROJECT_PATH')
+os.chdir(projpath)
+branches = os.listdir('.')
+_lp_branches = _launchpad.branches
+
+for lb in branches:
+    if lb == trunk:
+        continue
+    try:
+        _branch  = branch.Branch.open(lb)
+    except errors.NotBranchError:
+        continue
+    print ' * %s' % lb
+    _rem_branch_url = _branch.get_public_branch()
+    try:
+        _rem_branch = branch.Branch.open(_rem_branch_url)
+    except errors.NotBranchError:
+        print '   - Remote branch does not exist'
+        continue
+    if _branch.revno() != _rem_branch.revno():
+        print '   - Remote branch is missing revisions'
+    else:
+        print '   - Remote branch is up to date'
+    _remote = _lp_branches.getByUrl(url = _rem_branch_url)
+    _mps = _remote.landing_targets
+    for mp in _mps:
+        print '   - MP: %s' % mp.queue_status
+
