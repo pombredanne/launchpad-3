@@ -159,16 +159,11 @@ Anonymous requests can't change the dataset.
 A completely unsigned web service request is treated as an anonymous
 request, with the OAuth consumer name being equal to the User-Agent.
 
+    >>> agent = "unsigned-user-agent"
     >>> login(ANONYMOUS)
-    >>> print consumer_set.getByKey('unsigned-user-agent')
+    >>> print consumer_set.getByKey(agent)
     None
     >>> logout()
-
-Make a dummy request to set up the 'headers' object so that we can
-make a request with custom headers. This is necessary due to a bug in
-Zope testbrowser.
-
-Now make a real unsigned request.
 
     >>> from zope.app.testing.functional import HTTPCaller
     >>> def request_with_user_agent(agent, url="/devel"):
@@ -182,7 +177,7 @@ Now make a real unsigned request.
     ...                "%s\n\n") % (url, agent_string)
     ...     return http(request)
 
-    >>> response = request_with_user_agent('unsigned agent')
+    >>> response = request_with_user_agent(agent)
     >>> print response.getOutput()
     HTTP/1.1 200 Ok
     ...
@@ -192,14 +187,23 @@ Here, too, the OAuth consumer name is automatically registered if it
 doesn't exist.
 
     >>> login(ANONYMOUS)
-    >>> print consumer_set.getByKey('unsigned agent').key
-    unsigned agent
+    >>> print consumer_set.getByKey(agent).key
+    unsigned-user-agent
     >>> logout()
+
+Here's another request now that the User-Agent has been registered as
+a consumer name.
+
+    >>> response = request_with_user_agent(agent)
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    {...}
 
 An unsigned request, like a request signed with the empty string,
 isn't logged in as any particular user:
 
-    >>> response = request_with_user_agent("user-agent", "/devel/people/+me")
+    >>> response = request_with_user_agent(agent, "/devel/people/+me")
     >>> print response.getOutput()
     HTTP/1.1 401 Unauthorized
     ...
