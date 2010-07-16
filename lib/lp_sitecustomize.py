@@ -6,11 +6,22 @@
 
 import os
 import warnings
+import logging
 
 from bzrlib.branch import Branch
 from lp.services.mime import customizeMimetypes
 from zope.security import checker
 
+
+# XXX matsubara bug=XXXX NullHandler class is available on python 2.7 so when
+# LP is running with it, we can remove this class.
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
+def silence_root_logger():
+    """Install the NullHandler on the root logger to silence logs."""
+    logging.getLogger().addHandler(NullHandler())
 
 def dont_wrap_class_and_subclasses(cls):
     checker.BasicTypes.update({cls: checker.NoProxy})
@@ -40,5 +51,6 @@ def main():
     customizeMimetypes()
     dont_wrap_class_and_subclasses(Branch)
     silence_warnings()
+    silence_root_logger()
 
 main()
