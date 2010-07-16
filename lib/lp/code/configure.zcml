@@ -445,7 +445,12 @@
         permission="launchpad.Edit"
         interface="lp.code.interfaces.branch.IBranchEdit"
         set_schema="lp.code.interfaces.branch.IBranchEditableAttributes"
-        attributes="setPrivate"/>
+        attributes="setPrivate"
+        set_attributes="branch_format branch_type
+                        last_scanned last_scanned_id
+                        last_mirrored last_mirrored_id next_mirror_time
+                        revision_count merge_queue mirror_failures
+                        stacked_on mirror_status_message"/>
     <require
         permission="launchpad.AnyPerson"
         set_schema="lp.code.interfaces.branch.IBranchAnyone"/>
