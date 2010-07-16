@@ -33,68 +33,86 @@ class BugNotificationRecipientReason(RecipientReason):
         return template_values
 
     @classmethod
-    def _getReasonTemplate(cls, reason_string):
+    def makeRationale(cls, rationale, person, duplicate_bug=None):
+        """See `RecipientReason.makeRationale`."""
+        rationale = RecipientReason.makeRationale(rationale, person)
+        if duplicate_bug is not None:
+            rationale = "%s via Bug %s" % (rationale, duplicate_bug.id)
+
+        return rationale
+
+    @classmethod
+    def _getReasonTemplate(cls, reason_string, duplicate_bug=None):
         """Return a reason template to pass to __init__()."""
-        reason_base = (
-            "You received this bug notification because %(lc_entity_is)s")
-        return "%s %s." % (reason_base, reason_string)
+        if duplicate_bug is not None:
+            reason_suffix = " (via bug %s)." % duplicate_bug.id
+        else:
+            reason_suffix = "."
+
+        reason_parts = {
+            'prefix':
+                "You received this bug notification because %(lc_entity_is)s",
+            'reason': reason_string,
+            'suffix': reason_suffix,
+            }
+        return "%(prefix)s %(reason)s%(suffix)s" % reason_parts
 
     @classmethod
     def forDupeSubscriber(cls, person, duplicate_bug):
         """Return a `BugNotificationRecipientReason` for a dupe subscriber.
         """
-        header = "%s via Bug %s" % (
-            cls.makeRationale('Subscriber to Duplicate', person),
-            duplicate_bug.id)
+        header = cls.makeRationale(
+            'Subscriber to Duplicate', person, duplicate_bug)
 
         reason = cls._getReasonTemplate(
             "a direct subscriber to duplicate bug %s" %  duplicate_bug.id)
         return cls(person, person, header, reason)
 
     @classmethod
-    def forDirectSubscriber(cls, person):
+    def forDirectSubscriber(cls, person, duplicate_bug=None):
         """Return a `BugNotificationRecipientReason` for a direct subscriber.
         """
-        header = cls.makeRationale("Subscriber", person)
-        reason = cls._getReasonTemplate("a direct subscriber to the bug")
+        header = cls.makeRationale("Subscriber", person, duplicate_bug)
+        reason = cls._getReasonTemplate(
+            "a direct subscriber to the bug", duplicate_bug)
         return cls(person, person, header, reason)
 
     @classmethod
-    def forAssignee(cls, person):
+    def forAssignee(cls, person, duplicate_bug=None):
         """Return a `BugNotificationRecipientReason` for a bug assignee."""
-        header = cls.makeRationale("Assignee", person)
-        reason = cls._getReasonTemplate("a bug assignee")
+        header = cls.makeRationale("Assignee", person, duplicate_bug)
+        reason = cls._getReasonTemplate("a bug assignee", duplicate_bug)
         return cls(person, person, header, reason)
 
     @classmethod
-    def forBugSupervisor(cls, person, target):
+    def forBugSupervisor(cls, person, target, duplicate_bug=None):
         """Return a `BugNotificationRecipientReason` for a bug supervisor."""
         # All displaynames in these reasons should be changed to bugtargetname
         # (as part of bug 113262) once bugtargetname is finalized for packages
         # (bug 113258). Changing it before then would be excessively
         # disruptive.
         header = cls.makeRationale(
-            "Bug Supervisor (%s)" % target.displayname, person)
+            "Bug Supervisor (%s)" % target.displayname, person, duplicate_bug)
         reason = cls._getReasonTemplate(
-            "the bug supervisor for %s" % target.displayname)
+            "the bug supervisor for %s" % target.displayname, duplicate_bug)
         return cls(person, person, header, reason)
 
     @classmethod
-    def forStructuralSubscriber(cls, person, target):
+    def forStructuralSubscriber(cls, person, target, duplicate_bug=None):
         """Return a recipient reason for a structural subscriber."""
         header = cls.makeRationale(
-            "Subscriber (%s)" % target.displayname, person)
+            "Subscriber (%s)" % target.displayname, person, duplicate_bug)
         reason = cls._getReasonTemplate(
-            "subscribed to %s" % target.displayname)
+            "subscribed to %s" % target.displayname, duplicate_bug)
         return cls(person, person, header, reason)
 
     @classmethod
-    def forRegistrant(cls, person, target):
+    def forRegistrant(cls, person, target, duplicate_bug=None):
         """Return a recipient reason for a registrant."""
         header = cls.makeRationale(
-            "Registrant (%s)" % target.displayname, person)
+            "Registrant (%s)" % target.displayname, person, duplicate_bug)
         reason = cls._getReasonTemplate(
-            "the registrant of %s" % target.displayname)
+            "the registrant of %s" % target.displayname, duplicate_bug)
         return cls(person, person, header, reason)
 
 
@@ -155,8 +173,15 @@ class BugNotificationRecipients(NotificationRecipientSet):
         reason = "You received this bug notification because you %s." % reason
         self.add(person, reason, header)
 
-    def addDupeSubscriber(self, person, duplicate_bug):
+    def addDupeSubscriber(self, person, duplicate_bug=None):
         """Registers a subscriber of a duplicate of this bug."""
+        if duplicate_bug is None:
+            duplicate_bug = self.duplicateof
+
+        assert duplicate_bug is not None, (
+            "A duplicate subscriber can only be added if the duplicate "
+            "bug is specified.")
+
         reason = BugNotificationRecipientReason.forDupeSubscriber(
             person, duplicate_bug)
         self.add(person, reason, reason.mail_header)
@@ -164,34 +189,35 @@ class BugNotificationRecipients(NotificationRecipientSet):
     def addDirectSubscriber(self, person):
         """Registers a direct subscriber of this bug."""
         reason = BugNotificationRecipientReason.forDirectSubscriber(
-            person)
+            person, self.duplicateof)
         self.add(person, reason, reason.mail_header)
 
     def addAssignee(self, person):
         """Registers an assignee of a bugtask of this bug."""
-        reason = BugNotificationRecipientReason.forAssignee(person)
+        reason = BugNotificationRecipientReason.forAssignee(
+            person, self.duplicateof)
         self.add(person, reason, reason.mail_header)
 
     def addDistroBugSupervisor(self, person, distro):
         """Registers a distribution bug supervisor for this bug."""
         reason = BugNotificationRecipientReason.forBugSupervisor(
-            person, distro)
+            person, distro, self.duplicateof)
         self.add(person, reason, reason.mail_header)
 
     def addStructuralSubscriber(self, person, target):
         """Registers a structural subscriber to this bug's target."""
         reason = BugNotificationRecipientReason.forStructuralSubscriber(
-            person, target)
+            person, target, self.duplicateof)
         self.add(person, reason, reason.mail_header)
 
     def addUpstreamBugSupervisor(self, person, upstream):
         """Registers an upstream bug supervisor for this bug."""
         reason = BugNotificationRecipientReason.forBugSupervisor(
-            person, upstream)
+            person, upstream, self.duplicateof)
         self.add(person, reason, reason.mail_header)
 
     def addRegistrant(self, person, upstream):
         """Registers an upstream product registrant for this bug."""
         reason = BugNotificationRecipientReason.forRegistrant(
-            person, upstream)
+            person, upstream, self.duplicateof)
         self.add(person, reason, reason.mail_header)

@@ -50,9 +50,9 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
         expected_header = 'Subscriber to Duplicate @%s via Bug %s' % (
             self.team.name, duplicate_bug.id)
         expected_reason = (
-            'You received this bug notification because your team %s is '
-            'a direct subscriber to duplicate bug %s.' % (
-                self.team.displayname, duplicate_bug.id))
+            'You received this bug notification because you are a member of '
+            '%s, which is a direct subscriber to duplicate bug %s.' %
+                (self.team.displayname, duplicate_bug.id))
         self._assertReasonAndHeaderAreCorrect(
             reason, expected_reason, expected_header)
 
@@ -73,8 +73,9 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
 
         expected_header = "Subscriber @%s" % self.team.name
         expected_reason = (
-            "You received this bug notification because your team %s is "
-            "a direct subscriber to the bug." % self.team.displayname)
+            "You received this bug notification because you are a member "
+            "of %s, which is a direct subscriber to the bug." %
+                self.team.displayname)
         self._assertReasonAndHeaderAreCorrect(
             reason, expected_reason, expected_header)
 
@@ -94,8 +95,8 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
 
         expected_header = "Assignee @%s" % self.team.name
         expected_reason = (
-            "You received this bug notification because your team %s is "
-            "a bug assignee." % self.team.displayname)
+            "You received this bug notification because you are a member "
+            "of %s, which is a bug assignee." % self.team.displayname)
 
         self._assertReasonAndHeaderAreCorrect(
             reason, expected_reason, expected_header)
@@ -120,8 +121,8 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
         expected_header = "Bug Supervisor (%s) @%s" % (
             distro.displayname, self.team.name)
         expected_reason = (
-            "You received this bug notification because your team %s is the "
-            "bug supervisor for %s." %
+            "You received this bug notification because you are a member "
+            "of %s, which is the bug supervisor for %s." %
                 (self.team.displayname, distro.displayname))
         self._assertReasonAndHeaderAreCorrect(
             reason, expected_reason, expected_header)
@@ -147,8 +148,9 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
         expected_header = "Subscriber (%s) @%s" % (
             target.displayname, self.team.name)
         expected_reason = (
-            "You received this bug notification because your team %s is "
-            "subscribed to %s." % (self.team.displayname, target.displayname))
+            "You received this bug notification because you are a member "
+            "of %s, which is subscribed to %s." %
+                (self.team.displayname, target.displayname))
 
         self._assertReasonAndHeaderAreCorrect(
             reason, expected_reason, expected_header)
@@ -174,8 +176,8 @@ class BugNotificationRecipientReasonTestCase(TestCaseWithFactory):
         expected_header = "Registrant (%s) @%s" % (
             target.displayname, self.team.name)
         expected_reason = (
-            "You received this bug notification because your team %s "
-            "is the registrant of %s." % (
+            "You received this bug notification because you are a member "
+            "of %s, which is the registrant of %s." % (
                 self.team.displayname, target.displayname))
 
         self._assertReasonAndHeaderAreCorrect(
