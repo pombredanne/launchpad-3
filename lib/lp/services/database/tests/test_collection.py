@@ -70,45 +70,45 @@ class CollectionTest(TestCaseWithFactory):
 
     def test_select_one(self):
         TestTable = make_table(1, 5)
-        collection = Collection(None, TestTable.id == 1, tables=TestTable)
+        collection = Collection(TestTable.id == 1, tables=TestTable)
         result = collection.select(TestTable)
         self.assertEqual([1], get_ids(result))
 
     def test_select_all(self):
         TestTable = make_table(1, 3)
-        collection = Collection(None, tables=TestTable)
+        collection = Collection(tables=TestTable)
         result = collection.select(TestTable)
         self.assertContentEqual([1, 2], get_ids(result))
 
     def test_select_condition(self):
         TestTable = make_table(1, 5)
-        collection = Collection(None, TestTable.id > 2, tables=TestTable)
+        collection = Collection(TestTable.id > 2, tables=TestTable)
         result = collection.select(TestTable)
         self.assertContentEqual([3, 4], get_ids(result))
 
     def test_select_conditions(self):
         TestTable = make_table(1, 5)
         collection = Collection(
-            None, TestTable.id > 2, TestTable.id < 4, tables=TestTable)
+            TestTable.id > 2, TestTable.id < 4, tables=TestTable)
         result = collection.select(TestTable)
         self.assertContentEqual([3], get_ids(result))
 
     def test_select_column(self):
         TestTable = make_table(1, 3)
-        collection = Collection(None, tables=TestTable)
+        collection = Collection(tables=TestTable)
         result = collection.select(TestTable.id)
         self.assertContentEqual([1, 2], list(result))
 
     def test_copy_collection(self):
         TestTable = make_table(1, 3)
-        collection = Collection(None, tables=TestTable)
+        collection = Collection(tables=TestTable)
         copied_collection = Collection(collection)
         result = copied_collection.select(TestTable)
         self.assertContentEqual([1, 2], get_ids(result))
 
     def test_restrict_collection(self):
         TestTable = make_table(1, 3)
-        collection = Collection(None, tables=TestTable)
+        collection = Collection(tables=TestTable)
         copied_collection = Collection(collection, TestTable.id < 2)
         result = copied_collection.select(TestTable)
         self.assertContentEqual([1], get_ids(result))
@@ -117,7 +117,7 @@ class CollectionTest(TestCaseWithFactory):
         # The list of tables to select from carries across copies.
         TestTable1 = make_table(1, 2, 'TestTable1')
         TestTable2 = make_table(2, 3, 'TestTable2')
-        collection = Collection(None, tables=TestTable1)
+        collection = Collection(tables=TestTable1)
         collection = Collection(collection, tables=TestTable2)
         result = collection.select(TestTable1.id, TestTable2.id)
         self.assertEqual([(1, 2)], list(result))
@@ -125,7 +125,7 @@ class CollectionTest(TestCaseWithFactory):
     def test_add_tables_and_conditions(self):
         TestTable1 = make_table(1, 2, 'TestTable1')
         TestTable2 = make_table(2, 3, 'TestTable2')
-        collection = Collection(None, TestTable1.id == 1, tables=TestTable1)
+        collection = Collection(TestTable1.id == 1, tables=TestTable1)
         collection = Collection(
             collection, TestTable2.id == 2, tables=TestTable2)
         result = collection.select(TestTable1.id, TestTable2.id)
@@ -134,7 +134,7 @@ class CollectionTest(TestCaseWithFactory):
     def test_select_join(self):
         TestTable1 = make_table(1, 2, 'TestTable1')
         TestTable2 = make_table(2, 3, 'TestTable2')
-        collection = Collection(None, tables=(TestTable1, TestTable2))
+        collection = Collection(tables=(TestTable1, TestTable2))
         result = collection.select(TestTable1, TestTable2)
         self.assertEqual(
             [(TestTable1(id=1), TestTable2(id=2))], list(result))
@@ -142,7 +142,7 @@ class CollectionTest(TestCaseWithFactory):
     def test_select_join_column(self):
         TestTable1 = make_table(1, 2, 'TestTable1')
         TestTable2 = make_table(2, 3, 'TestTable2')
-        collection = Collection(None, tables=(TestTable1, TestTable2))
+        collection = Collection(tables=(TestTable1, TestTable2))
         result = collection.select(TestTable1.id, TestTable2.id)
         self.assertEqual([(1, 2)], list(result))
 
@@ -150,7 +150,6 @@ class CollectionTest(TestCaseWithFactory):
         TestTable1 = make_table(1, 2, 'TestTable1')
         TestTable2 = make_table(2, 3, 'TestTable2')
         collection = Collection(
-            None,
             TestTable2.id == TestTable1.id + 1,
             tables=(TestTable1, TestTable2))
         result = collection.select(TestTable1.id)
@@ -161,7 +160,7 @@ class CollectionTest(TestCaseWithFactory):
         TestTable2 = make_table(2, 4, 'TestTable2')
 
         # Add a join table to the collection.
-        collection = Collection(None, tables=TestTable1).joinInner(
+        collection = Collection(tables=TestTable1).joinInner(
             TestTable2, TestTable2.id == TestTable1.id)
         result = collection.select(TestTable1.id, TestTable2.id)
         self.assertContentEqual([(2, 2)], list(result))
@@ -171,14 +170,14 @@ class CollectionTest(TestCaseWithFactory):
         TestTable2 = make_table(2, 4, 'TestTable2')
 
         # Add an outer-join table to the collection.
-        collection = Collection(None, tables=TestTable1).joinOuter(
+        collection = Collection(tables=TestTable1).joinOuter(
             TestTable2, TestTable2.id == TestTable1.id)
         result = collection.select(TestTable1.id, TestTable2.id)
         self.assertContentEqual([(1, None), (2, 2)], list(result))
 
     def test_select_store(self):
         TestTable = make_table(1, 2)
-        collection = Collection(None, tables=TestTable)
+        collection = Collection(tables=TestTable)
 
         store = FakeStore()
         self.assertNotEqual(store, collection.store)
