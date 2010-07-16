@@ -488,18 +488,16 @@ class BugTracker(SQLBase):
             # Set the interval to 6 days + 1 hence. This is mostly for
             # testing.
             new_next_check = SQL(
-                "now() at time zone 'UTC') + (random() * interval '6 days') "
-                "+ interval '1 day'")
+                "now() at time zone 'UTC' + (random() * interval '7 days')")
 
         store = Store.of(self)
-        self.next_check = new_next_check
-        self.lastchecked = None
-        self.last_error_type = None
-        store.flush()
+        store.find(BugWatch, BugWatch.bugtracker == self).set(
+            next_check=new_next_check, lastchecked=None,
+            last_error_type=None)
 
 
 class BugTrackerSet:
-    """Implements IBugTrackerSet for a container or set of BugTracker's,
+    """Implements IBugTrackerSet for a container or set of BugTrackers,
     either the full set in the db, or a subset.
     """
 

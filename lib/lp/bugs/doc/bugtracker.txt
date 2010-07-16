@@ -623,17 +623,17 @@ now().
     1 now
 
 By default, the bug watches next_check times are set to a random time
-between one and seven days in the future so as to avoid big lumps of
+between now and seven days in the future so as to avoid big lumps of
 watches being checked at once. We can't test for randomness, but we can
 check that the times are roughly in the right ball park.
 
     >>> mozilla_bugzilla.resetWatches()
-    >>> transaction.commit()
+
     >>> for watch in mozilla_bugzilla.watches:
-    ...     one_day_hence = definitely_now + timedelta(days=1)
     ...     one_week_hence = definitely_now + timedelta(days=7)
     ...     print (
-    ...         watch.next_check >= one_day_hence and 
+    ...         watch.next_check is not None and
+    ...         watch.next_check >= definitely_now and 
     ...         watch.next_check <= one_week_hence)
     True
     True
