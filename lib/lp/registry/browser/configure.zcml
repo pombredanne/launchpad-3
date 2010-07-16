@@ -302,7 +302,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         name="+questions"
-        layer="canonical.launchpad.layers.AnswersLayer"/>
+        layer="lp.code.publisher.AnswersLayer"/>
     <browser:pages
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.registry.browser.project.ProjectView"
@@ -428,7 +428,7 @@
         name="+index"/>
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.code.publisher.AnswersLayer"
         name="+questions"/>
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -1360,7 +1360,7 @@
         layer="lp.code.publisher.CodeLayer"/>
     <browser:defaultView
         for="lp.registry.interfaces.product.IProduct"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.code.publisher.AnswersLayer"
         name="+questions"/>
     <browser:defaultView
         for="lp.registry.interfaces.product.IProduct"
@@ -1746,7 +1746,7 @@
         name="+bugs-index"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.code.publisher.AnswersLayer"
         name="+questions"/>
     <browser:navigation
         module="lp.registry.browser.distribution"
@@ -1950,7 +1950,7 @@
         name="+bugs"/>
     <browser:defaultView
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.code.publisher.AnswersLayer"
         name="+questions"/>
     <browser:navigation
         module="lp.registry.browser.sourcepackage"

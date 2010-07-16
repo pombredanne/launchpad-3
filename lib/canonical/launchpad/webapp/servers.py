@@ -1046,21 +1046,6 @@ class BugsPublication(LaunchpadBrowserPublication):
 class BugsBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.BugsLayer)
 
-# ---- answers
-
-class AnswersPublication(LaunchpadBrowserPublication):
-    """The publication used for the Answers site."""
-
-class AnswersBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.AnswersLayer)
-
-    def __init__(self, body_instream, environ, response=None):
-        super(AnswersBrowserRequest, self).__init__(
-            body_instream, environ, response)
-        # Many of the responses from Answers vary based on language.
-        self.response.setHeader(
-            'Vary', 'Cookie, Authorization, Accept-Language')
-
 
 class AccountPrincipalMixin:
     """Mixin for publication that works with person-less accounts."""
@@ -1468,7 +1453,6 @@ def register_launchpad_request_publication_factories():
         VWSHRP('translations', TranslationsBrowserRequest,
                TranslationsPublication),
         VWSHRP('bugs', BugsBrowserRequest, BugsPublication),
-        VWSHRP('answers', AnswersBrowserRequest, AnswersPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
         WebServiceRequestPublicationFactory(
             'api', WebServiceClientRequest, WebServicePublication),

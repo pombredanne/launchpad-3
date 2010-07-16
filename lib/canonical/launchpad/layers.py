@@ -41,10 +41,6 @@ class BlueprintLayer(LaunchpadLayer):
 BlueprintsLayer = BlueprintLayer
 
 
-class AnswersLayer(LaunchpadLayer):
-    """The `AnswersLayer` layer."""
-
-
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
 

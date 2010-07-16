@@ -26,14 +26,14 @@
     <!-- Marketing material for Answers. -->
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.code.publisher.AnswersLayer"
         name="+about"
         new_name="+tour/community-support"
         rootsite="mainsite"
         />
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.code.publisher.AnswersLayer"
         name="+faq"
         new_name="+tour/community-support"
         rootsite="mainsite"
@@ -43,7 +43,7 @@
         new_name="+tour/community-support"
         rootsite="mainsite"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.code.publisher.AnswersLayer"
         />
 
     <!-- Marketing material for Blueprints. -->

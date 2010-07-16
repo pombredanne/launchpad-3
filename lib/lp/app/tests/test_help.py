@@ -11,13 +11,13 @@ from zope.component import getUtility
 
 from canonical.testing.layers import FunctionalLayer
 from canonical.launchpad.layers import (
-    AnswersLayer, BlueprintsLayer, BugsLayer, LaunchpadLayer,
-    TranslationsLayer)
+    BlueprintsLayer, BugsLayer, LaunchpadLayer, TranslationsLayer)
 from canonical.launchpad.testing.systemdocs import create_view
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from canonical.lazr.folder import ExportedFolder
 
+from lp.answers.publisher import AnswersLayer
 from lp.code.publisher import CodeLayer
 
 # The root of the tree

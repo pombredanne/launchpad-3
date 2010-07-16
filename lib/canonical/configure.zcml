@@ -140,14 +140,14 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="questions"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.code.publisher.AnswersLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.code.publisher.AnswersLayer"
         />
 
     <include package="canonical.widgets" />
