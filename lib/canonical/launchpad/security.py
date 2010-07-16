@@ -2062,9 +2062,7 @@ class ViewArchive(AuthorizationBase):
 
         # The software center agent can view commercial archives
         if self.obj.commercial:
-            agent = getUtility(ILaunchpadCelebrities).software_center_agent
-            if user.person == agent:
-                return True
+            return user.in_software_center_agent
 
         return False
 
@@ -2106,9 +2104,7 @@ class AppendArchive(AuthorizationBase):
 
         # The software center agent can change commercial archives
         if self.obj.commercial:
-            agent = getUtility(ILaunchpadCelebrities).software_center_agent
-            if user.person == agent:
-                return True
+            return user.in_software_center_agent
 
         return False
 
