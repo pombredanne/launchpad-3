@@ -13,6 +13,7 @@ __all__ = [
     'POTemplateSet',
     'POTemplateSubset',
     'POTemplateToTranslationFileDataAdapter',
+    'TranslationTemplatesCollection',
     ]
 
 import datetime
@@ -24,7 +25,7 @@ from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.expr import Alias, And, Desc, In, Join, LeftJoin, Or, SQL
+from storm.expr import And, Count, Desc, In, Join, LeftJoin, Or
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getAdapter, getUtility
@@ -41,6 +42,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.services.database.prejoin import prejoin
+from lp.services.database.collection import Collection
 from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -1520,58 +1522,151 @@ class HasTranslationTemplatesMixin:
     """Helper class for implementing `IHasTranslationTemplates`."""
     implements(IHasTranslationTemplates)
 
-    def getCurrentTranslationTemplates(self, just_ids=False):
+    def getTemplatesCollection(self):
+        """See `IHasTranslationTemplates`.
+
+        To be provided by derived classes.
+        """
+        raise NotImplementedError(
+            "Child class must provide getTemplatesCollection.")
+
+    def _orderTemplates(self, result):
+        """Apply the conventional ordering to a result set of templates."""
+        return result.order_by(Desc(POTemplate.priority), POTemplate.name)
+
+    def getCurrentTemplatesCollection(self, current_value=True):
         """See `IHasTranslationTemplates`."""
-        raise NotImplementedError('This must be provided when subclassing.')
+        collection = self.getTemplatesCollection()
+
+        # XXX JeroenVermeulen 2010-07-15 bug=605924: Move the
+        # official_rosetta distinction into browser code.
+        if collection.target_pillar.official_rosetta:
+            return collection.restrictCurrent(current_value)
+        else:
+            # Product/Distribution does not have translation enabled.
+            # Treat all templates as obsolete.
+            return collection.refine(not current_value)
+
+    def getCurrentTranslationTemplates(self,
+                                       just_ids=False,
+                                       current_value=True):
+        """See `IHasTranslationTemplates`."""
+        if just_ids:
+            selection = POTemplate.id
+        else:
+            selection = POTemplate
+
+        collection = self.getCurrentTemplatesCollection(current_value)
+        return self._orderTemplates(collection.select(selection))
+
+    @property
+    def has_translation_templates(self):
+        """See `IHasTranslationTemplates`."""
+        return bool(self.getTranslationTemplates().any())
 
     @property
     def has_current_translation_templates(self):
-        """Does self have current translation templates?"""
-        templates = self.getCurrentTranslationTemplates()
-        return bool(templates.any())
+        """See `IHasTranslationTemplates`."""
+        return bool(self.getCurrentTranslationTemplates(just_ids=True).any())
 
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        # XXX 2009-06-30 Danilo: until Storm can do find() on
-        # ResultSets (bug #338255), we need to manually get a select
-        # and extend it with another condition.
-        current_templates = (
-            self.getCurrentTranslationTemplates()._get_select())
-        for column in current_templates.columns:
-            if column.name == 'id':
-                columns = [column]
-                break
-        assert len(columns) == 1, (
-            'There is no ID column in getCurrentTranslationTemplates '
-            'select query.')
-        current_templates.columns = columns
-        templates = Alias(current_templates, 'potemplates')
-
         if just_ids:
-            looking_for = POFile.id
+            selection = POFile.id
         else:
-            looking_for = POFile
-        store = Store.of(self)
-        if store is None:
-            # If self is a non-DB object like SourcePackage,
-            # it keeps current store in self._store.
-            store = self._store
-        return store.using(POFile, templates).find(
-            looking_for, POFile.potemplate==SQL('potemplates.id'))
+            selection = POFile
+
+        collection = self.getCurrentTemplatesCollection()
+        return collection.joinPOFile().select(selection)
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
-        raise NotImplementedError('This must be provided when subclassing.')
+        # XXX JeroenVermeulen 2010-07-15 bug=605924: This returns a list
+        # whereas the analogous method for current template returns a
+        # result set.  Clean up this mess.
+        return list(self.getCurrentTranslationTemplates(current_value=False))
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
-        raise NotImplementedError('This must be provided when subclassing.')
+        return self._orderTemplates(
+            self.getTemplatesCollection().select(POTemplate))
 
     def getTranslationTemplateFormats(self):
         """See `IHasTranslationTemplates`."""
         formats_query = self.getCurrentTranslationTemplates().order_by(
             'source_file_format').config(distinct=True)
-        formats = helpers.shortlist(
-            formats_query.values(POTemplate.source_file_format),
-            10)
-        return formats
+        return helpers.shortlist(
+            formats_query.values(POTemplate.source_file_format), 10)
+
+    def getTemplatesAndLanguageCounts(self):
+        """See `IHasTranslationTemplates`."""
+        join = self.getTemplatesCollection().joinOuterPOFile()
+        result = join.select(POTemplate, Count(POFile.id))
+        return result.group_by(POTemplate)
+
+
+class TranslationTemplatesCollection(Collection):
+    """A `Collection` of `POTemplate`."""
+    starting_table = POTemplate
+
+    # The Product or Distribution that this collection is restricted to.
+    target_pillar = None
+
+    def __init__(self, *args, **kwargs):
+        super(TranslationTemplatesCollection, self).__init__(*args, **kwargs)
+        if self.base is not None:
+            self.target_pillar = self.base.target_pillar
+
+    def restrictProductSeries(self, productseries):
+        product = productseries.product
+        new_collection = self.refine(
+            POTemplate.productseriesID == productseries.id)
+        new_collection._setTargetPillar(product)
+        return new_collection
+
+    def restrictDistroSeries(self, distroseries):
+        distribution = distroseries.distribution
+        new_collection = self.refine(
+            POTemplate.distroseriesID == distroseries.id)
+        new_collection._setTargetPillar(distribution)
+        return new_collection
+
+    def restrictSourcePackageName(self, sourcepackagename):
+        return self.refine(
+            POTemplate.sourcepackagenameID == sourcepackagename.id)
+
+    def _setTargetPillar(self, target_pillar):
+        assert (
+            self.target_pillar is None or
+            self.target_pillar == target_pillar), (
+                "Collection restricted to both %s and %s." % (
+                    self.target_pillar, target_pillar))
+        self.target_pillar = target_pillar
+
+    def restrictCurrent(self, current_value=True):
+        """Select based on `POTemplate.iscurrent`.
+
+        :param current_value: The value for `iscurrent` that you are
+            looking for.  Defaults to True, meaning this will restrict
+            to current templates.  If False, will select obsolete
+            templates instead.
+        :return: A `TranslationTemplatesCollection` based on this one,
+            but restricted to ones with the desired `iscurrent` value.
+        """
+        return self.refine(POTemplate.iscurrent == current_value)
+
+    def joinPOFile(self):
+        """Join `POFile` into the collection.
+
+        :return: A `TranslationTemplatesCollection` with an added inner
+            join to `POFile`.
+        """
+        return self.joinInner(POFile, POTemplate.id == POFile.potemplateID)
+
+    def joinOuterPOFile(self):
+        """Outer-join `POFile` into the collection.
+
+        :return: A `TranslationTemplatesCollection` with an added outer
+            join to `POFile`.
+        """
+        return self.joinOuter(POFile, POTemplate.id == POFile.potemplateID)

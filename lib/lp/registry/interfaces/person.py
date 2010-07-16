@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -1508,10 +1508,9 @@ class IPersonCommAdminWriteRestricted(Interface):
     visibility = exported(
         Choice(title=_("Visibility"),
                description=_(
-                   "Public visibility is standard.  Private Membership "
-                   "means that a team's members are hidden.  "
+                   "Public visibility is standard.  "
                    "Private means the team is completely "
-                   "hidden [experimental]."),
+                   "hidden."),
                required=True, vocabulary=PersonVisibility,
                default=PersonVisibility.PUBLIC))
 

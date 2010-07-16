@@ -196,20 +196,17 @@ def validate_person_visibility(person, attr, value):
     * Prevent private teams from any transition.
     """
 
+    # XXX: BradCrittenden 2010-07-12 bug=602773: Private membership teams are
+    # deprecated and new ones may not be created.
+    if value == PersonVisibility.PRIVATE_MEMBERSHIP:
+        raise AssertionError(
+            "Private membership teams are deprecated.")
+
     # Prohibit any visibility changes for private teams.  This rule is
     # recognized to be Draconian and may be relaxed in the future.
     if person.visibility == PersonVisibility.PRIVATE:
         raise ImmutableVisibilityError(
             'A private team cannot change visibility.')
-
-    mailing_list = getUtility(IMailingListSet).get(person.name)
-
-    if (value == PersonVisibility.PUBLIC and
-        person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
-        mailing_list is not None and
-        mailing_list.status != MailingListStatus.PURGED):
-        raise ImmutableVisibilityError(
-            'This team cannot be made public since it has a mailing list')
 
     # If transitioning to a non-public visibility, check for existing
     # relationships that could leak data.
