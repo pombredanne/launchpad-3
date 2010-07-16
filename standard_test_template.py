@@ -9,8 +9,8 @@ from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCase
 
 
-# XXX: Sample test class.  Replace with your own test class(es).
 class TestSomething(TestCase):
+    # XXX: Sample test class.  Replace with your own test class(es).
 
     # XXX: Optional layer--see lib/canonical/testing/layers.py
     # Get the simplest layer that your test will work on, or if you
