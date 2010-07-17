@@ -452,9 +452,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
         context, using the usual archive dependency rules.
 
         :param distro_arch_series: the context `IDistroArchSeries`.
-        :param pocket: the context `IPackagePublishingPocket`.
+        :param pocket: the context `PackagePublishingPocket`.
         :param component: the context `IComponent`.
-        :param source_package_name: the context `ISourcePackageName`.
+        :param source_package_name: the context source package name (as text).
         :param dep_name: the name of the binary package to look up.
         """
 
