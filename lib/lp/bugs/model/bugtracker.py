@@ -485,10 +485,8 @@ class BugTracker(SQLBase):
     def resetWatches(self, new_next_check=None):
         """See `IBugTracker`."""
         if new_next_check is None:
-            # Set the interval to 6 days + 1 hence. This is mostly for
-            # testing.
             new_next_check = SQL(
-                "now() at time zone 'UTC' + (random() * interval '7 days')")
+                "now() at time zone 'UTC' + (random() * interval '1 day')")
 
         store = Store.of(self)
         store.find(BugWatch, BugWatch.bugtracker == self).set(

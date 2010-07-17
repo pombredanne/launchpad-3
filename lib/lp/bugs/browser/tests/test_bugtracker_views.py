@@ -41,7 +41,7 @@ class BugTrackerEditViewTestCase(TestCaseWithFactory):
 
         Raise an error if:
          * The next_check dates aren't in the future.
-         * The next_check dates aren't <= 7 days in the future.
+         * The next_check dates aren't <= 1 day in the future.
          * The lastcheck dates are not None
          * The last_error_types are not None.
         """
@@ -53,9 +53,9 @@ class BugTrackerEditViewTestCase(TestCaseWithFactory):
                 watch.next_check >= self.now,
                 "BugWatch next_check time should be in the future.")
             self.assertTrue(
-                watch.next_check <= self.now + timedelta(days=7),
-                "BugWatch next_check time should be less than a week in "
-                "the future")
+                watch.next_check <= self.now + timedelta(days=1),
+                "BugWatch next_check time should be one day or less in "
+                "the future.")
             self.assertTrue(
                 watch.lastchecked is None,
                 "BugWatch lastchecked should be None.")
