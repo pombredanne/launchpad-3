@@ -1176,6 +1176,65 @@ class TestFindDepCandidateByName(TestCaseWithFactory):
             self.archive, PackagePublishingPocket.RELEASE)
         self.assertDep('i386', 'foo', bins[0], archive=other_archive)
 
+    def test_obeys_dependency_pockets(self):
+        # Only packages published in a pocket matching the dependency should
+        # be found.
+        release_bins = self.publisher.getPubBinaries(
+            binaryname='foo-release', archive=self.archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        updates_bins = self.publisher.getPubBinaries(
+            binaryname='foo-updates', archive=self.archive,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.UPDATES)
+        proposed_bins = self.publisher.getPubBinaries(
+            binaryname='foo-proposed', archive=self.archive,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.PROPOSED)
+
+        # Temporarily turn our test PPA into a copy archive, so we can
+        # add non-RELEASE dependencies on it.
+        removeSecurityProxy(self.archive).purpose = ArchivePurpose.COPY
+
+        other_archive = self.factory.makeArchive()
+        other_archive.addArchiveDependency(
+            self.archive, PackagePublishingPocket.UPDATES)
+        self.assertDep(
+            'i386', 'foo-release', release_bins[0], archive=other_archive)
+        self.assertDep(
+            'i386', 'foo-updates', updates_bins[0], archive=other_archive)
+        self.assertDep('i386', 'foo-proposed', None, archive=other_archive)
+
+        other_archive.removeArchiveDependency(self.archive)
+        other_archive.addArchiveDependency(
+            self.archive, PackagePublishingPocket.PROPOSED)
+        self.assertDep(
+            'i386', 'foo-proposed', proposed_bins[0], archive=other_archive)
+
+    def test_obeys_dependency_components(self):
+        # Only packages published in a component matching the dependency
+        # should be found.
+        primary = self.archive.distribution.main_archive
+        main_bins = self.publisher.getPubBinaries(
+            binaryname='foo-main', archive=primary, component='main',
+            status=PackagePublishingStatus.PUBLISHED)
+        universe_bins = self.publisher.getPubBinaries(
+            binaryname='foo-universe', archive=primary,
+            component='universe',
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.archive.addArchiveDependency(
+            primary, PackagePublishingPocket.RELEASE,
+            component=getUtility(IComponentSet)['main'])
+        self.assertDep('i386', 'foo-main', main_bins[0])
+        self.assertDep('i386', 'foo-universe', None)
+
+        self.archive.removeArchiveDependency(primary)
+        self.archive.addArchiveDependency(
+            primary, PackagePublishingPocket.RELEASE,
+            component=getUtility(IComponentSet)['universe'])
+        self.assertDep('i386', 'foo-main', main_bins[0])
+        self.assertDep('i386', 'foo-universe', universe_bins[0])
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

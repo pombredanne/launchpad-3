@@ -48,6 +48,7 @@ from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount)
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.component import Component
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
@@ -811,11 +812,14 @@ class Archive(SQLBase):
     def findDepCandidateByName(self, distro_arch_series, pocket,
                                component, source_package_name, dep_name):
         """See `IArchive`."""
-
         deps = expand_dependencies(
             self, distro_arch_series.distroseries, pocket, component,
             source_package_name)
-        archive_clauses = []
+        archive_clause = Or([(
+            BinaryPackagePublishingHistory.archiveID == archive.id,
+            BinaryPackagePublishingHistory.pocket == pocket,
+            Component.name.is_in(components))
+            for (archive, pocket, components) in deps])
 
         store = ISlaveStore(BinaryPackagePublishingHistory)
         candidate = store.find(
@@ -828,7 +832,8 @@ class Archive(SQLBase):
                 distro_arch_series,
             BinaryPackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED,
-            *archive_clauses).order_by(
+            BinaryPackagePublishingHistory.componentID == Component.id,
+            archive_clause).order_by(
                 Desc(BinaryPackagePublishingHistory.id))
         return candidate.first()
 
