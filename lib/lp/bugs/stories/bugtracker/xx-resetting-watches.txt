@@ -10,9 +10,9 @@ is failing to update.
     >>> from lp.testing import login, login_person, logout
 
     >>> login(ADMIN_EMAIL)
-    >>> bug_tracker = factory.makeBugTracker()
-    >>> for i in range(5):
-    ...     bug_watch = factory.makeBugWatch(bugtracker=bug_tracker)
+    >>> bug_tracker = factory.makeBugTracker(
+    ...     name='our-bugtracker', title='Our BugTracker')
+    >>> bug_watch = factory.makeBugWatch(bugtracker=bug_tracker)
     >>> logout()
 
     >>> bug_tracker_edit_url = (
@@ -57,3 +57,38 @@ team.
     >>> lp_dev_browser.open(bug_tracker_edit_url)
     >>> reschedule_button = lp_dev_browser.getControl(
     ...     'Reschedule all watches')
+
+Clicking the button will reschedule the watches for the bug tracker for
+checking at some future date.
+
+    >>> reschedule_button.click()
+    >>> print lp_dev_browser.url
+    http://bugs.launchpad.dev/bugs/bugtrackers/our-bugtracker
+
+    >>> for message in find_tags_by_class(
+    ...     lp_dev_browser.contents, 'informational message'):
+    ...     print extract_text(message)
+    All bug watches on Our BugTracker have been rescheduled.
+
+If we look at the bug watch on our bugtracker we can see that it has
+been scheduled for checking at some point in the future.
+
+    >>> from datetime import datetime
+    >>> from pytz import utc
+
+    >>> login(ADMIN_EMAIL)
+    >>> print bug_watch.next_check >= datetime.now(utc)
+    True
+
+Should the bug watch be deleted the reschedule button will no longer
+appear on the bugtracker page.
+
+    >>> bug_watch.destroySelf()
+    >>> logout()
+
+    >>> lp_dev_browser.open(bug_tracker_edit_url)
+    >>> reschedule_button = lp_dev_browser.getControl(
+    ...     'Reschedule all watches')
+    Traceback (most recent call last):
+      ...
+    LookupError: label 'Reschedule all watches'

@@ -404,6 +404,12 @@ class BugTrackerEditView(LaunchpadEditFormView):
         condition=reschedule_action_condition)
     def rescheduleAction(self, action, data):
         """Reschedule all the watches for the bugtracker."""
+        self.resetBugTrackerWatches()
+        self.request.response.addInfoNotification(
+            structured(
+                "All bug watches on %s have been rescheduled." %
+                self.context.title))
+        self.next_url = canonical_url(self.context)
 
 
 class BugTrackerNavigation(Navigation):
