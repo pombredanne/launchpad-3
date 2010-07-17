@@ -333,7 +333,6 @@ class LaunchpadObjectFactory(ObjectFactory):
     for any other required objects.
     """
 
-    # XXX: Completely redundant. Delete this.
     def doAsUser(self, user, factory_method, **factory_args):
         """Perform a factory method while temporarily logged in as a user.
 
