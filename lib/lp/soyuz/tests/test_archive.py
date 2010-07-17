@@ -4,9 +4,10 @@
 """Test Archive features."""
 
 from datetime import date, datetime, timedelta
-import pytz
 import unittest
 
+import pytz
+import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -1099,7 +1100,59 @@ class TestCommercialArchive(TestCaseWithFactory):
         login("commercial-member@canonical.com")
         self.setCommercial(self.archive, True)
         self.assertTrue(self.archive.commercial)
-        
+
+
+class TestFindDepCandidateByName(TestCaseWithFactory):
+    """Tests for Archive.findDepCandidateByName."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestFindDepCandidateByName, self).setUp()
+        self.archive = self.factory.makeArchive()
+        self.publisher = SoyuzTestPublisher()
+        login('admin@canonical.com')
+        self.publisher.prepareBreezyAutotest()
+
+    def assertDep(self, arch_tag, name, expected, archive=None):
+        """Helper to check that findDepCandidateByName works."""
+        # We need to commit here, since findDepCandidate uses the slave
+        # store.
+        transaction.commit()
+
+        if archive is None:
+            archive = self.archive
+        self.assertEquals(
+            archive.findDepCandidateByName(
+                self.publisher.distroseries[arch_tag], name),
+            expected)
+
+    def test_finds_candidate_in_same_archive(self):
+        # A published candidate in the same archive should be found.
+        bins = self.publisher.getPubBinaries(
+            binaryname='foo', archive=self.archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertDep('i386', 'foo', bins[0])
+        self.assertDep('hppa', 'foo', bins[1])
+
+    def test_does_not_find_pending_publication(self):
+        # A pending candidate in the same archive should not be found.
+        bins = self.publisher.getPubBinaries(
+            binaryname='foo', archive=self.archive)
+        self.assertDep('i386', 'foo', None)
+
+    def test_searches_dependencies(self):
+        # Candidates from archives on which the target depends should be
+        # found.
+        bins = self.publisher.getPubBinaries(
+            binaryname='foo', archive=self.archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        other_archive = self.factory.makeArchive()
+        self.assertDep('i386', 'foo', None, archive=other_archive)
+
+        other_archive.addArchiveDependency(
+            self.archive, PackagePublishingPocket.RELEASE)
+        self.assertDep('i386', 'foo', bins[0], archive=other_archive)
 
 
 def test_suite():
