@@ -387,8 +387,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def _isDependencySatisfied(self, token):
         """Check if the given dependency token is satisfied.
 
-        Check if the dependency exists, if its version constraint is
-        satisfied and if it is reachable in the build context.
+        Check if the dependency exists and that its version constraint is
+        satisfied.
         """
         name, version, relation = self._parseDependencyToken(token)
 
@@ -399,22 +399,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         if not dep_candidate:
             return False
 
-        if not self._checkDependencyVersion(
-            dep_candidate.binarypackagerelease.version, version, relation):
-            return False
-
-        # Only PRIMARY archive build dependencies should be restricted
-        # to the ogre_components. Both PARTNER and PPA can reach
-        # dependencies from all components in the PRIMARY archive.
-        # Moreover, PARTNER and PPA component domain is single, i.e,
-        # PARTNER only contains packages in 'partner' component and PPAs
-        # only contains packages in 'main' component.
-        ogre_components = get_components_for_building(self)
-        if (self.archive.purpose == ArchivePurpose.PRIMARY and
-            dep_candidate.component.name not in ogre_components):
-            return False
-
-        return True
+        return self._checkDependencyVersion(
+            dep_candidate.binarypackagerelease.version, version, relation)
 
     def _toAptFormat(self, token):
         """Rebuild dependencies line in apt format."""
