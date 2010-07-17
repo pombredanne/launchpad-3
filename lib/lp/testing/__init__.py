@@ -40,6 +40,7 @@ __all__ = [
     'unlink_source_packages',
     'validate_mock_class',
     'WindmillTestCase',
+    'with_celebrity_logged_in',
     'ws_object',
     'YUIUnitTestCase',
     'ZopeTestInSubProcess',
@@ -100,6 +101,7 @@ from lp.testing._login import (
     logout,
     person_logged_in,
     run_with_login,
+    with_celebrity_logged_in,
     )
 # canonical.launchpad.ftests expects test_tales to be imported from here.
 # XXX: JonathanLange 2010-01-01: Why?!

@@ -25,6 +25,7 @@ from lp.testing import (
     login_team,
     logout,
     person_logged_in,
+    with_celebrity_logged_in,
     )
 from lp.testing import TestCaseWithFactory
 
@@ -195,13 +196,13 @@ class TestLoginHelpers(TestCaseWithFactory):
         e = self.assertRaises(ValueError, login_celebrity, 'nonexistent')
         self.assertEqual(str(e), "No such celebrity: 'nonexistent'")
 
-    def test_with_person_logged_in(self):
+    def test_person_logged_in(self):
         # The person_logged_in context manager runs with a person logged in.
         person = self.factory.makePerson()
         with person_logged_in(person):
             self.assertLoggedIn(person)
 
-    def test_with_person_logged_in_restores_person(self):
+    def test_person_logged_in_restores_person(self):
         # Once outside of the person_logged_in context, the originially
         # logged-in person is re-logged in.
         a = self.factory.makePerson()
@@ -211,14 +212,14 @@ class TestLoginHelpers(TestCaseWithFactory):
             self.assertLoggedIn(b)
         self.assertLoggedIn(a)
 
-    def test_with_team_logged_in(self):
+    def test_team_logged_in(self):
         # person_logged_in also works when given teams.
         team = self.factory.makeTeam()
         with person_logged_in(team):
             person = self.getLoggedInPerson()
         self.assertTrue(person.inTeam(team))
 
-    def test_with_celebrity_logged_in(self):
+    def test_celebrity_logged_in(self):
         # celebrity_logged_in runs in a context where a celebrity is logged
         # in.
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
@@ -226,7 +227,7 @@ class TestLoginHelpers(TestCaseWithFactory):
             person = self.getLoggedInPerson()
         self.assertTrue(person.inTeam(vcs_imports))
 
-    def test_with_celebrity_logged_in_restores_person(self):
+    def test_celebrity_logged_in_restores_person(self):
         # Once outside of the celebrity_logged_in context, the originally
         # logged-in person is re-logged in.
         person = self.factory.makePerson()
@@ -234,6 +235,16 @@ class TestLoginHelpers(TestCaseWithFactory):
         with celebrity_logged_in('vcs_imports'):
             pass
         self.assertLoggedIn(person)
+
+    def test_with_celebrity_logged_in(self):
+        # with_celebrity_logged_in decorates a function so that it runs with
+        # the given person logged in.
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        @with_celebrity_logged_in('vcs_imports')
+        def f():
+            return self.getLoggedInPerson()
+        person = f()
+        self.assertTrue(person.inTeam, vcs_imports)
 
 
 def test_suite():
