@@ -443,11 +443,19 @@ class IArchivePublic(IHasOwner, IPrivacy):
         Person table indexes while searching.
         """
 
-    def findDepCandidateByName(distroarchseries, name):
-        """Return the last published binarypackage by given name.
+    def findDepCandidateByName(distro_arch_series, pocket, component,
+                               source_package_name, dep_name):
+        """Return the latest matching binary in this archive and dependencies.
 
-        Return the `BinaryPackagePublishingHistory` record by distroarchseries
-        and name, or None if not found.
+        Return the latest `IBinaryPackagePublishingHistory` with the given
+        name, in this archive and dependencies as specified by the given build
+        context, using the usual archive dependency rules.
+
+        :param distro_arch_series: the context `IDistroArchSeries`.
+        :param pocket: the context `IPackagePublishingPocket`.
+        :param component: the context `IComponent`.
+        :param source_package_name: the context `ISourcePackageName`.
+        :param dep_name: the name of the binary package to look up.
         """
 
     def removeArchiveDependency(dependency):
