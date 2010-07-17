@@ -179,15 +179,14 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
      3. external dependencies
      4. the default primary archive
 
-    :param build: a context `IBuild`.
-    :param distroarchseries: A `IDistroArchSeries`
-    :param sourcepackagename: A source package name (as text)
-    :return: a deb sources_list entries (lines).
+    :param build: the context `IBuild`.
+    :param distroarchseries: the context `IDistroArchSeries`.
+    :param sourcepackagename: the source package name (as text).
+    :return: a list of sources.list entries.
     """
     deps = expand_dependencies(
         build.archive, distroarchseries.distroseries, build.pocket,
         build.current_component, sourcepackagename)
-
     sources_list_lines = \
         _get_sources_list_for_dependencies(deps, distroarchseries)
 
