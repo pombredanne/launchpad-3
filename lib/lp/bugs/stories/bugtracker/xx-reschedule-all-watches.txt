@@ -7,7 +7,7 @@ is failing to update.
 
     >>> from canonical.launchpad.webapp import canonical_url
     >>> from lp.testing.sampledata import ADMIN_EMAIL
-    >>> from lp.testing import login, login_person, logout
+    >>> from lp.testing import login, logout
 
     >>> login(ADMIN_EMAIL)
     >>> bug_tracker = factory.makeBugTracker(

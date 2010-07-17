@@ -58,7 +58,9 @@ SINGLE_INSTANCE_TRACKERS = (
 # of.
 NO_DIRECT_CREATION_TRACKERS = (
     SINGLE_INSTANCE_TRACKERS + (
-        BugTrackerType.EMAILADDRESS,))
+        BugTrackerType.EMAILADDRESS,
+        )
+    )
 
 
 class UserCannotResetWatchesError(Exception):
@@ -168,7 +170,7 @@ class BugTrackerSetView(LaunchpadView):
             has_more_pillars = False
         return {
             'pillars': pillars[:self.pillar_limit],
-            'has_more_pillars': has_more_pillars
+            'has_more_pillars': has_more_pillars,
         }
 
 
