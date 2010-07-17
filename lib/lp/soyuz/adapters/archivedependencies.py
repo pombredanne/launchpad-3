@@ -30,6 +30,7 @@ __all__ = [
     'component_dependencies',
     'default_component_dependency_name',
     'default_pocket_dependency',
+    'expand_dependencies',
     'get_components_for_building',
     'get_primary_current_component',
     'get_sources_list_for_building',

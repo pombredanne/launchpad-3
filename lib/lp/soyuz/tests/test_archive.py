@@ -1114,7 +1114,9 @@ class TestFindDepCandidateByName(TestCaseWithFactory):
         login('admin@canonical.com')
         self.publisher.prepareBreezyAutotest()
 
-    def assertDep(self, arch_tag, name, expected, archive=None):
+    def assertDep(self, arch_tag, name, expected, archive=None,
+                  pocket=PackagePublishingPocket.RELEASE, component=None,
+                  source_package_name='something-new'):
         """Helper to check that findDepCandidateByName works.
 
         Searches for the given dependency name in the given architecture and
@@ -1125,11 +1127,15 @@ class TestFindDepCandidateByName(TestCaseWithFactory):
         """
         transaction.commit()
 
+        if component is None:
+            component = getUtility(IComponentSet)['main']
         if archive is None:
             archive = self.archive
+
         self.assertEquals(
             archive.findDepCandidateByName(
-                self.publisher.distroseries[arch_tag], name),
+                self.publisher.distroseries[arch_tag], pocket, component,
+                source_package_name, name),
             expected)
 
     def test_finds_candidate_in_same_archive(self):

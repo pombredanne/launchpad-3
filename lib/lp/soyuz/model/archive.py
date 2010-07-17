@@ -37,6 +37,7 @@ from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table)
@@ -807,29 +808,28 @@ class Archive(SQLBase):
         self.sources_cached = sources_cached.count()
         self.binaries_cached = binaries_cached.count()
 
-    def findDepCandidateByName(self, distroarchseries, name):
+    def findDepCandidateByName(self, distro_arch_series, pocket,
+                               component, source_package_name, dep_name):
         """See `IArchive`."""
-        archives = []
-        if self.is_ppa:
-            archives.append(self.distribution.main_archive.id)
-        archives.append(self.id)
-        archives.extend(
-            IResultSet(self.dependencies).values(
-            ArchiveDependency.dependencyID))
+
+        deps = expand_dependencies(
+            self, distro_arch_series.distroseries, pocket, component,
+            source_package_name)
+        archive_clauses = []
 
         store = ISlaveStore(BinaryPackagePublishingHistory)
         candidate = store.find(
             BinaryPackagePublishingHistory,
-            BinaryPackageName.name == name,
+            BinaryPackageName.name == dep_name,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.distroarchseries ==
-                distroarchseries,
-            In(BinaryPackagePublishingHistory.archiveID, archives),
+                distro_arch_series,
             BinaryPackagePublishingHistory.status ==
-                PackagePublishingStatus.PUBLISHED
-            ).order_by(Desc(BinaryPackagePublishingHistory.id))
+                PackagePublishingStatus.PUBLISHED,
+            *archive_clauses).order_by(
+                Desc(BinaryPackagePublishingHistory.id))
         return candidate.first()
 
     def getArchiveDependency(self, dependency):
