@@ -86,19 +86,29 @@ default_pocket_dependency = PackagePublishingPocket.UPDATES
 default_component_dependency_name = 'multiverse'
 
 
-def get_components_for_building(build):
+def get_components_for_context(component, pocket):
     """Return the components allowed to be used in the build context.
 
-    :param build: a context `IBuild`.
+    :param component: the context `IComponent`.
+    :param pocket: the context `IPocket`.
     :return: a list of component names.
     """
     # BACKPORTS should be able to fetch build dependencies from any
     # component in order to cope with component changes occurring
-    # accross distroseries. See bug #198936 for further information.
-    if build.pocket == PackagePublishingPocket.BACKPORTS:
+    # across distroseries. See bug #198936 for further information.
+    if pocket == PackagePublishingPocket.BACKPORTS:
         return component_dependencies['multiverse']
 
-    return component_dependencies[build.current_component.name]
+    return component_dependencies[component.name]
+
+
+def get_components_for_building(build):
+    """Return the components allowed to be used for a build.
+
+    :param build: the context `IBuild`.
+    :return: a list of component names.
+    """
+    return get_components_for_context(build.current_component, build.pocket)
 
 
 def get_primary_current_component(archive, distroseries, sourcepackagename):
