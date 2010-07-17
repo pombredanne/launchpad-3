@@ -176,8 +176,8 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
     The entries are returned in the order that is most useful;
      1. the context archive itself
      2. user-selected archive dependencies
-     3. external dependencies
-     4. the default primary archive
+     3. the default primary archive
+     4. external dependencies
 
     :param build: the context `IBuild`.
     :param distroarchseries: the context `IDistroArchSeries`.
