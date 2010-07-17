@@ -131,11 +131,14 @@ class cmd_test_named_outputs(Command):
             os.mkfifo(stdin_name)
             os.mkfifo(stdout_name)
             os.mkfifo(stderr_name)
-            # OS_NDELAY/OS_NBLOCK?
+            # OS_NDELAY/OS_NONBLOCK?
             # Opening a fifo for reading/writing blocks until someone opens the
             # other end
-            fd_out = os.open(stdout_name, os.O_WRONLY | osutils.O_BINARY)
             fd_in = os.open(stdin_name, os.O_RDONLY | osutils.O_BINARY)
+            fd_out = os.open(stdout_name, os.O_WRONLY | osutils.O_BINARY)
+            # TODO: self.add_cleanup(os.close, fd_in)
+            # TODO: self.add_cleanup(os.close, fd_out)
+            # TODO: self.add_cleanup(os.close, fd_err)
             # Close the existing file handles, to make sure that they don't
             # accidentally get used.
             # Also, redirect everything to the new handles
@@ -168,5 +171,121 @@ class cmd_test_named_outputs(Command):
         finally:
             osutils.rmtree(tempdir)
             
-
 register_command(cmd_test_named_outputs)
+
+
+class cmd_trivial_forwarder(Command):
+    """Take the path given and forward pipes back to stdin/out/err."""
+
+    _timeout = 10000
+    _buf_size = 5
+
+    takes_args = ['base_path']
+
+    def run(self, base_path):
+        import select
+        from bzrlib import osutils, ui
+
+        stdin_path = os.path.join(base_path, 'child_stdin')
+        stdout_path = os.path.join(base_path, 'child_stdout')
+        stderr_path = os.path.join(base_path, 'child_stderr')
+
+        in_buffer = []
+        out_buffer = []
+        err_buffer = []
+
+        poller = select.poll()
+        fd_in = sys.stdin.fileno()
+        poller.register(fd_in, select.POLLIN)
+        fd_out = sys.stdout.fileno()
+        # poller.register(fd_out)
+        # fd_err = sys.stderr.fileno()
+        # poller.register(fd_err)
+        sys.stderr.write('opening %s\n' % (stdin_path,))
+        fd_child_in = os.open(stdin_path,
+            os.O_WRONLY | osutils.O_BINARY | os.O_NONBLOCK)
+        # poller.register(fd_child_in)
+        sys.stderr.write('opening %s\n' % (stdout_path,))
+        fd_child_out = os.open(stdout_path,
+            os.O_RDONLY | osutils.O_BINARY | os.O_NONBLOCK)
+        poller.register(fd_child_out, select.POLLIN)
+        # fd_child_err = os.open(stdout_path, os.O_RDONLY | osutils.O_BINARY)
+        # poller.register(fd_child_err)
+        in_to_out = {}
+        in_to_out[fd_in] = fd_child_in
+        in_to_out[fd_child_out] = fd_out
+        inout_to_buffer = {}
+        inout_to_buffer[fd_in] = in_buffer
+        inout_to_buffer[fd_child_in] = in_buffer
+        inout_to_buffer[fd_out] = out_buffer
+        inout_to_buffer[fd_child_out] = out_buffer
+        should_close = set()
+        while True:
+            events = poller.poll(self._timeout) # TIMEOUT?
+            if not events:
+                sys.stderr.write('** timeout\n')
+                # TODO: check if all buffers are indicated 'closed' so we
+                #       should exit
+                continue
+            for fd, event in events:
+                sys.stderr.write('event: %s %s\n' % (fd, event))
+                if event & select.POLLIN:
+                    # Register the output buffer, buffer a bit, and wait for
+                    # the output to be available
+                    buf = inout_to_buffer[fd]
+                    # TODO: We could set a maximum size for buf, and if we go
+                    #       beyond that, we stop reading
+                    # n_buffered = sum(map(len, buf))
+                    thebytes = os.read(fd, self._buf_size)
+                    buf.append(thebytes)
+                    out_fd = in_to_out[fd]
+                    sys.stderr.write('%d read %d => %d register %d\n'
+                                     % (fd, len(thebytes), sum(map(len, buf)),
+                                        out_fd))
+                    # Let the poller know that we need to do non-blocking output
+                    # We always re-register, we could know that it is already
+                    # active
+                    poller.register(out_fd, select.POLLOUT)
+                elif event & select.POLLOUT:
+                    # We can write some bytes without blocking, do so
+                    buf = inout_to_buffer[fd]
+                    if not buf:
+                        # the buffer is now empty, we have written everything
+                        # so unregister this buffer so we don't keep polling
+                        # for the ability to write without blocking
+                        sys.stderr.write('%d unregistered\n' % (fd,))
+                        poller.unregister(fd)
+                        # Check to see if the input has been closed, and close
+                        # if true
+                        if fd in should_close:
+                            os.close(fd)
+                        continue
+                    thebytes = ''.join(buf)
+                    n_written = os.write(fd, thebytes)
+                    thebytes = thebytes[n_written:]
+                    sys.stderr.write('%d wrote %d => %d remain\n'
+                                     % (fd, n_written, len(thebytes)))
+                    if thebytes:
+                        buf[:] = [thebytes]
+                    else:
+                        del buf[:]
+                        # We *could* unregister the output here, but I have the
+                        # feeling waiting for another poll loop will be better
+                        # because it will avoid looping, oh we have bytes,
+                        # register, loop, find bytes, write them, unregister,
+                        # loop, find more bytes, register, loop, etc.
+                        # I don't know for sure, but I think this gives us at
+                        # least a chance to have more bytes to write before we
+                        # unregister
+                elif event & select.POLLHUP:
+                    # The connection hung up, I'm assuming these only occur on
+                    # the inputs for now..., but carry across the action.
+                    # Importantly, we don't close the out_fd yet, because we
+                    # want to flush the buffer first
+                    poller.unregister(fd)
+                    out_fd = in_to_out[fd]
+                    should_close.add(out_fd)
+                    sys.stderr.write('%d closed, closing %d\n'
+                                     % (fd, out_fd))
+
+register_command(cmd_trivial_forwarder)
