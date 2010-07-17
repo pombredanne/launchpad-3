@@ -120,7 +120,7 @@ class cmd_test_named_outputs(Command):
     """
 
     def run(self):
-        from bzrlib import osutils
+        from bzrlib import osutils, ui
         tempdir = osutils.mkdtemp(prefix='lpserve-')
         # self.add_cleanup for bzr >= 2.1
         try:
@@ -132,26 +132,35 @@ class cmd_test_named_outputs(Command):
             os.mkfifo(stdout_name)
             os.mkfifo(stderr_name)
             # OS_NDELAY/OS_NBLOCK?
-            sys.stderr.write('Opening stdin\n')
-            fd_in = os.open(stdin_name, os.O_RDONLY | osutils.O_BINARY)
-            sys.stderr.write('Opening stdout\n')
+            # Opening a fifo for reading/writing blocks until someone opens the
+            # other end
             fd_out = os.open(stdout_name, os.O_WRONLY | osutils.O_BINARY)
+            fd_in = os.open(stdin_name, os.O_RDONLY | osutils.O_BINARY)
+            # Close the existing file handles, to make sure that they don't
+            # accidentally get used.
+            # Also, redirect everything to the new handles
+            sys.stdin.close()
+            sys.stdout.close()
+            os.dup2(fd_in, 0)
+            os.dup2(fd_out, 1)
             #sys.stderr.write('Opening stderr\n')
             # fd_err = os.open(stderr_name, os.O_WRONLY | osutils.O_BINARY)
-            # os.dup2(fd_in, 0)
-            # os.dup2(fd_out, 1)
             # os.dup2(fd_err, 2)
-            # sys.stdin = os.fdopen(fd_in)
-            # sys.stdout = os.fdopen(fd_out)
+            # TODO: buffering?
+            sys.stdin = os.fdopen(fd_in, 'rb')
+            sys.stdout = os.fdopen(fd_out, 'wb')
+            sys.stderr.write('ready for input\n')
+            # TODO: reset ui.ui_factory if we need to
+            #       reset self.outf if we need to
+            #       Handle sys.stderr, I just didn't want to have to manually
+            #       read from it right now
             # sys.stderr = os.fdopen(fd_err)
             # sys.stdout.write(sys.stderr.read())
             # sys.stderr.write('error')
-            thebytes = os.read(fd_in, 100)
-            sys.stderr.write('read %d bytes\n' % (len(thebytes),))
-            sys.stderr.flush()
-            os.write(fd_out, thebytes)
+            thebytes = sys.stdin.read()
+            sys.stdout.write(thebytes)
+            sys.stdout.flush()
             sys.stderr.write('wrote %d bytes\n' % (len(thebytes),))
-            sys.stderr.flush()
             # os.write(fd_err, 'error')
             # sys.stderr.write('wrote %d bytes to error\n' % (len(thebytes),))
             # os.flush(fd_err)
