@@ -129,6 +129,44 @@ def get_primary_current_component(archive, distroseries, sourcepackagename):
     return 'universe'
 
 
+def expand_dependencies(archive, distro_series, pocket, component,
+                        source_package_name):
+    deps = []
+
+    # Add implicit self-dependency for non-primary contexts.
+    if archive.purpose in ALLOW_RELEASE_BUILDS:
+        deps.append((
+            archive, PackagePublishingPocket.RELEASE,
+            get_components_for_context(component, pocket)))
+
+    primary_component = get_primary_current_component(
+        archive, distro_series, source_package_name)
+    # Consider user-selected archive dependencies.
+    for archive_dependency in archive.dependencies:
+        # When the dependency component is undefined, we should use
+        # the component where the source is published in the primary
+        # archive.
+        if archive_dependency.component is None:
+            components = component_dependencies[primary_component]
+        else:
+            components = component_dependencies[
+                archive_dependency.component.name]
+        # Follow pocket dependencies.
+        for pocket in pocket_dependencies[archive_dependency.pocket]:
+            deps.append(
+                (archive_dependency.dependency, pocket, components))
+
+    # Consider primary archive dependency override. Add the default
+    # primary archive dependencies if it's not present.
+    if archive.getArchiveDependency(
+        archive.distribution.main_archive) is None:
+        primary_dependencies = _get_default_primary_dependencies(
+            archive, component, pocket)
+        deps.extend(primary_dependencies)
+
+    return deps
+
+
 def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
     """Return the sources_list entries required to build the given item.
 
@@ -143,16 +181,12 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
     :param sourcepackagename: A source package name (as text)
     :return: a deb sources_list entries (lines).
     """
-    deps = []
-    sources_list_lines = []
+    deps = expand_dependencies(
+        build.archive, distroarchseries.distroseries, build.pocket,
+        build.current_component, sourcepackagename)
 
-    # Add implicit self-dependency for non-primary contexts.
-    if build.archive.purpose in ALLOW_RELEASE_BUILDS:
-        self_dep = [(
-            build.archive, PackagePublishingPocket.RELEASE,
-            get_components_for_building(build))]
-        sources_list_lines = _get_sources_list_for_dependencies(
-            self_dep, distroarchseries)
+    sources_list_lines = \
+        _get_sources_list_for_dependencies(deps, distroarchseries)
 
     # Append external sources_list lines for this archive if it's
     # specified in the configuration.
@@ -176,34 +210,6 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
         if build.archive.enabled == True:
             build.archive.disable()
 
-    # Consider user-selected archive dependencies.
-    primary_component = get_primary_current_component(
-        build.archive, build.distro_series, sourcepackagename)
-    for archive_dependency in build.archive.dependencies:
-        # When the dependency component is undefined, we should use
-        # the component where the source is published in the primary
-        # archive.
-        if archive_dependency.component is None:
-            components = component_dependencies[primary_component]
-        else:
-            components = component_dependencies[
-                archive_dependency.component.name]
-        # Follow pocket dependencies.
-        for pocket in pocket_dependencies[archive_dependency.pocket]:
-            deps.append(
-                (archive_dependency.dependency, pocket, components)
-                )
-
-    # Consider primary archive dependency override. Add the default
-    # primary archive dependencies if it's not present.
-    if build.archive.getArchiveDependency(
-        build.archive.distribution.main_archive) is None:
-        primary_dependencies = _get_default_primary_dependencies_for_build(
-            build)
-        deps.extend(primary_dependencies)
-
-    sources_list_lines.extend(
-        _get_sources_list_for_dependencies(deps, distroarchseries))
     return sources_list_lines
 
 
