@@ -38,7 +38,7 @@ from lp.code.interfaces.codeimportjob import (
 from lp.code.interfaces.codeimportresult import ICodeImportResult
 from lp.testing import (
     ANONYMOUS, login, login_celebrity, logout, TestCaseWithFactory,
-    with_celebrity_logged_in)
+    with_anonymous_login, with_celebrity_logged_in)
 from lp.testing.sampledata import NO_PRIVILEGE_EMAIL
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import, make_running_import)
@@ -996,6 +996,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         code_import_id = code_import.id
         return code_import_id, branch_url
 
+    # XXX: Change this not to use sample data.
     @logged_in_as(NO_PRIVILEGE_EMAIL)
     def requestJobByUserWithDisplayName(self, code_import_id, displayname):
         """Record a request for the job by a user with the given name."""
@@ -1011,7 +1012,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         getUtility(ICodeImportSet).get(code_import_id).updateFromData(
             {'review_status': CodeImportReviewStatus.SUSPENDED}, user)
 
-    @logged_in_as(ANONYMOUS)
+    @with_anonymous_login
     def startJob(self, code_import_id):
         """Mark the job as started on an arbitrary machine."""
         getUtility(ICodeImportJobWorkflow).startJob(

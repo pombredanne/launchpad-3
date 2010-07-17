@@ -16,6 +16,7 @@ __all__ = [
     'is_logged_in',
     'person_logged_in',
     'run_with_login',
+    'with_anonymous_login',
     'with_celebrity_logged_in',
     ]
 
@@ -173,6 +174,9 @@ def person_logged_in(person):
 def celebrity_logged_in(celebrity_name):
     """Make a context manager for running logged in as a celebrity."""
     return _with_login(login_celebrity, celebrity_name)
+
+
+with_anonymous_login = decorate_with(person_logged_in, None)
 
 
 def with_celebrity_logged_in(celebrity_name):

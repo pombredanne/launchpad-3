@@ -25,6 +25,7 @@ from lp.testing import (
     login_team,
     logout,
     person_logged_in,
+    with_anonymous_login,
     with_celebrity_logged_in,
     )
 from lp.testing import TestCaseWithFactory
@@ -258,6 +259,14 @@ class TestLoginHelpers(TestCaseWithFactory):
             return self.getLoggedInPerson()
         person = f()
         self.assertTrue(person.inTeam, vcs_imports)
+
+    def test_with_anonymous_log_in(self):
+        # with_anonymous_login logs in as the anonymous user.
+        @with_anonymous_login
+        def f():
+            return self.getLoggedInPerson()
+        person = f()
+        self.assertEqual(ANONYMOUS, person)
 
 
 def test_suite():
