@@ -198,12 +198,14 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
     # primary archive dependencies if it's not present.
     if build.archive.getArchiveDependency(
         build.archive.distribution.main_archive) is None:
-        primary_dependencies = _get_default_primary_dependencies(build)
+        primary_dependencies = _get_default_primary_dependencies_for_build(
+            build)
         deps.extend(primary_dependencies)
 
     sources_list_lines.extend(
         _get_sources_list_for_dependencies(deps, distroarchseries))
     return sources_list_lines
+
 
 def _has_published_binaries(archive, distroarchseries, pocket):
     """Whether or not the archive dependency has published binaries."""
@@ -262,7 +264,35 @@ def _get_sources_list_for_dependencies(dependencies, distroarchseries):
     return sources_list_lines
 
 
-def _get_default_primary_dependencies(build):
+def _get_default_primary_dependencies(archive, component, pocket):
+    """Return the default primary dependencies for a given context.
+
+    :param archive: the context `IArchive`.
+    :param component: the context `IComponent`.
+    :param pocket: the context `IPocket`.
+
+    :return: a list containing the default dependencies to primary
+        archive.
+    """
+    if archive.purpose in ALLOW_RELEASE_BUILDS:
+        primary_pockets = pocket_dependencies[
+            default_pocket_dependency]
+        primary_components = component_dependencies[
+            default_component_dependency_name]
+    else:
+        primary_pockets = pocket_dependencies[pocket]
+        primary_components = get_components_for_context(component, pocket)
+
+    primary_dependencies = []
+    for pocket in primary_pockets:
+        primary_dependencies.append(
+            (archive.distribution.main_archive, pocket,
+             primary_components))
+
+    return primary_dependencies
+
+
+def _get_default_primary_dependencies_for_build(build):
     """Return the default primary dependencies for a given build.
 
     :param build: the `IBuild` context;
@@ -270,19 +300,5 @@ def _get_default_primary_dependencies(build):
     :return: a list containing the default dependencies to primary
         archive.
     """
-    if build.archive.purpose in ALLOW_RELEASE_BUILDS:
-        primary_pockets = pocket_dependencies[
-            default_pocket_dependency]
-        primary_components = component_dependencies[
-            default_component_dependency_name]
-    else:
-        primary_pockets = pocket_dependencies[build.pocket]
-        primary_components = get_components_for_building(build)
-
-    primary_dependencies = []
-    for pocket in primary_pockets:
-        primary_dependencies.append(
-            (build.distro_series.distribution.main_archive, pocket,
-             primary_components))
-
-    return primary_dependencies
+    return _get_default_primary_dependencies(
+        build.archive, build.current_component, build.pocket)
