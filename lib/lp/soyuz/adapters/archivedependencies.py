@@ -277,7 +277,7 @@ def _get_default_primary_dependencies(archive, component, pocket):
 
     :param archive: the context `IArchive`.
     :param component: the context `IComponent`.
-    :param pocket: the context `IPocket`.
+    :param pocket: the context `PackagePublishingPocket`.
 
     :return: a list containing the default dependencies to primary
         archive.
