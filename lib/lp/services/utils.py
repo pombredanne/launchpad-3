@@ -157,11 +157,11 @@ def run_with(context, function, *args, **kwargs):
         return function(*args, **kwargs)
 
 
-def decorate_with(context):
+def decorate_with(context_factory, *args, **kwargs):
     """Create a decorator that runs decorated functions with 'context'."""
     def decorator(function):
-        def decorated(*args, **kwargs):
-            with context:
-                return function(*args, **kwargs)
+        def decorated(*a, **kw):
+            with context_factory(*args, **kwargs):
+                return function(*a, **kw)
         return mergeFunctionMetadata(function, decorated)
     return decorator

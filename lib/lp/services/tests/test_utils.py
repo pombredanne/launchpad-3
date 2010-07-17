@@ -128,10 +128,9 @@ class TestDecorateWith(TestCase):
 
     def setUp(self):
         super(TestDecorateWith, self).setUp()
-        self.trivialContextManager = self._trivialContextManager()
 
     @contextmanager
-    def _trivialContextManager(self):
+    def trivialContextManager(self):
         """A trivial context manager, used for testing."""
         yield
 
@@ -144,7 +143,7 @@ class TestDecorateWith(TestCase):
             calls.append('before')
             yield
             calls.append('after')
-        @decorate_with(appending_twice())
+        @decorate_with(appending_twice)
         def function():
             pass
         function()
@@ -159,6 +158,16 @@ class TestDecorateWith(TestCase):
             calls.append('foo')
         function()
         self.assertEquals(['foo'], calls)
+
+    def test_decorate_with_call_twice(self):
+        # A function decorated with decorate_with can be called twice.
+        calls = []
+        @decorate_with(self.trivialContextManager)
+        def function():
+            calls.append('foo')
+        function()
+        function()
+        self.assertEquals(['foo', 'foo'], calls)
 
     def test_decorate_with_arguments(self):
         # decorate_with passes through arguments.
