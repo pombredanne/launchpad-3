@@ -149,6 +149,7 @@ from lp.soyuz.model.processor import ProcessorFamily, ProcessorFamilySet
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from lp.testing import (
+    ANONYMOUS,
     login,
     login_as,
     logout,
@@ -353,6 +354,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         If you want to log in as a celebrity, including admins, see
         `lp.testing.login_celebrity`.
         """
+        login(ANONYMOUS)
         person = self.makePerson()
         login_as(person)
         return person
