@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
+import os
 import resource
 import sys
 
@@ -110,3 +111,53 @@ class cmd_launchpad_server(Command):
 
 
 register_command(cmd_launchpad_server)
+
+
+class cmd_test_named_outputs(Command):
+    """Spawn a process that remaps stdin and stdout to named pipes.
+
+    Report what those are onto stdout, but otherwise write nothing to stdout.
+    """
+
+    def run(self):
+        from bzrlib import osutils
+        tempdir = osutils.mkdtemp(prefix='lpserve-')
+        # self.add_cleanup for bzr >= 2.1
+        try:
+            sys.stdout.write('%s\n' % (tempdir,))
+            stdin_name = os.path.join(tempdir, 'child_stdin')
+            stdout_name = os.path.join(tempdir, 'child_stdout')
+            stderr_name = os.path.join(tempdir, 'child_stderr')
+            os.mkfifo(stdin_name)
+            os.mkfifo(stdout_name)
+            os.mkfifo(stderr_name)
+            # OS_NDELAY/OS_NBLOCK?
+            sys.stderr.write('Opening stdin\n')
+            fd_in = os.open(stdin_name, os.O_RDONLY | osutils.O_BINARY)
+            sys.stderr.write('Opening stdout\n')
+            fd_out = os.open(stdout_name, os.O_WRONLY | osutils.O_BINARY)
+            #sys.stderr.write('Opening stderr\n')
+            # fd_err = os.open(stderr_name, os.O_WRONLY | osutils.O_BINARY)
+            # os.dup2(fd_in, 0)
+            # os.dup2(fd_out, 1)
+            # os.dup2(fd_err, 2)
+            # sys.stdin = os.fdopen(fd_in)
+            # sys.stdout = os.fdopen(fd_out)
+            # sys.stderr = os.fdopen(fd_err)
+            # sys.stdout.write(sys.stderr.read())
+            # sys.stderr.write('error')
+            thebytes = os.read(fd_in, 100)
+            sys.stderr.write('read %d bytes\n' % (len(thebytes),))
+            sys.stderr.flush()
+            os.write(fd_out, thebytes)
+            sys.stderr.write('wrote %d bytes\n' % (len(thebytes),))
+            sys.stderr.flush()
+            # os.write(fd_err, 'error')
+            # sys.stderr.write('wrote %d bytes to error\n' % (len(thebytes),))
+            # os.flush(fd_err)
+            # sys.stderr.write('flushed %d bytes\n' % (len(thebytes),))
+        finally:
+            osutils.rmtree(tempdir)
+            
+
+register_command(cmd_test_named_outputs)
