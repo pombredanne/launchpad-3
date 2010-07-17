@@ -267,7 +267,8 @@ class SoyuzTestPublisher:
                        pub_source=None,
                        version='666',
                        architecturespecific=False,
-                       builder=None):
+                       builder=None,
+                       component='main'):
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.distroseries
@@ -285,7 +286,8 @@ class SoyuzTestPublisher:
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket,
                 archive=archive, distroseries=distroseries,
-                version=version, architecturehintlist=architecturehintlist)
+                version=version, architecturehintlist=architecturehintlist,
+                component=component)
         else:
             archive = pub_source.archive
 
