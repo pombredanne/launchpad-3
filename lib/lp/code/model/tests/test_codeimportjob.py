@@ -36,7 +36,6 @@ from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
 from lp.code.interfaces.codeimportresult import ICodeImportResult
-from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     ANONYMOUS, login, login_celebrity, logout, TestCaseWithFactory)
 from lp.testing.sampledata import NO_PRIVILEGE_EMAIL, VCS_IMPORTS_MEMBER_EMAIL
