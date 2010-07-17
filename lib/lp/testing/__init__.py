@@ -10,6 +10,7 @@ from __future__ import with_statement
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
+    'anonymous_logged_in',
     'build_yui_unittest_suite',
     'BrowserTestCase',
     'capture_events',
@@ -42,6 +43,7 @@ __all__ = [
     'WindmillTestCase',
     'with_anonymous_login',
     'with_celebrity_logged_in',
+    'with_person_logged_in',
     'ws_object',
     'YUIUnitTestCase',
     'ZopeTestInSubProcess',
@@ -92,6 +94,7 @@ from lp.registry.interfaces.packaging import IPackagingUtil
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
+    anonymous_logged_in,
     celebrity_logged_in,
     is_logged_in,
     login,
@@ -104,6 +107,7 @@ from lp.testing._login import (
     run_with_login,
     with_anonymous_login,
     with_celebrity_logged_in,
+    with_person_logged_in,
     )
 # canonical.launchpad.ftests expects test_tales to be imported from here.
 # XXX: JonathanLange 2010-01-01: Why?!
@@ -232,11 +236,12 @@ def run_with_storm_debug(function, *args, **kwargs):
 
 class TestCase(testtools.TestCase):
     """Provide Launchpad-specific test facilities."""
+
     def becomeDbUser(self, dbuser):
         """Commit, then log into the database as `dbuser`.
-        
+
         For this to work, the test must run in a layer.
-        
+
         Try to test every code path at least once under a realistic db
         user, or you'll hit privilege violations later on.
         """

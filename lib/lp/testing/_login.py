@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'anonymous_logged_in',
     'celebrity_logged_in',
     'login',
     'login_as',
@@ -18,6 +19,7 @@ __all__ = [
     'run_with_login',
     'with_anonymous_login',
     'with_celebrity_logged_in',
+    'with_person_logged_in',
     ]
 
 from contextlib import contextmanager
@@ -176,12 +178,22 @@ def person_logged_in(person):
 
 
 @contextmanager
+def anonymous_logged_in():
+    """Make a context manager for running with the anonymous log in."""
+    return _with_login(login_as, ANONYMOUS)
+
+
+@contextmanager
 def celebrity_logged_in(celebrity_name):
     """Make a context manager for running logged in as a celebrity."""
     return _with_login(login_celebrity, celebrity_name)
 
 
 with_anonymous_login = decorate_with(person_logged_in, None)
+
+
+def with_person_logged_in(person):
+    return decorate_with(person_logged_in, person)
 
 
 def with_celebrity_logged_in(celebrity_name):

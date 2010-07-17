@@ -16,6 +16,7 @@ from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS,
+    anonymous_logged_in,
     celebrity_logged_in,
     is_logged_in,
     login,
@@ -27,6 +28,7 @@ from lp.testing import (
     person_logged_in,
     with_anonymous_login,
     with_celebrity_logged_in,
+    with_person_logged_in,
     )
 from lp.testing import TestCaseWithFactory
 
@@ -270,6 +272,15 @@ class TestLoginHelpers(TestCaseWithFactory):
         person = f()
         self.assertTrue(person.inTeam, vcs_imports)
 
+    def test_with_person_logged_in(self):
+        person = self.factory.makePerson()
+        @with_person_logged_in(person)
+        def f():
+            return self.getLoggedInPerson()
+        logout()
+        logged_in = f()
+        self.assertEqual(person, logged_in)
+
     def test_with_anonymous_log_in(self):
         # with_anonymous_login logs in as the anonymous user.
         @with_anonymous_login
@@ -277,6 +288,11 @@ class TestLoginHelpers(TestCaseWithFactory):
             return self.getLoggedInPerson()
         person = f()
         self.assertEqual(ANONYMOUS, person)
+
+    def test_anonymous_log_in(self):
+        # anonymous_logged_in is a context logged in as anonymous.
+        with anonymous_logged_in():
+            self.assertLoggedIn(ANONYMOUS)
 
 
 def test_suite():
