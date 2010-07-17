@@ -124,6 +124,16 @@ def get_primary_current_component(archive, distroseries, sourcepackagename):
 
 def expand_dependencies(archive, distro_series, pocket, component,
                         source_package_name):
+    """Return the set of dependency archives, pockets and components.
+
+    :param archive: the context `IArchive`.
+    :param distro_series: the context `IDistroSeries`.
+    :param pocket: the context `PackagePublishingPocket`.
+    :param component: the context `IComponent`.
+    :param source_package_name: A source package name (as text)
+    :return: a list of (archive, pocket, [component]), representing the
+        dependencies defined by the given build context.
+    """
     deps = []
 
     # Add implicit self-dependency for non-primary contexts.
@@ -165,8 +175,8 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
 
     The entries are returned in the order that is most useful;
      1. the context archive itself
-     2. external dependencies
-     3. user-selected archive dependencies
+     2. user-selected archive dependencies
+     3. external dependencies
      4. the default primary archive
 
     :param build: a context `IBuild`.
@@ -289,15 +299,3 @@ def _get_default_primary_dependencies(archive, component, pocket):
              primary_components))
 
     return primary_dependencies
-
-
-def _get_default_primary_dependencies_for_build(build):
-    """Return the default primary dependencies for a given build.
-
-    :param build: the `IBuild` context;
-
-    :return: a list containing the default dependencies to primary
-        archive.
-    """
-    return _get_default_primary_dependencies(
-        build.archive, build.current_component, build.pocket)
