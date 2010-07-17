@@ -37,8 +37,9 @@ from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
 from lp.code.interfaces.codeimportresult import ICodeImportResult
 from lp.testing import (
-    ANONYMOUS, login, login_celebrity, logout, TestCaseWithFactory)
-from lp.testing.sampledata import NO_PRIVILEGE_EMAIL, VCS_IMPORTS_MEMBER_EMAIL
+    ANONYMOUS, login, login_celebrity, logout, TestCaseWithFactory,
+    with_celebrity_logged_in)
+from lp.testing.sampledata import NO_PRIVILEGE_EMAIL
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import, make_running_import)
 from canonical.launchpad.testing.pages import get_feedback_messages
@@ -973,9 +974,7 @@ def logged_in_as(email):
     return decorator
 
 
-# This is a dependence on the sample data: David Allouche is a member of the
-# ~vcs-imports celebrity team.
-logged_in_for_code_imports = logged_in_as(VCS_IMPORTS_MEMBER_EMAIL)
+logged_in_for_code_imports = with_celebrity_logged_in('vcs_imports')
 
 
 class TestRequestJobUIRaces(TestCaseWithFactory):
@@ -1036,6 +1035,8 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
         user_browser = self.getUserBrowser(branch_url)
         self.deleteJob(code_import_id)
+        # user_browser fails when we are logged in.
+        logout()
         user_browser.getControl('Import Now').click()
         self.assertEqual(
             [u'This import is no longer being updated automatically.'],
