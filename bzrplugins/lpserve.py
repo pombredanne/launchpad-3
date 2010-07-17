@@ -119,10 +119,14 @@ class cmd_test_named_outputs(Command):
     Report what those are onto stdout, but otherwise write nothing to stdout.
     """
 
-    def run(self):
+    takes_args = ['lots*']
+
+    def run(self, lots_list):
         from bzrlib import osutils, ui
         tempdir = osutils.mkdtemp(prefix='lpserve-')
         # self.add_cleanup for bzr >= 2.1
+        if not lots_list:
+            lots_list = []
         try:
             sys.stdout.write('%s\n' % (tempdir,))
             stdin_name = os.path.join(tempdir, 'child_stdin')
@@ -134,8 +138,15 @@ class cmd_test_named_outputs(Command):
             # OS_NDELAY/OS_NONBLOCK?
             # Opening a fifo for reading/writing blocks until someone opens the
             # other end
-            fd_in = os.open(stdin_name, os.O_RDONLY | osutils.O_BINARY)
+            sys.stdout.write('waiting for binding\n')
+            sys.stdout.flush()
+            fd_in = os.open(stdin_name,
+                os.O_RDONLY | osutils.O_BINARY | os.O_NONBLOCK)
             fd_out = os.open(stdout_name, os.O_WRONLY | osutils.O_BINARY)
+            fd_err = os.open(stdout_name, os.O_WRONLY | osutils.O_BINARY)
+            cmd = [sys.executable, sys.argv[0]] + lots_list
+            sys.stdout.write('running %s\n' % (' '.join(cmd)))
+            sys.stdout.flush()
             # TODO: self.add_cleanup(os.close, fd_in)
             # TODO: self.add_cleanup(os.close, fd_out)
             # TODO: self.add_cleanup(os.close, fd_err)
@@ -144,31 +155,16 @@ class cmd_test_named_outputs(Command):
             # Also, redirect everything to the new handles
             sys.stdin.close()
             sys.stdout.close()
+            sys.stderr.close()
             os.dup2(fd_in, 0)
             os.dup2(fd_out, 1)
-            #sys.stderr.write('Opening stderr\n')
-            # fd_err = os.open(stderr_name, os.O_WRONLY | osutils.O_BINARY)
-            # os.dup2(fd_err, 2)
-            # TODO: buffering?
+            os.dup2(fd_err, 2)
             sys.stdin = os.fdopen(fd_in, 'rb')
             sys.stdout = os.fdopen(fd_out, 'wb')
-            sys.stderr.write('ready for input\n')
-            # TODO: reset ui.ui_factory if we need to
-            #       reset self.outf if we need to
-            #       Handle sys.stderr, I just didn't want to have to manually
-            #       read from it right now
-            # sys.stderr = os.fdopen(fd_err)
-            # sys.stdout.write(sys.stderr.read())
-            # sys.stderr.write('error')
-            thebytes = sys.stdin.read()
-            sys.stdout.write(thebytes)
-            sys.stdout.flush()
-            sys.stderr.write('wrote %d bytes\n' % (len(thebytes),))
-            # os.write(fd_err, 'error')
-            # sys.stderr.write('wrote %d bytes to error\n' % (len(thebytes),))
-            # os.flush(fd_err)
-            # sys.stderr.write('flushed %d bytes\n' % (len(thebytes),))
+            sys.stderr = os.fdopen(fd_err, 'wb')
+            return os.execvp(sys.executable, cmd)
         finally:
+            # This doesn't happen if we are using execvp
             osutils.rmtree(tempdir)
             
 register_command(cmd_test_named_outputs)
@@ -178,57 +174,74 @@ class cmd_trivial_forwarder(Command):
     """Take the path given and forward pipes back to stdin/out/err."""
 
     _timeout = 10000
-    _buf_size = 5
+    _buf_size = 8192
 
-    takes_args = ['base_path']
+    takes_options = [Option('in', type=unicode, help='map stdin to this fifo',
+                            argname='in_path', param_name='in_path'),
+                     Option('out', type=unicode, help='map stdout to this',
+                            argname='out_path', param_name='out_path'),
+                     Option('err', type=unicode, help='map stderr to this',
+                            argname='err_path', param_name='err_path'),
+                    ]
+    takes_args = []
 
-    def run(self, base_path):
+    def log(self, msg):
+        if self._do_log:
+            sys.stderr.write(msg)
+
+    def run(self, in_path=None, out_path=None, err_path=None):
         import select
         from bzrlib import osutils, ui
 
-        stdin_path = os.path.join(base_path, 'child_stdin')
-        stdout_path = os.path.join(base_path, 'child_stdout')
-        stderr_path = os.path.join(base_path, 'child_stderr')
+        in_to_out = {}
+        inout_to_buffer = {}
 
-        in_buffer = []
-        out_buffer = []
-        err_buffer = []
+        self._do_log = (err_path is None)
 
         poller = select.poll()
-        fd_in = sys.stdin.fileno()
-        poller.register(fd_in, select.POLLIN)
-        fd_out = sys.stdout.fileno()
-        # poller.register(fd_out)
-        # fd_err = sys.stderr.fileno()
-        # poller.register(fd_err)
-        sys.stderr.write('opening %s\n' % (stdin_path,))
-        fd_child_in = os.open(stdin_path,
-            os.O_WRONLY | osutils.O_BINARY | os.O_NONBLOCK)
-        # poller.register(fd_child_in)
-        sys.stderr.write('opening %s\n' % (stdout_path,))
-        fd_child_out = os.open(stdout_path,
-            os.O_RDONLY | osutils.O_BINARY | os.O_NONBLOCK)
-        poller.register(fd_child_out, select.POLLIN)
-        # fd_child_err = os.open(stdout_path, os.O_RDONLY | osutils.O_BINARY)
-        # poller.register(fd_child_err)
-        in_to_out = {}
-        in_to_out[fd_in] = fd_child_in
-        in_to_out[fd_child_out] = fd_out
-        inout_to_buffer = {}
-        inout_to_buffer[fd_in] = in_buffer
-        inout_to_buffer[fd_child_in] = in_buffer
-        inout_to_buffer[fd_out] = out_buffer
-        inout_to_buffer[fd_child_out] = out_buffer
+        if out_path:
+            out_buffer = []
+            fd_out = sys.stdout.fileno()
+            fd_child_out = os.open(out_path,
+                os.O_RDONLY | osutils.O_BINARY | os.O_NONBLOCK)
+            in_to_out[fd_child_out] = fd_out
+            poller.register(fd_child_out, select.POLLIN)
+            inout_to_buffer[fd_out] = out_buffer
+            inout_to_buffer[fd_child_out] = out_buffer
+            self.log('opened %s => %d\n' % (out_path, fd_child_out))
+        if err_path:
+            err_buffer = []
+            fd_err = sys.stderr.fileno()
+            fd_child_err = os.open(err_path,
+                os.O_RDONLY | osutils.O_BINARY | os.O_NONBLOCK)
+            in_to_out[fd_child_err] = fd_err
+            poller.register(fd_child_err, select.POLLIN)
+            inout_to_buffer[fd_err] = err_buffer
+            inout_to_buffer[fd_child_err] = err_buffer
+        if in_path:
+            in_buffer = []
+            fd_in = sys.stdin.fileno()
+            # We don't use O_NONBLOCK, because otherwise it raises an error if
+            # the write side isn't open yet, however it does mean we definitely
+            # need to open it *last*
+            self.log('blocked waiting for %s\n' % (in_path,))
+            fd_child_in = os.open(in_path, os.O_WRONLY | osutils.O_BINARY)
+            in_to_out[fd_in] = fd_child_in
+            poller.register(fd_in, select.POLLIN)
+            # If the only thing we are polling is sys.stdin, then we'll close
+            inout_to_buffer[fd_in] = in_buffer
+            inout_to_buffer[fd_child_in] = in_buffer
+            self.log('opened %s => %d\n' % (in_path, fd_child_in))
         should_close = set()
         while True:
             events = poller.poll(self._timeout) # TIMEOUT?
             if not events:
-                sys.stderr.write('** timeout\n')
+                self.log('** timeout\n')
                 # TODO: check if all buffers are indicated 'closed' so we
                 #       should exit
                 continue
             for fd, event in events:
-                sys.stderr.write('event: %s %s\n' % (fd, event))
+                self.log('event: %s %s  ' % (fd, event))
                 if event & select.POLLIN:
                     # Register the output buffer, buffer a bit, and wait for
                     # the output to be available
@@ -239,12 +252,19 @@ class cmd_trivial_forwarder(Command):
                     thebytes = os.read(fd, self._buf_size)
                     buf.append(thebytes)
                     out_fd = in_to_out[fd]
-                    sys.stderr.write('%d read %d => %d register %d\n'
-                                     % (fd, len(thebytes), sum(map(len, buf)),
-                                        out_fd))
+                    self.log('read %d => %d register %d\n'
+                             % (len(thebytes), sum(map(len, buf)),
+                                out_fd))
                     # Let the poller know that we need to do non-blocking output
                     # We always re-register, we could know that it is already
                     # active
+                    if not thebytes:
+                        # Input without content, treat this as a close request
+                        should_close.add(out_fd)
+                        poller.unregister(fd)
+                        os.close(fd)
+                        self.log('no bytes closed closed, closing %d\n'
+                                 % (out_fd,))
                     poller.register(out_fd, select.POLLOUT)
                 elif event & select.POLLOUT:
                     # We can write some bytes without blocking, do so
@@ -253,18 +273,21 @@ class cmd_trivial_forwarder(Command):
                         # the buffer is now empty, we have written everything
                         # so unregister this buffer so we don't keep polling
                         # for the ability to write without blocking
-                        sys.stderr.write('%d unregistered\n' % (fd,))
+                        self.log('unregistered\n')
                         poller.unregister(fd)
                         # Check to see if the input has been closed, and close
                         # if true
                         if fd in should_close:
+                            self.log('%d closed\n' % (fd,))
                             os.close(fd)
+                            if len(should_close) == open_handles:
+                                return 0
                         continue
                     thebytes = ''.join(buf)
                     n_written = os.write(fd, thebytes)
                     thebytes = thebytes[n_written:]
-                    sys.stderr.write('%d wrote %d => %d remain\n'
-                                     % (fd, n_written, len(thebytes)))
+                    self.log('\n  wrote %d => %d remain\n'
+                             % (n_written, len(thebytes)))
                     if thebytes:
                         buf[:] = [thebytes]
                     else:
@@ -285,7 +308,7 @@ class cmd_trivial_forwarder(Command):
                     poller.unregister(fd)
                     out_fd = in_to_out[fd]
                     should_close.add(out_fd)
-                    sys.stderr.write('%d closed, closing %d\n'
-                                     % (fd, out_fd))
+                    self.log('closed, closing %d\n'
+                             % (out_fd,))
 
 register_command(cmd_trivial_forwarder)
