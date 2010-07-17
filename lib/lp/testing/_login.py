@@ -162,6 +162,11 @@ def with_anonymous_login(function):
 
 @contextmanager
 def person_logged_in(person):
+    """Make a context manager for running logged in as 'person'.
+
+    :param person: A person, an account, a team or ANONYMOUS. If a team,
+        will log in as an arbitrary member of that team.
+    """
     current_person = getUtility(ILaunchBag).user
     logout()
     login_as(person)
