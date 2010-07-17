@@ -13,9 +13,15 @@ __all__ = [
     'login_team',
     'logout',
     'is_logged_in',
+    'person_logged_in',
+    'run_with_login',
+    'with_anonymous_login',
     ]
 
+from contextlib import contextmanager
 import random
+
+from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
 from zope.security.management import endInteraction
@@ -23,6 +29,7 @@ from zope.security.management import endInteraction
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import (
     ANONYMOUS, setupInteractionByEmail, setupInteractionForPerson)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 
@@ -140,3 +147,32 @@ def logout():
     global _logged_in
     _logged_in = False
     endInteraction()
+
+
+def with_anonymous_login(function):
+    """Decorate 'function' so that it runs in an anonymous login."""
+    def wrapped(*args, **kwargs):
+        login(ANONYMOUS)
+        try:
+            return function(*args, **kwargs)
+        finally:
+            logout()
+    return mergeFunctionMetadata(function, wrapped)
+
+
+@contextmanager
+def person_logged_in(person):
+    current_person = getUtility(ILaunchBag).user
+    logout()
+    login_person(person)
+    try:
+        yield
+    finally:
+        logout()
+        login_person(current_person)
+
+
+def run_with_login(person, function, *args, **kwargs):
+    """Run 'function' with 'person' logged in."""
+    with person_logged_in(person):
+        return function(*args, **kwargs)

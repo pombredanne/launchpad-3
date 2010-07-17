@@ -27,6 +27,7 @@ __all__ = [
     'map_branch_contents',
     'normalize_whitespace',
     'oauth_access_token_for',
+    'person_logged_in',
     'record_statements',
     'run_with_login',
     'run_with_storm_debug',
@@ -69,8 +70,6 @@ from storm.tracer import install_tracer, remove_tracer_type
 import testtools
 import transaction
 
-from twisted.python.util import mergeFunctionMetadata
-
 from windmill.authoring import WindmillTestClient
 
 from zope.component import adapter, getUtility
@@ -85,15 +84,14 @@ from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import branch_id_to_path, get_rw_server
 from lp.registry.interfaces.packaging import IPackagingUtil
-# Import the login and logout functions here as it is a much better
+# Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
     is_logged_in, login, login_as, login_celebrity, login_person, login_team,
-    logout)
+    logout, person_logged_in, run_with_login, with_anonymous_login)
 # canonical.launchpad.ftests expects test_tales to be imported from here.
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
@@ -819,35 +817,6 @@ def get_lsb_information():
                 distinfo[var] = arg
 
     return distinfo
-
-
-def with_anonymous_login(function):
-    """Decorate 'function' so that it runs in an anonymous login."""
-    def wrapped(*args, **kwargs):
-        login(ANONYMOUS)
-        try:
-            return function(*args, **kwargs)
-        finally:
-            logout()
-    return mergeFunctionMetadata(function, wrapped)
-
-
-@contextmanager
-def person_logged_in(person):
-    current_person = getUtility(ILaunchBag).user
-    logout()
-    login_person(person)
-    try:
-        yield
-    finally:
-        logout()
-        login_person(current_person)
-
-
-def run_with_login(person, function, *args, **kwargs):
-    """Run 'function' with 'person' logged in."""
-    with person_logged_in(person):
-        return function(*args, **kwargs)
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
