@@ -18,8 +18,6 @@ from sqlobject.sqlbuilder import SQLConstant
 
 import transaction
 
-from twisted.python.util import mergeFunctionMetadata
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -39,7 +37,6 @@ from lp.code.interfaces.codeimportresult import ICodeImportResult
 from lp.testing import (
     ANONYMOUS, login, login_celebrity, logout, TestCaseWithFactory,
     with_anonymous_login, with_celebrity_logged_in)
-from lp.testing.sampledata import NO_PRIVILEGE_EMAIL
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import, make_running_import)
 from canonical.launchpad.testing.pages import get_feedback_messages
@@ -960,20 +957,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
             CodeImportReviewStatus.FAILING, code_import.review_status)
 
 
-def logged_in_as(email):
-    """Return a decorator that wraps functions to runs logged in as `email`.
-    """
-    def decorator(function):
-        def decorated(*args, **kw):
-            login(email)
-            try:
-                return function(*args, **kw)
-            finally:
-                logout()
-        return mergeFunctionMetadata(function, decorated)
-    return decorator
-
-
 logged_in_for_code_imports = with_celebrity_logged_in('vcs_imports')
 
 
@@ -996,13 +979,15 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         code_import_id = code_import.id
         return code_import_id, branch_url
 
-    # XXX: Change this not to use sample data.
-    @logged_in_as(NO_PRIVILEGE_EMAIL)
     def requestJobByUserWithDisplayName(self, code_import_id, displayname):
         """Record a request for the job by a user with the given name."""
-        getUtility(ICodeImportJobWorkflow).requestJob(
-            getUtility(ICodeImportSet).get(code_import_id).import_job,
-            self.factory.makePerson(displayname=displayname))
+        self.factory.loginAsAnyone()
+        try:
+            getUtility(ICodeImportJobWorkflow).requestJob(
+                getUtility(ICodeImportSet).get(code_import_id).import_job,
+                self.factory.makePerson(displayname=displayname))
+        finally:
+            logout()
 
     @logged_in_for_code_imports
     def deleteJob(self, code_import_id):
@@ -1048,6 +1033,8 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
         user_browser = self.getUserBrowser(branch_url)
         self.startJob(code_import_id)
+        # user_browser fails when we are logged in.
+        logout()
         user_browser.getControl('Import Now').click()
         self.assertEqual(
             [u'The import is already running.'],
