@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -34,6 +34,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.blueprints.model.specificationbranch import (
@@ -1052,6 +1053,27 @@ class TestBranchDeletion(TestCaseWithFactory):
         branch.destroySelf(break_references=True)
 
         Store.of(branch).flush()
+
+    def test_unrelated_TranslationTemplatesBuildJob_intact(self):
+        # No innocent BuildQueue entries are harmed in deleting a
+        # branch.
+        branch = self.factory.makeAnyBranch()
+        other_branch = self.factory.makeAnyBranch()
+        source = getUtility(ITranslationTemplatesBuildJobSource)
+        job = source.create(branch)
+        other_job = source.create(other_branch)
+        store = Store.of(branch)
+
+        branch.destroySelf(break_references=True)
+
+        # The BuildQueue for the job whose branch we deleted is gone.
+        buildqueue = store.find(BuildQueue, BuildQueue.job == job.job)
+        self.assertEqual([], list(buildqueue))
+
+        # The other job's BuildQueue entry is still there.
+        other_buildqueue = store.find(
+            BuildQueue, BuildQueue.job == other_job.job)
+        self.assertNotEqual([], list(other_buildqueue))
 
     def test_createsJobToReclaimSpace(self):
         # When a branch is deleted from the database, a job to remove the
