@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from storm.locals import Int, Storm
 from zope.component import getUtility
 
@@ -185,4 +183,4 @@ class CollectionTest(TestCaseWithFactory):
         collection_with_store = collection.use(store)
         self.assertEqual(store, collection_with_store.store)
 
-        self.assertEqual([], collection_with_store.select())
+        self.assertEqual([], collection_with_store.select(TestTable))

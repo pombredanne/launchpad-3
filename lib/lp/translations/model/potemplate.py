@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -92,16 +92,15 @@ standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
 '''
 
 standardTemplateHeader = (
-"Project-Id-Version: %(origin)s\n"
-"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: %(templatedate)s\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: %(languagename)s <%(languagecode)s@li.org>\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-)
+    "Project-Id-Version: %(origin)s\n"
+    "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+    "POT-Creation-Date: %(templatedate)s\n"
+    "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+    "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+    "Language-Team: %(languagename)s <%(languagecode)s@li.org>\n"
+    "MIME-Version: 1.0\n"
+    "Content-Type: text/plain; charset=UTF-8\n"
+    "Content-Transfer-Encoding: 8bit\n")
 
 
 standardPOFileHeader = (standardTemplateHeader +
@@ -1380,7 +1379,6 @@ class POTemplateSharingSubset(object):
         self.sourcepackagename = sourcepackagename
         self.product = product
 
-
     def _get_potemplate_equivalence_class(self, template):
         """Return whatever we group `POTemplate`s by for sharing purposes."""
         if template.sourcepackagename is None:
@@ -1588,8 +1586,7 @@ class HasTranslationTemplatesMixin:
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
-        return self._orderTemplates(
-            self.getTemplatesCollection().select(POTemplate))
+        return self._orderTemplates(self.getTemplatesCollection().select())
 
     def getTranslationTemplateFormats(self):
         """See `IHasTranslationTemplates`."""
