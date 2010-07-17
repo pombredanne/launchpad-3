@@ -204,7 +204,7 @@ class TestLoginHelpers(TestCaseWithFactory):
             self.assertLoggedIn(person)
 
     def test_person_logged_in_restores_person(self):
-        # Once outside of the person_logged_in context, the originially
+        # Once outside of the person_logged_in context, the originally
         # logged-in person is re-logged in.
         a = self.factory.makePerson()
         login_as(a)
@@ -212,6 +212,15 @@ class TestLoginHelpers(TestCaseWithFactory):
         with person_logged_in(b):
             self.assertLoggedIn(b)
         self.assertLoggedIn(a)
+
+    def test_person_logged_in_restores_logged_out(self):
+        # If we are logged out before the person_logged_in context, then we
+        # are logged out afterwards.
+        person = self.factory.makePerson()
+        logout()
+        with person_logged_in(person):
+            pass
+        self.assertLoggedOut()
 
     def test_person_logged_in_restores_person_even_when_raises(self):
         # Once outside of the person_logged_in context, the originially
@@ -257,6 +266,7 @@ class TestLoginHelpers(TestCaseWithFactory):
         @with_celebrity_logged_in('vcs_imports')
         def f():
             return self.getLoggedInPerson()
+        logout()
         person = f()
         self.assertTrue(person.inTeam, vcs_imports)
 

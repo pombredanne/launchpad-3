@@ -28,7 +28,8 @@ from zope.security.management import endInteraction
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import (
-    ANONYMOUS, setupInteractionByEmail, setupInteractionForPerson)
+    ANONYMOUS, get_current_principal, setupInteractionByEmail,
+    setupInteractionForPerson)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -153,11 +154,15 @@ def logout():
 def _with_login(login_method, identifier):
     """Make a context manager that runs with a particular log in."""
     current_person = getUtility(ILaunchBag).user
+    current_principal = get_current_principal()
     login_method(identifier)
     try:
         yield
     finally:
-        login_person(current_person)
+        if current_principal is None:
+            logout()
+        else:
+            login_person(current_person)
 
 
 @contextmanager
