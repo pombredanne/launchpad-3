@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'celebrity_logged_in',
     'login',
     'login_as',
     'login_celebrity',
@@ -15,13 +16,10 @@ __all__ = [
     'is_logged_in',
     'person_logged_in',
     'run_with_login',
-    'with_anonymous_login',
     ]
 
 from contextlib import contextmanager
 import random
-
-from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
 from zope.security.management import endInteraction
@@ -32,7 +30,6 @@ from canonical.launchpad.webapp.interaction import (
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
-
 
 
 _logged_in = False
@@ -149,15 +146,12 @@ def logout():
     endInteraction()
 
 
-def with_anonymous_login(function):
-    """Decorate 'function' so that it runs in an anonymous login."""
-    def wrapped(*args, **kwargs):
-        login(ANONYMOUS)
-        try:
-            return function(*args, **kwargs)
-        finally:
-            logout()
-    return mergeFunctionMetadata(function, wrapped)
+def _with_login(login_method, identifier):
+    """Make a context manager that runs with a particular log in."""
+    current_person = getUtility(ILaunchBag).user
+    login_method(identifier)
+    yield
+    login_person(current_person)
 
 
 @contextmanager
@@ -167,14 +161,13 @@ def person_logged_in(person):
     :param person: A person, an account, a team or ANONYMOUS. If a team,
         will log in as an arbitrary member of that team.
     """
-    current_person = getUtility(ILaunchBag).user
-    logout()
-    login_as(person)
-    try:
-        yield
-    finally:
-        logout()
-        login_person(current_person)
+    return _with_login(login_as, person)
+
+
+@contextmanager
+def celebrity_logged_in(celebrity_name):
+    """WAke a context manager for running logged in as a celebrity."""
+    return _with_login(login_celebrity, celebrity_name)
 
 
 def run_with_login(person, function, *args, **kwargs):

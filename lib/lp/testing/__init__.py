@@ -13,6 +13,7 @@ __all__ = [
     'build_yui_unittest_suite',
     'BrowserTestCase',
     'capture_events',
+    'celebrity_logged_in',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
@@ -39,7 +40,6 @@ __all__ = [
     'unlink_source_packages',
     'validate_mock_class',
     'WindmillTestCase',
-    'with_anonymous_login',
     'ws_object',
     'YUIUnitTestCase',
     'ZopeTestInSubProcess',
@@ -90,8 +90,17 @@ from lp.registry.interfaces.packaging import IPackagingUtil
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
-    is_logged_in, login, login_as, login_celebrity, login_person, login_team,
-    logout, person_logged_in, run_with_login, with_anonymous_login)
+    celebrity_logged_in,
+    is_logged_in,
+    login,
+    login_as,
+    login_celebrity,
+    login_person,
+    login_team,
+    logout,
+    person_logged_in,
+    run_with_login,
+    )
 # canonical.launchpad.ftests expects test_tales to be imported from here.
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales

@@ -15,8 +15,17 @@ from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
-    ANONYMOUS, is_logged_in, login, login_as, login_celebrity, login_person,
-    login_team, logout, person_logged_in)
+    ANONYMOUS,
+    celebrity_logged_in,
+    is_logged_in,
+    login,
+    login_as,
+    login_celebrity,
+    login_person,
+    login_team,
+    logout,
+    person_logged_in,
+    )
 from lp.testing import TestCaseWithFactory
 
 
@@ -177,7 +186,7 @@ class TestLoginHelpers(TestCaseWithFactory):
         login_celebrity('vcs_imports')
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         person = self.getLoggedInPerson()
-        self.assertTrue(person.inTeam, vcs_imports)
+        self.assertTrue(person.inTeam(vcs_imports))
 
     def test_login_nonexistent_celebrity(self):
         # login_celebrity raises ValueError when called with a non-existent
@@ -193,7 +202,7 @@ class TestLoginHelpers(TestCaseWithFactory):
             self.assertLoggedIn(person)
 
     def test_with_person_logged_in_restores_person(self):
-        # Once outside of the person_logged_in context, the orginially
+        # Once outside of the person_logged_in context, the originially
         # logged-in person is re-logged in.
         a = self.factory.makePerson()
         login_as(a)
@@ -208,6 +217,23 @@ class TestLoginHelpers(TestCaseWithFactory):
         with person_logged_in(team):
             person = self.getLoggedInPerson()
         self.assertTrue(person.inTeam(team))
+
+    def test_with_celebrity_logged_in(self):
+        # celebrity_logged_in runs in a context where a celebrity is logged
+        # in.
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        with celebrity_logged_in('vcs_imports'):
+            person = self.getLoggedInPerson()
+        self.assertTrue(person.inTeam(vcs_imports))
+
+    def test_with_celebrity_logged_in_restores_person(self):
+        # Once outside of the celebrity_logged_in context, the originally
+        # logged-in person is re-logged in.
+        person = self.factory.makePerson()
+        login_as(person)
+        with celebrity_logged_in('vcs_imports'):
+            pass
+        self.assertLoggedIn(person)
 
 
 def test_suite():
