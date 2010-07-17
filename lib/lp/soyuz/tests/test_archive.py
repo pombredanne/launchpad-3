@@ -1115,9 +1115,14 @@ class TestFindDepCandidateByName(TestCaseWithFactory):
         self.publisher.prepareBreezyAutotest()
 
     def assertDep(self, arch_tag, name, expected, archive=None):
-        """Helper to check that findDepCandidateByName works."""
-        # We need to commit here, since findDepCandidate uses the slave
-        # store.
+        """Helper to check that findDepCandidateByName works.
+
+        Searches for the given dependency name in the given architecture and
+        archive, and compares it to the given expected value.
+        The archive defaults to self.archive.
+
+        Also commits, since findDepCandidate uses the slave store.
+        """
         transaction.commit()
 
         if archive is None:
@@ -1141,9 +1146,20 @@ class TestFindDepCandidateByName(TestCaseWithFactory):
             binaryname='foo', archive=self.archive)
         self.assertDep('i386', 'foo', None)
 
+    def test_ppa_searches_primary_archive(self):
+        # PPA searches implicitly look in the primary archive too.
+        self.assertEquals(self.archive.purpose, ArchivePurpose.PPA)
+        self.assertDep('i386', 'foo', None)
+
+        bins = self.publisher.getPubBinaries(
+            binaryname='foo', archive=self.archive.distribution.main_archive,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.assertDep('i386', 'foo', bins[0])
+
     def test_searches_dependencies(self):
-        # Candidates from archives on which the target depends should be
-        # found.
+        # Candidates from archives on which the target explicitly depends
+        # should be found.
         bins = self.publisher.getPubBinaries(
             binaryname='foo', archive=self.archive,
             status=PackagePublishingStatus.PUBLISHED)
