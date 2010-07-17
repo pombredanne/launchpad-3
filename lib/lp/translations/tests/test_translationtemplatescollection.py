@@ -26,6 +26,13 @@ class TestSomething(TestCaseWithFactory):
         collection = TranslationTemplatesCollection()
         self.assertIn(template, collection.select())
 
+    def test_none_found(self):
+        trunk = self.factory.makeProduct().getSeries('trunk')
+        collection = TranslationTemplatesCollection()
+        by_series = collection.restrictProductSeries(trunk)
+
+        self.assertContentEqual([], by_series.select())
+
     def test_restrictProductSeries(self):
         trunk = self.factory.makeProduct().getSeries('trunk')
         template = self.factory.makePOTemplate(productseries=trunk)
@@ -34,6 +41,26 @@ class TestSomething(TestCaseWithFactory):
         by_series = collection.restrictProductSeries(trunk)
 
         self.assertContentEqual([template], by_series.select())
+
+    def test_restrictProductSeries_restricts(self):
+        # restrictProductSeries makes the collection ignore templates
+        # from other productseries and source packages.
+        product = self.factory.makeProduct()
+        trunk = product.getSeries('trunk')
+
+        nontrunk = removeSecurityProxy(product).newSeries(
+            product.owner, 'nontrunk', 'foo')
+        sourcepackage = self.factory.makeSourcePackage()
+
+        self.factory.makePOTemplate(productseries=nontrunk)
+        self.factory.makePOTemplate(
+            distroseries=sourcepackage.distroseries,
+            sourcepackagename=sourcepackage.sourcepackagename)
+
+        collection = TranslationTemplatesCollection()
+        by_series = collection.restrictProductSeries(trunk)
+
+        self.assertContentEqual([], by_series.select())
 
     def test_restrictDistroSeries(self):
         package = self.factory.makeSourcePackage()
@@ -45,6 +72,25 @@ class TestSomething(TestCaseWithFactory):
         by_series = collection.restrictDistroSeries(package.distroseries)
 
         self.assertContentEqual([template], by_series.select())
+
+    def test_restrictDistroSeries_restricts(self):
+        # restrictProductSeries makes the collection ignore templates
+        # from other productseries and distroseries.
+        distribution = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=distribution)
+        other_series = self.factory.makeDistroSeries(
+            distribution=distribution)
+        productseries = self.factory.makeProductSeries()
+        package = self.factory.makeSourcePackageName()
+
+        self.factory.makePOTemplate(
+            distroseries=other_series, sourcepackagename=package)
+        self.factory.makePOTemplate(productseries=productseries)
+
+        collection = TranslationTemplatesCollection()
+        by_series = collection.restrictDistroSeries(series)
+
+        self.assertContentEqual([], by_series.select())
 
     def test_restrictSourcePackageName(self):
         package = self.factory.makeSourcePackage()
@@ -58,6 +104,26 @@ class TestSomething(TestCaseWithFactory):
             package.sourcepackagename)
 
         self.assertContentEqual([template], by_packagename.select())
+
+    def test_restrictSourcePackageName_restricts(self):
+        # restrictSourcePackageName makes the collection ignore
+        # templates from other source package names and productseries.
+        package = self.factory.makeSourcePackage()
+        distroseries = package.distroseries
+        other_package = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+        productseries = self.factory.makeProductSeries()
+
+        self.factory.makePOTemplate(
+            distroseries=distroseries,
+            sourcepackagename=other_package.sourcepackagename)
+        self.factory.makePOTemplate(productseries=productseries)
+
+        collection = TranslationTemplatesCollection()
+        by_packagename = collection.restrictSourcePackageName(
+            package.sourcepackagename)
+
+        self.assertContentEqual([], by_packagename.select())
 
     def test_restrict_SourcePackage(self):
         # You can restrict to a source package by restricting both to a
@@ -74,22 +140,33 @@ class TestSomething(TestCaseWithFactory):
 
         self.assertContentEqual([template], by_package.select())
 
-    def test_restrictCurrent(self):
+    def test_restrictCurrent_current(self):
         trunk = self.factory.makeProduct().getSeries('trunk')
         template = self.factory.makePOTemplate(productseries=trunk)
         collection = TranslationTemplatesCollection()
         by_series = collection.restrictProductSeries(trunk)
 
         current_templates = by_series.restrictCurrent(True)
-        obsolete_templates = by_series.restrictCurrent(False)
 
         removeSecurityProxy(template).iscurrent = True
         self.assertContentEqual(
             [template], current_templates.select())
-        self.assertContentEqual([], obsolete_templates.select())
 
         removeSecurityProxy(template).iscurrent = False
         self.assertContentEqual([], current_templates.select())
+
+    def test_restrictCurrent_obsolete(self):
+        trunk = self.factory.makeProduct().getSeries('trunk')
+        template = self.factory.makePOTemplate(productseries=trunk)
+        collection = TranslationTemplatesCollection()
+        by_series = collection.restrictProductSeries(trunk)
+
+        obsolete_templates = by_series.restrictCurrent(False)
+
+        removeSecurityProxy(template).iscurrent = True
+        self.assertContentEqual([], obsolete_templates.select())
+
+        removeSecurityProxy(template).iscurrent = False
         self.assertContentEqual(
             [template], obsolete_templates.select())
 
