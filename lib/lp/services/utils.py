@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = [
     'CachingIterator',
     'iter_split',
+    'run_with',
     'synchronize',
     'text_delta',
     'value_string',
@@ -141,3 +142,13 @@ class CachingIterator:
                 break
             self.data.append(item)
             yield item
+
+
+def run_with(context, function, *args, **kwargs):
+    """Run 'function' with 'context'.
+
+    Runs the given function with arbitrary arguments and keyword arguments
+    with the given context. Returns the return value of 'function'.
+    """
+    with context:
+        return function(*args, **kwargs)
