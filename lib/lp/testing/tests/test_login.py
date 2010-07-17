@@ -16,7 +16,7 @@ from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS, is_logged_in, login, login_as, login_celebrity, login_person,
-    login_team, logout)
+    login_team, logout, person_logged_in)
 from lp.testing import TestCaseWithFactory
 
 
@@ -185,6 +185,29 @@ class TestLoginHelpers(TestCaseWithFactory):
         logout()
         e = self.assertRaises(ValueError, login_celebrity, 'nonexistent')
         self.assertEqual(str(e), "No such celebrity: 'nonexistent'")
+
+    def test_with_person_logged_in(self):
+        # The person_logged_in context manager runs with a person logged in.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            self.assertLoggedIn(person)
+
+    def test_with_person_logged_in_restores_person(self):
+        # Once outside of the person_logged_in context, the orginially
+        # logged-in person is re-logged in.
+        a = self.factory.makePerson()
+        login_as(a)
+        b = self.factory.makePerson()
+        with person_logged_in(b):
+            self.assertLoggedIn(b)
+        self.assertLoggedIn(a)
+
+    def test_with_team_logged_in(self):
+        # person_logged_in also works when given teams.
+        team = self.factory.makeTeam()
+        with person_logged_in(team):
+            person = self.getLoggedInPerson()
+        self.assertTrue(person.inTeam(team))
 
 
 def test_suite():

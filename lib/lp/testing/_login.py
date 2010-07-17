@@ -164,7 +164,7 @@ def with_anonymous_login(function):
 def person_logged_in(person):
     current_person = getUtility(ILaunchBag).user
     logout()
-    login_person(person)
+    login_as(person)
     try:
         yield
     finally:
