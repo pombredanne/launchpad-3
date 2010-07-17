@@ -815,7 +815,7 @@ class Archive(SQLBase):
         deps = expand_dependencies(
             self, distro_arch_series.distroseries, pocket, component,
             source_package_name)
-        archive_clause = Or([(
+        archive_clause = Or([And(
             BinaryPackagePublishingHistory.archiveID == archive.id,
             BinaryPackagePublishingHistory.pocket == pocket,
             Component.name.is_in(components))
