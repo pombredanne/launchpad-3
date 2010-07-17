@@ -393,7 +393,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         name, version, relation = self._parseDependencyToken(token)
 
         dep_candidate = self.archive.findDepCandidateByName(
-            self.distro_arch_series, name)
+            self.distro_arch_series, self.pocket, self.current_component,
+            self.source_package_release.sourcepackagename.name, name)
 
         if not dep_candidate:
             return False
