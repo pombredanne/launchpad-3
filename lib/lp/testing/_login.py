@@ -153,8 +153,10 @@ def _with_login(login_method, identifier):
     """Make a context manager that runs with a particular log in."""
     current_person = getUtility(ILaunchBag).user
     login_method(identifier)
-    yield
-    login_person(current_person)
+    try:
+        yield
+    finally:
+        login_person(current_person)
 
 
 @contextmanager
@@ -175,7 +177,7 @@ def celebrity_logged_in(celebrity_name):
 
 def with_celebrity_logged_in(celebrity_name):
     """Decorate a function so that it's run with a celebrity logged in."""
-    return decorate_with(celebrity_logged_in(celebrity_name))
+    return decorate_with(celebrity_logged_in, celebrity_name)
 
 
 def run_with_login(person, function, *args, **kwargs):

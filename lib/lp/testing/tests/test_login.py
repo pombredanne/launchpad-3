@@ -212,6 +212,19 @@ class TestLoginHelpers(TestCaseWithFactory):
             self.assertLoggedIn(b)
         self.assertLoggedIn(a)
 
+    def test_person_logged_in_restores_person_even_when_raises(self):
+        # Once outside of the person_logged_in context, the originially
+        # logged-in person is re-logged in.
+        a = self.factory.makePerson()
+        login_as(a)
+        b = self.factory.makePerson()
+        try:
+            with person_logged_in(b):
+                1/0
+        except ZeroDivisionError:
+            pass
+        self.assertLoggedIn(a)
+
     def test_team_logged_in(self):
         # person_logged_in also works when given teams.
         team = self.factory.makeTeam()
