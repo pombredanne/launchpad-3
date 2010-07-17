@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 
+from doctest import DocTestSuite
 import unittest
 
-from zope.testing.doctest import DocTestSuite
 from zope.interface import implements
 from zope.session.interfaces import ISession, ISessionData
 from zope.app.testing import ztapi, placelesssetup
