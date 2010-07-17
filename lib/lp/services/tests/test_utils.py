@@ -9,7 +9,12 @@ from contextlib import contextmanager
 import itertools
 import unittest
 
-from lp.services.utils import CachingIterator, iter_split, run_with
+from lp.services.utils import (
+    CachingIterator,
+    decorate_with,
+    iter_split,
+    run_with,
+    )
 from lp.testing import TestCase
 
 
@@ -116,6 +121,68 @@ class TestRunWithContextManager(TestCase):
         self.assertRaises(
             ZeroDivisionError,
             run_with, self.trivialContextManager, lambda: 1/0)
+
+
+class TestDecorateWith(TestCase):
+    """Tests for `decorate_with`."""
+
+    def setUp(self):
+        super(TestDecorateWith, self).setUp()
+        self.trivialContextManager = self._trivialContextManager()
+
+    @contextmanager
+    def _trivialContextManager(self):
+        """A trivial context manager, used for testing."""
+        yield
+
+    def test_decorate_with_calls_context(self):
+        # When run, a function decorated with decorated_with runs with the
+        # context given to decorated_with.
+        calls = []
+        @contextmanager
+        def appending_twice():
+            calls.append('before')
+            yield
+            calls.append('after')
+        @decorate_with(appending_twice())
+        def function():
+            pass
+        function()
+        self.assertEquals(['before', 'after'], calls)
+
+    def test_decorate_with_function(self):
+        # The original function is actually called when we call the result of
+        # decoration.
+        calls = []
+        @decorate_with(self.trivialContextManager)
+        def function():
+            calls.append('foo')
+        function()
+        self.assertEquals(['foo'], calls)
+
+    def test_decorate_with_arguments(self):
+        # decorate_with passes through arguments.
+        calls = []
+        @decorate_with(self.trivialContextManager)
+        def function(*args, **kwargs):
+            calls.append((args, kwargs))
+        function('foo', 'bar', qux=4)
+        self.assertEquals([(('foo', 'bar'), {'qux': 4})], calls)
+
+    def test_decorate_with_name_and_docstring(self):
+        # decorate_with preserves function names and docstrings.
+        @decorate_with(self.trivialContextManager)
+        def arbitrary_name():
+            """Arbitrary docstring."""
+        self.assertEqual('arbitrary_name', arbitrary_name.__name__)
+        self.assertEqual('Arbitrary docstring.', arbitrary_name.__doc__)
+
+    def test_decorate_with_returns(self):
+        # decorate_with returns the original function's return value.
+        decorator = decorate_with(self.trivialContextManager)
+        arbitrary_value = self.getUniqueString()
+        result = decorator(lambda: arbitrary_value)()
+        self.assertEqual(arbitrary_value, result)
 
 
 def test_suite():

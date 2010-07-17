@@ -10,6 +10,7 @@ stuff.
 __metaclass__ = type
 __all__ = [
     'CachingIterator',
+    'decorate_with',
     'iter_split',
     'run_with',
     'synchronize',
@@ -20,6 +21,8 @@ __all__ = [
 import itertools
 
 from lazr.enum import BaseItem
+
+from twisted.python.util import mergeFunctionMetadata
 from zope.security.proxy import isinstance as zope_isinstance
 
 
@@ -152,3 +155,13 @@ def run_with(context, function, *args, **kwargs):
     """
     with context:
         return function(*args, **kwargs)
+
+
+def decorate_with(context):
+    """Create a decorator that runs decorated functions with 'context'."""
+    def decorator(function):
+        def decorated(*args, **kwargs):
+            with context:
+                return function(*args, **kwargs)
+        return mergeFunctionMetadata(function, decorated)
+    return decorator
