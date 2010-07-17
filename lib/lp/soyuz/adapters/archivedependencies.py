@@ -12,8 +12,9 @@ records.
 
 Auxiliary functions exposed for testing purposes:
 
- * get_components_for_building: return the corresponding component
-       dependencies for a build, this result is known as 'ogre_components';
+ * get_components_for_context: return the corresponding component
+       dependencies for a component and pocket, this result is known as
+       'ogre_components';
  * get_primary_current_component: return the component name where the
        building source is published in the primary archive.
 
@@ -31,7 +32,7 @@ __all__ = [
     'default_component_dependency_name',
     'default_pocket_dependency',
     'expand_dependencies',
-    'get_components_for_building',
+    'get_components_for_context',
     'get_primary_current_component',
     'get_sources_list_for_building',
     'pocket_dependencies',
@@ -101,15 +102,6 @@ def get_components_for_context(component, pocket):
         return component_dependencies['multiverse']
 
     return component_dependencies[component.name]
-
-
-def get_components_for_building(build):
-    """Return the components allowed to be used for a build.
-
-    :param build: the context `IBuild`.
-    :return: a list of component names.
-    """
-    return get_components_for_context(build.current_component, build.pocket)
 
 
 def get_primary_current_component(archive, distroseries, sourcepackagename):

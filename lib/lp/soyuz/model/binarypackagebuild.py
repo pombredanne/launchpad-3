@@ -50,7 +50,6 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild, PackageBuildDerived)
 from lp.services.job.model.job import Job
-from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus, CannotBeRescored, IBinaryPackageBuild,
