@@ -60,7 +60,6 @@ install:
 	install -m755 buildd-config.py $(target)/usr/bin/buildd-genconfig
 	install -m644 sbuildrc $(targetshare)/sbuildrc
 	install -m644 sbuild.conf $(target)/etc/sbuild.conf
-	install -m644 example.chroot debian/launchpad-buildd/usr/share/doc/launchpad-buildd/
 	install -m755 debian/upgrade-config $(targetshare)/upgrade-config
 	install -m755 check-implicit-pointer-functions $(target)/usr/bin/check-implicit-pointer-functions
 	# Okay, that's installed all the slave-related files
