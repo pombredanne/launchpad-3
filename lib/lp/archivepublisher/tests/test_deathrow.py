@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for deathrow class."""
@@ -9,7 +9,6 @@ __metaclass__ = type
 import os
 import shutil
 import tempfile
-import unittest
 
 from zope.component import getUtility
 
@@ -43,6 +42,7 @@ class TestDeathRow(TestCase):
         """
         pool_path = tempfile.mkdtemp('-pool')
         temp_path = tempfile.mkdtemp('-pool-tmp')
+
         def clean_pool(pool_path, temp_path):
             shutil.rmtree(pool_path)
             shutil.rmtree(temp_path)
@@ -57,8 +57,7 @@ class TestDeathRow(TestCase):
         return diskpool.pathFor(
             pub_file.componentname.encode('utf-8'),
             pub_file.sourcepackagename.encode('utf8'),
-            pub_file.libraryfilealiasfilename.encode('utf-8')
-            )
+            pub_file.libraryfilealiasfilename.encode('utf-8'))
 
     def assertIsFile(self, path):
         """Assert the path exists and is a regular file."""
@@ -145,8 +144,3 @@ class TestDeathRow(TestCase):
 
         self.assertDoesNotExist(main_dsc_path)
         self.assertDoesNotExist(universe_dsc_path)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
