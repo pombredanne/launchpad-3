@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lp.testing import login_person, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 from canonical.testing import DatabaseFunctionalLayer
@@ -121,7 +119,3 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
             self.product, name='+configure-bugtracker', form=form)
         self.assertEqual([], view.errors)
         self.assertFalse(self.product.enable_bug_expiration)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
