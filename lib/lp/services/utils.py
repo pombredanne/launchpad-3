@@ -147,16 +147,6 @@ class CachingIterator:
             yield item
 
 
-def run_with(context, function, *args, **kwargs):
-    """Run 'function' with 'context'.
-
-    Runs the given function with arbitrary arguments and keyword arguments
-    with the given context. Returns the return value of 'function'.
-    """
-    with context:
-        return function(*args, **kwargs)
-
-
 def decorate_with(context_factory, *args, **kwargs):
     """Create a decorator that runs decorated functions with 'context'."""
     def decorator(function):

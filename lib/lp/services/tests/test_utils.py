@@ -73,61 +73,8 @@ class TestCachingIterator(TestCase):
         self.assertEqual([1,2,3,4], list(i1))
 
 
-class TestRunWithContextManager(TestCase):
-    """Tests for `run_with`."""
-
-    def setUp(self):
-        super(TestRunWithContextManager, self).setUp()
-        self.trivialContextManager = self._trivialContextManager()
-
-    @contextmanager
-    def _trivialContextManager(self):
-        """A trivial context manager, used for testing."""
-        yield
-
-    def test_run_with_calls_context(self):
-        # run_with runs with the context that it is passed.
-        calls = []
-        @contextmanager
-        def appending_twice():
-            calls.append('before')
-            yield
-            calls.append('after')
-        run_with(appending_twice(), lambda: None)
-        self.assertEquals(['before', 'after'], calls)
-
-    def test_run_with_calls_function(self):
-        # run_with calls the function that it has been passed.
-        calls = []
-        run_with(self.trivialContextManager, calls.append, 'foo')
-        self.assertEquals(['foo'], calls)
-
-    def test_run_with_passes_through_kwargs(self):
-        # run_with passes through keyword arguments.
-        calls = []
-        def append(*args, **kwargs):
-            calls.append((args, kwargs))
-        run_with(self.trivialContextManager, append, 'foo', 'bar', qux=4)
-        self.assertEquals([(('foo', 'bar'), {'qux': 4})], calls)
-
-    def test_run_with_returns_result(self):
-        # run_with returns the result of the function it's given.
-        arbitrary_value = self.factory.getUniqueString()
-        result = run_with(self.trivialContextManager, lambda: arbitrary_value)
-        self.assertEquals(arbitrary_value, result)
-
-    def test_run_with_bubbles_exceptions(self):
-        # run_with bubbles up exceptions.
-        self.assertRaises(
-            ZeroDivisionError,
-            run_with, self.trivialContextManager, lambda: 1/0)
-
-
 class TestDecorateWith(TestCase):
     """Tests for `decorate_with`."""
-
-    def setUp(self):
-        super(TestDecorateWith, self).setUp()
 
     @contextmanager
     def trivialContextManager(self):
