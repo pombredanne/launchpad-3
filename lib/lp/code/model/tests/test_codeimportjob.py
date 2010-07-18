@@ -1021,8 +1021,6 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
         user_browser = self.getUserBrowser(branch_url)
         self.deleteJob(code_import_id)
-        # user_browser fails when we are logged in.
-        logout()
         user_browser.getControl('Import Now').click()
         self.assertEqual(
             [u'This import is no longer being updated automatically.'],
@@ -1033,8 +1031,6 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
         user_browser = self.getUserBrowser(branch_url)
         self.startJob(code_import_id)
-        # user_browser fails when we are logged in.
-        logout()
         user_browser.getControl('Import Now').click()
         self.assertEqual(
             [u'The import is already running.'],
