@@ -391,15 +391,20 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         """
         name, version, relation = self._parseDependencyToken(token)
 
-        dep_candidate = self.archive.findDepCandidateByName(
+        # There may be several published versions in the available
+        # archives and pockets. If any one of them satisifies our
+        # constraints, the dependency is satisfied.
+        dep_candidates = self.archive.findDepCandidates(
             self.distro_arch_series, self.pocket, self.current_component,
             self.source_package_release.sourcepackagename.name, name)
 
-        if not dep_candidate:
-            return False
+        for dep_candidate in dep_candidates:
+            if self._checkDependencyVersion(
+                dep_candidate.binarypackagerelease.version, version,
+                relation):
+                return True
 
-        return self._checkDependencyVersion(
-            dep_candidate.binarypackagerelease.version, version, relation)
+        return False
 
     def _toAptFormat(self, token):
         """Rebuild dependencies line in apt format."""

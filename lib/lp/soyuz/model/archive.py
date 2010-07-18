@@ -809,8 +809,8 @@ class Archive(SQLBase):
         self.sources_cached = sources_cached.count()
         self.binaries_cached = binaries_cached.count()
 
-    def findDepCandidateByName(self, distro_arch_series, pocket,
-                               component, source_package_name, dep_name):
+    def findDepCandidates(self, distro_arch_series, pocket, component,
+                          source_package_name, dep_name):
         """See `IArchive`."""
         deps = expand_dependencies(
             self, distro_arch_series.distroseries, pocket, component,
@@ -822,7 +822,7 @@ class Archive(SQLBase):
             for (archive, pocket, components) in deps])
 
         store = ISlaveStore(BinaryPackagePublishingHistory)
-        candidate = store.find(
+        return store.find(
             BinaryPackagePublishingHistory,
             BinaryPackageName.name == dep_name,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
@@ -835,7 +835,6 @@ class Archive(SQLBase):
             BinaryPackagePublishingHistory.componentID == Component.id,
             archive_clause).order_by(
                 Desc(BinaryPackagePublishingHistory.id))
-        return candidate.first()
 
     def getArchiveDependency(self, dependency):
         """See `IArchive`."""
