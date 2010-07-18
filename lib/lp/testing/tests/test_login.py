@@ -16,6 +16,7 @@ from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS,
+    anonymous_logged_in,
     celebrity_logged_in,
     is_logged_in,
     login,
@@ -27,6 +28,7 @@ from lp.testing import (
     person_logged_in,
     with_anonymous_login,
     with_celebrity_logged_in,
+    with_person_logged_in,
     )
 from lp.testing import TestCaseWithFactory
 
@@ -204,7 +206,7 @@ class TestLoginHelpers(TestCaseWithFactory):
             self.assertLoggedIn(person)
 
     def test_person_logged_in_restores_person(self):
-        # Once outside of the person_logged_in context, the originially
+        # Once outside of the person_logged_in context, the originally
         # logged-in person is re-logged in.
         a = self.factory.makePerson()
         login_as(a)
@@ -212,6 +214,15 @@ class TestLoginHelpers(TestCaseWithFactory):
         with person_logged_in(b):
             self.assertLoggedIn(b)
         self.assertLoggedIn(a)
+
+    def test_person_logged_in_restores_logged_out(self):
+        # If we are logged out before the person_logged_in context, then we
+        # are logged out afterwards.
+        person = self.factory.makePerson()
+        logout()
+        with person_logged_in(person):
+            pass
+        self.assertLoggedOut()
 
     def test_person_logged_in_restores_person_even_when_raises(self):
         # Once outside of the person_logged_in context, the originially
@@ -257,8 +268,18 @@ class TestLoginHelpers(TestCaseWithFactory):
         @with_celebrity_logged_in('vcs_imports')
         def f():
             return self.getLoggedInPerson()
+        logout()
         person = f()
         self.assertTrue(person.inTeam, vcs_imports)
+
+    def test_with_person_logged_in(self):
+        person = self.factory.makePerson()
+        @with_person_logged_in(person)
+        def f():
+            return self.getLoggedInPerson()
+        logout()
+        logged_in = f()
+        self.assertEqual(person, logged_in)
 
     def test_with_anonymous_log_in(self):
         # with_anonymous_login logs in as the anonymous user.
@@ -267,6 +288,11 @@ class TestLoginHelpers(TestCaseWithFactory):
             return self.getLoggedInPerson()
         person = f()
         self.assertEqual(ANONYMOUS, person)
+
+    def test_anonymous_log_in(self):
+        # anonymous_logged_in is a context logged in as anonymous.
+        with anonymous_logged_in():
+            self.assertLoggedIn(ANONYMOUS)
 
 
 def test_suite():
