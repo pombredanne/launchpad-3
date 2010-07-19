@@ -8,6 +8,7 @@ __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
     'BuildAlreadyPending',
+    'BuildNotAllowedForDistro',
     'BranchMergeProposalExists',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
