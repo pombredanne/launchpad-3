@@ -34,6 +34,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 class TestRecordingSlaves(TrialTestCase):
@@ -858,8 +859,18 @@ class TestNewBuilders(TrialTestCase):
 
     def test_checkForNewBuilders(self):
         # Test that checkForNewBuilders() detects a new builder
+
+        # The basic case, where no builders are added.
         builder_scanner = NewBuildersScanner()
         self.failUnlessIdentical(None, builder_scanner.checkForNewBuilders())
+
+        # Add two builders and ensure they're returned.
+        new_builders = ["scooby", "lassie"]
+        factory = LaunchpadObjectFactory()
+        for builder_name in new_builders:
+            factory.makeBuilder(name=builder_name)
+        self.failUnlessEqual(
+            new_builders, builder_scanner.checkForNewBuilders())
 
 
 class TestBuilddManagerScript(unittest.TestCase):

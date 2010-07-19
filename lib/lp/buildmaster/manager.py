@@ -517,6 +517,8 @@ class NewBuildersScanner:
             # No new builders.
             return None
 
+        return [builder for builder in extra_builders]
+
 
 class BuilddManager(service.Service):
     """Main Buildd Manager service class."""
