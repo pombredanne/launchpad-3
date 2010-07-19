@@ -20,10 +20,10 @@ so on.
 
 == Application homepages ==
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMaloneApplication, IBazaarApplication,
-    ...     ILaunchpadRoot, IQuestionSet
-    ...     )
+    >>> from canonical.launchpad.interfaces.launchpad import IBazaarApplication
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+    >>> from lp.answers.interfaces.questioncollection import IQuestionSet
+    >>> from lp.bugs.interfaces.malone import IMaloneApplication
 
 The Launchpad homepage.
 
