@@ -23,7 +23,8 @@ class TestTranslationsVHostBreadcrumb(BaseBreadcrumbTestCase):
             name='crumb-tester', displayname="Crumb Tester")
         self.assertBreadcrumbs(
             [("Crumb Tester", 'http://launchpad.dev/crumb-tester'),
-             ("Translations", 'http://translations.launchpad.dev/crumb-tester')],
+             ("Translations",
+              'http://translations.launchpad.dev/crumb-tester')],
             product, rootsite='translations')
 
     def test_productseries(self):
@@ -33,7 +34,8 @@ class TestTranslationsVHostBreadcrumb(BaseBreadcrumbTestCase):
         self.assertBreadcrumbs(
             [("Crumb Tester", 'http://launchpad.dev/crumb-tester'),
              ("Series test", 'http://launchpad.dev/crumb-tester/test'),
-             ("Translations", 'http://translations.launchpad.dev/crumb-tester/test')],
+             ("Translations",
+              'http://translations.launchpad.dev/crumb-tester/test')],
             series, rootsite='translations')
 
     def test_distribution(self):
@@ -41,7 +43,8 @@ class TestTranslationsVHostBreadcrumb(BaseBreadcrumbTestCase):
             name='crumb-tester', displayname="Crumb Tester")
         self.assertBreadcrumbs(
             [("Crumb Tester", 'http://launchpad.dev/crumb-tester'),
-             ("Translations", 'http://translations.launchpad.dev/crumb-tester')],
+             ("Translations",
+              'http://translations.launchpad.dev/crumb-tester')],
             distribution, rootsite='translations')
 
     def test_distroseries(self):
@@ -52,7 +55,8 @@ class TestTranslationsVHostBreadcrumb(BaseBreadcrumbTestCase):
         self.assertBreadcrumbs(
             [("Crumb Tester", 'http://launchpad.dev/crumb-tester'),
              ("Test (1.0)", 'http://launchpad.dev/crumb-tester/test'),
-             ("Translations", 'http://translations.launchpad.dev/crumb-tester/test')],
+             ("Translations",
+              'http://translations.launchpad.dev/crumb-tester/test')],
             series, rootsite='translations')
 
     def test_project(self):
@@ -60,7 +64,8 @@ class TestTranslationsVHostBreadcrumb(BaseBreadcrumbTestCase):
             name='crumb-tester', displayname="Crumb Tester")
         self.assertBreadcrumbs(
             [("Crumb Tester", 'http://launchpad.dev/crumb-tester'),
-             ("Translations", 'http://translations.launchpad.dev/crumb-tester')],
+             ("Translations",
+              'http://translations.launchpad.dev/crumb-tester')],
             project, rootsite='translations')
 
     def test_person(self):
@@ -68,7 +73,8 @@ class TestTranslationsVHostBreadcrumb(BaseBreadcrumbTestCase):
             name='crumb-tester', displayname="Crumb Tester")
         self.assertBreadcrumbs(
             [("Crumb Tester", 'http://launchpad.dev/~crumb-tester'),
-             ("Translations", 'http://translations.launchpad.dev/~crumb-tester')],
+             ("Translations",
+              'http://translations.launchpad.dev/~crumb-tester')],
             person, rootsite='translations')
 
 
@@ -77,14 +83,16 @@ class TestTranslationGroupsBreadcrumbs(BaseBreadcrumbTestCase):
     def test_translationgroupset(self):
         group_set = getUtility(ITranslationGroupSet)
         self.assertBreadcrumbs(
-            [("Translation groups", 'http://translations.launchpad.dev/+groups')],
+            [("Translation groups",
+              'http://translations.launchpad.dev/+groups')],
             group_set, rootsite='translations')
 
     def test_translationgroup(self):
         group = self.factory.makeTranslationGroup(
             name='test-translators', title='Test translators')
         self.assertBreadcrumbs(
-            [("Translation groups", 'http://translations.launchpad.dev/+groups'),
+            [("Translation groups",
+              'http://translations.launchpad.dev/+groups'),
              ("Test translators",
               'http://translations.launchpad.dev/+groups/test-translators')],
             group, rootsite='translations')
@@ -111,7 +119,8 @@ class TestSeriesLanguageBreadcrumbs(BaseBreadcrumbTestCase):
              ("Translations",
               "http://translations.launchpad.dev/crumb-tester/test"),
              ("Serbian (sr)",
-              "http://translations.launchpad.dev/crumb-tester/test/+lang/sr")],
+              "http://translations.launchpad.dev/"
+              "crumb-tester/test/+lang/sr")],
             serieslanguage)
 
     def test_productserieslanguage(self):
@@ -129,11 +138,14 @@ class TestSeriesLanguageBreadcrumbs(BaseBreadcrumbTestCase):
              ("Translations",
               "http://translations.launchpad.dev/crumb-tester/test"),
              ("Serbian (sr)",
-              "http://translations.launchpad.dev/crumb-tester/test/+lang/sr")],
+              "http://translations.launchpad.dev/"
+              "crumb-tester/test/+lang/sr")],
             serieslanguage)
 
 
 class TestPOTemplateBreadcrumbs(BaseBreadcrumbTestCase):
+    """Test POTemplate breadcrumbs."""
+
     def test_potemplate(self):
         product = self.factory.makeProduct(
             name='crumb-tester', displayname="Crumb Tester",
@@ -148,7 +160,8 @@ class TestPOTemplateBreadcrumbs(BaseBreadcrumbTestCase):
              ("Translations",
               "http://translations.launchpad.dev/crumb-tester/test"),
              (smartquote('Template "template"'),
-              "http://translations.launchpad.dev/crumb-tester/test/+pots/template")],
+              "http://translations.launchpad.dev/"
+              "crumb-tester/test/+pots/template")],
             potemplate)
 
 

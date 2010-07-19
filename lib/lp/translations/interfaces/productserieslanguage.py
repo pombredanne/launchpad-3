@@ -49,7 +49,6 @@ class IProductSeriesLanguage(IRosettaStats):
     last_changed_date = Datetime(
         title=_('When this file was last changed.'))
 
-
     def getPOFilesFor(potemplates):
         """Return `POFiles` for each of `potemplates`, in the same order.
 
