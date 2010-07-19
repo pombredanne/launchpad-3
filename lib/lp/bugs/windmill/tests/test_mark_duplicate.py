@@ -44,9 +44,12 @@ class TestMarkDuplicate(WindmillTestCase):
         client.waits.forElement(
             xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
 
-        # Initially the form overlay is hidden
+        # Initially the form overlay is hidden...
         client.asserts.assertElemJS(
             xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
+
+        # ...and there is an expandable form for editing bug status, etc.
+        client.asserts.assertNode(classname='bug-status-expand')
 
         # Clicking on the mark duplicate link brings up the formoverlay.
         # Entering 1 as the duplicate ID changes the duplicate text.
@@ -114,6 +117,9 @@ class TestMarkDuplicate(WindmillTestCase):
         # ...we see the same warning about commenting on a duplicate bug
         # as the one we saw before.
         client.asserts.assertNode(id='warning-comment-on-duplicate')
+
+        # Duplicate pages also do not have the expandable form on them.
+        client.asserts.assertNotNode(classname='bug-status-expand')
 
         # Once we remove the duplicate mark...
         client.click(id=u'change_duplicate_bug')
