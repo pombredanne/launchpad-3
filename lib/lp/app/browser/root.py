@@ -1,6 +1,5 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
 """Browser code for the Launchpad root page."""
 
 __metaclass__ = type
@@ -49,7 +48,6 @@ from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductSet
-
 
 
 shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
@@ -134,7 +132,6 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
         """The total blueprint count in all of Launchpad."""
         return getUtility(ILaunchpadStatisticSet).value('question_count')
 
-
     def getRecentBlogPosts(self):
         """Return the parsed feed of the most recent blog posts.
 
@@ -169,7 +166,6 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
                 'date': time.strftime('%d %b %Y', entry.updated_parsed),
                 })
         return posts
-
 
 
 class LaunchpadSearchFormView(LaunchpadView):
