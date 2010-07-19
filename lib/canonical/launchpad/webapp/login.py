@@ -1,8 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from __future__ import with_statement
-
 """Stuff to do with logging in and logging out."""
+
+from __future__ import with_statement
 
 __metaclass__ = type
 
