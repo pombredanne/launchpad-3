@@ -165,36 +165,41 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         self.assertNotIn('last_write', ISession(view.request)['lp.dbpolicy'])
 
     def test_redirect_logic(self):
-        # the starting_url can either be in the request.form values (in the
+        # The starting_url can either be in the request.form values (in the
         # case of a GET) or in the query string (in the case of a POST).  The
         # OpenIDCallbackView._redirect method pulls it out and redirects to
         # it.
         APPLICATION_URL = 'http://example.com'
-        request = LaunchpadTestRequest(SERVER_URL=APPLICATION_URL)
-#        class FakeRequest:
-#            form = {}
-#            query_string_params = {}
-#            def getApplicationURL(self):
-#                return APPLICATION_URL
+        STARTING_URL = APPLICATION_URL + '/start'
+        view = OpenIDCallbackView(context=None, request=None)
 
-#            @property
-#            def response(self):
-#                class FakeResponse:
-#                    def
-
-#        request = FakeRequest()
-        response = view.request.response
-        view = OpenIDCallbackView(object(), request)
+        # If the request was a POST or GET with no form or query string values
+        # at all, then the application URL is used.
+        view.request = LaunchpadTestRequest(SERVER_URL=APPLICATION_URL)
         view._redirect()
+        self.assertEquals(
+            httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
+        self.assertEquals(
+            view.request.response.getHeader('Location'), APPLICATION_URL)
 
-        # if there is no starting_url in the .form or .query_string_params
-        # attributes, then the application URL is used.
-        self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
-        self.assertEquals(response.getHeader('Location'), APPLICATION_URL)
+        # If the request was a GET, the starting_url is extracted correctly.
+        view.request = LaunchpadTestRequest(
+            SERVER_URL=APPLICATION_URL, form={'starting_url': STARTING_URL})
+        view._redirect()
+        self.assertEquals(
+            httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
+        self.assertEquals(
+            view.request.response.getHeader('Location'), STARTING_URL)
 
-
-#        request = LaunchpadTestRequest(SERVER_URL=APPLICATION_URL,
-#            QUERY_STRING='a=1&b=2&c=3')
+        # If the request was a POST, the starting_url is extracted correctly.
+        view.request = LaunchpadTestRequest(
+            SERVER_URL=APPLICATION_URL, form={'fake': 'value'},
+            QUERY_STRING='starting_url='+STARTING_URL)
+        view._redirect()
+        self.assertEquals(
+            httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
+        self.assertEquals(
+            view.request.response.getHeader('Location'), STARTING_URL)
 
     def test_gather_params(self):
         # If the currently requested URL includes a query string, the
@@ -236,13 +241,14 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             environ={'PATH_INFO': '/'})
         view = FakeConsumerOpenIDCallbackView(object(), request)
         view.initialize()
-        params = view.fake_consumer.params
-        requested_url = view.fake_consumer.requested_url
-        self.assertEquals(params, {
+        self.assertEquals(
+            view.fake_consumer.params,
+            {
                 'starting_url': 'http://launchpad.dev/after-login',
                 'foo': 'bar',
             })
-        self.assertEquals(requested_url,'http://example.com?foo=bar')
+        self.assertEquals(
+            view.fake_consumer.requested_url,'http://example.com?foo=bar')
 
     def test_personless_account(self):
         # When there is no Person record associated with the account, we

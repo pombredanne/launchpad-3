@@ -417,6 +417,8 @@ class OpenIDCallbackView(OpenIDLogin):
             target = self.request.query_string_params.get('starting_url')
             if target is None:
                 target = self.request.getApplicationURL()
+            else:
+                target = target[0]
         self.request.response.redirect(target, temporary_if_possible=True)
 
 
