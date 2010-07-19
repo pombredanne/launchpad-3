@@ -850,11 +850,17 @@ class TestNewBuilders(TrialTestCase):
         builder_scanner.scheduleScan()
 
         def failed_scan():
-            self.fail("scheduleScan did not get called")
+            self.fail("scheduleScan did not schedule anything")
 
         # If scheduleScan does its job, it will cancel this callback
-        # that will fail the test.
+        # that is going fail the test.
         failure_callback = reactor.callLater(0, failed_scan)
+
+    def test_checkForNewBuilders(self):
+        # Test that checkForNewBuilders() detects a new builder
+        builder_scanner = NewBuildersScanner()
+        self.failUnlessIdentical(None, builder_scanner.checkForNewBuilders())
+
 
 class TestBuilddManagerScript(unittest.TestCase):
 

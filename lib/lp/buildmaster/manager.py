@@ -502,8 +502,20 @@ class NewBuildersScanner:
         """Schedule a callback SCAN_INTERVAL seconds later."""
         reactor.callLater(self.SCAN_INTERVAL, self.scan)
 
-    #def scan
+    def scan(self):
+        # XXX stub
+        pass
 
+    def checkForNewBuilders(self):
+        """See if any new builders were added."""
+        # Avoid circular import.
+        from lp.buildmaster.interfaces.builder import IBuilderSet
+        new_builders = set(builder.name for builder in getUtility(IBuilderSet))
+        old_builders = set(self.current_builders)
+        extra_builders = new_builders.difference(old_builders)
+        if len(extra_builders) == 0:
+            # No new builders.
+            return None
 
 
 class BuilddManager(service.Service):
