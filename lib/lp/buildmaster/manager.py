@@ -486,6 +486,20 @@ class SlaveScanner:
         return self.fail_result(slave, info)
 
 
+class NewBuildersScanner:
+    """If new builders appear, create a scanner for them."""
+
+    # How often to check for new builders, in seconds.
+    SCAN_INTERVAL = 300
+
+    def __init__(self):
+        # Avoid circular import.
+        from lp.buildmaster.interfaces.builder import IBuilderSet
+        self.current_builders = [
+            builder.name for builder in getUtility(IBuilderSet)]
+
+
+
 class BuilddManager(service.Service):
     """Main Buildd Manager service class."""
 
