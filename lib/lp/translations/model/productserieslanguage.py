@@ -12,14 +12,9 @@ __all__ = [
 
 from zope.interface import implements
 
-from storm.expr import Coalesce, Sum
-from storm.store import Store
-
 from lp.translations.utilities.rosettastats import RosettaStats
-from lp.translations.model.pofile import DummyPOFile, POFile
-from lp.translations.model.potemplate import get_pofiles_for, POTemplate
+from lp.translations.model.potemplate import get_pofiles_for
 from lp.translations.model.translatedlanguage import TranslatedLanguageMixin
-from lp.translations.interfaces.translations import ITranslatedLanguage
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage, IProductSeriesLanguageSet)
 
@@ -40,16 +35,6 @@ class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
         self.pofile = pofile
         self.id = 0
         self.last_changed_date = None
-
-    def _getMessageCount(self):
-        store = Store.of(self.language)
-        query = store.find(Sum(POTemplate.messagecount),
-                           POTemplate.productseries==self.productseries,
-                           POTemplate.iscurrent==True)
-        total, = query
-        if total is None:
-            total = 0
-        return total
 
     @property
     def title(self):
