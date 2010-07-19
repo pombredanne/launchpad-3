@@ -831,10 +831,30 @@ class TestNewBuilders(TrialTestCase):
     layer = LaunchpadZopelessLayer
 
     def test_init_stores_existing_builders(self):
+        # Make sure that NewBuildersScanner initialises itself properly
+        # by storing a list of existing builders.
         all_builders = [builder.name for builder in getUtility(IBuilderSet)]
         builder_scanner = NewBuildersScanner()
         self.assertEqual(all_builders, builder_scanner.current_builders)
 
+    def test_scheduleScan(self):
+        # Test that scheduleScan calls the "scan" method.
+        builder_scanner = NewBuildersScanner()
+        builder_scanner.SCAN_INTERVAL = 0
+        failure_callback = None
+
+        def fake_scan():
+            failure_callback.cancel()
+
+        builder_scanner.scan = fake_scan
+        builder_scanner.scheduleScan()
+
+        def failed_scan():
+            self.fail("scheduleScan did not get called")
+
+        # If scheduleScan does its job, it will cancel this callback
+        # that will fail the test.
+        failure_callback = reactor.callLater(0, failed_scan)
 
 class TestBuilddManagerScript(unittest.TestCase):
 

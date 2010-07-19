@@ -498,6 +498,12 @@ class NewBuildersScanner:
         self.current_builders = [
             builder.name for builder in getUtility(IBuilderSet)]
 
+    def scheduleScan(self):
+        """Schedule a callback SCAN_INTERVAL seconds later."""
+        reactor.callLater(self.SCAN_INTERVAL, self.scan)
+
+    #def scan
+
 
 
 class BuilddManager(service.Service):
