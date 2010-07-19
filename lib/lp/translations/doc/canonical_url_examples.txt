@@ -50,13 +50,13 @@ name.
 
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> canonical_url(potemplate)
-    u'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
+    u'http://translations.../hoary/+source/evolution/+pots/evolution-2.2'
 
 And we can get a particular PO file for this PO template by its language code.
 
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> canonical_url(pofile)
-    u'http://translations.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
+    u'http://translations.../hoary/+source/evolution/+pots/evolution-2.2/es'
 
 Also, we can get the url to a translation message.
 
@@ -65,7 +65,7 @@ Also, we can get the url to a translation message.
     ...     pofile.potemplate, pofile.language)
     >>> translationmessage.setPOFile(pofile)
     >>> print canonical_url(translationmessage)
-    http://translations.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1
+    http://transl.../hoary/+source/evolution/+pots/evolution-2.2/es/1
 
 Even for a dummy one.
 
@@ -73,7 +73,7 @@ Even for a dummy one.
     >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
     ...     pofile.potemplate, pofile.language)
     >>> print canonical_url(translationmessage)
-    http://translations.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20
+    http://transl.../hoary/+source/evolution/+pots/evolution-2.2/es/20
 
 Upstream POTemplateSubsets work in much the same way, except they hang off a
 product series.  Let's get a product series.

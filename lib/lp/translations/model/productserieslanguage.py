@@ -12,7 +12,7 @@ __all__ = [
 
 from zope.interface import implements
 
-from storm.expr import Sum
+from storm.expr import Coalesce, Sum
 from storm.store import Store
 
 from lp.translations.utilities.rosettastats import RosettaStats
@@ -94,7 +94,7 @@ class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
 class ProductSeriesLanguageSet:
     """See `IProductSeriesLanguageSet`.
 
-    Provides a means to get a ProductSeriesLanguage or create a dummy.
+    Provides a means to get a ProductSeriesLanguage.
     """
     implements(IProductSeriesLanguageSet)
 

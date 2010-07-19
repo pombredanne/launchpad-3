@@ -155,6 +155,7 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         potemplate = self.createPOTemplateWithPOTMsgSets(10)
         psl = self.psl_set.getProductSeriesLanguage(
             self.productseries, self.language)
+        psl.recalculateCounts()
         self.assertPSLStatistics(
             psl, (10, 0, 0, 0, 0, 0, None))
 
