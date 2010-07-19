@@ -16,7 +16,7 @@ from storm.expr import Coalesce, Sum
 from storm.store import Store
 
 from lp.translations.utilities.rosettastats import RosettaStats
-from lp.translations.model.pofile import DummyPOFile, POFile
+from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import get_pofiles_for, POTemplate
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage, IProductSeriesLanguageSet)
@@ -53,7 +53,6 @@ class ProductSeriesLanguage(RosettaStats):
         self._unreviewed_count = unreviewed
         if last_changed is not None:
             self._last_changed_date = last_changed
-
 
     def _getMessageCount(self):
         store = Store.of(self.language)
