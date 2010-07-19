@@ -1195,14 +1195,14 @@
     </facet>
   <securedutility
     name="BuildableDistroSeries"
-    component="lp.code.browser.sourcepackagerecipe.buildable_distroseries_vocabulary"
+    component="lp.code.vocabularies.sourcepackagerecipe.buildable_distroseries_vocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
   <securedutility
     name="TargetPPAs"
-    component="lp.code.browser.sourcepackagerecipe.target_ppas_vocabulary"
+    component="lp.code.vocabularies.sourcepackagerecipe.target_ppas_vocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
