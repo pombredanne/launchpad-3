@@ -57,8 +57,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
     def test_cancel_build(self):
         """An admin can cancel a build."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
-        build = self.makeRecipeBuild()
-        build.queueBuild(build)
+        queue = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue.specific_job.build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -83,7 +83,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_cancel_build_not_admin(self):
         """No one but admins can cancel a build."""
-        build = self.makeRecipeBuild()
+        queue = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue.specific_job.build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -109,8 +110,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
     def test_rescore_build(self):
         """An admin can rescore a build."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
-        build = self.makeRecipeBuild()
-        build.queueBuild(build)
+        queue = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue.specific_job.build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -138,8 +139,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
     def test_rescore_build_invalid_score(self):
         """Build scores can only take numbers."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
-        build = self.makeRecipeBuild()
-        build.queueBuild(build)
+        queue = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue.specific_job.build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -162,8 +163,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_rescore_build_not_admin(self):
         """No one but admins can rescore a build."""
-        build = self.makeRecipeBuild()
-        build.queueBuild(build)
+        queue = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue.specific_job.build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
