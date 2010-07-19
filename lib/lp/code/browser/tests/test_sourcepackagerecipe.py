@@ -21,9 +21,9 @@ from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
-    SourcePackageRecipeView, SourcePackageRecipeRequestBuildsView,
-    SourcePackageRecipeBuildView
-)
+    SourcePackageRecipeView, SourcePackageRecipeRequestBuildsView)
+from lp.code.browser.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuildView)
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily

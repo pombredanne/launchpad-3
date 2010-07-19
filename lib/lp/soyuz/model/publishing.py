@@ -1266,7 +1266,7 @@ class PublishingSet:
         return Store.of(archive).find(
             baseclass,
             baseclass.id == id,
-            baseclass.archive == archive.id)
+            baseclass.archive == archive.id).one()
 
     def _extractIDs(self, one_or_more_source_publications):
         """Return a list of database IDs for the given list or single object.

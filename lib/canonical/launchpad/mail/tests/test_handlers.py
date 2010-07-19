@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import unittest
 
-from zope.testing.doctest import DocTestSuite
+from doctest import DocTestSuite
 
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import MaloneHandler

@@ -287,8 +287,8 @@
                 button.style.display = 'none';
               </script>
               <script type="text/javascript">
-                LPS.use('lp.comment', function(Y) {
-                    var comment = new Y.lp.Comment();
+                LPS.use('lp.app.comment', function(Y) {
+                    var comment = new Y.lp.app.comment.Comment();
                     comment.render();
                 });
               </script>
