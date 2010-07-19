@@ -213,8 +213,10 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
         if build.archive.enabled == True:
             build.archive.disable()
 
-    # We want the external dependency lines to show up second: after the
-    # archive itself, but before any other dependencies.
+    # For an unknown reason (perhaps because OEM has archives with
+    # binaries that need to override primary binaries of the same
+    # version), we want the external dependency lines to show up second:
+    # after the archive itself, but before any other dependencies.
     return [sources_list_lines[0]] + external_dep_lines + \
            sources_list_lines[1:]
 
