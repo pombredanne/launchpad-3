@@ -256,11 +256,6 @@
                     retractMentoring"/>
         </class>
         <adapter
-            provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-            for="lp.bugs.interfaces.bugtask.IBugTask"
-            factory="lp.bugs.browser.bugtask.BugTaskSOP"
-            permission="zope.Public"/>
-        <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskPrivacyAdapter"
@@ -661,7 +656,8 @@
                     users_affected_with_dupes
                     bug_messages
                     isUserAffected
-                    getHWSubmissions"/>
+                    getHWSubmissions
+                    isExpirable"/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -968,18 +964,6 @@
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
-
-    <!-- CalculateBugHeatJobs -->
-    <class class="lp.bugs.model.bugheat.CalculateBugHeatJob">
-        <allow interface="lp.bugs.interfaces.bugjob.IBugJob" />
-        <allow interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJob"/>
-    </class>
-    <securedutility
-        component="lp.bugs.model.bugheat.CalculateBugHeatJob"
-        provides="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource">
-        <allow
-            interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource"/>
-    </securedutility>
 
     <!-- ProcessApportBlobJobs -->
     <class class="lp.bugs.model.apportjob.ProcessApportBlobJob">

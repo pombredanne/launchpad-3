@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'SourcePackageRecipeAddView',
-    'SourcePackageRecipeBuildView',
     'SourcePackageRecipeContextMenu',
     'SourcePackageRecipeEditView',
     'SourcePackageRecipeNavigationMenu',
@@ -29,7 +28,6 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import Hierarchy
-from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
@@ -39,19 +37,18 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.errors import ForbiddenInstruction
+from lp.code.errors import BuildAlreadyPending
 from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
+    ISourcePackageRecipeBuildSource)
 from lp.soyuz.browser.archive import make_archive_vocabulary
 from lp.soyuz.interfaces.archive import (
     IArchiveSet)
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.job.interfaces.job import JobStatus
 
 RECIPE_BETA_MESSAGE = structured(
     'We\'re still working on source package recipes. '
@@ -193,6 +190,7 @@ def buildable_distroseries_vocabulary(context):
     terms.reverse()
     return SimpleVocabulary(terms)
 
+
 def target_ppas_vocabulary(context):
     """Return a vocabulary of ppas that the current user can target."""
     ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
@@ -232,10 +230,8 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     label = title
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         return canonical_url(self.context)
-
-    cancel_url = next_url
 
     def validate(self, data):
         over_quota_distroseries = []
@@ -252,72 +248,18 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     def request_action(self, action, data):
         """User action for requesting a number of builds."""
         for distroseries in data['distros']:
-            self.context.requestBuild(
-                data['archive'], self.user, distroseries,
-                PackagePublishingPocket.RELEASE, manual=True)
+            try:
+                self.context.requestBuild(
+                    data['archive'], self.user, distroseries,
+                    PackagePublishingPocket.RELEASE, manual=True)
+            except BuildAlreadyPending, e:
+                self.setFieldError(
+                    'distros',
+                    'An identical build is already pending for %s.' %
+                    e.distroseries)
+                return
+        self.next_url = self.cancel_url
 
-
-class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
-
-    usedfor = ISourcePackageRecipeBuild
-
-
-class SourcePackageRecipeBuildView(LaunchpadView):
-    """Default view of a SourcePackageRecipeBuild."""
-
-    @property
-    def status(self):
-        """A human-friendly status string."""
-        if (self.context.buildstate == BuildStatus.NEEDSBUILD
-            and self.eta is None):
-            return 'No suitable builders'
-        return {
-            BuildStatus.NEEDSBUILD: 'Pending build',
-            BuildStatus.FULLYBUILT: 'Successful build',
-            BuildStatus.MANUALDEPWAIT: (
-                'Could not build because of missing dependencies'),
-            BuildStatus.CHROOTWAIT: (
-                'Could not build because of chroot problem'),
-            BuildStatus.SUPERSEDED: (
-                'Could not build because source package was superseded'),
-            BuildStatus.FAILEDTOUPLOAD: 'Could not be uploaded correctly',
-            }.get(self.context.buildstate, self.context.buildstate.title)
-
-    @property
-    def eta(self):
-        """The datetime when the build job is estimated to complete.
-
-        This is the BuildQueue.estimated_duration plus the
-        Job.date_started or BuildQueue.getEstimatedJobStartTime.
-        """
-        if self.context.buildqueue_record is None:
-            return None
-        queue_record = self.context.buildqueue_record
-        if queue_record.job.status == JobStatus.WAITING:
-            start_time = queue_record.getEstimatedJobStartTime()
-            if start_time is None:
-                return None
-        else:
-            start_time = queue_record.job.date_started
-        duration = queue_record.estimated_duration
-        return start_time + duration
-
-    @property
-    def date(self):
-        """The date when the build completed or is estimated to complete."""
-        if self.estimate:
-            return self.eta
-        return self.context.datebuilt
-
-    @property
-    def estimate(self):
-        """If true, the date value is an estimate."""
-        if self.context.datebuilt is not None:
-            return False
-        return self.eta is not None
-
-    def binary_builds(self):
-        return list(self.context.binary_builds)
 
 
 class ISourcePackageAddEditSchema(Interface):
@@ -327,7 +269,10 @@ class ISourcePackageAddEditSchema(Interface):
         'name',
         'description',
         'owner',
+        'build_daily'
         ])
+    daily_build_archive = Choice(vocabulary='TargetPPAs',
+        title=u'Daily build archive')
     distros = List(
         Choice(vocabulary='BuildableDistroSeries'),
         title=u'Default Distribution series')
@@ -336,10 +281,16 @@ class ISourcePackageAddEditSchema(Interface):
         description=u'The text of the recipe.')
 
 
+
 class RecipeTextValidatorMixin:
     """Class to validate that the Source Package Recipe text is valid."""
 
     def validate(self, data):
+        if data['build_daily']:
+            if len(data['distros']) == 0:
+                self.setFieldError(
+                    'distros',
+                    'You must specify at least one series for daily builds.')
         try:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
@@ -367,7 +318,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     def initial_values(self):
         return {
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
-            'owner': self.user}
+            'owner': self.user,
+            'build_daily': False}
 
     @property
     def cancel_url(self):
@@ -381,7 +333,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
             source_package_recipe = getUtility(
                 ISourcePackageRecipeSource).new(
                     self.user, self.user, data['name'], recipe,
-                    data['description'], data['distros'])
+                    data['description'], data['distros'],
+                    data['daily_build_archive'], data['build_daily'])
         except ForbiddenInstruction:
             # XXX: bug=592513 We shouldn't be hardcoding "run" here.
             self.setFieldError(

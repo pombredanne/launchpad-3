@@ -4,10 +4,10 @@
 __metaclass__ = type
 
 
+from doctest import DocTestSuite
 import unittest
 
 from zope.security.proxy import removeSecurityProxy
-from zope.testing.doctest import DocTestSuite
 
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person
 from canonical.launchpad.testing.systemdocs import (
@@ -245,8 +245,8 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
             self.bug.default_bugtask, LaunchpadTestRequest())
         view.initialize()
         self.assertEqual(
-            ['New', 'Incomplete', 'Invalid', 'Confirmed', 'In Progress',
-             'Fix Committed', 'Fix Released'],
+            ['New', 'Incomplete', 'Opinion', 'Invalid', 'Confirmed',
+             'In Progress', 'Fix Committed', 'Fix Released'],
             self.getWidgetOptionTitles(view.form_fields['status']))
 
     def test_status_field_privileged_persons(self):
@@ -260,8 +260,9 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
                 self.bug.default_bugtask, LaunchpadTestRequest())
             view.initialize()
             self.assertEqual(
-                ['New', 'Incomplete', 'Invalid', "Won't Fix", 'Confirmed',
-                 'Triaged', 'In Progress', 'Fix Committed', 'Fix Released'],
+                ['New', 'Incomplete', 'Opinion', 'Invalid', "Won't Fix",
+                 'Confirmed', 'Triaged', 'In Progress', 'Fix Committed',
+                 'Fix Released'],
                 self.getWidgetOptionTitles(view.form_fields['status']),
                 'Unexpected set of settable status options for %s'
                 % user.name)
@@ -278,8 +279,8 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
             self.bug.default_bugtask, LaunchpadTestRequest())
         view.initialize()
         self.assertEqual(
-            ['New', 'Incomplete', 'Invalid', 'Confirmed', 'In Progress',
-             'Fix Committed', 'Fix Released', 'Unknown'],
+            ['New', 'Incomplete', 'Opinion', 'Invalid', 'Confirmed',
+             'In Progress', 'Fix Committed', 'Fix Released', 'Unknown'],
             self.getWidgetOptionTitles(view.form_fields['status']))
 
     def test_status_field_bug_task_in_status_expired(self):
@@ -292,8 +293,8 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
             self.bug.default_bugtask, LaunchpadTestRequest())
         view.initialize()
         self.assertEqual(
-            ['New', 'Incomplete', 'Invalid', 'Expired', 'Confirmed',
-             'In Progress', 'Fix Committed', 'Fix Released'],
+            ['New', 'Incomplete', 'Opinion', 'Invalid', 'Expired',
+             'Confirmed', 'In Progress', 'Fix Committed', 'Fix Released'],
             self.getWidgetOptionTitles(view.form_fields['status']))
 
 

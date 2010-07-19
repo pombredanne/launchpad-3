@@ -1142,6 +1142,15 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     usedfor = ICodeImportMachine
 
 
+class DeleteSourcePackageRecipeBuilds(OnlyBazaarExpertsAndAdmins):
+    """Control who can delete SourcePackageRecipeBuilds.
+
+    Access is restricted to members of ~bazaar-experts and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ISourcePackageRecipeBuild
+
+
 class AdminDistributionTranslations(AuthorizationBase):
     """Class for deciding who can administer distribution translations.
 
@@ -2060,6 +2069,10 @@ class ViewArchive(AuthorizationBase):
             if archive_subs:
                 return True
 
+        # The software center agent can view commercial archives
+        if self.obj.commercial:
+            return user.in_software_center_agent
+
         return False
 
     def checkUnauthenticated(self):
@@ -2097,6 +2110,10 @@ class AppendArchive(AuthorizationBase):
             self.obj.distribution == celebrities.ubuntu and
             user.in_ubuntu_security):
             return True
+
+        # The software center agent can change commercial archives
+        if self.obj.commercial:
+            return user.in_software_center_agent
 
         return False
 

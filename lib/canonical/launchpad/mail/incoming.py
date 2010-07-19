@@ -7,12 +7,15 @@
 
 __metaclass__ = type
 
-from logging import getLogger
 from cStringIO import StringIO as cStringIO
 from email.utils import getaddresses, parseaddr
 import email.errors
+import logging
 import re
 import sys
+
+import dkim
+import dns.exception
 
 import transaction
 from zope.component import getUtility
@@ -65,6 +68,77 @@ class InactiveAccount(Exception):
     """The account for the person sending this email is inactive."""
 
 
+def extract_address_domain(address):
+    realname, email_address = email.utils.parseaddr(address)
+    return email_address.split('@')[1]
+
+
+_trusted_dkim_domains = [
+    'gmail.com', 'google.com', 'mail.google.com', 'canonical.com']
+
+
+def _isDkimDomainTrusted(domain):
+    # Really this should come from a dynamically-modifiable
+    # configuration, but we don't have such a thing yet.
+    #
+    # Being listed here means that we trust the domain not to be an open relay
+    # or to allow arbitrary intra-domain spoofing.
+    return domain in _trusted_dkim_domains
+
+
+def _authenticateDkim(signed_message):
+    """"Attempt DKIM authentication of email; return True if known authentic
+
+    :param signed_message: ISignedMessage
+    """
+
+    log = logging.getLogger('mail-authenticate-dkim')
+    log.setLevel(logging.DEBUG)
+    # uncomment this for easier test debugging
+    # log.addHandler(logging.FileHandler('/tmp/dkim.log'))
+
+    dkim_log = cStringIO()
+    log.info('Attempting DKIM authentication of message %s from %s'
+        % (signed_message['Message-ID'], signed_message['From']))
+    signing_details = []
+    try:
+        # NB: if this fails with a keyword argument error, you need the
+        # python-dkim 0.3-3.2 that adds it
+        dkim_result = dkim.verify(
+            signed_message.parsed_string, dkim_log, details=signing_details)
+    except dkim.DKIMException, e:
+        log.warning('DKIM error: %r' % (e,))
+        dkim_result = False
+    except dns.exception.DNSException, e:
+        # many of them have lame messages, thus %r
+        log.warning('DNS exception: %r' % (e,))
+        dkim_result = False
+    else:
+        log.info('DKIM verification result=%s' % (dkim_result,))
+    log.debug('DKIM debug log: %s' % (dkim_log.getvalue(),))
+    if not dkim_result:
+        return False
+    # in addition to the dkim signature being valid, we have to check that it
+    # was actually signed by the user's domain.
+    if len(signing_details) != 1:
+        log.errors(
+            'expected exactly one DKIM details record: %r'
+            % (signing_details,))
+        return False
+    signing_domain = signing_details[0]['d']
+    from_domain = extract_address_domain(signed_message['From'])
+    if signing_domain != from_domain:
+        log.warning("DKIM signing domain %s doesn't match From address %s; "
+            "disregarding signature"
+            % (signing_domain, from_domain))
+        return False
+    if not _isDkimDomainTrusted(signing_domain):
+        log.warning("valid DKIM signature from untrusted domain %s" 
+            % (signing_domain,))
+        return False
+    return True
+
+
 def authenticateEmail(mail):
     """Authenticates an email by verifying the PGP signature.
 
@@ -88,6 +162,17 @@ def authenticateEmail(mail):
     if person.account_status != AccountStatus.ACTIVE:
         raise InactiveAccount(
             "Mail from a user with an inactive account.")
+
+    dkim_result = _authenticateDkim(mail)
+
+    if dkim_result:
+        if mail.signature is not None:
+            log = logging.getLogger('process-mail')
+            log.info('message has gpg signature, therefore not treating DKIM '
+                'success as conclusive')
+        else:
+            setupInteraction(principal, email_addr)
+            return principal
 
     if signature is None:
         # Mark the principal so that application code can check that the
@@ -184,7 +269,7 @@ def handleMail(trans=transaction):
             mail['From'], 'Submit Request Failure', str(error), mail)
         trans.commit()
 
-    log = getLogger('process-mail')
+    log = logging.getLogger('process-mail')
     mailbox = getUtility(IMailBox)
     log.info("Opening the mail box.")
     mailbox.open()
@@ -224,7 +309,7 @@ def handleMail(trans=transaction):
                     mail = signed_message_from_string(raw_mail)
                 except email.Errors.MessageError, error:
                     mailbox.delete(mail_id)
-                    log = getLogger('canonical.launchpad.mail')
+                    log = logging.getLogger('canonical.launchpad.mail')
                     log.warn(
                         "Couldn't convert email to email.Message: %s" % (
                             file_alias_url, ),
@@ -329,7 +414,7 @@ def handleMail(trans=transaction):
                 # from being processed.
                 _handle_error(
                     "Unhandled exception", file_alias_url)
-                log = getLogger('canonical.launchpad.mail')
+                log = logging.getLogger('canonical.launchpad.mail')
                 if file_alias_url is not None:
                     email_info = file_alias_url
                 else:
