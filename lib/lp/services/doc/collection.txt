@@ -16,7 +16,7 @@ them.
     >>> from storm.locals import Count, Int, Storm
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
- 
+
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
     >>> ok = store.execute("CREATE TEMP TABLE Kumquat(id integer UNIQUE)")
     >>> class Kumquat(Storm):
@@ -30,7 +30,8 @@ them.
     >>> obj = store.add(Kumquat(1))
     >>> obj = store.add(Kumquat(2))
 
-A custom KumquatCollection class derives from Kumquat.
+A custom KumquatCollection class derives from Collection.  The
+starting_table attribute tells Collection what it is a collection of.
 
     >>> from lp.services.database.collection import Collection
     >>> class KumquatCollection(Collection):
@@ -41,6 +42,11 @@ yet until you invoke the "select" method, which returns a Storm result
 set.
 
     >>> collection = KumquatCollection()
+    >>> print list(collection.select().order_by(Kumquat.id))
+    [Kumquat-1, Kumquat-2]
+
+Actually, select() is just shorthand for select(Kumquat).
+
     >>> print list(collection.select(Kumquat).order_by(Kumquat.id))
     [Kumquat-1, Kumquat-2]
 

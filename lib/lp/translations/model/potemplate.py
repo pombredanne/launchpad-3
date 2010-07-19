@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -92,16 +92,15 @@ standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
 '''
 
 standardTemplateHeader = (
-"Project-Id-Version: %(origin)s\n"
-"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: %(templatedate)s\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: %(languagename)s <%(languagecode)s@li.org>\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-)
+    "Project-Id-Version: %(origin)s\n"
+    "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+    "POT-Creation-Date: %(templatedate)s\n"
+    "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+    "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+    "Language-Team: %(languagename)s <%(languagecode)s@li.org>\n"
+    "MIME-Version: 1.0\n"
+    "Content-Type: text/plain; charset=UTF-8\n"
+    "Content-Transfer-Encoding: 8bit\n")
 
 
 standardPOFileHeader = (standardTemplateHeader +
@@ -1380,7 +1379,6 @@ class POTemplateSharingSubset(object):
         self.sourcepackagename = sourcepackagename
         self.product = product
 
-
     def _get_potemplate_equivalence_class(self, template):
         """Return whatever we group `POTemplate`s by for sharing purposes."""
         if template.sourcepackagename is None:
@@ -1535,11 +1533,7 @@ class HasTranslationTemplatesMixin:
         return result.order_by(Desc(POTemplate.priority), POTemplate.name)
 
     def getCurrentTemplatesCollection(self, current_value=True):
-        """Get collection of current templates.
-
-        Ignores current templates on products or distributions that have
-        not enabled translation.
-        """
+        """See `IHasTranslationTemplates`."""
         collection = self.getTemplatesCollection()
 
         # XXX JeroenVermeulen 2010-07-15 bug=605924: Move the
@@ -1564,9 +1558,14 @@ class HasTranslationTemplatesMixin:
         return self._orderTemplates(collection.select(selection))
 
     @property
+    def has_translation_templates(self):
+        """See `IHasTranslationTemplates`."""
+        return bool(self.getTranslationTemplates().any())
+
+    @property
     def has_current_translation_templates(self):
         """See `IHasTranslationTemplates`."""
-        return bool(self.getCurrentTranslationTemplates().any())
+        return bool(self.getCurrentTranslationTemplates(just_ids=True).any())
 
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
@@ -1587,8 +1586,7 @@ class HasTranslationTemplatesMixin:
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
-        return self._orderTemplates(
-            self.getTemplatesCollection().select(POTemplate))
+        return self._orderTemplates(self.getTemplatesCollection().select())
 
     def getTranslationTemplateFormats(self):
         """See `IHasTranslationTemplates`."""
