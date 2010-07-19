@@ -54,7 +54,7 @@ blog:
     Three tips from Leonard...
     New Launchpad Bugs Status: Opinion...
 
-The homepage looks different when the use is logged in:
+The homepage looks different when the user is logged in:
 
   >>> user_browser = setupBrowser(auth="Basic test@canonical.com:test")
   >>> user_browser.open('http://launchpad.dev/')
