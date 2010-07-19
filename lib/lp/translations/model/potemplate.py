@@ -1662,10 +1662,15 @@ class TranslationTemplatesCollection(Collection):
         """
         return self.joinInner(POFile, POTemplate.id == POFile.potemplateID)
 
-    def joinOuterPOFile(self):
+    def joinOuterPOFile(self, language=None):
         """Outer-join `POFile` into the collection.
 
         :return: A `TranslationTemplatesCollection` with an added outer
             join to `POFile`.
         """
-        return self.joinOuter(POFile, POTemplate.id == POFile.potemplateID)
+        if language is not None:
+            return self.joinOuter(
+                POFile, And(POTemplate.id == POFile.potemplateID,
+                            POFile.languageID == language.id))
+        else:
+            return self.joinOuter(POFile, POTemplate.id == POFile.potemplateID)

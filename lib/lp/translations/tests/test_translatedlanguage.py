@@ -121,6 +121,148 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         self.assertEqual(expected,
                          translated_language.translation_statistics)
 
+    def test_recalculateCounts_total_one_pofile(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        potemplate = self.addPOTemplate(number_of_potmsgsets=5)
+        pofile = self.factory.makePOFile(self.language.code, potemplate)
+
+        translated_language.recalculateCounts()
+        self.assertEqual(
+            5, translated_language.translation_statistics['total_count'])
+
+    def test_recalculateCounts_total_two_pofiles(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        potemplate1 = self.addPOTemplate(number_of_potmsgsets=5)
+        pofile1 = self.factory.makePOFile(self.language.code, potemplate1)
+        potemplate2 = self.addPOTemplate(number_of_potmsgsets=3)
+        pofile2 = self.factory.makePOFile(self.language.code, potemplate2)
+
+        translated_language.recalculateCounts()
+        self.assertEqual(
+            5+3, translated_language.translation_statistics['total_count'])
+
+    def test_recalculateCounts_translated_one_pofile(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        potemplate = self.addPOTemplate(number_of_potmsgsets=5)
+        pofile = self.factory.makePOFile(self.language.code, potemplate)
+        naked_pofile = removeSecurityProxy(pofile)
+        # translated count is current + rosetta
+        naked_pofile.currentcount = 3
+        naked_pofile.rosettacount = 1
+
+        translated_language.recalculateCounts()
+        self.assertEqual(
+            4, translated_language.translation_statistics['translated_count'])
+
+    def test_recalculateCounts_translated_two_pofiles(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        potemplate1 = self.addPOTemplate(number_of_potmsgsets=5)
+        pofile1 = self.factory.makePOFile(self.language.code, potemplate1)
+        naked_pofile1 = removeSecurityProxy(pofile1)
+        # translated count is current + rosetta
+        naked_pofile1.currentcount = 3
+        naked_pofile1.rosettacount = 1
+
+        potemplate2 = self.addPOTemplate(number_of_potmsgsets=3)
+        pofile2 = self.factory.makePOFile(self.language.code, potemplate2)
+        naked_pofile2 = removeSecurityProxy(pofile2)
+        # translated count is current + rosetta
+        naked_pofile2.currentcount = 1
+        naked_pofile2.rosettacount = 1
+
+        translated_language.recalculateCounts()
+        self.assertEqual(
+            6, translated_language.translation_statistics['translated_count'])
+
+    def test_recalculateCounts_changed_one_pofile(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        potemplate = self.addPOTemplate(number_of_potmsgsets=5)
+        pofile = self.factory.makePOFile(self.language.code, potemplate)
+        naked_pofile = removeSecurityProxy(pofile)
+        # translated count is current + rosetta
+        naked_pofile.updatescount = 3
+
+        translated_language.recalculateCounts()
+        self.assertEqual(
+            3, translated_language.translation_statistics['changed_count'])
+
+    def test_recalculateCounts_changed_two_pofiles(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        potemplate1 = self.addPOTemplate(number_of_potmsgsets=5)
+        pofile1 = self.factory.makePOFile(self.language.code, potemplate1)
+        naked_pofile1 = removeSecurityProxy(pofile1)
+        naked_pofile1.updatescount = 3
+
+        potemplate2 = self.addPOTemplate(number_of_potmsgsets=3)
+        pofile2 = self.factory.makePOFile(self.language.code, potemplate2)
+        naked_pofile2 = removeSecurityProxy(pofile2)
+        naked_pofile2.updatescount = 1
+
+        translated_language.recalculateCounts()
+        self.assertEqual(
+            4, translated_language.translation_statistics['changed_count'])
+
+    def test_recalculateCounts_new_one_pofile(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        potemplate = self.addPOTemplate(number_of_potmsgsets=5)
+        pofile = self.factory.makePOFile(self.language.code, potemplate)
+        naked_pofile = removeSecurityProxy(pofile)
+        # new count is rosetta - changed
+        naked_pofile.rosettacount = 3
+        naked_pofile.updatescount = 1
+
+        translated_language.recalculateCounts()
+        self.assertEqual(
+            2, translated_language.translation_statistics['new_count'])
+
+    def test_recalculateCounts_new_two_pofiles(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        potemplate1 = self.addPOTemplate(number_of_potmsgsets=5)
+        pofile1 = self.factory.makePOFile(self.language.code, potemplate1)
+        naked_pofile1 = removeSecurityProxy(pofile1)
+        # new count is rosetta - changed
+        naked_pofile1.rosettacount = 3
+        naked_pofile1.updatescount = 1
+
+        potemplate2 = self.addPOTemplate(number_of_potmsgsets=3)
+        pofile2 = self.factory.makePOFile(self.language.code, potemplate2)
+        naked_pofile2 = removeSecurityProxy(pofile2)
+        # new count is rosetta - changed
+        naked_pofile2.rosettacount = 2
+        naked_pofile2.updatescount = 1
+
+        translated_language.recalculateCounts()
+        self.assertEqual(
+            3, translated_language.translation_statistics['new_count'])
+
+    def test_recalculateCounts_unreviewed_one_pofile(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        potemplate = self.addPOTemplate(number_of_potmsgsets=5)
+        pofile = self.factory.makePOFile(self.language.code, potemplate)
+        naked_pofile = removeSecurityProxy(pofile)
+        # translated count is current + rosetta
+        naked_pofile.unreviewed_count = 3
+
+        translated_language.recalculateCounts()
+        self.assertEqual(
+            3, translated_language.translation_statistics['unreviewed_count'])
+
+    def test_recalculateCounts_unreviewed_two_pofiles(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        potemplate1 = self.addPOTemplate(number_of_potmsgsets=5)
+        pofile1 = self.factory.makePOFile(self.language.code, potemplate1)
+        naked_pofile1 = removeSecurityProxy(pofile1)
+        naked_pofile1.unreviewed_count = 3
+
+        potemplate2 = self.addPOTemplate(number_of_potmsgsets=3)
+        pofile2 = self.factory.makePOFile(self.language.code, potemplate2)
+        naked_pofile2 = removeSecurityProxy(pofile2)
+        naked_pofile2.unreviewed_count = 1
+
+        translated_language.recalculateCounts()
+        self.assertEqual(
+            4, translated_language.translation_statistics['unreviewed_count'])
+
     def test_recalculateCounts_one_pofile(self):
         translated_language = self.getTranslatedLanguage(self.language)
         potemplate = self.addPOTemplate(number_of_potmsgsets=5)
@@ -149,8 +291,7 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         self.assertEqual(expected,
                          translated_language.translation_statistics)
 
-
-    def test_recalculateCounts_total_two_pofiles(self):
+    def test_recalculateCounts_two_pofiles(self):
         translated_language = self.getTranslatedLanguage(self.language)
         potemplate1 = self.addPOTemplate(number_of_potmsgsets=5)
         pofile1 = self.factory.makePOFile(self.language.code, potemplate1)
@@ -163,20 +304,19 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         naked_pofile1.rosettacount = 1
         # Changed count is 'updatescount' on POFile.
         # It has to be lower or equal to currentcount.
-        naked_pofile1.updatescount = 1
         # new is rosettacount-updatescount.
-        naked_pofile1.newcount = 0
+        naked_pofile1.updatescount = 1
+
         naked_pofile1.unreviewed_count = 3
 
-        naked_pofile2 = removeSecurityProxy(pofile1)
+        naked_pofile2 = removeSecurityProxy(pofile2)
         # translated count is current + rosetta
         naked_pofile2.currentcount = 1
         naked_pofile2.rosettacount = 1
         # Changed count is 'updatescount' on POFile.
         # It has to be lower or equal to currentcount.
-        naked_pofile2.updatescount = 0
         # new is rosettacount-updatescount.
-        naked_pofile2.newcount = 1
+        naked_pofile2.updatescount = 0
         naked_pofile2.unreviewed_count = 1
 
         translated_language.recalculateCounts()

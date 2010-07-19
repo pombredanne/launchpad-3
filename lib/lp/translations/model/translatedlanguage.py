@@ -51,7 +51,7 @@ class TranslatedLanguageMixin(object):
     def recalculateCounts(self):
         """See `ITranslatedLanguage`."""
         templates = self.parent.getCurrentTemplatesCollection()
-        pofiles = templates.joinPOFile()
+        pofiles = templates.joinOuterPOFile(self.language)
         total_count_results = list(
             pofiles.select(Coalesce(Sum(POTemplate.messagecount), 0),
                            Coalesce(Sum(POFile.currentcount), 0),
