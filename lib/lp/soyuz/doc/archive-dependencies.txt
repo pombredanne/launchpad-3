@@ -558,12 +558,12 @@ Now builds in Celso's PPA will use the external dependencies.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://user:pass@repository zoing everything
+    deb http://user:pass@repository hoary public private
+    deb http://user:pass@repository hoary-extra public
     deb http://ftpmaster.internal/ubuntu hoary
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-security
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
-    deb http://user:pass@repository zoing everything
-    deb http://user:pass@repository hoary public private
-    deb http://user:pass@repository hoary-extra public

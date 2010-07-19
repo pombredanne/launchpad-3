@@ -175,14 +175,14 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
 
     The entries are returned in the order that is most useful;
      1. the context archive itself
-     2. user-selected archive dependencies
-     3. the default primary archive
-     4. external dependencies
+     2. external dependencies
+     3. user-selected archive dependencies
+     4. the default primary archive
 
-    :param build: the context `IBuild`.
-    :param distroarchseries: the context `IDistroArchSeries`.
-    :param sourcepackagename: the source package name (as text).
-    :return: a list of sources.list entries.
+    :param build: a context `IBuild`.
+    :param distroarchseries: A `IDistroArchSeries`
+    :param sourcepackagename: A source package name (as text)
+    :return: a deb sources_list entries (lines).
     """
     deps = expand_dependencies(
         build.archive, distroarchseries.distroseries, build.pocket,
@@ -190,6 +190,7 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
     sources_list_lines = \
         _get_sources_list_for_dependencies(deps, distroarchseries)
 
+    external_dep_lines = []
     # Append external sources_list lines for this archive if it's
     # specified in the configuration.
     try:
@@ -198,7 +199,7 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
             for archive_dep in dependencies.splitlines():
                 line = archive_dep % (
                     {'series': distroarchseries.distroseries.name})
-                sources_list_lines.append(line)
+                external_dep_lines.append(line)
     except StandardError, e:
         # Malformed external dependencies can incapacitate the build farm
         # manager (lp:516169). That's obviously not acceptable.
@@ -212,7 +213,10 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
         if build.archive.enabled == True:
             build.archive.disable()
 
-    return sources_list_lines
+    # We want the external dependency lines to show up second: after the
+    # archive itself, but before any other dependencies.
+    return [sources_list_lines[0]] + external_dep_lines + \
+           sources_list_lines[1:]
 
 
 def _has_published_binaries(archive, distroarchseries, pocket):
