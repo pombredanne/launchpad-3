@@ -13,7 +13,6 @@ from lp.services.utils import (
     CachingIterator,
     decorate_with,
     iter_split,
-    run_with,
     )
 from lp.testing import TestCase
 
