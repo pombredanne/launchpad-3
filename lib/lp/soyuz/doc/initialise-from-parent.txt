@@ -34,7 +34,7 @@ builds that exist in Ubuntu Hoary in the sampledata:
   >>> pending_builds = hoary.getBuildRecords(BuildStatus.NEEDSBUILD,
   ...     pocket=PackagePublishingPocket.RELEASE)
   >>> for build in pending_builds:
-  ...     build.buildstate = BuildStatus.FAILEDTOBUILD
+  ...     build.status = BuildStatus.FAILEDTOBUILD
 
   >>> import transaction
   >>> transaction.commit()
@@ -122,7 +122,7 @@ Follow BPR.build and discover it was built in the parent series:
 
 Now we obtain the sourcepackagerelease from the build:
 
-  >>> pmount_srcrel = pmount_binrel.build.sourcepackagerelease
+  >>> pmount_srcrel = pmount_binrel.build.source_package_release
   >>> pmount_srcrel.title
   u'pmount - 0.1-1'
 

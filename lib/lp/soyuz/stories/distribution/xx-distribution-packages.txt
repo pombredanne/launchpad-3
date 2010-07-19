@@ -215,7 +215,7 @@ The page has an appropriate title and main heading.
     Hierarchy: Ubuntu > ?iceweasel? package
     Tabs:
     * Overview (selected) - not linked
-    * Branches - http://code.launchpad.dev/ubuntu/+source/iceweasel
+    * Code - http://code.launchpad.dev/ubuntu/+source/iceweasel
     * Bugs - http://bugs.launchpad.dev/ubuntu/+source/iceweasel
     * Blueprints - not linked
     * Translations - not linked
@@ -407,7 +407,7 @@ the index page.
     Hierarchy: Ubuntu > ?foobar? package > Change log
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/foobar
-    * Branches - http://code.launchpad.dev/ubuntu/+source/foobar
+    * Code - http://code.launchpad.dev/ubuntu/+source/foobar
     * Bugs - http://bugs.launchpad.dev/ubuntu/+source/foobar
     * Blueprints - not linked
     * Translations - not linked
@@ -600,7 +600,7 @@ source package hierarchy.
     Hierarchy: Ubuntu > ?alsa-utils? package > Publishing history
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
-    * Branches - http://code.launchpad.dev/ubuntu/+source/alsa-utils
+    * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
     * Bugs - http://bugs.launchpad.dev/ubuntu/+source/alsa-utils
     * Blueprints - not linked
     * Translations - not linked

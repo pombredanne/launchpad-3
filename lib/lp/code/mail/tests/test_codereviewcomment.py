@@ -48,7 +48,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             notification_level = CodeReviewNotificationLevel.FULL
         comment.branch_merge_proposal.source_branch.subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            notification_level)
+            notification_level, subscriber)
         # Email is not sent on construction, so fake a root message id on the
         # merge proposal.
         login_person(comment.branch_merge_proposal.registrant)
@@ -265,7 +265,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             email='commenter@email.com', displayname='Commenter')
         bmp.source_branch.subscribe(commenter,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL, commenter)
         comment = bmp.createComment(commenter, 'hello')
         return comment
 

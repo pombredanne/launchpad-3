@@ -25,7 +25,6 @@ __all__ = [
     'BugTaskPortletView',
     'BugTaskPrivacyAdapter',
     'BugTaskRemoveQuestionView',
-    'BugTaskSOP',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
     'BugTaskStatusView',
@@ -115,6 +114,7 @@ from lp.bugs.interfaces.bugtask import (
     IProductSeriesBugTask, IRemoveQuestionFromBugTaskForm, IUpstreamBugTask,
     IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
 from lp.bugs.interfaces.bugtracker import BugTrackerType
+from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.distribution import IDistribution
@@ -122,7 +122,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IStructuralObjectPresentation)
+    ILaunchpadCelebrities)
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -143,7 +143,6 @@ from lp.bugs.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink, FeedsMixin)
 from lp.registry.browser.mentoringoffer import CanBeMentoredView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
@@ -542,9 +541,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
     @property
     def page_title(self):
-        return smartquote('%s: "%s"') % (
-            IStructuralObjectPresentation(self.context).getMainHeading(),
-            self.context.bug.title)
+        bugtask = self.context
+        if INullBugTask.providedBy(bugtask):
+            heading = 'Bug #%s is not in %s' % (
+                bugtask.bug.id, bugtask.bugtargetdisplayname)
+        else:
+            heading = 'Bug #%s in %s' % (
+                bugtask.bug.id, bugtask.bugtargetdisplayname)
+        return smartquote('%s: "%s"') % (heading, self.context.bug.title)
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -861,9 +865,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
     @cachedproperty
     def activity_by_date(self):
-        """Return a list of `BugActivityItem`s for the current bug.
+        """Return a dict of `BugActivityItem`s for the current bug.
 
-        The `BugActivityItem`s will be grouped by the date on which they
+        The `BugActivityItem`s will be keyed by the date on which they
         occurred.
         """
         activity_by_date = {}
@@ -905,7 +909,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         # Sort all the lists to ensure that changes are written out in
         # alphabetical order.
         for date, activity_by_target in activity_by_date.items():
-            # We convert each {target: activty_list} mapping into a list
+            # We convert each {target: activity_list} mapping into a list
             # of {target, activity_list} dicts for the sake of making
             # them usable in templates.
             activity_by_date[date] = [{
@@ -919,40 +923,72 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
     @cachedproperty
     def activity_and_comments(self):
-        # Add the activity to the activity_and_comments list. For each
-        # activity dict we use the person responsible for the first
-        # activity item as the owner of the list of activities.
-        activity_by_date = [
-            {'activity': activity_dict, 'date': date,
-             'person': activity_dict[0]['activity'][0].person}
-            for date, activity_dict in self.activity_by_date.items()]
+        """Build list of comments interleaved with activities
 
+        When activities occur on the same day a comment was posted,
+        encapsulate them with that comment.  For the remainder, group
+        then as if owned by the person who posted the first action
+        that day.
+
+        If the number of comments exceeds the configured maximum limit,
+        the list will be truncated to just the first and last sets of
+        comments.  The division between the newest and oldest is marked
+        by an entry in the list with the key 'num_hidden' defined.
+        """
         activity_and_comments = []
-        for comment in self.visible_comments_for_display:
-            # Check to see if there are any activities for this
-            # comment's datecreated.
-            activity_for_comment = []
+        activity_log = self.activity_by_date
 
-            # Loop over a copy of activity_by_date to ensure that we
-            # don't break the looping by removing things from the list
-            # over which we're iterating.
-            for activity_dict in list(activity_by_date):
-                if activity_dict['date'] == comment.datecreated:
-                    activity_for_comment.extend(activity_dict['activity'])
+        # Ensure truncation results in < max_length comments as expected
+        assert(config.malone.comments_list_truncate_oldest_to
+               + config.malone.comments_list_truncate_newest_to
+               < config.malone.comments_list_max_length)
 
-                    # Remove the activity from the list of activity by date;
-                    # we don't need it there any more.
-                    activity_by_date.remove(activity_dict)
+        newest_comments = self.visible_newest_comments_for_display
+        oldest_comments = self.visible_oldest_comments_for_display
 
-            activity_for_comment.sort(key=itemgetter('target'))
-            comment.activity = activity_for_comment
+        # Oldest comments and activities
+        for comment in oldest_comments:
+            # Move any corresponding activities into the comment
+            comment.activity = activity_log.pop(comment.datecreated, [])
+            comment.activity.sort(key=itemgetter('target'))
 
             activity_and_comments.append({
                 'comment': comment,
                 'date': comment.datecreated,
                 })
 
-        activity_and_comments.extend(activity_by_date)
+        # Insert blank if we're showing only a subset of the comment list
+        if len(newest_comments) > 0:
+            activity_and_comments.append({
+                'num_hidden': (len(self.visible_comments)
+                               - len(oldest_comments)
+                               - len(newest_comments)),
+                'date': newest_comments[0].datecreated,
+                })
+
+        # Most recent comments and activities (if showing a subset)
+        for comment in newest_comments:
+            # Move any corresponding activities into the comment
+            comment.activity = activity_log.pop(comment.datecreated, [])
+            comment.activity.sort(key=itemgetter('target'))
+
+            activity_and_comments.append({
+                'comment': comment,
+                'date': comment.datecreated,
+                })
+
+        # Add the remaining activities not associated with any visible
+        # comments to the activity_for_comments list.  For each
+        # activity dict we use the person responsible for the first
+        # activity item as the owner of the list of activities.
+        activity_by_date = []
+        for date, activity_dict in activity_log.items():
+            activity_and_comments.append({
+                'activity': activity_dict,
+                'date': date,
+                'person': activity_dict[0]['activity'][0].person
+                })
+
         activity_and_comments.sort(key=itemgetter('date'))
         return activity_and_comments
 
@@ -966,8 +1002,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         return get_visible_comments(self.comments)
 
     @cachedproperty
-    def visible_comments_for_display(self):
-        """The list of visible comments to be rendered.
+    def visible_oldest_comments_for_display(self):
+        """The list of oldest visible comments to be rendered.
 
         This considers truncating the comment list if there are tons
         of comments, but also obeys any explicitly requested ways to
@@ -978,14 +1014,33 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         if show_all or len(self.visible_comments) <= max_comments:
             return self.visible_comments
         else:
-            truncate_to = config.malone.comments_list_truncate_to
-            return self.visible_comments[:truncate_to]
+            oldest_count = config.malone.comments_list_truncate_oldest_to
+            return self.visible_comments[:oldest_count]
+
+    @cachedproperty
+    def visible_newest_comments_for_display(self):
+        """The list of newest visible comments to be rendered.
+
+        If the number of comments is beyond the maximum threshold, this
+        returns the newest few comments.  If we're under the threshold,
+        then visible_oldest_comments_for_display will be returning the
+        bugs, so this routine will return an empty set to avoid
+        duplication.
+        """
+        show_all = (self.request.form_ng.getOne('comments') == 'all')
+        max_comments = config.malone.comments_list_max_length
+        total = len(self.visible_comments)
+        if show_all or total <= max_comments:
+            return []
+        else:
+            start = total - config.malone.comments_list_truncate_newest_to
+            return self.visible_comments[start:total]
 
     @property
     def visible_comments_truncated_for_display(self):
-        """Wether the visible comment list truncated for display."""
+        """Whether the visible comment list is truncated for display."""
         return (len(self.visible_comments) >
-                len(self.visible_comments_for_display))
+                len(self.visible_oldest_comments_for_display))
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
@@ -1003,7 +1058,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     @property
     def days_to_expiration(self):
         """Return the number of days before the bug is expired, or None."""
-        if not self.context.bug.can_expire:
+        if not self.context.bug.isExpirable(days_old=0):
             return None
 
         expire_after = timedelta(days=config.malone.days_before_expiration)
@@ -1022,7 +1077,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
         If the bug is not due to be expired None will be returned.
         """
-        if not self.context.bug.can_expire:
+        if not self.context.bug.isExpirable(days_old=0):
             return None
 
         days_to_expiration = self.days_to_expiration
@@ -1176,7 +1231,72 @@ def get_prefix(bugtask):
     return '_'.join(parts)
 
 
-class BugTaskEditView(LaunchpadEditFormView):
+def get_assignee_vocabulary(context):
+    """The vocabulary of bug task assignees the current user can set."""
+    if context.userCanSetAnyAssignee(getUtility(ILaunchBag).user):
+        return 'ValidAssignee'
+    else:
+        return 'AllUserTeamsParticipation'
+
+
+class BugTaskBugWatchMixin:
+    """A mixin to be used where a BugTask view displays BugWatch data."""
+
+    @property
+    def bug_watch_error_message(self):
+        """Return a browser-useable error message for a bug watch."""
+        if not self.context.bugwatch:
+            return None
+
+        bug_watch = self.context.bugwatch
+        if not bug_watch.last_error_type:
+            return None
+
+        error_message_mapping = {
+            BugWatchActivityStatus.BUG_NOT_FOUND: "%(bugtracker)s bug #"
+                "%(bug)s appears not to exist. Check that the bug "
+                "number is correct.",
+            BugWatchActivityStatus.CONNECTION_ERROR: "Launchpad couldn't "
+                "connect to %(bugtracker)s.",
+            BugWatchActivityStatus.INVALID_BUG_ID: "Bug ID %(bug)s isn't "
+                "valid on %(bugtracker)s. Check that the bug ID is "
+                "correct.",
+            BugWatchActivityStatus.TIMEOUT: "Launchpad's connection to "
+                "%(bugtracker)s timed out.",
+            BugWatchActivityStatus.UNKNOWN: "Launchpad couldn't import bug "
+                "#%(bug)s from " "%(bugtracker)s.",
+            BugWatchActivityStatus.UNPARSABLE_BUG: "Launchpad couldn't "
+                "extract a status from %(bug)s on %(bugtracker)s.",
+            BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER: "Launchpad "
+                "couldn't determine the version of %(bugtrackertype)s "
+                "running on %(bugtracker)s.",
+            BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER: "Launchpad "
+                "doesn't support importing bugs from %(bugtrackertype)s"
+                " bug trackers.",
+            BugWatchActivityStatus.PRIVATE_REMOTE_BUG: "The bug is marked as "
+                "private on the remote bug tracker. Launchpad cannot import "
+                "the status of private remote bugs.",
+            }
+
+        if bug_watch.last_error_type in error_message_mapping:
+            message = error_message_mapping[bug_watch.last_error_type]
+        else:
+            message = bug_watch.last_error_type.description
+
+        error_data = {
+            'bug': bug_watch.remotebug,
+            'bugtracker': bug_watch.bugtracker.title,
+            'bugtrackertype': bug_watch.bugtracker.bugtrackertype.title}
+
+        return {
+            'message': message % error_data,
+            'help_url': '%s#%s' % (
+                canonical_url(bug_watch, view_name="+error-help"),
+                bug_watch.last_error_type.name),
+            }
+
+
+class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     """The view class used for the task +editstatus page."""
 
     schema = IBugTask
@@ -1200,6 +1320,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         if self.user_is_subscribed is None:
             self.user_is_subscribed = self.context.bug.isSubscribed(self.user)
 
+    page_title = 'Edit status'
 
     @cachedproperty
     def field_names(self):
@@ -1383,7 +1504,8 @@ class BugTaskEditView(LaunchpadEditFormView):
             self.form_fields = self.form_fields.omit('assignee')
             self.form_fields += formlib.form.Fields(ParticipatingPersonChoice(
                 __name__='assignee', title=_('Assigned to'), required=False,
-                vocabulary='ValidAssignee', readonly=False))
+                vocabulary=get_assignee_vocabulary(self.context),
+                readonly=False))
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 BugTaskAssigneeWidget)
 
@@ -1662,6 +1784,8 @@ class BugTaskEditView(LaunchpadEditFormView):
 class BugTaskStatusView(LaunchpadView):
     """Viewing the status of a bug task."""
 
+    page_title = 'View status'
+
     def initialize(self):
         """Set up the appropriate widgets.
 
@@ -1876,9 +2000,11 @@ class BugsStatsMixin(BugsInfoMixin):
         The bugtarget may be an `IDistribution`, `IDistroSeries`, `IProduct`,
         or `IProductSeries`.
         """
+        days_old = config.malone.days_before_expiration
+
         if target_has_expirable_bugs_listing(self.context):
             return getUtility(IBugTaskSet).findExpirableBugTasks(
-                0, user=self.user, target=self.context).count()
+                days_old, user=self.user, target=self.context).count()
         else:
             return None
 
@@ -2161,32 +2287,22 @@ class BugTaskSearchListingMenu(NavigationMenu):
                 'bugsupervisor',
                 'securitycontact',
                 'cve',
-                'subscribe',
                 )
         elif IDistroSeries.providedBy(bug_target):
             return (
                 'cve',
                 'nominations',
-                'subscribe',
-                )
-        elif IDistributionSourcePackage.providedBy(bug_target):
-            return (
-                'subscribe',
                 )
         elif IProduct.providedBy(bug_target):
             return (
                 'bugsupervisor',
                 'securitycontact',
                 'cve',
-                'subscribe'
                 )
         elif IProductSeries.providedBy(bug_target):
             return (
                 'nominations',
-                'subscribe',
                 )
-        elif IProjectGroup.providedBy(bug_target):
-            return ()
         else:
             return ()
 
@@ -2589,7 +2705,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 dict(
                     value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
-        return helpers.shortlist(widget_values, longest_expected=11)
+        return helpers.shortlist(widget_values, longest_expected=12)
 
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
@@ -3274,7 +3390,7 @@ class BugTasksAndNominationsView(LaunchpadView):
             return None
 
 
-class BugTaskTableRowView(LaunchpadView):
+class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     """Browser class for rendering a bugtask row on the bug page."""
 
     is_conjoined_slave = None
@@ -3449,11 +3565,21 @@ class BugTaskTableRowView(LaunchpadView):
 
     def js_config(self):
         """Configuration for the JS widgets on the row, JSON-serialized."""
+        assignee_vocabulary = get_assignee_vocabulary(self.context)
+        # Display the search field only if the user can set any person
+        # or team
+        user = getUtility(ILaunchBag).user
+        hide_assignee_team_selection = (
+            not self.context.userCanSetAnyAssignee(user) and
+            (user is None or user.teams_participated_in.count() == 0))
         return dumps({
             'row_id': 'tasksummary%s' % self.context.id,
             'bugtask_path': '/'.join(
                 [''] + canonical_url(self.context).split('/')[3:]),
             'prefix': get_prefix(self.context),
+            'assignee_vocabulary': assignee_vocabulary,
+            'hide_assignee_team_selection': hide_assignee_team_selection,
+            'user_can_unassign': self.context.userCanUnassign(user),
             'target_is_product': IProduct.providedBy(self.context.target),
             'status_widget_items': self.status_widget_items,
             'status_value': self.context.status.title,
@@ -3531,35 +3657,6 @@ class BugTaskPrivacyAdapter:
     def is_private(self):
         """Return True if the bug is private, otherwise False."""
         return self.context.bug.private
-
-
-# XXX mars 2008-08-25 bug=261188
-# This whole class hierarchy should be replaced with something more
-# specific, ie. a class that generates BugTask page titles.
-class BugTaskSOP(StructuralObjectPresentation):
-    """Provides the structural heading for `IBugTask`."""
-
-    def getIntroHeading(self):
-        """Return None."""
-        return None
-
-    def getMainHeading(self):
-        """Return the heading using the BugTask."""
-        bugtask = self.context
-        if INullBugTask.providedBy(bugtask):
-            return 'Bug #%s is not in %s' % (
-                bugtask.bug.id, bugtask.bugtargetdisplayname)
-        else:
-            return 'Bug #%s in %s' % (
-                bugtask.bug.id, bugtask.bugtargetdisplayname)
-
-    def listChildren(self, num):
-        """Return an empty list."""
-        return []
-
-    def listAltChildren(self, num):
-        """Return None."""
-        return None
 
 
 class BugTaskCreateQuestionView(LaunchpadFormView):
@@ -3694,9 +3791,10 @@ class BugTaskExpirableListingView(LaunchpadView):
     @property
     def search(self):
         """Return an `ITableBatchNavigator` for the expirable bugtasks."""
+        days_old = config.malone.days_before_expiration
         bugtaskset = getUtility(IBugTaskSet)
         bugtasks = bugtaskset.findExpirableBugTasks(
-            0, user=self.user, target=self.context)
+            days_old, user=self.user, target=self.context)
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)

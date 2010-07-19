@@ -8,7 +8,7 @@ Browse the changelog of a sourcepackage..
   Hierarchy: Ubuntu > Hoary (5.04) > ...pmount... source package > Change log
   Tabs:
   * Overview (selected) - http://launchpad.dev/ubuntu/hoary/+source/pmount
-  * Branches - http://code.launchpad.dev/ubuntu/hoary/+source/pmount
+  * Code - http://code.launchpad.dev/ubuntu/hoary/+source/pmount
   * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/pmount
   * Blueprints - not linked
   * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/pmount
@@ -104,8 +104,8 @@ although the version link will point to the same page we're already on.
   <pre ... id="alsa-utils_1.0.9a-4ubuntu1">alsa-utils (1.0.9a-4ubuntu1) ...
   <BLANKLINE>
   ...
-   LP: <a href="/bugs/10" title="another test bug">#10</a>
-   LP: <a href="/bugs/999" title="No such bug">#999</a>
+   LP: <a href="/bugs/10">#10</a>
+   LP: <a href="/bugs/999">#999</a>
    LP: #badid
   ...
 

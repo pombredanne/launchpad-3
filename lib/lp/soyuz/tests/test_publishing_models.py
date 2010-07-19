@@ -6,6 +6,7 @@
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
@@ -13,7 +14,7 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.interfaces.publishing import (IPublishingSet,
     PackagePublishingStatus)
-from lp.soyuz.tests.test_build import BaseTestCaseWithThreeBuilds
+from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 
 
 class TestPublishingSet(BaseTestCaseWithThreeBuilds):
@@ -27,7 +28,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
         # Ensure all the builds have been built.
         for build in self.builds:
-            build.buildstate = BuildStatus.FULLYBUILT
+            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
         self.publishing_set = getUtility(IPublishingSet)
 
     def _getBuildsForResults(self, results):
@@ -83,8 +84,8 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
             for hist in self.sources)
         urls = [lfa.http_url for lfa in lfas]
         self.assertEqual(urls, [
-            'http://localhost:58000/94/gedit_666_source.changes', 
-            'http://localhost:58000/96/firefox_666_source.changes', 
+            'http://localhost:58000/94/gedit_666_source.changes',
+            'http://localhost:58000/96/firefox_666_source.changes',
             'http://localhost:58000/98/getting-things-gnome_666_source.changes'
             ])
 

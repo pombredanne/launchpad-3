@@ -19,7 +19,7 @@ In order to test notifications, we need a subscriber for the branch.
     ...     '~name12/firefox/main')
     >>> _unused = branch.subscribe(subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
-    ...     CodeReviewNotificationLevel.FULL)
+    ...     CodeReviewNotificationLevel.FULL, subscriber)
 
 Also subscribe to gnome-terminal, since Firefox tests are mixed with
 Gnome Terminal tests.
@@ -28,7 +28,7 @@ Gnome Terminal tests.
     ...     '~name12/gnome-terminal/main')
     >>> _unused = branch.subscribe(subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
-    ...     CodeReviewNotificationLevel.FULL)
+    ...     CodeReviewNotificationLevel.FULL, subscriber)
     >>> from lp.code.tests.helpers import make_erics_fooix_project
     >>> locals().update(make_erics_fooix_project(factory))
     >>> logout()

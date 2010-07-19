@@ -232,7 +232,7 @@ Uploads to restricted component are accepted too.
   >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
 
   # Change the component where this package was attached.
-  >>> queue_item.builds[0].build.sourcepackagerelease.override(
+  >>> queue_item.builds[0].build.source_package_release.override(
   ...     component=restricted_component)
   >>> queue_item.customfiles[0].publish()
 
@@ -265,7 +265,7 @@ But the ones into universe are not accepted.
   >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
 
   # Change the component where this package was attached.
-  >>> queue_item.builds[0].build.sourcepackagerelease.override(
+  >>> queue_item.builds[0].build.source_package_release.override(
   ...     component=universe_component)
   >>> queue_item.customfiles[0].publish()
 

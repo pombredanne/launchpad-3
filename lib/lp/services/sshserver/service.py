@@ -127,16 +127,16 @@ class SSHService(service.Service):
                  banner=None):
         """Construct an SSH service.
 
-        :param portal: The `Portal` that turns authentication requests into
-            views on the system.
+        :param portal: The `twisted.cred.portal.Portal` that turns
+            authentication requests into views on the system.
         :param private_key_path: The path to the SSH server's private key.
         :param public_key_path: The path to the SSH server's public key.
         :param oops_configuration: The section of the configuration file with
             the OOPS config details for this server.
-        :param main_log: A `logging.Logger` object to log most of the server
+        :param main_log: The name of the logger to log most of the server
             stuff to.
-        :param access_log: A `logging.Logger` object to log the server access
-            details to.
+        :param access_log: The name of the logger object to log the server
+            access details to.
         :param access_log_path: The path to the access log file.
         :param strport: The port to run the server on, expressed in Twisted's
             "strports" mini-language. Defaults to 'tcp:22'.
@@ -165,7 +165,7 @@ class SSHService(service.Service):
             logging.getLogger(self._access_log_path),
             self._access_log_path)
         manager.setUp()
-        set_up_oops_reporting(self._oops_configuration)
+        set_up_oops_reporting(self._oops_configuration, self._main_log)
         notify(events.ServerStarting())
         # By default, only the owner of files should be able to write to them.
         # Perhaps in the future this line will be deleted and the umask

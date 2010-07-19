@@ -384,6 +384,10 @@ class DatabaseConfig:
 
     @property
     def main_master(self):
+        # Its a bit silly having ro_main_master and rw_main_master.
+        # rw_main_master will never be used, as read-only-mode will
+        # fail attempts to access the master database with a
+        # ReadOnlyModeDisallowedStore exception.
         if is_read_only():
             return self.ro_main_master
         else:

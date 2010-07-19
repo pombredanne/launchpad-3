@@ -149,12 +149,18 @@ class BuilderSetView(LaunchpadView):
     def number_of_building_builders(self):
         return len([b for b in self.builders if b.currentjob is not None])
 
+    @cachedproperty
+    def build_queue_sizes(self):
+        """Return the build queue sizes for all processors."""
+        builderset = getUtility(IBuilderSet)
+        return builderset.getBuildQueueSizes()
+
     @property
     def ppa_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
             'PPA build status', virtualized=True)
-        builder_category.groupBuilders(self.builders)
+        builder_category.groupBuilders(self.builders, self.build_queue_sizes)
         return builder_category
 
     @property
@@ -162,7 +168,7 @@ class BuilderSetView(LaunchpadView):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
             'Official distributions build status', virtualized=False)
-        builder_category.groupBuilders(self.builders)
+        builder_category.groupBuilders(self.builders, self.build_queue_sizes)
         return builder_category
 
 
@@ -199,7 +205,7 @@ class BuilderCategory:
         return sorted(self._builder_groups,
                       key=operator.attrgetter('processor_name'))
 
-    def groupBuilders(self, all_builders):
+    def groupBuilders(self, all_builders, build_queue_sizes):
         """Group the given builders as a collection of Buildergroups.
 
         A BuilderGroup will be initialized for each processor.
@@ -214,10 +220,10 @@ class BuilderCategory:
             else:
                 grouped_builders[builder.processor] = [builder]
 
-        builderset = getUtility(IBuilderSet)
         for processor, builders in grouped_builders.iteritems():
-            queue_size, duration = builderset.getBuildQueueSizeForProcessor(
-                processor, virtualized=self.virtualized)
+            virt_str = 'virt' if self.virtualized else 'nonvirt'
+            queue_size, duration = build_queue_sizes[virt_str].get(
+                processor.name, (0, None))
             builder_group = BuilderGroup(
                 processor.name, queue_size, duration,
                 sorted(builders, key=operator.attrgetter('title')))
@@ -259,6 +265,7 @@ class BuilderHistoryView(BuildRecordsView):
     __used_for__ = IBuilder
 
     page_title = 'Build history'
+    binary_only = False
 
     @property
     def label(self):
@@ -335,7 +342,17 @@ class BuilderEditView(LaunchpadEditFormView):
     @action(_('Change'), name='update')
     def change_details(self, action, data):
         """Update the builder with the data from the form."""
-        builder_was_modified = self.updateContextFromData(data)
+        # notify_modified is set False here because it uses
+        # lazr.lifecycle.snapshot to store the state of the object
+        # before and after modification.  This is dangerous for the
+        # builder model class because it causes some properties to be
+        # queried that try and communicate with the slave, which cannot
+        # be done from the webapp (it's generally firewalled).  We could
+        # prevent snapshots for individual properties by defining the
+        # interface properties with doNotSnapshot() but this doesn't
+        # guard against future properties being created.
+        builder_was_modified = self.updateContextFromData(
+            data, notify_modified=False)
 
         if builder_was_modified:
             notification = 'The builder "%s" was updated successfully.' % (

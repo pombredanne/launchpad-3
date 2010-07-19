@@ -13,8 +13,7 @@ from __future__ import with_statement
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pytz import UTC
-import transaction
-import unittest
+from unittest import TestLoader
 
 from zope.component import getUtility
 
@@ -26,6 +25,7 @@ from lp.registry.model.distribution import Distribution
 from lp.registry.model.sourcepackagename import (
     SourcePackageName,
     SourcePackageNameSet)
+from lp.testing.fakemethod import FakeMethod
 from lp.services.worlddata.model.language import Language, LanguageSet
 from lp.translations.model.customlanguagecode import CustomLanguageCode
 from lp.translations.model.pofile import POFile
@@ -36,7 +36,6 @@ from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus, translation_import_queue_entry_age)
 from lp.testing import TestCaseWithFactory
-from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -46,31 +45,25 @@ class GardenerDbUserMixin(object):
 
     Admittedly, this might be a little over-engineered but it looks good. ;)
     """
-
-    def _become(self, dbuser):
-        """Switch to a different db user."""
-        transaction.commit()
-        self.layer.switchDbUser(dbuser)
-
     def becomeTheGardener(self):
         """One-way method to avoid unnecessary switch back."""
-        self._become('translations_import_queue_gardener')
+        self.becomeDbUser('translations_import_queue_gardener')
 
     @contextmanager
     def beingTheGardener(self):
         """Context manager to restore the launchpad user."""
-        self._become('translations_import_queue_gardener')
+        self.becomeTheGardener()
         yield
-        self._become('launchpad')
+        self.becomeDbUser('launchpad')
 
 
-class TestCustomLanguageCode(unittest.TestCase):
+class TestCustomLanguageCode(TestCaseWithFactory):
     """Unit tests for `CustomLanguageCode`."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.factory = LaunchpadObjectFactory()
+        super(TestCustomLanguageCode, self).setUp()
         self.product_codes = {}
         self.package_codes = {}
 
@@ -149,8 +142,8 @@ class TestCustomLanguageCode(unittest.TestCase):
         self.assertEqual(Brazilian_code.language, Language.byCode('pt_BR'))
 
 
-class TestGuessPOFileCustomLanguageCode(
-    unittest.TestCase, GardenerDbUserMixin):
+class TestGuessPOFileCustomLanguageCode(TestCaseWithFactory,
+                                        GardenerDbUserMixin):
     """Test interaction with `TranslationImportQueueEntry.getGuessedPOFile`.
 
     Auto-approval of translation files, i.e. figuring out which existing
@@ -163,7 +156,7 @@ class TestGuessPOFileCustomLanguageCode(
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.factory = LaunchpadObjectFactory()
+        super(TestGuessPOFileCustomLanguageCode, self).setUp()
         self.product = self.factory.makeProduct()
         self.series = self.factory.makeSeries(product=self.product)
         self.queue = TranslationImportQueue()
@@ -293,12 +286,12 @@ class TestGuessPOFileCustomLanguageCode(
         self.assertEqual(zh_TW_entry.getGuessedPOFile(), zh_CN_file)
 
 
-class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
+class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
     """Test auto-approval's attempts to find the right template."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.factory = LaunchpadObjectFactory()
+        super(TestTemplateGuess, self).setUp()
         self.templateset = POTemplateSet()
 
     def _setUpProduct(self):
@@ -362,8 +355,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         self._setUpDistro()
         other_series = self.factory.makeDistroRelease(
             distribution=self.distro)
-        other_template = self._makeTemplateForDistroSeries(
-            other_series, 'test1')
+        self._makeTemplateForDistroSeries(other_series, 'test1')
         self.distrotemplate1.iscurrent = False
         self.distrotemplate2.iscurrent = True
         self.distrotemplate1.from_sourcepackagename = None
@@ -522,7 +514,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
 
         # The clashing entry goes through approval unsuccessfully, but
         # without causing breakage.
-        entry2 = queue.addOrUpdateEntry(
+        queue.addOrUpdateEntry(
             'program/nl.po', 'other contents', False, template.owner,
             productseries=template.productseries, potemplate=template)
 
@@ -596,7 +588,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         self.assertEqual(template, entry.guessed_potemplate)
 
 
-class TestKdePOFileGuess(unittest.TestCase, GardenerDbUserMixin):
+class TestKdePOFileGuess(TestCaseWithFactory, GardenerDbUserMixin):
     """Test auto-approval's `POFile` guessing for KDE uploads.
 
     KDE has an unusual setup that the approver recognizes as a special
@@ -609,10 +601,10 @@ class TestKdePOFileGuess(unittest.TestCase, GardenerDbUserMixin):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        factory = LaunchpadObjectFactory()
+        super(TestKdePOFileGuess, self).setUp()
         self.queue = TranslationImportQueue()
 
-        self.distroseries = factory.makeDistroRelease()
+        self.distroseries = self.factory.makeDistroRelease()
 
         # For each of KDE3 and KDE4, set up:
         #  a translation package following that KDE's naming pattern,
@@ -621,7 +613,7 @@ class TestKdePOFileGuess(unittest.TestCase, GardenerDbUserMixin):
         #  a translation file into a language we'll test in.
         self.kde_i18n_ca = SourcePackageNameSet().new('kde-i18n-ca')
         kde3_package = SourcePackageNameSet().new('kde3')
-        ca_template = factory.makePOTemplate(
+        ca_template = self.factory.makePOTemplate(
             distroseries=self.distroseries,
             sourcepackagename=kde3_package, name='kde3',
             translation_domain='kde3')
@@ -629,7 +621,7 @@ class TestKdePOFileGuess(unittest.TestCase, GardenerDbUserMixin):
 
         self.kde_l10n_nl = SourcePackageNameSet().new('kde-l10n-nl')
         kde4_package = SourcePackageNameSet().new('kde4')
-        nl_template = factory.makePOTemplate(
+        nl_template = self.factory.makePOTemplate(
             distroseries=self.distroseries,
             sourcepackagename=kde4_package, name='kde4',
             translation_domain='kde4')
@@ -684,7 +676,7 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
         template.iscurrent = True
-        
+
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
 
@@ -702,7 +694,7 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
         template.iscurrent = False
-        
+
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
 
@@ -720,9 +712,8 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
         template.iscurrent = True
-        credits = self.factory.makePOTMsgSet(template, "translator-credits",
-                                             sequence=1)
-        
+        self.factory.makePOTMsgSet(template, "translator-credits", sequence=1)
+
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
 
@@ -833,7 +824,6 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
                     self._exists(entry_id),
                     "Queue entry in state '%s' was not removed." % status)
 
-
     def test_cleanUpInactiveProductEntries(self):
         # After a product is deactivated, _cleanUpInactiveProductEntries
         # will clean up any entries it may have on the queue.
@@ -894,7 +884,7 @@ class TestAutoApprovalNewPOFile(TestCaseWithFactory, GardenerDbUserMixin):
         # gardener has permissions to do this.  The POFile's owner is
         # the rosetta_experts team.
         trunk = self.product.getSeries('trunk')
-        template = self._makeTemplate(trunk)
+        self._makeTemplate(trunk)
         entry = self._makeQueueEntry(trunk)
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
@@ -918,11 +908,249 @@ class TestAutoApprovalNewPOFile(TestCaseWithFactory, GardenerDbUserMixin):
 
         self.becomeTheGardener()
 
-        pofile = entry.getGuessedPOFile()
+        entry.getGuessedPOFile()
 
         credits.getCurrentTranslationMessage(template, self.language)
         self.assertNotEqual(None, credits)
 
 
+class TestAutoBlocking(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestAutoBlocking, self).setUp()
+        self.queue = TranslationImportQueue()
+        # Our test queue operates on the master store instead of the
+        # slave store so we don't have to synchronize stores.
+        master_store = IMasterStore(TranslationImportQueueEntry)
+        self.queue._getSlaveStore = FakeMethod(result=master_store)
+
+    def _copyTargetFromEntry(self, entry):
+        """Return a dict representing `entry`'s translation target.
+
+        :param entry: An existing `TranslationImportQueueEntry`, or None.
+        """
+        if entry is None:
+            return {}
+        else:
+            return {
+                'distroseries': entry.distroseries,
+                'sourcepackagename': entry.sourcepackagename,
+                'productseries': entry.productseries,
+            }
+
+    def _makeTemplateEntry(self, suffix='.pot', directory=None, status=None,
+                           same_target_as=None):
+        """Create an import queue entry for a template.
+
+        If `same_target_as` is given, creates an entry for the same
+        translation target as `same_target_as`.  This lets you create an
+        entry for the same translation target as another one.
+        """
+        if suffix == '.xpi':
+            basename = 'en-US'
+        else:
+            basename = self.factory.getUniqueString()
+
+        filename = basename + suffix
+        if directory is None:
+            path = filename
+        else:
+            path = '/'.join([directory, filename])
+
+        target = self._copyTargetFromEntry(same_target_as)
+
+        return self.factory.makeTranslationImportQueueEntry(
+            path=path, status=status, **target)
+
+    def _makeTranslationEntry(self, path, status=None, same_target_as=None):
+        """Create an import queue entry for a translation file.
+
+        If `same_target_as` is given, creates an entry for the same
+        translation target as `same_target_as`.  This lets you create an
+        entry that may have to be blocked depending on same_target_as.
+        """
+        target = self._copyTargetFromEntry(same_target_as)
+        return self.factory.makeTranslationImportQueueEntry(
+            path=path, status=status, **target)
+
+    def test_getBlockableDirectories_checks_templates(self):
+        old_blocklist = self.queue._getBlockableDirectories()
+
+        self._makeTemplateEntry(status=RosettaImportStatus.BLOCKED)
+
+        new_blocklist = self.queue._getBlockableDirectories()
+
+        self.assertEqual(len(old_blocklist) + 1, len(new_blocklist))
+
+    def test_getBlockableDirectories_ignores_translations(self):
+        old_blocklist = self.queue._getBlockableDirectories()
+
+        self._makeTranslationEntry(
+            'gl.po', status=RosettaImportStatus.BLOCKED)
+
+        new_blocklist = self.queue._getBlockableDirectories()
+
+        self.assertEqual(len(old_blocklist), len(new_blocklist))
+
+    def test_getBlockableDirectories_checks_xpi_templates(self):
+        old_blocklist = self.queue._getBlockableDirectories()
+
+        self._makeTemplateEntry(
+            suffix='.xpi', status=RosettaImportStatus.BLOCKED)
+
+        new_blocklist = self.queue._getBlockableDirectories()
+
+        self.assertEqual(len(old_blocklist) + 1, len(new_blocklist))
+
+    def test_getBlockableDirectories_ignores_xpi_translations(self):
+        old_blocklist = self.queue._getBlockableDirectories()
+
+        self._makeTranslationEntry(
+            'lt.xpi', status=RosettaImportStatus.BLOCKED)
+
+        new_blocklist = self.queue._getBlockableDirectories()
+
+        self.assertEqual(len(old_blocklist), len(new_blocklist))
+
+    def test_isBlockable_none(self):
+        blocklist = self.queue._getBlockableDirectories()
+        entry = self._makeTranslationEntry('nl.po')
+        self.assertFalse(self.queue._isBlockable(entry, blocklist))
+
+    def test_isBlockable_one_blocked(self):
+        blocked_template = self._makeTemplateEntry(
+            status=RosettaImportStatus.BLOCKED)
+        blocklist = self.queue._getBlockableDirectories()
+
+        translations = self._makeTranslationEntry(
+            'de.po', same_target_as=blocked_template)
+
+        self.assertTrue(self.queue._isBlockable(translations, blocklist))
+
+    def test_isBlockable_multiple_blocked(self):
+        blocked1 = self._makeTemplateEntry(status=RosettaImportStatus.BLOCKED)
+        self._makeTemplateEntry(
+            status=RosettaImportStatus.BLOCKED, same_target_as=blocked1)
+        blocklist = self.queue._getBlockableDirectories()
+
+        translations = self._makeTranslationEntry(
+            'lo.po', same_target_as=blocked1)
+
+        self.assertTrue(self.queue._isBlockable(translations, blocklist))
+
+    def test_isBlockable_one_unblocked(self):
+        unblocked = self._makeTemplateEntry()
+        blocklist = self.queue._getBlockableDirectories()
+
+        translations = self._makeTranslationEntry(
+            'xh.po', same_target_as=unblocked)
+
+        self.assertFalse(self.queue._isBlockable(translations, blocklist))
+
+    def test_isBlockable_mixed(self):
+        # When there are both blocked and unblocked template entries in
+        # a directory, translation uploads for that directory are not
+        # blocked.
+        blocked = self._makeTemplateEntry(status=RosettaImportStatus.BLOCKED)
+        self._makeTemplateEntry(same_target_as=blocked)
+        blocklist = self.queue._getBlockableDirectories()
+
+        translations = self._makeTranslationEntry(
+            'fr.po', same_target_as=blocked)
+
+        self.assertFalse(self.queue._isBlockable(translations, blocklist))
+
+    def test_getBlockableDirectories_path_rootdir_match(self):
+        # _getBlockableDirectories matches sees a template and
+        # translations file in the root directory as being in the same
+        # directory.
+        blocked = self._makeTemplateEntry(
+            directory=None, status=RosettaImportStatus.BLOCKED)
+        blocklist = self.queue._getBlockableDirectories()
+        translations = self._makeTranslationEntry(
+            'es.po', same_target_as=blocked)
+        self.assertTrue(self.queue._isBlockable(translations, blocklist))
+
+    def test_getBlockableDirectories_path_rootdir_nonmatch(self):
+        # _getBlockableDirectories matches sees a template in the root
+        # directory (i.e. without a directory component in its path) as
+        # being in a different directory from a translations upload in a
+        # subdirectory.
+        blocked = self._makeTemplateEntry(
+            directory=None, status=RosettaImportStatus.BLOCKED)
+        blocklist = self.queue._getBlockableDirectories()
+        translations = self._makeTranslationEntry(
+            'po/es.po', same_target_as=blocked)
+        self.assertFalse(self.queue._isBlockable(translations, blocklist))
+
+    def test_getBlockableDirectories_path_subdir_match(self):
+        # _getBlockableDirectories matches sees a template and
+        # translations file in the same directory as being in the same
+        # directory.
+        blocked = self._makeTemplateEntry(
+            directory='po/module', status=RosettaImportStatus.BLOCKED)
+        blocklist = self.queue._getBlockableDirectories()
+        translations = self._makeTranslationEntry(
+            'po/module/es.po', same_target_as=blocked)
+        self.assertTrue(self.queue._isBlockable(translations, blocklist))
+
+    def test_getBlockableDirectories_path_subdir_nonmatch(self):
+        # _getBlockableDirectories matches sees a template in a
+        # subdirectory as being in a different directory from a
+        # translations upload in the root directory.
+        blocked = self._makeTemplateEntry(
+            directory='po', status=RosettaImportStatus.BLOCKED)
+        blocklist = self.queue._getBlockableDirectories()
+        translations = self._makeTranslationEntry(
+            'es.po', same_target_as=blocked)
+        self.assertFalse(self.queue._isBlockable(translations, blocklist))
+
+    def test_getBlockableDirectories_path_nested_translations(self):
+        # _getBlockableDirectories sees a translations upload in a
+        # subdirectory of that on the template upload as being in a
+        # different directory.
+        blocked = self._makeTemplateEntry(
+            directory='po', status=RosettaImportStatus.BLOCKED)
+        blocklist = self.queue._getBlockableDirectories()
+        translations = self._makeTranslationEntry(
+            'po/module/es.po', same_target_as=blocked)
+        self.assertFalse(self.queue._isBlockable(translations, blocklist))
+
+    def test_getBlockableDirectories_path_nested_template(self):
+        # _getBlockableDirectories sees a translations upload in one
+        # directory and a template upload in a subdirectory of that
+        # directory as being in different directories.
+        blocked = self._makeTemplateEntry(
+            directory='po/module', status=RosettaImportStatus.BLOCKED)
+        blocklist = self.queue._getBlockableDirectories()
+        translations = self._makeTranslationEntry(
+            'po/es.po', same_target_as=blocked)
+        self.assertFalse(self.queue._isBlockable(translations, blocklist))
+
+    def test_getBlockableDirectories_path_substring_translations(self):
+        # _getBlockableDirectories sees the difference between a
+        # template's directory and a translation upload's directory even
+        # if the latter is a substring of the former.
+        blocked = self._makeTemplateEntry(
+            directory='po/moduleX', status=RosettaImportStatus.BLOCKED)
+        blocklist = self.queue._getBlockableDirectories()
+        translations = self._makeTranslationEntry(
+            'po/module/es.po', same_target_as=blocked)
+        self.assertFalse(self.queue._isBlockable(translations, blocklist))
+
+    def test_getBlockableDirectories_path_substring_template(self):
+        # _getBlockableDirectories sees the difference between a
+        # template's directory and a translation upload's directory even
+        # if the former is a substring of the latter.
+        blocked = self._makeTemplateEntry(
+            directory='po/module', status=RosettaImportStatus.BLOCKED)
+        blocklist = self.queue._getBlockableDirectories()
+        translations = self._makeTranslationEntry(
+            'po/moduleX/es.po', same_target_as=blocked)
+        self.assertFalse(self.queue._isBlockable(translations, blocklist))
+
+
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    return TestLoader().loadTestsFromName(__name__)

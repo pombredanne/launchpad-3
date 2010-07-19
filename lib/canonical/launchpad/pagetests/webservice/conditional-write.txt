@@ -101,3 +101,39 @@ When two clients attempt overlapping modifications of the same
 resource, the later one still gets a 412 error. If an unwritable field
 changes, a conditional read will fail, but a conditional write will
 succeed, even though the ETags don't match exactly.
+
+
+It's okay if mod_compress modifies outgoing ETags
+=================================================
+
+Here's another way non-identical ETags may be treated as the
+same. Apache's mod_compress modifies outgoing ETags when it compresses
+the representations. Launchpad's web service will treat an ETag
+modified by mod_compress as though it were the original ETag.
+
+  >>> etag = webservice.get(url).jsonBody()['http_etag']
+
+  >>> headers = {'If-None-Match': etag}
+  >>> print webservice.get(url, headers=headers)
+  HTTP/1.1 304 Not Modified
+  ...
+
+Some versions of mod_compress turn '"foo"' into '"foo"-gzip', and some
+versions turn it into '"foo-gzip"'. We treat all three forms the same.
+
+  >>> headers = {'If-None-Match': etag + "-gzip"}
+  >>> print webservice.get(url, headers=headers)
+  HTTP/1.1 304 Not Modified
+  ...
+
+  >>> headers = {'If-None-Match': etag[:-1] + "-gzip" + etag[-1]}
+  >>> print webservice.get(url, headers=headers)
+  HTTP/1.1 304 Not Modified
+  ...
+
+Any other modification to the ETag is treated as a distinct ETag.
+
+  >>> headers = {'If-None-Match': etag + "-not-gzip"}
+  >>> print webservice.get(url, headers=headers)
+  HTTP/1.1 200 Ok
+  ...

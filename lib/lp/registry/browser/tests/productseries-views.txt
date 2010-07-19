@@ -259,6 +259,7 @@ mistake.
     >>> product = factory.makeProduct(name="field", displayname='Field')
     >>> productseries = factory.makeProductSeries(
     ...     product=product, name='rabbit')
+    >>> productseries.releasefileglob = 'http://eg.dom/rabbit/*'
 
     # Hack the creation date for testing purposes.
     >>> test_date = datetime(2009, 05, 01, 19, 34, 24, tzinfo=UTC)
@@ -466,6 +467,13 @@ avoid conflicts. The linked branch is removed.
     True
     >>> print productseries.name
     field-rabbit-20090501-193424
+
+The series status is set to obsolete and the releasefileglob was set to None.
+
+    >>> print productseries.status
+    Obsolete
+    >>> print productseries.releasefileglob
+    None
 
 A series cannot be deleted if it is has translation templates.
 

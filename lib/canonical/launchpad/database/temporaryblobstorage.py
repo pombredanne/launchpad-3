@@ -19,7 +19,7 @@ from sqlobject import StringCol, ForeignKey, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical import uuid
+import uuid
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -58,18 +58,34 @@ class TemporaryBlobStorage(SQLBase):
         finally:
             self.file_alias.close()
 
-    def hasBeenProcessed(self):
-        """See `ITemporaryBlobStorage`."""
+    @property
+    def _apport_job(self):
         # Imported here to avoid circular imports
         from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
         try:
             job_for_blob = getUtility(
                 IProcessApportBlobJobSource).getByBlobUUID(self.uuid)
         except SQLObjectNotFound:
-            return False
+            return None
 
+        return job_for_blob
+
+    def hasBeenProcessed(self):
+        """See `ITemporaryBlobStorage`."""
+        job_for_blob = self._apport_job
+        if not job_for_blob:
+            return False
         return (job_for_blob.job.status == JobStatus.COMPLETED)
 
+    def getProcessedData(self):
+        """See `ITemporaryBlobStorage`."""
+        job_for_blob = self._apport_job
+        if not job_for_blob:
+            return None
+        if 'processed_data' not in job_for_blob.metadata:
+            return {}
+        
+        return job_for_blob.metadata['processed_data']
 
 class TemporaryStorageManager:
     """A tool to create temporary BLOB's in Launchpad."""
@@ -102,13 +118,13 @@ class TemporaryStorageManager:
 
         # create the BLOB and return the UUID
 
-        new_uuid = uuid.generate_uuid()
+        new_uuid = str(uuid.uuid1())
 
         # We use a random filename, so only things that can look up the
         # secret can retrieve the original data (which is why we don't use
         # the UUID we return to the user as the filename, nor the filename
         # of the object they uploaded).
-        secret = uuid.generate_uuid()
+        secret = str(uuid.uuid1())
 
         file_alias = getUtility(ILibraryFileAliasSet).create(
                 secret, len(blob), StringIO(blob),

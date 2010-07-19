@@ -63,7 +63,7 @@ IBug.getBugNotificationRecipients().
 Let's up some data for our test:
 
   >>> from canonical.launchpad.interfaces import IPersonSet
-  >>> from canonical.launchpad.mailnotification import (
+  >>> from lp.bugs.mail.bugnotificationrecipients import (
   ...     BugNotificationRecipients)
   >>> debian = Distribution.selectOneBy(name="debian")
   >>> pmount = debian.getSourcePackage("pmount")

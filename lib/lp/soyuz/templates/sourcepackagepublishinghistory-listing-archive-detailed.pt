@@ -64,7 +64,7 @@
                           condition="not:view/builds_successful_and_published">
         <a tal:attributes="href build/fmt:url;
                            title build_status_summary/description">
-          <tal:arch content="build/distroarchseries/architecturetag" />
+          <tal:arch content="build/distro_arch_series/architecturetag" />
         </a>
       </tal:related_builds>
     </td>

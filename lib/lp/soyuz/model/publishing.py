@@ -41,18 +41,20 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.worlddata.model.country import Country
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (BinaryPackageRelease,
     BinaryPackageReleaseDownloadCount)
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus, IBinaryPackageBuildSet)
@@ -437,15 +439,16 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 BinaryPackageRelease.id AND
             BinaryPackagePublishingHistory.distroarchseries=
                 DistroArchSeries.id AND
-            BinaryPackageRelease.build=Build.id AND
-            Build.sourcepackagerelease=%s AND
+            BinaryPackageRelease.build=BinaryPackageBuild.id AND
+            BinaryPackageBuild.source_package_release=%s AND
             DistroArchSeries.distroseries=%s AND
             BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.pocket=%s
         """ % sqlvalues(self.sourcepackagerelease, self.distroseries,
                         self.archive, self.pocket)
 
-        clauseTables = ['Build', 'BinaryPackageRelease', 'DistroArchSeries']
+        clauseTables = [
+            'BinaryPackageBuild', 'BinaryPackageRelease', 'DistroArchSeries']
         orderBy = ['-BinaryPackagePublishingHistory.id']
         preJoins = ['binarypackagerelease']
 
@@ -563,15 +566,14 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Check DistroArchSeries database IDs because the object belongs
         # to different transactions (architecture_available is cached).
         if (build_candidate is not None and
-            (build_candidate.distroarchseries.id == arch.id or
-             build_candidate.buildstate == BuildStatus.FULLYBUILT)):
+            (build_candidate.distro_arch_series.id == arch.id or
+             build_candidate.status == BuildStatus.FULLYBUILT)):
             return None
 
         build = self.sourcepackagerelease.createBuild(
-            distroarchseries=arch, archive=self.archive, pocket=self.pocket)
+            distro_arch_series=arch, archive=self.archive, pocket=self.pocket)
         # Create the builds in suspended mode for disabled archives.
         build_queue = build.queueBuild(suspended=not self.archive.enabled)
-        build_queue.score()
         Store.of(build).flush()
 
         if logger is not None:
@@ -867,7 +869,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def buildIndexStanzaFields(self):
         """See `IPublishing`."""
         bpr = self.binarypackagerelease
-        spr = bpr.build.sourcepackagerelease
+        spr = bpr.build.source_package_release
 
         # binaries have only one file, the DEB
         bin_file = bpr.files[0]
@@ -892,7 +894,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Present 'all' in every archive index for architecture
         # independent binaries.
         if bpr.architecturespecific:
-            architecture = bpr.build.distroarchseries.architecturetag
+            architecture = bpr.build.distro_arch_series.architecturetag
         else:
             architecture = 'all'
 
@@ -1159,7 +1161,10 @@ class PublishingSet:
             section=section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW)
-
+        # Import here to prevent import loop.
+        from lp.registry.model.distributionsourcepackage import (
+            DistributionSourcePackage)
+        DistributionSourcePackage.ensure(pub)
         return pub
 
     def getBuildsForSourceIds(
@@ -1182,19 +1187,22 @@ class PublishingSet:
         # If an optional list of build states was passed in as a parameter,
         # ensure that the result is limited to builds in those states.
         if build_states is not None:
-            extra_exprs.append(
-                BinaryPackageBuild.buildstate.is_in(build_states))
+            extra_exprs.extend((
+                BinaryPackageBuild.package_build == PackageBuild.id,
+                PackageBuild.build_farm_job == BuildFarmJob.id,
+                BuildFarmJob.status.is_in(build_states)))
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         # We'll be looking for builds in the same distroseries as the
         # SPPH for the same release.
         builds_for_distroseries_expr = (
-            BinaryPackageBuild.distroarchseriesID == DistroArchSeries.id,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            BinaryPackageBuild.distro_arch_series_id == DistroArchSeries.id,
             SourcePackagePublishingHistory.distroseriesID ==
                 DistroArchSeries.distroseriesID,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                BinaryPackageBuild.sourcepackagereleaseID,
+                BinaryPackageBuild.source_package_release_id,
             In(SourcePackagePublishingHistory.id, source_publication_ids)
             )
 
@@ -1204,7 +1212,7 @@ class PublishingSet:
             BinaryPackageBuild,
             builds_for_distroseries_expr,
             (SourcePackagePublishingHistory.archiveID ==
-                BinaryPackageBuild.archiveID),
+                PackageBuild.archive_id),
             *extra_exprs)
 
         # Next get all the builds that have a binary published in the
@@ -1214,7 +1222,7 @@ class PublishingSet:
             BinaryPackageBuild,
             builds_for_distroseries_expr,
             (SourcePackagePublishingHistory.archiveID !=
-                BinaryPackageBuild.archiveID),
+                PackageBuild.archive_id),
             BinaryPackagePublishingHistory.archive ==
                 SourcePackagePublishingHistory.archiveID,
             BinaryPackagePublishingHistory.binarypackagerelease ==
@@ -1258,7 +1266,7 @@ class PublishingSet:
         return Store.of(archive).find(
             baseclass,
             baseclass.id == id,
-            baseclass.archive == archive.id)
+            baseclass.archive == archive.id).one()
 
     def _extractIDs(self, one_or_more_source_publications):
         """Return a list of database IDs for the given list or single object.
@@ -1297,7 +1305,7 @@ class PublishingSet:
 
         join = [
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                BinaryPackageBuild.sourcepackagereleaseID,
+                BinaryPackageBuild.source_package_release_id,
             BinaryPackageRelease.build == BinaryPackageBuild.id,
             BinaryPackageRelease.binarypackagenameID ==
                 BinaryPackageName.id,
@@ -1352,7 +1360,9 @@ class PublishingSet:
             self._getSourceBinaryJoinForSources(
                 source_publication_ids, active_binaries_only=False),
             BinaryPackagePublishingHistory.datepublished != None,
-            BinaryPackageBuild.buildstate.is_in(build_states))
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.status.is_in(build_states))
 
         published_builds.order_by(
             SourcePackagePublishingHistory.id,
@@ -1385,7 +1395,7 @@ class PublishingSet:
                 BinaryPackageRelease.id,
             BinaryPackageRelease.buildID == BinaryPackageBuild.id,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                BinaryPackageBuild.sourcepackagereleaseID,
+                BinaryPackageBuild.source_package_release_id,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.archiveID ==

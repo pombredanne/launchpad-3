@@ -16,8 +16,9 @@
 
     <script type="text/javascript">
         LPS.use(
-          'base', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
-            Y.bugs.setup_dupe_finder();
+          'base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
+          function(Y) {
+            Y.lp.bugs.filebug_dupefinder.setup_dupe_finder();
         });
     </script>
     <meta http-equiv="refresh" content="10"

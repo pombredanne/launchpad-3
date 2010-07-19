@@ -80,12 +80,6 @@ information in the label.
     >>> view.search_results_count
     0
 
-The second step's page also includes some special things if the user is in the
-vcs_imports celebrity.  Foo Bar is in this team.
-
-    >>> view.isVCSImport()
-    True
-
 The second step also has a iterator over all the search results, of which
 there are currently none.
 

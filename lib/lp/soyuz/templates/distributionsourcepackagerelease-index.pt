@@ -123,7 +123,7 @@
           <tal:builds tal:repeat="build series_builds/builds">
             <tal:icon replace="structure build/image:icon" />
             <a tal:attributes="href build/fmt:url"
-               tal:content="build/distroarchseries/architecturetag">i386</a>
+               tal:content="build/distro_arch_series/architecturetag">i386</a>
             <tal:upload define="upload build/package_upload"
                         condition="upload">
               <tal:not-done condition="not: upload/status/enumvalue:DONE">
@@ -140,7 +140,7 @@
 
   <div id="source-files" class="portlet">
    <h2>Downloads</h2>
-   <table class="summary">
+   <table class="narrow listing">
     <thead>
      <tr>
       <th>File</th>
@@ -150,13 +150,20 @@
     </thead>
     <tbody>
       <tr tal:repeat="file view/files">
-       <td>
-         <a class="sprite download"
-            tal:attributes="href file/http_url"
-            tal:content="file/filename">foo_1.0.dsc</a>
-       </td>
-       <td tal:content="file/content/filesize/fmt:bytes">10 bytes</td>
-       <td tal:content="file/content/md5">DEADBEEF</td>
+       <tal:file_available condition="not:file/deleted">
+         <td>
+           <a class="sprite download"
+              tal:attributes="href file/http_url"
+              tal:content="file/filename">foo_1.0.dsc</a>
+         </td>
+         <td tal:content="file/content/filesize/fmt:bytes">10 bytes</td>
+         <td tal:content="file/content/md5">DEADBEEF</td>
+       </tal:file_available>
+       <tal:file_unavailable condition="file/deleted">
+         <td span=3>
+           <span tal:replace="file/filename">foo.dsc</span> (deleted)
+         </td>
+       </tal:file_unavailable>
       </tr>
     </tbody>
    </table>

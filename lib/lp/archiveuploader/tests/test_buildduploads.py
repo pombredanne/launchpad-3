@@ -107,7 +107,7 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         self.assertEqual(
             u'i386 build of foo 1.0-1 in ubuntu breezy RELEASE',
             build_used.title)
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
         # Force immediate publication.
         queue_item = self.uploadprocessor.last_processed_upload.queue_root
@@ -123,7 +123,7 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         self.assertEqual(
             u'powerpc build of foo 1.0-1 in ubuntu breezy RELEASE',
             build_used.title)
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
 
 def test_suite():

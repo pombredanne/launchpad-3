@@ -23,7 +23,6 @@ __all__ = [
     'ArchiveView',
     'ArchiveViewBase',
     'make_archive_vocabulary',
-    'traverse_distro_archive',
     'traverse_named_ppa',
     ]
 
@@ -36,6 +35,7 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements, Interface
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.schema import Choice, List, TextLine
 from zope.schema.interfaces import IContextSourceBinder
@@ -78,6 +78,7 @@ from lp.soyuz.interfaces.packagecopyrequest import (
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.person import IPersonSet, PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, inactive_publishing_status, IPublishingSet,
     PackagePublishingStatus)
@@ -93,7 +94,7 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
-from canonical.launchpad.webapp.tales import FormattersAPI
+from lp.app.browser.stringformatter import FormattersAPI
 from canonical.widgets import (
     LabeledMultiCheckBoxWidget, PlainMultiCheckBoxWidget)
 from canonical.widgets.itemswidgets import (
@@ -109,21 +110,6 @@ class ArchiveBadges(HasBadgeBase):
     def getPrivateBadgeTitle(self):
         """Return private badge info useful for a tooltip."""
         return "This archive is private."
-
-
-def traverse_distro_archive(distribution, name):
-    """For distribution archives, traverse to the right place.
-
-    This traversal only applies to distribution archives, not PPAs.
-
-    :param name: The name of the archive, e.g. 'partner'
-    """
-    archive = getUtility(
-        IArchiveSet).getByDistroAndName(distribution, name)
-    if archive is None:
-        raise NotFoundError(name)
-
-    return archive
 
 
 def traverse_named_ppa(person_name, ppa_name):
@@ -215,12 +201,8 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
         # The ID is not enough on its own to identify the publication,
         # we need to make sure it matches the context archive as well.
-        results = getUtility(IPublishingSet).getByIdAndArchive(
+        return getUtility(IPublishingSet).getByIdAndArchive(
             pub_id, self.context, source)
-        if results.count() == 1:
-            return results[0]
-
-        return None
 
     @stepthrough('+binaryhits')
     def traverse_binaryhits(self, name_str):
@@ -442,7 +424,12 @@ class ArchiveMenuMixin:
 
     def packages(self):
         text = 'View package details'
-        return Link('+packages', text, icon='info')
+        link = Link('+packages', text, icon='info')
+        # Disable the link for P3As if they don't have upload rights.
+        if self.context.private:
+            if not check_permission('launchpad.Append', self.context):
+                link.enabled = False
+        return link
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
@@ -514,6 +501,10 @@ class ArchivePackagesActionMenu(NavigationMenu, ArchiveMenuMixin):
 
 class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
+
+    @cachedproperty
+    def private(self):
+        return self.context.private
 
     @cachedproperty
     def has_sources(self):
@@ -975,6 +966,12 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     """Detailed packages view for an archive."""
     implements(IArchivePackagesActionMenu)
+
+    def initialize(self):
+        super(ArchivePackagesView, self).initialize()
+        if self.context.private:
+            if not check_permission('launchpad.Append', self.context):
+                raise Unauthorized
 
     @property
     def page_title(self):
@@ -1823,6 +1820,10 @@ class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
 
     __used_for__ = IHasBuildRecords
 
+    # The archive builds view presents all package builds (binary
+    # or source package recipe builds).
+    binary_only = False
+
     @property
     def default_build_state(self):
         """See `IBuildRecordsView`.
@@ -1868,11 +1869,13 @@ class ArchiveEditView(BaseArchiveEditView):
 
 class ArchiveAdminView(BaseArchiveEditView):
 
-    field_names = ['enabled', 'private', 'require_virtualized',
+    field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
                    'buildd_secret', 'authorized_size', 'relative_build_score',
-                   'external_dependencies', 'arm_builds_allowed']
+                   'external_dependencies']
 
     custom_widget('external_dependencies', TextAreaWidget, height=3)
+
+    custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
 
     def validate_save(self, action, data):
         """Validate the save action on ArchiveAdminView.
@@ -1912,6 +1915,11 @@ class ArchiveAdminView(BaseArchiveEditView):
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
 
+        if data.get('commercial') is True and not data['private']:
+            self.setFieldError(
+                'commercial',
+                'Can only set commericial for private archives.')
+
     def validate_external_dependencies(self, ext_deps):
         """Validate the external_dependencies field.
 
@@ -1946,6 +1954,31 @@ class ArchiveAdminView(BaseArchiveEditView):
         :rtype: bool
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
+
+    def setUpFields(self):
+        """Override `LaunchpadEditFormView`.
+
+        See `createEnabledRestrictedFamilies` method.
+        """
+        super(ArchiveAdminView, self).setUpFields()
+        self.form_fields += self.createEnabledRestrictedFamilies()
+
+    def createEnabledRestrictedFamilies(self):
+        """Creates the 'enabled_restricted_families' field.
+
+        """
+        terms = []
+        for family in getUtility(IProcessorFamilySet).getRestricted():
+            terms.append(SimpleTerm(
+                family, token=family.name, title=family.title))
+        return form.Fields(
+            List(__name__='enabled_restricted_families',
+                 title=_('Enabled restricted families'),
+                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                 required=False,
+                 description=_('Select the restricted architecture families '
+                               'on which this archive is allowed to build.')),
+                 render_context=self.render_context)
 
 
 class ArchiveDeleteView(LaunchpadFormView):

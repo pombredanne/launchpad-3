@@ -1,16 +1,19 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from doctest import DocTestSuite
+import os
 import unittest
 
 import transaction
-from zope.testing.doctest import DocTestSuite
 
+from canonical.launchpad.mail.ftests.helpers import testmails_path
 from canonical.launchpad.mail.incoming import handleMail, MailErrorUtility
 from canonical.testing import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 from lp.services.mail.sendmail import MailController
+from lp.services.mail.stub import TestMailer
 
 
 class TestIncoming(TestCaseWithFactory):
@@ -51,6 +54,24 @@ class TestIncoming(TestCaseWithFactory):
             "Launchpad's email\ninterface.\n\n\n"
             "Error message:\n\nSignature couldn't be verified: No data",
             body)
+
+    def test_invalid_to_addresses(self):
+        """Invalid To: header should not be handled as an OOPS."""
+        raw_mail = open(os.path.join(
+            testmails_path, 'invalid-to-header.txt')).read()
+        # Due to the way handleMail works, even if we pass a valid To header
+        # to the TestMailer, as we're doing here, it falls back to parse all
+        # To and CC headers from the raw_mail. Also, TestMailer is used here
+        # because MailController won't send an email with a broken To: header.
+        TestMailer().send("from@example.com", "to@example.com", raw_mail)
+        error_utility = MailErrorUtility()
+        old_oops = error_utility.getLastOopsReport()
+        handleMail()
+        current_oops = error_utility.getLastOopsReport()
+        if old_oops is None:
+            self.assertIs(None, current_oops)
+        else:
+            self.assertEqual(old_oops.id, current_oops.id)
 
 
 def test_suite():

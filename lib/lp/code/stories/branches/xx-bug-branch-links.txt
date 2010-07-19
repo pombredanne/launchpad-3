@@ -56,7 +56,7 @@ requires the user to enter a bug number.
     >>> browser.getControl('Bug #').value = "9"
     >>> browser.getControl('Continue').click()
     >>> printBugBranchLinks(browser)
-    Bug #9: Thunderbird crashes Unknown Unknown
+    Bug #9: Thunderbird crashes
 
 Attempting to link to the same bug again gives no error.
 
@@ -91,7 +91,7 @@ Sample person can see it...
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> printBugBranchLinks(browser)
-    Bug #9: Thunderbird crashes Unknown Unknown
+    Bug #9: Thunderbird crashes
 
 ... but an anonymous user cannot.
 
@@ -130,7 +130,7 @@ links to a page restricted with the launchpad.AnyPerson permission.
 
     >>> browser.getLink('~name12/gnome-terminal/scanned').click()
     >>> printBugBranchLinks(browser)
-    Bug #11: Make Jokosher use autoaudiosink Undecided New
+    Bug #11: Make Jokosher use autoaudiosink
 
 
 Quick branch registration

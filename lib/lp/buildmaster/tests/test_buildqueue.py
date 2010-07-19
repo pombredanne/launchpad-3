@@ -11,6 +11,7 @@ from unittest import TestLoader
 from zope import component
 from zope.component import getGlobalSiteManager, getUtility
 from zope.interface.verify import verifyObject
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -45,7 +46,7 @@ def find_job(test, name, processor='386'):
     for build in test.builds:
         bq = build.buildqueue_record
         source = None
-        for attr in ('sourcepackagerelease', 'sourcepackagename'):
+        for attr in ('source_package_release', 'recipe'):
             source = getattr(build, attr, None)
             if source is not None:
                 break
@@ -105,7 +106,7 @@ def check_mintime_to_builder(test, bq, min_time):
     # Monkey-patch BuildQueueSet._now() so it returns a constant time stamp
     # that's not too far in the future. This avoids spurious test failures.
     monkey_patch_the_now_property(bq)
-    delay = bq._estimateTimeToNextBuilder()
+    delay = removeSecurityProxy(bq)._estimateTimeToNextBuilder()
     test.assertTrue(
         delay <= min_time,
         "Wrong min time to next available builder (%s > %s)"
@@ -122,7 +123,8 @@ def set_remaining_time_for_running_job(bq, remainder):
 def check_delay_for_job(test, the_job, delay):
     # Obtain the builder statistics pertaining to this job.
     builder_data = get_builder_data()
-    estimated_delay = the_job._estimateJobDelay(builder_data)
+    estimated_delay = removeSecurityProxy(the_job)._estimateJobDelay(
+        builder_data)
     test.assertEqual(delay, estimated_delay)
 
 
@@ -144,12 +146,13 @@ def monkey_patch_the_now_property(buildqueue):
     This avoids spurious test failures.
     """
     # Use the date/time the job started if available.
+    naked_buildqueue = removeSecurityProxy(buildqueue)
     if buildqueue.job.date_started:
         time_stamp = buildqueue.job.date_started
     else:
-        time_stamp = buildqueue._now()
+        time_stamp = naked_buildqueue._now()
 
-    buildqueue._now = FakeMethod(result=time_stamp)
+    naked_buildqueue._now = FakeMethod(result=time_stamp)
     return time_stamp
 
 
@@ -475,7 +478,10 @@ class TestBuilderData(SingleArchBuildsBase):
         # The build in question is an x86/native one.
         self.assertEqual(self.x86_proc.id, build.processor.id)
         self.assertEqual(False, build.is_virtualized)
-        bq = build.buildqueue_record
+
+        # To test this non-interface method, we need to remove the
+        # security proxy.
+        bq = removeSecurityProxy(build.buildqueue_record)
         builder_stats = get_builder_data()
         # We have 4 x86 native builders.
         self.assertEqual(
@@ -511,7 +517,7 @@ class TestBuilderData(SingleArchBuildsBase):
         # will be free again.
         build, bq = find_job(self, 'flex')
         bq.reset()
-        free_count = bq._getFreeBuildersCount(
+        free_count = removeSecurityProxy(bq)._getFreeBuildersCount(
             build.processor, build.is_virtualized)
         self.assertEqual(1, free_count)
 
@@ -595,7 +601,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
 
         # The following job can only run on a native builder.
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=111, sourcename='xxr-gftp', score=1055,
+            estimated_duration=111, sourcename=u'xxr-gftp', score=1055,
             virtualized=False)
         self.builds.append(job.specific_job.build)
 
@@ -997,11 +1003,11 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=22,
-            sourcename='xx-recipe-bash', score=1025)
+            sourcename=u'xx-recipe-bash', score=1025)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=222,
-            sourcename='xx-recipe-zsh', score=1053)
+            sourcename=u'xx-recipe-zsh', score=1053)
         self.builds.append(job.specific_job.build)
 
         # Assign the same score to the '386' vim and apg build jobs.
@@ -1095,10 +1101,10 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         for build in self.builds:
             bq = build.buildqueue_record
             if bq.processor == self.hppa_proc:
-                bq.virtualized = True
+                removeSecurityProxy(bq).virtualized = True
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=True, estimated_duration=332,
-            sourcename='xxr-openssh-client', score=1050)
+            sourcename=u'xxr-openssh-client', score=1050)
         self.builds.append(job.specific_job.build)
         # print_build_setup(self.builds)
         #   ...
@@ -1111,14 +1117,15 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
         flex_build, flex_job = find_job(self, 'flex', 'hppa')
         # The head job platform is the one of job #21 (xxr-openssh-client).
-        self.assertEquals((None, True), flex_job._getHeadJobPlatform())
+        self.assertEquals(
+            (None, True), removeSecurityProxy(flex_job)._getHeadJobPlatform())
         # The delay will be 900 (= 15*60) + 332 seconds
         check_delay_for_job(self, flex_job, 1232)
 
         # Now add a job with a NULL 'virtualized' flag. It should be treated
         # like jobs with virtualized=TRUE.
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=111, sourcename='xxr-gwibber', score=1051,
+            estimated_duration=111, sourcename=u'xxr-gwibber', score=1051,
             virtualized=None)
         self.builds.append(job.specific_job.build)
         # print_build_setup(self.builds)
@@ -1133,7 +1140,8 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         #   20,      xx-recipe-zsh, p: None, v:False e:0:03:42 *** s: 1053
 
         # The newly added 'xxr-gwibber' job is the new head job now.
-        self.assertEquals((None, None), flex_job._getHeadJobPlatform())
+        self.assertEquals(
+            (None, None), removeSecurityProxy(flex_job)._getHeadJobPlatform())
         # The newly added 'xxr-gwibber' job now weighs in as well and the
         # delay is 900 (= 15*60) + (332+111)/2 seconds
         check_delay_for_job(self, flex_job, 1121)
@@ -1142,7 +1150,9 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # 'xxr-openssh-client' jobs since the 'virtualized' values do not
         # match.
         flex_build, flex_job = find_job(self, 'flex', '386')
-        self.assertEquals((None, False), flex_job._getHeadJobPlatform())
+        self.assertEquals(
+            (None, False),
+            removeSecurityProxy(flex_job)._getHeadJobPlatform())
         # delay is 960 (= 16*60) + 222 seconds
         check_delay_for_job(self, flex_job, 1182)
 
@@ -1185,32 +1195,32 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
 
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=332,
-            sourcename='xxr-aptitude', score=1025)
+            sourcename=u'xxr-aptitude', score=1025)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=443,
-            sourcename='xxr-auto-apt', score=1053)
+            sourcename=u'xxr-auto-apt', score=1053)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=554, sourcename='xxr-daptup', score=1051,
+            estimated_duration=554, sourcename=u'xxr-daptup', score=1051,
             virtualized=None)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=665, sourcename='xxr-cron-apt', score=1043)
+            estimated_duration=665, sourcename=u'xxr-cron-apt', score=1043)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=776, sourcename='xxr-apt-build', score=1043)
+            estimated_duration=776, sourcename=u'xxr-apt-build', score=1043)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=887, sourcename='xxr-debdelta', score=1044,
+            estimated_duration=887, sourcename=u'xxr-debdelta', score=1044,
             virtualized=None)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=998, sourcename='xxr-apt', score=1044,
+            estimated_duration=998, sourcename=u'xxr-apt', score=1044,
             virtualized=None)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=1110, sourcename='xxr-cupt', score=1044,
+            estimated_duration=1110, sourcename=u'xxr-cupt', score=1044,
             virtualized=None)
         self.builds.append(job.specific_job.build)
 
@@ -1222,7 +1232,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         for build in self.builds:
             bq = build.buildqueue_record
             if bq.processor == self.x86_proc:
-                bq.virtualized = True
+                removeSecurityProxy(bq).virtualized = True
 
     def test_pending_jobs_only(self):
         # Let's see the assertion fail for a job that's not pending any more.

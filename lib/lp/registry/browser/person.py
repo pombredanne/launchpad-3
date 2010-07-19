@@ -84,7 +84,6 @@ import cgi
 import copy
 import itertools
 import pytz
-import subprocess
 import urllib
 
 from datetime import datetime, timedelta
@@ -165,7 +164,8 @@ from lp.registry.interfaces.person import (
     IPerson, IPersonClaim, IPersonSet, ITeam, ITeamReassignment,
     PersonVisibility, TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
 from lp.registry.interfaces.poll import IPollSet, IPollSubset
-from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
+from lp.registry.interfaces.ssh import (
+    ISSHKeySet, SSHKeyAdditionError, SSHKeyCompromisedError, SSHKeyType)
 from lp.registry.interfaces.teammembership import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ITeamMembership,
     ITeamMembershipSet, TeamMembershipStatus)
@@ -185,7 +185,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
-from lp.registry.interfaces.salesforce import (
+from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
@@ -223,13 +223,14 @@ from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import (
-    DateTimeFormatterAPI, FormattersAPI, PersonFormatterAPI)
+    DateTimeFormatterAPI, PersonFormatterAPI)
 from lazr.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
 
 from canonical.lazr.utils import smartquote
 
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 
@@ -556,9 +557,7 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context.person)
 
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
+    cancel_url = next_url
 
     @action(_("Renew"), name="renew")
     def renew_action(self, action, data):
@@ -729,7 +728,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def branches(self):
-        text = 'Branches'
+        text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.displayname)
         return Link('', text, summary)
@@ -1364,14 +1363,25 @@ class PeopleSearchView(LaunchpadView):
     def number_of_teams(self):
         return self.context.teamsCount()
 
+    @property
+    def is_teams_only(self):
+        """Is the search restricted to teams."""
+        searchfor = self.request.get("searchfor", None)
+        return searchfor == 'teamsonly'
+
+    @property
+    def is_people_only(self):
+        """Is the search restricted to people."""
+        searchfor = self.request.get("searchfor", None)
+        return searchfor == 'peopleonly'
+
     def searchPeopleBatchNavigator(self):
         name = self.request.get("name")
         if not name:
             return None
-        searchfor = self.request.get("searchfor")
-        if searchfor == "peopleonly":
+        if self.is_people_only:
             results = self.context.findPerson(name)
-        elif searchfor == "teamsonly":
+        elif self.is_teams_only:
             results = self.context.findTeam(name)
         else:
             results = self.context.find(name)
@@ -1732,7 +1742,7 @@ class PersonSpecWorkloadView(LaunchpadView):
         assert self.context.isTeam, (
             "PersonSpecWorkloadView.members can only be called on a team.")
         members = self.context.allmembers
-        batch_nav = BatchNavigator(members, self.request)
+        batch_nav = BatchNavigator(members, self.request, size=20)
         return batch_nav
 
 
@@ -1941,7 +1951,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
             extra_params=critical_bugs_params)
 
     def getHighBugsURL(self, distributionsourcepackage):
-        """Return the URL for high importance bugs on distributionsourcepackage."""
+        """Return URL for high bugs on distributionsourcepackage."""
         high_bugs_params = {
             'field.status': [], 'field.importance': "High"}
 
@@ -2285,9 +2295,9 @@ class PersonVouchersView(LaunchpadFormView):
 
         self.form_fields = []
         # Make the less expensive test for commercial projects first
-        # to avoid the more costly fetching of unredeemed vouchers.
+        # to avoid the more costly fetching of redeemable vouchers.
         if (self.has_commercial_projects and
-            len(self.unredeemed_vouchers) > 0):
+            len(self.redeemable_vouchers) > 0):
             self.form_fields = (self.createProjectField() +
                                 self.createVoucherField())
 
@@ -2308,10 +2318,10 @@ class PersonVouchersView(LaunchpadFormView):
     def createVoucherField(self):
         """Create voucher field.
 
-        Only unredeemed vouchers owned by the user are shown.
+        Only redeemable vouchers owned by the user are shown.
         """
         terms = []
-        for voucher in self.unredeemed_vouchers:
+        for voucher in self.redeemable_vouchers:
             text = "%s (%d months)" % (
                 voucher.voucher_id, voucher.term_months)
             terms.append(SimpleTerm(voucher, voucher.voucher_id, text))
@@ -2319,18 +2329,17 @@ class PersonVouchersView(LaunchpadFormView):
         field = FormFields(
             Choice(__name__='voucher',
                    title=_('Select a voucher'),
-                   description=_('Choose one of these unredeemed vouchers'),
+                   description=_('Choose one of these redeemable vouchers'),
                    vocabulary=voucher_vocabulary,
                    required=True),
             render_context=self.render_context)
         return field
 
     @cachedproperty
-    def unredeemed_vouchers(self):
-        """Get the unredeemed vouchers owned by the user."""
-        unredeemed, redeemed = (
-            self.context.getCommercialSubscriptionVouchers())
-        return unredeemed
+    def redeemable_vouchers(self):
+        """Get the redeemable vouchers owned by the user."""
+        vouchers = self.context.getRedeemableCommercialSubscriptionVouchers()
+        return vouchers
 
     @cachedproperty
     def has_commercial_projects(self):
@@ -2502,7 +2511,7 @@ class PersonKarmaView(LaunchpadView):
         if self.user == self.context:
             return 'Your Launchpad Karma'
         else:
-            return 'Launchpad Karma for %s' %  self.context.displayname
+            return 'Launchpad Karma'
 
     @cachedproperty
     def has_karma(self):
@@ -3037,14 +3046,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname
 
-    @property
-    def public_private_css(self):
-        """The CSS classes that represent the public or private state."""
-        if self.context.private:
-            return 'aside private'
-        else:
-            return 'aside public'
-
     @cachedproperty
     def should_show_ppa_section(self):
         """Return True if "Personal package archives" is to be shown.
@@ -3071,22 +3072,53 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    @property
-    def indirect_teams_via(self):
-        """Information about indirect membership.
+    def _asParticipation(self, membership, team_path=None):
+        """Return a dict of participation information for the membership."""
+        if team_path is None:
+            via = None
+        else:
+            via = COMMASPACE.join(team.displayname for team in team_path)
+        team = membership.team
+        if membership.person == team.teamowner:
+            role = 'Owner'
+        elif membership.status == TeamMembershipStatus.ADMIN:
+            role = 'Admin'
+        else:
+            role = 'Member'
+        if team.mailing_list is not None and team.mailing_list.is_usable:
+            subscription = team.mailing_list.getSubscription(self.context)
+            if subscription is None:
+                subscribed = 'Not subscribed'
+            else:
+                subscribed = 'Subscribed'
+        else:
+            subscribed = None
+        return dict(
+            displayname=team.displayname, team=team, membership=membership,
+            role=role, via=via, subscribed=subscribed)
 
-        :return: A list of dictionaries, where each dictionary has a team in
-          which the person is an indirect member, and a path to membership in
-          that team.
-        :rtype: a list of dictionaries
-        """
-        indirect_teams = []
+    @cachedproperty
+    def active_participations(self):
+        """Return the participation information for active memberships."""
+        participations = [self._asParticipation(membership)
+                for membership in self.context.myactivememberships
+                if check_permission('launchpad.View', membership.team)]
+        membership_set = getUtility(ITeamMembershipSet)
         for team in self.context.teams_indirectly_participated_in:
-            via = COMMASPACE.join(viateam.displayname
-                                  for viateam
-                                  in self.context.findPathToTeam(team)[:-1])
-            indirect_teams.append(dict(team=team, via=via))
-        return indirect_teams
+            if not check_permission('launchpad.View', team):
+                continue
+            # The key points of the path for presentation are:
+            # [-?] indirect memberships, [-2] direct membership, [-1] team.
+            team_path = self.context.findPathToTeam(team)
+            membership = membership_set.getByPersonAndTeam(
+                team_path[-2], team)
+            participations.append(
+                self._asParticipation(membership, team_path=team_path[:-1]))
+        return sorted(participations, key=itemgetter('displayname'))
+
+    @cachedproperty
+    def has_participations(self):
+        return len(self.active_participations) > 0
 
 
 class EmailAddressVisibleState:
@@ -3207,7 +3239,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             raise UnexpectedFormData(
-                _("This team does not have a mailing list."))
+                _("This team does not use Launchpad to host a mailing list."))
         if not self.user:
             raise Unauthorized(
                 _("You must be logged in to unsubscribe."))
@@ -3236,9 +3268,9 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-                YUI().use('node', 'lp.mapping', function(Y) {
+                YUI().use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
-                        Y.lp.mapping.renderPersonMapSmall(
+                        Y.lp.app.mapping.renderPersonMapSmall(
                             %(center_lat)s, %(center_lng)s);
                      }
                      Y.on("domready", renderMap);
@@ -3567,21 +3599,11 @@ class PersonEditSSHKeysView(LaunchpadView):
 
     def add_ssh(self):
         sshkey = self.request.form.get('sshkey')
-        try:
-            kind, keytext, comment = sshkey.split(' ', 2)
-        except ValueError:
+	try:
+      	    getUtility(ISSHKeySet).new(self.user, sshkey)
+        except SSHKeyAdditionError:
             self.error_message = structured('Invalid public key')
-            return
-
-        if not (kind and keytext and comment):
-            self.error_message = structured('Invalid public key')
-            return
-
-        process = subprocess.Popen(
-            '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, err) = process.communicate(sshkey.encode('utf-8'))
-        if 'compromised' in out.lower():
+        except SSHKeyCompromisedError:
             self.error_message = structured(
                 'This key is known to be compromised due to a security flaw '
                 'in the software used to generate it, so it will not be '
@@ -3589,18 +3611,8 @@ class PersonEditSSHKeysView(LaunchpadView):
                 '<a href="http://www.ubuntu.com/usn/usn-612-2">Security '
                 'Notice</a> for further information and instructions on how '
                 'to generate another key.')
-            return
-
-        if kind == 'ssh-rsa':
-            keytype = SSHKeyType.RSA
-        elif kind == 'ssh-dss':
-            keytype = SSHKeyType.DSA
         else:
-            self.error_message = structured('Invalid public key')
-            return
-
-        getUtility(ISSHKeySet).new(self.user, keytype, keytext, comment)
-        self.info_message = structured('SSH public key added.')
+            self.info_message = structured('SSH public key added.')
 
     def remove_ssh(self):
         key_id = self.request.form.get('key')
@@ -3658,13 +3670,17 @@ class PersonGPGView(LaunchpadView):
             IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     def form_action(self):
-        permitted_actions = ['claim_gpg', 'deactivate_gpg',
-                             'remove_gpgtoken', 'reactivate_gpg']
+        permitted_actions = [
+            'claim_gpg',
+            'deactivate_gpg',
+            'remove_gpgtoken',
+            'reactivate_gpg',
+            ]
         if self.request.method != "POST":
             return ''
         action = self.request.form.get('action')
-        if action and (action not in permitted_actions):
-            raise UnexpectedFormData("Action was not defined")
+        if action not in permitted_actions:
+            raise UnexpectedFormData("Action not permitted: %s" % action)
         getattr(self, action)()
 
     def claim_gpg(self):
@@ -4161,22 +4177,52 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         """Make the selected teams join this team."""
         context = self.context
         is_admin = check_permission('launchpad.Admin', context)
+        membership_set = getUtility(ITeamMembershipSet)
+        proposed_team_names = []
+        added_team_names = []
+        accepted_invite_team_names = []
+        membership_set = getUtility(ITeamMembershipSet)
         for team in data['teams']:
-            if is_admin:
+            membership = membership_set.getByPersonAndTeam(team, context)
+            if (membership is not None
+                and membership.status == TeamMembershipStatus.INVITED):
+                team.acceptInvitationToBeMemberOf(
+                    context,
+                    'Accepted an already pending invitation while trying to '
+                    'propose the team for membership.')
+                accepted_invite_team_names.append(team.displayname)
+            elif is_admin:
                 context.addMember(team, reviewer=self.user)
+                added_team_names.append(team.displayname)
             else:
                 team.join(context, requester=self.user)
-        if (context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED
-            and not is_admin):
-            msg = 'proposed to this team.'
-        else:
-            msg = 'added to this team.'
-        if len(data['teams']) > 1:
-            msg = "have been %s" % msg
-        else:
-            msg = "has been %s" % msg
-        team_names = ', '.join(team.displayname for team in data['teams'])
-        self.request.response.addInfoNotification("%s %s" % (team_names, msg))
+                membership = membership_set.getByPersonAndTeam(team, context)
+                if membership.status == TeamMembershipStatus.PROPOSED:
+                    proposed_team_names.append(team.displayname)
+                elif membership.status == TeamMembershipStatus.APPROVED:
+                    added_team_names.append(team.displayname)
+                else:
+                    raise AssertionError(
+                        'Unexpected membership status (%s) for %s.'
+                        % (membership.status.name, team.name))
+        full_message = ''
+        for team_names, message in (
+            (proposed_team_names, 'proposed to this team.'),
+            (added_team_names, 'added to this team.'),
+            (accepted_invite_team_names,
+             'added to this team because of an existing invite.'),
+            ):
+            if len(team_names) == 0:
+                continue
+            elif len(team_names) == 1:
+                verb = 'has been'
+                team_string = team_names[0]
+            elif len(team_names) > 1:
+                verb = 'have been'
+                team_string= (
+                    ', '.join(team_names[:-1]) + ' and ' + team_names[-1])
+            full_message += '%s %s %s ' % (team_string, verb, message)
+        self.request.response.addInfoNotification(full_message)
 
 
 class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
@@ -4712,8 +4758,34 @@ class TeamReassignmentView(ObjectReassignmentView):
     schema = ITeamReassignment
 
     def __init__(self, context, request):
-        ObjectReassignmentView.__init__(self, context, request)
+        super(TeamReassignmentView, self).__init__(context, request)
         self.callback = self._addOwnerAsMember
+
+    def validateOwner(self, new_owner):
+        """Display error if the owner is not valid.
+
+        Called by ObjectReassignmentView.validate().
+        """
+        if self.context.inTeam(new_owner):
+            path = self.context.findPathToTeam(new_owner)
+            if len(path) == 1:
+                relationship = 'a direct member'
+                path_string = ''
+            else:
+                relationship = 'an indirect member'
+                full_path = [self.context] + path
+                path_string = '(%s)' % '&rArr;'.join(
+                    team.displayname for team in full_path)
+            error = structured(
+                'Circular team memberships are not allowed. '
+                '%(new)s cannot be the new team owner, since %(context)s '
+                'is %(relationship)s of %(new)s. '
+                '<span style="white-space: nowrap">%(path)s</span>'
+                % dict(new=new_owner.displayname,
+                        context=self.context.displayname,
+                        relationship=relationship,
+                        path=path_string))
+            self.setFieldError(self.ownerOrMaintainerName, error)
 
     @property
     def contextName(self):
@@ -5012,12 +5084,15 @@ class SourcePackageReleaseWithStats:
 class PersonRelatedSoftwareView(LaunchpadView):
     """View for +related-software."""
     implements(IPersonRelatedSoftwareMenu)
+    _max_results_key = 'summary_list_size'
 
-    max_results_to_display = config.launchpad.default_batch_size
+    @property
+    def max_results_to_display(self):
+        return config.launchpad[self._max_results_key]
 
     @property
     def page_title(self):
-        return "Software related to " + self.context.displayname
+        return 'Related software'
 
     @cachedproperty
     def related_projects(self):
@@ -5054,12 +5129,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
     @cachedproperty
     def first_five_related_projects(self):
         """Return first five projects owned or driven by this person."""
-        return list(self._related_projects()[:5])
+        return self._related_projects()[:5]
 
     @cachedproperty
     def related_projects_count(self):
         """The number of project owned or driven by this person."""
-        return self._related_projects().count()
+        return len(self._related_projects())
 
     @cachedproperty
     def has_more_related_projects(self):
@@ -5132,7 +5207,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return results, header_message
 
     @property
-    def get_latest_uploaded_ppa_packages_with_stats(self):
+    def latest_uploaded_ppa_packages_with_stats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
 
         Results are filtered according to the permission of the requesting
@@ -5144,7 +5219,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return self.filterPPAPackageList(results)
 
     @property
-    def get_latest_maintained_packages_with_stats(self):
+    def latest_maintained_packages_with_stats(self):
         """Return the latest maintained packages, including stats."""
         packages = self.context.getLatestMaintainedPackages()
         results, header_message = self._getDecoratedPackagesSummary(packages)
@@ -5152,7 +5227,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return results
 
     @property
-    def get_latest_uploaded_but_not_maintained_packages_with_stats(self):
+    def latest_uploaded_but_not_maintained_packages_with_stats(self):
         """Return the latest uploaded packages, including stats.
 
         Don't include packages that are maintained by the user.
@@ -5185,14 +5260,14 @@ class PersonRelatedSoftwareView(LaunchpadView):
             builds_by_package[package] = []
             needs_build_by_package[package] = False
         for build in all_builds:
-            if build.buildstate == BuildStatus.FAILEDTOBUILD:
-                builds_by_package[build.sourcepackagerelease].append(build)
-            needs_build = build.buildstate in [
+            if build.status == BuildStatus.FAILEDTOBUILD:
+                builds_by_package[build.source_package_release].append(build)
+            needs_build = build.status in [
                 BuildStatus.NEEDSBUILD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.CHROOTWAIT,
                 ]
-            needs_build_by_package[build.sourcepackagerelease] = needs_build
+            needs_build_by_package[build.source_package_release] = needs_build
 
         return (builds_by_package, needs_build_by_package)
 
@@ -5236,6 +5311,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
 class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
     """View for +maintained-packages."""
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5244,11 +5320,12 @@ class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "Software maintained by " + self.context.displayname
+        return "Maintained Packages"
 
 
 class PersonUploadedPackagesView(PersonRelatedSoftwareView):
     """View for +uploaded-packages."""
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5257,11 +5334,12 @@ class PersonUploadedPackagesView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "Software uploaded by " + self.context.displayname
+        return "Uploaded packages"
 
 
 class PersonPPAPackagesView(PersonRelatedSoftwareView):
     """View for +ppa-packages."""
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5277,11 +5355,12 @@ class PersonPPAPackagesView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "PPA packages related to " + self.context.displayname
+        return "PPA packages"
 
 
 class PersonRelatedProjectsView(PersonRelatedSoftwareView):
     """View for +related-projects."""
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5291,7 +5370,7 @@ class PersonRelatedProjectsView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "Projects related to " + self.context.displayname
+        return "Related projects"
 
 
 class PersonOAuthTokensView(LaunchpadView):
@@ -5706,10 +5785,7 @@ class EmailToPersonView(LaunchpadFormView):
         # Subject and then Message fields.
         self.form_fields = FormFields(*chain((field, ), self.form_fields))
 
-    @property
-    def label(self):
-        """The form label."""
-        return 'Contact ' + self.context.displayname
+    label = 'Contact user'
 
     @cachedproperty
     def recipients(self):

@@ -113,8 +113,6 @@
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
-        <allow
             interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
         <require
             permission="launchpad.Edit"
@@ -374,6 +372,7 @@
                 name
                 displayname
                 title
+                summary
                 distro
                 get_distroseries_packages
                 subscribers
@@ -382,6 +381,7 @@
                 publishing_history
                 current_publishing_records
                 bug_reporting_guidelines
+                bug_reported_acknowledgement
                 latest_overall_publication
                 __getitem__
                 getVersion
@@ -446,7 +446,9 @@
                 removeAnswerContact"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="bug_reporting_guidelines"/>
+            set_attributes="
+                bug_reported_acknowledgement
+                bug_reporting_guidelines"/>
     </class>
     <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -499,22 +501,6 @@
         provides="lp.registry.interfaces.jabber.IJabberIDSet">
         <allow
             interface="lp.registry.interfaces.jabber.IJabberIDSet"/>
-    </securedutility>
-    <class
-        class="lp.registry.utilities.salesforce.SalesforceVoucherProxy">
-        <allow
-            interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy"/>
-    </class>
-    <class
-        class="lp.registry.utilities.salesforce.Voucher">
-        <allow
-            interface="lp.registry.interfaces.salesforce.ISalesforceVoucher"/>
-    </class>
-    <securedutility
-        class="lp.registry.utilities.salesforce.SalesforceVoucherProxy"
-        provides="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy">
-        <allow
-            interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy"/>
     </securedutility>
     <class
         class="lp.registry.model.pillar.PillarName">
@@ -1005,6 +991,16 @@
         interface="lp.registry.interfaces.mailinglist.IMailingListAPIView"
         class="canonical.launchpad.xmlrpc.MailingListAPIView"
         permission="zope.Public"/>
+    <securedutility
+        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentApplication"
+        provides="lp.registry.interfaces.person.ISoftwareCenterAgentApplication">
+      <allow interface="lp.registry.interfaces.person.ISoftwareCenterAgentApplication" />
+    </securedutility>
+    <xmlrpc:view
+        for="lp.registry.interfaces.person.ISoftwareCenterAgentApplication"
+        interface="lp.registry.interfaces.person.ISoftwareCenterAgentAPI"
+        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentAPI"
+        permission="zope.Public"/>
 
     <!-- Helper page for held message approval -->
 
@@ -1088,7 +1084,8 @@
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="bug_reporting_guidelines bugtracker
+            set_attributes="bug_reporting_guidelines
+                            bug_reported_acknowledgement bugtracker
                             commercial_subscription description
                             development_focus displayname downloadurl
                             driver enable_bug_expiration
@@ -1325,8 +1322,6 @@
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
-        <allow
-            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
         <require
             permission="launchpad.Edit"
             set_attributes="product name owner driver summary branch
@@ -1407,7 +1402,8 @@
                 displayname title summary description driver
                 members owner security_contact mirror_admin homepage_content
                 icon logo mugshot enable_bug_expiration
-                bug_reporting_guidelines official_blueprints official_malone
+                bug_reporting_guidelines bug_reported_acknowledgement
+                official_blueprints official_malone
                 official_rosetta official_answers official_bug_tags"/>
         <require
             permission="launchpad.TranslationsAdmin"
@@ -1529,8 +1525,6 @@
             interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
-        <allow
-            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
 
         <!-- IQuestionTarget -->
 

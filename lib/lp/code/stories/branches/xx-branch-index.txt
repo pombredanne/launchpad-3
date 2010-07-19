@@ -388,10 +388,10 @@ as the primary context for the branch and used for the breadcrumbs and tabs.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print_location(browser.contents)
-    Hierarchy: GNOME Terminal > Branches > scanned
+    Hierarchy: GNOME Terminal > Code > scanned
     Tabs:
     * Overview - http://launchpad.dev/gnome-terminal
-    * Branches (selected) - http://code.launchpad.dev/gnome-terminal
+    * Code (selected) - http://code.launchpad.dev/gnome-terminal
     * Bugs - http://bugs.launchpad.dev/gnome-terminal
     * Blueprints - http://blueprints.launchpad.dev/gnome-terminal
     * Translations - http://translations.launchpad.dev/gnome-terminal
@@ -400,10 +400,10 @@ as the primary context for the branch and used for the breadcrumbs and tabs.
 
     >>> browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> print_location(browser.contents)
-    Hierarchy: Sample Person > Branches > junk.dev
+    Hierarchy: Sample Person > Code > junk.dev
     Tabs:
     * Overview - http://launchpad.dev/~name12
-    * Branches (selected) - http://code.launchpad.dev/~name12
+    * Code (selected) - http://code.launchpad.dev/~name12
     * Bugs - http://bugs.launchpad.dev/~name12
     * Blueprints - http://blueprints.launchpad.dev/~name12
     * Translations - http://translations.launchpad.dev/~name12

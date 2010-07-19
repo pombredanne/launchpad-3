@@ -117,7 +117,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'distribution_source_package', 'edit_packaging', 'remove_packaging',
-        'changelog', 'builds', 'set_upstream',
+        'changelog', 'copyright', 'builds', 'set_upstream',
         ]
 
     def distribution_source_package(self):
@@ -128,6 +128,9 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')
+
+    def copyright(self):
+        return Link('+copyright', 'View copyright', icon='info')
 
     def edit_packaging(self):
         return Link('+edit-packaging', 'Change upstream link', icon='edit')
@@ -373,7 +376,7 @@ class SourcePackageView:
         all_arch = sorted([arch.architecturetag for arch in
                            self.context.distroseries.architectures])
         for bin in self.context.currentrelease.binaries:
-            distroarchseries = bin.build.distroarchseries
+            distroarchseries = bin.build.distro_arch_series
             if bin.name not in results:
                 results[bin.name] = []
 

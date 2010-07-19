@@ -46,6 +46,8 @@ from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp import canonical_url, errorlog
+from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.code.enums import match_enum_title
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
@@ -182,6 +184,14 @@ class BranchJobDerived(BaseRunnableJob):
 
     def __init__(self, branch_job):
         self.context = branch_job
+
+    def __repr__(self):
+        branch = self.branch
+        return '<%(job_type)s branch job (%(id)s) for %(branch)s>' % {
+            'job_type': self.context.job_type.name,
+            'id': self.context.id,
+            'branch': branch.unique_name,
+            }
 
     # XXX: henninge 2009-02-20 bug=331919: These two standard operators
     # should be implemented by delegates().
@@ -355,7 +365,29 @@ class BranchUpgradeJob(BranchJobDerived):
             upgrade_transport.clone('.bzr').copy_tree_to_transport(
                 source_branch_transport.clone('.bzr'))
 
-            self.branch.requestMirror()
+            # Re-open the source branch again.
+            source_branch = BzrBranch.open_from_transport(
+                source_branch_transport)
+
+            control_format = match_enum_title(
+                ControlFormat,
+                source_branch.bzrdir._format.get_format_string(),
+                ControlFormat.UNRECOGNIZED)
+            branch_format = match_enum_title(
+                BranchFormat,
+                source_branch._format.get_format_string(),
+                BranchFormat.UNRECOGNIZED)
+            repository_format = match_enum_title(
+                RepositoryFormat,
+                source_branch.repository._format.get_format_string(),
+                RepositoryFormat.UNRECOGNIZED)
+
+            self.branch.branchChanged(
+                self.branch.stacked_on,
+                self.branch.last_scanned_id,
+                control_format,
+                branch_format,
+                repository_format)
         finally:
             shutil.rmtree(upgrade_branch_path)
 
@@ -928,6 +960,12 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
     classProvides(IReclaimBranchSpaceJobSource)
 
     class_job_type = BranchJobType.RECLAIM_BRANCH_SPACE
+
+    def __repr__(self):
+        return '<RECLAIM_BRANCH_SPACE branch job (%(id)s) for %(branch)s>' % {
+            'id': self.context.id,
+            'branch': self.branch_id,
+            }
 
     @classmethod
     def create(cls, branch_id):

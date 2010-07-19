@@ -114,7 +114,7 @@ We're redirected to the newly created poll
     Hierarchy:  ?Ubuntu Team? team > Debian Project Leader Election 2080
     Tabs:
     * Overview (selected) - http://launchpad.dev/~ubuntu-team
-    * Branches - http://code.launchpad.dev/~ubuntu-team
+    * Code - http://code.launchpad.dev/~ubuntu-team
     * Bugs - http://bugs.launchpad.dev/~ubuntu-team
     * Blueprints - http://blueprints.launchpad.dev/~ubuntu-team
     * Translations - http://translations.launchpad.dev/~ubuntu-team

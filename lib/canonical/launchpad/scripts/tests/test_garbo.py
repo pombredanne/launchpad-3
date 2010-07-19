@@ -19,7 +19,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import THIRTY_DAYS_AGO, UTC_NOW
-from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
@@ -42,7 +41,6 @@ from lp.code.bzr import BranchFormat, RepositoryFormat
 from lp.code.model.branchjob import BranchJob, BranchUpgradeJob
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
-from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 
 
@@ -177,11 +175,18 @@ class TestGarbo(TestCaseWithFactory):
         results_to_keep_count = (
             config.codeimport.consecutive_failure_limit - 1)
 
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        code_import_id = self.factory.makeCodeImport().id
+        machine_id = self.factory.makeCodeImportMachine().id
+        requester_id = self.factory.makePerson().id
+        transaction.commit()
+
         def new_code_import_result(timestamp):
             LaunchpadZopelessLayer.switchDbUser('testadmin')
             CodeImportResult(
                 date_created=timestamp,
-                code_importID=1, machineID=1, requesting_userID=1,
+                code_importID=code_import_id, machineID=machine_id,
+                requesting_userID=requester_id,
                 status=CodeImportResultStatus.FAILURE,
                 date_job_started=timestamp)
             transaction.commit()

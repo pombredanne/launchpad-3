@@ -191,7 +191,7 @@ Adding and retrieving a buildlog.
     ...    'buildlog_ubuntu-breezy-autotest-i386.'
     ...    'test-pkg_1.0_FULLYBUILT.txt.gz')
     >>> buildlog = test_publisher.addMockFile(buildlog_name)
-    >>> build.buildlog = buildlog
+    >>> build.log = buildlog
 
     >>> buildlog == build.getFileByName(buildlog_name)
     True

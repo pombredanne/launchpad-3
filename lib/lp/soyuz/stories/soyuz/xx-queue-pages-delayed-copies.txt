@@ -27,7 +27,7 @@ We will create a testing delayed-copy for Ubuntu/breezy-autotest.
     >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
     ...     archive=ubuntu.main_archive, distroseries=breezy_autotest,
     ...     pocket=PackagePublishingPocket.RELEASE, signing_key=None)
-    >>> unused = delayed_copy.addSource(build.sourcepackagerelease)
+    >>> unused = delayed_copy.addSource(build.source_package_release)
     >>> unused = delayed_copy.addBuild(build)
     >>> transaction.commit()
     >>> delayed_copy.acceptFromCopy()

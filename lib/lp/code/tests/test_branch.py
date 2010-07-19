@@ -15,10 +15,8 @@ from canonical.testing import DatabaseFunctionalLayer
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.code.tests.helpers import make_official_package_branch
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import run_with_login, TestCaseWithFactory
 
@@ -136,7 +134,7 @@ class TestAccessBranch(PermissionTest):
         removeSecurityProxy(branch).subscribe(
             person, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL, person)
         self.assertAuthenticatedView(branch, person, True)
 
     def test_privateBranchAnyoneElse(self):
@@ -243,24 +241,7 @@ class TestWriteToBranch(PermissionTest):
 
     def makeOfficialPackageBranch(self):
         """Make a branch linked to the pocket of a source package."""
-        branch = self.factory.makePackageBranch()
-        # Make sure the (distroseries, pocket) combination used allows us to
-        # upload to it.
-        stable_states = (
-            SeriesStatus.SUPPORTED, SeriesStatus.CURRENT)
-        if branch.distroseries.status in stable_states:
-            pocket = PackagePublishingPocket.BACKPORTS
-        else:
-            pocket = PackagePublishingPocket.RELEASE
-        sourcepackage = branch.sourcepackage
-        suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
-        registrant = self.factory.makePerson()
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            ICanHasLinkedBranch(suite_sourcepackage).setBranch,
-            branch, registrant)
-        return branch
+        return make_official_package_branch(self.factory)
 
     def test_owner_can_write_to_official_package_branch(self):
         # The owner of an official package branch can write to it, just like a
@@ -305,7 +286,7 @@ class TestWriteToBranch(PermissionTest):
         permission_set = getUtility(IArchivePermissionSet)
         # Only admins or techboard members can add permissions normally. That
         # restriction isn't relevant to these tests.
-        self.permission_set = removeSecurityProxy(permission_set)
+        permission_set = removeSecurityProxy(permission_set)
         branch = self.makeOfficialPackageBranch()
         package = branch.sourcepackage
         person = self.factory.makePerson()
@@ -316,7 +297,7 @@ class TestWriteToBranch(PermissionTest):
         # Now give 'person' permission to upload to 'package'.
         archive = branch.distroseries.distribution.main_archive
         spn = package.sourcepackagename
-        self.permission_set.newPackageUploader(archive, person, spn)
+        permission_set.newPackageUploader(archive, person, spn)
         # Make sure person *is* authorised to upload the source package
         # targeted by the branch at hand.
         self.assertCanUpload(person, spn, archive, None)

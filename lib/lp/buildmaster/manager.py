@@ -207,7 +207,10 @@ class ResetDispatchResult(BaseDispatchResult):
         builder = getUtility(IBuilderSet)[self.slave.name]
         # Builders that fail to reset should be disabled as per bug
         # 563353.
-        builder.failBuilder(self.info)
+        # XXX Julian bug=586362
+        # This is disabled until this code is not also used for dispatch
+        # failures where we *don't* want to disable the builder.
+        # builder.failBuilder(self.info)
         self._cleanJob(builder.currentjob)
 
 

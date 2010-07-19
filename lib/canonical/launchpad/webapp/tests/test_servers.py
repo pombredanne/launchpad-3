@@ -5,11 +5,11 @@
 
 __metaclass__ = type
 
+from doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 import StringIO
 import unittest
 
 from zope.component import getGlobalSiteManager, getUtility
-from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.interface import implements, Interface
 
 from lazr.restful.interfaces import (

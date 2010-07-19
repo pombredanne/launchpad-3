@@ -908,7 +908,7 @@ class TestBranchDeletion(TestCaseWithFactory):
         # The owner of the branch is subscribed to the branch when it is
         # created.  The tests here assume no initial connections, so
         # unsubscribe the branch owner here.
-        self.branch.unsubscribe(self.branch.owner)
+        self.branch.unsubscribe(self.branch.owner, self.branch.owner)
 
     def test_deletable(self):
         """A newly created branch can be deleted without any problems."""
@@ -930,7 +930,7 @@ class TestBranchDeletion(TestCaseWithFactory):
         """A branch that has a subscription can be deleted."""
         self.branch.subscribe(
             self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL, self.user)
         self.assertEqual(True, self.branch.canBeDeleted())
 
     def test_codeImportCanStillBeDeleted(self):
@@ -1068,7 +1068,7 @@ class TestBranchDeletionConsequences(TestCase):
         # The owner of the branch is subscribed to the branch when it is
         # created.  The tests here assume no initial connections, so
         # unsubscribe the branch owner here.
-        self.branch.unsubscribe(self.branch.owner)
+        self.branch.unsubscribe(self.branch.owner, self.branch.owner)
 
     def test_plainBranch(self):
         """Ensure that a fresh branch has no deletion requirements."""
@@ -1081,8 +1081,9 @@ class TestBranchDeletionConsequences(TestCase):
         prerequisite_branch = self.factory.makeProductBranch(
             product=self.branch.product)
         # Remove the implicit subscriptions.
-        target_branch.unsubscribe(target_branch.owner)
-        prerequisite_branch.unsubscribe(prerequisite_branch.owner)
+        target_branch.unsubscribe(target_branch.owner, target_branch.owner)
+        prerequisite_branch.unsubscribe(
+            prerequisite_branch.owner, prerequisite_branch.owner)
         merge_proposal1 = self.branch.addLandingTarget(
             self.branch.owner, target_branch, prerequisite_branch)
         # Disable this merge proposal, to allow creating a new identical one
@@ -1261,7 +1262,8 @@ class TestBranchDeletionConsequences(TestCase):
         """Deletion requirements for a code import branch are right"""
         code_import = self.factory.makeCodeImport()
         # Remove the implicit branch subscription first.
-        code_import.branch.unsubscribe(code_import.branch.owner)
+        code_import.branch.unsubscribe(
+            code_import.branch.owner, code_import.branch.owner)
         self.assertEqual({}, code_import.branch.deletionRequirements())
 
     def test_branchWithCodeImportDeletion(self):
@@ -2303,7 +2305,8 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         # Revisions created before the start date are not returned.
         branch = self.factory.makeAnyBranch()
         epoch = datetime(2009, 9, 10, tzinfo=UTC)
-        old = add_revision_to_branch(
+        # Add some revisions before the epoch.
+        add_revision_to_branch(
             self.factory, branch, epoch - timedelta(days=1))
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=1))
@@ -2318,7 +2321,8 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         end_date = epoch + timedelta(days=2)
         in_range = add_revision_to_branch(
             self.factory, branch, end_date - timedelta(days=1))
-        too_new = add_revision_to_branch(
+        # Add some revisions after the end_date.
+        add_revision_to_branch(
             self.factory, branch, end_date + timedelta(days=1))
         result = branch.getMainlineBranchRevisions(epoch, end_date)
         branch_revisions = [br for br, rev, ra in result]
@@ -2354,7 +2358,8 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         epoch = datetime(2009, 9, 10, tzinfo=UTC)
         old = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=1))
-        merged = add_revision_to_branch(
+        # Add some non mainline revision.
+        add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=2), mainline=False)
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=3))

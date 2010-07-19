@@ -65,8 +65,10 @@ BuildQueue entries.
     ...         hoary386, pub.pocket, pub.archive)
     ...
     ...     build_queue = build.queueBuild()
-    ...     build_queue.job.date_created = date_created
-    ...     build_queue.manual = manual
+    ...     from zope.security.proxy import removeSecurityProxy
+    ...     naked_build_queue = removeSecurityProxy(build_queue)
+    ...     naked_build_queue.job.date_created = date_created
+    ...     naked_build_queue.manual = manual
     ...
     ...     return build_queue
 

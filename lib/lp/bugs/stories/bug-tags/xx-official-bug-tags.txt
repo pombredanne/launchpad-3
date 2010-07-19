@@ -60,6 +60,7 @@ They are grouped together at the beginning of the list.
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.bugs.tests.bug import print_bug_tag_anchors
     >>> import transaction
     >>> login('foo.bar@canonical.com')
     >>> gfoobar = factory.makeProduct(name='gfoobar')
@@ -72,9 +73,7 @@ They are grouped together at the beginning of the list.
 
     >>> browser.open(gfoobar_bug_url)
     >>> tags_div = find_tag_by_id(browser.contents, 'bug-tags')
-    >>> for anchor in tags_div.findAll('a'):
-    ...     if anchor['href'] != '+edit'  and anchor['href'] != '/+help/tag-help.html':
-    ...         print anchor['class'], anchor.contents[0]
+    >>> print_bug_tag_anchors(tags_div.findAll('a'))
     official-tag alpha
     official-tag charlie
     unofficial-tag bravo

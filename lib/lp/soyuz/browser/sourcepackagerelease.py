@@ -18,7 +18,7 @@ import cgi
 import re
 
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.tales import FormattersAPI
+from lp.app.browser.stringformatter import FormattersAPI
 
 
 def extract_bug_numbers(text):
@@ -147,3 +147,13 @@ class SourcePackageReleaseView(LaunchpadView):
     def change_summary(self):
         """Return a linkified change summary."""
         return linkify_changelog(self.user, self.context.change_summary)
+
+    @property
+    def highlighted_copyright(self):
+        """Return the copyright with markup that highlights paths and URLs."""
+        if not self.context.copyright:
+            return ''
+        # Match any string with 2 or more non-consecutive slashes in it.
+        pattern = re.compile(r'([\S]+/[\S]+/[\S]+)')
+        highlight = r'<span class="highlighted">\1</span>'
+        return pattern.sub(highlight, self.context.copyright)

@@ -23,7 +23,8 @@ from canonical.launchpad.webapp.interfaces import (
 
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.buildmaster.model.buildfarmjob import (
+    BuildFarmJobOld, BuildFarmJobOldDerived)
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
@@ -33,7 +34,7 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 
-class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
+class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
     """An `IBuildFarmJob` implementation that generates templates.
 
     Implementation-wise, this is actually a `BranchJob`.
@@ -49,6 +50,13 @@ class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
 
     def __init__(self, branch_job):
         super(TranslationTemplatesBuildJob, self).__init__(branch_job)
+
+    def _set_build_farm_job(self):
+        """Setup the IBuildFarmJob delegate.
+
+        We override this to provide a non-database delegate that simply
+        provides required functionality to the queue system."""
+        self.build_farm_job = BuildFarmJobOld()
 
     def score(self):
         """See `IBuildFarmJob`."""
@@ -151,7 +159,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
 
     @classmethod
     def getByJob(cls, job):
-        """See `IBuildFarmJobDerived`.
+        """See `IBuildFarmJob`.
 
         Overridden here to search via a BranchJob, rather than a Job.
         """

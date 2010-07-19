@@ -10,11 +10,11 @@ __all__ = [
 
 from canonical.launchpad import _
 from lazr.restful.fields import Reference
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobOld
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 
 
-class IBuildFarmBuildJob(IBuildFarmJob):
+class IBuildFarmBuildJob(IBuildFarmJobOld):
     """An `IBuildFarmJob` with an `IBuild` reference."""
     build = Reference(
         IBinaryPackageBuild, title=_("Build"), required=True, readonly=True,
