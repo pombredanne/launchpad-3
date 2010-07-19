@@ -372,7 +372,7 @@
             interface="lp.translations.interfaces.translationtemplateitem.ITranslationTemplateItem"/>
     </class>
 
-    <!-- ProductSeriesLanguage and Dummy -->
+    <!-- ProductSeriesLanguage -->
 
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

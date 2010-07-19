@@ -119,7 +119,8 @@ class TestSeriesLanguageBreadcrumbs(BaseBreadcrumbTestCase):
             name='crumb-tester', displayname="Crumb Tester")
         series = self.factory.makeProductSeries(
             name="test", product=product)
-        serieslanguage = getUtility(IProductSeriesLanguageSet).getDummy(
+        psl_set = getUtility(IProductSeriesLanguageSet)
+        serieslanguage = psl_set.getProductSeriesLanguage(
             series, self.language)
 
         self.assertBreadcrumbs(
