@@ -144,3 +144,14 @@ class BuildAlreadyPending(RecipeBuildException):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
             'An identical build of this recipe is already pending.')
+
+
+class BuildNotAllowedForDistro(RecipeBuildException):
+    """A build was request against a distroseries that is not supported."""
+
+    webservice_error(400)
+
+    def __init__(self, recipe, distroseries):
+        RecipeBuildException.__init__(
+            self, recipe, distroseries,
+            'A build against this distro is not allowed.')

@@ -25,7 +25,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.code.errors import BuildAlreadyPending, TooManyBuilds
+from lp.code.errors import (BuildAlreadyPending, BuildNotAllowedForDistro,
+    TooManyBuilds)
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
     ISourcePackageRecipeData)
@@ -193,7 +194,7 @@ class SourcePackageRecipe(Storm):
             get_buildable_distroseries_set)
         buildable_distros = get_buildable_distroseries_set(archive.owner)
         if distroseries not in buildable_distros:
-            raise Exception
+            raise BuildNotAllowedForDistro(self, distroseries)
 
         reject_reason = archive.checkUpload(
             requester, self.distroseries, None, component, pocket)
