@@ -1204,7 +1204,7 @@ class WebServicePublication(WebServicePublicationMixin,
             # Either the client's OAuth implementation is broken, or
             # the user is trying to make an unauthenticated request
             # using wget or another OAuth-ignorant application.
-            # Create or retrieve a consumer based on the User-Agent
+            # Try to retrieve a consumer based on the User-Agent
             # header.
             anonymous_request = True
             consumer_key = request.getHeader('User-Agent', '')
@@ -1216,8 +1216,8 @@ class WebServicePublication(WebServicePublicationMixin,
         if consumer is None:
             if anonymous_request:
                 # This is the first time anyone has tried to make an
-                # anonymous request using this consumer
-                # name. Dynamically create the consumer.
+                # anonymous request using this consumer name (or user
+                # agent). Dynamically create the consumer.
                 #
                 # In the normal website this wouldn't be possible
                 # because GET requests have their transactions rolled
