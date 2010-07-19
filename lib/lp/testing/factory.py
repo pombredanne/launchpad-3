@@ -28,15 +28,18 @@ from itertools import count
 import os.path
 from random import randint
 from StringIO import StringIO
+import sys
 from textwrap import dedent
 from threading import local
+from types import InstanceType
 
 import pytz
 
 from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import ComponentLookupError, getUtility
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    builtin_isinstance, Proxy, removeSecurityProxy)
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
@@ -121,7 +124,7 @@ from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, SourcePackageUrgency)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
+from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.interfaces.distributionmirror import (
     MirrorContent, MirrorSpeed)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -319,7 +322,7 @@ class ObjectFactory:
             branch_id, rcstype, url, cvs_root, cvs_module)
 
 
-class LaunchpadObjectFactory(ObjectFactory):
+class _LaunchpadObjectFactory(ObjectFactory):
     """Factory methods for creating Launchpad objects.
 
     All the factory methods should be callable with no parameters.
@@ -825,7 +828,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
-                'Unrecognized branch type: %r' % (branch_type,))
+                'Unrecognized branch type: %r' % (branch_type, ))
 
         namespace = get_branch_namespace(
             owner, product=product, distroseries=distroseries,
@@ -1777,7 +1780,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeRecipeText(self, *branches):
         if len(branches) == 0:
-            branches = (self.makeAnyBranch(),)
+            branches = (self.makeAnyBranch(), )
         base_branch = branches[0]
         other_branches = branches[1:]
         text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
@@ -1900,6 +1903,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                  ddd57463774cae9b50e70cd51221281b 185913 ed_0.2.orig.tar.gz
                  f9e1e5f13725f581919e9bfd62272a05 8506 ed_0.2-20.diff.gz
                 """))
+
             class Changes:
                 architectures = ['source']
             logger = QuietFakeLogger()
@@ -2708,3 +2712,39 @@ class LaunchpadObjectFactory(ObjectFactory):
         new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
+
+
+class LaunchpadObjectFactory:
+    """A wrapper around _LaunchpadObjectFactory.
+
+    Ensure that each object created by a _LaunchpadObjectFactory method
+    is either of a simple Python type or is security proxied.
+
+    A warning message s printed to stderr if a factory method creates
+    an object without a security proxy.
+    """
+
+    def __init__(self):
+        self._factory = _LaunchpadObjectFactory()
+
+    def __getattr__(self, name):
+        attr = getattr(self._factory, name)
+        if callable(attr):
+
+            def guarded_method(*args, **kw):
+                result = attr(*args, **kw)
+                if builtin_isinstance(result, Proxy):
+                    return result
+                if result is None:
+                    return result
+                if type(result) not in (
+                    int, str, unicode, Message, DSCFile, InstanceType, tuple,
+                    datetime):
+                    message = (
+                        "Unproxied object returned by "
+                        "LaunchpadObjectFactory.%s" % name)
+                    print >>sys.stderr, message
+                return result
+            return guarded_method
+        else:
+            return attr
