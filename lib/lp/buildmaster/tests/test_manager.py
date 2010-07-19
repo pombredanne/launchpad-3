@@ -568,11 +568,6 @@ class TestSlaveScannerScan(TrialTestCase):
         Replace its default logging handler by a testing version.
         """
         manager = SlaveScanner("bob", BufferLogger())
-
-        # XXX
-        #for handler in manager.logger.handlers:
-        #    manager.logger.removeHandler(handler)
-        #manager.logger = BufferLogger()
         manager.logger.name = 'slave-scanner'
 
         return manager
