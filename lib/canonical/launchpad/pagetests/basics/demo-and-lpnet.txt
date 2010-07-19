@@ -51,7 +51,7 @@ For a 3-0 page:
     <style...url(/@@/demo)...</style>
     ...
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
-    &bull;...Launchpad...) devmode demo site
+    &bull; r... devmode demo site
 
     >>> print extract_text(find_tags_by_class(
     ...     browser.contents, 'sitemessage')[0])
@@ -70,7 +70,7 @@ First for a 3-0 page:
 
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
-    &bull;...Launchpad...) devmode
+    &bull; r... devmode
     >>> len(find_tags_by_class(browser.contents, 'sitemessage'))
     0
 
@@ -143,17 +143,8 @@ redirects.
 
 == Launchpad.net ==
 
-On every instance except launchpad.net, Launchpad's version and
-revision numbers are displayed in the page footer.
-
-    >>> print config.launchpad.is_lpnet
-    False
-    >>> browser.open('http://launchpad.dev/ubuntu')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
-    &bull;...Launchpad ... (r...)...
-
-On launchpad.net, however, the version and revision numbers are
-presented only in an HTML comment.
+On launchpad.net, the version and revision numbers are presented only in an
+HTML comment.
 
     >>> # Pretend that we're on launchpad.net:
     >>> test_data = dedent("""
@@ -165,13 +156,6 @@ presented only in an HTML comment.
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> print find_tag_by_id(browser.contents, 'lp-version')
     None
-    >>> print browser.contents
-    <...
-    <!--
-      Facet name: overview
-      ...
-      Launchpad ... (...)
-    -->
 
     >>> # Restore the previous config:
     >>> config_data = config.pop('test_data')

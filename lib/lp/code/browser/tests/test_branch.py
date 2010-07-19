@@ -3,8 +3,9 @@
 
 """Unit tests for BranchView."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
-__all__ = ['TestBranchView', 'test_suite']
 
 from datetime import datetime, timedelta
 from textwrap import dedent
@@ -14,13 +15,14 @@ import pytz
 import simplejson
 
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
 from lp.app.interfaces.headings import IRootContext
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from lp.code.browser.branch import (
     BranchAddView, BranchMirrorStatusView, BranchReviewerEditView,
     BranchSparkView, BranchView)
@@ -28,11 +30,9 @@ from lp.code.browser.branchlisting import PersonOwnedBranchesView
 from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.helpers import truncate_text
 from lp.code.enums import BranchLifecycleStatus, BranchType
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
-from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.testing import (
-    login, login_person, logout, ANONYMOUS, TestCaseWithFactory)
+    login, login_person, logout, person_logged_in, ANONYMOUS,
+    TestCaseWithFactory)
 from lp.testing.views import create_initialized_view
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
@@ -117,20 +117,18 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
 
 class TestBranchView(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBranchView, self).setUp()
-        login(ANONYMOUS)
         self.request = LaunchpadTestRequest()
-
-    def tearDown(self):
-        logout()
-        super(TestBranchView, self).tearDown()
 
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
-        branch = getUtility(IBranchLookup).get(28)
+        branch = self.factory.makeBranch()
+        branch.mirrorFailed(
+            "on quick brown fox the dog jumps to" *
+            BranchMirrorStatusView.MAXIMUM_STATUS_MESSAGE_LENGTH)
         branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertEqual(
             truncate_text(branch.mirror_status_message,
@@ -139,7 +137,7 @@ class TestBranchView(TestCaseWithFactory):
 
     def testMirrorStatusMessage(self):
         """mirror_status_message on the view is the same as on the branch."""
-        branch = getUtility(IBranchLookup).get(5)
+        branch = self.factory.makeBranch()
         branch.mirrorFailed("This is a short error message.")
         branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertTrue(
@@ -155,8 +153,8 @@ class TestBranchView(TestCaseWithFactory):
 
     def testBranchAddRequestsMirror(self):
         """Registering a mirrored branch requests a mirror."""
-        arbitrary_person = getUtility(IPersonSet).get(1)
-        arbitrary_product = getUtility(IProductSet).get(1)
+        arbitrary_person = self.factory.makePerson()
+        arbitrary_product = self.factory.makeProduct()
         login(arbitrary_person.preferredemail.email)
         try:
             add_view = BranchAddView(arbitrary_person, self.request)
@@ -190,7 +188,7 @@ class TestBranchView(TestCaseWithFactory):
         # The merge links are shown on projects that have multiple branches.
         product = self.factory.makeProduct(name='super-awesome-project')
         branch1 = self.factory.makeAnyBranch(product=product)
-        branch2 = self.factory.makeAnyBranch(product=product)
+        self.factory.makeAnyBranch(product=product)
         view = BranchView(branch1, self.request)
         view.initialize()
         self.assertTrue(view.show_merge_links)
@@ -260,6 +258,48 @@ class TestBranchView(TestCaseWithFactory):
         view = create_initialized_view(branch, '+index')
         login_person(branch.owner)
         self.assertFalse(view.user_can_upload)
+
+    def _addBugLinks(self, branch):
+        for status in BugTaskStatus.items:
+            bug = self.factory.makeBug(status=status)
+            branch.linkBug(bug, branch.owner)
+
+    def test_linked_bugs(self):
+        # The linked bugs for a non series branch shows all linked bugs.
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(branch.owner):
+            self._addBugLinks(branch)
+        view = create_initialized_view(branch, '+index')
+        self.assertEqual(len(BugTaskStatus), len(view.linked_bugs))
+        self.assertFalse(view.context.is_series_branch)
+
+    def test_linked_bugs_privacy(self):
+        # If a linked bug is private, it is not in the linked bugs if the user
+        # can't see it.
+        branch = self.factory.makeAnyBranch()
+        reporter = self.factory.makePerson()
+        bug = self.factory.makeBug(private=True, owner=reporter)
+        with person_logged_in(reporter):
+            branch.linkBug(bug, reporter)
+            view = create_initialized_view(branch, '+index')
+            # Comparing bug ids as the linked bugs are decorated bugs.
+            self.assertEqual([bug.id], [bug.id for bug in view.linked_bugs])
+        with person_logged_in(branch.owner):
+            view = create_initialized_view(branch, '+index')
+            self.assertEqual([], view.linked_bugs)
+
+    def test_linked_bugs_series_branch(self):
+        # The linked bugs for a series branch shows only unresolved bugs.
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product)
+        with person_logged_in(product.owner):
+            product.development_focus.branch = branch
+        with person_logged_in(branch.owner):
+            self._addBugLinks(branch)
+        view = create_initialized_view(branch, '+index')
+        for bug in view.linked_bugs:
+            self.assertTrue(
+                bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES)
 
 
 class TestBranchAddView(TestCaseWithFactory):

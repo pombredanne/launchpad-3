@@ -15,7 +15,7 @@ from storm.locals import Int, Reference
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from storm.expr import (
     Desc, In, Join, LeftJoin)
 from storm.store import Store
@@ -33,6 +33,7 @@ from canonical.launchpad.helpers import (
      get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.lpstorm import IMasterObject, ISlaveStore
 from canonical.launchpad.mail import (
     simple_sendmail, format_address)
 from canonical.launchpad.webapp import canonical_url
@@ -62,6 +63,24 @@ from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadBuild)
+
+
+def get_binary_build_for_build_farm_job(build_farm_job):
+    """Factory method to returning a binary for a build farm job."""
+    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    find_spec = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
+    resulting_tuple = store.find(
+        find_spec,
+        BinaryPackageBuild.package_build == PackageBuild.id,
+        PackageBuild.build_farm_job == BuildFarmJob.id,
+        BuildFarmJob.id == build_farm_job.id).one()
+
+    if resulting_tuple is None:
+        return None
+
+    # We specifically return a proxied BinaryPackageBuild so that we can
+    # be sure it has the correct proxy.
+    return ProxyFactory(resulting_tuple[0])
 
 
 class BinaryPackageBuild(PackageBuildDerived, SQLBase):
@@ -380,7 +399,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             return False
 
         if not self._checkDependencyVersion(
-            dep_candidate.binarypackageversion, version, relation):
+            dep_candidate.binarypackagerelease.version, version, relation):
             return False
 
         # Only PRIMARY archive build dependencies should be restricted
@@ -391,7 +410,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # only contains packages in 'main' component.
         ogre_components = get_components_for_building(self)
         if (self.archive.purpose == ArchivePurpose.PRIMARY and
-            dep_candidate.component not in ogre_components):
+            dep_candidate.component.name not in ogre_components):
             return False
 
         return True
@@ -483,13 +502,14 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             clauseTables=['PackageBuild', 'BuildFarmJob', 'SourcePackageName',
                           'SourcePackageRelease'])
 
+        estimated_duration = None
         if completed_builds.count() > 0:
-            # Historic build data exists, use the most recent value.
+            # Historic build data exists, use the most recent value -
+            # assuming it has valid data.
             most_recent_build = completed_builds[0]
-            date_finished = most_recent_build.date_finished
-            date_started = most_recent_build.date_started
-            estimated_duration = date_finished - date_started
-        else:
+            estimated_duration = most_recent_build.duration
+
+        if estimated_duration is None:
             # Estimate the build duration based on package size if no
             # historic build data exists.
 
@@ -542,7 +562,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         extra_headers = {
             'X-Launchpad-Build-State': self.status.name,
             'X-Launchpad-Build-Component' : self.current_component.name,
-            'X-Launchpad-Build-Arch' : self.distro_arch_series.architecturetag,
+            'X-Launchpad-Build-Arch' :
+                self.distro_arch_series.architecturetag,
             }
 
         # XXX cprov 2006-10-27: Temporary extra debug info about the
@@ -691,6 +712,12 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             return file_object
 
         raise NotFoundError(filename)
+
+    def getSpecificJob(self):
+        """See `IBuildFarmJob`."""
+        # If we are asked to adapt an object that is already a binary
+        # package build, then don't hit the db.
+        return self
 
 
 class BinaryPackageBuildSet:
@@ -947,7 +974,7 @@ class BinaryPackageBuildSet:
         logger = logging.getLogger('retry-depwait')
 
         # Get the MANUALDEPWAIT records for all archives.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = ISlaveStore(BinaryPackageBuild)
 
         candidates = store.find(
             BinaryPackageBuild,
@@ -956,7 +983,11 @@ class BinaryPackageBuildSet:
             PackageBuild.build_farm_job == BuildFarmJob.id,
             BuildFarmJob.status == BuildStatus.MANUALDEPWAIT)
 
-        candidates_count = candidates.count()
+        # Materialise the results right away to avoid hitting the
+        # database multiple times.
+        candidates = list(candidates)
+
+        candidates_count = len(candidates)
         if candidates_count == 0:
             logger.info("No MANUALDEPWAIT record found.")
             return
@@ -967,6 +998,9 @@ class BinaryPackageBuildSet:
         for build in candidates:
             if not build.can_be_retried:
                 continue
+            # We're changing 'build' so make sure we have an object from
+            # the master store.
+            build = IMasterObject(build)
             build.updateDependencies()
             if build.dependencies:
                 logger.debug(

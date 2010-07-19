@@ -350,7 +350,7 @@ if __name__ == "__main__":
             except:
                 logging.exception("can not parse line '%s'" % line)
     except urllib2.HTTPError, e:
-        if e.getcode() != 404:
+        if e.code != 404:
             raise
         sys.stderr.write("hints-file: %s gave 404 error\n" % hints_file)
     

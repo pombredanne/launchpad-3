@@ -193,9 +193,9 @@ If we go ahead and modify the description, however:
     True
 
 The displayable comments for a bug can be obtained from the view
-property visible_comments_for_display.
+property visible_oldest_comments_for_display.
 
-    >>> viewable_comments = ubuntu_bugview.visible_comments_for_display
+    >>> viewable_comments = ubuntu_bugview.visible_oldest_comments_for_display
 
 Because we omit the first comment, and because the third comment is
 indentical to the second, we really only display one comment:
@@ -703,7 +703,7 @@ a bug watch will have a can_be_shown property of False.
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
     >>> print view.user
     None
-    >>> for comment in view.visible_comments_for_display:
+    >>> for comment in view.visible_oldest_comments_for_display:
     ...     comment.can_be_shown
     False
     False
@@ -725,7 +725,7 @@ The same is true for people not in the comment syncing team.
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
     >>> view.user.name
     u'no-priv'
-    >>> for comment in view.visible_comments_for_display:
+    >>> for comment in view.visible_oldest_comments_for_display:
     ...     comment.can_be_shown
     False
     False
@@ -743,7 +743,7 @@ People in the team get to see the comments.
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
     >>> view.user.name
     u'no-priv'
-    >>> for comment in view.visible_comments_for_display:
+    >>> for comment in view.visible_oldest_comments_for_display:
     ...     comment.can_be_shown
     True
     True
@@ -767,7 +767,7 @@ users.
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
     >>> print view.user
     None
-    >>> for comment in view.visible_comments_for_display:
+    >>> for comment in view.visible_oldest_comments_for_display:
     ...     comment.can_be_shown
     True
     True

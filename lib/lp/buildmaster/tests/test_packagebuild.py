@@ -15,9 +15,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild, IPackageBuildSource)
+    IPackageBuild, IPackageBuildSet, IPackageBuildSource)
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.test_buildbase import TestBuildBaseMixin
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -31,15 +32,16 @@ class TestPackageBuildBase(TestCaseWithFactory):
     only classes deriving from PackageBuild should be used.
     """
 
-    def makePackageBuild(self, archive=None):
+    def makePackageBuild(
+        self, archive=None, job_type=BuildFarmJobType.PACKAGEBUILD,
+        status=BuildStatus.NEEDSBUILD,
+        pocket=PackagePublishingPocket.RELEASE):
         if archive is None:
             archive = self.factory.makeArchive()
 
         return getUtility(IPackageBuildSource).new(
-            job_type=BuildFarmJobType.PACKAGEBUILD,
-            virtualized=True,
-            archive=archive,
-            pocket=PackagePublishingPocket.RELEASE)
+            job_type=job_type, virtualized=True, archive=archive,
+            status=status, pocket=pocket)
 
 
 class TestBuildBaseMethods(TestPackageBuildBase, TestBuildBaseMixin):
@@ -174,6 +176,47 @@ class TestPackageBuild(TestPackageBuildBase):
         self.package_build.dependencies = u'My deps'
         self.failUnlessEqual(
             u'My deps', self.package_build.dependencies)
+
+
+class TestPackageBuildSet(TestPackageBuildBase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPackageBuildSet, self).setUp()
+        person = self.factory.makePerson()
+        self.archive = self.factory.makeArchive(owner=person)
+        self.package_builds = []
+        self.package_builds.append(
+            self.makePackageBuild(archive=self.archive,
+                                  pocket=PackagePublishingPocket.UPDATES))
+        self.package_builds.append(
+            self.makePackageBuild(archive=self.archive,
+                                  status=BuildStatus.BUILDING))
+        self.package_build_set = getUtility(IPackageBuildSet)
+
+    def test_getBuildsForArchive_all(self):
+        # The default call without arguments returns all builds for the
+        # archive.
+        self.assertContentEqual(
+            self.package_builds, self.package_build_set.getBuildsForArchive(
+                self.archive))
+
+    def test_getBuildsForArchive_by_status(self):
+        # If the status arg is used, the results will be filtered by
+        # status.
+        self.assertContentEqual(
+            self.package_builds[1:],
+            self.package_build_set.getBuildsForArchive(
+                self.archive, status=BuildStatus.BUILDING))
+
+    def test_getBuildsForArchive_by_pocket(self):
+        # If the pocket arg is used, the results will be filtered by
+        # pocket.
+        self.assertContentEqual(
+            self.package_builds[:1],
+            self.package_build_set.getBuildsForArchive(
+                self.archive, pocket=PackagePublishingPocket.UPDATES))
 
 
 def test_suite():

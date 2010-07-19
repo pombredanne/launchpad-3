@@ -140,7 +140,7 @@ class TestCodeHandler(TestCaseWithFactory):
         super(TestCodeHandler, self).tearDown()
 
     def switchDbUser(self, user):
-        """Commit the transactionand switch to the new user."""
+        """Commit the transaction and switch to the new user."""
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(user)
 

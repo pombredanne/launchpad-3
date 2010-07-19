@@ -301,29 +301,6 @@ not have edit permission.
     >>> login_person(person)
 
 
-Milestone caching
------------------
-
-Active milestones cache bugtasks for 10 minutes.
-
-    >>> cached_milestone = factory.makeMilestone(
-    ...     'cache-test', productseries=series)
-    >>> cached_bugtask = factory.makeBugTask(target=cached_milestone.product)
-    >>> cached_bugtask.milestone = cached_milestone
-    >>> view = create_view(cached_milestone, '+index', principal=person)
-    >>> content = view.render()
-    >>> 'milestone_bugtasks cache:private 10 minute' in content
-    True
-
-Inactive milestones cache bugtasks for 3 hours.
-
-    >>> cached_milestone.active = False
-    >>> view = create_view(cached_milestone, '+index', principal=person)
-    >>> content = view.render()
-    >>> 'milestone_bugtasks cache:private 3 hour' in content
-    True
-
-
 ProjectGroup milestones
 -----------------------
 

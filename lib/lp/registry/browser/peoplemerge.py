@@ -90,6 +90,7 @@ class RequestPeopleMergeView(LaunchpadFormView):
 class AdminMergeBaseView(LaunchpadFormView):
     """Base view for the pages where admins can merge people/teams."""
 
+    page_title = 'Merge Launchpad accounts'
     # Both subclasses share the same template so we need to define these
     # variables (which are used in the template) here rather than on
     # subclasses.

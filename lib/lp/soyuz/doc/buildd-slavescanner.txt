@@ -479,7 +479,7 @@ scanned it)
     >>> bqItem11.date_started is None
     True
     >>> bqItem11.lastscore
-    0
+    2505
     >>> check_mail_sent(last_stub_mail_count)
     False
     >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(bqItem11)
@@ -704,6 +704,7 @@ tests.
     >>> syncUpdate(resurrect_build)
     >>> current_job.builder = None
     >>> current_job.setDateStarted(None)
+    >>> current_job.lastscore = 0
     >>> syncUpdate(current_job)
 
 IBuilder.findCandidate also identifies if there are builds for

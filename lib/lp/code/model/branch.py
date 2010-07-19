@@ -245,6 +245,17 @@ class Branch(SQLBase, BzrIdentityMixin):
         'Bug', joinColumn='branch', otherColumn='bug',
         intermediateTable='BugBranch', orderBy='id')
 
+    def getLinkedBugsAndTasks(self):
+        """Return a result set for the bugs with their tasks."""
+        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bugbranch import BugBranch
+        from lp.bugs.model.bugtask import BugTask
+        return Store.of(self).find(
+            (Bug, BugTask),
+            BugBranch.branch == self,
+            BugBranch.bug == Bug.id,
+            BugTask.bug == Bug.id)
+
     def linkBug(self, bug, registrant):
         """See `IBranch`."""
         return bug.linkBranch(self, registrant)
@@ -1214,18 +1225,6 @@ class BranchSet:
         if branch_count is not None:
             branches.config(limit=branch_count)
         return branches
-
-    def getLatestBranchesForProduct(self, product, quantity,
-                                    visible_by_user=None):
-        """See `IBranchSet`."""
-        assert product is not None, "Must have a valid product."
-        all_branches = getUtility(IAllBranches)
-        latest = all_branches.visibleByUser(visible_by_user).inProduct(
-            product).withLifecycleStatus(*DEFAULT_BRANCH_STATUS_IN_LISTING)
-        latest_branches = latest.getBranches().order_by(
-            Desc(Branch.date_created), Desc(Branch.id))
-        latest_branches.config(limit=quantity)
-        return latest_branches
 
     def getByUniqueName(self, unique_name):
         """See `IBranchSet`."""

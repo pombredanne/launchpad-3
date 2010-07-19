@@ -43,6 +43,11 @@ class MemcacheExpr:
     </div>
     """
     implements(ITALESExpression)
+
+    static_max_age = None # cache expiry if fixed
+    dynamic_max_age = None # callable if cache expiry is dynamic.
+    dynamic_max_age_unit = None # Multiplier for dynamic cache expiry result.
+
     def __init__(self, name, expr, engine, traverser=simpleTraverse):
         """expr is in the format "visibility, 42 units".
 
@@ -101,28 +106,35 @@ class MemcacheExpr:
 
         # Convert the max_age string to an integer number of seconds.
         if max_age is None:
-            self.max_age = 0
+            self.static_max_age = 0 # Never expire.
         else:
+            # Extract the unit, if there is one. Unit defaults to seconds.
             try:
                 value, unit = max_age.split(' ')
+                if unit[-1] == 's':
+                    unit = unit[:-1]
+                if unit == 'second':
+                    unit = 1
+                elif unit == 'minute':
+                    unit = 60
+                elif unit == 'hour':
+                    unit = 60 * 60
+                elif unit == 'day':
+                    unit = 24 * 60 * 60
+                else:
+                    raise SyntaxError(
+                        "Unknown unit %s in cache: expression %s"
+                        % (repr(unit), repr(expr)))
             except ValueError:
-                raise SyntaxError(
-                    "Unparsable age %s in cache: expression"
-                    % repr(self.max_age))
-            value = float(value)
-            if unit[-1] == 's':
-                unit = unit[:-1]
-            if unit == 'second':
-                pass
-            elif unit == 'minute':
-                value *= 60
-            elif unit == 'hour':
-                value *= 60 * 60
-            elif unit == 'day':
-                value *= 24 * 60 * 60
-            else:
-                raise AssertionError("Unknown unit %s" % unit)
-            self.max_age = int(value)
+                value = max_age
+                unit = 1
+
+            try:
+                self.static_max_age = float(value) * unit
+            except (ValueError, TypeError):
+                self.dynamic_max_age = PathExpr(
+                    name, value, engine, traverser)
+                self.dynamic_max_age_unit = unit
 
     # For use with str.translate to sanitize keys. No control characters
     # allowed, and we skip ':' too since it is a magic separator.
@@ -210,6 +222,11 @@ class MemcacheExpr:
 
         return key
 
+    def getMaxAge(self, econtext):
+        if self.dynamic_max_age is not None:
+            return self.dynamic_max_age(econtext) * self.dynamic_max_age_unit
+        return self.static_max_age
+
     def __call__(self, econtext):
         # If we have an 'anonymous' visibility chunk and are logged in,
         # we don't cache. Return the 'default' magic token to interpret
@@ -225,7 +242,7 @@ class MemcacheExpr:
 
         if cached_chunk is None:
             logging.debug("Memcache miss for %s", key)
-            return MemcacheMiss(key, self.max_age)
+            return MemcacheMiss(key, self.getMaxAge(econtext), self)
         else:
             logging.debug("Memcache hit for %s", key)
             return MemcacheHit(cached_chunk)
@@ -244,11 +261,18 @@ class MemcacheMiss:
     tag contents and invokes this callback, which will store the
     result in memcache against the key calculated by the MemcacheExpr.
     """
-    def __init__(self, key, max_age):
+    def __init__(self, key, max_age, memcache_expr):
         self._key = key
         self._max_age = max_age
+        self._memcache_expr = memcache_expr
 
     def __call__(self, value):
+        if not config.launchpad.is_lpnet and not config.launchpad.is_edge:
+            # For debugging and testing purposes, prepend a description of
+            # the memcache expression used to the stored value.
+            rule = '%s [%s seconds]' % (self._memcache_expr, self._max_age)
+            value = "<!-- Cache hit: %s -->%s<!-- End cache hit: %s -->" % (
+                rule, value, rule)
         if getUtility(IMemcacheClient).set(
             self._key, value, self._max_age):
             logging.debug("Memcache set succeeded for %s", self._key)

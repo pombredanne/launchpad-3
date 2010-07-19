@@ -609,6 +609,9 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
         readonly=True,
         value_type=Reference(schema=Interface))) # Really IBug
 
+    def getLinkedBugsAndTasks():
+        """Return a result set for the bugs with their tasks."""
+
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         bug=Reference(schema=Interface)) # Really IBug
@@ -1232,23 +1235,6 @@ class IBranchSet(Interface):
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
         """
-
-    def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
-        """Return the most recently created branches for the product.
-
-        At most `quantity` branches are returned. Branches that have been
-        merged or abandoned don't appear in the results -- only branches that
-        match `DEFAULT_BRANCH_STATUS_IN_LISTING`.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        """
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
-        # to change for source package branches.
 
     @operation_parameters(
         unique_name=TextLine(title=_('Branch unique name'), required=True))

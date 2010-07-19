@@ -276,10 +276,11 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         readonly=True)
     can_expire = exported(
         Bool(
-            title=_("Can the Incomplete bug expire if it becomes inactive? "
+            title=_("Can the Incomplete bug expire? "
                 "Expiration may happen when the bug permits expiration, "
                 "and a bugtask cannot be confirmed."),
-            readonly=True))
+            readonly=True),
+        ('devel', dict(exported=False)), exported=True)
     date_last_message = exported(
         Datetime(title=_("Date of last bug message"),
                  required=False, readonly=True))
@@ -371,7 +372,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     @operation_parameters(
         person=Reference(IPerson, title=_('Person'), required=True))
-    @call_with(subscribed_by=REQUEST_USER)
+    @call_with(subscribed_by=REQUEST_USER, suppress_notify=False)
     @export_write_operation()
     def subscribe(person, subscribed_by, suppress_notify=True):
         """Subscribe `person` to the bug.
@@ -807,6 +808,21 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     def updateHeat():
         """Update the heat for the bug."""
+
+    @operation_parameters(
+        days_old=Int(
+            title=_('Number of days of inactivity for which to check.'),
+            required=False))
+    @export_read_operation()
+    def isExpirable(days_old=None):
+        """Is this bug eligible for expiration and was it last updated
+        more than X days ago?
+
+        If days_old is None the default number of days without activity
+        is used.
+
+        Returns True or False.
+        """
 
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""

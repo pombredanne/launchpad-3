@@ -92,7 +92,7 @@ Let's link a pair to debbugs:
     ...         "http://launchpad.dev/%s/+configure-bugtracker" % name)
     ...     admin_browser.getControl("In a registered bug tracker").click()
     ...     bt = admin_browser.getControl(name="field.bugtracker.bugtracker")
-    ...     bt.value = ["3"]
+    ...     bt.value = 'debbugs'
     ...     admin_browser.getControl("Change").click()
     ...
     >>> link_to_debbugs('upstart')

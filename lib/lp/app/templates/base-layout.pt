@@ -69,7 +69,8 @@
       ${view/macro:pagetype}
       ${view/context/fmt:public-private-css}
       yui-skin-sam">
-        <script type="text/javascript">
+        <script type="text/javascript"
+          tal:condition="python: is_edge or is_lpnet">
           var _gaq = _gaq || [];
           _gaq.push(['_setAccount', 'UA-12833497-1']);
           _gaq.push(['_setDomainName', '.launchpad.net']);
@@ -102,16 +103,6 @@
       <div class="yui-t4"
         tal:omit-tag="not: view/macro:pagehas/portlets">
         <div id="maincontent" class="yui-main">
-
-          <tal:maintenance
-            replace="structure context/@@+maintenancemessage" />
-          <tal:notifications
-            define="notifications request/notifications"
-            condition="notifications">
-            <metal:notifications
-              use-macro="context/@@+base-layout-macros/notifications"/>
-          </tal:notifications>
-
           <div class="yui-b"
             tal:attributes="
               lang view/lang|default_language|default;
@@ -128,7 +119,16 @@
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
             </div>
-            <metal:main define-slot="main" />
+
+            <tal:maintenance
+              replace="structure context/@@+maintenancemessage" />
+            <tal:notifications
+              define="notifications request/notifications"
+              condition="notifications">
+              <metal:notifications
+                use-macro="context/@@+base-layout-macros/notifications"/>
+            </tal:notifications>
+              <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
@@ -176,7 +176,7 @@
 
     At least ${log}
 
-    ${version}
+    r${revno}
   --&gt;" />
 </tal:template>
 </metal:page>

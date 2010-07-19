@@ -1515,8 +1515,8 @@ class CodeImportFormatterAPI(CustomizableFormatter):
         return url
 
 
-class BuildBaseFormatterAPI(ObjectFormatterAPI):
-    """Adapter providing fmt support for `IBuildBase` objects."""
+class PackageBuildFormatterAPI(ObjectFormatterAPI):
+    """Adapter providing fmt support for `IPackageBuild` objects."""
     def _composeArchiveReference(self, archive):
         if archive.is_ppa:
             return " [%s/%s]" % (
