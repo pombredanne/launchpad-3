@@ -13,8 +13,8 @@ from lp.soyuz.browser.archive import make_archive_vocabulary
 from lp.soyuz.interfaces.archive import IArchiveSet
 
 
-def get_buildable_distroseries_set():
-    ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
+def get_buildable_distroseries_set(user):
+    ppas = getUtility(IArchiveSet).getPPAsForUser(user)
     supported_distros = [ppa.distribution for ppa in ppas]
     dsset = getUtility(IDistroSeriesSet).search()
 
@@ -26,7 +26,7 @@ def get_buildable_distroseries_set():
 
 def buildable_distroseries_vocabulary(context):
     """Return a vocabulary of buildable distroseries."""
-    distros = get_buildable_distroseries_set()
+    distros = get_buildable_distroseries_set(getUtility(ILaunchBag).user)
     terms = sorted_dotted_numbers(
         [SimpleTerm(distro, distro.id, distro.displayname)
          for distro in distros],

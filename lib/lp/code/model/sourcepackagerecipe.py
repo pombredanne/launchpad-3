@@ -188,6 +188,13 @@ class SourcePackageRecipe(Storm):
         if archive.purpose != ArchivePurpose.PPA:
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
+
+        from lp.code.vocabularies.sourcepackagerecipe import (
+            get_buildable_distroseries_set)
+        buildable_distros = get_buildable_distroseries_set(archive.owner)
+        if distroseries not in buildable_distros:
+            raise Exception
+
         reject_reason = archive.checkUpload(
             requester, self.distroseries, None, component, pocket)
         if reject_reason is not None:
