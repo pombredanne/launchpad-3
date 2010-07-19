@@ -9,6 +9,7 @@
 
 __metaclass__ = type
 
+import doctest
 import os
 import pdb
 import pprint
@@ -26,10 +27,7 @@ from urlparse import urljoin
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
 from zope.testbrowser.testing import Browser
-from zope.testing import doctest
 from zope.security.proxy import removeSecurityProxy
-
-from launchpadlib.launchpad import Launchpad
 
 from canonical.launchpad.interfaces import (
     IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities,
