@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'DummyProductSeriesLanguage',
     'ProductSeriesLanguage',
     'ProductSeriesLanguageSet',
     ]
@@ -138,27 +137,6 @@ class ProductSeriesLanguage(RosettaStats):
         return get_pofiles_for(potemplates, self.language, self.variant)
 
 
-class DummyProductSeriesLanguage(ProductSeriesLanguage):
-    """See `IProductSeriesLanguage`.
-
-    Implementation of IProductSeriesLanguage for a language with no
-    translations.
-    """
-    implements(IProductSeriesLanguage)
-
-    def __init__(self, productseries, language, variant=None, pofile=None):
-        ProductSeriesLanguage.__init__(
-            self, productseries, language, variant, pofile)
-        self.setCounts(self._getMessageCount(), 0, 0, 0, 0)
-
-    def getPOFilesFor(self, potemplates):
-        """See `IProductSeriesLanguage`."""
-        return [
-            DummyPOFile(template, self.language, self.variant)
-            for template in potemplates
-            ]
-
-
 class ProductSeriesLanguageSet:
     """See `IProductSeriesLanguageSet`.
 
@@ -167,11 +145,6 @@ class ProductSeriesLanguageSet:
     implements(IProductSeriesLanguageSet)
 
     def getProductSeriesLanguage(self, productseries, language,
-                                 variant=None):
+                                 variant=None, pofile=None):
         """See `IProductSeriesLanguageSet`."""
-        return ProductSeriesLanguage(productseries, language, variant)
-
-    def getDummy(self, productseries, language, variant=None, pofile=None):
-        """See `IProductSeriesLanguageSet`."""
-        return DummyProductSeriesLanguage(
-            productseries, language, variant, pofile)
+        return ProductSeriesLanguage(productseries, language, variant, pofile)

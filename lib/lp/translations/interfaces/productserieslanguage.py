@@ -67,10 +67,6 @@ class IProductSeriesLanguage(IRosettaStats):
 class IProductSeriesLanguageSet(Interface):
     """The set of productserieslanguages."""
 
-    def getDummy(productseries, language, variant=None):
-        """Return a new DummyProductSeriesLanguage for the given
-        productseries and language.
-        """
-
-    def getProductSeriesLanguage(productseries, language, variant=None):
+    def getProductSeriesLanguage(productseries, language, variant=None,
+                                 pofile=None):
         """Return a PSL for a productseries and a language."""

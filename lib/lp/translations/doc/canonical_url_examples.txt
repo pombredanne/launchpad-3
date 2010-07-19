@@ -173,7 +173,8 @@ ProductSeriesLanguage objects have their URLs on translations vhost.
     >>> from lp.translations.interfaces.productserieslanguage import (
     ...     IProductSeriesLanguageSet)
 
-    >>> coo_cah_serbian = getUtility(IProductSeriesLanguageSet).getDummy(
+    >>> psl_set = getUtility(IProductSeriesLanguageSet)
+    >>> coo_cah_serbian = psl_set.getProductSeriesLanguage(
     ...     productseries, serbian)
     >>> canonical_url(coo_cah_serbian)
     u'http://translations.launchpad.dev/coo/cah/+lang/sr'
