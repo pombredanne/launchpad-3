@@ -890,6 +890,34 @@ class TestNewBuilders(TrialTestCase):
         self.failUnlessEqual(
             new_builders, builder_scanner.checkForNewBuilders())
 
+    def test_scan(self):
+        # See if scan detects new builders and schedules the next scan.
+
+        # stub out the addScanForBuilders and scheduleScan methods since
+        # they use callLater; we only want to assert that they get
+        # called.
+        failure_callback = None
+
+        def fake_checkForNewBuilders():
+            return "new_builders"
+
+        def fake_addScanForBuilders(new_builders):
+            self.failUnlessEqual("new_builders", new_builders)
+
+        def fake_scheduleScan():
+            failure_callback.cancel()
+
+        def failed_scan():
+            self.fail("scheduleScan did not get called")
+
+        builder_scanner = self._getScanner(BuilddManager())
+        builder_scanner.checkForNewBuilders = fake_checkForNewBuilders
+        builder_scanner.manager.addScanForBuilders = fake_addScanForBuilders
+        builder_scanner.scheduleScan = fake_scheduleScan
+
+        reactor.callLater(0, builder_scanner.scan)
+        failure_callback = reactor.callLater(0, failed_scan)
+
 
 class TestBuilddManagerScript(unittest.TestCase):
 

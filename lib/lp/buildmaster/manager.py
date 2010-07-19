@@ -504,8 +504,11 @@ class NewBuildersScanner:
         reactor.callLater(self.SCAN_INTERVAL, self.scan)
 
     def scan(self):
-        # XXX stub
-        pass
+        """If a new builder appears, create a SlaveScanner for it."""
+        new_builders = self.checkForNewBuilders()
+        if new_builders is not None:
+            self.manager.addScanForBuilders(new_builders)
+        self.scheduleScan()
 
     def checkForNewBuilders(self):
         """See if any new builders were added."""
