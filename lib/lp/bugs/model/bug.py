@@ -494,8 +494,13 @@ class Bug(SQLBase):
     @property
     def initial_message(self):
         """See `IBug`."""
-        messages = sorted(self.messages, key=lambda ob: ob.id)
-        return messages[0]
+        store = Store.of(self)
+        messages = store.find(
+            Message,
+            BugMessage.bug == self,
+            BugMessage.message == Message.id).order_by('id')
+
+        return messages.first()
 
     def followup_subject(self):
         """See `IBug`."""
