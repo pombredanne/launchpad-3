@@ -469,8 +469,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                               pofile.currentCount(),
                               pofile.updatesCount(),
                               pofile.rosettaCount(),
-                              pofile.unreviewedCount(),
-                              pofile.date_changed)
+                              pofile.unreviewedCount())
+                psl.last_changed_date = pofile.date_changed
                 results.append(psl)
         else:
             # If there is more than one template, do a single
@@ -512,8 +512,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             for (language, imported, changed, new, unreviewed,
                 last_changed) in ordered_results:
                 psl = ProductSeriesLanguage(self, language)
-                psl.setCounts(
-                    total, imported, changed, new, unreviewed, last_changed)
+                psl.setCounts(total, imported, changed, new, unreviewed)
+                psl.last_changed_date = last_changed
                 results.append(psl)
 
         return results

@@ -12,6 +12,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.rosettastats import IRosettaStats
+from lp.translations.interfaces.translations import ITranslatedLanguage
 
 __metaclass__ = type
 
@@ -21,7 +22,7 @@ __all__ = [
     ]
 
 
-class IProductSeriesLanguage(IRosettaStats):
+class IProductSeriesLanguage(IRosettaStats, ITranslatedLanguage):
     """Per-language statistics for a product series."""
 
     pofile = Reference(

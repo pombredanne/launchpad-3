@@ -10,6 +10,8 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
+from lp.services.worlddata.interfaces.language import ILanguage
+#from lp.registry.interfaces.productseries import IProductSeries
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.registry.interfaces.person import IPerson
 
@@ -66,13 +68,16 @@ class ITranslatedLanguage(Interface):
 
     It expects `parent` to provide `IHasTranslationTemplates`."""
 
-    language = Choice(
+    language = Object(
         title=_('Language to gather statistics and POFiles for.'),
-        vocabulary='Language', required=True)
+        schema=ILanguage)
 
     parent = Object(
         title=_('A parent with translation templates.'),
         schema=IHasTranslationTemplates)
+
+    #parent = Attribute(
+    #    _('A parent with translation templates.'))
 
     pofiles = Attribute(
         'Iterator over all POFiles for this context and language.')

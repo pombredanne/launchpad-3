@@ -4,6 +4,7 @@
 __all__ = ['TranslatedLanguageMixin']
 
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from storm.expr import Coalesce, Desc, Sum
 

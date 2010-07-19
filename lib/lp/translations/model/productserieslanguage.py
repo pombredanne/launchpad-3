@@ -19,6 +19,7 @@ from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.model.pofile import DummyPOFile, POFile
 from lp.translations.model.potemplate import get_pofiles_for, POTemplate
 from lp.translations.model.translatedlanguage import TranslatedLanguageMixin
+from lp.translations.interfaces.translations import ITranslatedLanguage
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage, IProductSeriesLanguageSet)
 
@@ -38,22 +39,7 @@ class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
         self.variant = variant
         self.pofile = pofile
         self.id = 0
-        self._last_changed_date = None
-
-    def _setCounts(self, total=None, imported=None, changed=None, new=None,
-                  unreviewed=None, last_changed=None):
-        """See `IProductSeriesLanguage`."""
-        self._messagecount = total
-        # "currentcount" in RosettaStats conflicts our recent terminology
-        # and is closer to "imported" (except that it doesn't include
-        # "changed") translations.
-        self._currentcount = imported
-        self._updatescount = changed
-        self._rosettacount = new
-        self._unreviewed_count = unreviewed
-        if last_changed is not None:
-            self._last_changed_date = last_changed
-
+        self.last_changed_date = None
 
     def _getMessageCount(self):
         store = Store.of(self.language)

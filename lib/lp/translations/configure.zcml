@@ -384,13 +384,6 @@
         class="lp.translations.model.productserieslanguage.ProductSeriesLanguage">
         <allow
             interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage" />
-        <allow
-            interface="lp.translations.interfaces.translations.ITranslatedLanguage"/>
-    </class>
-    <class
-        class="lp.translations.model.productserieslanguage.DummyProductSeriesLanguage">
-        <allow
-            interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"/>
     </class>
 
     <!-- ProductSeriesLanguageSet -->
@@ -432,6 +425,13 @@
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             provides="lp.translations.interfaces.translationcommonformat.ITranslationFileData"
             factory="lp.translations.model.potemplate.POTemplateToTranslationFileDataAdapter"/>
+
+        <!-- TranslationTemplatesCollection -->
+        <class
+            class="lp.translations.model.potemplate.TranslationTemplatesCollection">
+            <allow
+                interface="lp.translations.interfaces.potemplate.ITranslationTemplatesCollection"/>
+        </class>
 
         <!-- POTemplateSet -->
 
