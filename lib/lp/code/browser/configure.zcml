@@ -1083,11 +1083,16 @@
         attribute_to_parent="recipe"
         path_expression="string:+build/${id}"
         rootsite="code" />
+    <browser:menus
+        classes="SourcePackageRecipeBuildContextMenu"
+        module="lp.code.browser.sourcepackagerecipebuild"/>
 
     <browser:navigation
         module="lp.code.browser.sourcepackagerecipe"
-        classes="SourcePackageRecipeNavigation
-        SourcePackageRecipeBuildNavigation" />
+        classes="SourcePackageRecipeNavigation" />
+    <browser:navigation
+        module="lp.code.browser.sourcepackagerecipebuild"
+        classes="SourcePackageRecipeBuildNavigation" />
 
     <facet facet="branches">
 
@@ -1115,9 +1120,15 @@
             layer="canonical.launchpad.layers.CodeLayer"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
-            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeBuildView"
+            class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildView"
             name="+index"
             template="../templates/sourcepackagerecipebuild-index.pt"
+            permission="launchpad.View"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+            class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildCancelView"
+            name="+cancel"
+            template="../../app/templates/generic-edit.pt"
             permission="launchpad.View"/>
         <browser:menus
             classes="
