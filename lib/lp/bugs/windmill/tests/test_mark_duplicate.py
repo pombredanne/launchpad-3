@@ -66,7 +66,7 @@ class TestMarkDuplicate(WindmillTestCase):
             id='warning-comment-on-duplicate', timeout=constants.FOR_ELEMENT)
 
         # The duplicate can be cleared:
-        client.click(classname=u'menu-link-mark-dupe')
+        client.click(id=u'mark-duplicate-text')
         client.type(text=u'', id=u'field.duplicateof')
         client.click(xpath=CHANGE_BUTTON)
         client.waits.forElement(
@@ -77,7 +77,7 @@ class TestMarkDuplicate(WindmillTestCase):
         client.asserts.assertNotNode(id='warning-comment-on-duplicate')
 
         # Entering a false bug number results in input validation errors
-        client.click(classname=u'menu-link-mark-dupe')
+        client.click(id=u'mark-duplicate-text')
         client.type(text=u'123', id=u'field.duplicateof')
         client.click(xpath=CHANGE_BUTTON)
         error_xpath = (
