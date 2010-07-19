@@ -499,7 +499,6 @@ class Bug(SQLBase):
             Message,
             BugMessage.bug == self,
             BugMessage.message == Message.id).order_by('id')
-
         return messages.first()
 
     def followup_subject(self):
