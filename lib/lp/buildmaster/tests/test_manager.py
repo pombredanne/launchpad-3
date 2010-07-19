@@ -27,8 +27,9 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
-    BaseDispatchResult, SlaveScanner, FailDispatchResult, NewBuildersScanner,
-    RecordingSlave, ResetDispatchResult, buildd_success_result_map)
+    BaseDispatchResult, BuilddManager, SlaveScanner, FailDispatchResult,
+    NewBuildersScanner, RecordingSlave, ResetDispatchResult,
+    buildd_success_result_map)
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
@@ -826,21 +827,38 @@ class TestDispatchResult(unittest.TestCase):
         self.assertEqual('does not work!', builder.failnotes)
 
 
+class TestBuilddManager(unittest.TestCase):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_addScanForBuilders(self):
+        # Test that addScanForBuilders generates SlaveScanner objects.
+        manager = BuilddManager()
+        builder_names = [builder.name for builder in getUtility(IBuilderSet)]
+        scanners = manager.addScanForBuilders(builder_names)
+        scanner_names = [scanner.builder_name for scanner in scanners]
+        for builder in builder_names:
+            self.assertTrue(builder in scanner_names)
+
+
 class TestNewBuilders(TrialTestCase):
     """Test detecting of new builders."""
 
     layer = LaunchpadZopelessLayer
 
+    def _getScanner(self, manager=None):
+        return NewBuildersScanner(manager=manager)
+
     def test_init_stores_existing_builders(self):
         # Make sure that NewBuildersScanner initialises itself properly
         # by storing a list of existing builders.
         all_builders = [builder.name for builder in getUtility(IBuilderSet)]
-        builder_scanner = NewBuildersScanner()
+        builder_scanner = self._getScanner()
         self.assertEqual(all_builders, builder_scanner.current_builders)
 
     def test_scheduleScan(self):
         # Test that scheduleScan calls the "scan" method.
-        builder_scanner = NewBuildersScanner()
+        builder_scanner = self._getScanner()
         builder_scanner.SCAN_INTERVAL = 0
         failure_callback = None
 
@@ -861,7 +879,7 @@ class TestNewBuilders(TrialTestCase):
         # Test that checkForNewBuilders() detects a new builder
 
         # The basic case, where no builders are added.
-        builder_scanner = NewBuildersScanner()
+        builder_scanner = self._getScanner()
         self.failUnlessIdentical(None, builder_scanner.checkForNewBuilders())
 
         # Add two builders and ensure they're returned.

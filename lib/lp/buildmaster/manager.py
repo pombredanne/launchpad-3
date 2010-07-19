@@ -492,7 +492,8 @@ class NewBuildersScanner:
     # How often to check for new builders, in seconds.
     SCAN_INTERVAL = 300
 
-    def __init__(self):
+    def __init__(self, manager):
+        self.manager = manager
         # Avoid circular import.
         from lp.buildmaster.interfaces.builder import IBuilderSet
         self.current_builders = [
@@ -555,13 +556,19 @@ class BuilddManager(service.Service):
         # Avoiding circular imports.
         from lp.buildmaster.interfaces.builder import IBuilderSet
         builder_set = getUtility(IBuilderSet)
-        for builder in builder_set:
-            slave_scanner = SlaveScanner(builder.name, self.logger)
-            self.builder_slaves.append(slave_scanner)
-            slave_scanner.scheduleNextScanCycle()
+        builders = [builder.name for builder in builder_set]
+        self.addScanForBuilders(builders)
 
         # Events will now fire in the SlaveScanner objects to scan each
         # builder.
 
+    def addScanForBuilders(self, builders):
+        """Set up scanner objects for the builders specified."""
+        for builder in builders:
+            slave_scanner = SlaveScanner(builder, self.logger)
+            self.builder_slaves.append(slave_scanner)
+            slave_scanner.scheduleNextScanCycle()
+
         # Return the slave list for the benefit of tests.
         return self.builder_slaves
+
