@@ -108,6 +108,14 @@ class TestMarkDuplicate(WindmillTestCase):
             xpath=u"//h1[@id='bug-title']/span[1]",
             validator=u'Firefox does not support SVG')
 
+        # If someone wants to set the master to dupe another bug, there
+        # is a warning in the dupe widget about this bug having its own
+        # duplicates.
+        client.click(classname='menu-link-mark-dupe')
+        client.asserts.assertTextIn(
+            classname='large-warning', validator=u'This bug has duplicates.',
+            timeout=constants.FOR_ELEMENT)
+
         # When we go back to the page for the duplicate bug...
         client.open(url=u'http://bugs.launchpad.dev:8085/bugs/15')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
