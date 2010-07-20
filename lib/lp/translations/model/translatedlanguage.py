@@ -9,7 +9,7 @@ from zope.security.proxy import removeSecurityProxy
 from storm.expr import Coalesce, Desc, Sum
 
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
-from lp.translations.interfaces.translations import ITranslatedLanguage
+from lp.translations.interfaces.translatedlanguage import ITranslatedLanguage
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import POTemplate
 

@@ -11,7 +11,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
-from lp.translations.interfaces.translations import ITranslatedLanguage
+from lp.translations.interfaces.translatedlanguage import ITranslatedLanguage
 from lp.testing import TestCaseWithFactory
 from canonical.testing import ZopelessDatabaseLayer
 
