@@ -43,7 +43,8 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.scripts import FakeLogger
 from lp.testing import TestCaseWithFactory
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import (
+    LaunchpadObjectFactory, remove_security_proxy_and_shout_at_engineer)
 
 
 class SoyuzTestPublisher:
@@ -135,7 +136,7 @@ class SoyuzTestPublisher:
                          changes_file_name="foo_666_source.changes",
                          changes_file_content="fake changes file content",
                          upload_status=PackageUploadStatus.DONE):
-        signing_key =  self.person.gpg_keys[0]
+        signing_key = self.person.gpg_keys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, changes_file_name, changes_file_content, archive,
             signing_key)
@@ -144,7 +145,10 @@ class SoyuzTestPublisher:
             PackageUploadStatus.DONE: 'setDone',
             PackageUploadStatus.ACCEPTED: 'setAccepted',
             }
-        method = getattr(package_upload, status_to_method[upload_status])
+        naked_package_upload = remove_security_proxy_and_shout_at_engineer(
+            package_upload)
+        method = getattr(
+            naked_package_upload, status_to_method[upload_status])
         method()
 
         return package_upload
@@ -220,7 +224,9 @@ class SoyuzTestPublisher:
             changes_file_name=changes_file_name,
             changes_file_content=changes_file_content,
             upload_status=upload_status)
-        package_upload.addSource(spr)
+        naked_package_upload = remove_security_proxy_and_shout_at_engineer(
+            package_upload)
+        naked_package_upload.addSource(spr)
 
         if filename is None:
             filename = "%s_%s.dsc" % (sourcename, version)
@@ -470,6 +476,7 @@ class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
         self.pool_dir = self.config.poolroot
         self.temp_dir = self.config.temproot
         self.logger = FakeLogger()
+
         def message(self, prefix, *stuff, **kw):
             pass
         self.logger.message = message
@@ -616,7 +623,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(self.disk_pool, self.logger)
         self.layer.commit()
         self.assertEqual(
-            pub_source.status,PackagePublishingStatus.PENDING)
+            pub_source.status, PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_dsc_path).read().strip(), 'Hello world')
 
     def testPublishingDifferentContents(self):
@@ -795,7 +802,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         try:
             copies = tuple(copied)
         except TypeError:
-            copies = (copied,)
+            copies = (copied, )
 
         for copy in copies:
             self.assertEquals(copy.component, pub_record.component)
@@ -905,7 +912,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """Return a mock source package publishing record for the archive
         and architecture used in this testcase.
 
-        :param architecturehintlist: Architecture hint list (e.g. "i386 amd64")
+        :param architecturehintlist: Architecture hint list (e.g.
+        "i386 amd64")
         """
         return super(BuildRecordCreationTests, self).getPubSource(
             archive=self.archive, distroseries=self.distroseries,
@@ -946,7 +954,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
 
     def test_createMissingBuilds_restricts_explicitlist(self):
         """createMissingBuilds() should limit builds targeted at a
-        variety of architectures architecture to those allowed for the archive.
+        variety of architectures architecture to those allowed for the
+        archive.
         """
         pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
         builds = pubrec.createMissingBuilds()

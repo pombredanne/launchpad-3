@@ -534,7 +534,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         jobs = list(getUtility(IBranchUpgradeJobSource).iterReady())
         self.assertEqual(
             jobs,
-            [job,])
+            [job, ])
 
     def test_requestUpgrade_no_upgrade_needed(self):
         # If a branch doesn't need to be upgraded, requestUpgrade raises an
@@ -632,6 +632,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
         branch = self.factory.makeProductBranch(
             product=fooix, owner=eric, name='trunk')
         linked_branch = ICanHasLinkedBranch(future)
+        login_person(fooix.owner)
         linked_branch.setBranch(branch)
         self.assertEqual(
             [linked_branch],
@@ -824,6 +825,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         product = branch.product
         series = self.factory.makeProductSeries(product=product)
         linked_branch = ICanHasLinkedBranch(series)
+        login_person(series.owner)
         linked_branch.setBranch(branch)
         self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
@@ -849,6 +851,7 @@ class TestBzrIdentity(TestCaseWithFactory):
             removeSecurityProxy(branch.product))
         series_link = ICanHasLinkedBranch(series)
         product_link.setBranch(branch)
+        login_person(series.owner)
         series_link.setBranch(branch)
         self.assertBzrIdentity(branch, product_link.bzr_path)
 

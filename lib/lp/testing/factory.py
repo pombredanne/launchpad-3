@@ -15,6 +15,7 @@ __all__ = [
     'GPGSigningContext',
     'LaunchpadObjectFactory',
     'ObjectFactory',
+    'remove_security_proxy_and_shout_at_engineer',
     ]
 
 from contextlib import nested
@@ -1810,9 +1811,11 @@ class _LaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if distroseries is None:
             distroseries = self.makeDistroSeries()
-            distroseries.nominatedarchindep = distroseries.newArch(
-                'i386', ProcessorFamily.get(1), False, owner,
-                supports_virtualized=True)
+            naked_distroseries = removeSecurityProxy(distroseries)
+            naked_distroseries.nominatedarchindep = (
+                naked_distroseries.newArch(
+                    'i386', ProcessorFamily.get(1), False, owner,
+                    supports_virtualized=True))
 
         if name is None:
             name = self.getUniqueString().decode('utf8')
@@ -1937,7 +1940,7 @@ class _LaunchpadObjectFactory(ObjectFactory):
             productseries = self.makeProductSeries(owner=owner)
             # Make it use Translations, otherwise there's little point
             # to us creating a template for it.
-            productseries.product.official_rosetta = True
+            removeSecurityProxy(productseries).product.official_rosetta = True
         templateset = getUtility(IPOTemplateSet)
         subset = templateset.getSubset(
             distroseries, sourcepackagename, productseries)
@@ -2748,3 +2751,20 @@ class LaunchpadObjectFactory:
             return guarded_method
         else:
             return attr
+
+
+def remove_security_proxy_and_shout_at_engineer(obj):
+    """Remove an object's security proxy and print a warning.
+
+    A number of LaunchpadObjectFactory methods returned objects without
+    a security proxy. This is now no longer possible, but a number of
+    tests rely on unrestricted access to object attributes.
+
+    This function should only beused in existing tests if a test fails
+    because a newer version of LaunchpadObjectFactory returns a security
+    proxied object.
+    """
+    print >>sys.stderr, (
+        "\ncalled removeSecurityProxy() for %r without a check if this "
+        "reasonable" % obj)
+    return removeSecurityProxy(obj)
