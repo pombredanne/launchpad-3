@@ -294,10 +294,11 @@ class RecipeTextValidatorMixin:
         try:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
-        except RecipeParseError:
+        except RecipeParseError, error:
             self.setFieldError(
                 'recipe_text',
-                'The recipe text is not a valid bzr-builder recipe.')
+                'The recipe text is not a valid bzr-builder recipe.  '
+                '%(error)s' % {'error': error.problem})
 
 
 class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):

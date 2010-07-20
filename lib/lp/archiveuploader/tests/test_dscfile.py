@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import os
-import unittest
 
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.dscfile import (
@@ -90,7 +89,6 @@ class TestDscFile(TestCase):
         self.assertEqual(self.dsc_file.changelog_path,
                          self.changelog_dest)
 
-
     def testOversizedFile(self):
         """Test that a file larger than 10MiB will fail.
 
@@ -131,7 +129,3 @@ class TestDscFileLibrarian(TestCaseWithFactory):
             list(dsc_file.unpackAndCheckSource())
         finally:
             os.chmod(tempdir, 0755)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

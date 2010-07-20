@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the renovated slave scanner aka BuilddManager."""
@@ -229,12 +229,15 @@ class TestSlaveScanner(TrialTestCase):
 
         # Stop cyclic execution and record the end of the cycle.
         self.stopped = False
+
         def testNextCycle():
             self.stopped = True
+
         self.manager.scheduleNextScanCycle = testNextCycle
 
         # Return the testing Proxy version.
         self.test_proxy = TestingXMLRPCProxy()
+
         def testGetProxyForSlave(slave):
             return self.test_proxy
         self.manager._getProxyForSlave = testGetProxyForSlave
@@ -249,7 +252,6 @@ class TestSlaveScanner(TrialTestCase):
             pass
         self._realwaitOnDeferredList = self.manager.waitOnDeferredList
         self.manager.waitOnDeferredList = testwaitOnDeferredList
-
 
     def assertIsDispatchReset(self, result):
         self.assertTrue(
@@ -291,14 +293,17 @@ class TestSlaveScanner(TrialTestCase):
         # slave by calling self.reset_result(slave)().
 
         reset_result_calls = []
+
         class LoggingResetResult(BaseDispatchResult):
             """A DispatchResult that logs calls to itself.
 
             This *must* subclass BaseDispatchResult, otherwise finishCycle()
             won't treat it like a dispatch result.
             """
+
             def __init__(self, slave, info=None):
                 self.slave = slave
+
             def __call__(self):
                 reset_result_calls.append(self.slave)
 
@@ -930,7 +935,3 @@ class TestBuilddManagerScript(unittest.TestCase):
         # Ensure `buildd-manager.tac` starts and stops correctly.
         BuilddManagerTestSetup().setUp()
         BuilddManagerTestSetup().tearDown()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

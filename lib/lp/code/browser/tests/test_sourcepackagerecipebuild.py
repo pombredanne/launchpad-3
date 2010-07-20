@@ -11,6 +11,8 @@ import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.testing.pages import (
+    extract_text, find_tags_by_class)
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing import DatabaseFunctionalLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -55,7 +57,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
     def test_cancel_build(self):
         """An admin can cancel a build."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
-        build = self.makeRecipeBuild()
+        queue = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue.specific_job.build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -80,7 +83,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_cancel_build_not_admin(self):
         """No one but admins can cancel a build."""
-        build = self.makeRecipeBuild()
+        queue = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue.specific_job.build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -89,3 +93,96 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Cancel build')
+
+    def test_cancel_build_wrong_state(self):
+        """If the build isn't queued, you can't cancel it."""
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        build = self.makeRecipeBuild()
+        transaction.commit()
+        build_url = canonical_url(build)
+        logout()
+
+        browser = self.getUserBrowser(build_url, user=experts)
+        self.assertRaises(
+            LinkNotFoundError,
+            browser.getLink, 'Cancel build')
+
+    def test_rescore_build(self):
+        """An admin can rescore a build."""
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        queue = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue.specific_job.build
+        transaction.commit()
+        build_url = canonical_url(build)
+        logout()
+
+        browser = self.getUserBrowser(build_url, user=experts)
+        browser.getLink('Rescore build').click()
+
+        self.assertEqual(
+            browser.getLink('Cancel').url,
+            build_url)
+
+        browser.getControl('Score').value = '1024'
+
+        browser.getControl('Rescore build').click()
+
+        self.assertEqual(
+            browser.url,
+            build_url)
+
+        login(ANONYMOUS)
+        self.assertEqual(
+            build.buildqueue_record.lastscore,
+            1024)
+
+    def test_rescore_build_invalid_score(self):
+        """Build scores can only take numbers."""
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        queue = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue.specific_job.build
+        transaction.commit()
+        build_url = canonical_url(build)
+        logout()
+
+        browser = self.getUserBrowser(build_url, user=experts)
+        browser.getLink('Rescore build').click()
+
+        self.assertEqual(
+            browser.getLink('Cancel').url,
+            build_url)
+
+        browser.getControl('Score').value = 'tentwentyfour'
+
+        browser.getControl('Rescore build').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'You have specified an invalid value for score. '
+            'Please specify an integer')
+
+    def test_rescore_build_not_admin(self):
+        """No one but admins can rescore a build."""
+        queue = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue.specific_job.build
+        transaction.commit()
+        build_url = canonical_url(build)
+        logout()
+
+        browser = self.getUserBrowser(build_url, user=self.chef)
+        self.assertRaises(
+            LinkNotFoundError,
+            browser.getLink, 'Rescore build')
+
+    def test_rescore_build_wrong_state(self):
+        """If the build isn't queued, you can't rescore it."""
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        build = self.makeRecipeBuild()
+        transaction.commit()
+        build_url = canonical_url(build)
+        logout()
+
+        browser = self.getUserBrowser(build_url, user=experts)
+        self.assertRaises(
+            LinkNotFoundError,
+            browser.getLink, 'Rescore build')
