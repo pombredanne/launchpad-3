@@ -247,16 +247,14 @@ class OpenIDCallbackView(OpenIDLogin):
     suspended_account_template = ViewPageTemplateFile(
         '../templates/login-suspended-account.pt')
 
-    @staticmethod
-    def _gather_params(request):
+    def _gather_params(self, request):
         params = dict(request.form)
         query_string = request.get('QUERY_STRING')
         if query_string is not None:
             params.update(cgi.parse_qsl(query_string))
         return params
 
-    @staticmethod
-    def _get_requested_url(request):
+    def _get_requested_url(self, request):
         requested_url = request.getURL()
         query_string = request.get('QUERY_STRING')
         if query_string is not None:
