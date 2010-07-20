@@ -24,6 +24,7 @@ def get_buildable_distroseries_set(user):
             buildables.append(distro)
     return buildables
 
+
 def buildable_distroseries_vocabulary(context):
     """Return a vocabulary of buildable distroseries."""
     distros = get_buildable_distroseries_set(getUtility(ILaunchBag).user)
@@ -33,6 +34,7 @@ def buildable_distroseries_vocabulary(context):
         key=lambda term: term.value.version)
     terms.reverse()
     return SimpleVocabulary(terms)
+
 
 def target_ppas_vocabulary(context):
     """Return a vocabulary of ppas that the current user can target."""

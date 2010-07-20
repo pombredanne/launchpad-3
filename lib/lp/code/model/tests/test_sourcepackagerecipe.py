@@ -45,7 +45,6 @@ from lp.code.model.sourcepackagerecipe import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
-from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS, launchpadlib_for, login, login_person, person_logged_in,
     TestCaseWithFactory, ws_object)
@@ -167,7 +166,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         branch2 = self.factory.makeAnyBranch()
         builder_recipe2 = self.factory.makeRecipe(branch2)
         login_person(sp_recipe.owner.teamowner)
-        #import pdb; pdb.set_trace()
         sp_recipe.builder_recipe = builder_recipe2
         self.assertEquals([branch2], list(sp_recipe.getReferencedBranches()))
 
@@ -297,6 +295,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             name=u'myrecipe', owner=requester)
         series = list(recipe.distroseries)[0]
         archive = self.factory.makeArchive(owner=requester)
+
         def request_build():
             build = recipe.requestBuild(archive, requester, series,
                     PackagePublishingPocket.RELEASE)
@@ -427,6 +426,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         build.buildduration = timedelta(minutes=10)
         self.assertEqual(
             timedelta(minutes=10), recipe.getMedianBuildDuration())
+
         def addBuild(minutes):
             build = removeSecurityProxy(
                 self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
