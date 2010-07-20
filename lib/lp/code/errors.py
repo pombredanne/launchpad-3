@@ -148,7 +148,7 @@ class BuildAlreadyPending(RecipeBuildException):
 
 
 class BuildNotAllowedForDistro(RecipeBuildException):
-    """A build was request against a distroseries that is not supported."""
+    """A build was requested against an unsupported distroseries."""
 
     webservice_error(400)
 
