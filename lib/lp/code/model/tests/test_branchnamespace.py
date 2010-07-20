@@ -86,6 +86,15 @@ class NamespaceMixin:
             BranchLifecycleStatus.EXPERIMENTAL, branch.lifecycle_status)
         self.assertEqual(whiteboard, branch.whiteboard)
 
+    def test_createBranch_subscribes_owner(self):
+        owner = self.factory.makeTeam()
+        namespace = self.getNamespace(owner)
+        branch_name = self.factory.getUniqueString()
+        registrant = owner.teamowner
+        branch = namespace.createBranch(
+            BranchType.HOSTED, branch_name, registrant)
+        self.assertEqual([owner], list(branch.subscribers))
+
     def test_getBranches_no_branches(self):
         # getBranches on an IBranchNamespace returns a result set of branches
         # in that namespace. If there are no branches, the result set is
