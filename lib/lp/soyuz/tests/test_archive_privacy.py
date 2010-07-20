@@ -37,4 +37,3 @@ class TestArchivePrivacy(TestCaseWithFactory):
         login_person(self.joe)
         p3a = getUtility(IArchiveSet).get(self.private_ppa.id)
         self.assertEqual(self._getDescription(p3a), "Foo")
-
