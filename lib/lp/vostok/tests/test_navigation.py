@@ -27,7 +27,7 @@ class TestRootNavigation(TestCaseWithFactory):
             (VostokRoot(), LaunchpadTestRequest()), IBrowserPublisher,
             name='')
 
-    def test_does_not_use_launchpad_navigation(self):
+    def test_use_VostokRootNavigation(self):
         self.assertIsInstance(self._navigation, VostokRootNavigation)
 
     def test_traverse_to_distributions(self):
@@ -42,6 +42,6 @@ class TestRootNavigation(TestCaseWithFactory):
         redirection_view = self._navigation.traverse('f00')
         self.assertEqual(canonical_url(distro), redirection_view.target)
 
-    def test_traverse_to_projects(self):
+    def test_can_not_traverse_to_projects(self):
         path = self.factory.makeProject().name
         self.assertRaises(NotFoundError, self._navigation.traverse, path)
