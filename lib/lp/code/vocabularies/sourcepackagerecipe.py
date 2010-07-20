@@ -16,10 +16,10 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 def get_buildable_distroseries_set(user):
     ppas = getUtility(IArchiveSet).getPPAsForUser(user)
     supported_distros = [ppa.distribution for ppa in ppas]
-    dsset = getUtility(IDistroSeriesSet).search()
+    distros = getUtility(IDistroSeriesSet).search()
 
     buildables = []
-    for distro in dsset:
+    for distro in distros:
         if distro.active and distro.distribution in supported_distros:
             buildables.append(distro)
     return buildables
