@@ -20,6 +20,7 @@
     <include package="lp.services.openid" />
     <include package="lp.services.job" />
     <include package="lp.services.memcache" />
+    <include package="lp.services.profile" />
     <include package="lp.services.scripts" />
     <include package="lp.services.worlddata" />
     <include package="lp.services.salesforce" />
