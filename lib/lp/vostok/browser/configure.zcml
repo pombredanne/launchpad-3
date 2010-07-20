@@ -27,4 +27,9 @@
      layer="lp.vostok.publisher.VostokLayer"
      />
 
+  <browser:navigation
+      module="lp.vostok.publisher"
+      classes="VostokRootNavigation"
+      />
+
 </configure>
