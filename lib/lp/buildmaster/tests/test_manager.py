@@ -916,6 +916,9 @@ class TestNewBuilders(TrialTestCase):
         builder_scanner.scheduleScan = fake_scheduleScan
 
         reactor.callLater(0, builder_scanner.scan)
+
+        # If scan() works, this callback will get cancelled and the test
+        # will pass.
         failure_callback = reactor.callLater(0, failed_scan)
 
 
