@@ -11,12 +11,13 @@ from datetime import datetime, timedelta
 from pytz import utc
 
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.bugs.browser.bugtracker import (
-    BugTrackerEditView, UserCannotResetWatchesError)
+    BugTrackerEditView)
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import login, TestCaseWithFactory
 from lp.testing.sampledata import ADMIN_EMAIL, NO_PRIVILEGE_EMAIL
@@ -70,7 +71,7 @@ class BugTrackerEditViewTestCase(TestCaseWithFactory):
         login(NO_PRIVILEGE_EMAIL)
         view = create_initialized_view(self.bug_tracker, '+edit')
         self.assertRaises(
-            UserCannotResetWatchesError, view.resetBugTrackerWatches)
+            Unauthorized, view.resetBugTrackerWatches)
 
     def test_admin_can_reset_watches(self):
         # Launchpad admins can reset the watches on a bugtracker.

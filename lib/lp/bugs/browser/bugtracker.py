@@ -27,6 +27,7 @@ from zope.app.form.browser import TextAreaWidget
 from zope.formlib import form
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
+from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_updates
@@ -61,10 +62,6 @@ NO_DIRECT_CREATION_TRACKERS = (
         BugTrackerType.EMAILADDRESS,
         )
     )
-
-
-class UserCannotResetWatchesError(Exception):
-    """Raised when a user cannot reset a bug tracker's watches."""
 
 
 class BugTrackerSetNavigation(GetitemNavigation):
@@ -387,11 +384,13 @@ class BugTrackerEditView(LaunchpadEditFormView):
     def resetBugTrackerWatches(self):
         """Call the resetWatches() method of the current context.
 
-        :raises `UserCannotResetWatchesError` if the user isn't an admin
+        :raises `Unauthorized` if the user isn't an admin
                 or a member of the Launchpad Developers team.
         """
         if not self.user_can_reset_watches:
-            raise UserCannotResetWatchesError
+            raise Unauthorized(
+                "You don't have permission to reset all the watches for "
+                "this bug tracker.")
 
         self.context.resetWatches()
 
