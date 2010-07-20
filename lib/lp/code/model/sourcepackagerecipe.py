@@ -34,9 +34,22 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
+
+
+def get_buildable_distroseries_set(user):
+    ppas = getUtility(IArchiveSet).getPPAsForUser(user)
+    supported_distros = [ppa.distribution for ppa in ppas]
+    distros = getUtility(IDistroSeriesSet).search()
+
+    buildables = []
+    for distro in distros:
+        if distro.active and distro.distribution in supported_distros:
+            buildables.append(distro)
+    return buildables
 
 
 class NonPPABuildRequest(Exception):
