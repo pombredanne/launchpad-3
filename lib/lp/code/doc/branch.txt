@@ -66,7 +66,6 @@ The collection of all branches is represented by IBranchSet, which is
 registered as an utility.
 
     >>> from zope.component import getUtility
-    >>> from lp.code.interfaces.branch import IBranchSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> branchset = getUtility(IBranchSet)
     >>> branch_lookup = getUtility(IBranchLookup)
@@ -89,7 +88,6 @@ Branches can be created with IBranchNamespace.createBranch, which takes
 details like the type of the branch -- whether it is mirrored, hosted,
 imported or remote, name, and so on.
 
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> registrant = factory.makePerson(name='registrant')
     >>> from lp.code.interfaces.branchnamespace import (
     ...     get_branch_namespace)
@@ -270,8 +268,6 @@ BranchSubscriptionNotificationLevel.
     >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
-    >>> from lp.code.interfaces.branchsubscription import (
-    ...     IBranchSubscription)
     >>> subscriber = factory.makePerson(name='subscriber')
     >>> branch = factory.makeProductBranch(
     ...     owner=user, product=product, name='subscribed')
@@ -362,48 +358,6 @@ Let's get a branch with some revisions in it.
     >>> junk = branch_lookup.getByUniqueName('~name12/+junk/junk.dev')
     >>> print junk.unique_name
     ~name12/+junk/junk.dev
-
-
-== Revision history of Branch ==
-
-Branch.revision_history gives the sequence of revisions in this branch's
-history, latest revisions first. All revision history items must implement the
-IBranchRevision interface. The Branch.revision_count attribute gives the length
-of the revision_history attribute but without building the list.
-
-    >>> from lp.code.interfaces.branchrevision import IBranchRevision
-    >>> junk.revision_count
-    6
-    >>> [verifyObject(IBranchRevision, a) for a in junk.revision_history]
-    [True, True, True, True, True, True]
-    >>> for branch_revision in junk.revision_history:
-    ...     print branch_revision.sequence, branch_revision.revision.id
-    6 9
-    5 8
-    4 7
-    3 6
-    2 5
-    1 4
-
-There are two methods for getting only the latest items of the revision
-history.
-
-Branch.latest_revisions give a specific count of BranchRevisions at the end of
-the history.
-
-    >>> three_latest = list(junk.revision_history)[:3]
-    >>> list(junk.latest_revisions(3)) == three_latest
-    True
-
-Branch.getRevisionsSince gives all the BranchRevisions for revisions committed
-since a given timestamp. It may give surprising results if some committers had a
-skewed clock.
-
-    >>> from datetime import datetime
-    >>> timestamp = datetime(2005, 10, 31, 12, 00, 00)
-    >>> two_latest = list(junk.revision_history)[:2]
-    >>> list(junk.getRevisionsSince(timestamp)) == two_latest
-    True
 
 
 == Ancestry of Revision ==
