@@ -321,7 +321,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             self.factory.makeArchive(owner=recipe.owner), recipe.owner,
             series, PackagePublishingPocket.RELEASE)
         # Varying distroseries allows build.
-        new_distroseries = archive.distribution.getSeries('hoary')
+        new_distroseries = self.factory.makeSourcePackageRecipeDistroseries(
+            "hoary")
         recipe.requestBuild(archive, recipe.owner,
             new_distroseries, PackagePublishingPocket.RELEASE)
         # Changing status of old build allows new build.
@@ -735,7 +736,7 @@ class TestWebservice(TestCaseWithFactory):
         self.assertIn('TooManyBuilds', str(e))
 
     def test_requestBuildRejectUnsupportedDistroSeries(self):
-        """Build requests are rejected if they exceed quota."""
+        """Build requests are rejected if they have a bad distroseries."""
         person = self.factory.makePerson()
         archives = [self.factory.makeArchive(owner=person) for x in range(6)]
         distroseries = self.factory.makeDistroSeries()
