@@ -357,7 +357,7 @@ class _LaunchpadObjectFactory(ObjectFactory):
 
         location = PackageLocation(copy_archive, distribution, distroseries,
             pocket)
-        return location
+        return ProxyFactory(location)
 
     def makeAccount(self, displayname, email=None, password=None,
                     status=AccountStatus.ACTIVE,
@@ -1035,7 +1035,7 @@ class _LaunchpadObjectFactory(ObjectFactory):
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
     def makeDiff(self, diff_text=DIFF):
-        return Diff.fromFile(StringIO(diff_text), len(diff_text))
+        return ProxyFactory(Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
     def makePreviewDiff(self, conflicts=u''):
         diff = self.makeDiff()
