@@ -267,19 +267,19 @@
             layer="canonical.launchpad.layers.TranslationsLayer"/>
     </facet>
     <browser:url
-        for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
+        for="lp.translations.interfaces.translatedlanguage.ITranslatedLanguage"
         path_expression="string:+lang/${language/code}"
-        attribute_to_parent="productseries"
+        attribute_to_parent="parent"
         rootsite="translations"/>
     <browser:navigation
         module="lp.translations.browser.serieslanguage"
         classes="
             ProductSeriesLanguageNavigation"/>
     <browser:defaultView
-        for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
+        for="lp.translations.interfaces.translatedlanguage.ITranslatedLanguage"
         name="+index"/>
     <browser:pages
-        for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
+        for="lp.translations.interfaces.translatedlanguage.ITranslatedLanguage"
         permission="zope.Public"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer">
@@ -290,7 +290,7 @@
     <browser:page
         name="+index"
         permission="zope.Public"
-        for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
+        for="lp.translations.interfaces.translatedlanguage.ITranslatedLanguage"
         template="../templates/serieslanguage-index.pt"
         class="lp.translations.browser.serieslanguage.ProductSeriesLanguageView"
         facet="translations"
