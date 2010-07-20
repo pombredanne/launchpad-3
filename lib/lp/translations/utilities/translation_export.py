@@ -259,8 +259,9 @@ class TarballFileStorageStrategy(StorageStrategy):
         self.buffer = tempfile.TemporaryFile()
         self.tar_writer = LaunchpadWriteTarFile(self.buffer)
         if single_file_storage is not None:
-            self.addFile(single_file_storage.path,
-                single_file_storage.extension, single_file_storage.content)
+            self.addFile(
+                single_file_storage.path, single_file_storage.extension,
+                single_file_storage.content, single_file_storage.mime_type)
 
     def addFile(self, path, extension, content, mime_type):
         """See `StorageStrategy`."""
