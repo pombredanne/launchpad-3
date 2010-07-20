@@ -2,6 +2,12 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Source Package Recipe vocabularies used in the lp/code modules."""
+__metaclass__ = type
+__all__ = [
+    'buildable_distroseries_vocabulary',
+    'target_ppas_vocabulary',
+    ]
+
 from zope.component import getUtility
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 

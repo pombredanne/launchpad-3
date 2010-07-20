@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_buildable_distroseries_set',
     'SourcePackageRecipe',
     ]
 
