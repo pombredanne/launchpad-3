@@ -433,6 +433,21 @@ class TestBranch(TestCaseWithFactory):
         # implements the interface.
         self.assertProvides(removeSecurityProxy(branch), IBranch)
 
+    def test_associatedProductSeries_initial(self):
+        # By default, a branch has no associated product series.
+        branch = self.factory.makeBranch()
+        self.assertEqual([], list(branch.associatedProductSeries()))
+
+    def test_associatedProductSeries_linked(self):
+        # When a branch is linked to a product series, that product series is
+        # included in associatedProductSeries.
+        branch = self.factory.makeProductBranch()
+        product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(product).setBranch(branch)
+        self.assertEqual(
+            [product.development_focus],
+            list(branch.associatedProductSeries()))
+
 
 class TestBranchUpgrade(TestCaseWithFactory):
     """Test the upgrade functionalities of branches."""
