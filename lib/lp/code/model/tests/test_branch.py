@@ -56,6 +56,7 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES)
+from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
@@ -1680,6 +1681,78 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
         # This is just "assertNotRaises"
         branch.createBranchRevisionFromIDs(
             [(rev.revision_id, revision_number)])
+
+
+class TestRevisionHistory(TestCaseWithFactory):
+    """Tests for a branch's revision history."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_revision_count(self):
+        # A branch's revision count is equal to the number of revisions that
+        # are associated with it.
+        branch = self.factory.makeBranch()
+        some_number = 6
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        self.assertEqual(some_number, branch.revision_count)
+
+    def test_revision_history_matches_count(self):
+        branch = self.factory.makeBranch()
+        some_number = 3
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        self.assertEqual(
+            branch.revision_count, branch.revision_history.count())
+
+    def test_revision_history_is_made_of_revisions(self):
+        # Branch.revision_history contains IBranchRevision objects.
+        branch = self.factory.makeBranch()
+        some_number = 6
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        for branch_revision in branch.revision_history:
+            self.assertProvides(branch_revision, IBranchRevision)
+
+    def test_continuous_sequence_numbers(self):
+        # The revisions in the revision history have sequence numbers which
+        # start from 1 at the oldest and don't have any gaps.
+        branch = self.factory.makeBranch()
+        some_number = 4
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        self.assertEqual(
+            [4, 3, 2, 1], [br.sequence for br in branch.revision_history])
+
+    def test_most_recent_first(self):
+        # The revisions in the revision history start with the most recent
+        # first.
+        branch = self.factory.makeBranch()
+        some_number = 4
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        revision_history = list(branch.revision_history)
+        sorted_by_date = sorted(
+            revision_history, key=lambda x: x.revision.revision_date,
+            reverse=True)
+        self.assertEqual(sorted_by_date, revision_history)
+
+    def test_latest_revisions(self):
+        # IBranch.latest_revisions gives only the latest revisions.
+        branch = self.factory.makeBranch()
+        some_number = 7
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        smaller_number = some_number / 2
+        self.assertEqual(
+            list(branch.revision_history[:smaller_number]),
+            list(branch.latest_revisions(smaller_number)))
+
+    def test_getRevisionsSince(self):
+        # IBranch.getRevisionsSince gives all the BranchRevisions for
+        # revisions committed since a given timestamp.
+        branch = self.factory.makeBranch()
+        some_number = 7
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        mid_sequence = some_number - 2
+        revisions = list(branch.revision_history)
+        mid_revision = revisions[mid_sequence]
+        since = branch.getRevisionsSince(mid_revision.revision.revision_date)
+        self.assertEqual(revisions[:mid_sequence], list(since))
 
 
 class TestCodebrowseURL(TestCaseWithFactory):
