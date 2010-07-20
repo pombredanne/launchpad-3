@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for pool.py."""
@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import hashlib
 import os
-import sys
 import shutil
 import unittest
 
@@ -18,6 +17,7 @@ from lp.archivepublisher.diskpool import DiskPool, poolify
 
 
 class MockFile:
+
     def __init__(self, contents):
         self.contents = contents
 
@@ -35,6 +35,7 @@ class MockFile:
 
 
 class PoolTestingFile:
+
     def __init__(self, pool, sourcename, filename):
         self.pool = pool
         self.sourcename = sourcename
@@ -66,15 +67,16 @@ class TestPoolification(unittest.TestCase):
     def testPoolificationOkay(self):
         """poolify should poolify properly"""
         cases = (
-            ( "foo", "main", "main/f/foo" ),
-            ( "foo", "universe", "universe/f/foo" ),
-            ( "libfoo", "main", "main/libf/libfoo" )
+            ("foo", "main", "main/f/foo"),
+            ("foo", "universe", "universe/f/foo"),
+            ("libfoo", "main", "main/libf/libfoo"),
             )
         for case in cases:
-            self.assertEqual( case[2], poolify(case[0], case[1]) )
+            self.assertEqual(case[2], poolify(case[0], case[1]))
 
 
 class TestPool(unittest.TestCase):
+
     def setUp(self):
         self.pool_path = mkdtemp()
         self.temp_path = mkdtemp()
@@ -137,7 +139,3 @@ class TestPool(unittest.TestCase):
         foo.removeFromPool("main")
         self.assertFalse(foo.checkExists("main"))
         self.assertTrue(foo.checkIsFile("universe"))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

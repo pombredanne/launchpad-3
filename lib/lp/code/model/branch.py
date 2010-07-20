@@ -46,6 +46,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
 from lp.app.errors import UserCannotUnsubscribePerson
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
     BranchFormat, ControlFormat, CURRENT_BRANCH_FORMATS,
     CURRENT_REPOSITORY_FORMATS, RepositoryFormat)
@@ -898,8 +899,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
             raise BranchTypeError(self.unique_name)
-        from canonical.launchpad.interfaces import IStore
-        branch = IStore(self).find(
+        branch = Store.of(self).find(
             Branch,
             Branch.id == self.id,
             Or(Branch.next_mirror_time > UTC_NOW,
@@ -966,31 +966,45 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return self.destroySelf(break_references=True)
 
+    def _deleteBranchSubscriptions(self):
+        """Delete subscriptions for this branch prior to deleting branch."""
+        subscriptions = Store.of(self).find(
+            BranchSubscription, BranchSubscription.branch == self)
+        subscriptions.remove()
+
+    def _deleteJobs(self):
+        """Delete jobs for this branch prior to deleting branch.
+
+        This deletion includes `BranchJob`s associated with the branch,
+        as well as `BuildQueue` entries for `TranslationTemplateBuildJob`s.
+        """
+        # Avoid circular imports.
+        from lp.code.model.branchjob import BranchJob
+
+        store = Store.of(self)
+        affected_jobs = Select(
+            [BranchJob.jobID],
+            And(BranchJob.job == Job.id, BranchJob.branch == self))
+
+        # Delete BuildQueue entries for affected Jobs.  They would pin
+        # the affected Jobs in the database otherwise.
+        store.find(BuildQueue, BuildQueue.jobID.is_in(affected_jobs)).remove()
+
+        # Delete Jobs.  Their BranchJobs cascade along in the database.
+        store.find(Job, Job.id.is_in(affected_jobs)).remove()
+
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
-        from lp.code.model.branchjob import BranchJob
         from lp.code.interfaces.branchjob import IReclaimBranchSpaceJobSource
         if break_references:
             self._breakReferences()
         if not self.canBeDeleted():
             raise CannotDeleteBranch(
                 "Cannot delete branch: %s" % self.unique_name)
-        # BranchRevisions are taken care of a cascading delete
-        # in the database.
-        store = Store.of(self)
-        # Delete the branch subscriptions.
-        subscriptions = store.find(
-            BranchSubscription, BranchSubscription.branch == self)
-        subscriptions.remove()
-        # Delete any linked jobs.
-        # Using a sub-select here as joins in delete statements is not
-        # valid standard sql.
-        jobs = store.find(
-            Job,
-            Job.id.is_in(Select([BranchJob.jobID],
-                                And(BranchJob.job == Job.id,
-                                    BranchJob.branch == self))))
-        jobs.remove()
+
+        self._deleteBranchSubscriptions()
+        self._deleteJobs()
+
         # Now destroy the branch.
         branch_id = self.id
         SQLBase.destroySelf(self)
@@ -1002,6 +1016,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         class DateTrunc(NamedFunc):
             name = "date_trunc"
+
         results = Store.of(self).find(
             (DateTrunc('day', Revision.revision_date), Count(Revision.id)),
             Revision.id == BranchRevision.revision_id,
