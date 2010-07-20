@@ -734,6 +734,21 @@ class TestWebservice(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE.title)
         self.assertIn('TooManyBuilds', str(e))
 
+    def test_requestBuildRejectUnsupportedDistroSeries(self):
+        """Build requests are rejected if they exceed quota."""
+        person = self.factory.makePerson()
+        archives = [self.factory.makeArchive(owner=person) for x in range(6)]
+        distroseries = self.factory.makeDistroSeries()
+
+        recipe, user, launchpad = self.makeRecipe(person)
+        distroseries = ws_object(launchpad, distroseries)
+        archive = ws_object(launchpad, archives[-1])
+
+        e = self.assertRaises(Exception, recipe.requestBuild,
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
+        self.assertIn('BuildNotAllowedForDistro', str(e))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
