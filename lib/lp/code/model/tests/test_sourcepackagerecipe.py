@@ -322,10 +322,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             self.factory.makeArchive(owner=recipe.owner), recipe.owner,
             series, PackagePublishingPocket.RELEASE)
         # Varying distroseries allows build.
-        new_distroseries = self.factory.makeDistroSeries()
-        new_distroseries.nominatedarchindep = new_distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, recipe.owner,
-            supports_virtualized=True)
+        new_distroseries = archive.distribution.getSeries('hoary')
         recipe.requestBuild(archive, recipe.owner,
             new_distroseries, PackagePublishingPocket.RELEASE)
         # Changing status of old build allows new build.
@@ -691,11 +688,7 @@ class TestWebservice(TestCaseWithFactory):
         """Build requests can be performed."""
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(owner=person)
-        distroseries = self.factory.makeDistroSeries()
-        distroseries_i386 = distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, person,
-            supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
 
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
@@ -708,11 +701,7 @@ class TestWebservice(TestCaseWithFactory):
         """Build requests are rejected if already pending."""
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(owner=person)
-        distroseries = self.factory.makeDistroSeries()
-        distroseries_i386 = distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, person,
-            supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
 
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
@@ -729,11 +718,7 @@ class TestWebservice(TestCaseWithFactory):
         """Build requests are rejected if they exceed quota."""
         person = self.factory.makePerson()
         archives = [self.factory.makeArchive(owner=person) for x in range(6)]
-        distroseries = self.factory.makeDistroSeries()
-        distroseries_i386 = distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, person,
-            supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
 
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)

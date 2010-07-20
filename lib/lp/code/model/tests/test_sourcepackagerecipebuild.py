@@ -249,10 +249,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         recipe.requestBuild(
             recipe.daily_build_archive, recipe.owner, first_distroseries,
             PackagePublishingPocket.RELEASE)
-        second_distroseries = self.factory.makeDistroSeries()
-        second_distroseries.nominatedarchindep = second_distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
-            supports_virtualized=True)
+        second_distroseries = self.factory.makeSourcePackageRecipeDistroseries(
+            "hoary")
         recipe.distroseries.add(second_distroseries)
         builds = SourcePackageRecipeBuild.makeDailyBuilds()
         self.assertEqual(
