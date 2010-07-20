@@ -1775,8 +1775,8 @@ class TestRevisionHistory(TestCaseWithFactory):
         self.assertEqual(last_rev.parent_ids, [second_last_rev.revision_id])
 
 
-class TestCodebrowseURL(TestCaseWithFactory):
-    """Tests for `Branch.codebrowse_url`."""
+class TestCodebrowse(TestCaseWithFactory):
+    """Tests for branch codebrowse support."""
 
     layer = DatabaseFunctionalLayer
 
@@ -1809,6 +1809,17 @@ class TestCodebrowseURL(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
             branch.browse_source_url, branch.codebrowse_url('files'))
+
+    def test_no_revisions_not_browseable(self):
+        # A branch with no revisions is not browseable.
+        branch = self.factory.makeBranch()
+        self.assertFalse(branch.code_is_browseable)
+
+    def test_revisions_means_browseable(self):
+        # A branch that has revisions is browseable.
+        branch = self.factory.makeBranch()
+        self.factory.makeRevisionsForBranch(branch, count=5)
+        self.assertTrue(branch.code_is_browseable)
 
 
 class TestBranchNamespace(TestCaseWithFactory):
