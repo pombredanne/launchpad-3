@@ -39,7 +39,7 @@ from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import ComponentLookupError, getUtility
 from zope.security.proxy import (
-    builtin_isinstance, Proxy, removeSecurityProxy)
+    builtin_isinstance, Proxy, ProxyFactory, removeSecurityProxy)
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
@@ -744,8 +744,8 @@ class _LaunchpadObjectFactory(ObjectFactory):
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
         naked_product = removeSecurityProxy(product)
-        return naked_product.newSeries(owner=owner, name=name,
-                                       summary=summary)
+        return ProxyFactory(
+            naked_product.newSeries(owner=owner, name=name, summary=summary))
 
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,
@@ -1671,7 +1671,7 @@ class _LaunchpadObjectFactory(ObjectFactory):
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
         series.status = status
-        return series
+        return ProxyFactory(series)
 
     # Most people think of distro releases as distro series.
     makeDistroSeries = makeDistroRelease
