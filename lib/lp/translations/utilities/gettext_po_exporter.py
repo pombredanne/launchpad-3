@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Export module for gettext's .po file format.
@@ -38,6 +38,7 @@ def strip_last_newline(text):
         return text[:-1]
     else:
         return text
+
 
 def comments_text_representation(translation_message):
     """Return text representation of the comments.
@@ -103,6 +104,7 @@ def wrap_text(text, prefix, wrap_width):
         it.
     :param wrap_width: The width where the text should be wrapped.
     """
+
     def local_escape(text):
         ret = text.replace(u'\\', u'\\\\')
         ret = ret.replace(ur'"', ur'\"')
@@ -297,7 +299,8 @@ class GettextPOExporterBase:
     def exportTranslationFiles(self, translation_files, ignore_obsolete=False,
                                force_utf8=False):
         """See `ITranslationFormatExporter`."""
-        storage = ExportFileStorage('application/x-po')
+        mime_type = 'application/x-po'
+        storage = ExportFileStorage()
 
         for translation_file in translation_files:
             dirname = os.path.dirname(translation_file.path)
@@ -377,7 +380,8 @@ class GettextPOExporterBase:
                 encoded_file_content = self._encode_file_content(
                     translation_file, exported_file_content)
 
-            storage.addFile(file_path, file_extension, encoded_file_content)
+            storage.addFile(
+                file_path, file_extension, encoded_file_content, mime_type)
 
         return storage.export()
 
