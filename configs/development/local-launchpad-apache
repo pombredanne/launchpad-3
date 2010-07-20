@@ -131,6 +131,7 @@ RewriteLock /var/tmp/rewrite-lock
   ServerAlias shipit.edubuntu.dev
   ServerAlias shipit.kubuntu.dev
   ServerAlias shipit.ubuntu.dev
+  ServerAlias vostok.dev
   <Proxy *>
     Order deny,allow
     Allow from 127.0.0.0/255.0.0.0
@@ -163,6 +164,7 @@ RewriteLock /var/tmp/rewrite-lock
   ServerAlias shipit.edubuntu.dev
   ServerAlias shipit.kubuntu.dev
   ServerAlias shipit.ubuntu.dev
+  ServerAlias vostok.dev
   RewriteEngine On
   RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 </VirtualHost>

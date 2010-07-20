@@ -1,0 +1,7 @@
+<metal:page
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  define-macro="master">
+<h1 metal:define-slot="heading" />
+<div metal:define-slot="content" />
+</metal:page>
