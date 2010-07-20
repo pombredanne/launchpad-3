@@ -9,7 +9,7 @@ import unittest
 
 from canonical.config import config
 from canonical.launchpad.layers import WebServiceLayer
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import FunctionalLayer
 
 from lp.testing import TestCase
 from lp.testing.publication import get_request_and_publication
@@ -20,7 +20,7 @@ from lp.code.publisher import CodeLayer
 class TestRegistration(TestCase):
     """Code's publication customizations are installed correctly."""
 
-    layer = DatabaseFunctionalLayer
+    layer = FunctionalLayer
 
     def test_code_request_provides_code_layer(self):
         # The request constructed for requests to the code hostname provides
