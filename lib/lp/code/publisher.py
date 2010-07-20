@@ -17,22 +17,18 @@ from zope.publisher.interfaces.browser import (
 
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
-    LaunchpadBrowserRequest, VirtualHostRequestPublicationFactory)
+    LaunchpadBrowserRequest, VHostWebServiceRequestPublicationFactory)
 
 
 class CodeLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The Code layer."""
 
 
-class CodeRequestMixin:
-
+class CodeBrowserRequest(LaunchpadBrowserRequest):
+    """Instances of CodeBrowserRequest provide `CodeLayer`."""
     implements(CodeLayer)
 
 
-class CodeBrowserRequest(CodeRequestMixin, LaunchpadBrowserRequest):
-    pass
-
-
 def code_request_publication_factory():
-    return VirtualHostRequestPublicationFactory(
+    return VHostWebServiceRequestPublicationFactory(
         'code', CodeBrowserRequest, LaunchpadBrowserPublication)
