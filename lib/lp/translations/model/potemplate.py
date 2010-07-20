@@ -461,7 +461,7 @@ class POTemplate(SQLBase, RosettaStats):
                                "POFile.potemplate = %d AND "
                                "POFile.variant IS NULL" % self.id,
                                clauseTables=['POFile', 'Language'],
-                               distinct=True
+                               distinct=True,
                                )
 
     def getPOFileByPath(self, path):
