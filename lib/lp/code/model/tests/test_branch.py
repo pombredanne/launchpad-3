@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from unittest import TestLoader
 
 from bzrlib.bzrdir import BzrDir
+from bzrlib.revision import NULL_REVISION
 
 from pytz import UTC
 
@@ -1773,6 +1774,29 @@ class TestRevisionHistory(TestCaseWithFactory):
         last_rev = revisions[0].revision
         second_last_rev = revisions[1].revision
         self.assertEqual(last_rev.parent_ids, [second_last_rev.revision_id])
+
+    def test_tip_revision_when_no_bazaar_data(self):
+        # When a branch has no revisions and no Bazaar data at all, its tip
+        # revision is None and its last_scanned_id is None.
+        branch = self.factory.makeBranch()
+        self.assertIs(None, branch.last_scanned_id)
+        self.assertIs(None, branch.getTipRevision())
+
+    def test_tip_revision_when_no_revisions(self):
+        # When a branch has no revisions but does have Bazaar data, its tip
+        # revision is None and its last_scanned_id is
+        # bzrlib.revision.NULL_REVISION.
+        branch = self.factory.makeBranch()
+        branch.updateScannedDetails(None, 0)
+        self.assertEqual(NULL_REVISION, branch.last_scanned_id)
+        self.assertIs(None, branch.getTipRevision())
+
+    def test_tip_revision_is_updated(self):
+        branch = self.factory.makeBranch()
+        revision = self.factory.makeRevision()
+        branch.updateScannedDetails(revision, 1)
+        self.assertEqual(revision.revision_id, branch.last_scanned_id)
+        self.assertEqual(revision, branch.getTipRevision())
 
 
 class TestCodebrowse(TestCaseWithFactory):
