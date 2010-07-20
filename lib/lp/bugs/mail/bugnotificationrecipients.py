@@ -62,10 +62,11 @@ class BugNotificationRecipientReason(RecipientReason):
         """Return a `BugNotificationRecipientReason` for a dupe subscriber.
         """
         header = cls.makeRationale(
-            'Subscriber to Duplicate', person, duplicate_bug)
+            'Subscriber of Duplicate', person, duplicate_bug)
 
         reason = cls._getReasonTemplate(
-            "a direct subscriber to duplicate bug %s" %  duplicate_bug.id)
+            "a direct subscriber of a duplicate bug (via bug %s)" % 
+                duplicate_bug.id)
         return cls(person, person, header, reason)
 
     @classmethod
@@ -74,7 +75,7 @@ class BugNotificationRecipientReason(RecipientReason):
         """
         header = cls.makeRationale("Subscriber", person, duplicate_bug)
         reason = cls._getReasonTemplate(
-            "a direct subscriber to the bug", duplicate_bug)
+            "a direct subscriber of the bug", duplicate_bug)
         return cls(person, person, header, reason)
 
     @classmethod
@@ -112,7 +113,7 @@ class BugNotificationRecipientReason(RecipientReason):
         header = cls.makeRationale(
             "Registrant (%s)" % target.displayname, person, duplicate_bug)
         reason = cls._getReasonTemplate(
-            "the registrant of %s" % target.displayname, duplicate_bug)
+            "the registrant for %s" % target.displayname, duplicate_bug)
         return cls(person, person, header, reason)
 
 
