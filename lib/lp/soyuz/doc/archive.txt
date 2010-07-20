@@ -1463,7 +1463,7 @@ including PPA, DEBUG, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    19
+    18
 
     >>> print sorted(set(archive_purposes))
     ['COPY', 'DEBUG', 'PARTNER', 'PPA', 'PRIMARY']
