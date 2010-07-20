@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'SourcePackageRecipeAddView',
-    'SourcePackageRecipeBuildView',
     'SourcePackageRecipeContextMenu',
     'SourcePackageRecipeEditView',
     'SourcePackageRecipeNavigationMenu',
@@ -29,7 +28,6 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import Hierarchy
-from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
@@ -39,19 +37,18 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.code.errors import BuildAlreadyPending, ForbiddenInstruction
+from lp.code.errors import ForbiddenInstruction
+from lp.code.errors import BuildAlreadyPending
 from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
+    ISourcePackageRecipeBuildSource)
 from lp.soyuz.browser.archive import make_archive_vocabulary
 from lp.soyuz.interfaces.archive import (
     IArchiveSet)
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.job.interfaces.job import JobStatus
 
 RECIPE_BETA_MESSAGE = structured(
     'We\'re still working on source package recipes. '
@@ -193,6 +190,7 @@ def buildable_distroseries_vocabulary(context):
     terms.reverse()
     return SimpleVocabulary(terms)
 
+
 def target_ppas_vocabulary(context):
     """Return a vocabulary of ppas that the current user can target."""
     ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
@@ -264,69 +262,6 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
 
 
-class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
-
-    usedfor = ISourcePackageRecipeBuild
-
-
-class SourcePackageRecipeBuildView(LaunchpadView):
-    """Default view of a SourcePackageRecipeBuild."""
-
-    @property
-    def status(self):
-        """A human-friendly status string."""
-        if (self.context.buildstate == BuildStatus.NEEDSBUILD
-            and self.eta is None):
-            return 'No suitable builders'
-        return {
-            BuildStatus.NEEDSBUILD: 'Pending build',
-            BuildStatus.FULLYBUILT: 'Successful build',
-            BuildStatus.MANUALDEPWAIT: (
-                'Could not build because of missing dependencies'),
-            BuildStatus.CHROOTWAIT: (
-                'Could not build because of chroot problem'),
-            BuildStatus.SUPERSEDED: (
-                'Could not build because source package was superseded'),
-            BuildStatus.FAILEDTOUPLOAD: 'Could not be uploaded correctly',
-            }.get(self.context.buildstate, self.context.buildstate.title)
-
-    @property
-    def eta(self):
-        """The datetime when the build job is estimated to complete.
-
-        This is the BuildQueue.estimated_duration plus the
-        Job.date_started or BuildQueue.getEstimatedJobStartTime.
-        """
-        if self.context.buildqueue_record is None:
-            return None
-        queue_record = self.context.buildqueue_record
-        if queue_record.job.status == JobStatus.WAITING:
-            start_time = queue_record.getEstimatedJobStartTime()
-            if start_time is None:
-                return None
-        else:
-            start_time = queue_record.job.date_started
-        duration = queue_record.estimated_duration
-        return start_time + duration
-
-    @property
-    def date(self):
-        """The date when the build completed or is estimated to complete."""
-        if self.estimate:
-            return self.eta
-        return self.context.datebuilt
-
-    @property
-    def estimate(self):
-        """If true, the date value is an estimate."""
-        if self.context.datebuilt is not None:
-            return False
-        return self.eta is not None
-
-    def binary_builds(self):
-        return list(self.context.binary_builds)
-
-
 class ISourcePackageAddEditSchema(Interface):
     """Schema for adding or editing a recipe."""
 
@@ -359,10 +294,11 @@ class RecipeTextValidatorMixin:
         try:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
-        except RecipeParseError:
+        except RecipeParseError, error:
             self.setFieldError(
                 'recipe_text',
-                'The recipe text is not a valid bzr-builder recipe.')
+                'The recipe text is not a valid bzr-builder recipe.  '
+                '%(error)s' % {'error': error.problem})
 
 
 class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):

@@ -191,7 +191,8 @@ An active mailing list can be deactivated. If the deactivated mailing
 list was the team contact method, the contact method will be changed
 to 'each user individually'.
 
-    >>> browser.open('http://launchpad.dev/~landscape-developers/+mailinglist')
+    >>> browser.open(
+    ...     'http://launchpad.dev/~landscape-developers/+mailinglist')
     >>> browser.getControl('Deactivate this Mailing List').click()
     >>> browser.getLink(url='+contactaddress').click()
     >>> control = browser.getControl(name='field.contact_method')
@@ -199,7 +200,8 @@ to 'each user individually'.
     ['Each member individually']
 
     >>> act()
-    >>> browser.open('http://launchpad.dev/~landscape-developers/+mailinglist')
+    >>> browser.open(
+    ...     'http://launchpad.dev/~landscape-developers/+mailinglist')
     >>> print mailing_list_status_message(browser.contents)
     This team's mailing list has been deactivated.
 
@@ -247,7 +249,7 @@ and for private mailing lists for team members.
     >>> from lp.registry.interfaces.person import PersonVisibility
     >>> login('foo.bar@canonical.com')
     >>> bassists = mailinglists_helper.new_team('bassists')
-    >>> bassists.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> bassists.visibility = PersonVisibility.PRIVATE
     >>> bassists_list = mailinglists_helper.new_list_for_team(bassists)
     >>> logout()
 
@@ -258,8 +260,8 @@ The owner of the list can see archive link.
     ...     find_tag_by_id(user_browser.contents, 'mailing-list-archive'))
     http://lists.launchpad.dev/bassists
 
-Anonymous users cannot see the link, because they cannot even see the private
-membership team.
+Anonymous users cannot see the link, because they cannot even see the
+private team.
 
     >>> anon_browser.open('http://launchpad.dev/~bassists')
     Traceback (most recent call last):

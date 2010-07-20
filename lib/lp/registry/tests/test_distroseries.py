@@ -233,7 +233,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         sourcepackagename = self.factory.makeSourcePackageName(name)
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=sourcepackagename, distroseries=self.series,
-            component=component, section=section)
+            component=component, section_name=section)
         source_package = self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=self.series)
         if heat is not None:

@@ -1,3 +1,9 @@
+launchpad-buildd (66) hardy-cat; urgency=low
+
+  * handle [linux-any] build-dependencies.  LP#604981
+
+ -- LaMont Jones <lamont@canonical.com>  Mon, 19 Jul 2010 12:13:31 -0600
+
 launchpad-buildd (65) hardy-cat; urgency=low
 
   * Drop preinst check, since human time does not scale across a large

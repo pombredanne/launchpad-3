@@ -3,6 +3,9 @@
 
 __metaclass__ = type
 
+from doctest import NORMALIZE_WHITESPACE, ELLIPSIS
+from doctest import DocTestSuite
+
 import unittest
 from urllib2 import HTTPError, Request
 
@@ -13,8 +16,6 @@ from pytz import utc
 import transaction
 
 from zope.security.proxy import removeSecurityProxy
-from zope.testing.doctest import NORMALIZE_WHITESPACE, ELLIPSIS
-from zope.testing.doctestunit import DocTestSuite
 
 from lazr.lifecycle.snapshot import Snapshot
 
