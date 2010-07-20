@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for domination.py."""
@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import datetime
 import pytz
-import unittest
 
 from zope.component import getUtility
 
@@ -80,13 +79,13 @@ class TestDominator(TestNativePublishingBase):
         flush_database_updates()
 
         # The dominant version remains correctly published.
-        dominant  = self.checkSourcePublication(
+        dominant = self.checkSourcePublication(
             dominant_source, PackagePublishingStatus.PUBLISHED)
         self.assertTrue(dominant.supersededby is None)
         self.assertTrue(dominant.datesuperseded is None)
 
         # The dominated version is correctly dominated.
-        dominated  = self.checkSourcePublication(
+        dominated = self.checkSourcePublication(
             dominated_source, PackagePublishingStatus.SUPERSEDED)
         self.assertEqual(
             dominated.supersededby, dominant.sourcepackagerelease)
@@ -113,13 +112,13 @@ class TestDominator(TestNativePublishingBase):
         flush_database_updates()
 
         # Dominant version remains correctly published.
-        dominant  = self.checkBinaryPublication(
+        dominant = self.checkBinaryPublication(
             dominant, PackagePublishingStatus.PUBLISHED)
         self.assertTrue(dominant.supersededby is None)
         self.assertTrue(dominant.datesuperseded is None)
 
         # Dominated version is correctly dominated.
-        dominated  = self.checkBinaryPublication(
+        dominated = self.checkBinaryPublication(
             dominated, PackagePublishingStatus.SUPERSEDED)
         self.assertEqual(
             dominated.supersededby, dominant.binarypackagerelease.build)
@@ -142,7 +141,7 @@ class TestDominator(TestNativePublishingBase):
         dominator._dominateBinary(dominated, dominant)
         flush_database_updates()
 
-        dominated  = self.checkBinaryPublication(
+        dominated = self.checkBinaryPublication(
             dominated, PackagePublishingStatus.SUPERSEDED)
         self.assertEqual(
             dominated.supersededby, dominant.binarypackagerelease.build)
@@ -180,7 +179,7 @@ class TestDominator(TestNativePublishingBase):
             AssertionError, dominator._dominateBinary, dominated, dominant)
 
         # The refused publishing record remains the same.
-        dominated  = self.checkBinaryPublication(
+        dominated = self.checkBinaryPublication(
             dominated, PackagePublishingStatus.SUPERSEDED)
         self.assertEqual(dominated.datesuperseded, manual_domination_date)
 
@@ -191,7 +190,7 @@ class TestDominator(TestNativePublishingBase):
 
         dominator._dominateBinary(dominated, dominant)
         flush_database_updates()
-        dominated  = self.checkBinaryPublication(
+        dominated = self.checkBinaryPublication(
             dominated, PackagePublishingStatus.SUPERSEDED)
         self.assertEqual(dominated.datesuperseded, manual_domination_date)
 
@@ -394,6 +393,7 @@ class TestDomination(TestNativePublishingBase):
             superseded_source.scheduleddeletiondate,
             lag=datetime.timedelta(days=publisher._config.stayofexecution))
 
+
 class TestDominationOfObsoletedSeries(TestDomination):
     """Replay domination tests upon a OBSOLETED distroseries."""
 
@@ -401,8 +401,3 @@ class TestDominationOfObsoletedSeries(TestDomination):
         TestDomination.setUp(self)
         self.ubuntutest['breezy-autotest'].status = (
             SeriesStatus.OBSOLETE)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

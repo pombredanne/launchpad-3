@@ -347,6 +347,8 @@ build on a virtualized builder.
     True
     >>> admin_browser.getControl(name="field.private").value
     False
+    >>> admin_browser.getControl(name="field.commercial").value
+    False
     >>> admin_browser.getControl(name="field.require_virtualized").value
     True
     >>> admin_browser.getControl(name="field.relative_build_score").value
@@ -356,6 +358,7 @@ build on a virtualized builder.
 
     >>> admin_browser.getControl(name="field.enabled").value = False
     >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.commercial").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl(
     ...     name="field.require_virtualized").value = False
@@ -398,7 +401,11 @@ a sources.list entry.  If the field fails validation an error is displayed.
     There is 1 error.
     'deb not_a_url' is not a complete and valid sources.list entry
 
-Setting the buildd secret for non-private archives generates an error:
+
+Setting the buildd secret for non-private archives also generates
+an error.  Because the "commercial" flag is also currently set, removing
+privacy will also trigger a validation error because the commercial flag can
+only be set on private archives:
 
     >>> admin_browser.getControl(
     ...     name="field.external_dependencies").value = ""
@@ -408,8 +415,10 @@ Setting the buildd secret for non-private archives generates an error:
 
     >>> for error in get_feedback_messages(admin_browser.contents):
     ...     print error
-    There is 1 error.
+    There are 2 errors.
+    Can only set commericial for private archives.
     Do not specify for non-private archives
+
 
 There is a maximum value allowed for `IArchive.authorized_size`, it is
 currently 2147483647 and the unit used in code is MiB, so in practice

@@ -10,11 +10,11 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
-from bzrlib.plugins.builder import RecipeParser
+from bzrlib.plugins.builder.recipe import RecipeParser
 from lazr.delegates import delegates
 
 from storm.locals import (
-    And, Bool, Desc, Int, Not, Reference, ReferenceSet, Select, Store, Storm,
+    Bool, Desc, Int, Reference, ReferenceSet, Store, Storm,
     Unicode)
 
 from zope.component import getUtility
@@ -24,13 +24,13 @@ from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
-from lp.code.errors import TooManyBuilds
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.errors import BuildAlreadyPending, TooManyBuilds
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
     ISourcePackageRecipeData)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
-from lp.code.model.branch import Branch
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.model.distroseries import DistroSeries
@@ -89,6 +89,8 @@ class SourcePackageRecipe(Storm):
 
     build_daily = Bool()
 
+    is_stale = Bool()
+
     @property
     def _sourcepackagename_text(self):
         return self.sourcepackagename.name
@@ -145,21 +147,7 @@ class SourcePackageRecipe(Storm):
     @classmethod
     def findStaleDailyBuilds(cls):
         store = IStore(cls)
-        # Distroseries which have been built since the base branch was
-        # modified.
-        up_to_date_distroseries = Select(
-            SourcePackageRecipeBuild.distroseries_id,
-            And(
-                SourcePackageRecipeData.sourcepackage_recipe_id ==
-                SourcePackageRecipeBuild.recipe_id,
-                SourcePackageRecipeData.base_branch_id == Branch.id,
-                Branch.date_last_modified <
-                SourcePackageRecipeBuild.datebuilt))
-        return store.find(
-            _SourcePackageRecipeDistroSeries, cls.build_daily == True,
-            _SourcePackageRecipeDistroSeries.sourcepackagerecipe_id == cls.id,
-            Not(_SourcePackageRecipeDistroSeries.distroseries_id.is_in(
-                up_to_date_distroseries)))
+        return store.find(cls, cls.is_stale == True, cls.build_daily == True)
 
     @staticmethod
     def exists(owner, name):
@@ -206,6 +194,13 @@ class SourcePackageRecipe(Storm):
             raise reject_reason
         if self.isOverQuota(requester, distroseries):
             raise TooManyBuilds(self, distroseries)
+        pending = IStore(self).find(SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.recipe_id == self.id,
+            SourcePackageRecipeBuild.distroseries_id == distroseries.id,
+            SourcePackageRecipeBuild.archive_id == archive.id,
+            SourcePackageRecipeBuild.buildstate == BuildStatus.NEEDSBUILD)
+        if pending.any() is not None:
+            raise BuildAlreadyPending(self, distroseries)
 
         build = getUtility(ISourcePackageRecipeBuildSource).new(distroseries,
             self, requester, archive)

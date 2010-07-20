@@ -279,8 +279,13 @@ class IHasBugHeat(Interface):
     def setMaxBugHeat(heat):
         """Set the max_bug_heat for this context."""
 
-    def recalculateMaxBugHeat():
-        """Recalculate and set the max_bug_heat for this context."""
+    def recalculateBugHeatCache():
+        """Recalculate and set the various bug heat values for this context.
+
+        Several different objects cache max_bug_heat.
+        When DistributionSourcePackage is the target, the total_bug_heat
+        and bug_count are also cached.
+        """
 
 
 class BugDistroSeriesTargetDetails:

@@ -18,6 +18,7 @@ __all__ = [
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',
+    'CannotRestrictArchitectures',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
     'DistroSeriesNotFound',
@@ -140,6 +141,10 @@ class NoSuchPPA(NameLookupFailed):
 class VersionRequiresName(Exception):
     """Raised on some queries when version is specified but name is not."""
     webservice_error(400) # Bad request.
+
+
+class CannotRestrictArchitectures(Exception):
+    """The architectures for this archive can not be restricted."""
 
 
 class CannotUploadToArchive(Exception):
@@ -374,6 +379,15 @@ class IArchivePublic(IHasOwner, IPrivacy):
                     "on"),
             value_type=Reference(schema=IProcessorFamily),
             readonly=False)
+
+    commercial = exported(
+        Bool(
+            title=_("Commercial Archive"),
+            required=True,
+            description=_(
+                "Set if this archive is used for commercial purposes and "
+                "should appear in the Software Center listings.  The archive "
+                "must also be private if this is set.")))
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -1107,15 +1121,6 @@ class IArchiveView(IHasBuildRecords):
         :return: A new IArchiveAuthToken
         """
 
-    @call_with(person=REQUEST_USER)
-    @export_write_operation()
-    def getPrivateSourcesList(person):
-        """Get a text line that is suitable to be used for a sources.list
-        entry.
-
-        It will create a new IArchiveAuthToken if one doesn't already exist.
-        """
-
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
 
@@ -1551,6 +1556,14 @@ class IArchiveSet(Interface):
 
     def getPrivatePPAs():
         """Return a result set containing all private PPAs."""
+
+    def getCommercialPPAs():
+        """Return a result set containing all commercial PPAs.
+
+        Commercial PPAs are private, but explicitly flagged up as commercial
+        so that they are discoverable by people who wish to buy items
+        from them.
+        """
 
     def getPublicationsInArchives(source_package_name, archive_list,
                                   distribution):
