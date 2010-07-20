@@ -1754,6 +1754,26 @@ class TestRevisionHistory(TestCaseWithFactory):
         since = branch.getRevisionsSince(mid_revision.revision.revision_date)
         self.assertEqual(revisions[:mid_sequence], list(since))
 
+    def test_top_ancestor_has_no_parents(self):
+        # The top-most revision of a branch (i.e. the first one) has no
+        # parents.
+        branch = self.factory.makeBranch()
+        self.factory.makeRevisionsForBranch(branch, count=1)
+        revision = list(branch.revision_history)[0].revision
+        self.assertEqual([], revision.parent_ids)
+
+    def test_non_first_revisions_have_parents(self):
+        # Revisions which are not the first revision of the branch have
+        # parent_ids. When there are no merges present, there is only one
+        # parent which is the previous revision.
+        branch = self.factory.makeBranch()
+        some_number = 5
+        self.factory.makeRevisionsForBranch(branch, count=some_number)
+        revisions = list(branch.revision_history)
+        last_rev = revisions[0].revision
+        second_last_rev = revisions[1].revision
+        self.assertEqual(last_rev.parent_ids, [second_last_rev.revision_id])
+
 
 class TestCodebrowseURL(TestCaseWithFactory):
     """Tests for `Branch.codebrowse_url`."""
