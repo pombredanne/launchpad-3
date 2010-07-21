@@ -26,6 +26,7 @@ from email.message import Message as EmailMessage
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itertools import count
+from operator import isSequenceType
 import os.path
 from random import randint
 from StringIO import StringIO
@@ -2721,17 +2722,34 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
 
 class LaunchpadObjectFactory:
-    """A wrapper around _LaunchpadObjectFactory.
+    """A wrapper around BareLaunchpadObjectFactory.
 
     Ensure that each object created by a _LaunchpadObjectFactory method
     is either of a simple Python type or is security proxied.
 
-    A warning message s printed to stderr if a factory method creates
+    A warning message is printed to stderr if a factory method creates
     an object without a security proxy.
+
+    Whereever you see such a warning: fix it!
     """
+    # Some factory methods return simple Python types. We don't add
+    # security wrappers for them.
+    unwrapped_types = (
+        DSCFile, InstanceType, Message, datetime, int, str, unicode)
 
     def __init__(self):
         self._factory = BareLaunchpadObjectFactory()
+
+    def isSecurityProxiedOrHarmless(self, obj):
+        if obj is None:
+            return True
+        if builtin_isinstance(obj, Proxy):
+            return True
+        if isSequenceType(obj):
+            elements_have_proxies = [
+                self.isSecurityProxied(element) for element in obj]
+            return reduce(lambda x, y: x and y, elements_have_proxies)
+        return type(obj) in self.unwrapped_types
 
     def __getattr__(self, name):
         attr = getattr(self._factory, name)
@@ -2739,16 +2757,10 @@ class LaunchpadObjectFactory:
 
             def guarded_method(*args, **kw):
                 result = attr(*args, **kw)
-                if builtin_isinstance(result, Proxy):
-                    return result
-                if result is None:
-                    return result
-                if type(result) not in (
-                    int, str, unicode, Message, DSCFile, InstanceType, tuple,
-                    datetime):
+                if not self.isSecurityProxiedOrHarmless(result):
                     message = (
-                        "Unproxied object returned by "
-                        "LaunchpadObjectFactory.%s" % name)
+                        "PLEASE FIX: LaunchpadObjectFactory.%s returns an "
+                        "unproxied object." % name)
                     print >>sys.stderr, message
                 return result
             return guarded_method
