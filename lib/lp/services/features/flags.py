@@ -1,23 +1,9 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-__all__ = ['UniqueFileAllocator']
+__all__ = ['FeatureController']
 
 __metaclass__ = type
-
-
-
-class FeatureSettings(object):
-    """Abstract base class for definitons of feature settings.
-    
-    These typically come from the FeatureFlag database table, but might 
-    be overridden for various reasons."""
-
-    def getSettings(self):
-        """Returns all settings. 
-        
-        list of [(flag_name, scope_name, priority, value_name)]
-        """
 
 
 class FeatureController(object):
