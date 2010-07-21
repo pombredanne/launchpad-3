@@ -113,7 +113,7 @@ class TestMarkDuplicate(WindmillTestCase):
         # duplicates.
         client.click(classname='menu-link-mark-dupe')
         client.asserts.assertTextIn(
-            classname='large-warning', validator=u'This bug has duplicates.',
+            classname='large-warning', validator=u'This bug has duplicates',
             timeout=constants.FOR_ELEMENT)
 
         # When we go back to the page for the duplicate bug...
