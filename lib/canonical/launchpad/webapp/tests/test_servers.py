@@ -388,16 +388,6 @@ class TestLaunchpadBrowserRequest_getNearest(TestCase):
         self.assertEquals(self.request.getNearest(IThing), (None, None))
 
 
-class TestAnswersBrowserRequest(TestCase):
-    """Tests for the Answers request class."""
-
-    def test_response_should_vary_based_on_language(self):
-        request = AnswersBrowserRequest(StringIO.StringIO(''), {})
-        self.assertEquals(
-            request.response.getHeader('Vary'),
-            'Cookie, Authorization, Accept-Language')
-
-
 class TestLaunchpadBrowserRequest(TestCase):
 
     def prepareRequest(self, form):

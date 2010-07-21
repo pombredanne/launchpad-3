@@ -17,19 +17,16 @@ from zope.publisher.interfaces.browser import (
 
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
-    LaunchpadBrowserRequest, VirtualHostRequestPublicationFactory)
+    LaunchpadBrowserRequest, VHostWebServiceRequestPublicationFactory)
 
 
 class AnswersLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The Answers layer."""
 
 
-class AnswersRequestMixin:
-
+class AnswersBrowserRequest(LaunchpadBrowserRequest):
+    """Instances of AnswersBrowserRequest provide `AnswersLayer`."""
     implements(AnswersLayer)
-
-
-class AnswersBrowserRequest(AnswersRequestMixin, LaunchpadBrowserRequest):
 
     def __init__(self, body_instream, environ, response=None):
         super(AnswersBrowserRequest, self).__init__(
@@ -40,5 +37,5 @@ class AnswersBrowserRequest(AnswersRequestMixin, LaunchpadBrowserRequest):
 
 
 def answers_request_publication_factory():
-    return VirtualHostRequestPublicationFactory(
+    return VHostWebServiceRequestPublicationFactory(
         'answers', AnswersBrowserRequest, LaunchpadBrowserPublication)
