@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -21,6 +21,7 @@ from lp.translations.utilities.gettext_po_parser import (
     POParser)
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
+from lp.translations.utilities.translation_export import ExportFileStorage
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -121,11 +122,12 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         cy_translation_file.language_code = 'cy'
         cy_translation_file.path = 'po/cy.po'
         cy_translation_file.translation_domain = 'testing'
-        exported_cy_file = self.translation_exporter.exportTranslationFiles(
-            [cy_translation_file])
+        storage = ExportFileStorage()
+        self.translation_exporter.exportTranslationFile(
+            cy_translation_file, storage)
 
         self._compareImportAndExport(
-            pofile_cy.strip(), exported_cy_file.read().strip())
+            pofile_cy.strip(), storage.export().read().strip())
 
     def testObsoleteExport(self):
         """Check how obsoleted messages are exported."""
@@ -176,11 +178,12 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         eo_translation_file.path = 'po/eo.po'
         eo_translation_file.translation_domain = 'testing'
         eo_translation_file.messages[0].is_obsolete = True
-        exported_eo_file = self.translation_exporter.exportTranslationFiles(
-            [eo_translation_file])
+        storage = ExportFileStorage()
+        self.translation_exporter.exportTranslationFile(
+            eo_translation_file, storage)
 
         self._compareImportAndExport(
-            pofile_eo_obsolete.strip(), exported_eo_file.read().strip())
+            pofile_eo_obsolete.strip(), storage.export().read().strip())
 
     def testEncodingExport(self):
         """Test that PO headers specifying character sets are respected."""
@@ -202,11 +205,12 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
                 translation_file.messages[0].translations,
                 [nihongo_unicode])
 
-            exported_file = self.translation_exporter.exportTranslationFiles(
-                [translation_file])
+            storage = ExportFileStorage()
+            self.translation_exporter.exportTranslationFile(
+                translation_file, storage)
 
             self._compareImportAndExport(
-                pofile.strip(), exported_file.read().strip())
+                pofile.strip(), storage.export().read().strip())
 
         # File representing the same PO file three times. Each is identical
         # except for the charset declaration in the header.
@@ -274,13 +278,14 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         # translation is not available in that encoding and thus, we should
         # get an export in UTF-8.
         translation_file.header.charset = 'ASCII'
-        exported_file = self.translation_exporter.exportTranslationFiles(
-            [translation_file])
+        storage = ExportFileStorage()
+        self.translation_exporter.exportTranslationFile(
+            translation_file, storage)
 
         self._compareImportAndExport(
             pofile_content.strip() % {
                 'charset': 'UTF-8', 'special': '\xc3\xa1'},
-            exported_file.read().strip())
+            storage.export().read().strip())
 
     def testBrokenEncodingExport(self):
         """Test what happens when the content and the encoding don't agree.
@@ -363,11 +368,12 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         translation_file.language_code = 'es'
         translation_file.path = 'po/es.po'
         translation_file.translation_domain = 'testing'
-        exported_file = self.translation_exporter.exportTranslationFiles(
-            [translation_file])
+        storage = ExportFileStorage()
+        self.translation_exporter.exportTranslationFile(
+            translation_file, storage)
 
         self._compareImportAndExport(
-            pofile.strip() % 'msgstr[1] ""', exported_file.read().strip())
+            pofile.strip() % 'msgstr[1] ""', storage.export().read().strip())
 
     def testClashingSingularMsgIds(self):
         # We don't accept it in gettext imports directly, since it's not

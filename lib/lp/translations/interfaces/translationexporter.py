@@ -51,6 +51,23 @@ class ITranslationExporter(Interface):
             it.
         """
 
+    def exportTranslationFiles(translation_files, target_format=None,
+                               ignore_obsolete=False, force_utf8=False):
+        """Return an `IExportedTranslationFile` representing the export.
+
+        :param translation_files: A sequence of `ITranslationFileData` objects
+            to export.
+        :param target_format: Optional `TranslationFileFormat` to export
+            to.  Defaults to the files' native formats.
+        :param ignore_obsolete: A flag indicating whether obsolete messages
+            should be exported.
+        :param force_utf8: A flag indicating whether the export should be
+            forced to use UTF-8 encoding. This argument is only useful if the
+            file format allows different encodings.
+        :return: An `IExportedTranslationFile` representing the export.
+        """
+
+
 
 class ITranslationFormatExporter(Interface):
     """Translation file format exporter."""
@@ -68,6 +85,8 @@ class ITranslationFormatExporter(Interface):
             '''),
         required=True, readonly=True)
 
+    mime_type = TextLine(title=_("MIME type for this file format."))
+
     def exportTranslationMessageData(translation_message):
         """Export the string for the given translation message.
 
@@ -75,18 +94,19 @@ class ITranslationFormatExporter(Interface):
         :return: Unicode string representing given `ITranslationMessageData`.
         """
 
-    def exportTranslationFiles(translation_files, ignore_obsolete=False,
-                               force_utf8=False):
+    def exportTranslationFile(translation_files, export_storage,
+                              ignore_obsolete=False, force_utf8=False):
         """Return an `IExportedTranslationFile` representing the export.
 
-        :param translation_files: A sequence of `ITranslationFileData` objects
-            to export.
+        :param translation_file: An `ITranslationFileData` object to
+            export.
+        :param export-storage: An `IExportedTranslationFile` that will
+            receive the export.
         :param ignore_obsolete: A flag indicating whether obsolete messages
             should be exported.
         :param force_utf8: A flag indicating whether the export should be
             forced to use UTF-8 encoding. This argument is only useful if the
             file format allows different encodings.
-        :return: An `IExportedTranslationFile` representing the export.
         """
 
 

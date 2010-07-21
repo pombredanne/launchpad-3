@@ -51,6 +51,10 @@ class GettextMOExporter:
     """Support class to export Gettext .mo files."""
     implements(ITranslationFormatExporter)
 
+    mime_type = 'application/x-gmo'
+
+    format = TranslationFileFormat.MO
+
     def __init__(self, context=None):
         # 'context' is ignored because it's only required by the way the
         # exporters are instantiated but it isn't used by this class.
@@ -62,49 +66,48 @@ class GettextMOExporter:
         raise NotImplementedError(
             "This file format doesn't allow to export a single message.")
 
-    def exportTranslationFiles(self, translation_files, ignore_obsolete=False,
-                               force_utf8=False):
+    def exportTranslationFile(self, translation_file, storage,
+                              ignore_obsolete=False, force_utf8=False):
         """See `ITranslationFormatExporter`."""
+
         translation_exporter = getUtility(ITranslationExporter)
         gettext_po_exporter = (
             translation_exporter.getExporterProducingTargetFileFormat(
                 TranslationFileFormat.PO))
 
+        # We use x-gmo for consistency with .po editors such as
+        # GTranslator.
         mime_type = 'application/x-gmo'
-        storage = ExportFileStorage()
 
-        for translation_file in translation_files:
-            # To generate MO files we need first its PO version and then,
-            # generate the MO one.
-            template_exported = gettext_po_exporter.exportTranslationFiles(
-                [translation_file], ignore_obsolete, force_utf8)
-            exported_file_content = template_exported.read()
-            if translation_file.is_template:
-                # This exporter is not able to handle template files. In that
-                # case, we leave it as .po file. For this file format exported
-                # templates are stored in templates/ directory.
-                file_path = 'templates/%s' % os.path.basename(
-                    template_exported.path)
-                content_type = template_exported.content_type
-                file_extension = template_exported.file_extension
-            else:
-                file_extension = 'mo'
-                # Standard layout for MO files is
-                # 'LANG_CODE/LC_MESSAGES/TRANSLATION_DOMAIN.mo'
-                file_path = os.path.join(
-                    translation_file.language_code,
-                    'LC_MESSAGES',
-                    '%s.%s' % (
-                        translation_file.translation_domain,
-                        file_extension))
-                mo_compiler = POCompiler()
-                mo_content = mo_compiler.compile(exported_file_content)
-                exported_file_content = mo_content
-                # We use x-gmo for consistency with other .po editors like
-                # GTranslator.
-                content_type = 'application/x-gmo'
+        # To generate MO files we need first its PO version and then,
+        # generate the MO one.
+        temp_storage = ExportFileStorage()
+        gettext_po_exporter.exportTranslationFile(
+            translation_file, temp_storage, ignore_obsolete, force_utf8)
+        exported_file_content = temp_storage.export().read()
 
-            storage.addFile(
-                file_path, file_extension, exported_file_content, mime_type)
+        if translation_file.is_template:
+            # This exporter is not able to handle template files. We
+            # include those as .pot files stored in a templates/
+            # directory.
+            file_path = 'templates/%s' % os.path.basename(
+                template_exported.path)
+            content_type = gettext_po_exporter.content_type
+            file_extension = template_exported.file_extension
+        else:
+            file_extension = 'mo'
+            # Standard layout for MO files is
+            # 'LANG_CODE/LC_MESSAGES/TRANSLATION_DOMAIN.mo'
+            file_path = os.path.join(
+                translation_file.language_code,
+                'LC_MESSAGES',
+                '%s.%s' % (
+                    translation_file.translation_domain,
+                    file_extension))
+            mo_compiler = POCompiler()
+            mo_content = mo_compiler.compile(exported_file_content)
+            exported_file_content = mo_content
+            content_type = self.mime_type
 
-        return storage.export()
+        storage.addFile(
+            file_path, file_extension, exported_file_content, content_type)
