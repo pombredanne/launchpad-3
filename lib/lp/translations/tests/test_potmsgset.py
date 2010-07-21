@@ -951,7 +951,7 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         self.assertTrue(translation.potemplate is None)
 
     def test_resetCurrentTranslation_diverged_not_imported(self):
-        # Resettting a diverged current translation that was not
+        # Resetting a diverged current translation that was not
         # imported, will change is_current to False and will make it
         # shared.
 
