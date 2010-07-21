@@ -816,6 +816,7 @@ class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return (user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(self.obj.distribution.bug_supervisor) or
                 user.in_admin)
 
 

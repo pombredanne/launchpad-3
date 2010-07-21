@@ -29,12 +29,6 @@ our meta view.
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form={}, method='GET')
 
-The base view requires a product and optionally add_packaging. The
-+choose-affected-product is also multistep view and has a field to manage
-that.
-
-    >>> add_task_view.field_names
-    ['product', 'add_packaging', '__visited_steps__']
 
 We haven't posted the form, so we'll see one button.
 
@@ -125,8 +119,8 @@ selected.
     u'firefox'
 
 If some package doesn't have a packaging link, a product will have to
-be chosen manually, and a notification will be displayed, explaining
-why the product wasn't chosen automatically.
+be chosen manually, and the user may choose to link the package to the
+project..
 
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
     >>> thunderbird_bug = ubuntu_thunderbird.createBug(create_params)
@@ -138,13 +132,11 @@ why the product wasn't chosen automatically.
 
     >>> add_task_view.step_name
     'choose_product'
+    >>> add_task_view.field_names
+    ['product', 'add_packaging', '__visited_steps__']
+
     >>> print add_task_view.widgets['product']._getFormInput()
     None
-    >>> len(add_task_view.request.response.notifications)
-    1
-    >>> for notification in add_task_view.request.response.notifications:
-    ...     print notification.message
-    Please select the appropriate upstream project. This step...
 
 Sometimes the distribution won't have any series, though. In that
 case, we won't prompt the user to add a link, since he can't actually

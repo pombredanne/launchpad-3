@@ -116,24 +116,6 @@ class ChooseProductStep(AlsoAffectsStep):
                 self.next_step = ProductBugTaskCreationStep
             return
 
-        distroseries = bugtask.distribution.currentseries
-        if distroseries is not None:
-            sourcepackage = distroseries.getSourcePackage(
-                bugtask.sourcepackagename)
-
-            self.request.response.addInfoNotification(
-                self._needProjectNotice(bugtask, sourcepackage))
-
-    def _needProjectNotice(self, bugtask, sourcepackage):
-        return structured(
-            _("""
-                Please select the appropriate upstream project. This step can
-                be avoided by <a href="%(package_url)s/+edit-packaging"
-                >updating the packaging information for
-                %(full_package_name)s</a>."""),
-            full_package_name=bugtask.bugtargetdisplayname,
-            package_url=canonical_url(sourcepackage))
-
     def validateStep(self, data):
         if data.get('product'):
             try:
@@ -169,6 +151,7 @@ class ChooseProductStep(AlsoAffectsStep):
         # Inject the selected product into the form and set the next_step to
         # be used by our multistep controller.
         self.request.form['field.product'] = data['product'].name
+        self.request.form['field.add_packaging'] = data['add_packaging'].name
         self.next_step = ProductBugTaskCreationStep
 
 
