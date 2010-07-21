@@ -12,6 +12,7 @@ import logging
 import operator
 
 from storm.locals import Int, Reference
+from storm.store import EmptyResultSet
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -882,10 +883,7 @@ class BinaryPackageBuildSet:
         """See `IBinaryPackageBuildSet`."""
         # If not distroarchseries was found return empty list
         if not arch_ids:
-            # XXX cprov 2006-09-08: returning and empty SelectResult to make
-            # the callsites happy as bjorn suggested. However it would be
-            # much clearer if we have something like SQLBase.empty() for this
-            return BinaryPackageBuild.select("2=1")
+            return EmptyResultSet()
 
         clauseTables = []
 
