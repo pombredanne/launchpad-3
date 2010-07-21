@@ -38,7 +38,7 @@ def nl_term_candidates(phrase):
 def nl_phrase_search(phrase, table, constraints='',
                      extra_constraints_tables=None,
                      fast_enabled=True):
-    """Return the tsearch2 query that should be use to do a phrase search.
+    """Return the tsearch2 query that should be used to do a phrase search.
 
     The precise heuristics applied by this function will vary as we tune
     the system.
@@ -117,7 +117,7 @@ def _slow_nl_phrase_search(terms, table, constraints,
     :extra_constraints_tables: A list of additional table names that are
     needed by the constraints clause.
 
-    Caveat: The model class must define a 'fti' column which is then used used
+    Caveat: The model class must define a 'fti' column which is then used
     for full text searching.
     """
     total = table.select(
