@@ -13,8 +13,6 @@ in the root element. The template provides common layout to Launchpad.
 
 __metaclass__ = type
 
-import unittest
-
 from BeautifulSoup import BeautifulSoup
 
 from z3c.ptcompat import ViewPageTemplateFile
@@ -160,7 +158,3 @@ class TestBaseLayout(TestCaseWithFactory):
         self.assertEqual(None, document.find(True, id='watermark'))
         self.assertEqual(None, document.find(True, id='side-portlets'))
         self.assertEqual(None, document.find(True, id='globalsearch'))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
