@@ -22,7 +22,6 @@ import apt_pkg
 import os
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
