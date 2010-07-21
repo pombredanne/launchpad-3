@@ -23,6 +23,7 @@ from canonical.launchpad.browser.librarian import (
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 
+from psycopg2 import ProgrammingError
 from storm.locals import Int, Reference, Storm, TimeDelta, Unicode
 from storm.store import Store
 
@@ -180,6 +181,8 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                         distroseries, PackagePublishingPocket.RELEASE)
                 except BuildAlreadyPending:
                     continue
+                except ProgrammingError:
+                    raise
                 except:
                     info = sys.exc_info()
                     errorlog.globalErrorUtility.raising(info)
