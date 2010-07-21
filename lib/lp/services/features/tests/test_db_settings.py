@@ -38,3 +38,9 @@ class TestFeatureModel(testtools.TestCase):
         coll = FeatureFlagCollection()
         self.assertFalse(coll.select().is_empty())
 
+        rs = coll.refine(scope=u'beta_user',
+            flag=u'notification.global.text').select()  
+        self.assertEqual(rs.count(), 1)
+        flag2 = rs.one()
+        self.assertEqual(100, flag2.priority)
+        self.assertEqual(flag.value, flag2.value)
