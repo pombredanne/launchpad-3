@@ -17,19 +17,16 @@ from zope.publisher.interfaces.browser import (
 
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
-    LaunchpadBrowserRequest, VirtualHostRequestPublicationFactory)
+    LaunchpadBrowserRequest, VHostWebServiceRequestPublicationFactory)
 
 
 class TranslationsLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The Translations layer."""
 
 
-class TranslationsRequestMixin:
-
+class TranslationsBrowserRequest(LaunchpadBrowserRequest):
+    """Instances of TranslationsBrowserRequest provide `TranslationsLayer`."""
     implements(TranslationsLayer)
-
-
-class TranslationsBrowserRequest(TranslationsRequestMixin, LaunchpadBrowserRequest):
 
     def __init__(self, body_instream, environ, response=None):
         super(TranslationsBrowserRequest, self).__init__(
@@ -40,5 +37,5 @@ class TranslationsBrowserRequest(TranslationsRequestMixin, LaunchpadBrowserReque
 
 
 def translations_request_publication_factory():
-    return VirtualHostRequestPublicationFactory(
+    return VHostWebServiceRequestPublicationFactory(
         'translations', TranslationsBrowserRequest, LaunchpadBrowserPublication)
