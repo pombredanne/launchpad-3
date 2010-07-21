@@ -15,6 +15,10 @@ from lp.services.database import collection
 from lp.services.features.model import FeatureFlag
 
 
+# TODO: might be nice to have features set only in memory for easier testing,
+# but so much other code needs the db we don't bother for now
+
+
 class FeatureSettings(object):
     """Abstract base class for definitons of feature settings.
     
