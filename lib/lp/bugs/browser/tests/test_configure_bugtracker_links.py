@@ -10,7 +10,7 @@ import unittest
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.testing import LaunchpadFunctionalLayer
 
-from lp.bugs.publiser import BugsLayer
+from lp.bugs.publisher import BugsLayer
 
 from lp.testing import login_person, TestCaseWithFactory
 from lp.testing.views import create_initialized_view

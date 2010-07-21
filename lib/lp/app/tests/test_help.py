@@ -20,7 +20,7 @@ from lp.answers.publisher import AnswersLayer
 from lp.blueprints.publisher import BlueprintsLayer
 from lp.bugs.publisher import BugsLayer
 from lp.code.publisher import CodeLayer
-from lp.translations.publiser import TranslationsLayer
+from lp.translations.publisher import TranslationsLayer
 
 # The root of the tree
 ROOT = os.path.realpath(
