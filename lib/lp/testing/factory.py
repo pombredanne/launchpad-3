@@ -2721,6 +2721,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
 
 
+# Some factory methods return simple Python types. We don't add
+# security wrappers for them.
+unwrapped_types = (
+    DSCFile, InstanceType, Message, datetime, int, str, unicode)
+
+def is_security_proxied_or_harmless(obj):
+    if obj is None:
+        return True
+    if builtin_isinstance(obj, Proxy):
+        return True
+    if isSequenceType(obj):
+        for element in obj:
+            if not is_security_proxied_or_harmless(element):
+                return False
+        return True
+    return type(obj) in unwrapped_types
+
+
 class LaunchpadObjectFactory:
     """A wrapper around BareLaunchpadObjectFactory.
 
@@ -2732,24 +2750,8 @@ class LaunchpadObjectFactory:
 
     Whereever you see such a warning: fix it!
     """
-    # Some factory methods return simple Python types. We don't add
-    # security wrappers for them.
-    unwrapped_types = (
-        DSCFile, InstanceType, Message, datetime, int, str, unicode)
-
     def __init__(self):
         self._factory = BareLaunchpadObjectFactory()
-
-    def isSecurityProxiedOrHarmless(self, obj):
-        if obj is None:
-            return True
-        if builtin_isinstance(obj, Proxy):
-            return True
-        if isSequenceType(obj):
-            elements_have_proxies = [
-                self.isSecurityProxied(element) for element in obj]
-            return reduce(lambda x, y: x and y, elements_have_proxies)
-        return type(obj) in self.unwrapped_types
 
     def __getattr__(self, name):
         attr = getattr(self._factory, name)
@@ -2757,7 +2759,7 @@ class LaunchpadObjectFactory:
 
             def guarded_method(*args, **kw):
                 result = attr(*args, **kw)
-                if not self.isSecurityProxiedOrHarmless(result):
+                if not is_security_proxied_or_harmless(result):
                     message = (
                         "PLEASE FIX: LaunchpadObjectFactory.%s returns an "
                         "unproxied object." % name)
