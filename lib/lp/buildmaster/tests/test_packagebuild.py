@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
 import hashlib
 
 from storm.store import Store
@@ -169,7 +168,6 @@ class TestPackageBuild(TestPackageBuildBase):
             Unauthorized, setattr, self.package_build,
             'dependencies', u'my deps')
 
-
     def test_admin_package_build(self):
         # Users with edit access can update attributes.
         login('admin@canonical.com')
@@ -217,7 +215,3 @@ class TestPackageBuildSet(TestPackageBuildBase):
             self.package_builds[:1],
             self.package_build_set.getBuildsForArchive(
                 self.archive, pocket=PackagePublishingPocket.UPDATES))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
