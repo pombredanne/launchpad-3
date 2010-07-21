@@ -99,14 +99,14 @@ We override the binary to main/devel, and accept it into the archive.
     >>> LaunchpadZopelessLayer.txn.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.uploadqueue.dbuser)
 
-    >>> bin_pubs_101 = bin.queue_root.realiseUpload()
+    >>> bin_pubs = bin.queue_root.realiseUpload()
 
     >>> LaunchpadZopelessLayer.txn.commit()
     >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
 Now, both, binary and debug-symbol packages are pending publication.
 
-    >>> for bin_pub in bin_pubs_101:
+    >>> for bin_pub in bin_pubs:
     ...     print '%s %s %s %s %s' % (
     ...         bin_pub.displayname, bin_pub.status.name,
     ...         bin_pub.component.name, bin_pub.section.name,
@@ -120,7 +120,7 @@ unacceptable.
 
 The DDEB is stored appropriately in the database.
 
-    >>> [deb_pub, ddeb_pub] = bin_pubs_101
+    >>> [deb_pub, ddeb_pub] = bin_pubs
     >>> ddeb = ddeb_pub.binarypackagerelease
 
     >>> print ddeb.title
