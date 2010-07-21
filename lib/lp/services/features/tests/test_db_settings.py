@@ -24,8 +24,3 @@ class TestFeatureModel(testtools.TestCase):
         # there are no settings in the sampledata
         coll = FeatureFlagCollection()
         self.assertTrue(coll.select().is_empty())
-
-    def setupFlags(list_of_flags):
-        for fdef in list_of_flags:
-            FeatureFlage(*fdef)
-
