@@ -171,7 +171,7 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         # Getting PSL through PSLSet gives an uninitialized object.
         psl = self.psl_set.getProductSeriesLanguage(
             self.productseries, self.language)
-        self.assertEquals(psl.messageCount(), None)
+        self.assertEquals(psl.messageCount(), 0)
 
         # So, we need to get it through productseries.productserieslanguages.
         psl = self.productseries.productserieslanguages[0]
