@@ -60,4 +60,3 @@ class TestArchivePrivacy(TestCaseWithFactory):
         url = self.ppa.archive_url.split('http://')[1]
         new_url = "http://joe:%s@%s" % (authtoken, url)
         self.assertEqual(sources, new_url)
-
