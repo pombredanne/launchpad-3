@@ -71,6 +71,15 @@ class TestFeatureFlags(testtools.TestCase):
             u'4.0',
             control.getFlag('ui.icing'))
 
+    def test_undefinedFlag(self):
+        # if the flag is not defined, we get None
+        control = self.makeControllerWithOverrides()
+        self.assertIs(None,
+            control.getFlag('unknown_flag'))
+        control.setScopes([])
+        self.assertIs(None,
+            control.getFlag('ui.icing'))
+
     def makePopulatedController(self):
         # make a controller with some test flags
         control = flags.FeatureController(['beta_user'])
@@ -78,8 +87,6 @@ class TestFeatureFlags(testtools.TestCase):
             scope=example_scope, flag=notification_name,
             value=notification_value, priority=100)
         return control
-
-    # TODO: test value not being found: should return None
 
     def makeControllerWithOverrides(self):
         control = self.makePopulatedController()

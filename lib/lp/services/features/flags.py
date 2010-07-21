@@ -54,8 +54,11 @@ class FeatureController(object):
                 .select()
                 .order_by(Desc(model.FeatureFlag.priority)))
         rs.config(limit=1)
-        f = rs.one()
-        return f.value
+        if rs.is_empty():
+            return None
+        else:
+            f = rs.one()
+            return f.value
 
     def getAllFlags(self):
         """Get the feature flags active for the current scopes.
