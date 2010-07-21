@@ -42,14 +42,18 @@ class FeatureController(object):
         
         :returns: dict from flag_name (unicode) to value (unicode).
         """
-        rs = self._collection.select().order_by(
-            Desc(model.FeatureFlag.priority))
-        l = dict((f.flag, f.value) for f in rs)
-        return l
+        rs = self._collection.select()
+        return self._resultSetToFlagDict(rs)
 
     def getFlagsForScopes(self, scopes):
         """Get flags for specified set of scopes.
         """
+        scopes = self._preenScopes(scopes)
+        rs = self._collection.refine(
+            model.FeatureFlag.scope.is_in(scopes)).select()
+        return self._resultSetToFlagDict(rs)
+
+    def _preenScopes(self, scopes):
         # for convenience turn strings to unicode
         us = []
         for s in scopes:
@@ -59,8 +63,9 @@ class FeatureController(object):
                 us.append(unicode(s))
             else:
                 raise TypeError("invalid scope: %r" % s)
-        rs = self._collection.refine(
-            model.FeatureFlag.scope.is_in(us)).select()
+        return us
+
+    def _resultSetToFlagDict(self, rs):
         rs = rs.order_by(
             Desc(model.FeatureFlag.priority))
         return dict((f.flag, f.value) for f in rs)
