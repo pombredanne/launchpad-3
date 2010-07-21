@@ -36,6 +36,8 @@ class FeatureController(object):
     At this level flag names and scope names are presented as strings for
     easier use in Python code, though the values remain unicode.  They
     should always be ascii like Python identifiers.
+
+    See <https://dev.launchpad.net/LEP/FeatureFlags>
     """
 
     def __init__(self, scopes):
