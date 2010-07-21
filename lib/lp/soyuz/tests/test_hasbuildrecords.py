@@ -1,9 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test implementations of the IHasBuildRecords interface."""
-
-import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -67,6 +65,7 @@ class TestHasBuildRecordsInterface(BaseTestCaseWithThreeBuilds):
 
 class TestDistroSeriesHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the DistroSeries implementation of IHasBuildRecords."""
+
     def setUp(self):
         super(TestDistroSeriesHasBuildRecords, self).setUp()
 
@@ -75,6 +74,7 @@ class TestDistroSeriesHasBuildRecords(TestHasBuildRecordsInterface):
 
 class TestDistroArchSeriesHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the DistroArchSeries implementation of IHasBuildRecords."""
+
     def setUp(self):
         super(TestDistroArchSeriesHasBuildRecords, self).setUp()
 
@@ -83,6 +83,7 @@ class TestDistroArchSeriesHasBuildRecords(TestHasBuildRecordsInterface):
 
 class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the Archive implementation of IHasBuildRecords."""
+
     def setUp(self):
         super(TestArchiveHasBuildRecords, self).setUp()
 
@@ -117,6 +118,7 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
 
 class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the Builder implementation of IHasBuildRecords."""
+
     def setUp(self):
         super(TestBuilderHasBuildRecords, self).setUp()
 
@@ -171,8 +173,10 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
             IncompatibleArguments, self.context.getBuildRecords,
             binary_only=False, name="anything")
 
+
 class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the SourcePackage implementation of IHasBuildRecords."""
+
     def setUp(self):
         super(TestSourcePackageHasBuildRecords, self).setUp()
 
@@ -187,7 +191,3 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         for build in self.builds[1:3]:
             spr = build.source_package_release
             removeSecurityProxy(spr).sourcepackagename = gedit_name
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

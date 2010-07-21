@@ -294,6 +294,16 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         build = self.factory.makeSourcePackageRecipeBuild()
         build.destroySelf()
 
+    def test_cancelBuild(self):
+        # ISourcePackageRecipeBuild should make sure to remove jobs and build
+        # queue entries and then invalidate itself.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        build.cancelBuild()
+
+        self.assertEqual(
+            BuildStatus.SUPERSEDED,
+            build.status)
+
 
 class TestAsBuildmaster(TestCaseWithFactory):
 

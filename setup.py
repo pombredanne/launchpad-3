@@ -45,6 +45,7 @@ setup(
         'lazr.testing',
         'lazr.uri',
         'lazr-js',
+        'manuel',
         'mechanize',
         'meliae',
         'mercurial',
