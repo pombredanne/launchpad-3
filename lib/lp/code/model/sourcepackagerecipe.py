@@ -204,8 +204,6 @@ class SourcePackageRecipe(Storm):
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
 
-        from lp.code.vocabularies.sourcepackagerecipe import (
-            get_buildable_distroseries_set)
         buildable_distros = get_buildable_distroseries_set(archive.owner)
         if distroseries not in buildable_distros:
             raise BuildNotAllowedForDistro(self, distroseries)
