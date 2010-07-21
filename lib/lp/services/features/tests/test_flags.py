@@ -16,6 +16,10 @@ from canonical.testing import layers
 from lp.services.features import flags, model
 
 
+example_flag_name = u'notification.global.text'
+example_flag_value = u'\N{SNOWMAN} stormy Launchpad weather ahead'
+example_scope = u'beta_user'
+
 class TestFeatureFlags(testtools.TestCase):
 
     layer = layers.DatabaseFunctionalLayer
@@ -24,20 +28,26 @@ class TestFeatureFlags(testtools.TestCase):
         # the sample db has no flags set
         control = flags.FeatureController()
         self.assertEqual({},
-            control.getActiveFlags())
+            control.getAllFlags())
 
     def test_simpleFlags(self):
         # with some flags set in the db, you can query them through the
         # FeatureController
-        flag_name = u'notification.global.text'
-        flag_value = u'\N{SNOWMAN} stormy Launchpad weather ahead'
         flag = model.FeatureFlag(
-            scope=u'beta_user',
-            flag=flag_name,
-            value=flag_value,
+            scope=example_scope,
+            flag=example_flag_name,
+            value=example_flag_value,
             priority=100)
         model.FeatureFlagCollection().store.add(flag)
         control = flags.FeatureController()
-        self.assertEqual({flag_name: flag_value},
-            control.getActiveFlags())
+        self.assertEqual({example_flag_name: example_flag_value},
+            control.getAllFlags())
 
+    def test_setFlags(self):
+        # you can also set flags through a facade
+        control = flags.FeatureController()
+        control.addSetting(
+            scope=example_scope, flag=example_flag_name,
+            value=example_flag_value, priority=100)
+        self.assertEqual({example_flag_name: example_flag_value},
+            control.getAllFlags())

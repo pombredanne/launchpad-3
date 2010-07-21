@@ -33,7 +33,6 @@ class FeatureFlag(Storm):
         self.priority = priority
         self.flag = flag
         self.value = value
-        getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR).add(self)
 
 
 class FeatureFlagCollection(collection.Collection):

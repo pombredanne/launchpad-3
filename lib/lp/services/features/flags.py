@@ -34,13 +34,20 @@ class FeatureController(object):
     oriented only towards readers.
     """
 
-    def getActiveFlags(self):
+    def __init__(self):
+        self._collection = model.FeatureFlagCollection()
+
+    def getAllFlags(self):
         """Get the feature flags active for the current context.
         
         :returns: dict from flag_name (unicode) to value (unicode).
         """
         # TODO: filter by specific scopes and flags
-        coll = model.FeatureFlagCollection()
-        rs = coll.select().order_by(Desc('priority'))
+        rs = self._collection.select().order_by(
+            Desc(model.FeatureFlag.priority))
         l = dict((f.flag, f.value) for f in rs)
         return l
+
+    def addSetting(self, **kwargs):
+        flag = model.FeatureFlag(**kwargs)
+        self._collection.store.add(flag)

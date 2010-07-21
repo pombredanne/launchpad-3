@@ -10,9 +10,6 @@ __metaclass__ = type
 import testtools
 
 from canonical.testing import layers
-from lp.services.features import (
-    settings,
-    )
 from lp.services.features.model import (
     FeatureFlag,
     FeatureFlagCollection,
@@ -28,19 +25,7 @@ class TestFeatureModel(testtools.TestCase):
         coll = FeatureFlagCollection()
         self.assertTrue(coll.select().is_empty())
 
-    def test_getSetFlags(self):
-        # test connection to Storm is sane
-        flag = FeatureFlag(
-            scope=u'beta_user',
-            flag=u'notification.global.text',
-            value=u'\N{SNOWMAN} stormy Launchpad weather ahead',
-            priority=100)
-        coll = FeatureFlagCollection()
-        self.assertFalse(coll.select().is_empty())
+    def setupFlags(list_of_flags):
+        for fdef in list_of_flags:
+            FeatureFlage(*fdef)
 
-        rs = coll.refine(scope=u'beta_user',
-            flag=u'notification.global.text').select()  
-        self.assertEqual(rs.count(), 1)
-        flag2 = rs.one()
-        self.assertEqual(100, flag2.priority)
-        self.assertEqual(flag.value, flag2.value)
