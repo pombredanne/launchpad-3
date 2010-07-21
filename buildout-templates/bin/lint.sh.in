@@ -50,7 +50,9 @@ if [ -z "$1" ]; then
         # bzr diff failed
         exit 1
     fi
-    files=`bzr st --short $rev_option | sed '/^.[MN]/!d; s/.* //'`
+    # Extract filename from status line.  Strip the @ that mark symlinks.
+    files=`bzr st --short $rev_option |
+        sed -e '/^.[MN]/!d; s/.* //' -e 's/@$//'`
 else
     # Add newlines so grep filters out pyfiles correctly later.
     files=`echo $* | tr " " "\n"`

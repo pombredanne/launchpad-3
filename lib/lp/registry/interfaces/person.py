@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -884,6 +884,27 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     def getRecipe(name):
         """Return the person's recipe with the given name."""
 
+    @call_with(requester=REQUEST_USER)
+    @export_read_operation()
+    def getArchiveSubscriptionURLs(requester):
+        """Return private archive URLs that this person can see.
+
+        For each of the private archives (PPAs) that this person can see,
+        return a URL that includes the HTTP basic auth data.  The URL
+        returned is suitable for including in a sources.list file.
+        """
+
+    @call_with(requester=REQUEST_USER)
+    @operation_parameters(
+        archive=Reference(schema=Interface)) # Really IArchive
+    @export_write_operation()
+    def getArchiveSubscriptionURL(requester, archive):
+        """Get a text line that is suitable to be used for a sources.list
+        entry.
+
+        It will create a new IArchiveAuthToken if one doesn't already exist.
+        """
+
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
 
@@ -904,6 +925,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         The results are ordered using Person.sortingColumns.
         """
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getBugSubscriberPackages():
         """Return the packages for which this person is a bug subscriber.
 
@@ -976,9 +999,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         """
 
     def getOwnedOrDrivenPillars():
-        """Return Distribution, Project Groups and Projects that this person
-        owns or drives.
-        """
+        """Return the pillars that this person directly owns or drives."""
 
     def getOwnedProjects(match_name=None):
         """Projects owned by this person or teams to which she belongs.
@@ -1500,15 +1521,6 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
-    @export_read_operation()
-    def getArchiveSubscriptionURLs():
-        """Return private archive URLs that this person can see.
-
-        For each of the private archives (PPAs) that this person can see,
-        return a URL that includes the HTTP basic auth data.  The URL
-        returned is suitable for including in a sources.list file.
-        """
-
 
 class IPersonModerate(Interface):
     """IPerson attributes that require launchpad.Moderate."""
@@ -1523,10 +1535,9 @@ class IPersonCommAdminWriteRestricted(Interface):
     visibility = exported(
         Choice(title=_("Visibility"),
                description=_(
-                   "Public visibility is standard.  Private Membership "
-                   "means that a team's members are hidden.  "
+                   "Public visibility is standard.  "
                    "Private means the team is completely "
-                   "hidden [experimental]."),
+                   "hidden."),
                required=True, vocabulary=PersonVisibility,
                default=PersonVisibility.PUBLIC))
 
@@ -2115,6 +2126,7 @@ class ISoftwareCenterAgentAPI(Interface):
         the software center to create subscriptions to private PPAs without
         requiring a Launchpad account.
         """
+
 
 class ISoftwareCenterAgentApplication(ILaunchpadApplication):
     """XMLRPC application root for ISoftwareCenterAgentAPI."""

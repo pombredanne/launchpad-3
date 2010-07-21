@@ -84,7 +84,6 @@ import cgi
 import copy
 import itertools
 import pytz
-import subprocess
 import urllib
 
 from datetime import datetime, timedelta
@@ -165,7 +164,8 @@ from lp.registry.interfaces.person import (
     IPerson, IPersonClaim, IPersonSet, ITeam, ITeamReassignment,
     PersonVisibility, TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
 from lp.registry.interfaces.poll import IPollSet, IPollSubset
-from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
+from lp.registry.interfaces.ssh import (
+    ISSHKeySet, SSHKeyAdditionError, SSHKeyCompromisedError, SSHKeyType)
 from lp.registry.interfaces.teammembership import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ITeamMembership,
     ITeamMembershipSet, TeamMembershipStatus)
@@ -2511,7 +2511,7 @@ class PersonKarmaView(LaunchpadView):
         if self.user == self.context:
             return 'Your Launchpad Karma'
         else:
-            return 'Launchpad Karma for %s' % self.context.displayname
+            return 'Launchpad Karma'
 
     @cachedproperty
     def has_karma(self):
@@ -3268,9 +3268,9 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-                YUI().use('node', 'lp.mapping', function(Y) {
+                YUI().use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
-                        Y.lp.mapping.renderPersonMapSmall(
+                        Y.lp.app.mapping.renderPersonMapSmall(
                             %(center_lat)s, %(center_lng)s);
                      }
                      Y.on("domready", renderMap);
@@ -3598,24 +3598,12 @@ class PersonEditSSHKeysView(LaunchpadView):
         return canonical_url(self.context, view_name="+edit")
 
     def add_ssh(self):
-        # XXX: JonathanLange 2010-05-13: This should hella not be in browser
-        # code. Move this to ISSHKeySet (bonus! tests become easier to write).
         sshkey = self.request.form.get('sshkey')
-        try:
-            kind, keytext, comment = sshkey.split(' ', 2)
-        except ValueError:
+	try:
+      	    getUtility(ISSHKeySet).new(self.user, sshkey)
+        except SSHKeyAdditionError:
             self.error_message = structured('Invalid public key')
-            return
-
-        if not (kind and keytext and comment):
-            self.error_message = structured('Invalid public key')
-            return
-
-        process = subprocess.Popen(
-            '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, err) = process.communicate(sshkey.encode('utf-8'))
-        if 'compromised' in out.lower():
+        except SSHKeyCompromisedError:
             self.error_message = structured(
                 'This key is known to be compromised due to a security flaw '
                 'in the software used to generate it, so it will not be '
@@ -3623,18 +3611,8 @@ class PersonEditSSHKeysView(LaunchpadView):
                 '<a href="http://www.ubuntu.com/usn/usn-612-2">Security '
                 'Notice</a> for further information and instructions on how '
                 'to generate another key.')
-            return
-
-        if kind == 'ssh-rsa':
-            keytype = SSHKeyType.RSA
-        elif kind == 'ssh-dss':
-            keytype = SSHKeyType.DSA
         else:
-            self.error_message = structured('Invalid public key')
-            return
-
-        getUtility(ISSHKeySet).new(self.user, keytype, keytext, comment)
-        self.info_message = structured('SSH public key added.')
+            self.info_message = structured('SSH public key added.')
 
     def remove_ssh(self):
         key_id = self.request.form.get('key')
@@ -5106,12 +5084,15 @@ class SourcePackageReleaseWithStats:
 class PersonRelatedSoftwareView(LaunchpadView):
     """View for +related-software."""
     implements(IPersonRelatedSoftwareMenu)
+    _max_results_key = 'summary_list_size'
 
-    max_results_to_display = config.launchpad.default_batch_size
+    @property
+    def max_results_to_display(self):
+        return config.launchpad[self._max_results_key]
 
     @property
     def page_title(self):
-        return "Software related to " + self.context.displayname
+        return 'Related software'
 
     @cachedproperty
     def related_projects(self):
@@ -5148,12 +5129,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
     @cachedproperty
     def first_five_related_projects(self):
         """Return first five projects owned or driven by this person."""
-        return list(self._related_projects()[:5])
+        return self._related_projects()[:5]
 
     @cachedproperty
     def related_projects_count(self):
         """The number of project owned or driven by this person."""
-        return self._related_projects().count()
+        return len(self._related_projects())
 
     @cachedproperty
     def has_more_related_projects(self):
@@ -5226,7 +5207,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return results, header_message
 
     @property
-    def get_latest_uploaded_ppa_packages_with_stats(self):
+    def latest_uploaded_ppa_packages_with_stats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
 
         Results are filtered according to the permission of the requesting
@@ -5238,7 +5219,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return self.filterPPAPackageList(results)
 
     @property
-    def get_latest_maintained_packages_with_stats(self):
+    def latest_maintained_packages_with_stats(self):
         """Return the latest maintained packages, including stats."""
         packages = self.context.getLatestMaintainedPackages()
         results, header_message = self._getDecoratedPackagesSummary(packages)
@@ -5246,7 +5227,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return results
 
     @property
-    def get_latest_uploaded_but_not_maintained_packages_with_stats(self):
+    def latest_uploaded_but_not_maintained_packages_with_stats(self):
         """Return the latest uploaded packages, including stats.
 
         Don't include packages that are maintained by the user.
@@ -5330,6 +5311,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
 class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
     """View for +maintained-packages."""
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5338,11 +5320,12 @@ class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "Software maintained by " + self.context.displayname
+        return "Maintained Packages"
 
 
 class PersonUploadedPackagesView(PersonRelatedSoftwareView):
     """View for +uploaded-packages."""
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5351,11 +5334,12 @@ class PersonUploadedPackagesView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "Software uploaded by " + self.context.displayname
+        return "Uploaded packages"
 
 
 class PersonPPAPackagesView(PersonRelatedSoftwareView):
     """View for +ppa-packages."""
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5371,11 +5355,12 @@ class PersonPPAPackagesView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "PPA packages related to " + self.context.displayname
+        return "PPA packages"
 
 
 class PersonRelatedProjectsView(PersonRelatedSoftwareView):
     """View for +related-projects."""
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -5385,7 +5370,7 @@ class PersonRelatedProjectsView(PersonRelatedSoftwareView):
 
     @property
     def page_title(self):
-        return "Projects related to " + self.context.displayname
+        return "Related projects"
 
 
 class PersonOAuthTokensView(LaunchpadView):
@@ -5800,10 +5785,7 @@ class EmailToPersonView(LaunchpadFormView):
         # Subject and then Message fields.
         self.form_fields = FormFields(*chain((field, ), self.form_fields))
 
-    @property
-    def label(self):
-        """The form label."""
-        return 'Contact ' + self.context.displayname
+    label = 'Contact user'
 
     @cachedproperty
     def recipients(self):

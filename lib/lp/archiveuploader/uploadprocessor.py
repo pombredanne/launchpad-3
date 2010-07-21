@@ -293,7 +293,7 @@ class UploadProcessor:
             (distribution, suite_name,
              archive) = parse_upload_path(relative_path)
         except UploadPathError, e:
-            # pick some defaults to create the NascentUploap() object.
+            # pick some defaults to create the NascentUpload() object.
             # We will be rejecting the upload so it doesn matter much.
             distribution = getUtility(IDistributionSet)['ubuntu']
             suite_name = None
