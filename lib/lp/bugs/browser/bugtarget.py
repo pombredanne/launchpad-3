@@ -167,11 +167,13 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        # bug_supervisor requires a transition method, so it must be
-        # handled separately and removed for the updateContextFromData
-        # to work as expected.
+        # bug_supervisor and security_contactrequires a transition method,
+        # so it must be handled separately and removed for the
+        # updateContextFromData to work as expected.
         self.changeBugSupervisor(data['bug_supervisor'])
         del data['bug_supervisor']
+        self.changeSecurityContact(data['security_contact'])
+        del data['security_contact']
         self.updateContextFromData(data)
 
 
