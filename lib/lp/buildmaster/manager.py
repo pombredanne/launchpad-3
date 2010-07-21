@@ -530,6 +530,7 @@ class BuilddManager(service.Service):
     def __init__(self):
         self.builder_slaves = []
         self.logger = self._setupLogger()
+        self.new_builders_scanner = NewBuildersScanner(manager=self)
 
     def _setupLogger(self):
         """Setup a 'slave-scanner' logger that redirects to twisted.
@@ -561,6 +562,7 @@ class BuilddManager(service.Service):
         builder_set = getUtility(IBuilderSet)
         builders = [builder.name for builder in builder_set]
         self.addScanForBuilders(builders)
+        self.new_builders_scanner.scheduleScan()
 
         # Events will now fire in the SlaveScanner objects to scan each
         # builder.

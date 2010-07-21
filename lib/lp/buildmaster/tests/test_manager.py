@@ -837,16 +837,27 @@ class TestBuilddManager(TrialTestCase):
 
     layer = LaunchpadZopelessLayer
 
+    def _stub_out_scheduleNextScanCycle(self):
+        # stub out the code that adds a callLater, so that later tests
+        # don't get surprises.
+        self._saved_schedule = SlaveScanner.scheduleNextScanCycle
+        def cleanup():
+            SlaveScanner.scheduleNextScanCycle = self._saved_schedule
+        self.addCleanup(cleanup)
+        SlaveScanner.scheduleNextScanCycle = FakeMethod
+
+    def _add_fake_NewBuildersScanner_scan(self, method):
+        # Replace the NewBuildersScanner.scan() method with a fake one.
+        self._saved_scan = SlaveScanner.scan
+        def cleanup():
+            SlaveScanner.scan = self._saved_scan
+        self.addCleanup(cleanup)
+        SlaveScanner.scan = method
+
     def test_addScanForBuilders(self):
         # Test that addScanForBuilders generates NewBuildersScanner objects.
 
-        # stub out the code that adds a callLater, so that later tests
-        # don't get surprises.
-        _saved_scheduleNextScanCycle = SlaveScanner.scheduleNextScanCycle
-        def cleanup():
-            SlaveScanner.scheduleNextScanCycle = _saved_scheduleNextScanCycle
-        self.addCleanup(cleanup)
-        SlaveScanner.scheduleNextScanCycle = FakeMethod
+        self._stub_out_scheduleNextScanCycle()
 
         manager = BuilddManager()
         builder_names = [builder.name for builder in getUtility(IBuilderSet)]
@@ -854,6 +865,22 @@ class TestBuilddManager(TrialTestCase):
         scanner_names = [scanner.builder_name for scanner in scanners]
         for builder in builder_names:
             self.assertTrue(builder in scanner_names)
+
+    def test_startService_adds_NewBuildersScanner(self):
+        # When startService is called, the manager will start up a
+        # NewBuildersScanner object.
+        self._stub_out_scheduleNextScanCycle()
+        NewBuildersScanner.SCAN_INTERVAL = 0
+        manager = BuilddManager()
+        failure_callback = None
+
+        manager.new_builders_scanner.scan = FakeMethod
+
+        def assertCalled():
+            self.failIf(manager.new_builders_scanner.scan.call_count == 0)
+
+        manager.startService()
+        reactor.callLater(0, assertCalled)
 
 
 class TestNewBuilders(TrialTestCase):
