@@ -10,7 +10,7 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
-from bzrlib.plugins.builder import RecipeParser
+from bzrlib.plugins.builder.recipe import RecipeParser
 from lazr.delegates import delegates
 
 from storm.locals import (
