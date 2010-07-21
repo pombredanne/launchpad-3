@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import StringIO
 import unittest
 
 from canonical.config import config
@@ -14,7 +15,8 @@ from canonical.testing.layers import FunctionalLayer
 from lp.testing import TestCase
 from lp.testing.publication import get_request_and_publication
 
-from lp.translations.publisher import TranslationsLayer
+from lp.translations.publisher import (
+    TranslationsLayer, TranslationsBrowserRequest)
 
 
 class TestRegistration(TestCase):
@@ -39,6 +41,14 @@ class TestRegistration(TestCase):
         # actually provides WebServiceLayer in the sense of verifyObject after
         # traversal has started.
         self.assertTrue(WebServiceLayer.providedBy(request))
+
+    def test_response_should_vary_based_on_language(self):
+        # Responses to requests to translations pages have the 'Vary' header
+        # set to include Accept-Language.
+        request = TranslationsBrowserRequest(StringIO.StringIO(''), {})
+        self.assertEquals(
+            request.response.getHeader('Vary'),
+            'Cookie, Authorization, Accept-Language')
 
 
 def test_suite():
