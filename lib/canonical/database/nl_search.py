@@ -75,7 +75,7 @@ def _nl_phrase_search(terms, table, constraints, extra_constraints_tables):
 
     See nl_phrase_search for the contract of this function.
     """
-    bad_words = set(['ubuntu', 'launchpad'])
+    bad_words = set(['firefox', 'ubuntu', 'launchpad'])
     terms = set(terms)
     filtered_terms = []
     for term in terms:
