@@ -267,7 +267,8 @@ class SoyuzTestPublisher:
                        pub_source=None,
                        version='666',
                        architecturespecific=False,
-                       builder=None):
+                       builder=None,
+                       component='main'):
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.distroseries
@@ -285,7 +286,8 @@ class SoyuzTestPublisher:
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket,
                 archive=archive, distroseries=distroseries,
-                version=version, architecturehintlist=architecturehintlist)
+                version=version, architecturehintlist=architecturehintlist,
+                component=component)
         else:
             archive = pub_source.archive
 
@@ -578,24 +580,6 @@ class TestNativePublishing(TestNativePublishingBase):
             pub_binary.status)
         pool_path = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
         self.assertEqual(open(pool_path).read().strip(), 'Hello world')
-
-    def test_publish_ddeb_for_ppas(self):
-        # DDEB publications in PPAs result in a PUBLISHED publishing record
-        # but the corresponding files are *not* dumped in the disk pool/.
-        cprov = getUtility(IPersonSet).getByName('cprov')
-        pub_binary = self.getPubBinaries(
-            filecontent='Hello world', format=BinaryPackageFormat.DDEB,
-            archive=cprov.archive)[0]
-
-        # Publication happens in the database domain.
-        pub_binary.publish(self.disk_pool, self.logger)
-        self.assertEqual(
-            PackagePublishingStatus.PUBLISHED,
-            pub_binary.status)
-
-        # But the DDEB isn't dumped to the repository pool/.
-        pool_path = "%s/main/f/foo/foo-bin_666_all.ddeb" % self.pool_dir
-        self.assertFalse(os.path.exists(pool_path))
 
     def testPublishingOverwriteFileInPool(self):
         """Test if publishOne refuses to overwrite a file in pool.
