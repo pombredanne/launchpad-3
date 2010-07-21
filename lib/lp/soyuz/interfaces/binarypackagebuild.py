@@ -152,6 +152,13 @@ class IBinaryPackageBuildView(IPackageBuild):
         :return the corresponding `ILibraryFileAlias` if the file was found.
         """
 
+    def getBinaryPackageFileByName(filename):
+        """Return the corresponding `IBinaryPackageFile` in this context.
+
+        :param filename: the filename to look up.
+        :return: the correpsonding `IBinaryPackageFile` if it was found.
+        """
+
 
 class IBinaryPackageBuildEdit(Interface):
     """A Build interface for items requiring launchpad.Edit."""

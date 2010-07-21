@@ -686,14 +686,11 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
 
     def _getDebByFileName(self, filename):
         """Helper function to get a .deb LFA in the context of this build."""
-        store = Store.of(self)
-        return store.find(
-            LibraryFileAlias,
-            BinaryPackageRelease.build == self.id,
-            BinaryPackageFile.binarypackagerelease == BinaryPackageRelease.id,
-            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
-            LibraryFileAlias.filename == filename
-            ).one()
+        bpf = self.getBinaryPackageFileByName(filename)
+        if bpf is not None:
+            return bpf.libraryfile
+        else:
+            return None
 
     def getFileByName(self, filename):
         """See `IBuild`."""
@@ -712,6 +709,15 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             return file_object
 
         raise NotFoundError(filename)
+
+    def getBinaryPackageFileByName(self, filename):
+        """See `IBuild`."""
+        return Store.of(self).find(
+            BinaryPackageFile,
+            BinaryPackageRelease.build == self.id,
+            BinaryPackageFile.binarypackagerelease == BinaryPackageRelease.id,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            LibraryFileAlias.filename == filename).one()
 
     def getSpecificJob(self):
         """See `IBuildFarmJob`."""
