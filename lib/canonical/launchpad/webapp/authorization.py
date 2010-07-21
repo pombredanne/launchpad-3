@@ -9,6 +9,7 @@ import weakref
 from zope.interface import classProvides
 from zope.component import getUtility, queryAdapter
 from zope.browser.interfaces import IView
+from zope.location.location import LocationProxy
 
 from zope.publisher.interfaces import IApplicationRequest
 from zope.security.interfaces import ISecurityPolicy
@@ -158,8 +159,12 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                 try:
                     cache = wd.setdefault(objecttoauthorize, {})
                 except TypeError, e:
-                    # XXX: objecttoauthorize may be a LocationProxy, to which
-                    # we can't create a weak ref.
+                    assert isinstance(objecttoauthorize, LocationProxy), (
+                        "This try/except exists solely because "
+                        "zope.app.apidoc will cause us to try and cache "
+                        "LocationProxy objects, to which we can't have "
+                        "weak refs. If we failed to cache anything else, "
+                        "we need to re-evaluate this try/except.")
                     cache = {}
                 if permission in cache:
                     return cache[permission]
