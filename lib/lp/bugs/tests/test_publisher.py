@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.config import config
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.testing.layers import FunctionalLayer

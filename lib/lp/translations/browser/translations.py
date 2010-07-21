@@ -183,7 +183,7 @@ class PageRedirectView:
         self.request.response.redirect(
             '/'.join([
                 canonical_url(self.context, rootsite='translations'),
-                self.page
+                self.page,
                 ]), status=301)
 
 
@@ -208,6 +208,7 @@ class TranslationsVHostBreadcrumb(Breadcrumb):
 
 class TranslationsLanguageBreadcrumb(Breadcrumb):
     """Breadcrumb for objects with language."""
+
     @property
     def text(self):
         return self.context.language.displayname

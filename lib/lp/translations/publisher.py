@@ -38,4 +38,5 @@ class TranslationsBrowserRequest(LaunchpadBrowserRequest):
 
 def translations_request_publication_factory():
     return VHostWebServiceRequestPublicationFactory(
-        'translations', TranslationsBrowserRequest, LaunchpadBrowserPublication)
+        'translations', TranslationsBrowserRequest,
+        LaunchpadBrowserPublication)

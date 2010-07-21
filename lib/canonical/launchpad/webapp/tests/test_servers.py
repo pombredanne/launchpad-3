@@ -115,7 +115,7 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
         return {
             'PATH_INFO': path,
             'HTTP_HOST': 'bugs.launchpad.dev',
-            'REQUEST_METHOD': method
+            'REQUEST_METHOD': method,
             }
 
     @property
@@ -266,8 +266,10 @@ class TestWebServiceRequestTraversal(WebServiceTestCase):
             implements(IGenericCollection)
 
         class MyRootResource(RootResource):
+
             def _build_top_level_objects(self):
-                return ({'foo' : (IGenericEntry, GenericCollection())}, {})
+                return ({'foo': (IGenericEntry, GenericCollection())}, {})
+
         getGlobalSiteManager().registerUtility(
             MyRootResource(), IServiceRootResource)
 
