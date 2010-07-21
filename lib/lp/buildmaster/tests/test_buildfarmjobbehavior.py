@@ -3,8 +3,6 @@
 
 """Unit tests for BuildFarmJobBehaviorBase."""
 
-from unittest import TestLoader
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -144,7 +142,3 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
         self.assertNotEqual(
             buildfarmjob1.generateSlaveBuildCookie(),
             buildfarmjob2.generateSlaveBuildCookie())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
