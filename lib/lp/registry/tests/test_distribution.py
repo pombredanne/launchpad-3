@@ -11,9 +11,36 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases)
+from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
-from lp.registry.interfaces.series import SeriesStatus
+from lp.testing import TestCaseWithFactory
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+
+
+class TestDistribution(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistribution, self).setUp('foo.bar@canonical.com')
+
+    def test_distribution_repr_ansii(self):
+        # Verify that ANSI displayname is ascii safe.
+        distro = self.factory.makeDistribution(
+            name="distro", displayname=u'\xdc-distro')
+        ignore, displayname, name = repr(distro).rsplit(' ', 2)
+        self.assertEqual("'\\xdc-distro'", displayname)
+        self.assertEqual('(distro)>', name)
+
+    def test_distribution_repr_unicode(self):
+        # Verify that Unicode displayname is ascii safe.
+        distro = self.factory.makeDistribution(
+            name="distro", displayname=u'\u0170-distro')
+        ignore, displayname, name = repr(distro).rsplit(' ', 2)
+        self.assertEqual("'\\u0170-distro'", displayname)
 
 
 class TestDistributionCurrentSourceReleases(
@@ -25,6 +52,7 @@ class TestDistributionCurrentSourceReleases(
     for the latest published source across multiple distro series.
     """
 
+    layer = LaunchpadFunctionalLayer
     release_interface = IDistributionSourcePackageRelease
 
     @property
@@ -74,8 +102,47 @@ class TestDistributionCurrentSourceReleases(
         self.assertTrue(series is distribution._cached_series)
 
 
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestDistributionCurrentSourceReleases))
-    return suite
+class SeriesByStatusTests(TestCaseWithFactory):
+    """Test IDistribution.getSeriesByStatus().
+    """
 
+    layer = LaunchpadFunctionalLayer
+
+    def test_get_none(self):
+        distro = self.factory.makeDistribution()
+        self.assertEquals([],
+            list(distro.getSeriesByStatus(SeriesStatus.FROZEN)))
+
+    def test_get_current(self):
+        distro = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=distro, 
+            status=SeriesStatus.CURRENT)
+        self.assertEquals([series],
+            list(distro.getSeriesByStatus(SeriesStatus.CURRENT)))
+
+
+class SeriesTests(TestCaseWithFactory):
+    """Test IDistribution.getSeries().
+    """
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_get_none(self):
+        distro = self.factory.makeDistribution()
+        self.assertRaises(NoSuchDistroSeries, distro.getSeries, "astronomy")
+
+    def test_get_by_name(self):
+        distro = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=distro, 
+            name="dappere")
+        self.assertEquals(series, distro.getSeries("dappere"))
+
+    def test_get_by_version(self):
+        distro = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=distro, 
+            name="dappere", version="42.6")
+        self.assertEquals(series, distro.getSeries("42.6"))
+
+
+def test_suite():
+    return unittest.TestLoader().loadTestsFromName(__name__)

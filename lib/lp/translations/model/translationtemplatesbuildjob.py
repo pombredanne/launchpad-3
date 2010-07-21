@@ -17,12 +17,13 @@ from storm.store import Store
 
 from canonical.config import config
 
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.buildmaster.model.buildfarmjob import (
+    BuildFarmJobOld, BuildFarmJobOldDerived)
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
@@ -32,7 +33,7 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 
-class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
+class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
     """An `IBuildFarmJob` implementation that generates templates.
 
     Implementation-wise, this is actually a `BranchJob`.
@@ -48,6 +49,13 @@ class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
 
     def __init__(self, branch_job):
         super(TranslationTemplatesBuildJob, self).__init__(branch_job)
+
+    def _set_build_farm_job(self):
+        """Setup the IBuildFarmJob delegate.
+
+        We override this to provide a non-database delegate that simply
+        provides required functionality to the queue system."""
+        self.build_farm_job = BuildFarmJobOld()
 
     def score(self):
         """See `IBuildFarmJob`."""
@@ -109,7 +117,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
     @classmethod
     def create(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(BranchJob)
 
         # Pass public HTTP URL for the branch.
         metadata = {'branch_url': branch.composePublicURL()}
@@ -118,13 +126,25 @@ class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
         store.add(branch_job)
         specific_job = TranslationTemplatesBuildJob(branch_job)
         duration_estimate = cls.duration_estimate
+
+        # XXX Danilo Segan bug=580429: we hard-code processor to the Ubuntu
+        # default processor architecture.  This stops the buildfarm from
+        # accidentally dispatching the jobs to private builders.
         build_queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
             job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
-            job=specific_job.job.id)
+            job=specific_job.job.id,
+            processor=cls._getBuildArch())
         store.add(build_queue_entry)
 
         return specific_job
+
+    @classmethod
+    def _getBuildArch(cls):
+        """Returns an `IProcessor` to queue a translation build for."""
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        # A round-about way of hard-coding i386.
+        return ubuntu.currentseries.nominatedarchindep.default_processor
 
     @classmethod
     def scheduleTranslationTemplatesBuild(cls, branch):
@@ -139,12 +159,22 @@ class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
 
     @classmethod
     def getByJob(cls, job):
-        """See `IBuildFarmJobDerived`.
+        """See `IBuildFarmJob`.
 
         Overridden here to search via a BranchJob, rather than a Job.
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BranchJob)
         branch_job = store.find(BranchJob, BranchJob.job == job).one()
+        if branch_job is None:
+            return None
+        else:
+            return cls(branch_job)
+
+    @classmethod
+    def getByBranch(cls, branch):
+        """See `ITranslationTemplatesBuildJobSource`."""
+        store = IStore(BranchJob)
+        branch_job = store.find(BranchJob, BranchJob.branch == branch).one()
         if branch_job is None:
             return None
         else:

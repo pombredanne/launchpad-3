@@ -379,7 +379,7 @@ class BinaryPublishingRecordView(BasePublishingRecordView):
         if self.context.archive != build.archive:
             return True
 
-        if self.context.distroarchseries != build.distroarchseries:
+        if self.context.distroarchseries != build.distro_arch_series:
             return True
 
         if self.context.pocket != build.pocket:

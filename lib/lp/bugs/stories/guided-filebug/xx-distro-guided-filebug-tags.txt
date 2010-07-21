@@ -21,6 +21,8 @@ candidates were found for this summary, though.
 
 After submitting the bug, the tags are added to the bug.
 
+    >>> from lp.bugs.tests.bug import print_bug_tag_anchors
+
     >>> user_browser.getControl('Further information').value = 'Thanks.'
     >>> user_browser.getControl('Submit Bug Report').click()
 
@@ -28,7 +30,5 @@ After submitting the bug, the tags are added to the bug.
     'http://bugs.launchpad.dev/ubuntu/+bug/...'
 
     >>> tags_div = find_tag_by_id(user_browser.contents, 'bug-tags')
-    >>> for a_tag in tags_div('a'):
-    ...   if a_tag['href'] != '+edit' and a_tag['href'] != '/+help/tag-help.html':
-    ...       print a_tag.renderContents()
-    new-package
+    >>> print_bug_tag_anchors(tags_div('a'))
+    unofficial-tag new-package

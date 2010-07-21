@@ -258,7 +258,7 @@ created if done through the web UI, so we'll add nopriv here.
     ...     nopriv,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.NODIFF,
-    ...     CodeReviewNotificationLevel.FULL)
+    ...     CodeReviewNotificationLevel.FULL, nopriv)
 
     >>> from lp.testing.mail_helpers import (
     ...     pop_notifications, print_emails)

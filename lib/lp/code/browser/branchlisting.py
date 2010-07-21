@@ -96,7 +96,7 @@ from lp.services.browser_helpers import get_plural_text
 
 class CodeVHostBreadcrumb(Breadcrumb):
     rootsite = 'code'
-    text = 'Branches'
+    text = 'Code'
 
 
 class BranchBadges(HasBadgeBase):
@@ -1010,7 +1010,8 @@ class PersonTeamBranchesView(LaunchpadView):
     @cachedproperty
     def teams_with_branches(self):
         teams = self._getCollection().getTeamsWithBranches(self.person)
-        return [self._createItem(team) for team in teams]
+        return [self._createItem(team) for team in teams
+                if check_permission('launchpad.View', team)]
 
 
 class PersonProductTeamBranchesView(PersonTeamBranchesView):

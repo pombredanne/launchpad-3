@@ -1009,7 +1009,7 @@ build once it was accepted, using 'queue-tool' or via the Web UI.
   >>> print build.title
   i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
 
-  >>> print build.buildstate.name
+  >>> print build.status.name
   NEEDSBUILD
 
   >>> print build.buildqueue_record.lastscore

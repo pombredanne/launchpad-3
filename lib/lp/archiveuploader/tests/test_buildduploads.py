@@ -1,11 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test buildd uploads use-cases."""
 
 __metaclass__ = type
-
-import unittest
 
 from lp.archiveuploader.tests.test_securityuploads import (
     TestStagedBinaryUploadBase)
@@ -33,7 +31,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
      * 'lib/lp/archiveuploader/tests/data/suite/foo_1.0-1/'
      * 'lib/lp/archiveuploader/tests/data/suite/foo_1.0-1_binary/'
 
-    This class allows uploads to ubuntu/breezy in i386 & powerpc architectures.
+    This class allows uploads to ubuntu/breezy in i386 & powerpc
+    architectures.
     """
     name = 'foo'
     version = '1.0-1'
@@ -107,7 +106,7 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         self.assertEqual(
             u'i386 build of foo 1.0-1 in ubuntu breezy RELEASE',
             build_used.title)
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
         # Force immediate publication.
         queue_item = self.uploadprocessor.last_processed_upload.queue_root
@@ -123,8 +122,4 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         self.assertEqual(
             u'powerpc build of foo 1.0-1 in ubuntu breezy RELEASE',
             build_used.title)
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        self.assertEqual('FULLYBUILT', build_used.status.name)

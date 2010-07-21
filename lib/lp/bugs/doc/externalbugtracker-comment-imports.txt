@@ -86,16 +86,13 @@ comment-importing ExternalBugTracker instance will result in the three
 comments in the comment_dict being imported into Launchpad.
 
     >>> from canonical.launchpad.scripts.logger import log
-    >>> from lp.bugs.scripts.checkwatches.base import (
-    ...     WorkingBase)
-    >>> from lp.bugs.scripts.checkwatches.bugwatchupdater import (
-    ...     BugWatchUpdater)
+    >>> from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
+    >>> from lp.bugs.scripts.checkwatches.tests.test_bugwatchupdater import (
+    ...     make_bug_watch_updater)
 
-    >>> working_base = WorkingBase()
-    >>> working_base.init(
-    ...     'bugwatch@bugs.launchpad.net', transaction, log)
-    >>> bugwatch_updater = BugWatchUpdater(
-    ...     working_base, bug_watch, external_bugtracker)
+    >>> bugwatch_updater = make_bug_watch_updater(
+    ...     CheckwatchesMaster(transaction), bug_watch,
+    ...     external_bugtracker)
     >>> bugwatch_updater.importBugComments()
     INFO:...:Imported 3 comments for remote bug 123456 on ...
 
@@ -396,8 +393,9 @@ Launchpad but will result in no Karma records being created.
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> external_bugtracker.remote_comments = {
     ...     '5':"A comment containing a CVE entry: CVE-1991-9911."}
-    >>> bugwatch_updater = BugWatchUpdater(
-    ...     working_base, bug_watch, external_bugtracker)
+    >>> bugwatch_updater = make_bug_watch_updater(
+    ...     CheckwatchesMaster(transaction), bug_watch,
+    ...     external_bugtracker)
     >>> bugwatch_updater.importBugComments()
     INFO:...:Imported 1 comments for remote bug 123456...
 
@@ -470,8 +468,9 @@ comments.
 
     >>> transaction.commit()
 
-    >>> bugwatch_updater = BugWatchUpdater(
-    ...     working_base, bug_watch, external_bugtracker)
+    >>> bugwatch_updater = make_bug_watch_updater(
+    ...     CheckwatchesMaster(transaction), bug_watch,
+    ...     external_bugtracker)
     >>> bugwatch_updater.importBugComments()
     INFO:...:Imported 2 comments for remote bug 42 ...
 

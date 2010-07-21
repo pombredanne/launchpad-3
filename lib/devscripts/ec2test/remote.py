@@ -277,7 +277,7 @@ class TestOnMergeRunner(BaseTestRunner):
 
     def build_test_command(self):
         """See BaseTestRunner.build_test_command()."""
-        command = ['make', 'check', 'VERBOSITY=' + self.test_options]
+        command = ['make', 'check', 'TESTOPTS=' + self.test_options]
         return command
 
 

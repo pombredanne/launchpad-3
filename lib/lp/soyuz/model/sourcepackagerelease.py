@@ -41,6 +41,7 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
     SourcePackageType, SourcePackageUrgency)
 from lp.soyuz.interfaces.archive import IArchiveSet, MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import (
     PackageDiffAlreadyRequested, PackageDiffStatus)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -145,12 +146,14 @@ class SourcePackageRelease(SQLBase):
         # a build may well have a different archive to the corresponding
         # sourcepackagerelease.
         return BinaryPackageBuild.select("""
-            sourcepackagerelease = %s AND
-            archive.id = build.archive AND
+            source_package_release = %s AND
+            package_build = packagebuild.id AND
+            archive.id = packagebuild.archive AND
+            packagebuild.build_farm_job = buildfarmjob.id AND
             archive.purpose IN %s
             """ % sqlvalues(self.id, MAIN_ARCHIVE_PURPOSES),
-            orderBy=['-datecreated', 'id'],
-            clauseTables=['Archive'])
+            orderBy=['-buildfarmjob.date_created', 'id'],
+            clauseTables=['Archive', 'PackageBuild', 'BuildFarmJob'])
 
     @property
     def age(self):
@@ -172,7 +175,7 @@ class SourcePackageRelease(SQLBase):
     @property
     def needs_building(self):
         for build in self._cached_builds:
-            if build.buildstate in [BuildStatus.NEEDSBUILD,
+            if build.status in [BuildStatus.NEEDSBUILD,
                                     BuildStatus.MANUALDEPWAIT,
                                     BuildStatus.CHROOTWAIT]:
                 return True
@@ -310,12 +313,12 @@ class SourcePackageRelease(SQLBase):
         else:
             return 0.0
 
-    def createBuild(self, distroarchseries, pocket, archive, processor=None,
+    def createBuild(self, distro_arch_series, pocket, archive, processor=None,
                     status=None):
         """See ISourcePackageRelease."""
         # Guess a processor if one is not provided
         if processor is None:
-            pf = distroarchseries.processorfamily
+            pf = distro_arch_series.processorfamily
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
 
@@ -325,15 +328,16 @@ class SourcePackageRelease(SQLBase):
         # Force the current timestamp instead of the default
         # UTC_NOW for the transaction, avoid several row with
         # same datecreated.
-        datecreated = datetime.datetime.now(pytz.timezone('UTC'))
+        date_created = datetime.datetime.now(pytz.timezone('UTC'))
 
-        return BinaryPackageBuild(distroarchseries=distroarchseries,
-                     sourcepackagerelease=self,
-                     processor=processor,
-                     buildstate=status,
-                     datecreated=datecreated,
-                     pocket=pocket,
-                     archive=archive)
+        return getUtility(IBinaryPackageBuildSet).new(
+            distro_arch_series=distro_arch_series,
+            source_package_release=self,
+            processor=processor,
+            status=status,
+            date_created=date_created,
+            pocket=pocket,
+            archive=archive)
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
@@ -345,9 +349,9 @@ class SourcePackageRelease(SQLBase):
             'DistroArchSeries']
 
         query = """
-            Build.sourcepackagerelease = %s AND
-            BinaryPackageRelease.build = Build.id AND
-            DistroArchSeries.id = Build.distroarchseries AND
+            BinaryPackageBuild.source_package_release = %s AND
+            BinaryPackageRelease.build = BinaryPackageBuild.id AND
+            DistroArchSeries.id = BinaryPackageBuild.distro_arch_series AND
             DistroArchSeries.architecturetag = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
@@ -358,7 +362,7 @@ class SourcePackageRelease(SQLBase):
 
         select_results = BinaryPackageBuild.select(
             query, clauseTables=clauseTables, distinct=True,
-            orderBy='-Build.id')
+            orderBy='-BinaryPackageBuild.id')
 
         # XXX cprov 20080216: this if/elif/else block could be avoided or,
         # at least, simplified if SelectOne accepts 'distinct' argument.
@@ -384,7 +388,11 @@ class SourcePackageRelease(SQLBase):
             # inheritance tree. See bellow.
             pass
 
-        queries = ["Build.sourcepackagerelease = %s" % sqlvalues(self)]
+        queries = [
+            "BinaryPackageBuild.package_build = PackageBuild.id AND "
+            "PackageBuild.build_farm_job = BuildFarmJob.id AND "
+            "BinaryPackageBuild.source_package_release = %s" % (
+            sqlvalues(self))]
 
         # Find out all the possible parent DistroArchSeries
         # a build could be issued (then inherited).
@@ -415,7 +423,8 @@ class SourcePackageRelease(SQLBase):
         architectures = [
             architecture.id for architecture in parent_architectures]
         queries.append(
-            "Build.distroarchseries IN %s" % sqlvalues(architectures))
+            "BinaryPackageBuild.distro_arch_series IN %s" % (
+                sqlvalues(architectures)))
 
         # Follow archive inheritance across distribution offical archives,
         # for example:
@@ -434,13 +443,15 @@ class SourcePackageRelease(SQLBase):
             archives = [archive.id, ]
 
         queries.append(
-            "Build.archive IN %s" % sqlvalues(archives))
+            "PackageBuild.archive IN %s" % sqlvalues(archives))
 
         # Query only the last build record for this sourcerelease
         # across all possible locations.
         query = " AND ".join(queries)
 
-        return BinaryPackageBuild.selectFirst(query, orderBy=['-datecreated'])
+        return BinaryPackageBuild.selectFirst(
+            query, clauseTables=['BuildFarmJob', 'PackageBuild'],
+            orderBy=['-BuildFarmJob.date_created'])
 
     def override(self, component=None, section=None, urgency=None):
         """See ISourcePackageRelease."""

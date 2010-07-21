@@ -1,9 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Builder features."""
-
-import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -115,8 +113,8 @@ class TestFindBuildCandidatePPABase(TestFindBuildCandidateBase):
         """
         count = 0
         for build in builds_list[:num_builds]:
-            if build.distroarchseries.architecturetag == archtag:
-                build.buildstate = BuildStatus.BUILDING
+            if build.distro_arch_series.architecturetag == archtag:
+                build.status = BuildStatus.BUILDING
                 build.builder = self.builders[count]
             count += 1
 
@@ -184,7 +182,7 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
     def test_findBuildCandidate_first_build_finished(self):
         # When joe's first ppa build finishes, his fourth i386 build
         # will be the next build candidate.
-        self.joe_builds[0].buildstate = BuildStatus.FAILEDTOBUILD
+        self.joe_builds[0].status = BuildStatus.FAILEDTOBUILD
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
@@ -227,17 +225,17 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
             self.frog_builder)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('primary', build.archive.name)
-        self.failUnlessEqual('gedit', build.sourcepackagerelease.name)
+        self.failUnlessEqual('gedit', build.source_package_release.name)
 
         # Now even if we set the build building, we'll still get the
         # second non-ppa build for the same archive as the next candidate.
-        build.buildstate = BuildStatus.BUILDING
+        build.status = BuildStatus.BUILDING
         build.builder = self.frog_builder
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('primary', build.archive.name)
-        self.failUnlessEqual('firefox', build.sourcepackagerelease.name)
+        self.failUnlessEqual('firefox', build.source_package_release.name)
 
     def test_findBuildCandidate_for_recipe_build(self):
         # Recipe builds with a higher score are selected first.
@@ -341,6 +339,3 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
 
         self.assertIsInstance(
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

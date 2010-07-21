@@ -12,6 +12,7 @@ __all__ = [
     'add_exception_logging_hook',
     'DenyingServer',
     'get_branch_stacked_on_url',
+    'get_stacked_on_url',
     'get_vfs_format_classes',
     'HttpAsLocalTransport',
     'identical_formats',
@@ -340,3 +341,11 @@ def safe_open(allowed_scheme, url, possible_transports=None):
     """
     return checked_open(
         makeURLChecker(allowed_scheme), url, possible_transports)
+
+
+def get_stacked_on_url(branch):
+    """Get the stacked-on URL for 'branch', or `None` if not stacked."""
+    try:
+        return branch.get_stacked_on_url()
+    except (NotStacked, UnstackableBranchFormat):
+        return None

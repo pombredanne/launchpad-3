@@ -219,16 +219,21 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         login(ANONYMOUS)
 
     def makeSeriesPackage(self, name,
-                          is_main=False, heat=None, messages=None):
+                          is_main=False, heat=None, messages=None,
+                          is_translations=False):
         # Make a published source package.
         if is_main:
             component = self.main_component
         else:
             component = self.universe_component
+        if is_translations:
+            section = 'translations'
+        else:
+            section = 'web'
         sourcepackagename = self.factory.makeSourcePackageName(name)
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=sourcepackagename, distroseries=self.series,
-            component=component)
+            component=component, section_name=section)
         source_package = self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=self.series)
         if heat is not None:
@@ -256,6 +261,15 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             u'main', u'hot-translatable', u'hot', u'translatable', u'normal']
         self.assertEqual(expected, names)
 
+    def test_getPrioritizedUnlinkedSourcePackages_no_language_packs(self):
+        # Verify that translations packages are not listed.
+        self.makeSeriesPackage('language-pack-vi', is_translations=True)
+        package_summaries = self.series.getPrioritizedUnlinkedSourcePackages()
+        names = [summary['package'].name for summary in package_summaries]
+        expected = [
+            u'main', u'hot-translatable', u'hot', u'translatable', u'normal']
+        self.assertEqual(expected, names)
+
     def test_getPrioritizedlPackagings(self):
         # Verify the ordering of packagings that need more upstream info.
         for name in ['main', 'hot-translatable', 'hot', 'translatable']:
@@ -274,7 +288,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         product_series.product.bugtraker = self.factory.makeBugTracker()
         packagings = self.series.getPrioritizedlPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
-        expected = [u'hot', u'linked', u'cold']
+        expected = [u'hot', u'cold', u'linked']
         self.assertEqual(expected, names)
 
     def test_getPrioritizedlPackagings_branch(self):
@@ -339,7 +353,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
                 translatables, self._ref_translatables()))
 
         new_sourcepackagename = self.factory.makeSourcePackageName()
-        new_potemplate = self.factory.makePOTemplate(
+        self.factory.makePOTemplate(
             distroseries=new_distroseries,
             sourcepackagename=new_sourcepackagename)
         transaction.commit()
@@ -368,7 +382,6 @@ class TestDistroSeriesSet(TestCaseWithFactory):
 
     def test_fromSuite_non_release_pocket(self):
         series = self.factory.makeDistroRelease()
-        pocket = PackagePublishingPocket.BACKPORTS
         suite = '%s-backports' % series.name
         result = getUtility(IDistroSeriesSet).fromSuite(
             series.distribution, suite)

@@ -123,6 +123,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
+    bug_reported_acknowledgement = StringCol(default=None)
     max_bug_heat = Int()
 
     # convenient joins

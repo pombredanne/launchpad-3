@@ -371,7 +371,7 @@ And thus, it doesn't have any translatable series.
 
 Even if it has resources to translate.
 
-    >>> sum([len(series.getTranslationTemplates())
+    >>> sum([len(list(series.getTranslationTemplates()))
     ...      for series in netapplet.series])
     1
 

@@ -51,6 +51,7 @@ from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
@@ -64,8 +65,8 @@ from lp.bugs.interfaces.bugtask import (
     IDistroBugTask, IDistroSeriesBugTask, INullBugTask, IProductSeriesBugTask,
     IUpstreamBugTask, IllegalRelatedBugTasksParams, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UserCannotEditBugTaskImportance, UserCannotEditBugTaskMilestone,
-    UserCannotEditBugTaskStatus)
+    UserCannotEditBugTaskAssignee, UserCannotEditBugTaskImportance,
+    UserCannotEditBugTaskMilestone, UserCannotEditBugTaskStatus)
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
@@ -89,7 +90,7 @@ from lp.registry.interfaces.person import (
     IPerson, validate_person_not_private_membership,
     validate_public_person)
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
+    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, SLAVE_FLAVOR, NotFoundError)
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,
@@ -148,7 +149,7 @@ def get_related_bugtasks_search_params(user, context, **kwargs):
     search for all tasks related to a user given by `context`.
 
     Which tasks are related to a user?
-      * the user has to be either assignee or owner of this tasks
+      * the user has to be either assignee or owner of this task
         OR
       * the user has to be subscriber or commenter to the underlying bug
         OR
@@ -157,7 +158,8 @@ def get_related_bugtasks_search_params(user, context, **kwargs):
         always get one task owned by the bug reporter
     """
     assert IPerson.providedBy(context), "Context argument needs to be IPerson"
-    relevant_fields = ('assignee', 'bug_subscriber', 'owner', 'bug_commenter')
+    relevant_fields = ('assignee', 'bug_subscriber', 'owner', 'bug_commenter',
+                       'structural_subscriber')
     search_params = []
     for key in relevant_fields:
         # all these parameter default to None
@@ -945,11 +947,53 @@ class BugTask(SQLBase, BugTaskMixin):
         if new_status < BugTaskStatus.FIXRELEASED:
             self.date_fix_released = None
 
+    def userCanSetAnyAssignee(self, user):
+        """See `IBugTask`."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return user is not None and (
+            user.inTeam(self.pillar.bug_supervisor) or
+            user.inTeam(self.pillar.owner) or
+            user.inTeam(self.pillar.driver) or
+            (self.distroseries is not None and
+             user.inTeam(self.distroseries.driver)) or
+            (self.productseries is not None and
+             user.inTeam(self.productseries.driver)) or
+            user.inTeam(celebrities.admin)
+            or user == celebrities.bug_importer)
+
+    def userCanUnassign(self, user):
+        """True if user can set the assignee to None.
+
+        This option not shown for regular users unless they or their teams
+        are the assignees. Project owners, drivers, bug supervisors and
+        Launchpad admins can always unassign.
+        """
+        return user is not None and (
+            user.inTeam(self.assignee) or self.userCanSetAnyAssignee(user))
+
+    def canTransitionToAssignee(self, assignee):
+        """See `IBugTask`."""
+        # All users can assign and unassign themselves and their teams,
+        # but only project owners, bug supervisors, project/distribution
+        # drivers and Launchpad admins can assign others.
+        user = getUtility(ILaunchBag).user
+        return (
+            user is not None and (
+                user.inTeam(assignee) or
+                (assignee is None and self.userCanUnassign(user)) or
+                self.userCanSetAnyAssignee(user)))
+
     def transitionToAssignee(self, assignee):
         """See `IBugTask`."""
         if assignee == self.assignee:
             # No change to the assignee, so nothing to do.
             return
+
+        if not self.canTransitionToAssignee(assignee):
+            raise UserCannotEditBugTaskAssignee(
+                'Regular users can assign and unassign only themselves and '
+                'their teams. Only project owners, bug supervisors, drivers '
+                'and release managers can assign others.')
 
         now = datetime.datetime.now(pytz.UTC)
         if self.assignee and not assignee:
@@ -1001,8 +1045,8 @@ class BugTask(SQLBase, BugTaskMixin):
         # After the target has changed, we need to recalculate the maximum bug
         # heat for the new and old targets.
         if self.target != target_before_change:
-            target_before_change.recalculateMaxBugHeat()
-            self.target.recalculateMaxBugHeat()
+            target_before_change.recalculateBugHeatCache()
+            self.target.recalculateBugHeatCache()
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1598,6 +1642,48 @@ class BugTaskSet:
                     BugSubscription.person = %(personid)s""" %
                     sqlvalues(personid=params.subscriber.id))
 
+        if params.structural_subscriber is not None:
+            structural_subscriber_clause = ( """BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE BugTask.product = StructuralSubscription.product
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.distribution = StructuralSubscription.distribution
+                    AND BugTask.sourcepackagename =
+                        StructuralSubscription.sourcepackagename
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.distroseries = StructuralSubscription.distroseries
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.milestone = StructuralSubscription.milestone
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.productseries = StructuralSubscription.productseries
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription, Product
+                WHERE
+                    BugTask.product = Product.id
+                    AND Product.project = StructuralSubscription.project
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.distribution = StructuralSubscription.distribution
+                    AND StructuralSubscription.sourcepackagename is NULL
+                    AND StructuralSubscription.subscriber = %(personid)s)""" %
+                sqlvalues(personid=params.structural_subscriber))
+            extra_clauses.append(structural_subscriber_clause)
+
         if params.component:
             clauseTables += ["SourcePackagePublishingHistory",
                              "SourcePackageRelease"]
@@ -1746,6 +1832,11 @@ class BugTaskSet:
             # If no branch specific search restriction is specified,
             # we don't need to add any clause.
             pass
+
+        if params.modified_since:
+            extra_clauses.append(
+                "Bug.date_last_updated > %s" % (
+                    sqlvalues(params.modified_since,)))
 
         orderby_arg = self._processOrderBy(params)
 
@@ -1981,7 +2072,8 @@ class BugTaskSet:
 
     def search(self, params, *args):
         """See `IBugTaskSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store_selector = getUtility(IStoreSelector)
+        store = store_selector.get(MAIN_STORE, SLAVE_FLAVOR)
         query, clauseTables, orderby = self.buildQuery(params)
         if len(args) == 0:
             # Do normal prejoins, if we don't have to do any UNION
@@ -2173,7 +2265,7 @@ class BugTaskSet:
         transitionToStatus() method. See 'Conjoined Bug Tasks' in
         c.l.doc/bugtasks.txt.
 
-        Only bugtask the specified user has permission to view are
+        Only bugtasks the specified user has permission to view are
         returned. The Janitor celebrity has permission to view all bugs.
         """
         if bug is None:

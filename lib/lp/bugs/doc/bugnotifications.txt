@@ -17,7 +17,7 @@ be sent. To start with, let's login:
 
     >>> login("test@canonical.com")
 
-Here are the things that cause bug notifications to be add, and what
+Here are the things that cause bug notifications to be added and what
 those notifications look like.
 
 

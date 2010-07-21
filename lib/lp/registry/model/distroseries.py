@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -48,7 +48,6 @@ from lp.bugs.model.bug import (
 from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries, DistroArchSeriesSet, PocketChroot)
@@ -72,7 +71,8 @@ from lp.registry.model.person import Person
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
-    POTemplate)
+    POTemplate,
+    TranslationTemplatesCollection)
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from lp.soyuz.model.queue import PackageUpload, PackageUploadQueue
@@ -103,7 +103,6 @@ from lp.registry.model.structuralsubscription import (
 from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from lp.soyuz.interfaces.publishing import (
@@ -131,7 +130,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A particular series of a distribution."""
     implements(
         ICanPublishPackages, IDistroSeries, IHasBugHeat, IHasBuildRecords,
-        IHasQueueItems, IHasTranslationTemplates)
+        IHasQueueItems)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -216,6 +215,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def __getitem__(self, archtag):
         """See `IDistroSeries`."""
         return self.getDistroArchSeries(archtag)
+
+    def __str__(self):
+        return '%s %s' % (self.distribution.name, self.name)
 
     def getDistroArchSeries(self, archtag):
         """See `IDistroSeries`."""
@@ -324,21 +326,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         find_spec = (
             SourcePackageName,
             SQL("""
-                coalesce(total_heat, 0) + coalesce(po_messages, 0) +
+                coalesce(total_bug_heat, 0) + coalesce(po_messages, 0) +
                 CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END AS score"""),
-            SQL("coalesce(total_bugs, 0) AS total_bugs"),
+            SQL("coalesce(bug_count, 0) AS bug_count"),
             SQL("coalesce(total_messages, 0) AS total_messages"))
         joins, conditions = self._current_sourcepackage_joins_and_conditions
         origin = SQL(joins)
         condition = SQL(conditions + "AND packaging.id IS NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
-        results = results.order_by('score DESC')
+        results = results.order_by('score DESC', SourcePackageName.name)
         return [{
                  'package': SourcePackage(
                     sourcepackagename=spn, distroseries=self),
-                 'total_bugs': total_bugs,
+                 'bug_count': bug_count,
                  'total_messages': total_messages}
-                for (spn, score, total_bugs, total_messages) in results]
+                for (spn, score, bug_count, total_messages) in results]
 
     def getPrioritizedlPackagings(self):
         """See `IDistroSeries`.
@@ -357,7 +359,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SQL("""
                 CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END +
                     CASE WHEN Product.bugtracker IS NULL
-                        THEN coalesce(total_heat, 10) ELSE 0 END +
+                        THEN coalesce(total_bug_heat, 10) ELSE 0 END +
                     CASE WHEN ProductSeries.translations_autoimport_mode = 1
                         THEN coalesce(po_messages, 10) ELSE 0 END +
                     CASE WHEN ProductSeries.branch IS NULL THEN 500
@@ -371,7 +373,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """)
         condition = SQL(conditions + "AND packaging.id IS NOT NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
-        results = results.order_by('score DESC')
+        results = results.order_by('score DESC, SourcePackageName.name ASC')
         return [packaging
                 for (packaging, spn, series, product, score) in results]
 
@@ -381,29 +383,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Bugs and PO messages are heuristically scored. These queries
         # can easily timeout so filters and weights are used to create
         # an acceptable prioritization of packages that is fast to excecute.
-        bug_heat_filter = 200
         po_message_weight = .5
-        heat_score = ("""
-            LEFT JOIN (
-                SELECT
-                    BugTask.sourcepackagename,
-                    sum(Bug.heat) AS total_heat,
-                    count(Bug.id) AS total_bugs
-                FROM BugTask
-                    JOIN Bug
-                        ON bugtask.bug = Bug.id
-                WHERE
-                    BugTask.sourcepackagename is not NULL
-                    AND BugTask.distribution = %(distribution)s
-                    AND BugTask.status in %(statuses)s
-                    AND Bug.heat > %(bug_heat_filter)s
-                GROUP BY BugTask.sourcepackagename
-                ) bugs
-                ON SourcePackageName.id = bugs.sourcepackagename
-            """ % sqlvalues(
-                distribution=self.distribution,
-                statuses=UNRESOLVED_BUGTASK_STATUSES,
-                bug_heat_filter=bug_heat_filter))
         message_score = ("""
             LEFT JOIN (
                 SELECT
@@ -433,16 +413,22 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 ON spr.id = spph.sourcepackagerelease
             JOIN archive
                 ON spph.archive = Archive.id
+            JOIN section
+                ON spph.section = section.id
             JOIN DistroSeries
                 ON spph.distroseries = DistroSeries.id
             LEFT JOIN Packaging
                 ON SourcePackageName.id = Packaging.sourcepackagename
                 AND Packaging.distroseries = DistroSeries.id
-            """ + heat_score + message_score)
+            LEFT JOIN DistributionSourcePackage dsp
+                ON dsp.sourcepackagename = spr.sourcepackagename
+                    AND dsp.distribution = DistroSeries.distribution
+            """ + message_score)
         conditions = ("""
             DistroSeries.id = %(distroseries)s
             AND spph.status IN %(active_status)s
             AND archive.purpose = %(primary)s
+            AND section.name != 'translations'
             """ % sqlvalues(
                 distroseries=self,
                 active_status=active_publishing_status,
@@ -501,6 +487,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def bug_reporting_guidelines(self):
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
+
+    @property
+    def bug_reported_acknowledgement(self):
+        """See `IBugTarget`."""
+        return self.distribution.bug_reported_acknowledgement
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
@@ -1044,8 +1035,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         BinaryPackageRelease.binarypackagename =
             BinaryPackageName.id AND
         BinaryPackageRelease.build =
-            Build.id AND
-        Build.sourcepackagerelease =
+            BinaryPackageBuild.id AND
+        BinaryPackageBuild.source_package_release =
             SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename =
             SourcePackageName.id AND
@@ -1082,8 +1073,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = " AND ".join(query)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
-                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
-                        'SourcePackageRelease', 'SourcePackageName']
+                        'BinaryPackageRelease', 'BinaryPackageName',
+                        'BinaryPackageBuild', 'SourcePackageRelease',
+                        'SourcePackageName']
 
         result = BinaryPackagePublishingHistory.select(
             query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
@@ -1100,11 +1092,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 for pubrecord in result]
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
         """See IHasBuildRecords"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
-        # now).
+        # now). We also ignore binary_only and always return binaries.
 
         # Find out the distroarchseries in question.
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
@@ -1300,15 +1292,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         find_spec = (
             DistroSeriesPackageCache,
             BinaryPackageName,
-            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text))
-            )
+            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text)))
         origin = [
             DistroSeriesPackageCache,
             Join(
                 BinaryPackageName,
                 DistroSeriesPackageCache.binarypackagename ==
-                    BinaryPackageName.id
-                )
+                    BinaryPackageName.id),
             ]
 
         # Note: When attempting to convert the query below into straight
@@ -1322,7 +1312,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self),
                    quote(self.distribution.all_distro_archive_ids),
-                   quote(text), quote_like(text))
+                   quote(text), quote_like(text)),
             ).config(distinct=True)
 
         # Create a function that will decorate the results, converting
@@ -1882,40 +1872,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def main_archive(self):
         return self.distribution.main_archive
 
-    def getTranslationTemplates(self):
+    def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(distroseries=self,
-                                     orderBy=['-priority', 'name'])
-        return shortlist(result, 2000)
-
-    def getCurrentTranslationTemplates(self, just_ids=False):
-        """See `IHasTranslationTemplates`."""
-        store = Store.of(self)
-        if just_ids:
-            looking_for = POTemplate.id
-        else:
-            looking_for = POTemplate
-
-        # Select all current templates for this series, if the Product
-        # actually uses Launchpad Translations.  Otherwise, return an
-        # empty result.
-        result = store.find(looking_for, And(
-            self.distribution.official_rosetta == True,
-            POTemplate.iscurrent == True,
-            POTemplate.distroseries == self))
-        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
-
-    def getObsoleteTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            distroseries = %s AND
-            distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
-            ''' % sqlvalues(self),
-            clauseTables = ['DistroSeries', 'Distribution'],
-            orderBy=['-priority', 'name'])
-        return shortlist(result, 300)
+        return TranslationTemplatesCollection().restrictDistroSeries(self)
 
     def getSuite(self, pocket):
         """See `IDistroSeries`."""

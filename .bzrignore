@@ -67,3 +67,13 @@ lp-clustered.sfood
 lp-clustered.svg
 lp.sfood
 apidocs
+twistd.pid
+lib/canonical/launchpad/apidoc
+*.prof
+lib/canonical/launchpad-buildd_*.dsc
+lib/canonical/launchpad-buildd_*.tar.gz
+lib/canonical/launchpad-buildd_*_all.deb
+lib/canonical/launchpad-buildd_*.changes
+lib/canonical/launchpad-buildd_*_source.build
+lib/canonical/launchpad-buildd_*_source.changes
+lib/canonical/buildd/debian/*

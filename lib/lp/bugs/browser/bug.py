@@ -58,9 +58,10 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
 from lp.bugs.interfaces.bugnomination import IBugNominationSet
+from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
 
 from canonical.launchpad.mailnotification import (
-    MailWrapper, format_rfc2822_date)
+    MailWrapper)
 from canonical.launchpad.searchbuilder import any, greater_than
 from canonical.launchpad.webapp import (
     ContextMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
@@ -68,7 +69,7 @@ from canonical.launchpad.webapp import (
     custom_widget, redirection, stepthrough, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.tales import FormattersAPI
+from lp.app.browser.stringformatter import FormattersAPI
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.bug import BugTagsWidget
@@ -313,6 +314,8 @@ class MaloneView(LaunchpadFormView):
 
     # Test: standalone/xx-slash-malone-slash-bugs.txt
     error_message = None
+
+    page_title = 'Launchpad Bugs'
 
     @property
     def target_css_class(self):
@@ -668,7 +671,7 @@ class BugSecrecyEditView(BugEditViewBase):
 
     @property
     def label(self):
-        return 'Bug #%i - Set visiblity and security' % self.context.bug.id
+        return 'Bug #%i - Set visibility and security' % self.context.bug.id
 
     page_title = label
 
@@ -737,6 +740,7 @@ class DeprecatedAssignedBugsView:
     to put the assigned bugs report, we'll redirect to the appropriate
     FOAF URL.
     """
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -750,8 +754,10 @@ class DeprecatedAssignedBugsView:
 
 normalize_mime_type = re.compile(r'\s+')
 
+
 class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
+
     @cachedproperty
     def bugtasks(self):
         """Cache bugtasks and avoid hitting the DB twice."""
@@ -791,7 +797,13 @@ class BugTextView(LaunchpadView):
 
         text.append('attachments: ')
         for attachment in bug.attachments:
-            text.append(' %s' % self.attachment_text(attachment))
+            if attachment.type != BugAttachmentType.PATCH:
+                text.append(' %s' % self.attachment_text(attachment))
+
+        text.append('patches: ')
+        for attachment in bug.attachments:
+            if attachment.type == BugAttachmentType.PATCH:
+                text.append(' %s' % self.attachment_text(attachment))
 
         text.append('tags: %s' % ' '.join(bug.tags))
 
@@ -966,8 +978,10 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
 def bug_description_xhtml_representation(context, field, request):
     """Render `IBug.description` as XHTML using the webservice."""
     formatter = FormattersAPI
+
     def renderer(value):
-        nomail  = formatter(value).obfuscate_email()
-        html    = formatter(nomail).text_to_html()
+        nomail = formatter(value).obfuscate_email()
+        html = formatter(nomail).text_to_html()
         return html.encode('utf-8')
+
     return renderer

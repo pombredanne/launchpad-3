@@ -310,7 +310,7 @@ BranchSubscriptionNotificationLevel.
     ...     subscriber,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
-    ...     CodeReviewNotificationLevel.FULL)
+    ...     CodeReviewNotificationLevel.FULL, subscriber)
     >>> verifyObject(IBranchSubscription, subscription)
     True
     >>> subscription.branch == branch and subscription.person == subscriber
@@ -338,7 +338,7 @@ The settings for a subscription can be changed by re-subscribing.
     ...     subscriber,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
+    ...     CodeReviewNotificationLevel.NOEMAIL, subscriber)
     >>> subscription == subscription2
     True
     >>> subscription2.review_level == CodeReviewNotificationLevel.NOEMAIL
@@ -346,7 +346,7 @@ The settings for a subscription can be changed by re-subscribing.
 
     Unsubscribing is also supported.
 
-    >>> branch.unsubscribe(subscriber)
+    >>> branch.unsubscribe(subscriber, subscriber)
     >>> branch.subscribers.count()
     1
 
@@ -365,7 +365,7 @@ subscription.
     ...     subscriber,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
+    ...     CodeReviewNotificationLevel.NOEMAIL, subscriber)
 
     >>> print_names(branch2.getSubscriptionsByLevel([
     ...     BranchSubscriptionNotificationLevel.FULL]))

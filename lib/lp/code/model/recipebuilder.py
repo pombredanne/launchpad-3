@@ -15,7 +15,6 @@ from zope.interface import implements
 
 from canonical.config import config
 
-from lp.archiveuploader.permission import check_upload_to_pocket
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.interfaces.builder import CannotBuild
@@ -42,10 +41,9 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
 
     @property
     def display_name(self):
-        sp = self.build.distroseries.getSourcePackage(
-            self.build.sourcepackagename)
-        ret = "%s, %s" % (
-            sp.path, self.build.recipe.name)
+        ret = "%s, %s, %s" % (
+            self.build.distroseries.displayname, self.build.recipe.name,
+            self.build.recipe.owner.name)
         if self._builder is not None:
             ret += " (on %s)" % self._builder.url
         return ret
@@ -64,16 +62,15 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         if self.build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (self.build.pocket.name.lower())
         args['suite'] = suite
-        args["package_name"] = self.build.sourcepackagename.name
         args["author_name"] = self.build.requester.displayname
         args["author_email"] = self.build.requester.preferredemail.email
         args["recipe_text"] = str(self.build.recipe.builder_recipe)
         args['archive_purpose'] = self.build.archive.purpose.name
         args["ogrecomponent"] = get_primary_current_component(
             self.build.archive, self.build.distroseries,
-            self.build.sourcepackagename.name)
+            None)
         args['archives'] = get_sources_list_for_building(self.build,
-            distroarchseries, self.build.sourcepackagename.name)
+            distroarchseries, None)
 
         # config.builddmaster.bzr_builder_sources_list can contain a
         # sources.list entry for an archive that will contain a
@@ -91,9 +88,10 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
                 args['archives'].append(sources_line)
             except StandardError:
                 # Someone messed up the config, don't add it.
-                logger.error(
-                    "Exception processing bzr_builder_sources_list:\n%s"
-                    % traceback.format_exc())
+                if logger:
+                    logger.error(
+                        "Exception processing bzr_builder_sources_list:\n%s"
+                        % traceback.format_exc())
 
         args['distroseries_name'] = self.build.distroseries.name
         return args
@@ -154,12 +152,12 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         """
         build = self.build
         assert not (not self._builder.virtualized and build.is_virtualized), (
-            "Attempt to build non-virtual item on a virtual builder.")
+            "Attempt to build virtual item on a non-virtual builder.")
 
         # This should already have been checked earlier, but just check again
         # here in case of programmer errors.
-        reason = check_upload_to_pocket(
-            build.archive, build.distroseries, build.pocket)
+        reason = build.archive.checkUploadToPocket(
+            build.distroseries, build.pocket)
         assert reason is None, (
                 "%s (%s) can not be built for pocket %s: invalid pocket due "
                 "to the series status of %s." %

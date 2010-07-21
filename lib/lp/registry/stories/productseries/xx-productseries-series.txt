@@ -28,7 +28,7 @@ listed.
     >>> content = find_main_content(anon_browser.contents)
     >>> series_trunk = find_tag_by_id(content, 'series-trunk')
     >>> print extract_text(series_trunk)
-    trunk series focus of development
+    trunk series Focus of Development
     Milestones: 1.0    Releases: 0.9.2, 0.9.1, 0.9
     Bugs targeted: None
     Blueprints targeted: 1 Unknown

@@ -1,13 +1,12 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # arch-tag: 90e6eb79-83a2-47e8-9f8b-3c687079c923
 
 import unittest
 import sys
-import shutil
 
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
@@ -196,7 +195,7 @@ class TestUtilities(unittest.TestCase):
              " <zakame@ubuntu.com (Zak B. Elep)>",
              " <zakame@ubuntu.com (Zak B. Elep)>",
              "",
-             "zakame@ubuntu.com (Zak B. Elep)")
+             "zakame@ubuntu.com (Zak B. Elep)"),
              )
 
         for case in cases:
@@ -222,11 +221,13 @@ class TestUtilities(unittest.TestCase):
             except ParseMaintError:
                 pass
 
+
 def test_suite():
     suite = unittest.TestSuite()
     loader = unittest.TestLoader()
     suite.addTest(loader.loadTestsFromTestCase(TestUtilities))
     return suite
+
 
 def main(argv):
     suite = test_suite()
@@ -235,6 +236,6 @@ def main(argv):
         return 1
     return 0
 
+
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
-

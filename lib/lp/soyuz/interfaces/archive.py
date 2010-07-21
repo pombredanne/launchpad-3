@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -11,12 +11,16 @@ __all__ = [
     'ALLOW_RELEASE_BUILDS',
     'AlreadySubscribed',
     'ArchiveDependencyError',
+    'ArchiveDisabled',
     'ArchiveNotPrivate',
     'ArchivePurpose',
     'ArchiveStatus',
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',
+    'CannotRestrictArchitectures',
+    'CannotUploadToPPA',
+    'CannotUploadToPocket',
     'DistroSeriesNotFound',
     'IArchive',
     'IArchiveAppend',
@@ -26,10 +30,15 @@ __all__ = [
     'IArchivePublic',
     'IArchiveSet',
     'IDistributionArchive',
+    'InsufficientUploadRights',
     'InvalidComponent',
+    'InvalidPocketForPartnerArchive',
+    'InvalidPocketForPPA',
     'IPPA',
     'IPPAActivateForm',
     'MAIN_ARCHIVE_PURPOSES',
+    'NoRightsForArchive',
+    'NoRightsForComponent',
     'NoSuchPPA',
     'NoTokensForTeams',
     'PocketNotFound',
@@ -48,6 +57,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.processor import IProcessorFamily
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
@@ -131,6 +141,84 @@ class NoSuchPPA(NameLookupFailed):
 class VersionRequiresName(Exception):
     """Raised on some queries when version is specified but name is not."""
     webservice_error(400) # Bad request.
+
+
+class CannotRestrictArchitectures(Exception):
+    """The architectures for this archive can not be restricted."""
+
+
+class CannotUploadToArchive(Exception):
+    """A reason for not being able to upload to an archive."""
+    webservice_error(403) # Forbidden.
+
+    _fmt = '%(person)s has no upload rights to %(archive)s.'
+
+    def __init__(self, **args):
+        """Construct a `CannotUploadToArchive`."""
+        Exception.__init__(self, self._fmt % args)
+
+
+class InvalidPocketForPartnerArchive(CannotUploadToArchive):
+    """Partner archives only support some pockets."""
+
+    _fmt = "Partner uploads must be for the RELEASE or PROPOSED pocket."
+
+
+class CannotUploadToPocket(Exception):
+    """Returned when a pocket is closed for uploads."""
+
+    def __init__(self, distroseries, pocket):
+        Exception.__init__(self,
+            "Not permitted to upload to the %s pocket in a series in the "
+            "'%s' state." % (pocket.name, distroseries.status.name))
+
+
+class CannotUploadToPPA(CannotUploadToArchive):
+    """Raised when a person cannot upload to a PPA."""
+
+    _fmt = 'Signer has no upload rights to this PPA.'
+
+
+class NoRightsForArchive(CannotUploadToArchive):
+    """Raised when a person has absolutely no upload rights to an archive."""
+
+    _fmt = (
+        "The signer of this package has no upload rights to this "
+        "distribution's primary archive.  Did you mean to upload to "
+        "a PPA?")
+
+
+class InsufficientUploadRights(CannotUploadToArchive):
+    """Raised when a person has insufficient upload rights."""
+    _fmt = (
+        "The signer of this package is lacking the upload rights for "
+        "the source package, component or package set in question.")
+
+
+class NoRightsForComponent(CannotUploadToArchive):
+    """Raised when a person tries to upload to a component without permission.
+    """
+
+    _fmt = (
+        "Signer is not permitted to upload to the component '%(component)s'.")
+
+    def __init__(self, component):
+        CannotUploadToArchive.__init__(self, component=component.name)
+
+
+class InvalidPocketForPPA(CannotUploadToArchive):
+    """PPAs only support some pockets."""
+
+    _fmt = "PPA uploads must be for the RELEASE pocket."
+
+
+class ArchiveDisabled(CannotUploadToArchive):
+    """Uploading to a disabled archive is not allowed."""
+
+    _fmt = ("%(archive_name)s is disabled.")
+
+    def __init__(self, archive_name):
+        CannotUploadToArchive.__init__(self, archive_name=archive_name)
 
 
 class IArchivePublic(IHasOwner, IPrivacy):
@@ -286,8 +374,20 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!"))
 
-    arm_builds_allowed = Bool(
-        title=_("Allow ARM builds for this archive"))
+    enabled_restricted_families = CollectionField(
+            title=_("Restricted architecture families this archive can build "
+                    "on"),
+            value_type=Reference(schema=IProcessorFamily),
+            readonly=False)
+
+    commercial = exported(
+        Bool(
+            title=_("Commercial Archive"),
+            required=True,
+            description=_(
+                "Set if this archive is used for commercial purposes and "
+                "should appear in the Software Center listings.  The archive "
+                "must also be private if this is set.")))
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -343,11 +443,24 @@ class IArchivePublic(IHasOwner, IPrivacy):
         Person table indexes while searching.
         """
 
-    def findDepCandidateByName(distroarchseries, name):
-        """Return the last published binarypackage by given name.
+    def findDepCandidates(distro_arch_series, pocket, component,
+                          source_package_name, dep_name):
+        """Return matching binaries in this archive and its dependencies.
 
-        Return the PublishedPackage record by binarypackagename or None if
-        not found.
+        Return all published `IBinaryPackagePublishingHistory` records with
+        the given name, in this archive and dependencies as specified by the
+        given build context, using the usual archive dependency rules.
+
+        We can't just use the first, since there may be other versions
+        published in other dependency archives.
+
+        :param distro_arch_series: the context `IDistroArchSeries`.
+        :param pocket: the context `PackagePublishingPocket`.
+        :param component: the context `IComponent`.
+        :param source_package_name: the context source package name (as text).
+        :param dep_name: the name of the binary package to look up.
+        :return: a sequence of matching `IBinaryPackagePublishingHistory`
+            records.
         """
 
     def removeArchiveDependency(dependency):
@@ -380,7 +493,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: A list of `IArchivePermission` records.
         """
 
-    def canUpload(person, component_or_package=None):
+    def checkArchivePermission(person, component_or_package=None):
         """Check to see if person is allowed to upload to component.
 
         :param person: An `IPerson` whom should be checked for authentication.
@@ -393,6 +506,78 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :raise TypeError: If component_or_package is not one of
             `IComponent` or `ISourcePackageName`.
 
+        """
+
+    def canUploadSuiteSourcePackage(person, suitesourcepackage):
+        """Check if 'person' upload 'suitesourcepackage' to 'archive'.
+
+        :param person: An `IPerson` who might be uploading.
+        :param suitesourcepackage: An `ISuiteSourcePackage` to be uploaded.
+        :return: True if they can, False if they cannot.
+        """
+
+    def checkUploadToPocket(distroseries, pocket):
+        """Check if uploading to a particular pocket in an archive is possible.
+
+        :param distroseries: A `IDistroSeries`
+        :param pocket: A `PackagePublishingPocket`
+        :return: Reason why uploading is not possible or None
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        distroseries=Reference(
+            # Really IDistroSeries, avoiding a circular import here.
+            Interface,
+            title=_("The distro series"), required=True),
+        sourcepackagename=TextLine(
+            title=_("Source package name"), required=True),
+        component=TextLine(
+            title=_("Component"), required=True),
+        pocket=Choice(
+            title=_("Pocket"),
+            description=_("The pocket into which this entry is published"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        strict_component=Bool(
+            title=_("Strict component"), required=False)
+        )
+    @export_operation_as("checkUpload")
+    @export_read_operation()
+    def _checkUpload(person, distroseries, sourcepackagename, component,
+            pocket, strict_component=True):
+        """Wrapper around checkUpload for the web service API."""
+
+    def checkUpload(person, distroseries, sourcepackagename, component,
+                    pocket, strict_component=True):
+        """Check if 'person' upload 'suitesourcepackage' to 'archive'.
+
+        :param person: An `IPerson` who might be uploading.
+        :param distroseries: The `IDistroSeries` being uploaded to.
+        :param sourcepackagename: The `ISourcePackageName` being uploaded.
+        :param component: The `Component` being uploaded to.
+        :param pocket: The `PackagePublishingPocket` of 'distroseries' being
+            uploaded to.
+        :return: The reason for not being able to upload, None otherwise.
+        """
+
+    def verifyUpload(person, sourcepackagename, component,
+                      distroseries, strict_component=True):
+        """Can 'person' upload 'sourcepackagename' to this archive ?
+
+        :param person: The `IPerson` trying to upload to the package. Referred to
+            as 'the signer' in upload code.
+        :param sourcepackagename: The source package being uploaded. None if the
+            package is new.
+        :param archive: The `IArchive` being uploaded to.
+        :param component: The `IComponent` that the source package belongs to.
+        :param distroseries: The upload's target distro series.
+        :param strict_component: True if access to the specific component for the
+            package is needed to upload to it. If False, then access to any
+            package will do.
+        :return: CannotUploadToArchive if 'person' cannot upload to the archive,
+            None otherwise.
         """
 
     def canAdministerQueue(person, component):
@@ -464,24 +649,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
             archive's distribution.
 
         :return The new `IPackageCopyRequest`
-        """
-
-    # XXX: noodles 2009-03-02 bug=336779: This should be moved into
-    # IArchiveView once the archive permissions are updated to grant
-    # IArchiveView to archive subscribers.
-    def newAuthToken(person, token=None, date_created=None):
-        """Create a new authorisation token.
-
-        XXX: noodles 2009-03-12 bug=341600 This method should not be exposed
-        through the API as we do not yet check that the callsite has
-        launchpad.Edit on the person.
-
-        :param person: An IPerson whom this token is for
-        :param token: Optional unicode text to use as the token. One will be
-            generated if not given
-        :param date_created: Optional, defaults to now
-
-        :return: A new IArchiveAuthToken
         """
 
     @operation_parameters(
@@ -562,6 +729,13 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
         :return: `ArchivePermission` records for all the package sets that
             'person' is allowed to upload to.
+        """
+
+    def getComponentsForUploader(person):
+        """Return the components that 'person' can upload to this archive.
+
+        :param person: An `IPerson` wishing to upload to an archive.
+        :return: A `set` of `IComponent`s that 'person' can upload to.
         """
 
     @operation_parameters(
@@ -940,6 +1114,24 @@ class IArchiveView(IHasBuildRecords):
 
         :param source_files: A list of filenames to return SHA1s of
         :return: A dictionary of filenames and SHA1s.
+        """
+
+    def getAuthToken(person):
+        """Returns an IArchiveAuthToken for the archive in question for
+        IPerson provided.
+
+        :return: A IArchiveAuthToken, or None if the user has none.
+        """
+
+    def newAuthToken(person, token=None, date_created=None):
+        """Create a new authorisation token.
+
+        :param person: An IPerson whom this token is for
+        :param token: Optional unicode text to use as the token. One will be
+            generated if not given
+        :param date_created: Optional, defaults to now
+
+        :return: A new IArchiveAuthToken
         """
 
 class IArchiveAppend(Interface):
@@ -1377,6 +1569,14 @@ class IArchiveSet(Interface):
 
     def getPrivatePPAs():
         """Return a result set containing all private PPAs."""
+
+    def getCommercialPPAs():
+        """Return a result set containing all commercial PPAs.
+
+        Commercial PPAs are private, but explicitly flagged up as commercial
+        so that they are discoverable by people who wish to buy items
+        from them.
+        """
 
     def getPublicationsInArchives(source_package_name, archive_list,
                                   distribution):

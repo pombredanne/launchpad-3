@@ -24,12 +24,12 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from lazr.lifecycle.event import ObjectCreatedEvent
 
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.scripts.checkwatches.base import (
     WorkingBase, commit_before)
 from lp.bugs.scripts.checkwatches.utilities import (
     get_remote_system_oops_properties)
 from lp.registry.interfaces.person import PersonCreationRationale
-
 
 
 class BugWatchUpdater(WorkingBase):
@@ -40,26 +40,41 @@ class BugWatchUpdater(WorkingBase):
         self.bug_watch = bug_watch
         self.external_bugtracker = external_bugtracker
 
+        # We save these for the sake of error reporting.
+        self.remote_bug = self.bug_watch.remotebug
+        self.local_bug = self.bug_watch.bug.id
+        self.oops_properties = get_remote_system_oops_properties(
+            self.external_bugtracker)
+        self.oops_properties.extend([
+            ('URL', self.bug_watch.url),
+            ('bug_id', self.remote_bug),
+            ('local_ids', str(self.local_bug))])
+
+        self.can_import_comments = parent.can_import_comments
+        self.can_push_comments = parent.can_push_comments
+        self.can_back_link = parent.can_back_link
+
+    # XXX 2010-05-11 gmb bug=578714:
+    #     The last three parameters on this method aren't needed and
+    #     should be removed.
     @commit_before
     def updateBugWatch(self, new_remote_status, new_malone_status,
                        new_remote_importance, new_malone_importance,
-                       can_import_comments, can_push_comments, can_back_link,
-                       error, oops_id):
+                       can_import_comments=None, can_push_comments=None,
+                       can_back_link=None):
         """Update the BugWatch."""
         with self.transaction:
-            self.bug_watch.last_error_type = error
             if new_malone_status is not None:
                 self.bug_watch.updateStatus(
                     new_remote_status, new_malone_status)
             if new_malone_importance is not None:
                 self.bug_watch.updateImportance(
                     new_remote_importance, new_malone_importance)
-            # Only sync comments and backlink if there was no
-            # earlier error, the local bug isn't a duplicate,
-            # *and* if the bug watch is associated with a bug
-            # task. This helps us to avoid spamming upstream.
+            # Only sync comments and backlink if the local bug isn't a
+            # duplicate and the bug watch is associated with a bug task.
+            # This helps us to avoid spamming both upstream and
+            # ourselves.
             do_sync = (
-                error is None and
                 self.bug_watch.bug.duplicateof is None and
                 len(self.bug_watch.bugtasks) > 0
                 )
@@ -69,17 +84,35 @@ class BugWatchUpdater(WorkingBase):
         # throw an exception, *all* the watches in
         # self.bug_watches, even those that have not errored,
         # will have negative activity added.
+        error_message = None
+        error_status = None
+        oops_id = None
         if do_sync:
-            if can_import_comments:
-                self.importBugComments()
-            if can_push_comments:
-                self.pushBugComments()
-            if can_back_link:
-                self.linkLaunchpadBug()
+            try:
+                if can_import_comments or self.can_import_comments:
+                    error_status = (
+                        BugWatchActivityStatus.COMMENT_IMPORT_FAILED)
+                    self.importBugComments()
+                if can_push_comments or self.can_push_comments:
+                    error_status = BugWatchActivityStatus.COMMENT_PUSH_FAILED
+                    self.pushBugComments()
+                if can_back_link or self.can_back_link:
+                    error_status = BugWatchActivityStatus.BACKLINK_FAILED
+                    self.linkLaunchpadBug()
+            except Exception, ex:
+                error_message = str(ex)
+                oops_id = self.error(
+                    "Failure updating bug %r on %s (local bug: %s)." %
+                        (self.remote_bug, self.external_bugtracker.baseurl,
+                        self.local_bug),
+                    self.oops_properties)
+            else:
+                error_status = None
 
         with self.transaction:
             self.bug_watch.addActivity(
-                result=error, oops_id=oops_id)
+                result=error_status, message=error_message, oops_id=oops_id)
+            self.bug_watch.last_error_type = error_status
 
     @commit_before
     def importBugComments(self):

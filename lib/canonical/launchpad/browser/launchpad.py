@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
-    'ApplicationButtons',
     'DoesNotExistView',
     'Hierarchy',
     'IcingContribFolder',
@@ -17,12 +16,9 @@ __all__ = [
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
-    'MenuBox',
     'NavigationMenuTabs',
     'RDFIndexView',
     'SoftTimeoutView',
-    'StructuralHeaderPresentation',
-    'StructuralObjectPresentation',
     'get_launchpad_views',
     ]
 
@@ -45,7 +41,6 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
-from zope.traversing.interfaces import ITraversable
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -55,8 +50,7 @@ from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
-    IRosettaApplication, IStructuralHeaderPresentation,
-    IStructuralObjectPresentation)
+    IRosettaApplication)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
@@ -124,44 +118,6 @@ from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
 
 from lp.answers.interfaces.questioncollection import IQuestionSet
-
-
-class MenuBox(LaunchpadView):
-    """View class that helps its template render the actions menu box.
-
-    Nothing at all is rendered if there are no contextmenu items and also
-    no applicationmenu items.
-
-    If there is at least one item, the template is rendered.
-
-    The context may be another view, or a content object.
-    """
-
-    def initialize(self):
-        menuapi = MenuAPI(self.context)
-        # We are only interested on enabled links in non development mode.
-        self.contextmenuitems = sorted([
-            link for link in menuapi.context.values()
-            if link.enabled or config.devmode],
-            key=operator.attrgetter('sort_key'))
-        facet = menuapi.selectedfacetname()
-        if facet != 'unknown':
-            # XXX sinzui 2008-06-23 bug=242453:
-            # Why are we getting unknown? Bounties are borked. We need
-            # to end the facet hacks to get a clear state for the menus.
-            application_links = getattr(menuapi, facet).values()
-        else:
-            application_links = []
-        self.applicationmenuitems = sorted([
-            link for link in application_links
-            if link.enabled or config.devmode],
-            key=operator.attrgetter('sort_key'))
-
-    def render(self):
-        if (not self.contextmenuitems and not self.applicationmenuitems):
-            return u''
-        else:
-            return self.template()
 
 
 class NavigationMenuTabs(LaunchpadView):
@@ -405,7 +361,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = ''
-        text = 'Branches'
+        text = 'Code'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
@@ -762,13 +718,6 @@ class SoftTimeoutView(LaunchpadView):
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
 
 
-class ObjectForTemplate:
-
-    def __init__(self, **kw):
-        for name, value in kw.items():
-            setattr(self, name, value)
-
-
 class IcingFolder(ExportedFolder):
     """Export the Launchpad icing."""
 
@@ -838,146 +787,6 @@ class LaunchpadAPIDocFolder(ExportedFolder):
             return self, ('index.html', )
         else:
             return self, ()
-
-
-class StructuralHeaderPresentation:
-    """Base class for StructuralHeaderPresentation adapters."""
-
-    implements(IStructuralHeaderPresentation)
-
-    def __init__(self, context):
-        self.context = context
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        raise NotImplementedError()
-
-
-class StructuralObjectPresentation(StructuralHeaderPresentation):
-    """Base class for StructuralObjectPresentation adapters."""
-
-    implements(IStructuralObjectPresentation)
-
-    def listChildren(self, num):
-        return []
-
-    def countChildren(self):
-        raise NotImplementedError()
-
-    def listAltChildren(self, num):
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError()
-
-
-class Button:
-
-    def __init__(self, **kw):
-        assert len(kw) == 1
-        self.name = kw.keys()[0]
-        self.text = kw.values()[0]
-        self.replacement_dict = self.makeReplacementDict()
-
-    def makeReplacementDict(self):
-        return dict(
-            url=allvhosts.configs[self.name].rooturl,
-            buttonname=self.name,
-            text=self.text)
-
-    def renderActive(self):
-        return (
-            '<a href="%(url)s">\n'
-            '  <img'
-            '    width="64"'
-            '    height="64"'
-            '    alt="%(buttonname)s"'
-            '    src="/+icing/app-%(buttonname)s-sml-active.gif"'
-            '    title="%(text)s"'
-            '  />\n'
-            '</a>\n' % self.replacement_dict)
-
-    def renderInactive(self):
-        return (
-            '<a href="%(url)s">\n'
-            '  <img'
-            '    width="64"'
-            '    height="64"'
-            '    alt="%(buttonname)s"'
-            '    src="/+icing/app-%(buttonname)s-sml.gif"'
-            '    title="%(text)s"'
-            '  />\n'
-            '</a>\n' % self.replacement_dict)
-
-    def renderFrontPage(self):
-        return (
-            '<a href="%(url)s">\n'
-            '  <img'
-            '    width="146"'
-            '    height="146"'
-            '    alt="%(buttonname)s"'
-            '    src="/+icing/app-%(buttonname)s.gif"'
-            '    title="%(text)s"'
-            '  />\n'
-            '</a>\n' % self.replacement_dict)
-
-    def renderButton(self, is_active, is_front_page):
-        if (is_front_page):
-            return self.renderFrontPage()
-        elif is_active:
-            return self.renderActive()
-        else:
-            return self.renderInactive()
-
-
-class PeopleButton(Button):
-
-    def makeReplacementDict(self):
-        return dict(
-            url='%speople/' % allvhosts.configs['mainsite'].rooturl,
-            buttonname=self.name,
-            text=self.text)
-
-
-class ApplicationButtons(LaunchpadView):
-    """Those buttons that you get on the index pages."""
-
-    implements(ITraversable)
-
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
-        self.name = None
-
-    buttons = [
-        PeopleButton(people="Join thousands of people and teams collaborating"
-            " in software development."),
-        Button(code="Publish your code for people to merge and branch from."),
-        Button(bugs="Share bug reports and fixes."),
-        Button(blueprints="Track blueprints through approval and "
-            "implementation."),
-        Button(translations="Localize software into your favorite language."),
-        Button(answers="Ask and answer questions about software."),
-        ]
-
-    def render(self):
-        L = []
-        for button in self.buttons:
-            if self.name:
-                is_active = button.name == self.name
-            else:
-                is_active = True
-            is_front_page = self.name == 'main'
-            L.append(button.renderButton(is_active, is_front_page))
-        return u'\n'.join(L)
-
-    def traverse(self, name, furtherPath):
-        self.name = name
-        if furtherPath:
-            raise AssertionError(
-                'Max of one path item after +applicationbuttons')
-        return self
 
 
 class AppFrontPageSearchView(LaunchpadFormView):

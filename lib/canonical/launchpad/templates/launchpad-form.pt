@@ -102,13 +102,15 @@
       tal:define="field_name widget/context/__name__;
                   error python:view.getFieldError(field_name);
                   error_class python:error and 'error' or None;
-                  show_optional python:view.showOptionalMarker(field_name)">
+                  show_optional python:view.showOptionalMarker(field_name);
+                  widget_class widget/widget_class|nothing">
     <tal:is-visible condition="widget/visible">
       <tr
         tal:condition="python: view.isSingleLineLayout(field_name)"
         tal:attributes="class error_class"
       >
       <td colspan="2">
+      <div tal:attributes="class widget_class">
         <tal:block tal:condition="display_label|widget/display_label|python:True">
           <label tal:attributes="for widget/name"
                  tal:content="string:${widget/label}:">Label</label>
@@ -124,11 +126,13 @@
              tal:condition="widget/hint"
              tal:content="widget/hint">Some Help Text
           </p>
+      </div>
         </td>
       </tr>
       <tal:block condition="python: view.isMultiLineLayout(field_name)">
         <tr tal:attributes="class error_class">
           <td colspan="2" style="text-align: left">
+            <div tal:attributes="class widget_class">
             <tal:showlabel
               condition="display_label|widget/display_label|python:True"
             >
@@ -151,11 +155,13 @@
                tal:condition="widget/hint"
                tal:content="widget/hint">Some Help Text
             </p>
+            </div>
           </td>
         </tr>
       </tal:block>
       <tr tal:condition="python: view.isCheckBoxLayout(field_name)">
         <td tal:attributes="class error_class" colspan="2">
+        <div tal:attributes="class widget_class">
           <input type="checkbox" tal:replace="structure widget" />
           <label tal:attributes="for widget/name"
                  tal:content="widget/label">Label</label>
@@ -168,12 +174,16 @@
              tal:condition="widget/hint"
              tal:content="widget/hint">Some Help Text
           </p>
+        </div>
         </td>
       </tr>
     </tal:is-visible>
-    <tal:not-visible condition="not: widget/visible">
-      <tr>
-        <td tal:content="structure widget/hidden" />
+    <tal:not-visible
+      condition="not: widget/visible">
+      <tr
+        tal:define="markup widget/hidden"
+        tal:condition="markup">
+        <td tal:content="structure markup" />
       </tr>
     </tal:not-visible>
   </metal:macro>

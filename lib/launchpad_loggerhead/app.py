@@ -123,13 +123,25 @@ class RootApp:
         elif response.status == CANCEL:
             self.log.error('open id response: CANCEL')
             exc = HTTPUnauthorized()
-            exc.explanation = "Authetication cancelled."
+            exc.explanation = "Authentication cancelled."
             raise exc
         else:
             self.log.error('open id response: UNKNOWN')
             exc = HTTPUnauthorized()
             exc.explanation = "Unknown OpenID response."
             raise exc
+
+    def _logout(self, environ, start_response):
+        """Logout of loggerhead.
+
+        Clear the cookie and redirect to `next_to`.
+        """
+        environ[self.session_var].clear()
+        query = dict(parse_querystring(environ))
+        next_url = query.get('next_to')
+        if next_url is None:
+            next_url = allvhosts.configs['mainsite'].rooturl
+        raise HTTPMovedPermanently(next_url)
 
     def __call__(self, environ, start_response):
         environ['loggerhead.static.url'] = environ['SCRIPT_NAME']
@@ -142,6 +154,8 @@ class RootApp:
             return robots_app(environ, start_response)
         elif environ['PATH_INFO'].startswith('/+login'):
             return self._complete_login(environ, start_response)
+        elif environ['PATH_INFO'].startswith('/+logout'):
+            return self._logout(environ, start_response)
         path = environ['PATH_INFO']
         trailingSlashCount = len(path) - len(path.rstrip('/'))
         user = environ[self.session_var].get('user', LAUNCHPAD_ANONYMOUS)

@@ -6,12 +6,12 @@
   font-weight: bold;
   color: white;
 }
-.yui-console-entry..yui-console-entry-fail .yui-console-entry-cat {
+.yui-console-entry.yui-console-entry-fail .yui-console-entry-cat {
   background-color: red;
   font-weight: bold;
   color: white;
 }
-.yui-console-entry..yui-console-entry-ignore .yui-console-entry-cat {
+.yui-console-entry.yui-console-entry-ignore .yui-console-entry-cat {
   background-color: #666;
   font-weight: bold;
   color: white;

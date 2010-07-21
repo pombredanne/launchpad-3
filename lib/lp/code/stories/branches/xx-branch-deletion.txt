@@ -11,7 +11,7 @@ branches that have been created in error.
     >>> browser.getControl('Name').value = 'to-delete'
     >>> browser.getControl('Register Branch').click()
     >>> print browser.title
-    to-delete : Branches : Mozilla Firefox
+    to-delete : Code : Mozilla Firefox
 
 The newly created branch has an action 'Delete branch'.
 

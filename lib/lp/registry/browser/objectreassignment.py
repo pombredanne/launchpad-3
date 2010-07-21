@@ -111,13 +111,13 @@ class ObjectReassignmentView(LaunchpadFormView):
         if callable(self.callback):
             self.callback(self.context, oldOwner, newOwner)
 
-    def isValidOwner(self, newOwner):
+    def validateOwner(self, new_owner):
         """Check whether the new owner is acceptable for the context object.
 
-        If it's not acceptable, return False and assign an error message to
-        self.errormessage to inform the user.
+        If it's not acceptable, display an error by calling:
+          self.setFieldError(self.ownerOrMaintainerName, 'some error info')
         """
-        return True
+        pass
 
     def _validate(self, action, data):
         """Override _validate() method."""
@@ -179,5 +179,4 @@ class ObjectReassignmentView(LaunchpadFormView):
             owner = personset.newTeam(
                 self.user, owner_name, owner_name.capitalize())
 
-        if not self.isValidOwner(owner):
-            self.setFieldError(self.ownerOrMaintainerName, 'Invalid owner.')
+        self.validateOwner(owner)

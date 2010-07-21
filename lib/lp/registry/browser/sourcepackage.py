@@ -117,7 +117,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'distribution_source_package', 'edit_packaging', 'remove_packaging',
-        'changelog', 'builds', 'set_upstream',
+        'changelog', 'copyright', 'builds', 'set_upstream',
         ]
 
     def distribution_source_package(self):
@@ -128,6 +128,9 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')
+
+    def copyright(self):
+        return Link('+copyright', 'View copyright', icon='info')
 
     def edit_packaging(self):
         return Link('+edit-packaging', 'Change upstream link', icon='edit')
@@ -373,7 +376,7 @@ class SourcePackageView:
         all_arch = sorted([arch.architecturetag for arch in
                            self.context.distroseries.architectures])
         for bin in self.context.currentrelease.binaries:
-            distroarchseries = bin.build.distroarchseries
+            distroarchseries = bin.build.distro_arch_series
             if bin.name not in results:
                 results[bin.name] = []
 
@@ -439,6 +442,9 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
     custom_widget(
         'upstream', LaunchpadRadioWidget, orientation='vertical')
     product_suggestions = None
+    initial_focus_widget = None
+    max_suggestions = 9
+    other_upstream = object()
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -452,13 +458,18 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
         # term descriptions that include a link to the product.
         self.product_suggestions = []
         vocab_terms = []
-        for item in matches:
+        for item in matches[:self.max_suggestions]:
             product = item.value
             self.product_suggestions.append(product)
             item_url = canonical_url(product)
             description = """<a href="%s">%s</a>""" % (
                 item_url, escape(product.displayname))
             vocab_terms.append(SimpleTerm(product, product.name, description))
+        # Add an option to represent the user's decision to choose a
+        # different project. Note that project names cannot be uppercase.
+        description = 'Choose another upstream project'
+        vocab_terms.append(
+            SimpleTerm(self.other_upstream, 'OTHER_UPSTREAM', description))
         upstream_vocabulary = SimpleVocabulary(vocab_terms)
 
         self.form_fields = Fields(
@@ -471,6 +482,11 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
     @action('Link to Upstream Project', name='link')
     def link(self, action, data):
         upstream = data.get('upstream')
+        if upstream is self.other_upstream:
+            # The user wants to link to an alternate upstream project.
+            self.next_url = canonical_url(
+                self.context, view_name="+edit-packaging")
+            return
         self.context.setPackaging(upstream.development_focus, self.user)
         self.request.response.addInfoNotification(
             'The project %s was linked to this source package.' %

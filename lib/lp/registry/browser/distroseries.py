@@ -45,6 +45,7 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
@@ -370,8 +371,10 @@ class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
         'status' field. See `createStatusField` method.
         """
         LaunchpadEditFormView.setUpFields(self)
-        if not self.context.distribution.full_functionality:
-            # This is an IDerivativeDistribution which may set its status.
+        is_derivitive = not self.context.distribution.full_functionality
+        has_admin = check_permission('launchpad.Admin', self.context)
+        if has_admin or is_derivitive:
+            # The user is an admin or this is an IDerivativeDistribution.
             self.form_fields = (
                 self.form_fields + self.createStatusField())
 

@@ -80,12 +80,6 @@ information in the label.
     >>> view.search_results_count
     0
 
-The second step's page also includes some special things if the user is in the
-vcs_imports celebrity.  Foo Bar is in this team.
-
-    >>> view.isVCSImport()
-    True
-
 The second step also has a iterator over all the search results, of which
 there are currently none.
 
@@ -203,7 +197,52 @@ However, when a proprietary license is selected, a description is required.
     >>> from lp.testing.mail_helpers import print_emails
     >>> print_emails()
     From: Launchpad <noreply@launchpad.net>
-    To: feedback@launchpad.net
+    To: Foo Bar <foo.bar@canonical.com>
+    Subject: License information for badger in Launchpad
+    Hello name16,
+    <BLANKLINE>
+    You recently registered the project 'badger' in Launchpad
+    with this licensing:
+    <BLANKLINE>
+        Other/Proprietary.
+    <BLANKLINE>
+    Launchpad is a collaboration site that is free to use for projects
+    with an approved open source license.  When you registered your
+    project the list of licenses presented are the ones we automatically
+    recognize.
+    <BLANKLINE>
+    Other licenses must follow the guidelines we list on the following
+    page in order to be approved:
+    https://help.launchpad.net/Legal/ProjectLicensing
+    <BLANKLINE>
+    Further information is on our FAQ "Can closed-source or proprietary
+    projects use Launchpad?" which can be found at:
+    https://answers.launchpad.net/launchpad/+faq/208
+    <BLANKLINE>
+    If your project's licensing does not meet the guidelines we will
+    consider it "Proprietary" and mark it as such in Launchpad.
+    <BLANKLINE>
+    Proprietary projects can use Launchpad by purchasing a commercial-use
+    subscription which costs US$250/year/project.  Please follow the
+    instructions presented on your project overview page to purchase a
+    subscription voucher.  Feel free to contact me if you have any
+    questions.
+    <BLANKLINE>
+    Sometimes new projects are licensed as 'Other/Open Source' because the
+    licensing decisions have not yet been made.  If that is your situation we u=
+    rge
+    you to update the licensing in Launchpad as soon as you make that choice.
+    <BLANKLINE>
+    If the license for your project needs to be corrected you can do so by
+    following the 'Change Details' link on your project's overview page.
+    <BLANKLINE>
+    Thanks,
+    <BLANKLINE>
+    The Launchpad team.
+    <BLANKLINE>
+    ----------------------------------------
+    From: Launchpad <noreply@launchpad.net>
+    To: Commercial <commercial@launchpad.net>
     Subject: Project License Submitted for badger by name16
     Please review this project's licenses.
     http://launchpad.dev/badger
@@ -224,68 +263,6 @@ However, when a proprietary license is selected, a description is required.
     <BLANKLINE>
     License info:
         The Badger(tm) License
-    <BLANKLINE>
-    ----------------------------------------
-
-Similarly, when a non-standard open source license is chosen, the license
-details are required...
-
-    >>> form = {
-    ...     'field.displayname': 'Cougar',
-    ...     'field.name': 'cougar',
-    ...     'field.title': 'The Cougar',
-    ...     'field.summary': "There's the Cougar!",
-    ...     'field.licenses': ['OTHER_OPEN_SOURCE'],
-    ...     'field.license_info': '',
-    ...     'field.__visited_steps__': '%s|%s' % (
-    ...         ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
-    ...     'field.actions.continue': 'Continue',
-    ...     }
-    >>> request = LaunchpadTestRequest(form=form, method='POST')
-    >>> view = ProjectAddStepTwo(product_set, request)
-    >>> view.initialize()
-
-    >>> for error in view.errors:
-    ...     print error
-    A description of the "Other/Open Source" license you checked is required.
-
-...and when provided, an email is sent to feedback.
-
-    >>> form['field.license_info'] = 'The Free Cougar License'
-    >>> request = LaunchpadTestRequest(form=form, method='POST')
-    >>> view = ProjectAddStepTwo(product_set, request)
-    >>> view.initialize()
-    >>> view.errors
-    []
-
-    >>> print product_set.getByName('cougar').displayname
-    Cougar
-
-    >>> transaction.commit()
-    >>> from lp.testing.mail_helpers import print_emails
-    >>> print_emails()
-    From: Launchpad <noreply@launchpad.net>
-    To: feedback@launchpad.net
-    Subject: Project License Submitted for cougar by name16
-    Please review this project's licenses.
-    http://launchpad.dev/cougar
-    <BLANKLINE>
-    User: Foo Bar (name16)
-    <BLANKLINE>
-    <BLANKLINE>
-    Project Name: cougar
-    <BLANKLINE>
-    <BLANKLINE>
-    Project Summary:
-        There's the Cougar!
-    <BLANKLINE>
-    <BLANKLINE>
-    Licenses:
-        Other/Open Source
-    <BLANKLINE>
-    <BLANKLINE>
-    License info:
-        The Free Cougar License
     <BLANKLINE>
     ----------------------------------------
 

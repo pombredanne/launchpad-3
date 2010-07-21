@@ -287,7 +287,7 @@ class QueueAction:
                 self.display(
                     "\t | %s %s/%s/%s Component: %s Section: %s Priority: %s"
                     % (status_flag, bpr.name, bpr.version,
-                       bpr.build.distroarchseries.architecturetag,
+                       bpr.build.distro_arch_series.architecturetag,
                        bpr.component.name, bpr.section.name,
                        bpr.priority.name))
 
@@ -618,7 +618,7 @@ class QueueActionOverride(QueueAction):
                 # See if the new component requires a new archive on the
                 # build:
                 if component:
-                    distroarchseries = build.build.distroarchseries
+                    distroarchseries = build.build.distro_arch_series
                     distribution = distroarchseries.distroseries.distribution
                     new_archive = distribution.getArchiveByComponent(
                         self.component_name)

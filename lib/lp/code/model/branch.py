@@ -45,6 +45,8 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
+from lp.app.errors import UserCannotUnsubscribePerson
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
     BranchFormat, ControlFormat, CURRENT_BRANCH_FORMATS,
     CURRENT_REPOSITORY_FORMATS, RepositoryFormat)
@@ -244,6 +246,17 @@ class Branch(SQLBase, BzrIdentityMixin):
         'Bug', joinColumn='branch', otherColumn='bug',
         intermediateTable='BugBranch', orderBy='id')
 
+    def getLinkedBugsAndTasks(self):
+        """Return a result set for the bugs with their tasks."""
+        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bugbranch import BugBranch
+        from lp.bugs.model.bugtask import BugTask
+        return Store.of(self).find(
+            (Bug, BugTask),
+            BugBranch.branch == self,
+            BugBranch.bug == Bug.id,
+            BugTask.bug == Bug.id)
+
     def linkBug(self, bug, registrant):
         """See `IBranch`."""
         return bug.linkBranch(self, registrant)
@@ -438,7 +451,7 @@ class Branch(SQLBase, BzrIdentityMixin):
     @property
     def code_is_browseable(self):
         """See `IBranch`."""
-        return (self.revision_count > 0  or self.last_mirrored != None)
+        return (self.revision_count > 0 or self.last_mirrored != None)
 
     def codebrowse_url(self, *extras):
         """See `IBranch`."""
@@ -659,7 +672,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
-                  code_review_level):
+                  code_review_level, subscribed_by):
         """See `IBranch`."""
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
@@ -668,7 +681,8 @@ class Branch(SQLBase, BzrIdentityMixin):
             subscription = BranchSubscription(
                 branch=self, person=person,
                 notification_level=notification_level,
-                max_diff_lines=max_diff_lines, review_level=code_review_level)
+                max_diff_lines=max_diff_lines, review_level=code_review_level,
+                subscribed_by=subscribed_by)
             Store.of(subscription).flush()
         else:
             subscription.notification_level = notification_level
@@ -701,12 +715,19 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return self.getSubscription(person) is not None
 
-    def unsubscribe(self, person):
+    def unsubscribe(self, person, unsubscribed_by):
         """See `IBranch`."""
         subscription = self.getSubscription(person)
+        if subscription is None:
+            # Silent success seems order of the day (like bugs).
+            return
+        if not subscription.canBeUnsubscribedByUser(unsubscribed_by):
+            raise UserCannotUnsubscribePerson(
+                '%s does not have permission to unsubscribe %s.' % (
+                    unsubscribed_by.displayname,
+                    person.displayname))
         store = Store.of(subscription)
-        assert subscription is not None, "User is not subscribed."
-        BranchSubscription.delete(subscription.id)
+        store.remove(subscription)
         store.flush()
 
     def getBranchRevision(self, sequence=None, revision=None,
@@ -870,19 +891,18 @@ class Branch(SQLBase, BzrIdentityMixin):
             prefix = config.launchpad.bzr_imports_root_url
             return urlappend(prefix, '%08x' % self.id)
         else:
-            raise AssertionError("No pull URL for %r" % (self,))
+            raise AssertionError("No pull URL for %r" % (self, ))
 
     def requestMirror(self):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
             raise BranchTypeError(self.unique_name)
-        from canonical.launchpad.interfaces import IStore
-        IStore(self).find(
+        branch = Store.of(self).find(
             Branch,
             Branch.id == self.id,
             Or(Branch.next_mirror_time > UTC_NOW,
-               Branch.next_mirror_time == None)
-            ).set(next_mirror_time=UTC_NOW)
+               Branch.next_mirror_time == None))
+        branch.set(next_mirror_time=UTC_NOW)
         self.next_mirror_time = AutoReload
         return self.next_mirror_time
 
@@ -897,7 +917,7 @@ class Branch(SQLBase, BzrIdentityMixin):
                       control_format, branch_format, repository_format):
         """See `IBranch`."""
         self.mirror_status_message = None
-        if stacked_on_location == '':
+        if stacked_on_location == '' or stacked_on_location is None:
             stacked_on_branch = None
         else:
             stacked_on_branch = getUtility(IBranchLookup).getByUniqueName(
@@ -944,31 +964,45 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return self.destroySelf(break_references=True)
 
+    def _deleteBranchSubscriptions(self):
+        """Delete subscriptions for this branch prior to deleting branch."""
+        subscriptions = Store.of(self).find(
+            BranchSubscription, BranchSubscription.branch == self)
+        subscriptions.remove()
+
+    def _deleteJobs(self):
+        """Delete jobs for this branch prior to deleting branch.
+
+        This deletion includes `BranchJob`s associated with the branch,
+        as well as `BuildQueue` entries for `TranslationTemplateBuildJob`s.
+        """
+        # Avoid circular imports.
+        from lp.code.model.branchjob import BranchJob
+
+        store = Store.of(self)
+        affected_jobs = Select(
+            [BranchJob.jobID],
+            And(BranchJob.job == Job.id, BranchJob.branch == self))
+
+        # Delete BuildQueue entries for affected Jobs.  They would pin
+        # the affected Jobs in the database otherwise.
+        store.find(BuildQueue, BuildQueue.jobID.is_in(affected_jobs)).remove()
+
+        # Delete Jobs.  Their BranchJobs cascade along in the database.
+        store.find(Job, Job.id.is_in(affected_jobs)).remove()
+
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
-        from lp.code.model.branchjob import BranchJob
         from lp.code.interfaces.branchjob import IReclaimBranchSpaceJobSource
         if break_references:
             self._breakReferences()
         if not self.canBeDeleted():
             raise CannotDeleteBranch(
                 "Cannot delete branch: %s" % self.unique_name)
-        # BranchRevisions are taken care of a cascading delete
-        # in the database.
-        store = Store.of(self)
-        # Delete the branch subscriptions.
-        subscriptions = store.find(
-            BranchSubscription, BranchSubscription.branch == self)
-        subscriptions.remove()
-        # Delete any linked jobs.
-        # Using a sub-select here as joins in delete statements is not
-        # valid standard sql.
-        jobs = store.find(
-            Job,
-            Job.id.is_in(Select([BranchJob.jobID],
-                                And(BranchJob.job == Job.id,
-                                    BranchJob.branch == self))))
-        jobs.remove()
+
+        self._deleteBranchSubscriptions()
+        self._deleteJobs()
+
         # Now destroy the branch.
         branch_id = self.id
         SQLBase.destroySelf(self)
@@ -977,8 +1011,10 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def commitsForDays(self, since):
         """See `IBranch`."""
+
         class DateTrunc(NamedFunc):
             name = "date_trunc"
+
         results = Store.of(self).find(
             (DateTrunc('day', Revision.revision_date), Count(Revision.id)),
             Revision.id == BranchRevision.revisionID,
@@ -1060,6 +1096,7 @@ class DeletionOperation:
     def __init__(self, affected_object, rationale):
         self.affected_object = ProxyFactory(affected_object)
         self.rationale = rationale
+
     def __call__(self):
         """Perform the deletion operation."""
         raise NotImplementedError(DeletionOperation.__call__)
@@ -1141,7 +1178,7 @@ class DeleteCodeImport(DeletionOperation):
 
     def __init__(self, code_import):
         DeletionOperation.__init__(
-            self, code_import, _( 'This is the import data for this branch.'))
+            self, code_import, _('This is the import data for this branch.'))
 
     def __call__(self):
         from lp.code.model.codeimport import CodeImportSet
@@ -1205,18 +1242,6 @@ class BranchSet:
         if branch_count is not None:
             branches.config(limit=branch_count)
         return branches
-
-    def getLatestBranchesForProduct(self, product, quantity,
-                                    visible_by_user=None):
-        """See `IBranchSet`."""
-        assert product is not None, "Must have a valid product."
-        all_branches = getUtility(IAllBranches)
-        latest = all_branches.visibleByUser(visible_by_user).inProduct(
-            product).withLifecycleStatus(*DEFAULT_BRANCH_STATUS_IN_LISTING)
-        latest_branches = latest.getBranches().order_by(
-            Desc(Branch.date_created), Desc(Branch.id))
-        latest_branches.config(limit=quantity)
-        return latest_branches
 
     def getByUniqueName(self, unique_name):
         """See `IBranchSet`."""

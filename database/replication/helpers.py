@@ -44,7 +44,6 @@ LPMAIN_SEED = frozenset([
     ('public', 'nameblacklist'),
     ('public', 'openidconsumerassociation'),
     ('public', 'openidconsumernonce'),
-    ('public', 'oauthnonce'),
     ('public', 'codeimportmachine'),
     ('public', 'scriptactivity'),
     ('public', 'standardshipitrequest'),
@@ -68,6 +67,11 @@ IGNORED_TABLES = set([
     'public.lp_person',
     'public.lp_personlocation',
     'public.lp_teamparticipation',
+    # Database statistics
+    'public.databasetablestats',
+    'public.databasecpustats',
+    # Don't replicate OAuthNonce - too busy and no real gain.
+    'public.oauthnonce',
     # Ubuntu SSO database. These tables where created manually by ISD
     # and the Launchpad scripts should not mess with them. Eventually
     # these tables will be in a totally separate database.
@@ -350,6 +354,9 @@ def calculate_replication_set(cur, seeds):
 
     A replication set must contain all tables linked by foreign key
     reference to the given table, and sequences used to generate keys.
+    Tables and sequences can be added to the IGNORED_TABLES and
+    IGNORED_SEQUENCES lists for cases where we known can safely ignore
+    this restriction.
 
     :param seeds: [(namespace, tablename), ...]
 
@@ -417,7 +424,8 @@ def calculate_replication_set(cur, seeds):
             """ % sqlvalues(namespace, tablename))
         for namespace, tablename in cur.fetchall():
             key = (namespace, tablename)
-            if key not in tables and key not in pending_tables:
+            if (key not in tables and key not in pending_tables
+                and '%s.%s' % (namespace, tablename) not in IGNORED_TABLES):
                 pending_tables.add(key)
 
     # Generate the set of sequences that are linked to any of our set of
@@ -438,8 +446,9 @@ def calculate_replication_set(cur, seeds):
                 ) AS whatever
             WHERE seq IS NOT NULL;
             """ % sqlvalues(fqn(namespace, tablename), namespace, tablename))
-        for row in cur.fetchall():
-            sequences.add(row[0])
+        for sequence, in cur.fetchall():
+            if sequence not in IGNORED_SEQUENCES:
+                sequences.add(sequence)
 
     # We can't easily convert the sequence name to (namespace, name) tuples,
     # so we might as well convert the tables to dot notation for consistancy.

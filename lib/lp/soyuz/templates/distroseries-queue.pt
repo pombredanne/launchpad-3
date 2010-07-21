@@ -284,6 +284,20 @@
         <td colspan="6"/>
       </tr>
     </tal:custom>
+
+    <tal:diffs condition="packageupload/sourcepackagerelease">
+      <tr tal:define="diffs packageupload/sourcepackagerelease/package_diffs"
+          tal:repeat="diff diffs"
+          tal:attributes="class string:${filelist_class}"
+          style="display:none">
+        <td/>
+        <td tal:condition="view/availableActions"></td>
+        <td>
+          <tal:difflink replace="structure diff/fmt:link" />
+        </td>
+        <td colspan="6"/>
+      </tr>
+    </tal:diffs>
     </tal:upload>
 
 </metal:macro>

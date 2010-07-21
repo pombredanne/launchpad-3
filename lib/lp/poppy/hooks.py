@@ -21,13 +21,14 @@ class Hooks:
     clients = {}
 
     def __init__(self, targetpath, logger, allow_user, cmd=None,
-                 targetstart=0, perms=None):
+                 targetstart=0, perms=None, prefix=''):
         self.targetpath = targetpath
         self.logger = logging.getLogger("%s.Hooks" % logger.name)
         self.cmd = cmd
         self.allow_user = allow_user
         self.targetcount = targetstart
         self.perms = perms
+        self.prefix = prefix
 
     def new_client_hook(self, fsroot, host, port):
         """Prepare a new client record indexed by fsroot..."""
@@ -81,7 +82,8 @@ class Hooks:
         try:
             self.targetcount += 1
             timestamp = time.strftime("%Y%m%d-%H%M%S")
-            path = "upload-%s-%06d" % (timestamp, self.targetcount)
+            path = "upload%s-%s-%06d" % (
+                self.prefix, timestamp, self.targetcount)
             target_fsroot = os.path.join(self.targetpath, path)
 
             # Create file to store the distro used.

@@ -1,19 +1,15 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the permissions for uploading to an archive."""
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import DatabaseFunctionalLayer
 
-from lp.archiveuploader.permission import (
-    check_upload_to_archive, components_valid_for)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -29,21 +25,22 @@ class TestComponents(TestCaseWithFactory):
         # By default, a person cannot upload to any component of an archive.
         archive = self.factory.makeArchive()
         person = self.factory.makePerson()
-        self.assertEqual(set(), components_valid_for(archive, person))
+        self.assertEqual(set(),
+            set(archive.getComponentsForUploader(person)))
 
     def test_components_for_person_with_permissions(self):
         # If a person has been explicitly granted upload permissions to a
         # particular component, then those components are included in
-        # components_valid_for.
+        # IArchive.getComponentsForUploader.
         archive = self.factory.makeArchive()
         component = self.factory.makeComponent()
         person = self.factory.makePerson()
         # Only admins or techboard members can add permissions normally. That
         # restriction isn't relevant to this test.
         ap_set = removeSecurityProxy(getUtility(IArchivePermissionSet))
-        ap_set.newComponentUploader(archive, person, component)
-        self.assertEqual(
-            set([component]), components_valid_for(archive, person))
+        ap = ap_set.newComponentUploader(archive, person, component)
+        self.assertEqual(set([ap]),
+            set(archive.getComponentsForUploader(person)))
 
 
 class TestPermission(TestCaseWithFactory):
@@ -67,8 +64,8 @@ class TestPermission(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         self.assertIs(
             None,
-            check_upload_to_archive(
-                person, distroseries, spn, archive, component, pocket,
+            archive.checkUpload(
+                person, distroseries, spn, component, pocket,
                 strict_component))
 
     def assertCannotUpload(self, reason, person, spn, archive, component,
@@ -87,8 +84,8 @@ class TestPermission(TestCaseWithFactory):
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
         pocket = PackagePublishingPocket.RELEASE
-        exception = check_upload_to_archive(
-            person, distroseries, spn, archive, component, pocket)
+        exception = archive.checkUpload(
+            person, distroseries, spn, component, pocket)
         self.assertEqual(reason, str(exception))
 
     def test_random_person_cannot_upload_to_ppa(self):
@@ -137,9 +134,8 @@ class TestPermission(TestCaseWithFactory):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         spn = self.factory.makeSourcePackageName()
         self.assertCannotUpload(
-            ("The signer of this package has no upload rights to this "
-             "distribution's primary archive.  Did you mean to upload to "
-             "a PPA?"),
+            ("The signer of this package is lacking the upload rights for "
+             "the source package, component or package set in question."),
             person, spn, archive, None)
 
     def test_package_specific_rights(self):
@@ -244,7 +240,3 @@ class TestPermission(TestCaseWithFactory):
         component = self.factory.makeComponent()
         self.assertCannotUpload(u"%s is disabled." % (archive.displayname),
             archive.owner, spn, archive, component)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

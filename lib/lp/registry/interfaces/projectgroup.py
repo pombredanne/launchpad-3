@@ -261,6 +261,16 @@ class IProjectGroupPublic(
             required=False,
             max_length=50000))
 
+    bug_reported_acknowledgement = exported(
+        Text(
+            title=(
+                u"After reporting a bug, I can expect the following."),
+            description=(
+                u"This message of acknowledgement will be displayed "
+                "to anyone after reporting a bug."),
+            required=False,
+            max_length=50000))
+
     def getProduct(name):
         """Get a product with name `name`."""
 

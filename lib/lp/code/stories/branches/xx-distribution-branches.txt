@@ -23,7 +23,7 @@ The code tab is now enabled at the distribution level.
 
     >>> print_location_apps(browser.contents)
     * Overview (selected) ...
-    * Branches - http://code.launchpad.dev/mint
+    * Code - http://code.launchpad.dev/mint
     ...
 
 Going to this page shows us a listing ordered by most recently changed first.

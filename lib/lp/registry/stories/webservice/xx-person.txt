@@ -39,7 +39,6 @@ for teams (as they're defined in the ITeam interface).
     name: u'salgado'
     open_membership_invitations_collection_link: u'http://.../~salgado/open_membership_invitations'
     participants_collection_link: u'http://.../~salgado/participants'
-    pending_gpg_keys_collection_link: u'http://.../~salgado/pending_gpg_keys'
     ppas_collection_link: u'http://.../~salgado/ppas'
     preferred_email_address_link: u'http://.../~salgado/+email/guilherme.salgado@canonical.com'
     private: False
@@ -89,7 +88,6 @@ for teams (as they're defined in the ITeam interface).
     name: u'ubuntu-team'
     open_membership_invitations_collection_link: u'http://.../~ubuntu-team/open_membership_invitations'
     participants_collection_link: u'http://.../~ubuntu-team/participants'
-    pending_gpg_keys_collection_link: u'http://.../~ubuntu-team/pending_gpg_keys'
     ppas_collection_link: u'http://.../~ubuntu-team/ppas'
     preferred_email_address_link: u'http://.../~ubuntu-team/+email/support@ubuntu.com'
     private: False
@@ -639,6 +637,36 @@ all the URLs to the private archives that the person can access.
 == Custom operations ==
 
 IPerson supports a bunch of operations.
+
+Teams can subscribe to source packages:
+
+    >>> login('admin@canonical.com')
+    >>> pythons_db = factory.makeTeam(name='pythons')
+    >>> package_db = factory.makeDistributionSourcePackage(
+    ...     sourcepackagename="fooix")
+    >>> ignored = package_db.addSubscription(None, pythons_db)
+    >>> logout()
+
+Subscribed packages can be listed with getBugSubscriberPackages:
+
+    >>> from lazr.restful.testing.webservice import pprint_collection
+    >>> subscriptions = webservice.named_get("/~pythons",
+    ...     "getBugSubscriberPackages").jsonBody()
+    >>> pprint_collection(subscriptions)
+    start: 0
+    total_size: 1
+    ---
+    bug_reported_acknowledgement: None
+    bug_reporting_guidelines: None
+    display_name: u'...'
+    distribution_link: u'...'
+    name: u'fooix'
+    official_bug_tags: []
+    resource_type_link: u'...'
+    self_link: u'...'
+    title: u'...'
+    upstream_product_link: None
+    ---
 
 
 === Team membership operations ===

@@ -118,15 +118,16 @@ def getSourcePackageDescriptions(
     cur = cursor()
     cur.execute("""SELECT DISTINCT BinaryPackageName.name,
                           SourcePackageName.name
-                     FROM BinaryPackageRelease, SourcePackageName, Build,
-                          SourcePackageRelease, BinaryPackageName
+                     FROM BinaryPackageRelease, SourcePackageName,
+                          BinaryPackageBuild, SourcePackageRelease,
+                          BinaryPackageName
                     WHERE
                        BinaryPackageName.id =
                            BinaryPackageRelease.binarypackagename AND
-                       BinaryPackageRelease.build = Build.id AND
+                       BinaryPackageRelease.build = BinaryPackageBuild.id AND
                        SourcePackageRelease.sourcepackagename =
                            SourcePackageName.id AND
-                       Build.sourcepackagerelease =
+                       BinaryPackageBuild.source_package_release =
                            SourcePackageRelease.id AND
                        %s
                    ORDER BY BinaryPackageName.name,

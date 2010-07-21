@@ -6,9 +6,11 @@
 __metaclass__ = type
 __all__ = []
 
+import transaction
+
 from canonical.launchpad.windmill.testing import constants, lpuser
 from lp.translations.windmill.testing import TranslationsWindmillLayer
-from lp.testing import WindmillTestCase
+from lp.testing import login, logout, WindmillTestCase
 
 
 class POFileNewTranslationFieldKeybindings(WindmillTestCase):
@@ -81,6 +83,150 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
                                        '_translation_0_new_select')
         self._checkTranslationAutoselect(
             start_url, new_translation_id, new_translation_select_id)
+
+
+class POFileTranslationActions(WindmillTestCase):
+    """Tests for actions that can be done on a translation message."""
+
+    layer = TranslationsWindmillLayer
+    suite_name = 'POFile Translation Actions'
+
+    def test_dismiss_uncheck_force_suggestion(self):
+        """Test the unchecking of force suggestion on dismissal.
+
+        Checking the dismiss all suggestions checkbox will uncheck a
+        previously ticked checkbox that forces submitting the current
+        translation as a suggestion.
+        """
+
+        self.test_user = lpuser.TRANSLATIONS_ADMIN
+        # Test the zoom out view for Evolution trunk Spanish (es).
+        url = ('http://translations.launchpad.dev:8085/'
+                        'evolution/trunk/+pots/evolution-2.2/es/5/+translate')
+        dismiss_id = u'msgset_5_dismiss'
+        force_suggestion_id = u'msgset_5_force_suggestion'
+
+        # Go to the translation page.
+        self.client.open(url=url)
+        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        self.test_user.ensure_login(self.client)
+        self.client.waits.forElement(
+            id=dismiss_id, timeout=constants.FOR_ELEMENT)
+        self.client.waits.forElement(
+            id=force_suggestion_id, timeout=constants.FOR_ELEMENT)
+
+        # Check that initially the checkboxes are not selected.
+        self.client.asserts.assertNotChecked(id=dismiss_id)
+        self.client.asserts.assertNotChecked(id=force_suggestion_id)
+
+        # Click the force suggestion checkbox and verify that it is checked.
+        self.client.click(id=force_suggestion_id)
+        self.client.asserts.assertChecked(id=force_suggestion_id)
+
+        self.client.click(id=dismiss_id)
+        self.client.asserts.assertChecked(id=dismiss_id)
+        self.client.asserts.assertNotChecked(id=force_suggestion_id)
+
+    def test_diverge_and_force_suggestion_mutual_exclusion(self):
+        """Test the mutual exclusion of diverge and force suggestion.
+
+        Diverge current translation and force suggestion checkbox can not
+        be enabled at the same time. Checking one option will disable the
+        other.
+
+        If suggestions are dismissed, unchecking the diverge checkbox will
+        keep the force suggesion disabled.
+        """
+
+        self.test_user = lpuser.TRANSLATIONS_ADMIN
+        # Test the zoom out view for Evolution trunk Spanish (es).
+
+        login('admin@canonical.com')
+        pofile = self.factory.makePOFile('pt_BR')
+        potemplate = pofile.potemplate
+        potmsgset = self.factory.makePOTMsgSet(potemplate)
+        potmsgset.setSequence(potemplate, 1)
+        potmsgset_id = potmsgset.id
+
+        current_translation = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, translations=['current'])
+        transaction.commit()
+        suggestion = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset,
+            translations=['suggestion'], suggestion=True)
+        transaction.commit()
+        logout()
+
+        url = ('http://translations.launchpad.dev:8085/'
+                        '%s/%s/+pots/%s/pt_BR/1/+translate' % (
+                        potemplate.product.name,
+                        potemplate.productseries.name,
+                        potemplate.name))
+
+        dismiss_id = u'msgset_%s_dismiss' % potmsgset_id
+        force_suggestion_id = u'msgset_%s_force_suggestion' % potmsgset_id
+        diverge_id = u'msgset_%s_diverge' % potmsgset_id
+
+        # Go to the translation page.
+        self.client.open(url=url)
+        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        self.test_user.ensure_login(self.client)
+        self.client.waits.forElement(
+            id=dismiss_id, timeout=constants.FOR_ELEMENT)
+        self.client.waits.forElement(
+            id=force_suggestion_id, timeout=constants.FOR_ELEMENT)
+        self.client.waits.forElement(
+            id=diverge_id, timeout=constants.FOR_ELEMENT)
+
+        # Check that initialy the checkboxes are not selected.
+        self.client.asserts.assertNotChecked(id=dismiss_id)
+        self.client.asserts.assertNotChecked(id=force_suggestion_id)
+        self.client.asserts.assertNotChecked(id=diverge_id)
+
+        # Test the diverge translation checking and unchecking.
+        self.client.click(id=diverge_id)
+        self.client.asserts.assertChecked(id=diverge_id)
+        self.client.asserts.assertNotChecked(id=force_suggestion_id)
+        self.client.asserts.assertNotChecked(id=dismiss_id)
+        self.client.asserts.assertElemJS(
+            id=force_suggestion_id, js=u'element.disabled')
+
+        self.client.click(id=diverge_id)
+        self.client.asserts.assertNotChecked(id=diverge_id)
+        self.client.asserts.assertNotChecked(id=force_suggestion_id)
+        self.client.asserts.assertNotChecked(id=dismiss_id)
+        self.client.asserts.assertElemJS(
+            id=force_suggestion_id, js=u'!element.disabled')
+
+        # Test the force suggestion checking and unchecking.
+        self.client.click(id=force_suggestion_id)
+        self.client.asserts.assertChecked(id=force_suggestion_id)
+        self.client.asserts.assertNotChecked(id=diverge_id)
+        self.client.asserts.assertNotChecked(id=dismiss_id)
+        self.client.asserts.assertElemJS(
+            id=diverge_id, js=u'element.disabled')
+
+        self.client.click(id=force_suggestion_id)
+        self.client.asserts.assertNotChecked(id=force_suggestion_id)
+        self.client.asserts.assertNotChecked(id=diverge_id)
+        self.client.asserts.assertNotChecked(id=dismiss_id)
+        self.client.asserts.assertElemJS(
+            id=diverge_id, js=u'!element.disabled')
+
+        # Test unchecking the diverge translations when dismiss all
+        # suggestions is enabled.
+        self.client.click(id=dismiss_id)
+        self.client.asserts.assertElemJS(
+            id=force_suggestion_id, js=u'element.disabled')
+        self.client.click(id=diverge_id)
+        self.client.asserts.assertElemJS(
+            id=force_suggestion_id, js=u'element.disabled')
+        self.client.asserts.assertNotChecked(id=force_suggestion_id)
+
+        self.client.click(id=diverge_id)
+        self.client.asserts.assertElemJS(
+            id=force_suggestion_id, js=u'element.disabled')
+        self.client.asserts.assertNotChecked(id=force_suggestion_id)
 
     def _checkResetTranslationSelect(
         self, client, checkbox, singular_new_select, singular_current_select,
@@ -188,7 +334,8 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
         checkbox = u'msgset_144_force_suggestion'
         singular_new_select = u'msgset_144_pt_BR_translation_0_new_select'
         singular_new_field = u'msgset_144_pt_BR_translation_0_new'
-        singular_current_select = u'msgset_144_pt_BR_translation_0_radiobutton'
+        singular_current_select = (
+            u'msgset_144_pt_BR_translation_0_radiobutton')
         plural_new_select = u'msgset_144_pt_BR_translation_1_new_select'
         self._checkResetTranslationSelect(
             client,
@@ -249,3 +396,92 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
             id=u'msgset_138_es_translation_0_new_select')
         client.asserts.assertNotChecked(
             id=u'msgset_139_es_translation_0_new_select')
+
+
+class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
+    """Tests for page behaviour in reviewer or translator mode."""
+
+    layer = TranslationsWindmillLayer
+    suite_name = 'POFile Translate'
+
+    test_user = lpuser.TRANSLATIONS_ADMIN
+
+    switch_working_mode = u'translation-switch-working-mode'
+    force_suggestion = u'msgset_1_force_suggestion'
+    new_translation = u'msgset_1_pt_BR_translation_0_new'
+    js_code = ("lookupNode({id: '%s'}).innerHTML.search('eviewer') > 0" %
+                switch_working_mode)
+
+    def test_pofile_reviewer_mode(self):
+        """Test for reviewer mode.
+
+        Adding new translations will force them as suggestions.
+        """
+
+        self.client.open(
+            url='http://translations.launchpad.dev:8085/'
+            'evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate')
+        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        self.test_user.ensure_login(self.client)
+
+        self._ensureTranslationMode(reviewer=True)
+
+        self.client.waits.forElement(
+            id=self.force_suggestion, timeout=constants.FOR_ELEMENT)
+        self.client.type(text=u'New translation', id=self.new_translation)
+        self.client.asserts.assertNotChecked(id=self.force_suggestion)
+
+    def test_pofile_translator_mode(self):
+        """Test for translator mode.
+
+        Adding new translations will not force them as suggestions.
+        """
+
+        self.client.open(
+            url='http://translations.launchpad.dev:8085'
+            '/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate')
+        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        self.test_user.ensure_login(self.client)
+
+        self._ensureTranslationMode(translator=True)
+
+        self.client.waits.forElement(
+            id=self.force_suggestion, timeout=constants.FOR_ELEMENT)
+        self.client.type(text=u'New translation', id=self.new_translation)
+        self.client.asserts.assertChecked(id=self.force_suggestion)
+
+        # The new translation will be forced only if the previous new
+        # translation field is empty. Othewise the force suggestion checkbox
+        # will remain unchecked.
+        self.client.click(id=self.force_suggestion)
+        self.client.keyPress(
+            id=self.new_translation,
+            options='a,true,false,false,false,false')
+        self.client.asserts.assertNotChecked(id=self.force_suggestion)
+
+    def _ensureTranslationMode(self, reviewer=False, translator=False):
+        """Ensure the specified mode is currently selected."""
+
+        if (reviewer is translator):
+            raise AssertionError("You must specify a single working mode.")
+
+        self.client.waits.forElement(
+            id=self.switch_working_mode, timeout=constants.FOR_ELEMENT)
+
+        current_is_reviewer = self.client.execJS(js=self.js_code)['output']
+        need_to_switch_mode = (
+            reviewer and not current_is_reviewer or
+            translator and current_is_reviewer)
+        if need_to_switch_mode:
+            self.client.click(id=self.switch_working_mode)
+        else:
+            return
+
+        # We check that the mode was changed.
+        current_is_reviewer = self.client.execJS(js=self.js_code)['output']
+
+        switch_done = (
+            reviewer and current_is_reviewer or
+            translator and not current_is_reviewer)
+        assert switch_done is True, "Could not switch working mode."
+

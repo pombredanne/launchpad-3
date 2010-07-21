@@ -47,7 +47,8 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION null_count(anyarray) IS 'Return the number of NULLs in the first row of the given array.';
+COMMENT ON FUNCTION null_count(anyarray) IS
+'Return the number of NULLs in the first row of the given array.';
 
 
 CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
@@ -114,6 +115,94 @@ $$;
 
 COMMENT ON FUNCTION update_replication_lag_cache() IS
 'Updates the DatabaseReplicationLag materialized view.';
+
+CREATE OR REPLACE FUNCTION update_database_stats() RETURNS void
+LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS
+$$
+    import re
+    import subprocess
+
+    # Prune DatabaseTableStats and insert current data.
+    # First, detect if the statistics have been reset.
+    stats_reset = plpy.execute("""
+        SELECT *
+        FROM
+            pg_catalog.pg_stat_user_tables AS NowStat,
+            DatabaseTableStats AS LastStat
+        WHERE
+            LastStat.date_created = (
+                SELECT max(date_created) FROM DatabaseTableStats)
+            AND NowStat.schemaname = LastStat.schemaname
+            AND NowStat.relname = LastStat.relname
+            AND (
+                NowStat.seq_scan < LastStat.seq_scan
+                OR NowStat.idx_scan < LastStat.idx_scan
+                OR NowStat.n_tup_ins < LastStat.n_tup_ins
+                OR NowStat.n_tup_upd < LastStat.n_tup_upd
+                OR NowStat.n_tup_del < LastStat.n_tup_del
+                OR NowStat.n_tup_hot_upd < LastStat.n_tup_hot_upd)
+        LIMIT 1
+        """, 1).nrows() > 0
+    if stats_reset:
+        # The database stats have been reset. We cannot calculate
+        # deltas because we do not know when this happened. So we trash
+        # our records as they are now useless to us. We could be more
+        # sophisticated about this, but this should only happen
+        # when an admin explicitly resets the statistics or if the
+        # database is rebuilt.
+        plpy.notice("Stats wraparound. Purging DatabaseTableStats")
+        plpy.execute("DELETE FROM DatabaseTableStats")
+    else:
+        plpy.execute("""
+            DELETE FROM DatabaseTableStats
+            WHERE date_created < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('21 days' AS interval));
+            """)
+    # Insert current data.
+    plpy.execute("""
+        INSERT INTO DatabaseTableStats
+            SELECT
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+                schemaname, relname, seq_scan, seq_tup_read,
+                coalesce(idx_scan, 0), coalesce(idx_tup_fetch, 0),
+                n_tup_ins, n_tup_upd, n_tup_del,
+                n_tup_hot_upd, n_live_tup, n_dead_tup, last_vacuum,
+                last_autovacuum, last_analyze, last_autoanalyze
+            FROM pg_catalog.pg_stat_user_tables;
+        """)
+
+    # Prune DatabaseCpuStats. Calculate CPU utilization information
+    # and insert current data.
+    plpy.execute("""
+        DELETE FROM DatabaseCpuStats
+        WHERE date_created < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            - CAST('21 days' AS interval));
+        """)
+    dbname = plpy.execute(
+        "SELECT current_database() AS dbname", 1)[0]['dbname']
+    ps = subprocess.Popen(
+        ["ps", "-C", "postgres", "--no-headers", "-o", "cp,args"],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+    stdout, stderr = ps.communicate()
+    cpus = {}
+    # We make the username match non-greedy so the trailing \d eats
+    # trailing digits from the database username. This collapses
+    # lpnet1, lpnet2 etc. into just lpnet.
+    ps_re = re.compile(
+        r"(?m)^\s*(\d+)\spostgres:\s(\w+?)\d*\s%s\s" % dbname)
+    for ps_match in ps_re.finditer(stdout):
+        cpu, username = ps_match.groups()
+        cpus[username] = int(cpu) + cpus.setdefault(username, 0)
+    cpu_ins = plpy.prepare(
+        "INSERT INTO DatabaseCpuStats (username, cpu) VALUES ($1, $2)",
+        ["text", "integer"])
+    for cpu_tuple in cpus.items():
+        plpy.execute(cpu_ins, cpu_tuple)
+$$;
+
+COMMENT ON FUNCTION update_database_stats() IS
+'Copies rows from pg_stat_user_tables into DatabaseTableStats. We use a stored procedure because it is problematic for us to grant permissions on objects in the pg_catalog schema.';
 
 
 CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
@@ -1502,4 +1591,120 @@ BEGIN
     PERFORM bug_update_latest_patch_uploaded(OLD.bug);
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION calculate_bug_heat(bug_id integer) RETURNS integer
+LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS $$
+    from datetime import datetime
+
+    class BugHeatConstants:
+        PRIVACY = 150
+        SECURITY = 250
+        DUPLICATE = 6
+        AFFECTED_USER = 4
+        SUBSCRIBER = 2
+
+
+    def get_max_heat_for_bug(bug_id):
+        results = plpy.execute("""
+            SELECT MAX(
+                GREATEST(Product.max_bug_heat, Distribution.max_bug_heat))
+                    AS max_heat
+            FROM BugTask
+            LEFT OUTER JOIN ProductSeries ON
+                BugTask.productseries = ProductSeries.id
+            LEFT OUTER JOIN Product ON (
+                BugTask.product = Product.id
+                OR ProductSeries.product = Product.id)
+            LEFT OUTER JOIN DistroSeries ON
+                BugTask.distroseries = DistroSeries.id
+            LEFT OUTER JOIN Distribution ON (
+                BugTask.distribution = Distribution.id
+                OR DistroSeries.distribution = Distribution.id)
+            WHERE
+                BugTask.bug = %s""" % bug_id)
+
+        return results[0]['max_heat']
+
+    # It would be nice to be able to just SELECT * here, but we need the
+    # timestamps to be in a format that datetime.fromtimestamp() will
+    # understand.
+    bug_data = plpy.execute("""
+        SELECT
+            duplicateof,
+            private,
+            security_related,
+            number_of_duplicates,
+            users_affected_count,
+            EXTRACT(epoch from datecreated)
+                AS timestamp_date_created,
+            EXTRACT(epoch from date_last_updated)
+                AS timestamp_date_last_updated,
+            EXTRACT(epoch from date_last_message)
+                AS timestamp_date_last_message
+        FROM Bug WHERE id = %s""" % bug_id)
+
+    if bug_data.nrows() == 0:
+        raise Exception("Bug %s doesn't exist." % bug_id)
+
+    bug = bug_data[0]
+    if bug['duplicateof'] is not None:
+        return None
+
+    heat = {}
+    heat['dupes'] = (
+        BugHeatConstants.DUPLICATE * bug['number_of_duplicates'])
+    heat['affected_users'] = (
+        BugHeatConstants.AFFECTED_USER *
+        bug['users_affected_count'])
+
+    if bug['private']:
+        heat['privacy'] = BugHeatConstants.PRIVACY
+    if bug['security_related']:
+        heat['security'] = BugHeatConstants.SECURITY
+
+    # Get the heat from subscribers, both direct and via duplicates.
+    subs_from_dupes = plpy.execute("""
+        SELECT COUNT(DISTINCT BugSubscription.person) AS sub_count
+        FROM BugSubscription, Bug
+        WHERE Bug.id = BugSubscription.bug
+            AND (Bug.id = %s OR Bug.duplicateof = %s)"""
+        % (bug_id, bug_id))
+
+    heat['subcribers'] = (
+        BugHeatConstants.SUBSCRIBER
+        * subs_from_dupes[0]['sub_count'])
+
+    total_heat = sum(heat.values())
+
+    # Bugs decay over time. Every day the bug isn't touched its heat
+    # decreases by 1%.
+    date_last_updated = datetime.fromtimestamp(
+        bug['timestamp_date_last_updated'])
+    days_since_last_update = (datetime.utcnow() - date_last_updated).days
+    total_heat = int(total_heat * (0.99 ** days_since_last_update))
+
+    if days_since_last_update > 0:
+        # Bug heat increases by a quarter of the maximum bug heat
+        # divided by the number of days since the bug's creation date.
+        date_created = datetime.fromtimestamp(
+            bug['timestamp_date_created'])
+
+        if bug['timestamp_date_last_message'] is not None:
+            date_last_message = datetime.fromtimestamp(
+                bug['timestamp_date_last_message'])
+            oldest_date = max(date_last_updated, date_last_message)
+        else:
+            date_last_message = None
+            oldest_date = date_last_updated
+
+        days_since_last_activity = (datetime.utcnow() - oldest_date).days
+        days_since_created = (datetime.utcnow() - date_created).days
+        max_heat = get_max_heat_for_bug(bug_id)
+        if max_heat is not None and days_since_created > 0:
+            total_heat = (
+                total_heat + (max_heat * 0.25 / days_since_created))
+
+    return int(total_heat)
 $$;

@@ -13,8 +13,6 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Launchpad CVE tracker</h1>
-
   <form method="post" style="margin-top: 1em; margin-bottom: 1em;">
     <div>Find CVEs by number or keywords:</div>
     <div>

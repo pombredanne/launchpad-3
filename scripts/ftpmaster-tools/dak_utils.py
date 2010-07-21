@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 
 # Utility functions from the dak suite
 # Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005, 2006  James Troup <james@nocrew.org>

@@ -110,7 +110,7 @@ def update_files_privacy(pub_record):
         package_upload = build.package_upload
         package_files.append((package_upload, 'changesfile'))
         # Re-upload the buildlog file as necessary.
-        package_files.append((build, 'buildlog'))
+        package_files.append((build, 'log'))
     elif IPackageUploadCustom.providedBy(pub_record):
         # Re-upload the custom files included
         package_files.append((pub_record, 'libraryfilealias'))
@@ -341,7 +341,7 @@ class CopyChecker:
             if not copied_binaries.issuperset(published_binaries):
                 raise CannotCopy(
                     "binaries conflicting with the existing ones")
-        self._checkConflictingFiles(source)    
+        self._checkConflictingFiles(source)
 
     def _checkConflictingFiles(self, source):
         # If both the source and destination archive are the same, we don't
@@ -350,7 +350,7 @@ class CopyChecker:
         if source.archive.id == self.archive.id:
             return None
         source_files = [
-            sprf.libraryfile.filename for sprf in 
+            sprf.libraryfile.filename for sprf in
             source.sourcepackagerelease.files]
         destination_sha1s = self.archive.getFilesAndSha1s(source_files)
         for lf in source.sourcepackagerelease.files:
@@ -624,7 +624,7 @@ def _do_delayed_copy(source, archive, series, pocket, include_binaries):
     # If binaries are included in the copy we include binary custom files.
     if include_binaries:
         for build in source.getBuilds():
-            if build.buildstate != BuildStatus.FULLYBUILT:
+            if build.status != BuildStatus.FULLYBUILT:
                 continue
             delayed_copy.addBuild(build)
             original_build_upload = build.package_upload

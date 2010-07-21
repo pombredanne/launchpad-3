@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5 -S
+#!/usr/bin/python -S
 # pylint: disable-msg=W0403
 
 # Copyright 2010 Canonical Ltd.  This software is licensed under the

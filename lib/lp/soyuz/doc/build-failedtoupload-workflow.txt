@@ -28,7 +28,7 @@ Let's use a sampledata build record in FAILEDTOUPLOAD:
   >>> print failedtoupload_candidate.title
   i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
-  >>> print failedtoupload_candidate.buildstate.name
+  >>> print failedtoupload_candidate.status.name
   FAILEDTOUPLOAD
 
   >>> print failedtoupload_candidate.upload_log.filename
@@ -110,7 +110,7 @@ Note that the generated notification contain the 'extra_info' content:
 Let's emulate the procedure of rescuing an FAILEDTOUPLOAD build.
 A FAILEDTOUPLOAD build obviously has no binaries:
 
-  >>> print failedtoupload_candidate.buildstate.name
+  >>> print failedtoupload_candidate.status.name
   FAILEDTOUPLOAD
 
   >>> failedtoupload_candidate.binarypackages.count()
@@ -162,7 +162,7 @@ right target location, they are passed via process-upload command-line:
   >>> buildd_policy = getPolicy(
   ...     name='buildd',
   ...     distro=failedtoupload_candidate.distribution.name,
-  ...     distroseries=failedtoupload_candidate.distroseries.name,
+  ...     distroseries=failedtoupload_candidate.distro_series.name,
   ...     buildid=failedtoupload_candidate.id)
 
   >>> cdrkit_bin_upload = NascentUpload(
@@ -180,7 +180,7 @@ FAILEDTOUPLOAD build record is already in FULLYBUILT state and the
 previously stored upload_log is dereferenced (they are both updated
 during the upload processing time):
 
-  >>> print failedtoupload_candidate.buildstate.name
+  >>> print failedtoupload_candidate.status.name
   FULLYBUILT
 
   >>> print failedtoupload_candidate.upload_log

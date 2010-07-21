@@ -163,10 +163,6 @@ special = {
         layer=LaunchpadZopelessLayer,
         setUp=setUp, tearDown=tearDown,
         ),
-    'sourceforge-remote-products.txt': LayeredDocFileSuite(
-        '../doc/sourceforge-remote-products.txt',
-        layer=LaunchpadZopelessLayer,
-        ),
     'karmacache.txt': LayeredDocFileSuite(
         '../doc/karmacache.txt',
         layer=LaunchpadZopelessLayer,

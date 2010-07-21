@@ -28,8 +28,9 @@ Neither any input widget:
   ...     raise AssertionError, 'Found input:\n%s' % input
 
 As an anynoymous user you will have access to the download and details
-pages for the pofile this message belongs to. The link to upload page
-should not be in that list.
+pages for the pofile this message belongs to. The link to upload page and
+the link for switching between translator and reviewer working mode will not
+be displayed in that list.
 
   >>> nav = find_tag_by_id(browser.contents, 'nav-pofile-subpages')
   >>> print extract_text(nav)
@@ -153,11 +154,14 @@ Let's test the ones at the end of the form.
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
 
 As a translation admin you will have access to the download, upload
-and details pages for the pofile this message belongs to.
+and details pages for the pofile this message belongs to. In the same time
+you have access to the link for switching between translator and reviewer
+working mode
 
   >>> nav = find_tag_by_id(browser.contents, 'nav-pofile-subpages')
   >>> print extract_text(nav)
   Download translation Upload translation Translation details
+  Reviewer mode (What's this?)
 
 All those links should linked the proper pages
 

@@ -28,7 +28,6 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
-from lp.archiveuploader.permission import check_upload_to_archive
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
@@ -489,8 +488,8 @@ class NascentUpload:
         source_name = getUtility(
             ISourcePackageNameSet).queryByName(self.changes.dsc.package)
 
-        rejection_reason = check_upload_to_archive(
-            uploader, self.policy.distroseries, source_name, archive,
+        rejection_reason = archive.checkUpload(
+            uploader, self.policy.distroseries, source_name, 
             self.changes.dsc.component, self.policy.pocket, not self.is_new)
 
         if rejection_reason is not None:
@@ -780,7 +779,7 @@ class NascentUpload:
                     # fine.
                     ancestry = self.getBinaryAncestry(
                         uploaded_file, try_other_archs=False)
-                    if (ancestry is not None and 
+                    if (ancestry is not None and
                         not self.policy.archive.is_copy):
                         # Ignore version checks for copy archives
                         # because the ancestry comes from the primary
@@ -840,6 +839,12 @@ class NascentUpload:
                 'Exception while accepting:\n %s' % e, exc_info=True)
             self.do_reject(notify)
             return False
+        else:
+            self.cleanUp()
+
+    def cleanUp(self):
+        if self.changes.dsc is not None:
+            self.changes.dsc.cleanUp()
 
     def do_reject(self, notify=True):
         """Reject the current upload given the reason provided."""
@@ -870,6 +875,7 @@ class NascentUpload:
         self.queue_root.notify(summary_text=self.rejection_message,
             changes_file_object=changes_file_object, logger=self.logger)
         changes_file_object.close()
+        self.cleanUp()
 
     def _createQueueEntry(self):
         """Return a PackageUpload object."""
@@ -921,7 +927,7 @@ class NascentUpload:
                 diff = to_sourcepackagerelease.requestDiffTo(
                     sourcepackagerelease.creator, sourcepackagerelease)
                 self.logger.debug(
-                    'Package diff for %s from %s requested' % (
+                    '%s %s requested' % (
                         diff.from_source.name, diff.title))
 
         if self.binaryful:
@@ -962,7 +968,7 @@ class NascentUpload:
                                    for build in self.queue_root.builds]
                 if considered_build.id in attached_builds:
                     continue
-                assert (considered_build.sourcepackagerelease.id ==
+                assert (considered_build.source_package_release.id ==
                         sourcepackagerelease.id), (
                     "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)

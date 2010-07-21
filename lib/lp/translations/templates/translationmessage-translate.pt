@@ -14,8 +14,8 @@
     }
     </style>
     <script type="text/javascript">
-      LPS.use('node', 'lp.pofile', function(Y) {
-        Y.on('domready', Y.lp.pofile.initializeTranslationMessage);
+      LPS.use('lp.translations.pofile', function(Y) {
+        Y.on('domready', Y.lp.translations.pofile.initializeTranslationMessage);
       });
     </script>
     </div>
@@ -25,7 +25,7 @@
       <tal:havepluralforms condition="view/has_plural_form_information">
 
       <!--  Navigation -->
-      <metal:nav-pofile-subpages 
+      <metal:nav-pofile-subpages
         use-macro="context/@@+translations-macros/nav-pofile-subpages" />
 
         <!-- Alternative suggestions. -->
@@ -86,7 +86,7 @@
           replace="structure view/batchnav/@@+navigation-links-lower" />
       <tal:status replace="structure context/pofile/@@+access" />
       </tal:havepluralforms>
-      <metal:pofile-js-footer 
+      <metal:pofile-js-footer
         use-macro="context/@@+translations-macros/pofile-js-footer" />
     </div>
 

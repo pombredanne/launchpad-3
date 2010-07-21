@@ -8,7 +8,7 @@ Say hello to Bugs. :)
   Hierarchy: None displayed
   Tabs:
   * Launchpad Home - http://launchpad.dev/
-  * Branches - http://code.launchpad.dev/
+  * Code - http://code.launchpad.dev/
   * Bugs (selected) - http://bugs.launchpad.dev/
   * Blueprints - http://blueprints.launchpad.dev/
   * Translations - http://translations.launchpad.dev/

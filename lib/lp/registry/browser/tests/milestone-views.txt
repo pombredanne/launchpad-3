@@ -726,3 +726,26 @@ project owner or series driver..
     >>> view = create_initialized_view(milestone, '+delete')
     >>> check_permission('launchpad.Edit', view)
     False
+
+Milestones with private bugs can be deleted. There is one caveate, the person
+deleting the milestone must have permssion to access the bug for it to be
+untargeted. It is possible for the owner or release manager to not have access
+to a private bug that was targeted to a milestone by a driver.
+
+    >>> login_person(owner)
+    >>> milestone = firefox_1_0.newMilestone('1.0.13')
+    >>> private_bug = factory.makeBug(product=firefox, private=True)
+    >>> private_bugtask = bug.bugtasks[0]
+    >>> private_bugtask.milestone = milestone
+    >>> view = create_initialized_view(milestone, '+delete')
+    >>> [bugtask.milestone.name for bugtask in view.bugtasks]
+    [u'1.0.13']
+
+    >>> view = create_initialized_view(milestone, '+delete', form=form)
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Milestone 1.0.13 deleted.
+
+    >>> transaction.commit()
+    >>> print private_bugtask.milestone
+    None

@@ -592,3 +592,20 @@ To get all milestones of a given distro we have the .all_milestones property.
     >>> [milestone.name for milestone in debian.all_milestones]
     [u'3.1', u'3.1-rc1', u'woody-rc1']
 
+
+== Archives ==
+
+A distribution archive (primary, partner, debug or copy) can be retrieved
+by name using IDistribution.getArchive.
+
+    >>> def display_archive(archive):
+    ...     print '%s %s %s' % (
+    ...         archive.distribution.name, archive.owner.name, archive.name)
+    >>> display_archive(ubuntu.getArchive('primary'))
+    ubuntu ubuntu-team primary
+    >>> display_archive(ubuntu.getArchive('partner'))
+    ubuntu ubuntu-team partner
+    >>> display_archive(debian.getArchive('primary'))
+    debian mark primary
+    >>> ubuntu.getArchive('ppa')
+    >>> debian.getArchive('partner')

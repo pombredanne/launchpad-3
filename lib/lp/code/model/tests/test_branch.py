@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -34,6 +34,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.blueprints.model.specificationbranch import (
@@ -78,6 +79,8 @@ from lp.testing import (
     person_logged_in, run_with_login, TestCase, TestCaseWithFactory,
     time_counter)
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.model.translationtemplatesbuildjob import (
+    ITranslationTemplatesBuildJobSource)
 
 
 class TestCodeImport(TestCase):
@@ -908,7 +911,7 @@ class TestBranchDeletion(TestCaseWithFactory):
         # The owner of the branch is subscribed to the branch when it is
         # created.  The tests here assume no initial connections, so
         # unsubscribe the branch owner here.
-        self.branch.unsubscribe(self.branch.owner)
+        self.branch.unsubscribe(self.branch.owner, self.branch.owner)
 
     def test_deletable(self):
         """A newly created branch can be deleted without any problems."""
@@ -930,7 +933,7 @@ class TestBranchDeletion(TestCaseWithFactory):
         """A branch that has a subscription can be deleted."""
         self.branch.subscribe(
             self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL, self.user)
         self.assertEqual(True, self.branch.canBeDeleted())
 
     def test_codeImportCanStillBeDeleted(self):
@@ -1039,6 +1042,39 @@ class TestBranchDeletion(TestCaseWithFactory):
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
 
+    def test_related_TranslationTemplatesBuildJob_cleaned_out(self):
+        # A TranslationTemplatesBuildJob is a type of BranchJob that
+        # comes with a BuildQueue entry referring to the same Job.
+        # Deleting the branch cleans up the BuildQueue before it can
+        # remove the Job and BranchJob.
+        branch = self.factory.makeAnyBranch()
+        getUtility(ITranslationTemplatesBuildJobSource).create(branch)
+
+        branch.destroySelf(break_references=True)
+
+        Store.of(branch).flush()
+
+    def test_unrelated_TranslationTemplatesBuildJob_intact(self):
+        # No innocent BuildQueue entries are harmed in deleting a
+        # branch.
+        branch = self.factory.makeAnyBranch()
+        other_branch = self.factory.makeAnyBranch()
+        source = getUtility(ITranslationTemplatesBuildJobSource)
+        job = source.create(branch)
+        other_job = source.create(other_branch)
+        store = Store.of(branch)
+
+        branch.destroySelf(break_references=True)
+
+        # The BuildQueue for the job whose branch we deleted is gone.
+        buildqueue = store.find(BuildQueue, BuildQueue.job == job.job)
+        self.assertEqual([], list(buildqueue))
+
+        # The other job's BuildQueue entry is still there.
+        other_buildqueue = store.find(
+            BuildQueue, BuildQueue.job == other_job.job)
+        self.assertNotEqual([], list(other_buildqueue))
+
     def test_createsJobToReclaimSpace(self):
         # When a branch is deleted from the database, a job to remove the
         # branch from disk as well.
@@ -1052,6 +1088,25 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.assertEqual(
             [branch_id],
             [ReclaimBranchSpaceJob(job).branch_id for job in jobs])
+
+    def test_destroySelf_with_SourcePackageRecipe(self):
+        """If branch is a base_branch in a recipe, it is deleted."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        store = Store.of(recipe)
+        recipe.base_branch.destroySelf(break_references=True)
+        # show no DB constraints have been violated
+        store.flush()
+
+    def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
+        """If branch is referred to by a recipe, it is deleted."""
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[branch1, branch2])
+        store = Store.of(recipe)
+        branch2.destroySelf(break_references=True)
+        # show no DB constraints have been violated
+        store.flush()
 
 
 class TestBranchDeletionConsequences(TestCase):
@@ -1068,7 +1123,7 @@ class TestBranchDeletionConsequences(TestCase):
         # The owner of the branch is subscribed to the branch when it is
         # created.  The tests here assume no initial connections, so
         # unsubscribe the branch owner here.
-        self.branch.unsubscribe(self.branch.owner)
+        self.branch.unsubscribe(self.branch.owner, self.branch.owner)
 
     def test_plainBranch(self):
         """Ensure that a fresh branch has no deletion requirements."""
@@ -1081,8 +1136,9 @@ class TestBranchDeletionConsequences(TestCase):
         prerequisite_branch = self.factory.makeProductBranch(
             product=self.branch.product)
         # Remove the implicit subscriptions.
-        target_branch.unsubscribe(target_branch.owner)
-        prerequisite_branch.unsubscribe(prerequisite_branch.owner)
+        target_branch.unsubscribe(target_branch.owner, target_branch.owner)
+        prerequisite_branch.unsubscribe(
+            prerequisite_branch.owner, prerequisite_branch.owner)
         merge_proposal1 = self.branch.addLandingTarget(
             self.branch.owner, target_branch, prerequisite_branch)
         # Disable this merge proposal, to allow creating a new identical one
@@ -1261,7 +1317,8 @@ class TestBranchDeletionConsequences(TestCase):
         """Deletion requirements for a code import branch are right"""
         code_import = self.factory.makeCodeImport()
         # Remove the implicit branch subscription first.
-        code_import.branch.unsubscribe(code_import.branch.owner)
+        code_import.branch.unsubscribe(
+            code_import.branch.owner, code_import.branch.owner)
         self.assertEqual({}, code_import.branch.deletionRequirements())
 
     def test_branchWithCodeImportDeletion(self):
@@ -1345,25 +1402,6 @@ class TestBranchDeletionConsequences(TestCase):
         self.assertEqual(
             {recipe: ('delete', 'This recipe uses this branch.')},
             recipe.base_branch.deletionRequirements())
-
-    def test_destroySelf_with_SourcePackageRecipe(self):
-        """If branch is a base_branch in a recipe, it is deleted."""
-        recipe = self.factory.makeSourcePackageRecipe()
-        store = Store.of(recipe)
-        recipe.base_branch.destroySelf(break_references=True)
-        # show no DB constraints have been violated
-        store.flush()
-
-    def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
-        """If branch is referred to by a recipe, it is deleted."""
-        branch1 = self.factory.makeAnyBranch()
-        branch2 = self.factory.makeAnyBranch()
-        recipe = self.factory.makeSourcePackageRecipe(
-            branches=[branch1, branch2])
-        store = Store.of(recipe)
-        branch2.destroySelf(break_references=True)
-        # show no DB constraints have been violated
-        store.flush()
 
 
 class StackedBranches(TestCaseWithFactory):
@@ -2303,7 +2341,8 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         # Revisions created before the start date are not returned.
         branch = self.factory.makeAnyBranch()
         epoch = datetime(2009, 9, 10, tzinfo=UTC)
-        old = add_revision_to_branch(
+        # Add some revisions before the epoch.
+        add_revision_to_branch(
             self.factory, branch, epoch - timedelta(days=1))
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=1))
@@ -2318,7 +2357,8 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         end_date = epoch + timedelta(days=2)
         in_range = add_revision_to_branch(
             self.factory, branch, end_date - timedelta(days=1))
-        too_new = add_revision_to_branch(
+        # Add some revisions after the end_date.
+        add_revision_to_branch(
             self.factory, branch, end_date + timedelta(days=1))
         result = branch.getMainlineBranchRevisions(epoch, end_date)
         branch_revisions = [br for br, rev, ra in result]
@@ -2354,7 +2394,8 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         epoch = datetime(2009, 9, 10, tzinfo=UTC)
         old = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=1))
-        merged = add_revision_to_branch(
+        # Add some non mainline revision.
+        add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=2), mainline=False)
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=3))

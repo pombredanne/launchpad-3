@@ -14,6 +14,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.widgets.textwidgets import URIWidget
 
@@ -192,6 +193,7 @@ class BugWatchActivityPortletView(LaunchpadFormView):
                 'date': activity.activity_date,
                 'completion_message': completion_message,
                 'result_text': activity.result.title,
+                'oops_id': activity.oops_id,
                 })
 
         return activity_items

@@ -17,8 +17,8 @@
     <script type="text/javascript">
       registerLaunchpadFunction(insertAllExpansionButtons);
 
-      LPS.use('lp.pofile', function(Y) {
-        Y.on('domready', Y.lp.pofile.initializePOFile);
+      LPS.use('lp.translations.pofile', function(Y) {
+        Y.on('domready', Y.lp.translations.pofile.initializePOFile);
       });
 
     </script>
@@ -98,7 +98,7 @@
         </div>
 
       <!--  Navigation -->
-      <metal:nav-pofile-subpages 
+      <metal:nav-pofile-subpages
         use-macro="context/@@+translations-macros/nav-pofile-subpages" />
 
         <!-- View filter and suggestions from alternative language. -->
@@ -234,7 +234,7 @@
         <tal:status replace="structure context/@@+access" />
         <tal:contributors replace="structure context/@@+contributors" />
       </tal:havepluralforms>
-      <metal:pofile-js-footer 
+      <metal:pofile-js-footer
         use-macro="context/@@+translations-macros/pofile-js-footer" />
     </div>
   </body>

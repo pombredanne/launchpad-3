@@ -12,9 +12,9 @@ __all__ = [
     'ProductAdminView',
     'ProductBrandingView',
     'ProductBugsMenu',
+    'ProductConfigureBase',
     'ProductConfigureAnswersView',
     'ProductConfigureBlueprintsView',
-    'ProductConfigureBugTrackerView',
     'ProductConfigureTranslationsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
@@ -51,13 +51,14 @@ import pytz
 
 from zope.component import getUtility
 from zope.event import notify
-from zope.app.form.browser import TextAreaWidget, TextWidget
+from zope.app.form.browser import CheckBoxWidget, TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
-from zope.schema import Choice
+from zope.schema import Bool, Choice
 from zope.schema.vocabulary import (
     SimpleVocabulary, SimpleTerm)
+from zope.security.proxy import removeSecurityProxy
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -65,13 +66,13 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.config import config
 from lazr.delegates import delegates
+from lazr.restful.interface import copy_field
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from lp.app.interfaces.headings import IEditableContextTitle
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
-from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -95,6 +96,7 @@ from lp.bugs.browser.bugtask import (
 from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
+from lp.registry.browser.pillar import PillarBugsMenu
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.pillar import PillarView
@@ -126,7 +128,7 @@ from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadRadioWidget)
 from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.product import (
-    LicenseWidget, GhostWidget, ProductBugTrackerWidget, ProductNameWidget)
+    LicenseWidget, GhostWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -228,44 +230,83 @@ class ProductLicenseMixin:
             # Launchpad is ok with all licenses used in this project.
             pass
 
-    def notifyFeedbackMailingList(self):
+    def notifyCommercialMailingList(self):
         """Email feedback@canonical.com to review product license."""
         if (License.OTHER_PROPRIETARY in self.product.licenses
-                or License.OTHER_OPEN_SOURCE in self.product.licenses):
-            user = getUtility(ILaunchBag).user
-            subject = "Project License Submitted for %s by %s" % (
-                    self.product.name, user.name)
-            fromaddress = format_address(
-                "Launchpad", config.canonical.noreply_from_address)
-            license_titles = '\n'.join(
-                license.title for license in self.product.licenses)
+            or License.OTHER_OPEN_SOURCE in self.product.licenses):
+            review_needed = True
+        elif (len(self.product.licenses) == 1
+            and License.DONT_KNOW in self.product.licenses):
+            review_needed = False
+        else:
+            # The project has a recognized license.
+            return
 
-            def indent(text):
-                text = '\n    '.join(line for line in text.split('\n'))
-                text = '    ' + text
-                return text
+        def indent(text):
+            if text is None:
+                return None
+            text = '\n    '.join(line for line in text.split('\n'))
+            text = '    ' + text
+            return text
 
+        user = getUtility(ILaunchBag).user
+        user_address = format_address(
+            user.displayname, user.preferredemail.email)
+        from_address = format_address(
+            "Launchpad", config.canonical.noreply_from_address)
+        commercial_address = format_address(
+            'Commercial', 'commercial@launchpad.net')
+        license_titles = '\n'.join(
+            license.title for license in self.product.licenses)
+        substitutions = dict(
+            user_browsername=user.displayname,
+            user_name=user.name,
+            product_name=self.product.name,
+            product_url=canonical_url(self.product),
+            product_summary=indent(self.product.summary),
+            license_titles=indent(license_titles),
+            license_info=indent(self.product.license_info))
+        if review_needed:
+            # Email the Commercial team that a project needs review.
+            subject = (
+                "Project License Submitted for %(product_name)s "
+                "by %(user_name)s" % substitutions)
             template = helpers.get_email_template('product-license.txt')
-            message = template % dict(
-                user_browsername=user.displayname,
-                user_name=user.name,
-                product_name=self.product.name,
-                product_url=canonical_url(self.product),
-                product_summary=indent(self.product.summary),
-                license_titles=indent(license_titles),
-                license_info=indent(self.product.license_info))
+            message = template % substitutions
+            simple_sendmail(
+                from_address, commercial_address,
+                subject, message, headers={'Reply-To': user_address})
+        # Email the user about license policy.
+        subject = (
+            "License information for %(product_name)s "
+            "in Launchpad" % substitutions)
+        template = helpers.get_email_template('product-other-license.txt')
+        message = template % substitutions
+        simple_sendmail(
+            from_address, user_address,
+            subject, message, headers={'Reply-To': commercial_address})
+        # Inform that Launchpad recognized the license change.
+        self._addLicenseChangeToReviewWhiteboard()
+        self.request.response.addInfoNotification(_(
+            "Launchpad is free to use for software under approved "
+            "licenses. The Launchpad team will be in contact with "
+            "you soon."))
 
-            reply_to = format_address(user.displayname,
-                                      user.preferredemail.email)
-            simple_sendmail(fromaddress,
-                            'feedback@launchpad.net',
-                            subject, message,
-                            headers={'Reply-To': reply_to})
+    def _addLicenseChangeToReviewWhiteboard(self):
+        """Update the whiteboard for the reviewer's benefit."""
+        now = self._formatDate()
+        whiteboard = 'User notified of license policy on %s.' % now
+        naked_product = removeSecurityProxy(self.product)
+        if naked_product.reviewer_whiteboard is None:
+            naked_product.reviewer_whiteboard = whiteboard
+        else:
+            naked_product.reviewer_whiteboard += '\n' + whiteboard
 
-            self.request.response.addInfoNotification(_(
-                "Launchpad is free to use for software under approved "
-                "licenses. The Launchpad team will be in contact with "
-                "you soon."))
+    def _formatDate(self, now=None):
+        """Return the date formatted for messages."""
+        if now is None:
+            now = datetime.now(tz=pytz.UTC)
+        return now.strftime('%Y-%m-%d')
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -289,7 +330,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def branches(self):
-        text = 'Branches'
+        text = 'Code'
         summary = 'Branches for %s' % self.context.displayname
         return Link('', text, summary)
 
@@ -516,7 +557,8 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         return Link('+addbranch', text, summary, icon='add')
 
 
-class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
+class ProductBugsMenu(PillarBugsMenu,
+                      ProductEditLinksMixin):
 
     usedfor = IProduct
     facet = 'bugs'
@@ -526,24 +568,9 @@ class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         'securitycontact',
         'cve',
         'subscribe',
+        'configure_bugtracker',
         )
-
-    def filebug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='bug')
-
-    def cve(self):
-        return Link('+cve', 'CVE reports', icon='cve')
-
-    @enabled_with_permission('launchpad.Edit')
-    def bugsupervisor(self):
-        text = 'Change bug supervisor'
-        return Link('+bugsupervisor', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def securitycontact(self):
-        text = 'Change security contact'
-        return Link('+securitycontact', text, icon='edit')
+    configurable_bugtracker = True
 
 
 class ProductSpecificationsMenu(NavigationMenu, ProductEditLinksMixin,
@@ -820,7 +847,7 @@ class ProductDownloadFileMixin:
     @cachedproperty
     def latest_release_with_download_files(self):
         """Return the latest release with download files."""
-        for series in self.sorted_series_list:
+        for series in self.sorted_active_series_list:
             for release in series.releases:
                 if len(list(release.files)) > 0:
                     return release
@@ -937,9 +964,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
-
-    def getLatestBranches(self):
-        return self.context.getLatestBranches(visible_by_user=self.user)
 
     @property
     def requires_commercial_subscription(self):
@@ -1270,30 +1294,6 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
         self.updateContextFromData(data)
 
 
-class ProductConfigureBugTrackerView(ProductConfigureBase):
-    """View class to configure the bug tracker for a project."""
-
-    label = "Configure bug tracker"
-    field_names = [
-        "bugtracker",
-        "enable_bug_expiration",
-        "remote_product",
-        "bug_reporting_guidelines",
-        ]
-    custom_widget('bugtracker', ProductBugTrackerWidget)
-
-    def validate(self, data):
-        """Constrain bug expiration to Launchpad Bugs tracker."""
-        # enable_bug_expiration is disabled by JavaScript when bugtracker
-        # is not 'In Launchpad'. The constraint is enforced here in case the
-        # JavaScript fails to activate or run. Note that the bugtracker
-        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
-        # 'In a registered bug tracker' : IBugTracker}.
-        bugtracker = data.get('bugtracker', None)
-        if bugtracker is None or IBugTracker.providedBy(bugtracker):
-            data['enable_bug_expiration'] = False
-
-
 class ProductConfigureBlueprintsView(ProductConfigureBase):
     """View class to configure the Launchpad Blueprints for a project."""
 
@@ -1379,9 +1379,9 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         self.updateContextFromData(data)
         # only send email the first time licenses are set
         if len(previous_licenses) == 0:
-            # self.product is expected by notifyFeedbackMailingList
+            # self.product is expected by notifyCommercialMailingList
             self.product = self.context
-            self.notifyFeedbackMailingList()
+            self.notifyCommercialMailingList()
 
     @property
     def next_url(self):
@@ -1821,7 +1821,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'licenses', 'license_info']
+                    'description', 'licenses', 'license_info',
+                    ]
     main_action_label = u'Complete Registration'
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -1842,23 +1843,32 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             return 'Check for duplicate projects'
         return 'Registration details'
 
-    def isVCSImport(self):
-        """Is the the user vcs-imports."""
-        if self.user is None:
-            return False
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        return self.user.inTeam(vcs_imports)
-
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpFields()
-        if not self.isVCSImport():
-            # vcs-imports members get it easy and are able to change
-            # the owner and reviewed status during the edit process;
-            # this saves time wasted on getting to product/+admin.
-            # The fields are not displayed for other people though.
-            self.form_fields = self.form_fields.omit(
-                'owner', 'license_reviewed')
+        self.form_fields = (self.form_fields +
+                            self._createDisclaimMaintainerField())
+
+    def _createDisclaimMaintainerField(self):
+        """Return a Bool field for disclaiming maintainer.
+
+        If the registrant does not want to maintain the project she can select
+        this checkbox and the ownership will be transfered to the registry
+        admins team.
+        """
+
+        return form.Fields(
+            Bool(__name__='disclaim_maintainer',
+                 title=_("I do not want to maintain this project"),
+                 description=_(
+                     "Select if you are registering this project "
+                     "for the purpose of taking an action (such as "
+                     "reporting a bug) but you don't want to actually "
+                     "maintain the project in Launchpad.  "
+                     "The Registry Administrators team will become "
+                     "the maintainers until a community maintainer "
+                     "can be found.")),
+            render_context=self.render_context)
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
@@ -1919,8 +1929,14 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # Get optional data.
         project = data.get('project')
         description = data.get('description')
+        disclaim_maintainer = data.get('disclaim_maintainer', False)
+        if disclaim_maintainer:
+            owner = getUtility(ILaunchpadCelebrities).registry_experts
+        else:
+            owner = self.user
         return getUtility(IProductSet).createProduct(
-            owner=self.user,
+            registrant=self.user,
+            owner=owner,
             name=data['name'],
             displayname=data['displayname'],
             title=data['title'],
@@ -1932,16 +1948,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     def main_action(self, data):
         """See `MultiStepView`."""
-        if not self.isVCSImport():
-            # Zope makes sure these are never set, since they are not in
-            # self.form_fields
-            assert "owner" not in data, 'Unexpected form data'
-            assert "license_reviewed" not in data, 'Unexpected form data'
-            data['owner'] = self.user
-            data['license_reviewed'] = False
-
         self.product = self.create_product(data)
-        self.notifyFeedbackMailingList()
+        self.notifyCommercialMailingList()
         notify(ObjectCreatedEvent(self.product))
         self.next_url = canonical_url(self.product)
 
@@ -1958,20 +1966,50 @@ class ProductAddView(MultiStepView):
         return ProjectAddStepOne
 
 
+class IProductEditPeopleSchema(Interface):
+    """Defines the fields for the edit form.
+
+    Specifically adds a new checkbox for transferring the maintainer role to
+    Registry Administrators and makes the owner optional.
+    """
+    owner = copy_field(IProduct['owner'])
+    owner.required = False
+
+    driver = copy_field(IProduct['driver'])
+
+    transfer_to_registry =  Bool(
+        title=_("I do not want to maintain this project"),
+        required=False,
+        description=_(
+            "Select this if you no longer want to maintain this project in "
+            "Launchpad.  Launchpad's Registry Administrators team will "
+            "become the project's new maintainers."))
+
+
 class ProductEditPeopleView(LaunchpadEditFormView):
     """Enable editing of important people on the project."""
 
     implements(IProductEditMenu)
 
     label = "Change the roles of people"
-    schema = IProduct
+    schema = IProductEditPeopleSchema
     field_names = [
         'owner',
+        'transfer_to_registry',
         'driver',
         ]
 
+    for_input = True
+
+    # Initial value must be provided for the 'transfer_to_registry' field to
+    # avoid having the non-existent attribute queried on the context and
+    # failing.
+    initial_values = {'transfer_to_registry': False}
+
     custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
                   include_create_team_link=True)
+    custom_widget('transfer_to_registry', CheckBoxWidget,
+                  widget_class='field subordinate')
     custom_widget('driver', PersonPickerWidget, header="Select the driver",
                   include_create_team_link=True)
 
@@ -1980,24 +2018,37 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         """The HTML page title."""
         return "Change the roles of %s's people" % self.context.title
 
+    def validate(self, data):
+        """Validate owner and transfer_to_registry are consistent.
+
+        At most one may be specified.
+        """
+        # If errors have already been found we can skip validation.
+        if len(self.errors) > 0:
+            return
+        xfer = data.get('transfer_to_registry', False)
+        owner = data.get('owner')
+        if owner is not None and xfer:
+            self.setFieldError(
+                'owner',
+                'You may not specify a new owner if you '
+                'select the checkbox.')
+        elif xfer:
+            data['owner'] = getUtility(ILaunchpadCelebrities).registry_experts
+        elif owner is None:
+            self.setFieldError(
+                'owner',
+                'You must specify a maintainer or select '
+                'the checkbox.')
+
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):
         """Save the changes to the associated people."""
-        old_owner = self.context.owner
-        old_driver = self.context.driver
+        # Since 'transfer_to_registry' is not a real attribute on a Product,
+        # it must be removed from data before the context is updated.
+        if 'transfer_to_registry' in data:
+            del data['transfer_to_registry']
         self.updateContextFromData(data)
-        if self.context.owner != old_owner:
-            self.request.response.addNotification(
-                "Successfully changed the maintainer to %s"
-                % self.context.owner.displayname)
-        if self.context.driver != old_driver:
-            if self.context.driver is not None:
-                self.request.response.addNotification(
-                    "Successfully changed the driver to %s"
-                    % self.context.driver.displayname)
-            else:
-                self.request.response.addNotification(
-                    "Successfully removed the driver")
 
     @property
     def next_url(self):
@@ -2008,3 +2059,8 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {IProductEditPeopleSchema: self.context}

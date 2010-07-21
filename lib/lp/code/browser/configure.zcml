@@ -141,10 +141,6 @@
             name="+index"
             template="../templates/bazaar-index.pt"/>
     </browser:pages>
-    <browser:menus
-        classes="
-            BazaarBranchesMenu"
-        module="lp.code.browser.bazaar"/>
     <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         name="+hierarchy"
@@ -395,6 +391,9 @@
         <browser:page
             name="++branch-pending-merges"
             template="../templates/branch-pending-merges.pt" />
+        <browser:page
+            name="++branch-recipes"
+            template="../templates/branch-recipes.pt" />
         <browser:page
             name="++branch-import-details"
             template="../templates/branch-import-details.pt" />
@@ -864,17 +863,6 @@
             permission="zope.Public"/>
     </facet>
 
-    <browser:pages
-        for="lp.registry.interfaces.product.IProduct"
-        permission="zope.Public"
-        class="lp.registry.browser.product.ProductView">
-
-      <browser:page
-            name="+portlet-latestbranches"
-            template="../templates/product-portlet-latestbranches.pt"/>
-
-    </browser:pages>
-
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.code.browser.branchlisting.ProductBranchesView"
@@ -1095,5 +1083,135 @@
         attribute_to_parent="recipe"
         path_expression="string:+build/${id}"
         rootsite="code" />
+    <browser:menus
+        classes="SourcePackageRecipeBuildContextMenu"
+        module="lp.code.browser.sourcepackagerecipebuild"/>
+
+    <browser:navigation
+        module="lp.code.browser.sourcepackagerecipe"
+        classes="SourcePackageRecipeNavigation" />
+    <browser:navigation
+        module="lp.code.browser.sourcepackagerecipebuild"
+        classes="SourcePackageRecipeBuildNavigation" />
+
+    <facet facet="branches">
+
+        <browser:defaultView
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            name="+index"
+            layer="canonical.launchpad.layers.CodeLayer"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeView"
+            name="+index"
+            template="../templates/sourcepackagerecipe-index.pt"
+            permission="launchpad.View"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsView"
+            name="+request-builds"
+            template="../templates/sourcepackagerecipe-request-builds.pt"
+            permission="launchpad.View"/>
+    </facet>
+    <facet facet="branches">
+        <browser:defaultView
+            for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+            name="+index"
+            layer="canonical.launchpad.layers.CodeLayer"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+            class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildView"
+            name="+index"
+            template="../templates/sourcepackagerecipebuild-index.pt"
+            permission="launchpad.View"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+            class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildCancelView"
+            name="+cancel"
+            template="../../app/templates/generic-edit.pt"
+            permission="launchpad.View"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+            class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildRescoreView"
+            name="+rescore"
+            template="../../app/templates/generic-edit.pt"
+            permission="launchpad.View"/>
+        <browser:menus
+            classes="
+                SourcePackageRecipeNavigationMenu
+                SourcePackageRecipeContextMenu"
+            module="lp.code.browser.sourcepackagerecipe"/>
+
+        <browser:page
+            for="lp.code.interfaces.branch.IBranch"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
+            permission="launchpad.AnyPerson"
+            facet="branches"
+            name="+new-recipe"
+            template="../../app/templates/generic-edit.pt"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeEditView"
+            permission="launchpad.Edit"
+            facet="branches"
+            name="+edit"
+            template="../../app/templates/generic-edit.pt"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeDeleteView"
+            permission="zope.Public"
+            facet="branches"
+            name="+delete"
+            template="../../app/templates/generic-edit.pt"/>
+
+        <browser:page
+            for="lp.code.interfaces.branch.IBranch"
+            class="lp.code.browser.sourcepackagerecipelisting.BranchRecipeListingView"
+            permission="zope.Public"
+            facet="branches"
+            name="+recipes"
+            template="../templates/sourcepackagerecipe-listing.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.product.IProduct"
+            class="lp.code.browser.sourcepackagerecipelisting.ProductRecipeListingView"
+            permission="zope.Public"
+            facet="branches"
+            name="+recipes"
+            template="../templates/sourcepackagerecipe-listing.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.code.browser.sourcepackagerecipelisting.PersonRecipeListingView"
+            permission="zope.Public"
+            facet="branches"
+            name="+recipes"
+            template="../templates/sourcepackagerecipe-listing.pt"/>
+
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            name="+hierarchy"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeHierarchy"
+            template="../../app/templates/launchpad-hierarchy.pt"
+            permission="zope.Public"/>
+
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
+            permission="zope.Public"/>
+    </facet>
+  <securedutility
+    name="BuildableDistroSeries"
+    component="lp.code.browser.sourcepackagerecipe.buildable_distroseries_vocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+  <securedutility
+    name="TargetPPAs"
+    component="lp.code.browser.sourcepackagerecipe.target_ppas_vocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
 </configure>
