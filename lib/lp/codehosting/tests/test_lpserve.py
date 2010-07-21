@@ -163,5 +163,7 @@ class TestLaunchpadServe(TestCaseWithTransport):
         self.assertIsNot(None, error_utility.getLastOopsReport())
 
 
+class TestLaunchpadService(TestCaseWithTransport):
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

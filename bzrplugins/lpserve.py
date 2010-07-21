@@ -12,11 +12,13 @@ __all__ = ['cmd_launchpad_server']
 
 
 import resource
+import threading
+import socket
 import sys
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
-from bzrlib import lockdir, ui
+from bzrlib import errors, lockdir, ui, trace
 
 from bzrlib.smart import medium, server
 from bzrlib.transport import get_transport
@@ -110,3 +112,91 @@ class cmd_launchpad_server(Command):
 
 
 register_command(cmd_launchpad_server)
+
+
+class cmd_launchpad_service(Command):
+    """Launch a long-running process, where you can ask for new processes.
+
+    The process will block on a given --port waiting for requests to be made.
+    """
+
+    aliases = ['lp-service']
+
+    DEFAULT_PORT = 4156
+
+    takes_options = [Option('port',
+                        help='Listen for connections on [host:]portnumber',
+                        type=str),
+                    ]
+
+    def get_host_and_port(self, port):
+        host = None
+        if port is not None:
+            if ':' in port:
+                host, port = port.rsplit(':', 1)
+            port = int(port)
+        return host, port
+
+    def run(self, port=None):
+        host, port = self.get_host_and_port(port)
+        if port is None:
+            port = self.DEFAULT_PORT
+        addrs = socket.getaddrinfo(host, port, socket.AF_UNSPEC,
+            socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[0]
+        (family, socktype, proto, canonname, sockaddr) = addrs
+        self._server_socket = socket.socket(family, socktype, proto)
+        if sys.platform != 'win32':
+            self._server_socket.setsockopt(socket.SOL_SOCKET,
+                socket.SO_REUSEADDR, 1)
+        try:
+            self._server_socket.bind(sockaddr)
+        except self._socket_error, message:
+            raise errors.CannotBindAddress(host, port, message)
+        self._sockname = self._server_socket.getsockname()
+        trace.note('Waiting on %s' % (self._sockname,))
+        self.port = self._sockname[1]
+        self._socket_timeout = socket.timeout
+        self._socket_error = socket.error
+        self._server_socket.listen(1)
+        self._server_socket.settimeout(1)
+        self._started = threading.Event()
+        self._stopped = threading.Event()
+        self._should_terminate = False
+        self._started.set()
+        while not self._should_terminate:
+            try:
+                conn, client_addr = self._server_socket.accept()
+            except self._socket_timeout:
+                # just check if we're asked to stop
+                pass
+            except self._socket_error, e:
+                # if the socket is closed by stop_background_thread
+                # we might get a EBADF here, any other socket errors
+                # should get logged.
+                if e.args[0] != errno.EBADF:
+                    trace.warning("listening socket error: %s", e)
+            else:
+                trace.note('Connected from: %s' % (client_addr,))
+                self.serve_conn(conn)
+                if self._should_terminate:
+                    break
+        self._stopped.set()
+
+    def serve_conn(self, conn):
+        request = conn.recv(64*1024);
+        request = request.strip()
+        if request == 'quit':
+            self._should_terminate = True
+            conn.sendall('quit command requested... exiting\n')
+            trace.note('quit requested')
+            return
+        elif request.startswith('fork'):
+            # Not handled yet
+            conn.sendall('not implemented\n')
+            trace.note('fork requested')
+            conn.close()
+        else:
+            trace.note('unknown request: %r' % (request[:20],))
+
+
+register_command(cmd_launchpad_service)
