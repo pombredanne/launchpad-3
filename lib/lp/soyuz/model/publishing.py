@@ -37,6 +37,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -68,6 +69,10 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
+
+
+PENDING = PackagePublishingStatus.PENDING
+PUBLISHED = PackagePublishingStatus.PUBLISHED
 
 
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
@@ -271,7 +276,6 @@ class ArchivePublisherBase:
         """See `IPublishing`."""
         self.status = PackagePublishingStatus.SUPERSEDED
         self.datesuperseded = UTC_NOW
-        return self
 
     def requestDeletion(self, removed_by, removal_comment=None):
         """See `IPublishing`."""
@@ -673,6 +677,25 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return fields
 
+    def supersede(self, dominant=None, logger=None):
+        """See `ISourcePackagePublishingHistory`."""
+        assert self.status in [PUBLISHED, PENDING], (
+            "Should not dominate unpublished source %s" %
+            self.sourcepackagerelease.title)
+
+        super(SourcePackagePublishingHistory, self).supersede()
+
+        if dominant is not None:
+            if logger is not None:
+                logger.debug(
+                    "%s/%s has been judged as superseded by %s/%s" %
+                    (self.sourcepackagerelease.sourcepackagename.name,
+                     self.sourcepackagerelease.version,
+                     dominant.sourcepackagerelease.sourcepackagename.name,
+                     dominant.sourcepackagerelease.version))
+
+            self.supersededby = dominant.sourcepackagerelease
+
     def changeOverride(self, new_component=None, new_section=None):
         """See `ISourcePackagePublishingHistory`."""
         # Check we have been asked to do something
@@ -926,6 +949,73 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # When we have the information this will be the place to fill them.
 
         return fields
+
+    def _getOtherPublications(self):
+        """Return remaining publications with the same overrides.
+
+        Only considers binary publications in the same archive, distroseries,
+        pocket, component, section and priority context. These publications
+        are candidates for domination if this is an architecture-independent
+        package.
+
+        The override match is critical -- it prevents a publication created
+        by new overrides from superseding itself.
+        """
+        available_architectures = [
+            das.id for das in self.distroarchseries.distroseries.architectures]
+        return IMasterStore(BinaryPackagePublishingHistory).find(
+                BinaryPackagePublishingHistory,
+                BinaryPackagePublishingHistory.status.is_in(
+                    [PUBLISHED, PENDING]),
+                BinaryPackagePublishingHistory.distroarchseries in (
+                    available_architectures),
+                binarypackagerelease=self.binarypackagerelease,
+                archive=self.archive,
+                pocket=self.pocket,
+                component=self.component,
+                section=self.section,
+                priority=self.priority)
+
+    def supersede(self, dominant=None, logger=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        # At this point only PUBLISHED (ancient versions) or PENDING (
+        # multiple overrides/copies) publications should be given. We
+        # tolerate SUPERSEDED architecture-independent binaries, because
+        # they are dominated automatically once the first publication is
+        # processed.
+        if self.status not in [PUBLISHED, PENDING]:
+            assert not self.binarypackagerelease.architecturespecific, (
+                "Should not dominate unpublished architecture specific "
+                "binary %s (%s)" % (
+                self.binarypackagerelease.title,
+                self.distroarchseries.architecturetag))
+            return
+
+        super(BinaryPackagePublishingHistory, self).supersede()
+
+        if dominant is not None:
+            dominant_build = dominant.binarypackagerelease.build
+            distroarchseries = dominant_build.distro_arch_series
+            if logger is not None:
+                logger.debug(
+                    "The %s build of %s has been judged as superseded by the "
+                    "build of %s.  Arch-specific == %s" % (
+                    distroarchseries.architecturetag,
+                    self.binarypackagerelease.title,
+                    dominant_build.source_package_release.title,
+                    self.binarypackagerelease.architecturespecific))
+            # Binary package releases are superseded by the new build,
+            # not the new binary package release. This is because
+            # there may not *be* a new matching binary package -
+            # source packages can change the binaries they build
+            # between releases.
+            self.supersededby = dominant_build
+
+        # If this is architecture-independet, all publications with the same
+        # context and overrides should be dominated simultaneously.
+        if not self.binarypackagerelease.architecturespecific:
+            for dominated in self._getOtherPublications():
+                dominated.supersede(dominant, logger)
 
     def changeOverride(self, new_component=None, new_section=None,
                        new_priority=None):
