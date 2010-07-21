@@ -7,4 +7,4 @@ ALTER TABLE BinaryPackageRelease
 CREATE UNIQUE INDEX binarypackagerelease__debug_package__key
     ON BinaryPackageRelease(debug_package);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 73, 0);
