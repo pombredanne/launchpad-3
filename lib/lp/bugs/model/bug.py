@@ -1509,8 +1509,8 @@ class Bug(SQLBase):
                     dupe_before = Snapshot(
                         duplicate, providing=providedBy(duplicate))
                     duplicate.markAsDuplicate(duplicate_of)
-                    notify(
-                        ObjectModifiedEvent(duplicate, dupe_before, 'duplicateof'))
+                    notify(ObjectModifiedEvent(
+                            duplicate, dupe_before, 'duplicateof'))
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
