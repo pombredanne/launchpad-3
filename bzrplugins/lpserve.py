@@ -162,14 +162,45 @@ class LPService(object):
         self._server_socket.listen(1)
         self._server_socket.settimeout(1)
 
+    def _setup_child_file_descriptors(self, base_path):
+        stdin_path = os.path.join(base_path, 'stdin')
+        stdout_path = os.path.join(base_path, 'stdout')
+        stderr_path = os.path.join(base_path, 'stderr')
+        os.mkfifo(stdin_path)
+        os.mkfifo(stdout_path)
+        os.mkfifo(stderr_path)
+        # Opening for writing blocks (or fails), so do those last
+        # TODO: Consider buffering...
+        stdin_fid = os.open(stdin_path, os.O_RDONLY | os.O_NONBLOCK)
+        stdout_fid = os.open(stdout_path, os.O_WRONLY)
+        stderr_fid = os.open(stdout_path, os.O_WRONLY)
+        sys.stdin.close()
+        sys.stdout.close()
+        # sys.stderr.close()
+        os.dup2(stdin_fid, 0)
+        os.dup2(stdout_fid, 1)
+        os.dup2(stderr_fid, 2)
+        # We don't actually have to do this, because the stdin/stdout/stderr
+        # objects will already talk to the right handles because dup2 replaces
+        # the low-level I/O (probably wouldn't do exactly the same on win32)
+        # sys.stdin = os.fdopen(stdin_fid, 'rb')
+        # sys.stdout = os.fdopen(stdout_fid, 'wb')
+        # sys.stderr = os.fdopen(stderr_fid, 'wb')
+        # Now that we've opened the handles, delete everything so that we don't
+        # leave garbage around. Because the open() is done in blocking mode, we
+        # know that someone has already connected to them, and we don't want
+        # anyone else getting confused and connecting.
+        os.remove(stderr_path)
+        os.remove(stdout_path)
+        os.remove(stdin_path)
+        os.rmdir(base_path)
+
     def become_child(self, path):
         """We are in the spawned child code, do our magic voodoo."""
-        # TODO: At this point we should be doing the equivalent of lp-serve
-        # Create the child fifos, open them, once someone connects to them,
-        # delete them so that we don't leave trash around
-        time.sleep(5)
-        os.rmdir(path)
-        sys.exit()
+        self._setup_child_file_descriptors(path)
+        # This is the point where we would actually want to do something with
+        # our life
+        sys.exit(0)
 
     def fork_one_request(self, conn, user_id):
         """Fork myself and serve a request."""
@@ -184,6 +215,8 @@ class LPService(object):
             self.port = None
             self._sockname = None
             self.become_child(temp_name)
+            trace.warning('become_child returned!!!')
+            sys.exit(1)
         else:
             self._child_processes[pid] = temp_name
             self.log(conn, 'Spawned process %s for user %r: %s'
