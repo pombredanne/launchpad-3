@@ -83,12 +83,6 @@ class FilePublishingBase:
 
     def publish(self, diskpool, log):
         """See IFilePublishing."""
-        # DDEB publication for PPAs is temporarily disabled, see bug #399444.
-        if (self.archive.is_ppa and
-            self.libraryfilealiasfilename.endswith('.ddeb')):
-            log.debug('Skipping DDEB disk publication.')
-            return
-
         # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
         # when retrieving data from DB.
         source = self.sourcepackagename.encode('utf-8')

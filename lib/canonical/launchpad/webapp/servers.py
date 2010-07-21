@@ -1209,22 +1209,33 @@ class WebServicePublication(WebServicePublicationMixin,
         consumer = consumers.getByKey(consumer_key)
         token_key = form.get('oauth_token')
         anonymous_request = (token_key == '')
-        if consumer is None:
-            if consumer_key is None:
-                # Most likely the user is trying to make a totally
-                # unauthenticated request.
+
+        if consumer_key is None:
+            # Either the client's OAuth implementation is broken, or
+            # the user is trying to make an unauthenticated request
+            # using wget or another OAuth-ignorant application.
+            # Try to retrieve a consumer based on the User-Agent
+            # header.
+            anonymous_request = True
+            consumer_key = request.getHeader('User-Agent', '')
+            if consumer_key == '':
                 raise Unauthorized(
-                    'Request is missing an OAuth consumer key.')
+                    'Anonymous requests must provide a User-Agent.')
+            consumer = consumers.getByKey(consumer_key)
+
+        if consumer is None:
             if anonymous_request:
                 # This is the first time anyone has tried to make an
-                # anonymous request using this consumer
-                # name. Dynamically create the consumer.
+                # anonymous request using this consumer name (or user
+                # agent). Dynamically create the consumer.
                 #
                 # In the normal website this wouldn't be possible
                 # because GET requests have their transactions rolled
                 # back. But webservice requests always have their
                 # transactions committed so that we can keep track of
                 # the OAuth nonces and prevent replay attacks.
+                if consumer_key == '' or consumer_key is None:
+                    raise Unauthorized("No consumer key specified.")
                 consumer = consumers.new(consumer_key, '')
             else:
                 # An unknown consumer can never make a non-anonymous

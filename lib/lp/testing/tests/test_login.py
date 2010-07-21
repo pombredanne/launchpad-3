@@ -1,6 +1,8 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """Tests for the login helpers."""
 
 __metaclass__ = type
@@ -15,8 +17,21 @@ from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
-    ANONYMOUS, is_logged_in, login, login_as, login_celebrity, login_person,
-    login_team, logout)
+    ANONYMOUS,
+    anonymous_logged_in,
+    celebrity_logged_in,
+    is_logged_in,
+    login,
+    login_as,
+    login_celebrity,
+    login_person,
+    login_team,
+    logout,
+    person_logged_in,
+    with_anonymous_login,
+    with_celebrity_logged_in,
+    with_person_logged_in,
+    )
 from lp.testing import TestCaseWithFactory
 
 
@@ -177,7 +192,7 @@ class TestLoginHelpers(TestCaseWithFactory):
         login_celebrity('vcs_imports')
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         person = self.getLoggedInPerson()
-        self.assertTrue(person.inTeam, vcs_imports)
+        self.assertTrue(person.inTeam(vcs_imports))
 
     def test_login_nonexistent_celebrity(self):
         # login_celebrity raises ValueError when called with a non-existent
@@ -185,6 +200,101 @@ class TestLoginHelpers(TestCaseWithFactory):
         logout()
         e = self.assertRaises(ValueError, login_celebrity, 'nonexistent')
         self.assertEqual(str(e), "No such celebrity: 'nonexistent'")
+
+    def test_person_logged_in(self):
+        # The person_logged_in context manager runs with a person logged in.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            self.assertLoggedIn(person)
+
+    def test_person_logged_in_restores_person(self):
+        # Once outside of the person_logged_in context, the originally
+        # logged-in person is re-logged in.
+        a = self.factory.makePerson()
+        login_as(a)
+        b = self.factory.makePerson()
+        with person_logged_in(b):
+            self.assertLoggedIn(b)
+        self.assertLoggedIn(a)
+
+    def test_person_logged_in_restores_logged_out(self):
+        # If we are logged out before the person_logged_in context, then we
+        # are logged out afterwards.
+        person = self.factory.makePerson()
+        logout()
+        with person_logged_in(person):
+            pass
+        self.assertLoggedOut()
+
+    def test_person_logged_in_restores_person_even_when_raises(self):
+        # Once outside of the person_logged_in context, the originially
+        # logged-in person is re-logged in.
+        a = self.factory.makePerson()
+        login_as(a)
+        b = self.factory.makePerson()
+        try:
+            with person_logged_in(b):
+                1/0
+        except ZeroDivisionError:
+            pass
+        self.assertLoggedIn(a)
+
+    def test_team_logged_in(self):
+        # person_logged_in also works when given teams.
+        team = self.factory.makeTeam()
+        with person_logged_in(team):
+            person = self.getLoggedInPerson()
+        self.assertTrue(person.inTeam(team))
+
+    def test_celebrity_logged_in(self):
+        # celebrity_logged_in runs in a context where a celebrity is logged
+        # in.
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        with celebrity_logged_in('vcs_imports'):
+            person = self.getLoggedInPerson()
+        self.assertTrue(person.inTeam(vcs_imports))
+
+    def test_celebrity_logged_in_restores_person(self):
+        # Once outside of the celebrity_logged_in context, the originally
+        # logged-in person is re-logged in.
+        person = self.factory.makePerson()
+        login_as(person)
+        with celebrity_logged_in('vcs_imports'):
+            pass
+        self.assertLoggedIn(person)
+
+    def test_with_celebrity_logged_in(self):
+        # with_celebrity_logged_in decorates a function so that it runs with
+        # the given person logged in.
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        @with_celebrity_logged_in('vcs_imports')
+        def f():
+            return self.getLoggedInPerson()
+        logout()
+        person = f()
+        self.assertTrue(person.inTeam, vcs_imports)
+
+    def test_with_person_logged_in(self):
+        person = self.factory.makePerson()
+        @with_person_logged_in(person)
+        def f():
+            return self.getLoggedInPerson()
+        logout()
+        logged_in = f()
+        self.assertEqual(person, logged_in)
+
+    def test_with_anonymous_log_in(self):
+        # with_anonymous_login logs in as the anonymous user.
+        @with_anonymous_login
+        def f():
+            return self.getLoggedInPerson()
+        person = f()
+        self.assertEqual(ANONYMOUS, person)
+
+    def test_anonymous_log_in(self):
+        # anonymous_logged_in is a context logged in as anonymous.
+        with anonymous_logged_in():
+            self.assertLoggedIn(ANONYMOUS)
 
 
 def test_suite():
