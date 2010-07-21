@@ -16,8 +16,8 @@ from canonical.testing import layers
 from lp.services.features import flags, model
 
 
-example_flag_name = u'notification.global.text'
-example_flag_value = u'\N{SNOWMAN} stormy Launchpad weather ahead'
+notification_name = u'notification.global.text'
+notification_value = u'\N{SNOWMAN} stormy Launchpad weather ahead'
 example_scope = u'beta_user'
 
 class TestFeatureFlags(testtools.TestCase):
@@ -35,19 +35,36 @@ class TestFeatureFlags(testtools.TestCase):
         # FeatureController
         flag = model.FeatureFlag(
             scope=example_scope,
-            flag=example_flag_name,
-            value=example_flag_value,
+            flag=notification_name,
+            value=notification_value,
             priority=100)
         model.FeatureFlagCollection().store.add(flag)
         control = flags.FeatureController()
-        self.assertEqual({example_flag_name: example_flag_value},
+        self.assertEqual({notification_name: notification_value},
             control.getAllFlags())
 
     def test_setFlags(self):
         # you can also set flags through a facade
+        control = self.makePopulatedController()
+        self.assertEqual({notification_name: notification_value},
+            control.getAllFlags())
+
+    def test_getFlagsForScopes(self):
+        control = self.makePopulatedController()
+        self.assertEqual(
+            {notification_name: notification_value},
+            control.getFlagsForScopes(['beta_user']))
+        self.assertEqual(
+            {},
+            control.getFlagsForScopes(['normal_user']))
+        self.assertEqual(
+            {},
+            control.getFlagsForScopes([]))
+
+    def makePopulatedController(self):
+        # make a controller with some test flags
         control = flags.FeatureController()
         control.addSetting(
-            scope=example_scope, flag=example_flag_name,
-            value=example_flag_value, priority=100)
-        self.assertEqual({example_flag_name: example_flag_value},
-            control.getAllFlags())
+            scope=example_scope, flag=notification_name,
+            value=notification_value, priority=100)
+        return control
