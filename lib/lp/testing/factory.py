@@ -151,7 +151,7 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.processor import ProcessorFamily, ProcessorFamilySet
+from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from lp.testing import (
@@ -834,7 +834,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
-                'Unrecognized branch type: %r' % (branch_type, ))
+                'Unrecognized branch type: %r' % (branch_type,))
 
         namespace = get_branch_namespace(
             owner, product=product, distroseries=distroseries,
@@ -1804,6 +1804,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         parser = RecipeParser(self.makeRecipeText(*branches))
         return parser.parse()
 
+    def makeSourcePackageRecipeDistroseries(self, name="warty"):
+        """Return a supported Distroseries to use with Source Package Recipes.
+
+        Ew.  This uses sampledata currently, which is the ONLY reason this
+        method exists: it gives us a migration path away from sampledata.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        return ubuntu.getSeries(name)
+
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, name=None,
                                 description=None, branches=(),
@@ -1815,12 +1824,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
         if distroseries is None:
-            distroseries = self.makeDistroSeries()
-            naked_distroseries = removeSecurityProxy(distroseries)
-            naked_distroseries.nominatedarchindep = (
-                naked_distroseries.newArch(
-                    'i386', ProcessorFamily.get(1), False, owner,
-                    supports_virtualized=True))
+            distroseries = self.makeSourcePackageRecipeDistroseries()
 
         if name is None:
             name = self.getUniqueString().decode('utf8')

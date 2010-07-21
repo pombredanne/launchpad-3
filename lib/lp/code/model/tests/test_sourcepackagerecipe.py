@@ -45,11 +45,9 @@ from lp.code.model.sourcepackagerecipe import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
-from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS, launchpadlib_for, login, login_person, person_logged_in,
     TestCaseWithFactory, ws_object)
-from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -210,7 +208,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     def test_requestBuild(self):
         recipe = self.factory.makeSourcePackageRecipe()
-        (distroseries, ) = list(recipe.distroseries)
+        (distroseries,) = list(recipe.distroseries)
         ppa = self.factory.makeArchive()
         build = recipe.requestBuild(ppa, ppa.owner, distroseries,
                 PackagePublishingPocket.RELEASE)
@@ -234,7 +232,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     def test_requestBuildRejectsNotPPA(self):
         recipe = self.factory.makeSourcePackageRecipe()
         not_ppa = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        (distroseries, ) = list(recipe.distroseries)
+        (distroseries,) = list(recipe.distroseries)
         self.assertRaises(NonPPABuildRequest, recipe.requestBuild, not_ppa,
                 not_ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
 
@@ -242,14 +240,14 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe()
         ppa = self.factory.makeArchive()
         requester = self.factory.makePerson()
-        (distroseries, ) = list(recipe.distroseries)
+        (distroseries,) = list(recipe.distroseries)
         self.assertRaises(CannotUploadToArchive, recipe.requestBuild, ppa,
                 requester, distroseries, PackagePublishingPocket.RELEASE)
 
     def test_requestBuildRejectsInvalidPocket(self):
         recipe = self.factory.makeSourcePackageRecipe()
         ppa = self.factory.makeArchive()
-        (distroseries, ) = list(recipe.distroseries)
+        (distroseries,) = list(recipe.distroseries)
         self.assertRaises(InvalidPocketForPPA, recipe.requestBuild, ppa,
                 ppa.owner, distroseries, PackagePublishingPocket.BACKPORTS)
 
@@ -257,7 +255,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe()
         ppa = self.factory.makeArchive()
         removeSecurityProxy(ppa).disable()
-        (distroseries, ) = list(recipe.distroseries)
+        (distroseries,) = list(recipe.distroseries)
         self.assertRaises(ArchiveDisabled, recipe.requestBuild, ppa,
                 ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
 
@@ -283,7 +281,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     def test_requestBuildHonoursConfig(self):
         recipe = self.factory.makeSourcePackageRecipe()
-        (distroseries, ) = list(recipe.distroseries)
+        (distroseries,) = list(recipe.distroseries)
         ppa = self.factory.makeArchive()
         self.pushConfig('build_from_branch', enabled=False)
         self.assertRaises(
@@ -323,12 +321,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             self.factory.makeArchive(owner=recipe.owner), recipe.owner,
             series, PackagePublishingPocket.RELEASE)
         # Varying distroseries allows build.
-        new_distroseries = self.factory.makeDistroSeries()
-        naked_new_distroseries = remove_security_proxy_and_shout_at_engineer(
-            new_distroseries)
-        naked_new_distroseries.nominatedarchindep = new_distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, recipe.owner,
-            supports_virtualized=True)
+        new_distroseries = self.factory.makeSourcePackageRecipeDistroseries(
+            "hoary")
         recipe.requestBuild(archive, recipe.owner,
             new_distroseries, PackagePublishingPocket.RELEASE)
         # Changing status of old build allows new build.
@@ -347,7 +341,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         """Test that the distroseries behaves as a set."""
         recipe = self.factory.makeSourcePackageRecipe()
         distroseries = self.factory.makeDistroSeries()
-        (old_distroseries, ) = recipe.distroseries
+        (old_distroseries,) = recipe.distroseries
         recipe.distroseries.add(distroseries)
         self.assertEqual(
             set([distroseries, old_distroseries]), set(recipe.distroseries))
@@ -695,13 +689,7 @@ class TestWebservice(TestCaseWithFactory):
         """Build requests can be performed."""
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(owner=person)
-        distroseries = self.factory.makeDistroSeries()
-        distroseries_i386 = distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, person,
-            supports_virtualized=True)
-        naked_distroseries = remove_security_proxy_and_shout_at_engineer(
-            distroseries)
-        naked_distroseries.nominatedarchindep = distroseries_i386
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
 
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
@@ -714,13 +702,7 @@ class TestWebservice(TestCaseWithFactory):
         """Build requests are rejected if already pending."""
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(owner=person)
-        distroseries = self.factory.makeDistroSeries()
-        distroseries_i386 = distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, person,
-            supports_virtualized=True)
-        naked_distroseries = remove_security_proxy_and_shout_at_engineer(
-            distroseries)
-        naked_distroseries.nominatedarchindep = distroseries_i386
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
 
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
@@ -737,13 +719,7 @@ class TestWebservice(TestCaseWithFactory):
         """Build requests are rejected if they exceed quota."""
         person = self.factory.makePerson()
         archives = [self.factory.makeArchive(owner=person) for x in range(6)]
-        distroseries = self.factory.makeDistroSeries()
-        distroseries_i386 = distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, person,
-            supports_virtualized=True)
-        naked_distroseries = remove_security_proxy_and_shout_at_engineer(
-            distroseries)
-        naked_distroseries.nominatedarchindep = distroseries_i386
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
 
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
@@ -758,6 +734,21 @@ class TestWebservice(TestCaseWithFactory):
             archive=archive, distroseries=distroseries,
             pocket=PackagePublishingPocket.RELEASE.title)
         self.assertIn('TooManyBuilds', str(e))
+
+    def test_requestBuildRejectUnsupportedDistroSeries(self):
+        """Build requests are rejected if they have a bad distroseries."""
+        person = self.factory.makePerson()
+        archives = [self.factory.makeArchive(owner=person) for x in range(6)]
+        distroseries = self.factory.makeDistroSeries()
+
+        recipe, user, launchpad = self.makeRecipe(person)
+        distroseries = ws_object(launchpad, distroseries)
+        archive = ws_object(launchpad, archives[-1])
+
+        e = self.assertRaises(Exception, recipe.requestBuild,
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
+        self.assertIn('BuildNotAllowedForDistro', str(e))
 
 
 def test_suite():

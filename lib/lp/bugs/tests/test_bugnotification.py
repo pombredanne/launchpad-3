@@ -155,7 +155,7 @@ class TestNotificationsForDuplicates(TestCaseWithFactory):
             user='test@canonical.com')
         self.bug = self.factory.makeBug()
         self.dupe_bug = self.factory.makeBug()
-        self.dupe_bug.duplicateof = self.bug
+        self.dupe_bug.markAsDuplicate(self.bug)
         self.dupe_subscribers = set(
             self.dupe_bug.getDirectSubscribers() +
             self.dupe_bug.getIndirectSubscribers())

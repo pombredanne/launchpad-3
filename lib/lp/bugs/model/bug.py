@@ -1493,11 +1493,6 @@ class Bug(SQLBase):
 
         self.updateHeat()
 
-    @property
-    def readonly_duplicateof(self):
-        """See `IBug`."""
-        return self.duplicateof
-
     def markAsDuplicate(self, duplicate_of):
         """See `IBug`."""
         field = DuplicateBug()
@@ -1506,6 +1501,9 @@ class Bug(SQLBase):
         try:
             if duplicate_of is not None:
                 field._validate(duplicate_of)
+            if self.duplicates:
+                for duplicate in self.duplicates:
+                    duplicate.markAsDuplicate(duplicate_of)
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
