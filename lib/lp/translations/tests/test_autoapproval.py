@@ -13,7 +13,6 @@ from __future__ import with_statement
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pytz import UTC
-from unittest import TestLoader
 
 from zope.component import getUtility
 
@@ -45,6 +44,7 @@ class GardenerDbUserMixin(object):
 
     Admittedly, this might be a little over-engineered but it looks good. ;)
     """
+
     def becomeTheGardener(self):
         """One-way method to avoid unnecessary switch back."""
         self.becomeDbUser('translations_import_queue_gardener')
@@ -1150,7 +1150,3 @@ class TestAutoBlocking(TestCaseWithFactory):
         translations = self._makeTranslationEntry(
             'po/moduleX/es.po', same_target_as=blocked)
         self.assertFalse(self.queue._isBlockable(translations, blocklist))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

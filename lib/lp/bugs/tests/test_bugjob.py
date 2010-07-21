@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.bugs.interfaces.bugjob import BugJobType
@@ -49,7 +47,3 @@ class BugJobDerivedTestCase(TestCaseWithFactory):
         bug = self.factory.makeBug()
         self.assertRaises(
             AttributeError, BugJobDerived.create, bug)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

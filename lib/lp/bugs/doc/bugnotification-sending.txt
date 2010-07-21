@@ -760,13 +760,14 @@ We will also need a fresh new bug.
     >>> switch_db_to_launchpad()
     >>> new_bug = ubuntu.createBug(params)
     >>> switch_db_to_bugnotification()
-
     >>> flush_notifications()
 
 If a bug is a duplicate of another bug, a marker gets inserted at the
 top of the email:
 
-    >>> new_bug.duplicateof = bug_one
+    >>> switch_db_to_launchpad()
+    >>> new_bug.markAsDuplicate(bug_one)
+    >>> switch_db_to_bugnotification()
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
