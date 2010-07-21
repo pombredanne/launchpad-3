@@ -1155,13 +1155,14 @@ class WebServicePublication(WebServicePublicationMixin,
     root_object_interface = IWebServiceApplication
 
     def constructPageID(self, view, context):
+        """Add the web service named operation (if any) to the page ID."""
+        pageid = super(WebServicePublication, self).constructPageID(
+            view, context)
         op = (view.request.get('ws.op')
             or view.request.query_string_params.get('ws.op'))
         if op:
-            return '%s:%s' % (context.__class__.__name__, op)
-        else:
-            return super(WebServicePublication, self).constructPageID(
-                view, context)
+            pageid += ':' + op
+        return pageid
 
     def getApplication(self, request):
         """See `zope.publisher.interfaces.IPublication`.

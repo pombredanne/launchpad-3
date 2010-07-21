@@ -133,7 +133,7 @@ class LaunchpadBrowserPublication(
     # If this becomes untrue at some point, the code will need to be
     # revisited.
 
-    # pylint: disable-msg=E0301 what you talkin' about pylint?
+    # pylint: disable-msg=E0301
     def beforeTraversal(self, request):
         notify(StartRequestEvent(request))
         request._traversalticks_start = tickcount.tickcount()
@@ -189,6 +189,7 @@ class LaunchpadBrowserPublication(
 
         # Set the default layer.
         adapters = zapi.getGlobalSiteManager().adapters
+        # pylint: disable-msg=E0231
         layer = adapters.lookup((providedBy(request),), IDefaultSkin, '')
         if layer is not None:
             layers.setAdditionalLayer(request, layer)
@@ -319,7 +320,7 @@ class LaunchpadBrowserPublication(
             return
         if (IOAuthSignedRequest.providedBy(request)
             or not IBrowserRequest.providedBy(request)
-            or request['PATH_INFO']  in (
+            or request['PATH_INFO'] in (
                 '/+storeblob', '/+request-token', '/+access-token',
                 '/+hwdb/+submit')):
             # We only want to check for the referrer header if we are
@@ -413,7 +414,6 @@ class LaunchpadBrowserPublication(
         view = removeSecurityProxy(ob)
         # It's possible that the view is a bounded method.
         view = getattr(view, 'im_self', view)
-        # ??? can view.context actually be security proxied?
         context = removeSecurityProxy(getattr(view, 'context', None))
         pageid = self.constructPageID(view, context)
         request.setInWSGIEnvironment('launchpad.pageid', pageid)
@@ -538,16 +538,16 @@ class LaunchpadBrowserPublication(
         orig_env = request._orig_env
         ticks = tickcount.tickcount()
         if (hasattr(request, '_publicationticks_start') and
-            not orig_env.has_key('launchpad.publicationticks')):
+            ('launchpad.publicationticks' not in orig_env)):
             # The traversal process has been started but hasn't completed.
-            assert orig_env.has_key('launchpad.traversalticks'), (
+            assert 'launchpad.traversalticks' in orig_env, (
                 'We reached the publication process so we must have finished '
                 'the traversal.')
             ticks = tickcount.difference(
                 request._publicationticks_start, ticks)
             request.setInWSGIEnvironment('launchpad.publicationticks', ticks)
         elif (hasattr(request, '_traversalticks_start') and
-              not orig_env.has_key('launchpad.traversalticks')):
+              ('launchpad.traversalticks' not in orig_env)):
             # The traversal process has been started but hasn't completed.
             ticks = tickcount.difference(
                 request._traversalticks_start, ticks)
