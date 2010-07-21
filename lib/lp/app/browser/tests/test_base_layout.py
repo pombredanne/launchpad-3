@@ -6,7 +6,7 @@
 The base-layout master template defines macros that control the layout
 of the page. Any page can use these layout options by including
 
-    metal:use-macro="view/macro:page/<layout>"
+    metal:use-macro='view/macro:page/<layout>"
 
 in the root element. The template provides common layout to Launchpad.
 """
@@ -57,10 +57,7 @@ class TestBaseLayout(TestCaseWithFactory):
         markup = view()
         self.assertTrue(markup.startswith('<!DOCTYPE html'))
 
-    def test_base_layout_common(self):
-        # Verfify the common markup provided to all tremplates
-        view = self.makeTemplateView('main_side')
-        content = BeautifulSoup(view())
+    def verify_base_layout_common(self, view, content):
         # The html element states the namespace and language information.
         self.assertEqual(
             'http://www.w3.org/1999/xhtml', content.html['xmlns'])
@@ -78,16 +75,77 @@ class TestBaseLayout(TestCaseWithFactory):
         load_script = find_tag_by_id(content, 'base-layout-load-scripts').name
         self.assertEqual('script', load_script)
 
+    def verify_main_content(self, document):
+        self.assertEqual('body', document.name)
+        yui_layout = document.find('div', 'yui-d0')
+        self.assertTrue(yui_layout is not None)
+        self.assertEqual(
+            'login-logout', yui_layout.find(True, id='locationbar')['class'])
+        self.assertEqual(
+            'yui-main', yui_layout.find(True, id='maincontent')['class'])
+        self.assertEqual(
+            'invisible', document.find(True, id='help-pane')['class'])
+        self.assertEqual(
+            'footer', yui_layout.find(True, id='footer')['class'])
+
+    def verify_watermark(self, document):
+        yui_layout = document.find('div', 'yui-d0')
+        watermark = yui_layout.find(True, id='watermark')
+        self.assertEqual('watermark-apps-portlet', watermark['class'])
+        self.assertEqual('/@@/person-logo', watermark.img['src'])
+        self.assertEqual('Waffles', watermark.h2.string)
+        self.assertEqual('facetmenu', watermark.ul['class'])
+        self.assertEqual(
+            'registering', watermark.find(True, id='registration')['class'])
+
     def test_main_side(self):
         view = self.makeTemplateView('main_side')
         content = BeautifulSoup(view())
+        self.verify_base_layout_common(view, content)
         document = find_tag_by_id(content, 'document')
-        self.assertEqual('body', document.name)
+        self.verify_main_content(document)
+        self.verify_watermark(document)
         classes = 'tab-overview main_side public yui-skin-sam'.split()
         self.assertEqual(classes, document['class'].split())
-        grid_layout = document.find('div', 'yui-d0')
-        self.assertEqual('div', grid_layout.name)
-        self.assertEqual('div', document.find('div', id='locationbar').name)
+        self.assertEqual(
+            'yui-b side', document.find(True, id='side-portlets')['class'])
+        self.assertEqual('form', document.find(True, id='globalsearch').name)
+
+    def test_main_only(self):
+        view = self.makeTemplateView('main_only')
+        content = BeautifulSoup(view())
+        self.verify_base_layout_common(view, content)
+        document = find_tag_by_id(content, 'document')
+        self.verify_main_content(document)
+        self.verify_watermark(document)
+        classes = 'tab-overview main_only public yui-skin-sam'.split()
+        self.assertEqual(classes, document['class'].split())
+        self.assertEqual(None, document.find(True, id='side-portlets'))
+        self.assertEqual('form', document.find(True, id='globalsearch').name)
+
+    def test_searchless(self):
+        view = self.makeTemplateView('searchless')
+        content = BeautifulSoup(view())
+        self.verify_base_layout_common(view, content)
+        document = find_tag_by_id(content, 'document')
+        self.verify_main_content(document)
+        self.verify_watermark(document)
+        classes = 'tab-overview searchless public yui-skin-sam'.split()
+        self.assertEqual(classes, document['class'].split())
+        self.assertEqual(None, document.find(True, id='side-portlets'))
+        self.assertEqual(None, document.find(True, id='globalsearch'))
+
+    def test_locationless(self):
+        view = self.makeTemplateView('locationless')
+        content = BeautifulSoup(view())
+        self.verify_base_layout_common(view, content)
+        document = find_tag_by_id(content, 'document')
+        self.verify_main_content(document)
+        classes = 'tab-overview locationless public yui-skin-sam'.split()
+        self.assertEqual(classes, document['class'].split())
+        self.assertEqual(None, document.find(True, id='watermark'))
+        self.assertEqual(None, document.find(True, id='side-portlets'))
+        self.assertEqual(None, document.find(True, id='globalsearch'))
 
 
 def test_suite():

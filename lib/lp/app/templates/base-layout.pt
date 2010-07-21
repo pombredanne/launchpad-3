@@ -87,7 +87,7 @@
         <tal:login replace="structure context/@@login_status" />
       </div><!--id="locationbar"-->
 
-      <div class="watermark-apps-portlet"
+      <div id="watermark" class="watermark-apps-portlet"
            tal:condition="view/macro:pagehas/applicationtabs">
         <div class="flowed-block">
           <span tal:replace="structure view/watermark:logo"></span>
@@ -136,7 +136,7 @@
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
-        <div class="yui-b side"
+        <div id="side-portlets" class="yui-b side"
           tal:condition="view/macro:pagehas/portlets">
           <metal:portlets define-slot="side" />
         </div><!-- yui-b side -->
