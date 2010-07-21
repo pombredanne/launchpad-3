@@ -1,0 +1,64 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:meta="http://namespaces.zope.org/meta"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="canonical">
+    <!-- These packages are required by apidoc. If they are deemed
+    generally useful, move them to zopeapp.zcml
+    -->
+
+    <browser:menu
+        id="zmi_views"
+        title="Views"
+        description="Menu for displaying alternate representations of an object"
+        />
+    <browser:menu
+        id="zmi_actions"
+        title="Actions"
+        description="Menu for displaying actions to be performed"
+        />
+
+    <!-- XXX Probably make this in overrides for ISimpleReadContainer.  Safer:
+      register for all apidoc containers, one way or another -->
+    <view
+      for="zope.container.interfaces.IReadContainer"
+      type="zope.publisher.interfaces.http.IHTTPRequest"
+      provides="zope.publisher.interfaces.IPublishTraverse"
+      factory="zope.container.traversal.ContainerTraverser"
+      permission="zope.Public"
+      allowed_interface="zope.publisher.interfaces.IPublishTraverse"
+      />
+    <adapter factory="canonical.launchpad.webapp.authentication.LaunchpadPrincipalAnnotations" />
+
+    <class class="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest">
+      <implements interface="zope.app.apidoc.browser.skin.APIDOC" />
+    </class>
+
+    <!-- XXX: Copied from zope.browserresource as apidoc breaks if we make
+         IAPIDocRoot implement ISite so that the original registration works
+         for us. -->
+    <view
+        for="canonical.launchpad.webapp.interfaces.IAPIDocRoot" 
+        type="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+        name=""
+        factory="zope.browserresource.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        />
+
+    <!-- Turn on devmode for the following includes principal=work -->
+    <meta:provides feature="devmode" />
+
+    <include package="zope.location" />
+    <include package="zope.app.applicationcontrol" />
+    <include package="zope.app.renderer" />
+    <include package="zope.app.preference" file="meta.zcml" />
+    <include package="zope.app.apidoc.codemodule" file="meta.zcml" />
+    <include package="zope.app.apidoc.bookmodule" file="meta.zcml" />
+    <include package="zope.app.preference" />
+    <include package="zope.app.tree" />
+    <include package="zope.app.apidoc" />
+
+</configure>
+

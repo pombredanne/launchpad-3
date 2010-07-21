@@ -170,22 +170,6 @@ class AuthorizationBase:
             return self.checkAuthenticated(IPersonRoles(person))
 
 
-class ManageApplicationForEverybody(AuthorizationBase):
-    """This is just to please apidoc.launchpad.dev.
-
-    We do this because zope.app.apidoc uses that permission, but nothing else
-    should be using it.
-    """
-    permission = 'zope.ManageApplication'
-    usedfor = Interface
-
-    def checkUnauthenticated(self, user):
-        return True
-
-    def checkAccountAuthenticated(self, user):
-        return True
-
-
 class ViewByLoggedInUser(AuthorizationBase):
     """The default ruleset for the launchpad.View permission.
 
@@ -1096,11 +1080,25 @@ class EditAnnouncement(AuthorizationBase):
 
 
 class UseApiDoc(AuthorizationBase):
+    """This is just to please apidoc.launchpad.dev."""
     permission = 'zope.app.apidoc.UseAPIDoc'
     usedfor = Interface
 
+    def checkUnauthenticated(self):
+        return True
+
     def checkAuthenticated(self, user):
         return True
+
+
+class ManageApplicationForEverybody(UseApiDoc):
+    """This is just to please apidoc.launchpad.dev.
+
+    We do this because zope.app.apidoc uses that permission, but nothing else
+    should be using it.
+    """
+    permission = 'zope.ManageApplication'
+    usedfor = Interface
 
 
 class OnlyBazaarExpertsAndAdmins(AuthorizationBase):
