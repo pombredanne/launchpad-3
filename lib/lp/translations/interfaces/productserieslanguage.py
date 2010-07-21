@@ -49,7 +49,6 @@ class IProductSeriesLanguage(IRosettaStats):
     last_changed_date = Datetime(
         title=_('When this file was last changed.'))
 
-
     def getPOFilesFor(potemplates):
         """Return `POFiles` for each of `potemplates`, in the same order.
 
@@ -67,10 +66,6 @@ class IProductSeriesLanguage(IRosettaStats):
 class IProductSeriesLanguageSet(Interface):
     """The set of productserieslanguages."""
 
-    def getDummy(productseries, language, variant=None):
-        """Return a new DummyProductSeriesLanguage for the given
-        productseries and language.
-        """
-
-    def getProductSeriesLanguage(productseries, language, variant=None):
+    def getProductSeriesLanguage(productseries, language, variant=None,
+                                 pofile=None):
         """Return a PSL for a productseries and a language."""
