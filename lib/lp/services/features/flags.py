@@ -34,24 +34,35 @@ class FeatureController(object):
     oriented only towards readers.
     """
 
-    def __init__(self):
+    def __init__(self, scopes):
+        """Construct a new view of the features for a set of scopes.
+        """
         self._collection = model.FeatureFlagCollection()
+        self.scopes = self._preenScopes(scopes)
+
+    def setScopes(self, scopes):
+        self.scopes = self._preenScopes(scopes)
+
+    def getFlag(self, flag_name):
+        rs = (self._collection
+                .refine(model.FeatureFlag.scope.is_in(self.scopes),
+                    model.FeatureFlag.flag == flag_name)
+                .select()
+                .order_by(Desc(model.FeatureFlag.priority)))
+        rs.config(limit=1)
+        f = rs.one()
+        return f.value
 
     def getAllFlags(self):
-        """Get the feature flags active for the current context.
+        """Get the feature flags active for the current scopes.
         
         :returns: dict from flag_name (unicode) to value (unicode).
         """
-        rs = self._collection.select()
-        return self._resultSetToFlagDict(rs)
-
-    def getFlagsForScopes(self, scopes):
-        """Get flags for specified set of scopes.
-        """
-        scopes = self._preenScopes(scopes)
-        rs = self._collection.refine(
-            model.FeatureFlag.scope.is_in(scopes)).select()
-        return self._resultSetToFlagDict(rs)
+        rs = (self._collection
+                .refine(model.FeatureFlag.scope.is_in(self.scopes))
+                .select()
+                .order_by(model.FeatureFlag.priority))
+        return dict((f.flag, f.value) for f in rs)
 
     def _preenScopes(self, scopes):
         # for convenience turn strings to unicode
@@ -65,11 +76,12 @@ class FeatureController(object):
                 raise TypeError("invalid scope: %r" % s)
         return us
 
-    def _resultSetToFlagDict(self, rs):
-        rs = rs.order_by(
-            Desc(model.FeatureFlag.priority))
-        return dict((f.flag, f.value) for f in rs)
-
     def addSetting(self, **kwargs):
+        """Add a setting for a flag.
+
+        Note that flag settings are global in the database: they affect all
+        FeatureControllers connected to this database, and they will persist
+        if the database transaction is committed.
+        """
         flag = model.FeatureFlag(**kwargs)
         self._collection.store.add(flag)

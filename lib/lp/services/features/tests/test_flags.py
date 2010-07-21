@@ -26,7 +26,7 @@ class TestFeatureFlags(testtools.TestCase):
 
     def test_defaultFlags(self):
         # the sample db has no flags set
-        control = flags.FeatureController()
+        control = flags.FeatureController([])
         self.assertEqual({},
             control.getAllFlags())
 
@@ -39,32 +39,58 @@ class TestFeatureFlags(testtools.TestCase):
             value=notification_value,
             priority=100)
         model.FeatureFlagCollection().store.add(flag)
-        control = flags.FeatureController()
-        self.assertEqual({notification_name: notification_value},
-            control.getAllFlags())
+        control = flags.FeatureController([u'beta_user'])
+        self.assertEqual(notification_value,
+            control.getFlag(notification_name))
 
     def test_setFlags(self):
         # you can also set flags through a facade
         control = self.makePopulatedController()
-        self.assertEqual({notification_name: notification_value},
+        self.assertEqual(notification_value,
+            control.getFlag(notification_name))
+
+    def test_getAllFlags(self):
+        # can fetch all the active flags, and it gives back only the
+        # highest-priority settings
+        control = self.makeControllerWithOverrides()
+        self.assertEqual(
+            {u'ui.icing': '4.0',
+             notification_name: notification_value},
             control.getAllFlags())
 
-    def test_getFlagsForScopes(self):
-        control = self.makePopulatedController()
+    def test_overrideFlag(self):
+        # if there are multiple settings for a flag, and they match multiple
+        # scopes, the priorities determine which is matched
+        control = self.makeControllerWithOverrides()
+        control.setScopes(['default'])
         self.assertEqual(
-            {notification_name: notification_value},
-            control.getFlagsForScopes(['beta_user']))
+            u'3.0',
+            control.getFlag(u'ui.icing'))
+        control.setScopes(['default', 'beta_user'])
         self.assertEqual(
-            {},
-            control.getFlagsForScopes(['normal_user']))
-        self.assertEqual(
-            {},
-            control.getFlagsForScopes([]))
+            u'4.0',
+            control.getFlag(u'ui.icing'))
 
     def makePopulatedController(self):
         # make a controller with some test flags
-        control = flags.FeatureController()
+        control = flags.FeatureController([u'beta_user'])
         control.addSetting(
             scope=example_scope, flag=notification_name,
             value=notification_value, priority=100)
+        return control
+
+    # TODO: test value not being found: should return None
+
+    def makeControllerWithOverrides(self):
+        control = self.makePopulatedController()
+        control.addSetting(
+            scope=u'default',
+            flag=u'ui.icing',
+            value=u'3.0',
+            priority=100)
+        control.addSetting(
+            scope=u'beta_user',
+            flag=u'ui.icing',
+            value=u'4.0',
+            priority=300)
         return control
