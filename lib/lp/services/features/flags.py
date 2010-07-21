@@ -32,6 +32,10 @@ class FeatureController(object):
 
     This presents a higher-level interface over the storm model objects,
     oriented only towards readers.
+
+    At this level flag names and scope names are presented as strings for
+    easier use in Python code, though the values remain unicode.  They
+    should always be ascii like Python identifiers.
     """
 
     def __init__(self, scopes):
@@ -46,7 +50,7 @@ class FeatureController(object):
     def getFlag(self, flag_name):
         rs = (self._collection
                 .refine(model.FeatureFlag.scope.is_in(self.scopes),
-                    model.FeatureFlag.flag == flag_name)
+                    model.FeatureFlag.flag == unicode(flag_name))
                 .select()
                 .order_by(Desc(model.FeatureFlag.priority)))
         rs.config(limit=1)
@@ -62,7 +66,7 @@ class FeatureController(object):
                 .refine(model.FeatureFlag.scope.is_in(self.scopes))
                 .select()
                 .order_by(model.FeatureFlag.priority))
-        return dict((f.flag, f.value) for f in rs)
+        return dict((str(f.flag), f.value) for f in rs)
 
     def _preenScopes(self, scopes):
         # for convenience turn strings to unicode
@@ -76,12 +80,15 @@ class FeatureController(object):
                 raise TypeError("invalid scope: %r" % s)
         return us
 
-    def addSetting(self, **kwargs):
+    def addSetting(self, scope, flag, value, priority):
         """Add a setting for a flag.
 
         Note that flag settings are global in the database: they affect all
         FeatureControllers connected to this database, and they will persist
         if the database transaction is committed.
         """
-        flag = model.FeatureFlag(**kwargs)
-        self._collection.store.add(flag)
+        flag_obj = model.FeatureFlag(scope=unicode(scope),
+            flag=unicode(flag),
+            value=value,
+            priority=priority)
+        self._collection.store.add(flag_obj)

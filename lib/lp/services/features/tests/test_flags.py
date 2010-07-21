@@ -16,9 +16,9 @@ from canonical.testing import layers
 from lp.services.features import flags, model
 
 
-notification_name = u'notification.global.text'
+notification_name = 'notification.global.text'
 notification_value = u'\N{SNOWMAN} stormy Launchpad weather ahead'
-example_scope = u'beta_user'
+example_scope = 'beta_user'
 
 class TestFeatureFlags(testtools.TestCase):
 
@@ -34,12 +34,12 @@ class TestFeatureFlags(testtools.TestCase):
         # with some flags set in the db, you can query them through the
         # FeatureController
         flag = model.FeatureFlag(
-            scope=example_scope,
-            flag=notification_name,
+            scope=unicode(example_scope),
+            flag=unicode(notification_name),
             value=notification_value,
             priority=100)
         model.FeatureFlagCollection().store.add(flag)
-        control = flags.FeatureController([u'beta_user'])
+        control = flags.FeatureController(['beta_user'])
         self.assertEqual(notification_value,
             control.getFlag(notification_name))
 
@@ -54,7 +54,7 @@ class TestFeatureFlags(testtools.TestCase):
         # highest-priority settings
         control = self.makeControllerWithOverrides()
         self.assertEqual(
-            {u'ui.icing': '4.0',
+            {'ui.icing': '4.0',
              notification_name: notification_value},
             control.getAllFlags())
 
@@ -65,15 +65,15 @@ class TestFeatureFlags(testtools.TestCase):
         control.setScopes(['default'])
         self.assertEqual(
             u'3.0',
-            control.getFlag(u'ui.icing'))
+            control.getFlag('ui.icing'))
         control.setScopes(['default', 'beta_user'])
         self.assertEqual(
             u'4.0',
-            control.getFlag(u'ui.icing'))
+            control.getFlag('ui.icing'))
 
     def makePopulatedController(self):
         # make a controller with some test flags
-        control = flags.FeatureController([u'beta_user'])
+        control = flags.FeatureController(['beta_user'])
         control.addSetting(
             scope=example_scope, flag=notification_name,
             value=notification_value, priority=100)
@@ -84,13 +84,13 @@ class TestFeatureFlags(testtools.TestCase):
     def makeControllerWithOverrides(self):
         control = self.makePopulatedController()
         control.addSetting(
-            scope=u'default',
-            flag=u'ui.icing',
+            scope='default',
+            flag='ui.icing',
             value=u'3.0',
             priority=100)
         control.addSetting(
-            scope=u'beta_user',
-            flag=u'ui.icing',
+            scope='beta_user',
+            flag='ui.icing',
             value=u'4.0',
             priority=300)
         return control
