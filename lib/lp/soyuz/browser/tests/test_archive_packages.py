@@ -12,8 +12,6 @@ __all__ = [
     'test_suite',
     ]
 
-import unittest
-
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -96,6 +94,3 @@ class TestPPAPackages(TestCaseWithFactory):
         view = create_initialized_view(self.ppa, "+index")
         menu = ArchiveNavigationMenu(view)
         self.assertTrue(menu.packages().enabled)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
