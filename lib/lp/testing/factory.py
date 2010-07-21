@@ -329,7 +329,7 @@ class ObjectFactory:
             branch_id, rcstype, url, cvs_root, cvs_module)
 
 
-class _LaunchpadObjectFactory(ObjectFactory):
+class BareLaunchpadObjectFactory(ObjectFactory):
     """Factory methods for creating Launchpad objects.
 
     All the factory methods should be callable with no parameters.
@@ -2731,7 +2731,7 @@ class LaunchpadObjectFactory:
     """
 
     def __init__(self):
-        self._factory = _LaunchpadObjectFactory()
+        self._factory = BareLaunchpadObjectFactory()
 
     def __getattr__(self, name):
         attr = getattr(self._factory, name)
