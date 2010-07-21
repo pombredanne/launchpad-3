@@ -449,7 +449,7 @@ total_bugs, and total_messages (translatable messages).
 
     >>> for summary in hoary.getPrioritizedUnlinkedSourcePackages():
     ...     print  summary['package'].name
-    ...     print '%(total_bugs)s %(total_messages)s' % summary
+    ...     print '%(bug_count)s %(total_messages)s' % summary
     pmount  0  64
     alsa-utils  0  0
     cnews  0  0

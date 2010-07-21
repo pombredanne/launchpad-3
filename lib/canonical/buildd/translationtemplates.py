@@ -7,6 +7,7 @@ import os
 
 from canonical.buildd.debian import DebianBuildManager, DebianBuildState
 
+
 class TranslationTemplatesBuildState(DebianBuildState):
     INSTALL = "INSTALL"
     GENERATE = "GENERATE"
@@ -65,7 +66,8 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
         # user. Should be safe to assume the home dirs are named identically.
         assert self.home.startswith('/'), "home directory must be absolute."
 
-        path = os.path.join(self._chroot_path, self.home[1:], self._resultname)
+        path = os.path.join(
+            self._chroot_path, self.home[1:], self._resultname)
         if os.access(path, os.F_OK):
             self._slave.addWaitingFile(path)
 

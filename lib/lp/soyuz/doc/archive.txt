@@ -276,10 +276,8 @@ archive.
 
 Uploads to copy archives are not allowed.
 
-    >>> rebuild_archive.checkArchivePermission(cprov)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Uploads to copy archives are not allowed.
+    >>> print rebuild_archive.checkArchivePermission(cprov)
+    False
 
 
 == Published Source and Binary Lookup ==
@@ -1287,72 +1285,6 @@ Attempts to remove a non-existent dependency results in a AssertionError.
     ...
     AssertionError: This dependency does not exist.
 
-== Find binary package dependency candidates ==
-
-Archive allows a lookup on a single binary package dependency
-candidate by its name, via the `PublishedPackage` table:
-
-    >>> warty_i386 = warty['i386']
-
-    >>> candidate = ubuntu.main_archive.findDepCandidateByName(
-    ...     warty_i386, "pmount")
-    >>> print candidate.binarypackagerelease.binarypackagename.name
-    pmount
-
-    >>> candidate = cprov.archive.findDepCandidateByName(
-    ...     warty_i386, "pmount")
-    >>> print candidate.binarypackagerelease.binarypackagename.name
-    pmount
-
-Since 'python2.4' isn't available in our sampledata (not even
-published), None is returned:
-
-    >>> print ubuntu.main_archive.findDepCandidateByName(
-    ...     warty_i386, "python2.4")
-    None
-
-    >>> print cprov.archive.findDepCandidateByName(
-    ...     warty_i386, "python2.4")
-    None
-
-This method is aware of the archive dependency tree. So, even when a
-package is not published on the context PPA but is available somewhere
-in the archive dependency domain it will be found.
-
-We also add another archive dependency here to exercise findDepCandidateByName
-a little more.
-
-    >>> joe = factory.makePerson(email='joe@example.com')
-    >>> second_ppa = factory.makeArchive(name="secondppa", owner=joe)
-    >>> second_archive_dep = cprov.archive.addArchiveDependency(
-    ...     second_ppa, release_pocket, main_component)
-
-'at' binary package is not present in Celso's PPA.
-
-    >>> cprov_archive.getAllPublishedBinaries(name='at').count()
-    0
-
-But it is available in PRIMARY ubuntu archive.
-
-    >>> primary_candidate = ubuntu.main_archive.findDepCandidateByName(
-    ...     warty_i386, "at")
-    >>> primary_candidate is not None
-    True
-
-Then a lookup on Celso's PPA will find it.
-
-    >>> ppa_candidate = cprov.archive.findDepCandidateByName(
-    ...     warty_i386, "at")
-    >>> ppa_candidate is not None
-    True
-
-    >>> primary_candidate == ppa_candidate
-    True
-
-And clean-up after ourselves:
-
-    >>> ignore = cprov.archive.removeArchiveDependency(second_ppa)
-
 == Creating a package copy request from an IArchive ==
 
 The IArchive interface includes a convenience method for creating a
@@ -1531,7 +1463,7 @@ including PPA, DEBUG, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    19
+    18
 
     >>> print sorted(set(archive_purposes))
     ['COPY', 'DEBUG', 'PARTNER', 'PPA', 'PRIMARY']
@@ -2047,11 +1979,13 @@ The owner of the archive will also see their private archive in the results:
     my-copy-archive  me-copy       True     True
     ultimate-copy    copy-owner1   False    True
 
-An admin will see all the private and disabled archives in the results:
+An admin will see all the private and disabled archives in the results
+if requested:
 
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
-    ...     ubuntu, purposes=[ArchivePurpose.COPY], user=foobar)
+    ...     ubuntu, purposes=[ArchivePurpose.COPY], user=foobar,
+    ...     exclude_disabled=False)
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
@@ -2059,6 +1993,20 @@ An admin will see all the private and disabled archives in the results:
     team-archive     t1            True     True
     there-we-go      juergen       False    False
     true-copy        copy-owner2   False    False
+    ultimate-copy    copy-owner1   False    True
+
+If exclude_disabled is set to True no disabled archives will be 
+included:
+
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY], user=foobar,
+    ...     exclude_disabled=True)
+    >>> print_archive_names(ubuntu_copy_archives)
+    Name             Owner         Private  Enabled
+    fine-copy        copy-owner2   False    True
+    my-copy-archive  me-copy       True     True
+    team-archive     t1            True     True
     ultimate-copy    copy-owner1   False    True
 
 And if the archive is owned by a team, then anyone in the team will also
@@ -2073,16 +2021,16 @@ be able to view the private team archive:
     team-archive     t1            True     True
     ultimate-copy    copy-owner1   False    True
 
-A separate argument allows forcing the inclusion of all disabled archives.
+A separate argument allows forcing the inclusion of all disabled archives 
+the user has access to, so it doesn't include the archive 
+of juergen that is disabled.
 
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
-    ...     ubuntu, purposes=[ArchivePurpose.COPY], user=cprov,
+    ...     ubuntu, purposes=[ArchivePurpose.COPY], user=copy_owner2,
     ...     exclude_disabled=False)
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    team-archive     t1            True     True
-    there-we-go      juergen       False    False
     true-copy        copy-owner2   False    False
     ultimate-copy    copy-owner1   False    True
 

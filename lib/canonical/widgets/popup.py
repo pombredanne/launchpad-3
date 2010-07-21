@@ -180,6 +180,56 @@ class PersonPickerWidget(VocabularyPickerWidget):
         return '/people/'
 
 
+class BugTrackerPickerWidget(VocabularyPickerWidget):
+    link_template = """
+        or (<a id="%(activator_id)s" href="/bugs/bugtrackers/+newbugtracker"
+                    >Register an external bug tracker&hellip;</a>)
+        <script>
+        LPS.use('lp.bugs.bugtracker_overlay', function(Y) {
+            if (Y.UA.ie) {
+                return;
+            }
+            Y.on('domready', function () {
+                // After the success handler finishes, it calls the
+                // next_step function.
+                var next_step = function(bug_tracker) {
+                    // Fill in the text field with either the name of
+                    // the newly created bug tracker or the name of an
+                    // existing bug tracker whose base_url matches.
+                    var bugtracker_text_box = Y.one(
+                        Y.DOM.byId('field.bugtracker.bugtracker'));
+                    if (bugtracker_text_box !== null) {
+                        bugtracker_text_box.set(
+                            'value', bug_tracker.get('name'));
+                        // It doesn't appear possible to use onChange
+                        // event, so the onKeyPress event is explicitely
+                        // fired here.
+                        if (bugtracker_text_box.get('onkeypress')) {
+                            bugtracker_text_box.get('onkeypress')();
+                        }
+                        bugtracker_text_box.scrollIntoView();
+                    }
+                }
+                Y.lp.bugs.bugtracker_overlay.attach_widget({
+                    activate_node: Y.get('#%(activator_id)s'),
+                    next_step: next_step
+                    });
+                });
+        });
+        </script>
+        """
+
+    def chooseLink(self):
+        link = super(BugTrackerPickerWidget, self).chooseLink()
+        link += self.link_template % dict(
+            activator_id='create-bugtracker-link')
+        return link
+
+    @property
+    def nonajax_uri(self):
+        return '/bugs/bugtrackers/'
+
+
 class SearchForUpstreamPopupWidget(VocabularyPickerWidget):
     """A SinglePopupWidget with a custom error message.
 

@@ -327,6 +327,7 @@ data in a bug task is derived from the bug.
   date_fix_committed: None
   date_fix_released: None
   date_in_progress: None
+  date_incomplete: None
   date_left_closed: None
   date_left_new: None
   date_triaged: None
@@ -1436,6 +1437,15 @@ setting the tags_combinator parameter to 'All'.
     total_size: 0
     ---
 
+It can also be used to find bugs modified since a certain date.
+
+    >>> pprint_collection(webservice.named_get(
+    ...     '/ubuntu', 'searchTasks',
+    ...     modified_since=u'2011-01-01T00:00:00+00:00').jsonBody())
+    start: None
+    total_size: 0
+    ---
+
 It is possible to search for bugs targeted to a milestone within a
 project group.
 
@@ -1992,3 +2002,45 @@ For every branch we can also look at the bugs linked to it.
     ...     branch_entry['bug_link']).jsonBody()
     >>> print bug_link['self_link']
     http://.../bugs/4
+
+Bug expiration
+--------------
+
+In addition to can_expire bugs have an isExpirable method to which a custom time
+period, days_old, can be passed.  This is then used with
+findExpirableBugTasks.  This allows projects to create their own janitor using
+a different period for bug expiration.
+
+Check to ensure that isExpirable() works without days_old.
+
+    >>> bug_four = webservice.get("/bugs/4").jsonBody()
+    >>> print webservice.named_get(bug_four['self_link'],
+    ...     'isExpirable').jsonBody()
+    False
+
+Pass isExpirable() an integer for days_old.
+
+    >>> bug_four = webservice.get("/bugs/4").jsonBody()
+    >>> print webservice.named_get(bug_four['self_link'], 'isExpirable',
+    ...     days_old='14').jsonBody()
+    False
+
+Pass isExpirable() a string for days_old.
+
+    >>> bug_four = webservice.get("/bugs/4").jsonBody()
+    >>> print webservice.named_get(bug_four['self_link'], 'isExpirable',
+    ...     days_old='sixty')
+    HTTP/1.1 400 Bad Request
+    ...
+    days_old: got 'unicode', expected int: u'sixty'
+
+Can expire
+----------
+
+can_expire is not exported in the development version of the API.
+
+    >>> bug_four = webservice.get("/bugs/4", api_version='devel').jsonBody()
+    >>> bug_four[can_expire]
+    Traceback (most recent call last):
+    ...
+    NameError: name 'can_expire' is not defined

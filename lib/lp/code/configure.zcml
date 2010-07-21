@@ -589,6 +589,9 @@
       for="lp.codehosting.scanner.events.ITipChanged"
       handler="lp.codehosting.scanner.bzrsync.schedule_translation_upload"/>
   <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.bzrsync.update_recipes"/>
+  <subscriber
       for="lp.codehosting.scanner.events.IRevisionsRemoved"
       handler="lp.codehosting.scanner.email.send_removed_revision_emails"/>
   <subscriber
@@ -1053,12 +1056,14 @@
        set_attributes="
            build_daily
            builder_recipe
+           daily_build_archive
            date_last_modified
            description
            distroseries
            name
            owner
-           sourcepackagename"/>
+           sourcepackagename
+           is_stale"/>
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">

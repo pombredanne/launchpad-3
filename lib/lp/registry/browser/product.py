@@ -51,11 +51,11 @@ import pytz
 
 from zope.component import getUtility
 from zope.event import notify
-from zope.app.form.browser import TextAreaWidget, TextWidget
+from zope.app.form.browser import CheckBoxWidget, TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
-from zope.schema import Choice
+from zope.schema import Bool, Choice
 from zope.schema.vocabulary import (
     SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import removeSecurityProxy
@@ -66,6 +66,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.config import config
 from lazr.delegates import delegates
+from lazr.restful.interface import copy_field
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from lp.app.interfaces.headings import IEditableContextTitle
@@ -964,9 +965,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
 
-    def getLatestBranches(self):
-        return self.context.getLatestBranches(visible_by_user=self.user)
-
     @property
     def requires_commercial_subscription(self):
         """Whether to display notice to purchase a commercial subscription."""
@@ -1823,7 +1821,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'licenses', 'license_info']
+                    'description', 'licenses', 'license_info',
+                    ]
     main_action_label = u'Complete Registration'
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -1843,6 +1842,33 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         if self.search_results_count > 0:
             return 'Check for duplicate projects'
         return 'Registration details'
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(ProjectAddStepTwo, self).setUpFields()
+        self.form_fields = (self.form_fields +
+                            self._createDisclaimMaintainerField())
+
+    def _createDisclaimMaintainerField(self):
+        """Return a Bool field for disclaiming maintainer.
+
+        If the registrant does not want to maintain the project she can select
+        this checkbox and the ownership will be transfered to the registry
+        admins team.
+        """
+
+        return form.Fields(
+            Bool(__name__='disclaim_maintainer',
+                 title=_("I do not want to maintain this project"),
+                 description=_(
+                     "Select if you are registering this project "
+                     "for the purpose of taking an action (such as "
+                     "reporting a bug) but you don't want to actually "
+                     "maintain the project in Launchpad.  "
+                     "The Registry Administrators team will become "
+                     "the maintainers until a community maintainer "
+                     "can be found.")),
+            render_context=self.render_context)
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
@@ -1903,8 +1929,14 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # Get optional data.
         project = data.get('project')
         description = data.get('description')
+        disclaim_maintainer = data.get('disclaim_maintainer', False)
+        if disclaim_maintainer:
+            owner = getUtility(ILaunchpadCelebrities).registry_experts
+        else:
+            owner = self.user
         return getUtility(IProductSet).createProduct(
-            owner=self.user,
+            registrant=self.user,
+            owner=owner,
             name=data['name'],
             displayname=data['displayname'],
             title=data['title'],
@@ -1934,20 +1966,50 @@ class ProductAddView(MultiStepView):
         return ProjectAddStepOne
 
 
+class IProductEditPeopleSchema(Interface):
+    """Defines the fields for the edit form.
+
+    Specifically adds a new checkbox for transferring the maintainer role to
+    Registry Administrators and makes the owner optional.
+    """
+    owner = copy_field(IProduct['owner'])
+    owner.required = False
+
+    driver = copy_field(IProduct['driver'])
+
+    transfer_to_registry =  Bool(
+        title=_("I do not want to maintain this project"),
+        required=False,
+        description=_(
+            "Select this if you no longer want to maintain this project in "
+            "Launchpad.  Launchpad's Registry Administrators team will "
+            "become the project's new maintainers."))
+
+
 class ProductEditPeopleView(LaunchpadEditFormView):
     """Enable editing of important people on the project."""
 
     implements(IProductEditMenu)
 
     label = "Change the roles of people"
-    schema = IProduct
+    schema = IProductEditPeopleSchema
     field_names = [
         'owner',
+        'transfer_to_registry',
         'driver',
         ]
 
+    for_input = True
+
+    # Initial value must be provided for the 'transfer_to_registry' field to
+    # avoid having the non-existent attribute queried on the context and
+    # failing.
+    initial_values = {'transfer_to_registry': False}
+
     custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
                   include_create_team_link=True)
+    custom_widget('transfer_to_registry', CheckBoxWidget,
+                  widget_class='field subordinate')
     custom_widget('driver', PersonPickerWidget, header="Select the driver",
                   include_create_team_link=True)
 
@@ -1956,24 +2018,37 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         """The HTML page title."""
         return "Change the roles of %s's people" % self.context.title
 
+    def validate(self, data):
+        """Validate owner and transfer_to_registry are consistent.
+
+        At most one may be specified.
+        """
+        # If errors have already been found we can skip validation.
+        if len(self.errors) > 0:
+            return
+        xfer = data.get('transfer_to_registry', False)
+        owner = data.get('owner')
+        if owner is not None and xfer:
+            self.setFieldError(
+                'owner',
+                'You may not specify a new owner if you '
+                'select the checkbox.')
+        elif xfer:
+            data['owner'] = getUtility(ILaunchpadCelebrities).registry_experts
+        elif owner is None:
+            self.setFieldError(
+                'owner',
+                'You must specify a maintainer or select '
+                'the checkbox.')
+
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):
         """Save the changes to the associated people."""
-        old_owner = self.context.owner
-        old_driver = self.context.driver
+        # Since 'transfer_to_registry' is not a real attribute on a Product,
+        # it must be removed from data before the context is updated.
+        if 'transfer_to_registry' in data:
+            del data['transfer_to_registry']
         self.updateContextFromData(data)
-        if self.context.owner != old_owner:
-            self.request.response.addNotification(
-                "Successfully changed the maintainer to %s"
-                % self.context.owner.displayname)
-        if self.context.driver != old_driver:
-            if self.context.driver is not None:
-                self.request.response.addNotification(
-                    "Successfully changed the driver to %s"
-                    % self.context.driver.displayname)
-            else:
-                self.request.response.addNotification(
-                    "Successfully removed the driver")
 
     @property
     def next_url(self):
@@ -1984,3 +2059,8 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {IProductEditPeopleSchema: self.context}

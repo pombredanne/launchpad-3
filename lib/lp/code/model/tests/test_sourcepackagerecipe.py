@@ -24,13 +24,16 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
 
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.testing import verifyObject
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled, ArchivePurpose, CannotUploadToArchive,
     InvalidPocketForPPA)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
-    ForbiddenInstruction, TooManyBuilds, TooNewRecipeFormat)
+    BuildAlreadyPending, ForbiddenInstruction, TooManyBuilds,
+    TooNewRecipeFormat)
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -52,6 +55,11 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     """Tests for `SourcePackageRecipe` objects."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_implements_interface(self):
+        """SourcePackageRecipe implements ISourcePackageRecipe."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        verifyObject(ISourcePackageRecipe, recipe)
 
     def makeSourcePackageRecipeFromBuilderRecipe(self, builder_recipe):
         """Make a SourcePackageRecipe from a recipe with arbitrary other data.
@@ -82,6 +90,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             (registrant, owner, set([distroseries]), name),
             (recipe.registrant, recipe.owner, set(recipe.distroseries),
              recipe.name))
+        self.assertEqual(True, recipe.is_stale)
 
     def test_exists(self):
         # Test ISourcePackageRecipeSource.exists
@@ -294,13 +303,40 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         series = list(recipe.distroseries)[0]
         archive = self.factory.makeArchive(owner=requester)
         def request_build():
-            recipe.requestBuild(archive, requester, series,
+            build = recipe.requestBuild(archive, requester, series,
                     PackagePublishingPocket.RELEASE)
+            removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
         [request_build() for num in range(5)]
         e = self.assertRaises(TooManyBuilds, request_build)
         self.assertIn(
             'You have exceeded your quota for recipe requester/myrecipe',
             str(e))
+
+    def test_requestBuildRejectRepeats(self):
+        """Reject build requests that are identical to pending builds."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        series = list(recipe.distroseries)[0]
+        archive = self.factory.makeArchive(owner=recipe.owner)
+        old_build = recipe.requestBuild(archive, recipe.owner, series,
+                PackagePublishingPocket.RELEASE)
+        self.assertRaises(
+            BuildAlreadyPending, recipe.requestBuild, archive, recipe.owner,
+            series, PackagePublishingPocket.RELEASE)
+        # Varying archive allows build.
+        recipe.requestBuild(
+            self.factory.makeArchive(owner=recipe.owner), recipe.owner,
+            series, PackagePublishingPocket.RELEASE)
+        # Varying distroseries allows build.
+        new_distroseries = self.factory.makeDistroSeries()
+        new_distroseries.nominatedarchindep = new_distroseries.newArch(
+            'i386', ProcessorFamily.get(1), False, recipe.owner,
+            supports_virtualized=True)
+        recipe.requestBuild(archive, recipe.owner,
+            new_distroseries, PackagePublishingPocket.RELEASE)
+        # Changing status of old build allows new build.
+        removeSecurityProxy(old_build).buildstate = BuildStatus.FULLYBUILT
+        recipe.requestBuild(archive, recipe.owner, series,
+                PackagePublishingPocket.RELEASE)
 
     def test_sourcepackagerecipe_description(self):
         """Ensure that the SourcePackageRecipe has a proper description."""
@@ -379,36 +415,17 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # Show no database constraints were violated
         Store.of(recipe).flush()
 
-    def test_findStaleDailyBuilds_requires_build_daily(self):
-        recipe = self.factory.makeSourcePackageRecipe()
-        self.assertContentEqual(
-            [], SourcePackageRecipe.findStaleDailyBuilds())
-        removeSecurityProxy(recipe).build_daily = True
-        self.assertEqual([recipe],
-            [sprd.sourcepackage_recipe for sprd
-             in SourcePackageRecipe.findStaleDailyBuilds()])
-
-    def test_findStaleDailyBuilds_for_modified_base_branch(self):
-        recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
-        now = self.factory.getUniqueDate()
-        self.assertEqual([recipe],
-            [sprd.sourcepackage_recipe for sprd
-             in SourcePackageRecipe.findStaleDailyBuilds()])
-        recipe.base_branch.date_last_modified = now - timedelta(hours=1)
-        build = recipe.requestBuild(
-            archive=recipe.daily_build_archive, requester=recipe.owner,
-            distroseries=list(recipe.distroseries)[0],
-            pocket=PackagePublishingPocket.RELEASE)
-        removeSecurityProxy(build).datebuilt = now
-        self.assertContentEqual(
-            [], SourcePackageRecipe.findStaleDailyBuilds())
-        distro2 = self.factory.makeDistroSeries()
-        distro3 = self.factory.makeDistroSeries()
-        recipe.distroseries.add(distro2)
-        recipe.distroseries.add(distro3)
-        self.assertContentEqual(set([(recipe, distro2), (recipe, distro3)]),
-            set((sprd.sourcepackage_recipe, sprd.distroseries) for sprd
-                in SourcePackageRecipe.findStaleDailyBuilds()))
+    def test_findStaleDailyBuilds(self):
+        # Stale recipe not built daily.
+        self.factory.makeSourcePackageRecipe()
+        # Daily build recipe not stale.
+        self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=False)
+        # Stale daily build.
+        stale_daily = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
+        self.assertContentEqual([stale_daily],
+            SourcePackageRecipe.findStaleDailyBuilds())
 
     def test_getMedianBuildDuration(self):
         recipe = removeSecurityProxy(self.factory.makeSourcePackageRecipe())
@@ -635,14 +652,17 @@ class TestWebservice(TestCaseWithFactory):
         db_distroseries = self.factory.makeDistroSeries()
         if recipe_text is None:
             recipe_text = self.makeRecipeText()
+        db_archive = self.factory.makeArchive(owner=owner, name="recipe-ppa")
         launchpad = launchpadlib_for('test', user,
                 service_root="http://api.launchpad.dev:8085")
         login(ANONYMOUS)
         distroseries = ws_object(launchpad, db_distroseries)
         ws_owner = ws_object(launchpad, owner)
+        ws_archive = ws_object(launchpad, db_archive)
         recipe = ws_owner.createRecipe(
             name='toaster-1', description='a recipe', recipe_text=recipe_text,
-            distroseries=[distroseries.self_link])
+            distroseries=[distroseries.self_link], build_daily=True,
+            daily_build_archive=ws_archive)
         # at the moment, distroseries is not exposed in the API.
         db_recipe = owner.getRecipe(name=u'toaster-1')
         self.assertEqual(set([db_distroseries]), set(db_recipe.distroseries))
@@ -658,6 +678,8 @@ class TestWebservice(TestCaseWithFactory):
         self.assertEqual(team.teamowner.name, recipe.registrant.name)
         self.assertEqual('toaster-1', recipe.name)
         self.assertEqual(recipe_text, recipe.recipe_text)
+        self.assertTrue(recipe.build_daily)
+        self.assertEqual('recipe-ppa', recipe.daily_build_archive.name)
 
     def test_recipe_text(self):
         recipe_text2 = self.makeRecipeText()
@@ -686,6 +708,51 @@ class TestWebservice(TestCaseWithFactory):
         recipe.requestBuild(
             archive=archive, distroseries=distroseries,
             pocket=PackagePublishingPocket.RELEASE.title)
+
+    def test_requestBuildRejectRepeat(self):
+        """Build requests are rejected if already pending."""
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive(owner=person)
+        distroseries = self.factory.makeDistroSeries()
+        distroseries_i386 = distroseries.newArch(
+            'i386', ProcessorFamily.get(1), False, person,
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+
+        recipe, user, launchpad = self.makeRecipe(person)
+        distroseries = ws_object(launchpad, distroseries)
+        archive = ws_object(launchpad, archive)
+        recipe.requestBuild(
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
+        e = self.assertRaises(Exception, recipe.requestBuild,
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
+        self.assertIn('BuildAlreadyPending', str(e))
+
+    def test_requestBuildRejectOverQuota(self):
+        """Build requests are rejected if they exceed quota."""
+        person = self.factory.makePerson()
+        archives = [self.factory.makeArchive(owner=person) for x in range(6)]
+        distroseries = self.factory.makeDistroSeries()
+        distroseries_i386 = distroseries.newArch(
+            'i386', ProcessorFamily.get(1), False, person,
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+
+        recipe, user, launchpad = self.makeRecipe(person)
+        distroseries = ws_object(launchpad, distroseries)
+        for archive in archives[:-1]:
+            archive = ws_object(launchpad, archive)
+            recipe.requestBuild(
+                archive=archive, distroseries=distroseries,
+                pocket=PackagePublishingPocket.RELEASE.title)
+
+        archive = ws_object(launchpad, archives[-1])
+        e = self.assertRaises(Exception, recipe.requestBuild,
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
+        self.assertIn('TooManyBuilds', str(e))
 
 
 def test_suite():
