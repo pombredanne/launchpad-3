@@ -846,14 +846,6 @@ class TestBuilddManager(TrialTestCase):
         self.addCleanup(cleanup)
         SlaveScanner.scheduleNextScanCycle = FakeMethod
 
-    def _add_fake_NewBuildersScanner_scan(self, method):
-        # Replace the NewBuildersScanner.scan() method with a fake one.
-        self._saved_scan = SlaveScanner.scan
-        def cleanup():
-            SlaveScanner.scan = self._saved_scan
-        self.addCleanup(cleanup)
-        SlaveScanner.scan = method
-
     def test_addScanForBuilders(self):
         # Test that addScanForBuilders generates NewBuildersScanner objects.
 
@@ -872,8 +864,8 @@ class TestBuilddManager(TrialTestCase):
         self._stub_out_scheduleNextScanCycle()
         NewBuildersScanner.SCAN_INTERVAL = 0
         manager = BuilddManager()
-        failure_callback = None
 
+        # Replace scan() with FakeMethod so we can see if it was called.
         manager.new_builders_scanner.scan = FakeMethod
 
         def assertCalled():
@@ -902,20 +894,16 @@ class TestNewBuilders(TrialTestCase):
         # Test that scheduleScan calls the "scan" method.
         builder_scanner = self._getScanner()
         builder_scanner.SCAN_INTERVAL = 0
-        failure_callback = None
 
-        def fake_scan():
-            failure_callback.cancel()
-
-        builder_scanner.scan = fake_scan
+        builder_scanner.scan = FakeMethod
         builder_scanner.scheduleScan()
 
-        def failed_scan():
-            self.fail("scheduleScan did not schedule anything")
+        def assertCalled():
+            self.failIf(
+                builder_scanner.scan.call_count == 0,
+                "scheduleScan did not schedule anything")
 
-        # If scheduleScan does its job, it will cancel this callback
-        # that is going fail the test.
-        failure_callback = reactor.callLater(0, failed_scan)
+        reactor.callLater(0, assertCalled)
 
     def test_checkForNewBuilders(self):
         # Test that checkForNewBuilders() detects a new builder
@@ -938,30 +926,24 @@ class TestNewBuilders(TrialTestCase):
         # stub out the addScanForBuilders and scheduleScan methods since
         # they use callLater; we only want to assert that they get
         # called.
-        failure_callback = None
-
         def fake_checkForNewBuilders():
             return "new_builders"
 
         def fake_addScanForBuilders(new_builders):
             self.failUnlessEqual("new_builders", new_builders)
 
-        def fake_scheduleScan():
-            failure_callback.cancel()
-
-        def failed_scan():
-            self.fail("scheduleScan did not get called")
+        def assertCalled():
+            self.failIf(
+                builder_scanner.scheduleScan.call_count == 0,
+                "scheduleScan did not get called")
 
         builder_scanner = self._getScanner(BuilddManager())
         builder_scanner.checkForNewBuilders = fake_checkForNewBuilders
         builder_scanner.manager.addScanForBuilders = fake_addScanForBuilders
-        builder_scanner.scheduleScan = fake_scheduleScan
+        builder_scanner.scheduleScan = FakeMethod
 
         reactor.callLater(0, builder_scanner.scan)
-
-        # If scan() works, this callback will get cancelled and the test
-        # will pass.
-        failure_callback = reactor.callLater(0, failed_scan)
+        reactor.callLater(0, assertCalled)
 
 
 class TestBuilddManagerScript(unittest.TestCase):
