@@ -3,7 +3,9 @@
      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
      class="portletBody">
   <div class="section" tal:define="tags_cloud_data view/tags_cloud_data">
-    <h2 tal:condition="tags_cloud_data">Tags</h2>
+    <h2 tal:condition="tags_cloud_data"
+        tal:content="cache:public, 60 minutes">Tags</h2>
+    <!-- tags_cloud_data cache:public 60 minutes -->
     <div style="text-align: justify">
       <a tal:repeat="tag_info view/tags_cloud_data"
          tal:content="tag_info/tag"
