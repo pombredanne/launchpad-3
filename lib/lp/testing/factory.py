@@ -2727,16 +2727,18 @@ unwrapped_types = (
     DSCFile, InstanceType, Message, datetime, int, str, unicode)
 
 def is_security_proxied_or_harmless(obj):
+    """Check if the given object is security wrapped or a harmless object."""
     if obj is None:
         return True
     if builtin_isinstance(obj, Proxy):
+        return True
+    if type(obj) in unwrapped_types:
         return True
     if isSequenceType(obj):
         for element in obj:
             if not is_security_proxied_or_harmless(element):
                 return False
         return True
-    return type(obj) in unwrapped_types
 
 
 class LaunchpadObjectFactory:
