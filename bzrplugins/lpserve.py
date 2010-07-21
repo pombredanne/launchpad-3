@@ -12,7 +12,6 @@ __all__ = ['cmd_launchpad_server']
 
 
 import resource
-import threading
 import socket
 import sys
 
@@ -114,34 +113,31 @@ class cmd_launchpad_server(Command):
 register_command(cmd_launchpad_server)
 
 
-class cmd_launchpad_service(Command):
-    """Launch a long-running process, where you can ask for new processes.
+class LPService(object):
+    """A class encapsulating the state of the LP Service."""
 
-    The process will block on a given --port waiting for requests to be made.
-    """
-
-    aliases = ['lp-service']
-
+    DEFAULT_HOST = '127.0.0.1'
     DEFAULT_PORT = 4156
 
-    takes_options = [Option('port',
-                        help='Listen for connections on [host:]portnumber',
-                        type=str),
-                    ]
-
-    def get_host_and_port(self, port):
-        host = None
-        if port is not None:
-            if ':' in port:
-                host, port = port.rsplit(':', 1)
-            port = int(port)
-        return host, port
-
-    def run(self, port=None):
-        host, port = self.get_host_and_port(port)
+    def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT):
+        if host is None:
+            self.host = self.DEFAULT_HOST
+        else:
+            self.host = host
         if port is None:
-            port = self.DEFAULT_PORT
-        addrs = socket.getaddrinfo(host, port, socket.AF_UNSPEC,
+            self.port = self.DEFAULT_PORT
+        else:
+            self.port = port
+        self._should_terminate = False
+        # We address these locally, in case of shutdown socket may be gc'd
+        # before we are
+        self._socket_timeout = socket.timeout
+        self._socket_error = socket.error
+        self._socket_timeout = socket.timeout
+        self._socket_error = socket.error
+
+    def _create_master_socket(self):
+        addrs = socket.getaddrinfo(self.host, self.port, socket.AF_UNSPEC,
             socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[0]
         (family, socktype, proto, canonname, sockaddr) = addrs
         self._server_socket = socket.socket(family, socktype, proto)
@@ -153,50 +149,103 @@ class cmd_launchpad_service(Command):
         except self._socket_error, message:
             raise errors.CannotBindAddress(host, port, message)
         self._sockname = self._server_socket.getsockname()
-        trace.note('Waiting on %s' % (self._sockname,))
+        # self.host = self._sockname[0]
         self.port = self._sockname[1]
-        self._socket_timeout = socket.timeout
-        self._socket_error = socket.error
         self._server_socket.listen(1)
         self._server_socket.settimeout(1)
-        self._started = threading.Event()
-        self._stopped = threading.Event()
+
+    def fork_one_request(self, conn, user_id):
+        """Fork myself and serve a request."""
+
+    def main_loop(self):
+        self._create_master_socket()
+        trace.note('Waiting on %s' % (self._sockname,))
         self._should_terminate = False
-        self._started.set()
         while not self._should_terminate:
             try:
                 conn, client_addr = self._server_socket.accept()
             except self._socket_timeout:
                 # just check if we're asked to stop
+                # DEBUG flag to mutter when we get timeouts?
                 pass
             except self._socket_error, e:
-                # if the socket is closed by stop_background_thread
                 # we might get a EBADF here, any other socket errors
                 # should get logged.
                 if e.args[0] != errno.EBADF:
                     trace.warning("listening socket error: %s", e)
             else:
-                trace.note('Connected from: %s' % (client_addr,))
-                self.serve_conn(conn)
+                self.log(conn, 'connected')
+                self.serve_one_connection(conn)
                 if self._should_terminate:
                     break
-        self._stopped.set()
+        trace.note('Exiting')
 
-    def serve_conn(self, conn):
-        request = conn.recv(64*1024);
+    def log(self, conn, message):
+        """Log a message to the trace log.
+
+        Include the information about what connection is being served.
+        """
+        peer_host, peer_port = conn.getpeername()
+        trace.mutter('[%s:%d] %s' % (peer_host, peer_port, message))
+
+    def serve_one_connection(self, conn):
+        request = conn.recv(1024);
         request = request.strip()
-        if request == 'quit':
+        if request == 'hello':
+            self.log(conn, 'hello heartbeat')
+            conn.sendall('yep, still alive\n')
+        elif request == 'quit':
             self._should_terminate = True
             conn.sendall('quit command requested... exiting\n')
-            trace.note('quit requested')
-            return
-        elif request.startswith('fork'):
+            self.log(conn, 'quit requested')
+        elif request.startswith('fork '):
             # Not handled yet
-            conn.sendall('not implemented\n')
-            trace.note('fork requested')
-            conn.close()
+            user_id = request[5:]
+            self.log(conn, 'fork requested for %r' % (user_id,))
+            self.fork_one_request(conn, user_id)
         else:
-            trace.note('unknown request: %r' % (request[:20],))
+            self.log(conn, 'unknown request: %r' % (request,))
+        conn.close()
 
+class cmd_launchpad_service(Command):
+    """Launch a long-running process, where you can ask for new processes.
+
+    The process will block on a given --port waiting for requests to be made.
+    """
+
+    aliases = ['lp-service']
+
+    takes_options = [Option('port',
+                        help='Listen for connections on [host:]portnumber',
+                        type=str),
+                    ]
+
+    def _preload_libraries(self):
+        global libraries_to_preload
+        for pyname in libraries_to_preload:
+            try:
+                __import__(pyname)
+            except ImportError, e:
+                trace.mutter('failed to preload %s: %s' % (pyname, e))
+
+    def _get_host_and_port(self, port):
+        host = None
+        if port is not None:
+            if ':' in port:
+                host, port = port.rsplit(':', 1)
+            port = int(port)
+        return host, port
+
+    def run(self, port=None):
+        host, port = self._get_host_and_port(port)
+        self._preload_libraries()
+        service = LPService(host, port)
+        service.main_loop()
 
 register_command(cmd_launchpad_service)
+
+
+libraries_to_preload = [
+    'bzrlib.errors',
+    'bzrlib.repository',
+    ]
