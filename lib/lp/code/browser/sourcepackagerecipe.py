@@ -21,7 +21,7 @@ from zope.interface import providedBy
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
-import transaction
+from storm.locals import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, Interface
@@ -364,7 +364,7 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
                 ISourcePackageRecipeSource).new(
                     self.user, self.user, data['name'], recipe,
                     data['description'], data['distros'])
-            transaction.commit()
+            Store.of(source_package_recipe).flush()
         except ForbiddenInstruction:
             # XXX: bug=592513 We shouldn't be hardcoding "run" here.
             self.setFieldError(
