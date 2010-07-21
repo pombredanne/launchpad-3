@@ -2781,9 +2781,8 @@ def remove_security_proxy_and_shout_at_engineer(obj):
     a security proxy. This is now no longer possible, but a number of
     tests rely on unrestricted access to object attributes.
 
-    This function should only beused in existing tests if a test fails
-    because a newer version of LaunchpadObjectFactory returns a security
-    proxied object.
+    This function should only be used in legacy tests which fail because
+    they expect unproxied objects.
     """
     print >>sys.stderr, (
         "\ncalled removeSecurityProxy() for %r without a check if this "
