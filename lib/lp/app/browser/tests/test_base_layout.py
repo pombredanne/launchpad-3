@@ -57,7 +57,7 @@ class TestBaseLayout(TestCaseWithFactory):
         markup = view()
         self.assertTrue(markup.startswith('<!DOCTYPE html'))
 
-    def verify_base_layout_common(self, view, content):
+    def verify_base_layout_html_element(self, content):
         # The html element states the namespace and language information.
         self.assertEqual(
             'http://www.w3.org/1999/xhtml', content.html['xmlns'])
@@ -65,17 +65,22 @@ class TestBaseLayout(TestCaseWithFactory):
         self.assertEqual('en', html_tag['xml:lang'])
         self.assertEqual('en', html_tag['lang'])
         self.assertEqual('ltr', html_tag['dir'])
+
+    def verify_base_layout_head_parts(self, view, content):
+        # Verify the common head parts of every layout.
+        head = content.head
         # The page's title starts with the view's page_title.
-        self.assertTrue(content.title.string.startswith(view.page_title))
+        self.assertTrue(head.title.string.startswith(view.page_title))
         # The shortcut icon for the browser chrome is provided.
-        link_tag = content.link
+        link_tag = head.link
         self.assertEqual('shortcut icon', link_tag['rel'])
         self.assertEqual('/@@/launchpad.png', link_tag['href'])
         # The template loads the common scripts.
-        load_script = find_tag_by_id(content, 'base-layout-load-scripts').name
+        load_script = find_tag_by_id(head, 'base-layout-load-scripts').name
         self.assertEqual('script', load_script)
 
-    def verify_main_content(self, document):
+    def verify_base_layout_body_parts(self, document):
+        # Verify the common body parts of every layout.
         self.assertEqual('body', document.name)
         yui_layout = document.find('div', 'yui-d0')
         self.assertTrue(yui_layout is not None)
@@ -89,6 +94,7 @@ class TestBaseLayout(TestCaseWithFactory):
             'footer', yui_layout.find(True, id='footer')['class'])
 
     def verify_watermark(self, document):
+        # Verify the parts of a watermark.
         yui_layout = document.find('div', 'yui-d0')
         watermark = yui_layout.find(True, id='watermark')
         self.assertEqual('watermark-apps-portlet', watermark['class'])
@@ -99,36 +105,42 @@ class TestBaseLayout(TestCaseWithFactory):
             'registering', watermark.find(True, id='registration')['class'])
 
     def test_main_side(self):
+        # The main_side layout has everything.
         view = self.makeTemplateView('main_side')
         content = BeautifulSoup(view())
-        self.verify_base_layout_common(view, content)
+        self.verify_base_layout_html_element(content)
+        self.verify_base_layout_head_parts(view, content)
         document = find_tag_by_id(content, 'document')
-        self.verify_main_content(document)
-        self.verify_watermark(document)
+        self.verify_base_layout_body_parts(document)
         classes = 'tab-overview main_side public yui-skin-sam'.split()
         self.assertEqual(classes, document['class'].split())
+        self.verify_watermark(document)
         self.assertEqual(
             'yui-b side', document.find(True, id='side-portlets')['class'])
         self.assertEqual('form', document.find(True, id='globalsearch').name)
 
     def test_main_only(self):
+        # The main_only layout has everything except side portlets.
         view = self.makeTemplateView('main_only')
         content = BeautifulSoup(view())
-        self.verify_base_layout_common(view, content)
+        self.verify_base_layout_html_element(content)
+        self.verify_base_layout_head_parts(view, content)
         document = find_tag_by_id(content, 'document')
-        self.verify_main_content(document)
-        self.verify_watermark(document)
+        self.verify_base_layout_body_parts(document)
         classes = 'tab-overview main_only public yui-skin-sam'.split()
         self.assertEqual(classes, document['class'].split())
+        self.verify_watermark(document)
         self.assertEqual(None, document.find(True, id='side-portlets'))
         self.assertEqual('form', document.find(True, id='globalsearch').name)
 
     def test_searchless(self):
+        # The searchless layout is missing side portlets and search.
         view = self.makeTemplateView('searchless')
         content = BeautifulSoup(view())
-        self.verify_base_layout_common(view, content)
+        self.verify_base_layout_html_element(content)
+        self.verify_base_layout_head_parts(view, content)
         document = find_tag_by_id(content, 'document')
-        self.verify_main_content(document)
+        self.verify_base_layout_body_parts(document)
         self.verify_watermark(document)
         classes = 'tab-overview searchless public yui-skin-sam'.split()
         self.assertEqual(classes, document['class'].split())
@@ -136,11 +148,13 @@ class TestBaseLayout(TestCaseWithFactory):
         self.assertEqual(None, document.find(True, id='globalsearch'))
 
     def test_locationless(self):
+        # The locationless layout has no optional content.
         view = self.makeTemplateView('locationless')
         content = BeautifulSoup(view())
-        self.verify_base_layout_common(view, content)
+        self.verify_base_layout_html_element(content)
+        self.verify_base_layout_head_parts(view, content)
         document = find_tag_by_id(content, 'document')
-        self.verify_main_content(document)
+        self.verify_base_layout_body_parts(document)
         classes = 'tab-overview locationless public yui-skin-sam'.split()
         self.assertEqual(classes, document['class'].split())
         self.assertEqual(None, document.find(True, id='watermark'))
