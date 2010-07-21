@@ -119,3 +119,28 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
             self.product, name='+configure-bugtracker', form=form)
         self.assertEqual([], view.errors)
         self.assertFalse(self.product.enable_bug_expiration)
+
+    def test_bug_role_non_admin_can_edit(self):
+        # Verify that a member of an owning team who is not an admin of
+        # the bug supervisor team or security_contact team can change bug
+        # reporting guidelines.
+        owning_team = self.factory.makeTeam(owner=self.owner)
+        bug_team = self.factory.makeTeam(owner=self.owner)
+        weak_owner = self.factory.makePerson()
+        login_person(self.owner)
+        owning_team.addMember(weak_owner, self.owner)
+        bug_team.addMember(weak_owner, self.owner)
+        self.product.owner = owning_team
+        self.product.setBugSupervisor(bug_team, self.owner)
+        self.product.security_contact = bug_team
+        login_person(weak_owner)
+        form = self._makeForm()
+        # Only the bug_reporting_guidelines are different.
+        form['field.bug_supervisor'] = bug_team.name
+        form['field.security_contact'] = bug_team.name
+        form['field.bug_reporting_guidelines'] = 'new guidelines'
+        view = create_initialized_view(
+            self.product, name='+configure-bugtracker', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(
+            'new guidelines', self.product.bug_reporting_guidelines)
