@@ -4,10 +4,10 @@
 __metaclass__ = type
 
 
+from doctest import DocTestSuite
 import unittest
 
 from zope.security.proxy import removeSecurityProxy
-from zope.testing.doctest import DocTestSuite
 
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person
 from canonical.launchpad.testing.systemdocs import (
