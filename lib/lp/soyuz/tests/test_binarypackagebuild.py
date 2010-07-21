@@ -162,13 +162,13 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         Return an `IBinaryPackageBuild` in MANUALDEWAIT state and depending
         on a binary that exists and is reachable.
         """
-        test_publisher = SoyuzTestPublisher()
-        test_publisher.prepareBreezyAutotest()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
 
-        depwait_source = test_publisher.getPubSource(
+        depwait_source = self.publisher.getPubSource(
             sourcename='depwait-source')
 
-        test_publisher.getPubBinaries(
+        self.publisher.getPubBinaries(
             binaryname='dep-bin',
             status=PackagePublishingStatus.PUBLISHED)
 
@@ -269,6 +269,41 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         self.layer.txn.commit()
         depwait_build.updateDependencies()
         self.assertEquals(depwait_build.dependencies, '')
+
+    def testVersionedDependencies(self):
+        # `IBinaryPackageBuild.updateDependencies` supports versioned
+        # dependencies. A build will not be retried unless the candidate
+        # complies with the version restriction.
+        # In this case, dep-bin 666 is available. >> 666 isn't
+        # satisified, but >= 666 is.
+        depwait_build = self._setupSimpleDepwaitContext()
+        self.layer.txn.commit()
+
+        depwait_build.dependencies = u'dep-bin (>> 666)'
+        depwait_build.updateDependencies()
+        self.assertEquals(depwait_build.dependencies, u'dep-bin (>> 666)')
+        depwait_build.dependencies = u'dep-bin (>= 666)'
+        depwait_build.updateDependencies()
+        self.assertEquals(depwait_build.dependencies, u'')
+
+    def testVersionedDependencyOnOldPublication(self):
+        # `IBinaryPackageBuild.updateDependencies` doesn't just consider
+        # the latest publication. There may be older publications which
+        # satisfy the version constraints (in other archives or pockets).
+        # In this case, dep-bin 666 and 999 are available, so both = 666
+        # and = 999 are satisfied.
+        depwait_build = self._setupSimpleDepwaitContext()
+        self.publisher.getPubBinaries(
+            binaryname='dep-bin', version='999',
+            status=PackagePublishingStatus.PUBLISHED)
+        self.layer.txn.commit()
+
+        depwait_build.dependencies = u'dep-bin (= 666)'
+        depwait_build.updateDependencies()
+        self.assertEquals(depwait_build.dependencies, u'')
+        depwait_build.dependencies = u'dep-bin (= 999)'
+        depwait_build.updateDependencies()
+        self.assertEquals(depwait_build.dependencies, u'')
 
 
 class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
