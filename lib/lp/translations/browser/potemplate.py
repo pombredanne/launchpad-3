@@ -806,6 +806,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
     productseries = None
     label = "Translation templates"
     page_title = "All templates"
+    can_edit = None
+    can_admin = None
 
     def initialize(self, series, is_distroseries=True):
         self.is_distroseries = is_distroseries
@@ -813,6 +815,10 @@ class BaseSeriesTemplatesView(LaunchpadView):
             self.distroseries = series
         else:
             self.productseries = series
+        self.can_admin = check_permission(
+            'launchpad.TranslationsAdmin', series)
+        self.can_edit = (
+            self.can_admin or check_permission('launchpad.Edit', series))
 
     def iter_templates(self):
         potemplateset = getUtility(IPOTemplateSet)
@@ -826,10 +832,3 @@ class BaseSeriesTemplatesView(LaunchpadView):
             return "active-template"
         else:
             return "inactive-template"
-
-    def isVisible(self, template):
-        if (template.iscurrent or
-            check_permission('launchpad.Edit', template)):
-            return True
-        else:
-            return False

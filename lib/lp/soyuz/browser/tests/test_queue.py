@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 import transaction
-import unittest
 from zope.component import getUtility, queryMultiAdapter
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -185,7 +184,3 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         self.assertEquals(
             'NEW',
             getUtility(IPackageUploadSet).get(package_upload_id).status.name)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

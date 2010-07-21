@@ -913,10 +913,8 @@ decreases.
 
     >>> cprov_archive.number_of_sources
     3
-    >>> superseded = cprov_archive.getPublishedSources(
+    >>> cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0].supersede()
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(superseded)
 
     >>> cprov_archive.number_of_sources
     2
@@ -926,9 +924,8 @@ decreases.
 
     >>> cprov_archive.number_of_binaries
     3
-    >>> superseded = cprov_archive.getAllPublishedBinaries(
+    >>> cprov_archive.getAllPublishedBinaries(
     ...     name='mozilla-firefox')[0].supersede()
-    >>> syncUpdate(superseded)
 
     >>> cprov_archive.number_of_binaries
     2
@@ -982,7 +979,6 @@ it continues to be considered 'available for deletion'.
 
     >>> login("celso.providelo@canonical.com")
     >>> removal_candidate.requestDeletion(cprov, 'go away !')
-    >>> syncUpdate(removal_candidate)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     1
@@ -1022,7 +1018,6 @@ binary is also DELETED.
 
     >>> for bin in removal_candidate.getPublishedBinaries():
     ...     bin.requestDeletion(cprov, 'go away !')
-    ...     syncUpdate(bin)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     0
@@ -1285,72 +1280,6 @@ Attempts to remove a non-existent dependency results in a AssertionError.
     ...
     AssertionError: This dependency does not exist.
 
-== Find binary package dependency candidates ==
-
-Archive allows a lookup on a single binary package dependency
-candidate by its name, via the `PublishedPackage` table:
-
-    >>> warty_i386 = warty['i386']
-
-    >>> candidate = ubuntu.main_archive.findDepCandidateByName(
-    ...     warty_i386, "pmount")
-    >>> print candidate.binarypackagerelease.binarypackagename.name
-    pmount
-
-    >>> candidate = cprov.archive.findDepCandidateByName(
-    ...     warty_i386, "pmount")
-    >>> print candidate.binarypackagerelease.binarypackagename.name
-    pmount
-
-Since 'python2.4' isn't available in our sampledata (not even
-published), None is returned:
-
-    >>> print ubuntu.main_archive.findDepCandidateByName(
-    ...     warty_i386, "python2.4")
-    None
-
-    >>> print cprov.archive.findDepCandidateByName(
-    ...     warty_i386, "python2.4")
-    None
-
-This method is aware of the archive dependency tree. So, even when a
-package is not published on the context PPA but is available somewhere
-in the archive dependency domain it will be found.
-
-We also add another archive dependency here to exercise findDepCandidateByName
-a little more.
-
-    >>> joe = factory.makePerson(email='joe@example.com')
-    >>> second_ppa = factory.makeArchive(name="secondppa", owner=joe)
-    >>> second_archive_dep = cprov.archive.addArchiveDependency(
-    ...     second_ppa, release_pocket, main_component)
-
-'at' binary package is not present in Celso's PPA.
-
-    >>> cprov_archive.getAllPublishedBinaries(name='at').count()
-    0
-
-But it is available in PRIMARY ubuntu archive.
-
-    >>> primary_candidate = ubuntu.main_archive.findDepCandidateByName(
-    ...     warty_i386, "at")
-    >>> primary_candidate is not None
-    True
-
-Then a lookup on Celso's PPA will find it.
-
-    >>> ppa_candidate = cprov.archive.findDepCandidateByName(
-    ...     warty_i386, "at")
-    >>> ppa_candidate is not None
-    True
-
-    >>> primary_candidate == ppa_candidate
-    True
-
-And clean-up after ourselves:
-
-    >>> ignore = cprov.archive.removeArchiveDependency(second_ppa)
-
 == Creating a package copy request from an IArchive ==
 
 The IArchive interface includes a convenience method for creating a
@@ -1529,7 +1458,7 @@ including PPA, DEBUG, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    19
+    18
 
     >>> print sorted(set(archive_purposes))
     ['COPY', 'DEBUG', 'PARTNER', 'PPA', 'PRIMARY']
