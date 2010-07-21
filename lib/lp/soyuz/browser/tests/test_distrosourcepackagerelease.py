@@ -7,8 +7,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -32,8 +30,9 @@ class TestDistroSourcePackageReleaseFiles(TestCaseWithFactory):
         distroseries = stp.setUpDefaultDistroSeries()
         naked_distroseries = remove_security_proxy_and_shout_at_engineer(
             distroseries)
-        # XXX this is scary. But if we use distroseries.distribution
-        # instead, test_spr_files_deleted() and test_spr_files_one() fail.
+        # XXX Abel Deuring, 2010-07-21, bug 608240. This is scary. But
+        # if we use distroseries.distribution instead,
+        # test_spr_files_deleted() and test_spr_files_one() fail.
         distro = naked_distroseries.distribution
         source_package_release = stp.getPubSource().sourcepackagerelease
         self.dspr = DistributionSourcePackageRelease(
@@ -54,7 +53,3 @@ class TestDistroSourcePackageReleaseFiles(TestCaseWithFactory):
         view = create_initialized_view(self.dspr, "+index")
         html = view.__call__()
         self.failUnless('test_file.dsc (deleted)' in html)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -252,6 +252,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         recipe.requestBuild(
             recipe.daily_build_archive, recipe.owner, first_distroseries,
             PackagePublishingPocket.RELEASE)
+<<<<<<< TREE
         second_distroseries = self.factory.makeDistroSeries()
         naked_second_distroseries = (
             remove_security_proxy_and_shout_at_engineer(second_distroseries))
@@ -259,6 +260,10 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             second_distroseries.newArch(
                 'i386', ProcessorFamily.get(1), False,
                 self.factory.makePerson(), supports_virtualized=True))
+=======
+        second_distroseries = \
+            self.factory.makeSourcePackageRecipeDistroseries("hoary")
+>>>>>>> MERGE-SOURCE
         recipe.distroseries.add(second_distroseries)
         builds = SourcePackageRecipeBuild.makeDailyBuilds()
         self.assertEqual(
@@ -342,7 +347,11 @@ class TestAsBuildmaster(TestCaseWithFactory):
             ' built.\n', body)
 
     def test_handleStatusNotifies(self):
+<<<<<<< TREE
         """handleStatus causes notification, even if OK."""
+=======
+        """"handleStatus causes notification, even if OK."""
+>>>>>>> MERGE-SOURCE
 
         def prepare_build():
             queue_record = self.factory.makeSourcePackageRecipeBuildJob()

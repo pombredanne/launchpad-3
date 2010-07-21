@@ -13,6 +13,7 @@ This module should not have any actual tests.
 __metaclass__ = type
 __all__ = [
     'GPGSigningContext',
+    'is_security_proxied_or_harmless',
     'LaunchpadObjectFactory',
     'ObjectFactory',
     'remove_security_proxy_and_shout_at_engineer',
@@ -26,6 +27,7 @@ from email.message import Message as EmailMessage
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itertools import count
+from operator import isSequenceType
 import os.path
 from random import randint
 from StringIO import StringIO
@@ -149,12 +151,18 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.processor import ProcessorFamily, ProcessorFamilySet
+from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
-
-from lp.testing import run_with_login, time_counter, login, logout, temp_dir
-
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_as,
+    logout,
+    run_with_login,
+    temp_dir,
+    time_counter,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
@@ -323,7 +331,7 @@ class ObjectFactory:
             branch_id, rcstype, url, cvs_root, cvs_module)
 
 
-class _LaunchpadObjectFactory(ObjectFactory):
+class BareLaunchpadObjectFactory(ObjectFactory):
     """Factory methods for creating Launchpad objects.
 
     All the factory methods should be callable with no parameters.
@@ -331,19 +339,16 @@ class _LaunchpadObjectFactory(ObjectFactory):
     for any other required objects.
     """
 
-    def doAsUser(self, user, factory_method, **factory_args):
-        """Perform a factory method while temporarily logged in as a user.
+    def loginAsAnyone(self):
+        """Log in as an arbitrary person.
 
-        :param user: The user to log in as, and then to log out from.
-        :param factory_method: The factory method to invoke while logged in.
-        :param factory_args: Keyword arguments to pass to factory_method.
+        If you want to log in as a celebrity, including admins, see
+        `lp.testing.login_celebrity`.
         """
-        login(user)
-        try:
-            result = factory_method(**factory_args)
-        finally:
-            logout()
-        return result
+        login(ANONYMOUS)
+        person = self.makePerson()
+        login_as(person)
+        return person
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):
@@ -829,7 +834,7 @@ class _LaunchpadObjectFactory(ObjectFactory):
                 url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
-                'Unrecognized branch type: %r' % (branch_type, ))
+                'Unrecognized branch type: %r' % (branch_type,))
 
         namespace = get_branch_namespace(
             owner, product=product, distroseries=distroseries,
@@ -1799,6 +1804,15 @@ class _LaunchpadObjectFactory(ObjectFactory):
         parser = RecipeParser(self.makeRecipeText(*branches))
         return parser.parse()
 
+    def makeSourcePackageRecipeDistroseries(self, name="warty"):
+        """Return a supported Distroseries to use with Source Package Recipes.
+
+        Ew.  This uses sampledata currently, which is the ONLY reason this
+        method exists: it gives us a migration path away from sampledata.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        return ubuntu.getSeries(name)
+
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, name=None,
                                 description=None, branches=(),
@@ -1810,12 +1824,7 @@ class _LaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
         if distroseries is None:
-            distroseries = self.makeDistroSeries()
-            naked_distroseries = removeSecurityProxy(distroseries)
-            naked_distroseries.nominatedarchindep = (
-                naked_distroseries.newArch(
-                    'i386', ProcessorFamily.get(1), False, owner,
-                    supports_virtualized=True))
+            distroseries = self.makeSourcePackageRecipeDistroseries()
 
         if name is None:
             name = self.getUniqueString().decode('utf8')
@@ -2717,18 +2726,40 @@ class _LaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
 
 
-class LaunchpadObjectFactory:
-    """A wrapper around _LaunchpadObjectFactory.
+# Some factory methods return simple Python types. We don't add
+# security wrappers for them.
+unwrapped_types = (
+    DSCFile, InstanceType, Message, datetime, int, str, unicode)
 
-    Ensure that each object created by a _LaunchpadObjectFactory method
+def is_security_proxied_or_harmless(obj):
+    """Check that the given object is security wrapped or a harmless object."""
+    if obj is None:
+        return True
+    if builtin_isinstance(obj, Proxy):
+        return True
+    if type(obj) in unwrapped_types:
+        return True
+    if isSequenceType(obj):
+        for element in obj:
+            if not is_security_proxied_or_harmless(element):
+                return False
+        return True
+    return False
+
+
+class LaunchpadObjectFactory:
+    """A wrapper around `BareLaunchpadObjectFactory`.
+
+    Ensure that each object created by a `BareLaunchpadObjectFactory` method
     is either of a simple Python type or is security proxied.
 
-    A warning message s printed to stderr if a factory method creates
+    A warning message is printed to stderr if a factory method creates
     an object without a security proxy.
-    """
 
+    Whereever you see such a warning: fix it!
+    """
     def __init__(self):
-        self._factory = _LaunchpadObjectFactory()
+        self._factory = BareLaunchpadObjectFactory()
 
     def __getattr__(self, name):
         attr = getattr(self._factory, name)
@@ -2736,16 +2767,10 @@ class LaunchpadObjectFactory:
 
             def guarded_method(*args, **kw):
                 result = attr(*args, **kw)
-                if builtin_isinstance(result, Proxy):
-                    return result
-                if result is None:
-                    return result
-                if type(result) not in (
-                    int, str, unicode, Message, DSCFile, InstanceType, tuple,
-                    datetime):
+                if not is_security_proxied_or_harmless(result):
                     message = (
-                        "Unproxied object returned by "
-                        "LaunchpadObjectFactory.%s" % name)
+                        "PLEASE FIX: LaunchpadObjectFactory.%s returns an "
+                        "unproxied object." % name)
                     print >>sys.stderr, message
                 return result
             return guarded_method
@@ -2760,11 +2785,11 @@ def remove_security_proxy_and_shout_at_engineer(obj):
     a security proxy. This is now no longer possible, but a number of
     tests rely on unrestricted access to object attributes.
 
-    This function should only beused in existing tests if a test fails
-    because a newer version of LaunchpadObjectFactory returns a security
-    proxied object.
+    This function should only be used in legacy tests which fail because
+    they expect unproxied objects.
     """
     print >>sys.stderr, (
-        "\ncalled removeSecurityProxy() for %r without a check if this "
-        "reasonable" % obj)
+        "\nWarning: called removeSecurityProxy() for %r without a check if "
+        "this reasonable. Look for a call of "
+        "remove_security_proxy_and_shout_at_engineer(some_object)." % obj)
     return removeSecurityProxy(obj)

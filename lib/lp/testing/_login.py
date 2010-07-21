@@ -1,11 +1,15 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 # We like global statements!
 # pylint: disable-msg=W0602,W0603
 __metaclass__ = type
 
 __all__ = [
+    'anonymous_logged_in',
+    'celebrity_logged_in',
     'login',
     'login_as',
     'login_celebrity',
@@ -13,20 +17,28 @@ __all__ = [
     'login_team',
     'logout',
     'is_logged_in',
+    'person_logged_in',
+    'run_with_login',
+    'with_anonymous_login',
+    'with_celebrity_logged_in',
+    'with_person_logged_in',
     ]
 
+from contextlib import contextmanager
 import random
 
 from zope.component import getUtility
 from zope.security.management import endInteraction
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import (
-    ANONYMOUS, setupInteractionByEmail, setupInteractionForPerson)
+    ANONYMOUS, get_current_principal, setupInteractionByEmail,
+    setupInteractionForPerson)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 
+from lp.services.utils import decorate_with
 
 
 _logged_in = False
@@ -141,3 +153,57 @@ def logout():
     global _logged_in
     _logged_in = False
     endInteraction()
+
+
+def _with_login(login_method, identifier):
+    """Make a context manager that runs with a particular log in."""
+    current_person = getUtility(ILaunchBag).user
+    current_principal = get_current_principal()
+    login_method(identifier)
+    try:
+        yield
+    finally:
+        if current_principal is None:
+            logout()
+        else:
+            login_person(current_person)
+
+
+@contextmanager
+def person_logged_in(person):
+    """Make a context manager for running logged in as 'person'.
+
+    :param person: A person, an account, a team or ANONYMOUS. If a team,
+        will log in as an arbitrary member of that team.
+    """
+    return _with_login(login_as, person)
+
+
+@contextmanager
+def anonymous_logged_in():
+    """Make a context manager for running with the anonymous log in."""
+    return _with_login(login_as, ANONYMOUS)
+
+
+@contextmanager
+def celebrity_logged_in(celebrity_name):
+    """Make a context manager for running logged in as a celebrity."""
+    return _with_login(login_celebrity, celebrity_name)
+
+
+with_anonymous_login = decorate_with(person_logged_in, None)
+
+
+def with_person_logged_in(person):
+    return decorate_with(person_logged_in, person)
+
+
+def with_celebrity_logged_in(celebrity_name):
+    """Decorate a function so that it's run with a celebrity logged in."""
+    return decorate_with(celebrity_logged_in, celebrity_name)
+
+
+def run_with_login(person, function, *args, **kwargs):
+    """Run 'function' with 'person' logged in."""
+    with person_logged_in(person):
+        return function(*args, **kwargs)
