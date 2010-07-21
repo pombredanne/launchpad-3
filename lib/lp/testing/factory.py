@@ -2744,9 +2744,9 @@ def is_security_proxied_or_harmless(obj):
 
 
 class LaunchpadObjectFactory:
-    """A wrapper around BareLaunchpadObjectFactory.
+    """A wrapper around `BareLaunchpadObjectFactory`.
 
-    Ensure that each object created by a _LaunchpadObjectFactory method
+    Ensure that each object created by a `BareLaunchpadObjectFactory` method
     is either of a simple Python type or is security proxied.
 
     A warning message is printed to stderr if a factory method creates
@@ -2785,6 +2785,7 @@ def remove_security_proxy_and_shout_at_engineer(obj):
     they expect unproxied objects.
     """
     print >>sys.stderr, (
-        "\ncalled removeSecurityProxy() for %r without a check if this "
-        "reasonable" % obj)
+        "\nWarning: called removeSecurityProxy() for %r without a check if "
+        "this reasonable. Look for a call of "
+        "remove_security_proxy_and_shout_at_engineer(some_object)." % obj)
     return removeSecurityProxy(obj)
