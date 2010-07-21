@@ -2,8 +2,7 @@
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
-<configure xmlns="http://namespaces.zope.org/zope"
-           xmlns:browser="http://namespaces.zope.org/browser">
+<configure xmlns="http://namespaces.zope.org/zope">
 
     <include file="zopeapp.zcml" />
     <!--<include package="zope.app" />-->
