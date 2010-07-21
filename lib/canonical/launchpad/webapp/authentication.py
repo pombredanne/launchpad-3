@@ -322,11 +322,8 @@ class LaunchpadPrincipal:
         return encryptor.validate(pw1, pw2)
 
 
-# XXX:
-# u'context/++preferences++apidoc/InterfaceDetails/showSpecificRequiredAdapters'
-# in apidoc/ifacemodule/index.pt expects our principals to be adaptable
-# into IAnnotations, so I've hacked this thing here just to make that code not
-# OOPS.
+# zope.app.apidoc expects our principals to be adaptable into IAnnotations, so
+# we use this dummy adapter here just to make that code not OOPS.
 class LaunchpadPrincipalAnnotations:
     implements(IAnnotations)
     adapts(ILaunchpadPrincipal, IPreferenceGroup)
