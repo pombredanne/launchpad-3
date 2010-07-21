@@ -971,10 +971,12 @@ class NascentUpload:
             # Container for the build that will be processed.
             processed_builds = []
 
-            # Map from upload files to BPRs.
-            file_to_bpr = {}
-
-            for binary_package_file in self.changes.binary_package_files:
+            # Create the BPFs referencing DDEBs last. This lets
+            # storeInDatabase find and link DDEBs when creating DEBs.
+            bpfs_to_create = sorted(
+                self.changes.binary_package_files,
+                key=lambda file: file.ddeb_file is not None)
+            for binary_package_file in bpfs_to_create:
                 if self.sourceful:
                     # The reason we need to do this verification
                     # so late in the game is that in the
@@ -993,13 +995,8 @@ class NascentUpload:
                 build = binary_package_file.findBuild(sourcepackagerelease)
                 assert self.queue_root.pocket == build.pocket, (
                     "Binary was not build for the claimed pocket.")
-                file_to_bpr[binary_package_file] = \
-                    binary_package_file.storeInDatabase(build)
+                binary_package_file.storeInDatabase(build)
                 processed_builds.append(build)
-
-            for (bpf, bpr) in file_to_bpr.items():
-                if bpf.ddeb_file is not None:
-                    removeSecurityProxy(bpr).debug_package = file_to_bpr[bpf.ddeb_file]
 
             # Store the related builds after verifying they were built
             # from the same source.

@@ -865,6 +865,12 @@ class BaseBinaryUploadFile(PackageUploadFile):
         binary_name = getUtility(
             IBinaryPackageNameSet).getOrCreateByName(self.package)
 
+        if self.ddeb_file:
+            debug_package = build.getBinaryPackageFileByName(
+                self.ddeb_file.filename).binarypackagerelease
+        else:
+            debug_package = None
+
         binary = build.createBinaryPackageRelease(
             binarypackagename=binary_name,
             version=self.control_version,
@@ -886,7 +892,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             breaks=encoded.get('Breaks', ''),
             essential=is_essential,
             installedsize=installedsize,
-            architecturespecific=architecturespecific)
+            architecturespecific=architecturespecific,
+            debug_package=debug_package)
 
         library_file = self.librarian.create(self.filename,
              self.size, open(self.filepath, "rb"), self.content_type,

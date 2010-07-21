@@ -127,7 +127,8 @@ class IBinaryPackageBuildView(IPackageBuild):
         binarypackagename, version, summary, description, binpackageformat,
         component, section, priority, shlibdeps, depends, recommends,
         suggests, conflicts, replaces, provides, pre_depends, enhances,
-        breaks, essential, installedsize, architecturespecific):
+        breaks, essential, installedsize, architecturespecific,
+        debug_package):
         """Create and return a `BinaryPackageRelease`.
 
         The binarypackagerelease will be attached to this specific build.

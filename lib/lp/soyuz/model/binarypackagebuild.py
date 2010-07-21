@@ -459,7 +459,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         binpackageformat, component,section, priority, shlibdeps,
         depends, recommends, suggests, conflicts, replaces, provides,
         pre_depends, enhances, breaks, essential, installedsize,
-        architecturespecific):
+        architecturespecific, debug_package):
         """See IBuild."""
         return BinaryPackageRelease(
             build=self, binarypackagename=binarypackagename, version=version,
@@ -470,7 +470,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             suggests=suggests, conflicts=conflicts, replaces=replaces,
             provides=provides, pre_depends=pre_depends, enhances=enhances,
             breaks=breaks, essential=essential, installedsize=installedsize,
-            architecturespecific=architecturespecific)
+            architecturespecific=architecturespecific,
+            debug_package=debug_package)
 
     def estimateDuration(self):
         """See `IBuildBase`."""
