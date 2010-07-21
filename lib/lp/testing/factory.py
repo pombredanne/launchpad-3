@@ -13,6 +13,7 @@ This module should not have any actual tests.
 __metaclass__ = type
 __all__ = [
     'GPGSigningContext',
+    'is_security_proxied_or_harmless',
     'LaunchpadObjectFactory',
     'ObjectFactory',
     'remove_security_proxy_and_shout_at_engineer',
@@ -2727,7 +2728,7 @@ unwrapped_types = (
     DSCFile, InstanceType, Message, datetime, int, str, unicode)
 
 def is_security_proxied_or_harmless(obj):
-    """Check if the given object is security wrapped or a harmless object."""
+    """Check that the given object is security wrapped or a harmless object."""
     if obj is None:
         return True
     if builtin_isinstance(obj, Proxy):
@@ -2739,6 +2740,7 @@ def is_security_proxied_or_harmless(obj):
             if not is_security_proxied_or_harmless(element):
                 return False
         return True
+    return False
 
 
 class LaunchpadObjectFactory:
