@@ -643,14 +643,19 @@ class TestWebservice(TestCaseWithFactory):
         return MINIMAL_RECIPE_TEXT % branch.bzr_identity
 
     def makeRecipe(self, user=None, owner=None, recipe_text=None):
+        # rockstar 21 Jul 2010 - This function does more commits than I'd like,
+        # but it's the result of the fact that the webservice runs in a
+        # separate thread so doesn't get the database updates without those
+        # commits.
         if user is None:
             user = self.factory.makePerson()
         if owner is None:
             owner = user
-        db_distroseries = self.factory.makeDistroSeries()
+        db_distroseries = self.factory.makeSourcePackageRecipeDistroseries()
         if recipe_text is None:
             recipe_text = self.makeRecipeText()
         db_archive = self.factory.makeArchive(owner=owner, name="recipe-ppa")
+        transaction.commit()
         launchpad = launchpadlib_for('test', user,
                 service_root="http://api.launchpad.dev:8085")
         login(ANONYMOUS)
@@ -662,6 +667,7 @@ class TestWebservice(TestCaseWithFactory):
             distroseries=[distroseries.self_link], build_daily=True,
             daily_build_archive=ws_archive)
         # at the moment, distroseries is not exposed in the API.
+        transaction.commit()
         db_recipe = owner.getRecipe(name=u'toaster-1')
         self.assertEqual(set([db_distroseries]), set(db_recipe.distroseries))
         return recipe, ws_owner, launchpad
