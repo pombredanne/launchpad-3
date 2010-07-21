@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to bug notifications."""
@@ -198,8 +198,3 @@ class TestNotificationsForDuplicates(TestCaseWithFactory):
             recipient.person
             for recipient in latest_notification.recipients)
         self.assertEqual(self.dupe_subscribers, recipients)
-
-
-def test_suite():
-    """Return the test suite for the tests in this module."""
-    return unittest.TestLoader().loadTestsFromName(__name__)

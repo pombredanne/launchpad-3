@@ -22,7 +22,7 @@ from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
 from openid import oidutil
-from openid.server.server import CheckIDRequest, Server
+from openid.server.server import CheckIDRequest, Server, ENCODE_HTML_FORM
 from openid.store.memstore import MemoryStore
 from openid.extensions.sreg import SRegRequest, SRegResponse
 
@@ -170,6 +170,10 @@ class OpenIDMixin:
         webresponse = self.openid_server.encodeResponse(openid_response)
         response = self.request.response
         response.setStatus(webresponse.code)
+        # encodeResponse doesn't generate a content-type, help it out
+        if (webresponse.code == 200 and webresponse.body
+                and openid_response.whichEncoding() == ENCODE_HTML_FORM):
+            response.setHeader('content-type', 'text/html')
         for header, value in webresponse.headers.items():
             response.setHeader(header, value)
         return webresponse.body
