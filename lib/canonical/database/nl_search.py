@@ -36,7 +36,58 @@ def nl_term_candidates(phrase):
 
 
 def nl_phrase_search(phrase, table, constraints='',
-                     extra_constraints_tables=None):
+                     extra_constraints_tables=None,
+                     fast_enabled=True):
+    """Return the tsearch2 query that should be use to do a phrase search.
+
+    The precise heuristics applied by this function will vary as we tune
+    the system.
+
+    It is the interface by which a user query should be turned into a backend
+    search language query.
+
+    Caveats: The model class must define a 'fti' column which is then used used
+    for full text searching.
+
+    :param phrase: A search phrase.
+    :param table: This should be the SQLBase class representing the base type.
+    :param constraints: Additional SQL clause that limits the rows to a subset
+        of the table.
+    :param extra_constraints_tables: A list of additional table names that are
+        needed by the constraints clause.
+    :param fast_enabled: If true use a fast, but less precise, code path. When
+        feature flags are available this will be converted to a feature flag.
+    :return: A tsearch2 query string.
+    """
+    terms = nl_term_candidates(phrase)
+    if len(terms) == 0:
+        return ''
+    if fast_enabled:
+        return _nl_phrase_search(terms, table, constraints,
+            extra_constraints_tables)
+    else:
+        return _slow_nl_phrase_search(terms, table, constraints,
+            extra_constraints_tables)
+
+
+def _nl_phrase_search(terms, table, constraints, extra_constraints_tables):
+    """Perform a very simple pruning of the phrase, letting fti do ranking.
+
+    See nl_phrase_search for the contract of this function.
+    """
+    bad_words = set(['ubuntu', 'launchpad'])
+    terms = set(terms)
+    filtered_terms = []
+    for term in terms:
+        if term.lower() in bad_words:
+            continue
+        filtered_terms.append(term)
+    # sorted for testing convenience.
+    return '|'.join(sorted(filtered_terms))
+
+
+def _slow_nl_phrase_search(terms, table, constraints,
+    extra_constraints_tables):
     """Return the tsearch2 query that should be use to do a phrase search.
 
     This function implement an algorithm similar to the one used by MySQL
@@ -56,7 +107,7 @@ def nl_phrase_search(phrase, table, constraints='',
     closer in the text at the top of the list, while still returning rows that
     use only some of the terms.
 
-    :phrase: A search phrase.
+    :terms: Some candidate search terms.
 
     :table: This should be the SQLBase class representing the base type.
 
@@ -66,14 +117,12 @@ def nl_phrase_search(phrase, table, constraints='',
     :extra_constraints_tables: A list of additional table names that are
     needed by the constraints clause.
 
-    Caveat: The SQLBase class must define a 'fti' column .
-    This is the column that is used for full text searching.
+    Caveat: The model class must define a 'fti' column which is then used used
+    for full text searching.
     """
     total = table.select(
         constraints, clauseTables=extra_constraints_tables).count()
-    term_candidates = nl_term_candidates(phrase)
-    if len(term_candidates) == 0:
-        return ''
+    term_candidates = terms
     if total < 5:
         return '|'.join(term_candidates)
 
