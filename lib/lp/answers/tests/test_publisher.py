@@ -48,7 +48,3 @@ class TestRegistration(TestCase):
         self.assertEquals(
             request.response.getHeader('Vary'),
             'Cookie, Authorization, Accept-Language')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
