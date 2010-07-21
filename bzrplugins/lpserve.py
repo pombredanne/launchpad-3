@@ -163,6 +163,8 @@ class LPService(object):
         self._server_socket.settimeout(1)
 
     def _setup_child_file_descriptors(self, base_path):
+        import logging
+        from bzrlib import ui
         stdin_path = os.path.join(base_path, 'stdin')
         stdout_path = os.path.join(base_path, 'stdout')
         stderr_path = os.path.join(base_path, 'stderr')
@@ -174,18 +176,24 @@ class LPService(object):
         stdin_fid = os.open(stdin_path, os.O_RDONLY | os.O_NONBLOCK)
         stdout_fid = os.open(stdout_path, os.O_WRONLY)
         stderr_fid = os.open(stdout_path, os.O_WRONLY)
+        # XXX: Cheap hack. by this point bzrlib has opened stderr for logging
+        #      (as part of starting the service process in the first place). As
+        #      such, it has a stream handler that writes to stderr. logging
+        #      tries to flush and close that, but the file is already closed.
+        #      This just supresses that exception
+        logging.raiseExceptions = False
         sys.stdin.close()
         sys.stdout.close()
-        # sys.stderr.close()
+        sys.stderr.close()
         os.dup2(stdin_fid, 0)
         os.dup2(stdout_fid, 1)
         os.dup2(stderr_fid, 2)
-        # We don't actually have to do this, because the stdin/stdout/stderr
-        # objects will already talk to the right handles because dup2 replaces
-        # the low-level I/O (probably wouldn't do exactly the same on win32)
-        # sys.stdin = os.fdopen(stdin_fid, 'rb')
-        # sys.stdout = os.fdopen(stdout_fid, 'wb')
-        # sys.stderr = os.fdopen(stderr_fid, 'wb')
+        sys.stdin = os.fdopen(stdin_fid, 'rb')
+        sys.stdout = os.fdopen(stdout_fid, 'wb')
+        sys.stderr = os.fdopen(stderr_fid, 'wb')
+        ui.ui_factory.stdin = sys.stdin
+        ui.ui_factory.stdout = sys.stdout
+        ui.ui_factory.stderr = sys.stderr
         # Now that we've opened the handles, delete everything so that we don't
         # leave garbage around. Because the open() is done in blocking mode, we
         # know that someone has already connected to them, and we don't want
@@ -195,14 +203,15 @@ class LPService(object):
         os.remove(stdin_path)
         os.rmdir(base_path)
 
-    def become_child(self, path):
+    def become_child(self, user_id, path):
         """We are in the spawned child code, do our magic voodoo."""
         self._setup_child_file_descriptors(path)
         # This is the point where we would actually want to do something with
         # our life
-        sys.exit(0)
+        cmd = cmd_launchpad_server()
+        sys.exit(cmd.run_argv_aliases(['--inet', user_id]))
 
-    def fork_one_request(self, conn, user_id):
+    def fork_one_request(self, conn, client_addr, user_id):
         """Fork myself and serve a request."""
         temp_name = tempfile.mkdtemp(prefix='lp-service-child-')
         pid = os.fork()
@@ -214,12 +223,12 @@ class LPService(object):
             self.host = None
             self.port = None
             self._sockname = None
-            self.become_child(temp_name)
+            self.become_child(user_id, temp_name)
             trace.warning('become_child returned!!!')
             sys.exit(1)
         else:
             self._child_processes[pid] = temp_name
-            self.log(conn, 'Spawned process %s for user %r: %s'
+            self.log(client_addr, 'Spawned process %s for user %r: %s'
                             % (pid, user_id, temp_name))
 
     def main_loop(self):
@@ -239,8 +248,8 @@ class LPService(object):
                 if e.args[0] != errno.EBADF:
                     trace.warning("listening socket error: %s", e)
             else:
-                self.log(conn, 'connected')
-                self.serve_one_connection(conn)
+                self.log(client_addr, 'connected')
+                self.serve_one_connection(conn, client_addr)
                 if self._should_terminate:
                     break
         trace.note('Shutting down. Waiting up to %.0fs for %d child processes'
@@ -249,13 +258,15 @@ class LPService(object):
         self._wait_for_children()
         trace.note('Exiting')
 
-    def log(self, conn, message):
+    def log(self, client_addr, message):
         """Log a message to the trace log.
 
         Include the information about what connection is being served.
         """
-        if conn is not None:
-            peer_host, peer_port = conn.getpeername()
+        if client_addr is not None:
+            # Note, we don't use conn.getpeername() because if a client
+            # disconnects before we get here, that raises an exception
+            peer_host, peer_port = client_addr
             conn_info = '[%s:%d] ' % (peer_host, peer_port)
         else:
             conn_info = ''
@@ -317,25 +328,25 @@ class LPService(object):
                                   % (c_id, c_path))
                     shutil.rmtree(c_path)
 
-    def serve_one_connection(self, conn):
+    def serve_one_connection(self, conn, client_addr):
         request = conn.recv(1024);
         request = request.strip()
         if request == 'hello':
-            self.log(conn, 'hello heartbeat')
+            self.log(client_addr, 'hello heartbeat')
             conn.sendall('yep, still alive\n')
             self.log_information()
         elif request == 'quit':
             self._should_terminate = True
             conn.sendall('quit command requested... exiting\n')
-            self.log(conn, 'quit requested')
+            self.log(client_addr, 'quit requested')
         elif request.startswith('fork '):
             # Not handled yet
             user_id = request[5:]
-            self.log(conn, 'fork requested for %r' % (user_id,))
+            self.log(client_addr, 'fork requested for %r' % (user_id,))
             # TODO: Do we want to limit the number of children?
-            self.fork_one_request(conn, user_id)
+            self.fork_one_request(conn, client_addr, user_id)
         else:
-            self.log(conn, 'unknown request: %r' % (request,))
+            self.log(client_addr, 'unknown request: %r' % (request,))
         conn.close()
 
 
@@ -370,6 +381,7 @@ class cmd_launchpad_service(Command):
 
     def run(self, port=None):
         host, port = self._get_host_and_port(port)
+        trace.note('Preloading %d modules' % (len(libraries_to_preload),))
         self._preload_libraries()
         service = LPService(host, port)
         service.main_loop()
@@ -380,4 +392,9 @@ register_command(cmd_launchpad_service)
 libraries_to_preload = [
     'bzrlib.errors',
     'bzrlib.repository',
+    'lp.codehosting.bzrutils',
+    'lp.codehosting.vfs',
+    'lp.codehosting.vfs.branchfs',
+    'lp.codehosting.vfs.branchfsclient',
+    'lp.codehosting.vfs.transport',
     ]
