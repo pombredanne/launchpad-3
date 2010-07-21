@@ -36,6 +36,7 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.fakemethod import FakeMethod
 
 
 class TestRecordingSlaves(TrialTestCase):
@@ -832,12 +833,21 @@ class TestDispatchResult(unittest.TestCase):
         self.assertEqual('does not work!', builder.failnotes)
 
 
-class TestBuilddManager(unittest.TestCase):
+class TestBuilddManager(TrialTestCase):
 
     layer = LaunchpadZopelessLayer
 
     def test_addScanForBuilders(self):
-        # Test that addScanForBuilders generates SlaveScanner objects.
+        # Test that addScanForBuilders generates NewBuildersScanner objects.
+
+        # stub out the code that adds a callLater, so that later tests
+        # don't get surprises.
+        _saved_scheduleNextScanCycle = SlaveScanner.scheduleNextScanCycle
+        def cleanup():
+            SlaveScanner.scheduleNextScanCycle = _saved_scheduleNextScanCycle
+        self.addCleanup(cleanup)
+        SlaveScanner.scheduleNextScanCycle = FakeMethod
+
         manager = BuilddManager()
         builder_names = [builder.name for builder in getUtility(IBuilderSet)]
         scanners = manager.addScanForBuilders(builder_names)
