@@ -113,7 +113,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             Make some food!
 
             Recipe information
-            Build daily: True
+            Build schedule: Built daily
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/veggies
             Debian version: 0\+\{revno\}
@@ -309,7 +309,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build daily: False
+            Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: 0\+\{revno\}
@@ -419,8 +419,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build daily:
-            False
+            Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: 0\+\{revno\}
@@ -455,7 +454,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             This recipe .*changes.
 
             Recipe information
-            Build daily: False
+            Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: 0\+\{revno\}
