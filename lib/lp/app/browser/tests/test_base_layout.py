@@ -64,20 +64,30 @@ class TestBaseLayout(TestCaseWithFactory):
         # The html element states the namespace and language information.
         self.assertEqual(
             'http://www.w3.org/1999/xhtml', content.html['xmlns'])
-        self.assertEqual('en', content.html['xml:lang'])
-        self.assertEqual('en', content.html['lang'])
-        self.assertEqual('ltr', content.html['dir'])
+        html_tag = content.html
+        self.assertEqual('en', html_tag['xml:lang'])
+        self.assertEqual('en', html_tag['lang'])
+        self.assertEqual('ltr', html_tag['dir'])
         # The page's title starts with the view's page_title.
         self.assertTrue(content.title.string.startswith(view.page_title))
         # The shortcut icon for the browser chrome is provided.
-        self.assertEqual('shortcut icon', content.link['rel'])
-        self.assertEqual('/@@/launchpad.png', content.link['href'])
+        link_tag = content.link
+        self.assertEqual('shortcut icon', link_tag['rel'])
+        self.assertEqual('/@@/launchpad.png', link_tag['href'])
+        # The template loads the common scripts.
+        load_script = find_tag_by_id(content, 'base-layout-load-scripts').name
+        self.assertEqual('script', load_script)
 
     def test_main_side(self):
         view = self.makeTemplateView('main_side')
         content = BeautifulSoup(view())
         document = find_tag_by_id(content, 'document')
         self.assertEqual('body', document.name)
+        classes = 'tab-overview main_side public yui-skin-sam'.split()
+        self.assertEqual(classes, document['class'].split())
+        grid_layout = document.find('div', 'yui-d0')
+        self.assertEqual('div', grid_layout.name)
+        self.assertEqual('div', document.find('div', id='locationbar').name)
 
 
 def test_suite():
