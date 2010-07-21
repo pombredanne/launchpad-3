@@ -9,7 +9,7 @@
 <tal:breadcrumbs repeat="breadcrumb view/items">
   <li>
     <a tal:attributes="href breadcrumb/url"
-      tal:omit-tag="repeat/breadcrumb/end"><tal:text 
+      tal:omit-tag="repeat/breadcrumb/end"><tal:text
         condition="not: repeat/breadcrumb/end"
         replace="breadcrumb/text">
           Bugs on redfish</tal:text><tal:text
