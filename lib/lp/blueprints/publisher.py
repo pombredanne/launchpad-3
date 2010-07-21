@@ -17,22 +17,18 @@ from zope.publisher.interfaces.browser import (
 
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
-    LaunchpadBrowserRequest, VirtualHostRequestPublicationFactory)
+    LaunchpadBrowserRequest, VHostWebServiceRequestPublicationFactory)
 
 
 class BlueprintsLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The Blueprints layer."""
 
 
-class BlueprintsRequestMixin:
-
+class BlueprintsBrowserRequest(LaunchpadBrowserRequest):
+    """Instances of BlueprintsBrowserRequest provide `BlueprintsLayer`."""
     implements(BlueprintsLayer)
 
 
-class BlueprintsBrowserRequest(BlueprintsRequestMixin, LaunchpadBrowserRequest):
-    pass
-
-
 def blueprints_request_publication_factory():
-    return VirtualHostRequestPublicationFactory(
+    return VHostWebServiceRequestPublicationFactory(
         'blueprints', BlueprintsBrowserRequest, LaunchpadBrowserPublication)
