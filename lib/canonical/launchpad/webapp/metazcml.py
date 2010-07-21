@@ -35,7 +35,6 @@ import z3c.ptcompat.zcml
 from z3c.ptcompat.zcml import page_directive as original_page
 from z3c.ptcompat.zcml import pages_directive as original_pages
 
-from canonical.config import config
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IAuthorization, ICanonicalUrlData, IContextMenu,
@@ -48,9 +47,11 @@ class IAuthorizationsDirective(Interface):
 
     module = GlobalObject(title=u'module', required=True)
 
+
 def _isAuthorization(module_member):
     return (type(module_member) is type and
             IAuthorization.implementedBy(module_member))
+
 
 def authorizations(_context, module):
     if not inspect.ismodule(module):
@@ -100,6 +101,7 @@ class PermissionCollectingContext:
                     raise RuntimeError(
                         "unrecognised discriminator name", name)
 
+
 class SecuredUtilityDirective:
 
     def __init__(self, _context, provides, class_=None, component=None,
@@ -131,11 +133,10 @@ class SecuredUtilityDirective:
         # of the zcml.
         checker = Checker(
             self.permission_collector.get_permissions,
-            self.permission_collector.set_permissions
-            )
+            self.permission_collector.set_permissions)
         component = ProxyFactory(self.component, checker=checker)
-        utility(self._context, self.provides, component=component,
-                name=self.name)
+        utility(
+            self._context, self.provides, component=component, name=self.name)
         return ()
 
 
@@ -144,29 +145,24 @@ class IURLDirective(Interface):
 
     for_ = GlobalObject(
         title=u"Specification of the object that has this canonical url",
-        required=True
-        )
+        required=True)
 
     urldata = GlobalObject(
         title=u"Adapter to ICanonicalUrlData for this object.",
-        required=False
-        )
+        required=False)
 
     path_expression = TextLine(
         title=u"TALES expression that evaluates to the path"
                " relative to the parent object.",
-        required=False
-        )
+        required=False)
 
     attribute_to_parent = PythonIdentifier(
         title=u"Name of the attribute that gets you to the parent object",
-        required=False
-        )
+        required=False)
 
     parent_utility = GlobalObject(
         title=u"Interface of the utility that is the parent of the object",
-        required=False
-        )
+        required=False)
 
     rootsite = PythonIdentifier(
         title=u"Name of the site this URL has as its root."
@@ -182,14 +178,12 @@ class IGlueDirective(Interface):
     generic mechanism, what that 'something' is isn't important.
     """
     module = GlobalObject(
-        title=u"Module in which the classes are found."
-        )
+        title=u"Module in which the classes are found.")
 
     classes = Tokens(
         value_type=PythonIdentifier(),
         title=u"Space separated list of classes to register.",
-        required=True
-        )
+        required=True)
 
 
 class IMenusDirective(IGlueDirective):
@@ -208,13 +202,11 @@ class IFaviconDirective(Interface):
 
     for_ = GlobalObject(
         title=u"Specification of the object that has this favicon",
-        required=True
-        )
+        required=True)
 
     file = Path(
         title=u"Path to the image file",
-        required=True
-        )
+        required=True)
 
 
 def menus(_context, module, classes):
@@ -307,6 +299,7 @@ def navigation(_context, module, classes):
 class InterfaceInstanceDispatcher:
     """Dispatch getitem on names that appear in the interface to the instance.
     """
+
     def __init__(self, interface, instance):
         self.interface = interface
         self.instance = instance
@@ -379,6 +372,7 @@ def url(_context, for_, path_expression=None, urldata=None,
             _for = for_
             _compiled_path_expression = compiled_path_expression
             rootsite = rootsite_
+
             @property
             def inside(self):
                 return getattr(self.context, attribute_to_parent)
@@ -387,6 +381,7 @@ def url(_context, for_, path_expression=None, urldata=None,
             _for = for_
             _compiled_path_expression = compiled_path_expression
             rootsite = rootsite_
+
             @property
             def inside(self):
                 return getUtility(parent_utility)
@@ -397,17 +392,18 @@ def url(_context, for_, path_expression=None, urldata=None,
 
 
 class FaviconRendererBase:
-
     # subclasses must provide a 'fileobj' member that has 'contentType'
     # and 'data' attributes.
 
     def __call__(self):
-        self.request.response.setHeader('Content-type',
-                                        self.file.contentType)
+        self.request.response.setHeader(
+            'Content-type', self.file.contentType)
         return self.file.data
+
 
 def favicon(_context, for_, file):
     fileobj = Image(open(file, 'rb').read())
+
     class Favicon(FaviconRendererBase):
         file = fileobj
 
@@ -434,8 +430,7 @@ def page(_context, name, permission, for_,
          layer=IDefaultBrowserLayer, template=None, class_=None,
          allowed_interface=None, allowed_attributes=None,
          attribute='__call__', menu=None, title=None,
-         facet=None
-         ):
+         facet=None):
     """Like the standard 'page' directive, but with an added 'facet' optional
     argument.
 
@@ -503,7 +498,7 @@ class IRenamedPageDirective(Interface):
 
     for_ = GlobalObject(
         title=u"Specification of the object that has the renamed page",
-        required=True )
+        required=True)
 
     layer = GlobalInterface(
         title=u"The layer the renamed page is in.",
@@ -532,6 +527,7 @@ class IRenamedPageDirective(Interface):
 def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
                  rootsite=None):
     """Will provide a `RedirectView` that will redirect to the new_name."""
+
     def renamed_factory(context, request):
         return RenamedView(
             context, request, new_name=new_name, rootsite=rootsite)
