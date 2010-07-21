@@ -11,9 +11,14 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
+import errno
+import os
 import resource
+import shutil
 import socket
 import sys
+import tempfile
+import time
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
@@ -118,6 +123,7 @@ class LPService(object):
 
     DEFAULT_HOST = '127.0.0.1'
     DEFAULT_PORT = 4156
+    WAIT_FOR_CHILDREN_TIMEOUT = 5*60 # Wait no more than 5 min for children
 
     def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT):
         if host is None:
@@ -135,6 +141,8 @@ class LPService(object):
         self._socket_error = socket.error
         self._socket_timeout = socket.timeout
         self._socket_error = socket.error
+        # Map from pid => information
+        self._child_processes = {}
 
     def _create_master_socket(self):
         addrs = socket.getaddrinfo(self.host, self.port, socket.AF_UNSPEC,
@@ -154,20 +162,44 @@ class LPService(object):
         self._server_socket.listen(1)
         self._server_socket.settimeout(1)
 
+    def become_child(self, path):
+        """We are in the spawned child code, do our magic voodoo."""
+        # TODO: At this point we should be doing the equivalent of lp-serve
+        # Create the child fifos, open them, once someone connects to them,
+        # delete them so that we don't leave trash around
+        time.sleep(5)
+        os.rmdir(path)
+        sys.exit()
+
     def fork_one_request(self, conn, user_id):
         """Fork myself and serve a request."""
+        temp_name = tempfile.mkdtemp(prefix='lp-service-child-')
+        pid = os.fork()
+        if pid == 0:
+            # Child process, close the connections
+            conn.sendall(temp_name + '\n')
+            conn.close()
+            self._server_socket.close()
+            self.host = None
+            self.port = None
+            self._sockname = None
+            self.become_child(temp_name)
+        else:
+            self._child_processes[pid] = temp_name
+            self.log(conn, 'Spawned process %s for user %r: %s'
+                            % (pid, user_id, temp_name))
 
     def main_loop(self):
         self._create_master_socket()
-        trace.note('Waiting on %s' % (self._sockname,))
+        trace.note('Connected to: %s' % (self._sockname,))
         self._should_terminate = False
         while not self._should_terminate:
             try:
                 conn, client_addr = self._server_socket.accept()
             except self._socket_timeout:
-                # just check if we're asked to stop
-                # DEBUG flag to mutter when we get timeouts?
-                pass
+                # Check on the children, and see if we think we should quit
+                # anyway
+                self._poll_children()
             except self._socket_error, e:
                 # we might get a EBADF here, any other socket errors
                 # should get logged.
@@ -178,6 +210,10 @@ class LPService(object):
                 self.serve_one_connection(conn)
                 if self._should_terminate:
                     break
+        trace.note('Shutting down. Waiting up to %.0fs for %d child processes'
+                   % (self.WAIT_FOR_CHILDREN_TIMEOUT,
+                      len(self._child_processes),))
+        self._wait_for_children()
         trace.note('Exiting')
 
     def log(self, conn, message):
@@ -185,8 +221,68 @@ class LPService(object):
 
         Include the information about what connection is being served.
         """
-        peer_host, peer_port = conn.getpeername()
-        trace.mutter('[%s:%d] %s' % (peer_host, peer_port, message))
+        if conn is not None:
+            peer_host, peer_port = conn.getpeername()
+            conn_info = '[%s:%d] ' % (peer_host, peer_port)
+        else:
+            conn_info = ''
+        trace.mutter('%s%s' % (conn_info, message))
+
+    def log_information(self):
+        """Log the status information.
+
+        This includes stuff like number of children, and ... ?
+        """
+        self.log(None, '%d children currently running'
+                       % (len(self._child_processes)))
+
+    def _poll_children(self):
+        """See if children are still running, etc.
+
+        One interesting hook here would be to track memory consumption, etc.
+        """
+        to_remove = []
+        for child_pid, child_path in self._child_processes.iteritems():
+            remove_child = True
+            try:
+                (c_pid, status) = os.waitpid(child_pid, os.WNOHANG)
+            except OSError, e:
+                trace.warning('Exception while checking child %s status: %s'
+                              % (child_pid, e))
+            else:
+                if c_pid == 0: # Child did not exit
+                    remove_child = False
+                else:
+                    self.log(None, 'child %s exited with status: %s'
+                                    % (c_pid, status))
+            if remove_child:
+                # On error or child exiting, stop tracking the child
+                to_remove.append(child_pid)
+        for c_id in to_remove:
+            # Should we do something about the temporary paths?
+            c_path = self._child_processes.pop(c_id)
+            if os.path.exists(c_path):
+                # The child failed to cleanup after itself, do the work here
+                trace.warning('Had to clean up after child %d: %s\n'
+                              % (c_id, c_path))
+                shutil.rmtree(c_path)
+
+    def _wait_for_children(self):
+        start = time.time()
+        end = start + self.WAIT_FOR_CHILDREN_TIMEOUT
+        while self._child_processes:
+            self._poll_children()
+            if self.WAIT_FOR_CHILDREN_TIMEOUT > 0 and time.time() > end:
+                break
+            time.sleep(1.0)
+        if self._child_processes:
+            trace.warning('Failed to stop children: %s'
+                % ', '.join(map(str, self._child_processes)))
+            for c_id, c_path in self._child_processes.iteritems():
+                if os.path.exists(c_path):
+                    trace.warning('Had to clean up after child %d: %s\n'
+                                  % (c_id, c_path))
+                    shutil.rmtree(c_path)
 
     def serve_one_connection(self, conn):
         request = conn.recv(1024);
@@ -194,6 +290,7 @@ class LPService(object):
         if request == 'hello':
             self.log(conn, 'hello heartbeat')
             conn.sendall('yep, still alive\n')
+            self.log_information()
         elif request == 'quit':
             self._should_terminate = True
             conn.sendall('quit command requested... exiting\n')
@@ -202,10 +299,12 @@ class LPService(object):
             # Not handled yet
             user_id = request[5:]
             self.log(conn, 'fork requested for %r' % (user_id,))
+            # TODO: Do we want to limit the number of children?
             self.fork_one_request(conn, user_id)
         else:
             self.log(conn, 'unknown request: %r' % (request,))
         conn.close()
+
 
 class cmd_launchpad_service(Command):
     """Launch a long-running process, where you can ask for new processes.

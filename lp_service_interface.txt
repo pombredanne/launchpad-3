@@ -1,0 +1,17 @@
+=======================================
+Launchpad Codehosting Service Interface
+=======================================
+
+The codehosting service is a way to speed up the time it takes to spawn
+many a new bzr smart-server for every codehosting connection.
+
+Overview
+========
+
+The service starts up and preloads various libraries. It then opens up
+a socket connection, where clients can make a few simple requests. One
+of these is to fork a smart server process. The server then responds to
+the client, indicating what FIFO handles they can use to communicate to
+the new process.
+
+.. vim: tw=71 sw=4 sts=4 ts=8 et si ft=rst
