@@ -1356,10 +1356,15 @@ And clean-up after ourselves:
 The IArchive interface includes a convenience method for creating a
 package copy request:
 
+    >>> from lp.testing.factory import (
+    ...     remove_security_proxy_and_shout_at_engineer)
     >>> requestor = factory.makePerson(name='me-copy')
     >>> copy_target = factory.makeCopyArchiveLocation(
     ...     distribution=ubuntu, name='my-copy-archive', owner=requestor)
-    >>> pcr = ubuntu.main_archive.requestPackageCopy(copy_target, requestor)
+    >>> naked_copy_target = remove_security_proxy_and_shout_at_engineer(
+    ...     copy_target)
+    >>> pcr = ubuntu.main_archive.requestPackageCopy(
+    ...     naked_copy_target, requestor)
     >>> print pcr
     Package copy request
     source = primary/hoary/-/RELEASE
@@ -1372,7 +1377,7 @@ package copy request:
 The requestPackageCopy method can also take an optional suite name:
 
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
-    ...     copy_target, requestor, suite="hoary-updates");
+    ...     naked_copy_target, requestor, suite="hoary-updates");
     >>> print package_copy_request
     Package copy request
     source = primary/hoary/-/UPDATES
@@ -1483,9 +1488,9 @@ use to retrieve files from it.
 
 COPY archives use a URL format of <distro-name>-<archive-name>:
 
-    >>> print copy_target.archive.is_copy
+    >>> print naked_copy_target.archive.is_copy
     True
-    >>> print copy_target.archive.archive_url
+    >>> print naked_copy_target.archive.archive_url
     http://rebuild-test.internal/ubuntu-my-copy-archive/ubuntu
 
 If the archive is private, the url may be different as private PPAs
