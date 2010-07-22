@@ -252,6 +252,14 @@ class OpenIDCallbackView(OpenIDLogin):
         query_string = request.get('QUERY_STRING')
         if query_string is not None:
             params.update(cgi.parse_qsl(query_string))
+        # The production OpenID provider has some Django middleware that
+        # generates a token used to prevent XSRF attacks and stuffs it into
+        # every form.  Unfortunately that includes forms that have off-site
+        # targets and since our OpenID client verifies that no form values have
+        # been injected as a security precaution, this breaks logging-in in
+        # certain cercumstances (see bug 597324).  The best we can do at the
+        # moment is to remove the token before invoking the OpenID library.
+        params.pop('csrfmiddlewaretoken', None)
         return params
 
     def _get_requested_url(self, request):
