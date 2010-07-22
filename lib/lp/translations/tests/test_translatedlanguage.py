@@ -65,10 +65,10 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
     def test_pofiles_template_no_pofiles(self):
         translated_language = self.getTranslatedLanguage(self.language)
         potemplate = self.addPOTemplate()
-        dummy_pofile = potemplate.getDummyPOFile(self.language.code)
+        dummy_pofile = potemplate.getDummyPOFile(self.language)
         pofiles = list(translated_language.pofiles)
         self.assertEqual(1, len(pofiles))
-        #self.assertStatementCount(1, list, translated_language.pofiles)
+        self.assertStatementCount(1, list, translated_language.pofiles)
 
         # When there are no actual PO files, we get a DummyPOFile object
         # instead.
@@ -82,7 +82,7 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         translated_language = self.getTranslatedLanguage(self.language)
         potemplate = self.addPOTemplate()
         pofile = self.factory.makePOFile(self.language.code, potemplate)
-        #self.assertStatementCount(1, getattr, translated_language, 'pofiles')
+        self.assertStatementCount(1, list, translated_language.pofiles)
         self.assertEqual([pofile], list(translated_language.pofiles))
 
     def test_statistics_empty(self):
