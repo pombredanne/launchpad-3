@@ -6,7 +6,10 @@ __all__ = ['FeatureController']
 __metaclass__ = type
 
 
-from lp.services.features import model
+from lp.services.features.model import (
+    getFeatureStore,
+    FeatureFlag,
+    )
 
 from storm.locals import (
     Desc,
@@ -49,7 +52,7 @@ class FeatureController(object):
     def __init__(self, scopes):
         """Construct a new view of the features for a set of scopes.
         """
-        self._store = model.getFeatureStore()
+        self._store = getFeatureStore()
         self.scopes = self._preenScopes(scopes)
 
     def setScopes(self, scopes):
@@ -57,26 +60,30 @@ class FeatureController(object):
 
     def getFlag(self, flag_name):
         rs = (self._store
-                .find(model.FeatureFlag,
-                    model.FeatureFlag.scope.is_in(self.scopes),
-                    model.FeatureFlag.flag == unicode(flag_name))
-                .order_by(Desc(model.FeatureFlag.priority)))
-        row = rs.first()
-        if row is None:
-            return None
+                .find(FeatureFlag,
+                    FeatureFlag.scope.is_in(self.scopes),
+                    FeatureFlag.flag == unicode(flag_name))
+                .order_by(Desc(FeatureFlag.priority))
+                .values(FeatureFlag.value))
+        for value in rs:
+            return value
         else:
-            return row.value
+            return None
 
     def getAllFlags(self):
         """Get the feature flags active for the current scopes.
         
         :returns: dict from flag_name (unicode) to value (unicode).
         """
+        d = {}
         rs = (self._store
-                .find(model.FeatureFlag,
-                    model.FeatureFlag.scope.is_in(self.scopes))
-                .order_by(model.FeatureFlag.priority))
-        return dict((str(f.flag), f.value) for f in rs)
+                .find(FeatureFlag,
+                    FeatureFlag.scope.is_in(self.scopes))
+                .order_by(FeatureFlag.priority)
+                .values(FeatureFlag.flag, FeatureFlag.value))
+        for flag, value in rs:
+            d[str(flag)] = value
+        return d
 
     def _preenScopes(self, scopes):
         # for convenience turn strings to unicode
@@ -97,7 +104,7 @@ class FeatureController(object):
         FeatureControllers connected to this database, and they will persist
         if the database transaction is committed.
         """
-        flag_obj = model.FeatureFlag(scope=unicode(scope),
+        flag_obj = FeatureFlag(scope=unicode(scope),
             flag=unicode(flag),
             value=value,
             priority=priority)
