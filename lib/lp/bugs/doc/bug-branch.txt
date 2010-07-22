@@ -20,64 +20,6 @@ BugBranch links a bug and a branch.
     >>> bug = bugset.get(1)
     >>> branch = getUtility(IBranchLookup).get(10)
 
-If we make the bug private, no-priv won't be allowed to edit either
-the bug or the BugBranch.
-
-    >>> login('foo.bar@canonical.com')
-    >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
-    True
-    >>> login('no-priv@canonical.com')
-
-    >>> bug.description = 'Yet another description.'
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-
-    >>> bug.unlinkBranch(branch, getUtility(ILaunchBag).user)
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-
-    >>> another_branch = factory.makeAnyBranch()
-    >>> bug.linkBranch(another_branch, getUtility(ILaunchBag).user)
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-
-    >>> login('foo.bar@canonical.com')
-    >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
-    True
-
-Likewise, anonymous users cannot link or unlink branches.
-
-    >>> login(ANONYMOUS)
-
-    >>> bug.unlinkBranch(branch, getUtility(ILaunchBag).user)
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-
-    >>> bug.linkBranch(another_branch, getUtility(ILaunchBag).user)
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-
-    >>> login('no-priv@canonical.com')
-
-You can unlink a branch from a bug using unlinkBranch().
-
-    >>> bug.hasBranch(branch)
-    True
-    >>> bug.unlinkBranch(branch, getUtility(ILaunchBag).user)
-    >>> bug.hasBranch(branch)
-    False
-
-Calling unlinkBranch() once again is a noop.
-
-    >>> bug.unlinkBranch(branch, getUtility(ILaunchBag).user)
-
-    >>> bug_branch = bug.linkBranch(branch, getUtility(ILaunchBag).user)
-
 
 == Bugs Related to Branches ==
 

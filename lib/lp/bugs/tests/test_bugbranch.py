@@ -1,18 +1,21 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """Tests for bug-branch linking from the bugs side."""
 
 __metaclass__ = type
 
 from zope.event import notify
+from zope.security.interfaces import Unauthorized
 
 from canonical.testing import DatabaseFunctionalLayer
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lp.bugs.model.bugbranch import BugBranch, BugBranchSet
 from lp.bugs.interfaces.bugbranch import IBugBranch, IBugBranchSet
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import anonymous_logged_in, TestCase, TestCaseWithFactory
 
 
 class TestBugBranchSet(TestCase):
@@ -94,6 +97,46 @@ class TestBugBranch(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         bug.linkBranch(branch, self.factory.makePerson())
         self.assertTrue(bug.hasBranch(branch))
+
+    def test_unlink_branch(self):
+        # Bug.unlinkBranch removes the bug<->branch link.
+        bug = self.factory.makeBug()
+        branch = self.factory.makeBranch()
+        bug.linkBranch(branch, self.factory.makePerson())
+        bug.unlinkBranch(branch, self.factory.makePerson())
+        self.assertEqual([], list(bug.linked_branches))
+        self.assertFalse(bug.hasBranch(branch))
+
+    def test_unlink_not_linked_branch(self):
+        # When unlinkBranch is called with a branch that isn't already linked,
+        # nothing discernable happens.
+        bug = self.factory.makeBug()
+        branch = self.factory.makeBranch()
+        bug.unlinkBranch(branch, self.factory.makePerson())
+        self.assertEqual([], list(bug.linked_branches))
+        self.assertFalse(bug.hasBranch(branch))
+
+    def test_the_unwashed_cannot_link_branch_to_private_bug(self):
+        # Those who cannot see a bug are forbidden to link a branch to it.
+        bug = self.factory.makeBug(private=True)
+        self.assertRaises(Unauthorized, getattr, bug, 'linkBranch')
+
+    def test_the_unwashed_cannot_unlink_branch_from_private_bug(self):
+        # Those who cannot see a bug are forbidden to unlink branches from it.
+        bug = self.factory.makeBug(private=True)
+        self.assertRaises(Unauthorized, getattr, bug, 'unlinkBranch')
+
+    def test_anonymous_users_cannot_link_branches(self):
+        # Anonymous users cannot link branches to bugs, even public bugs.
+        bug = self.factory.makeBug()
+        with anonymous_logged_in():
+            self.assertRaises(Unauthorized, getattr, bug, 'linkBranch')
+
+    def test_anonymous_users_cannot_unlink_branches(self):
+        # Anonymous users cannot unlink branches from bugs, even public bugs.
+        bug = self.factory.makeBug()
+        with anonymous_logged_in():
+            self.assertRaises(Unauthorized, getattr, bug, 'unlinkBranch')
 
     def test_adding_branch_changes_date_last_updated(self):
         # Adding a branch to a bug changes IBug.date_last_updated.
