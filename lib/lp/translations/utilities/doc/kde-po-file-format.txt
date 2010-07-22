@@ -159,8 +159,6 @@ forms. They are simply newline-separated strings.
 
     >>> firefox_serbian_pofile = firefox_potemplate.newPOFile('sr')
     >>> firefox_serbian_pofile.path='sr.po'
-    >>> firefox_serbian_pofile.source_file_format = (
-    ...     TranslationFileFormat.KDEPO)
     >>> firefox_serbian_pofile_contents = r'''
     ... msgid ""
     ... msgstr ""
