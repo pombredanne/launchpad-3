@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """cronscripts/buildd-* tests."""
@@ -15,9 +15,13 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import (
     DatabaseLayer, LaunchpadLayer, LaunchpadZopelessLayer)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.interfaces.component import IComponentSet
@@ -145,12 +149,12 @@ class TestQueueBuilder(TestCronscriptBase):
         qb = self.getQueueBuilder(distribution='boing')
         self.assertRaises(LaunchpadScriptFailure, qb.calculateDistroseries)
 
-        qb = self.getQueueBuilder(suites=('hoary-test',))
+        qb = self.getQueueBuilder(suites=('hoary-test', ))
         self.assertRaises(LaunchpadScriptFailure, qb.calculateDistroseries)
 
         # A single valid suite argument results in a list with one
         # distroseries (pockets are completely ignored).
-        qb = self.getQueueBuilder(suites=('warty-security',))
+        qb = self.getQueueBuilder(suites=('warty-security', ))
         self.assertEqual(
             ['warty'],
             [distroseries.name
@@ -175,7 +179,7 @@ class TestQueueBuilder(TestCronscriptBase):
         # Restricting the build creation to another distroseries
         # does not create any builds.
         source = self.getSourceWithoutBuilds()
-        queue_builder = self.getQueueBuilder(suites=('warty',))
+        queue_builder = self.getQueueBuilder(suites=('warty', ))
         queue_builder.main()
         self.assertEqual(0, len(source.getBuilds()))
 
@@ -183,7 +187,7 @@ class TestQueueBuilder(TestCronscriptBase):
         # A build is created when queue-builder is restricted to the
         # distroseries where the testing source is published
         source = self.getSourceWithoutBuilds()
-        queue_builder = self.getQueueBuilder(suites=('hoary',))
+        queue_builder = self.getQueueBuilder(suites=('hoary', ))
         queue_builder.main()
         self.assertEqual(1, len(source.getBuilds()))
 
@@ -228,7 +232,13 @@ class TestRetryDepwait(TestCronscriptBase):
         self.number_of_pending_builds = self.getPendingBuilds().count()
 
     def getPendingBuilds(self):
-        return BinaryPackageBuild.selectBy(buildstate=BuildStatus.NEEDSBUILD)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        pending_builds = store.find(
+            BinaryPackageBuild,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.status == BuildStatus.NEEDSBUILD)
+        return pending_builds
 
     def getRetryDepwait(self, distribution=None):
         test_args = ['-n']
@@ -278,7 +288,7 @@ class TestRetryDepwait(TestCronscriptBase):
 
         # Make it dependend on the only binary that can be satisfied in
         # the sampledata.
-        depwait_build.dependencies = 'pmount'
+        depwait_build.dependencies = u'pmount'
 
         self.layer.commit()
 
@@ -291,9 +301,5 @@ class TestRetryDepwait(TestCronscriptBase):
         self.assertEqual(
             self.number_of_pending_builds + 1,
             self.getPendingBuilds().count())
-        self.assertEqual(depwait_build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(depwait_build.status.name, 'NEEDSBUILD')
         self.assertEqual(depwait_build.buildqueue_record.lastscore, 1755)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -20,7 +20,6 @@ __all__ = [
     'IProjectGroupBugAddForm',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
-    'UserCannotUnsubscribePerson',
     ]
 
 from zope.component import getUtility
@@ -28,7 +27,6 @@ from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
-from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -99,7 +97,7 @@ class CreateBugParams:
         False in a boolean context, or an AssertionError will be raised.
 
         If distribution is specified, sourcepackagename may optionally
-        be provided. product must evaluate to False in a boolean
+        be provided. Product must evaluate to False in a boolean
         context, or an AssertionError will be raised.
         """
         assert product or distribution, (
@@ -185,8 +183,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
         Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
-    duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
-    readonly_duplicateof = exported(
+    duplicateof = exported(
         DuplicateBug(title=_('Duplicate Of'), required=False, readonly=True),
         exported_as='duplicate_of')
     # This is redefined from IPrivacy.private because the attribute is
@@ -206,7 +203,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             description=_("The person who set this bug private."),
             readonly=True))
     security_related = exported(
-        Bool(title=_("This bug is a security vulnerability"),
+        Bool(title=_("This bug is a security vulnerability."),
              required=False, default=False, readonly=True))
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
@@ -216,7 +213,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     bugtasks = exported(
         CollectionField(
             title=_('BugTasks on this bug, sorted upstream, then '
-                    'ubuntu, then other distroseriess.'),
+                    'by ubuntu, then by other distroseries.'),
             value_type=Reference(schema=IBugTask),
             readonly=True),
         exported_as='bug_tasks')
@@ -239,12 +236,12 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     cve_links = Attribute('Links between this bug and CVE entries.')
     subscriptions = exported(
         doNotSnapshot(CollectionField(
-            title=_('Subscriptions.'),
+            title=_('Subscriptions'),
             value_type=Reference(schema=Interface),
             readonly=True)))
     duplicates = exported(
         CollectionField(
-            title=_('MultiJoin of the bugs which are dups of this one'),
+            title=_("MultiJoin of bugs which are dupes of this one."),
             value_type=BugField(), readonly=True))
     attachments = exported(
         CollectionField(
@@ -263,9 +260,10 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         List(title=_("Tags"), description=_("Separated by whitespace."),
              value_type=Tag(), required=False))
     is_complete = Bool(
+        title=_("Is Complete?"),
         description=_(
             "True or False depending on whether this bug is considered "
-            "completely addressed. A bug is Launchpad is completely "
+            "completely addressed. A bug in Launchpad is completely "
             "addressed when there are no tasks that are still open for "
             "the bug."),
         readonly=True)
@@ -278,12 +276,13 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         readonly=True)
     can_expire = exported(
         Bool(
-        title=_("Can the Incomplete bug expire if it becomes inactive? "
+            title=_("Can the Incomplete bug expire? "
                 "Expiration may happen when the bug permits expiration, "
                 "and a bugtask cannot be confirmed."),
-        readonly=True))
+            readonly=True),
+        ('devel', dict(exported=False)), exported=True)
     date_last_message = exported(
-        Datetime(title=_('Date of last bug message'),
+        Datetime(title=_("Date of last bug message"),
                  required=False, readonly=True))
     number_of_duplicates = exported(
         Int(title=_('The number of bugs marked as duplicates of this bug'),
@@ -305,7 +304,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         Int(title=_('The number of users unaffected by this bug'),
             required=True, readonly=True))
     users_affected = exported(doNotSnapshot(CollectionField(
-            title=_('Users affected (not including duplicates)'),
+            title=_('The number of users affected by this bug '
+                    '(not including duplicates)'),
             value_type=Reference(schema=IPerson),
             readonly=True)))
     users_unaffected = exported(doNotSnapshot(CollectionField(
@@ -372,7 +372,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     @operation_parameters(
         person=Reference(IPerson, title=_('Person'), required=True))
-    @call_with(subscribed_by=REQUEST_USER)
+    @call_with(subscribed_by=REQUEST_USER, suppress_notify=False)
     @export_write_operation()
     def subscribe(person, subscribed_by, suppress_notify=True):
         """Subscribe `person` to the bug.
@@ -444,7 +444,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """Return IPersons subscribed from dupes of this bug."""
 
     def getBugNotificationRecipients(duplicateof=None, old_bug=None,
-                                     include_master_dupe_subscribers=True):
+                                     include_master_dupe_subscribers=False):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -454,7 +454,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         canonical.launchpad.interfaces.BugNotificationRecipients for
         details of this implementation.
         If this bug is a dupe, set include_master_dupe_subscribers to
-        False to not include the master bug's subscribers.
+        True to include the master bug's subscribers as recipients.
         """
 
     def addChangeNotification(text, person, recipients=None, when=None):
@@ -713,6 +713,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
             :security_related: True/False.
 
+        This may also cause the security contact to be subscribed
+        if one is registered and if the bug is not private.
+        
         Return True if a change is made, False otherwise.
         """
 
@@ -750,8 +753,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     def markUserAffected(user, affected=True):
         """Mark :user: as affected by this bug."""
 
-    @mutator_for(readonly_duplicateof)
-    @operation_parameters(duplicate_of=copy_field(readonly_duplicateof))
+    @mutator_for(duplicateof)
+    @operation_parameters(duplicate_of=copy_field(duplicateof))
     @export_write_operation()
     def markAsDuplicate(duplicate_of):
         """Mark this bug as a duplicate of another."""
@@ -764,7 +767,10 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def setCommentVisibility(user, comment_number, visible):
-        """Set the visible attribute on a bug comment."""
+        """Set the visible attribute on a bug comment.  This is restricted
+        to Launchpad admins, and will return a HTTP Error 401: Unauthorized
+        error for non-admin callers.
+        """
 
     def userCanView(user):
         """Return True if `user` can see this IBug, false otherwise."""
@@ -800,14 +806,27 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     def setHeat(heat, timestamp=None):
         """Set the heat for the bug."""
 
+    def updateHeat():
+        """Update the heat for the bug."""
+
+    @operation_parameters(
+        days_old=Int(
+            title=_('Number of days of inactivity for which to check.'),
+            required=False))
+    @export_read_operation()
+    def isExpirable(days_old=None):
+        """Is this bug eligible for expiration and was it last updated
+        more than X days ago?
+
+        If days_old is None the default number of days without activity
+        is used.
+
+        Returns True or False.
+        """
+
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)
-
-
-class UserCannotUnsubscribePerson(Unauthorized):
-    """User does not have persmisson to unsubscribe person or team."""
-    webservice_error(401)
 
 
 # We are forced to define these now to avoid circular import problems.
@@ -979,10 +998,10 @@ class IBugSet(Interface):
           * the reporter will be subscribed to the bug
 
           * distribution, product and package contacts (whichever ones are
-            applicable based on the bug report target) will bug subscribed to
+            applicable based on the bug report target) will be subscribed to
             all *public bugs only*
 
-          * for public upstreams bugs where there is no upstream bug contact,
+          * for public upstream bugs where there is no upstream bug contact,
             the product owner will be subscribed instead
 
           * if either product or distribution is specified, an appropiate

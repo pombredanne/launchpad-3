@@ -35,13 +35,14 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
-    And, Count, Func, In, LeftJoin, Max, Not, Or, Select, SQLRaw, Union)
+    And, Count, Func, In, LeftJoin, Max, Not, Or, Select, SQL, SQLRaw, Union)
 from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -58,22 +59,22 @@ from canonical.launchpad.interfaces.message import (
     IMessage, IndexedMessage)
 from lp.registry.interfaces.structuralsubscription import (
     BugNotificationLevel, IStructuralSubscriptionTarget)
-from canonical.launchpad.mailnotification import BugNotificationRecipients
+from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.errors import UserCannotUnsubscribePerson
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
     BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)
 from lp.bugs.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet, IFileBugData,
-    InvalidDuplicateValue, UserCannotUnsubscribePerson)
+    InvalidDuplicateValue)
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
-from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
     NominationError, NominationSeriesObsoleteError)
@@ -83,7 +84,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
-from lp.bugs.scripts.bugheat import BugHeatConstants
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
@@ -437,7 +437,7 @@ class Bug(SQLBase):
         enabled_bug_expiration set to True can be expired. To qualify for
         expiration, the bug and its bugtasks meet the follow conditions:
 
-        1. The bug is inactive; the last update of the is older than
+        1. The bug is inactive; the last update of the bug is older than
             Launchpad expiration age.
         2. The bug is not a duplicate.
         3. The bug has at least one message (a request for more information).
@@ -455,6 +455,7 @@ class Bug(SQLBase):
         if not self.permits_expiration:
             return False
 
+        days_old = config.malone.days_before_expiration
         # Do the search as the Janitor, to ensure that this bug can be
         # found, even if it's private. We don't have access to the user
         # calling this property. If the user has access to view this
@@ -462,14 +463,43 @@ class Bug(SQLBase):
         # exposing something we shouldn't. The Janitor has access to
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
-            0, getUtility(ILaunchpadCelebrities).janitor, bug=self)
+            days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
+        return bugtasks.count() > 0
+
+    def isExpirable(self, days_old=None):
+        """See `IBug`."""
+
+        # If days_old is None read it from the Launchpad configuration
+        # and use that value
+        if days_old is None:
+            days_old = config.malone.days_before_expiration
+
+        # IBugTaskSet.findExpirableBugTasks() is the authoritative determiner
+        # if a bug can expire, but it is expensive. We do a general check
+        # to verify the bug permits expiration before using IBugTaskSet to
+        # determine if a bugtask can cause expiration.
+        if not self.permits_expiration:
+            return False
+
+        # Do the search as the Janitor, to ensure that this bug can be
+        # found, even if it's private. We don't have access to the user
+        # calling this property. If the user has access to view this
+        # property, he has permission to see the bug, so we're not
+        # exposing something we shouldn't. The Janitor has access to
+        # view all bugs.
+        bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
+            days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
         return bugtasks.count() > 0
 
     @property
     def initial_message(self):
         """See `IBug`."""
-        messages = sorted(self.messages, key=lambda ob: ob.id)
-        return messages[0]
+        store = Store.of(self)
+        messages = store.find(
+            Message,
+            BugMessage.bug == self,
+            BugMessage.message == Message.id).order_by('id')
+        return messages.first()
 
     def followup_subject(self):
         """See `IBug`."""
@@ -490,8 +520,6 @@ class Bug(SQLBase):
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
 
-        getUtility(ICalculateBugHeatJobSource).create(self)
-
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
 
@@ -501,6 +529,7 @@ class Bug(SQLBase):
         if suppress_notify is False:
             notify(ObjectCreatedEvent(sub, user=subscribed_by))
 
+        self.updateHeat()
         return sub
 
     def unsubscribe(self, person, unsubscribed_by):
@@ -525,6 +554,7 @@ class Bug(SQLBase):
                 # flushed so that code running with implicit flushes
                 # disabled see the change.
                 store.flush()
+                self.updateHeat()
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -647,12 +677,14 @@ class Bug(SQLBase):
         if self.private:
             return []
 
-        dupe_subscribers = set(
-            Person.select("""
-                Person.id = BugSubscription.person AND
-                BugSubscription.bug = Bug.id AND
-                Bug.duplicateof = %d""" % self.id,
-                clauseTables=["Bug", "BugSubscription"]))
+        dupe_details = dict(
+            Store.of(self).find(
+                (Person, Bug),
+                BugSubscription.person == Person.id,
+                BugSubscription.bug == Bug.id,
+                Bug.duplicateof == self.id))
+
+        dupe_subscribers = set([person for person in dupe_details.keys()])
 
         # Direct and "also notified" subscribers take precedence over
         # subscribers from dupes. Note that we don't supply recipients
@@ -662,7 +694,7 @@ class Bug(SQLBase):
 
         if recipients is not None:
             for subscriber in dupe_subscribers:
-                recipients.addDupeSubscriber(subscriber)
+                recipients.addDupeSubscriber(subscriber, dupe_details[subscriber])
 
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
@@ -727,7 +759,7 @@ class Bug(SQLBase):
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
-                                     include_master_dupe_subscribers=True):
+                                     include_master_dupe_subscribers=False):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
         self.getDirectSubscribers(recipients)
@@ -803,7 +835,7 @@ class Bug(SQLBase):
                 notification_data['text'], change.person, recipients,
                 when)
 
-        getUtility(ICalculateBugHeatJobSource).create(self)
+        self.updateHeat()
 
     def expireNotifications(self):
         """See `IBug`."""
@@ -888,7 +920,7 @@ class Bug(SQLBase):
 
         # When a new task is added the bug's heat becomes relevant to the
         # target's max_bug_heat.
-        target.recalculateMaxBugHeat()
+        target.recalculateBugHeatCache()
 
         return new_task
 
@@ -1358,11 +1390,7 @@ class Bug(SQLBase):
 
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
-            if private:
-                self.setHeat(self.heat + BugHeatConstants.PRIVACY)
-            else:
-                self.setHeat(self.heat - BugHeatConstants.PRIVACY)
-
+            self.updateHeat()
             return True # Changed.
         else:
             return False # Not changed.
@@ -1374,10 +1402,7 @@ class Bug(SQLBase):
 
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
-            if security_related:
-                self.setHeat(self.heat + BugHeatConstants.SECURITY)
-            else:
-                self.setHeat(self.heat - BugHeatConstants.SECURITY)
+            self.updateHeat()
 
             return True # Changed
         else:
@@ -1466,34 +1491,42 @@ class Bug(SQLBase):
             if dupe._getAffectedUser(user) is not None:
                 dupe.markUserAffected(user, affected)
 
-        getUtility(ICalculateBugHeatJobSource).create(self)
-
-    @property
-    def readonly_duplicateof(self):
-        """See `IBug`."""
-        return self.duplicateof
+        self.updateHeat()
 
     def markAsDuplicate(self, duplicate_of):
         """See `IBug`."""
         field = DuplicateBug()
         field.context = self
+        current_duplicateof = self.duplicateof
         try:
             if duplicate_of is not None:
                 field._validate(duplicate_of)
+            if self.duplicates:
+                for duplicate in self.duplicates:
+                    # Fire a notify event in model code since moving
+                    # duplicates of a duplicate does not normally fire an
+                    # event.
+                    dupe_before = Snapshot(
+                        duplicate, providing=providedBy(duplicate))
+                    duplicate.markAsDuplicate(duplicate_of)
+                    notify(ObjectModifiedEvent(
+                            duplicate, dupe_before, 'duplicateof'))
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
 
         if duplicate_of is not None:
-            # Create a job to update the heat of the master bug and set
-            # this bug's heat to 0 (since it's a duplicate, it shouldn't
-            # have any heat at all).
-            getUtility(ICalculateBugHeatJobSource).create(duplicate_of)
+            # Update the heat of the master bug and set this bug's heat
+            # to 0 (since it's a duplicate, it shouldn't have any heat
+            # at all).
             self.setHeat(0)
+            duplicate_of.updateHeat()
         else:
-            # Otherwise, create a job to recalculate this bug's heat,
-            # since it will be 0 from having been a duplicate.
-            getUtility(ICalculateBugHeatJobSource).create(self)
+            # Otherwise, recalculate this bug's heat, since it will be 0
+            # from having been a duplicate. We also update the bug that
+            # was previously duplicated.
+            self.updateHeat()
+            current_duplicateof.updateHeat()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
@@ -1574,7 +1607,22 @@ class Bug(SQLBase):
         self.heat = heat
         self.heat_last_updated = timestamp
         for task in self.bugtasks:
-            task.target.recalculateMaxBugHeat()
+            task.target.recalculateBugHeatCache()
+
+    def updateHeat(self):
+        """See `IBug`."""
+        if self.duplicateof is not None:
+            # If this bug is a duplicate we don't try to calculate its
+            # heat.
+            return
+
+        # We need to flush the store first to ensure that changes are
+        # reflected in the new bug heat total.
+        store = Store.of(self)
+        store.flush()
+
+        self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
+        self.heat_last_updated = UTC_NOW
 
     @property
     def attachments(self):
@@ -1722,6 +1770,9 @@ class BugSet:
         # Tell everyone.
         notify(event)
 
+        # Calculate the bug's initial heat.
+        bug.updateHeat()
+
         return bug
 
     def createBugWithoutTarget(self, bug_params):
@@ -1852,7 +1903,8 @@ class BugSet:
             Bug.heat_last_updated < last_updated_cutoff,
             Bug.heat_last_updated == None)
 
-        return store.find(Bug, last_updated_clause).order_by('id')
+        return store.find(
+            Bug, Bug.duplicateof==None, last_updated_clause).order_by('id')
 
 
 class BugAffectsPerson(SQLBase):

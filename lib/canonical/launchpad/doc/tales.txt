@@ -198,13 +198,14 @@ The 'Needs building' build is 14x14:
 The 'building' build is 14x14:
 
     >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
-    >>> build.buildstate = BuildStatus.BUILDING
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(build).status = BuildStatus.BUILDING
     >>> print test_tales("build/image:icon", build=build)
     <img width="14" height="14"...src="/@@/processing" />
 
 But the 'failed to build' build is 16x14:
 
-    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> removeSecurityProxy(build).status = BuildStatus.FAILEDTOBUILD
     >>> print test_tales("build/image:icon", build=build)
     <img width="16" height="14"...src="/@@/build-failed" />
 
@@ -1173,20 +1174,6 @@ get linkified.  test@canonical.com is hidden:
 
 Test the 'fmt:' namespace where the context is a dict.
 ------------------------------------------------------
-
-fmt:pagetitle takes a page template CONTEXTS dict, and gives you a
-string for use in the <title> element of a page.
-
-This case ought to apply only to a page template's CONTEXTS dict.
-However, we have to make this namespace available for all dicts, as
-there is no type information to distinguish a page template CONTEXTS
-dict from any other dict.
-
-    >>> class MockPageTemplateFile:
-    ...     filename = '/blah/blah/debug-root-index.pt'
-    >>> CONTEXTS = {'template': MockPageTemplateFile}
-    >>> test_tales('foo/fmt:pagetitle', foo=CONTEXTS)
-    'Launchpad Debug Home Page'
 
 Test the 'fmt:url' namespace for canonical urls.
 

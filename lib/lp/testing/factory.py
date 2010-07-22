@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=F0401
 
+from __future__ import with_statement
+
 """Testing infrastructure for the Launchpad application.
 
 This module should not have any actual tests.
@@ -15,6 +17,7 @@ __all__ = [
     'ObjectFactory',
     ]
 
+from contextlib import nested
 from datetime import datetime, timedelta
 from email.encoders import encode_base64
 from email.utils import make_msgid, formatdate
@@ -22,8 +25,11 @@ from email.message import Message as EmailMessage
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itertools import count
-from StringIO import StringIO
 import os.path
+from random import randint
+from StringIO import StringIO
+from textwrap import dedent
+from threading import local
 
 import pytz
 
@@ -53,11 +59,13 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
 from canonical.launchpad.ftests._sqlobject import syncUpdate
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.uuid import generate_uuid
 
+from lp.archiveuploader.dscfile import DSCFile
+from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.blueprints.interfaces.sprint import ISprintSet
@@ -113,7 +121,7 @@ from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, SourcePackageUrgency)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
+from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.interfaces.distributionmirror import (
     MirrorContent, MirrorSpeed)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -124,27 +132,42 @@ from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 
+from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import (
     default_name_by_purpose, IArchiveSet, ArchivePurpose)
-from lp.soyuz.adapters.packagelocation import PackageLocation
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.publishing import (
+    PackagePublishingPriority, PackagePublishingStatus)
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.processor import ProcessorFamily, ProcessorFamilySet
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
-from lp.testing import run_with_login, time_counter, login, logout
-
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_as,
+    logout,
+    run_with_login,
+    temp_dir,
+    time_counter,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.translationimportqueue import (
+    RosettaImportStatus)
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
-from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
+from lp.translations.interfaces.translator import ITranslatorSet
+from lp.translations.model.translationimportqueue import (
+    TranslationImportQueueEntry)
 
 
 SPACE = ' '
@@ -213,14 +236,22 @@ class ObjectFactory:
 
     def __init__(self):
         # Initialise the unique identifier.
-        self._integer = count(1)
+        self._local = local()
 
     def getUniqueEmailAddress(self):
         return "%s@example.com" % self.getUniqueString('email')
 
     def getUniqueInteger(self):
-        """Return an integer unique to this factory instance."""
-        return self._integer.next()
+        """Return an integer unique to this factory instance.
+
+        For each thread, this will be a series of increasing numbers, but the
+        starting point will be unique per thread.
+        """
+        counter = getattr(self._local, 'integer', None)
+        if counter is None:
+            counter = count(randint(0, 1000000))
+            self._local.integer = counter
+        return counter.next()
 
     def getUniqueHexString(self, digits=None):
         """Return a unique hexadecimal string.
@@ -245,7 +276,7 @@ class ObjectFactory:
         """
         if prefix is None:
             prefix = "generic-string"
-        string = "%s%s" % (prefix, generate_uuid())
+        string = "%s%s" % (prefix, self.getUniqueInteger())
         return string.replace('_', '-').lower()
 
     def getUniqueUnicode(self):
@@ -302,19 +333,16 @@ class LaunchpadObjectFactory(ObjectFactory):
     for any other required objects.
     """
 
-    def doAsUser(self, user, factory_method, **factory_args):
-        """Perform a factory method while temporarily logged in as a user.
+    def loginAsAnyone(self):
+        """Log in as an arbitrary person.
 
-        :param user: The user to log in as, and then to log out from.
-        :param factory_method: The factory method to invoke while logged in.
-        :param factory_args: Keyword arguments to pass to factory_method.
+        If you want to log in as a celebrity, including admins, see
+        `lp.testing.login_celebrity`.
         """
-        login(user)
-        try:
-            result = factory_method(**factory_args)
-        finally:
-            logout()
-        return result
+        login(ANONYMOUS)
+        person = self.makePerson()
+        login_as(person)
+        return person
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):
@@ -539,7 +567,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         team = getUtility(IPersonSet).newTeam(
             owner, name, displayname, subscriptionpolicy=subscription_policy)
         if visibility is not None:
-            team.visibility = visibility
+            # Visibility is normally restricted to launchpad.Commercial, so
+            # removing the security proxy as we don't care here.
+            removeSecurityProxy(team).visibility = visibility
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
@@ -986,7 +1016,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return proposal
 
-    def makeBranchSubscription(self, branch=None, person=None):
+    def makeBranchSubscription(self, branch=None, person=None,
+                               subscribed_by=None):
         """Create a BranchSubscription.
 
         :param branch_title: The title to use for the created Branch
@@ -996,9 +1027,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch = self.makeBranch()
         if person is None:
             person = self.makePerson()
+        if subscribed_by is None:
+            subscribed_by = person
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
     def makeDiff(self, diff_text=DIFF):
         return Diff.fromFile(StringIO(diff_text), len(diff_text))
@@ -1087,7 +1120,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
-                date_created=None, description=None, comment=None):
+                date_created=None, description=None, comment=None,
+                status=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -1109,7 +1143,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             comment = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, private=private,
-            datecreated=date_created, description=description)
+            datecreated=date_created, description=description,
+            status=status)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
@@ -1409,7 +1444,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, target=None, branch_name=None,
                        git_repo_url=None, hg_repo_url=None, registrant=None,
-                       rcs_type=None):
+                       rcs_type=None, review_status=None):
         """Create and return a new, arbitrary code import.
 
         The type of code import will be inferred from the source details
@@ -1434,26 +1469,29 @@ class LaunchpadObjectFactory(ObjectFactory):
             else:
                 assert rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN)
-            return code_import_set.new(
+            code_import = code_import_set.new(
                 registrant, target, branch_name, rcs_type=rcs_type,
                 url=svn_branch_url)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
-            return code_import_set.new(
+            code_import = code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
                 url=git_repo_url)
         elif hg_repo_url is not None:
-            return code_import_set.new(
+            code_import = code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.HG,
                 url=hg_repo_url)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
-            return code_import_set.new(
+            code_import = code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
                 cvs_root=cvs_root, cvs_module=cvs_module)
+        if review_status:
+            removeSecurityProxy(code_import).review_status = review_status
+        return code_import
 
     def makeCodeImportEvent(self):
         """Create and return a CodeImportEvent."""
@@ -1740,13 +1778,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             processor, url, name, title, description, owner, active,
             virtualized, vm_host, manual=manual)
 
-    def makeRecipe(self, *branches):
-        """Make a builder recipe that references `branches`.
-
-        If no branches are passed, return a recipe text that references an
-        arbitrary branch.
-        """
-        from bzrlib.plugins.builder.recipe import RecipeParser
+    def makeRecipeText(self, *branches):
         if len(branches) == 0:
             branches = (self.makeAnyBranch(),)
         base_branch = branches[0]
@@ -1754,63 +1786,80 @@ class LaunchpadObjectFactory(ObjectFactory):
         text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
         for i, branch in enumerate(other_branches):
             text += 'merge dummy-%s %s\n' % (i, branch.bzr_identity)
-        parser = RecipeParser(text)
+        return text
+
+    def makeRecipe(self, *branches):
+        """Make a builder recipe that references `branches`.
+
+        If no branches are passed, return a recipe text that references an
+        arbitrary branch.
+        """
+        from bzrlib.plugins.builder.recipe import RecipeParser
+        parser = RecipeParser(self.makeRecipeText(*branches))
         return parser.parse()
 
+    def makeSourcePackageRecipeDistroseries(self, name="warty"):
+        """Return a supported Distroseries to use with Source Package Recipes.
+
+        Ew.  This uses sampledata currently, which is the ONLY reason this
+        method exists: it gives us a migration path away from sampledata.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        return ubuntu.getSeries(name)
+
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
-                                distroseries=None, sourcepackagename=None,
-                                name=None, description=None, branches=()):
+                                distroseries=None, name=None,
+                                description=None, branches=(),
+                                build_daily=False, daily_build_archive=None,
+                                is_stale=None):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
         if owner is None:
             owner = self.makePerson()
         if distroseries is None:
-            distroseries = self.makeDistroSeries()
-            distroseries.nominatedarchindep = distroseries.newArch(
-                'i386', ProcessorFamily.get(1), False, owner,
-                supports_virtualized=True)
+            distroseries = self.makeSourcePackageRecipeDistroseries()
 
-        # Make sure we have a real sourcepackagename object.
-        if (sourcepackagename is None or
-            isinstance(sourcepackagename, basestring)):
-            sourcepackagename = self.getOrMakeSourcePackageName(
-                sourcepackagename)
         if name is None:
             name = self.getUniqueString().decode('utf8')
         if description is None:
             description = self.getUniqueString().decode('utf8')
+        if daily_build_archive is None:
+            daily_build_archive = self.makeArchive(
+                distribution=distroseries.distribution, owner=owner)
         recipe = self.makeRecipe(*branches)
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            registrant, owner, [distroseries], sourcepackagename, name,
-            recipe, description)
+            registrant, owner, name, recipe, description, [distroseries],
+            daily_build_archive, build_daily)
+        if is_stale is not None:
+            removeSecurityProxy(source_package_recipe).is_stale = is_stale
         IStore(source_package_recipe).flush()
         return source_package_recipe
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
                                      sourcename=None, distroseries=None,
-                                     pocket=None):
+                                     pocket=None, date_created=None,
+                                     status=BuildStatus.NEEDSBUILD):
         """Make a new SourcePackageRecipeBuild."""
         if recipe is None:
-            recipe = self.makeSourcePackageRecipe(
-                sourcepackagename=self.makeSourcePackageName(sourcename))
+            recipe = self.makeSourcePackageRecipe(name=sourcename)
         if archive is None:
             archive = self.makeArchive()
         if distroseries is None:
             distroseries = self.makeDistroSeries(
                 distribution=archive.distribution)
-        if sourcepackage is None:
-            sourcepackage = distroseries.getSourcePackage(
-                recipe.sourcepackagename)
         if requester is None:
             requester = self.makePerson()
-        return getUtility(ISourcePackageRecipeBuildSource).new(
-            sourcepackage=sourcepackage,
+        spr_build = getUtility(ISourcePackageRecipeBuildSource).new(
+            distroseries=distroseries,
             recipe=recipe,
             archive=archive,
             requester=requester,
-            pocket=pocket)
+            pocket=pocket,
+            date_created=date_created)
+        removeSecurityProxy(spr_build).buildstate = status
+        return spr_build
 
     def makeSourcePackageRecipeBuildJob(
         self, score=9876, virtualized=True, estimated_duration=64,
@@ -1830,6 +1879,48 @@ class LaunchpadObjectFactory(ObjectFactory):
             virtualized=virtualized)
         store.add(bq)
         return bq
+
+    def makeDscFile(self, tempdir_path=None):
+        """Make a DscFile.
+
+        :param tempdir_path: Path to a temporary directory to use.  If not
+            supplied, a temp directory will be created.
+        """
+        filename = 'ed_0.2-20.dsc'
+        contexts = []
+        if tempdir_path is None:
+            contexts.append(temp_dir())
+        # Use nested so temp_dir is an optional context.
+        with nested(*contexts) as result:
+            if tempdir_path is None:
+                tempdir_path = result[0]
+            fullpath = os.path.join(tempdir_path, filename)
+            with open(fullpath, 'w') as dsc_file:
+                dsc_file.write(dedent("""\
+                Format: 1.0
+                Source: ed
+                Version: 0.2-20
+                Binary: ed
+                Maintainer: James Troup <james@nocrew.org>
+                Architecture: any
+                Standards-Version: 3.5.8.0
+                Build-Depends: dpatch
+                Files:
+                 ddd57463774cae9b50e70cd51221281b 185913 ed_0.2.orig.tar.gz
+                 f9e1e5f13725f581919e9bfd62272a05 8506 ed_0.2-20.diff.gz
+                """))
+
+            class Changes:
+                architectures = ['source']
+            logger = QuietFakeLogger()
+            policy = BuildDaemonUploadPolicy()
+            policy.distroseries = self.makeDistroSeries()
+            policy.archive = self.makeArchive()
+            policy.distro = policy.distroseries.distribution
+            dsc_file = DSCFile(fullpath, 'digest', 0, 'main/editors',
+                'priority', 'package', 'version', Changes, policy, logger)
+            list(dsc_file.verify())
+        return dsc_file
 
     def makeTranslationTemplatesBuildJob(self, branch=None):
         """Make a new `TranslationTemplatesBuildJob`.
@@ -1970,6 +2061,42 @@ class LaunchpadObjectFactory(ObjectFactory):
         translation.is_imported = is_imported
         translation.is_current = True
 
+    def makeTranslationImportQueueEntry(self, path=None, status=None,
+                                        sourcepackagename=None,
+                                        distroseries=None,
+                                        productseries=None, content=None,
+                                        uploader=None, is_published=False):
+        """Create a `TranslationImportQueueEntry`."""
+        if path is None:
+            path = self.getUniqueString() + '.pot'
+        if status is None:
+            status = RosettaImportStatus.NEEDS_REVIEW
+
+        if (sourcepackagename is None and distroseries is None):
+            if productseries is None:
+                productseries = self.makeProductSeries()
+        else:
+            if sourcepackagename is None:
+                sourcepackagename = self.makeSourcePackageName()
+            if distroseries is None:
+                distroseries = self.makeDistroSeries()
+
+        if uploader is None:
+            uploader = self.makePerson()
+
+        if content is None:
+            content = self.getUniqueString()
+
+        content_reference = getUtility(ILibraryFileAliasSet).create(
+            name=os.path.basename(path), size=len(content),
+            file=StringIO(content), contentType='text/plain')
+
+        return TranslationImportQueueEntry(
+            path=path, status=status, sourcepackagename=sourcepackagename,
+            distroseries=distroseries, productseries=productseries,
+            importer=uploader, content=content_reference,
+            is_published=is_published)
+
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""
         team_list = getUtility(IMailingListSet).new(team, owner)
@@ -2087,9 +2214,10 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRelease(self, archive=None, sourcepackagename=None,
                                  distroseries=None, maintainer=None,
-                                 creator=None, component=None, section=None,
-                                 urgency=None, version=None,
-                                 builddepends=None, builddependsindep=None,
+                                 creator=None, component=None,
+                                 section_name=None, urgency=None,
+                                 version=None, builddepends=None,
+                                 builddependsindep=None,
                                  build_conflicts=None,
                                  build_conflicts_indep=None,
                                  architecturehintlist='all',
@@ -2116,11 +2244,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 purpose=ArchivePurpose.PRIMARY)
 
         if sourcepackagename is None:
-            if source_package_recipe_build is not None:
-                sourcepackagename = (
-                    source_package_recipe_build.sourcepackagename)
-            else:
-                sourcepackagename = self.makeSourcePackageName()
+            sourcepackagename = self.makeSourcePackageName()
 
         if component is None:
             component = self.makeComponent()
@@ -2128,9 +2252,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         if urgency is None:
             urgency = self.getAnySourcePackageUrgency()
 
-        if section is None:
-            section = self.getUniqueString('section')
-        section = getUtility(ISectionSet).ensure(section)
+        section = self.makeSection(name=section_name)
 
         if maintainer is None:
             maintainer = self.makePerson()
@@ -2172,33 +2294,42 @@ class LaunchpadObjectFactory(ObjectFactory):
             source_package_recipe_build=source_package_recipe_build)
 
     def makeBinaryPackageBuild(self, source_package_release=None,
-            distroarchseries=None):
+            distroarchseries=None, archive=None, builder=None):
         """Create a BinaryPackageBuild.
 
-        If supplied, the source_package_release is used to determine archive.
+        If archive is not supplied, the source_package_release is used
+        to determine archive.
         :param source_package_release: The SourcePackageRelease this binary
             build uses as its source.
         :param distroarchseries: The DistroArchSeries to use.
+        :param archive: The Archive to use.
+        :param builder: An optional builder to assign.
         """
+        if archive is None:
+            if source_package_release is None:
+                archive = self.makeArchive()
+            else:
+                archive = source_package_release.upload_archive
         if source_package_release is None:
-            archive = self.makeArchive()
-        else:
-            archive = source_package_release.upload_archive
-        if source_package_release is None:
-            source_package_release = self.makeSourcePackageRelease(archive)
+            multiverse = self.makeComponent(name='multiverse')
+            source_package_release = self.makeSourcePackageRelease(
+                archive, component=multiverse)
         processor = self.makeProcessor()
         if distroarchseries is None:
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=source_package_release.upload_distroseries,
                 processorfamily=processor.family)
-        binary_package_build = BinaryPackageBuild(
-            sourcepackagerelease=source_package_release,
+        binary_package_build = getUtility(IBinaryPackageBuildSet).new(
+            source_package_release=source_package_release,
             processor=processor,
-            distroarchseries=distroarchseries,
-            buildstate=BuildStatus.NEEDSBUILD,
+            distro_arch_series=distroarchseries,
+            status=BuildStatus.NEEDSBUILD,
             archive=archive,
-            datecreated=self.getUniqueDate())
-        binary_package_build_job = binary_package_build.makeJob()
+            pocket=PackagePublishingPocket.RELEASE,
+            date_created=self.getUniqueDate())
+        naked_build = removeSecurityProxy(binary_package_build)
+        naked_build.builder = builder
+        binary_package_build_job = naked_build.makeJob()
         BuildQueue(
             job=binary_package_build_job.job,
             job_type=BuildFarmJobType.PACKAGEBUILD)
@@ -2207,8 +2338,9 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
                                            distroseries=None, maintainer=None,
                                            creator=None, component=None,
-                                           section=None, urgency=None,
-                                           version=None, archive=None,
+                                           section_name=None,
+                                           urgency=None, version=None,
+                                           archive=None,
                                            builddepends=None,
                                            builddependsindep=None,
                                            build_conflicts=None,
@@ -2248,7 +2380,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroseries=distroseries,
             maintainer=maintainer,
             creator=creator, component=component,
-            section=section,
+            section_name=section_name,
             urgency=urgency,
             version=version,
             builddepends=builddepends,
@@ -2276,6 +2408,97 @@ class LaunchpadObjectFactory(ObjectFactory):
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
         # of SSPPH and other useful attributes.
         return SourcePackagePublishingHistory.get(sspph.id)
+
+    def makeBinaryPackagePublishingHistory(self, binarypackagerelease=None,
+                                           distroarchseries=None,
+                                           component=None, section_name=None,
+                                           priority=None, status=None,
+                                           scheduleddeletiondate=None,
+                                           dateremoved=None,
+                                           pocket=None, archive=None):
+        """Make a `BinaryPackagePublishingHistory`."""
+        if distroarchseries is None:
+            if archive is None:
+                distribution = None
+            else:
+                distribution = archive.distribution
+            distroseries = self.makeDistroSeries(distribution=distribution)
+            distroarchseries = self.makeDistroArchSeries(
+                distroseries=distroseries)
+
+        if archive is None:
+            archive = self.makeArchive(
+                distribution=distroarchseries.distroseries.distribution,
+                purpose=ArchivePurpose.PRIMARY)
+
+        if pocket is None:
+            pocket = self.getAnyPocket()
+
+        if status is None:
+            status = PackagePublishingStatus.PENDING
+
+        if priority is None:
+            priority = PackagePublishingPriority.OPTIONAL
+
+        bpr = self.makeBinaryPackageRelease(
+            component=component,
+            section_name=section_name,
+            priority=priority)
+
+        return BinaryPackagePublishingHistory(
+            distroarchseries=distroarchseries,
+            binarypackagerelease=bpr,
+            component=bpr.component,
+            section=bpr.section,
+            status=status,
+            dateremoved=dateremoved,
+            scheduleddeletiondate=scheduleddeletiondate,
+            pocket=pocket,
+            priority=priority,
+            archive=archive)
+
+    def makeBinaryPackageName(self, name=None):
+        if name is None:
+            name = self.getUniqueString("binarypackage")
+        return BinaryPackageName(name=name)
+
+    def makeBinaryPackageRelease(self, binarypackagename=None,
+                                 version=None, build=None,
+                                 binpackageformat=None, component=None,
+                                 section_name=None, priority=None,
+                                 architecturespecific=False,
+                                 summary=None, description=None):
+        """Make a `BinaryPackageRelease`."""
+        if binarypackagename is None:
+            binarypackagename = self.makeBinaryPackageName()
+        if version is None:
+            version = self.getUniqueString("version")
+        if build is None:
+            build = self.makeBinaryPackageBuild()
+        if binpackageformat is None:
+            binpackageformat = BinaryPackageFormat.DEB
+        if component is None:
+            component = self.makeComponent()
+        section = self.makeSection(name=section_name)
+        if priority is None:
+            priority = PackagePublishingPriority.OPTIONAL
+        if summary is None:
+            summary = self.getUniqueString("summary")
+        if description is None:
+            description = self.getUniqueString("description")
+        return BinaryPackageRelease(binarypackagename=binarypackagename,
+                                    version=version, build=build,
+                                    binpackageformat=binpackageformat,
+                                    component=component, section=section,
+                                    priority=priority, summary=summary,
+                                    description=description,
+                                    architecturespecific=architecturespecific)
+
+    def makeSection(self, name=None):
+        """Make a `Section`."""
+        if name is None:
+            name = self.getUniqueString('section')
+        return getUtility(ISectionSet).ensure(name)
 
     def makePackageset(self, name=None, description=None, owner=None,
                        packages=(), distroseries=None):
@@ -2480,13 +2703,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IHWSubmissionDeviceSet).create(
             device_driver_link, submission, parent, hal_device_id)
 
-    def makeSSHKey(self, person=None, keytype=SSHKeyType.RSA):
+    def makeSSHKey(self, person=None):
         """Create a new SSHKey."""
         if person is None:
             person = self.makePerson()
-        return getUtility(ISSHKeySet).new(
-            person=person, keytype=keytype, keytext=self.getUniqueString(),
-            comment=self.getUniqueString())
+        public_key = "ssh-rsa %s %s" % (
+            self.getUniqueString(), self.getUniqueString())
+        return getUtility(ISSHKeySet).new(person, public_key)
 
     def makeBlob(self, blob=None, expires=None):
         """Create a new TemporaryFileStorage BLOB."""

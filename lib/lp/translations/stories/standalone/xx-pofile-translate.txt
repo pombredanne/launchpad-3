@@ -235,13 +235,13 @@ single message.
 
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/ab/+translate')
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'maincontent'))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Launchpad can&#8217;t handle the plural items ...
 
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/ab/5/+translate')
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'maincontent'))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Launchpad can&#8217;t handle the plural items ...
 

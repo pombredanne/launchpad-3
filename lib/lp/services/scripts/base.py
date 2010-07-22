@@ -112,13 +112,18 @@ class LaunchpadScript:
 
         self.dbuser = dbuser
 
+        if self.description is None:
+            description = self.__doc__
+        else:
+            description = self.description
+
         # The construction of the option parser is a bit roundabout, but
         # at least it's isolated here. First we build the parser, then
         # we add options that our logger object uses, then call our
         # option-parsing hook, and finally pull out and store the
         # supplied options and args.
         self.parser = OptionParser(usage=self.usage,
-                                   description=self.description)
+                                   description=description)
         scripts.logger_options(self.parser, default=self.loglevel)
         self.parser.add_option(
             '--profile', dest='profile', metavar='FILE', help=(

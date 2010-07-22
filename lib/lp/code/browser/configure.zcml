@@ -863,17 +863,6 @@
             permission="zope.Public"/>
     </facet>
 
-    <browser:pages
-        for="lp.registry.interfaces.product.IProduct"
-        permission="zope.Public"
-        class="lp.registry.browser.product.ProductView">
-
-      <browser:page
-            name="+portlet-latestbranches"
-            template="../templates/product-portlet-latestbranches.pt"/>
-
-    </browser:pages>
-
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.code.browser.branchlisting.ProductBranchesView"
@@ -1094,11 +1083,16 @@
         attribute_to_parent="recipe"
         path_expression="string:+build/${id}"
         rootsite="code" />
+    <browser:menus
+        classes="SourcePackageRecipeBuildContextMenu"
+        module="lp.code.browser.sourcepackagerecipebuild"/>
 
     <browser:navigation
         module="lp.code.browser.sourcepackagerecipe"
-        classes="SourcePackageRecipeNavigation
-        SourcePackageRecipeBuildNavigation" />
+        classes="SourcePackageRecipeNavigation" />
+    <browser:navigation
+        module="lp.code.browser.sourcepackagerecipebuild"
+        classes="SourcePackageRecipeBuildNavigation" />
 
     <facet facet="branches">
 
@@ -1126,9 +1120,21 @@
             layer="canonical.launchpad.layers.CodeLayer"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
-            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeBuildView"
+            class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildView"
             name="+index"
             template="../templates/sourcepackagerecipebuild-index.pt"
+            permission="launchpad.View"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+            class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildCancelView"
+            name="+cancel"
+            template="../../app/templates/generic-edit.pt"
+            permission="launchpad.View"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+            class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildRescoreView"
+            name="+rescore"
+            template="../../app/templates/generic-edit.pt"
             permission="launchpad.View"/>
         <browser:menus
             classes="
@@ -1139,14 +1145,14 @@
         <browser:page
             for="lp.code.interfaces.branch.IBranch"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
-            permission="zope.Public"
+            permission="launchpad.AnyPerson"
             facet="branches"
             name="+new-recipe"
             template="../../app/templates/generic-edit.pt"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeEditView"
-            permission="zope.Public"
+            permission="launchpad.Edit"
             facet="branches"
             name="+edit"
             template="../../app/templates/generic-edit.pt"/>
@@ -1195,14 +1201,14 @@
     </facet>
   <securedutility
     name="BuildableDistroSeries"
-    component="lp.code.browser.sourcepackagerecipe.buildable_distroseries_vocabulary"
+    component="lp.code.vocabularies.sourcepackagerecipe.buildable_distroseries_vocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
   <securedutility
     name="TargetPPAs"
-    component="lp.code.browser.sourcepackagerecipe.target_ppas_vocabulary"
+    component="lp.code.vocabularies.sourcepackagerecipe.target_ppas_vocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>

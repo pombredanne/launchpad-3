@@ -605,6 +605,17 @@ class IPackageUploadCustom(Interface):
         reside in the librarian for later retrieval using the webservice.
         """
 
+    def publish_META_DATA(logger):
+        """Publish this custom item as a meta-data file.
+
+        This method writes the meta-data custom file to the archive in
+        the location matching this schema:
+        /<person>/meta/<ppa_name>/<filename>
+
+        It's not written to the main archive location because that could be
+        protected by htaccess in the case of private archives.
+        """
+
 
 class IPackageUploadSet(Interface):
     """Represents a set of IPackageUploads"""
@@ -741,4 +752,11 @@ class PackageUploadCustomFormat(DBEnumeratedType):
         raw-translations-static
 
         A tarball containing raw (Gnome) help file translations.
+        """)
+
+    META_DATA = DBItem(5, """
+        meta-data
+
+        A file containing meta-data about the package, mainly for use in
+        the Software Center.
         """)

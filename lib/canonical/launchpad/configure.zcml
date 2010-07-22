@@ -94,4 +94,9 @@
       module="canonical.launchpad.browser"
       classes="LaunchpadRootNavigation"
       />
+
+  <!-- Register a handler to fix things up just before the application
+       starts (and after zcml has been processed). -->
+  <subscriber handler=".webapp.initialization.handle_process_start" />
+
 </configure>

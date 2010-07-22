@@ -60,7 +60,7 @@ list of emails to send:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
@@ -74,7 +74,7 @@ list of emails to send:
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
@@ -87,7 +87,7 @@ list of emails to send:
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
@@ -101,7 +101,7 @@ list of emails to send:
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
@@ -153,7 +153,7 @@ Let's define a helper function to do that for all pending notifications:
     ...     flush_database_updates()
 
 
-To every message that get sent out, [Bug $bugid] is prefixed to the
+To every message that gets sent out, [Bug $bugid] is prefixed to the
 subject. It gets prefixed only if it's not already present in the
 subject, though, which is often the case when someone replies via email.
 
@@ -172,7 +172,7 @@ subject, though, which is often the case when someone replies via email.
     To: mark@example.com
     ...
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: Re: [Bug 1] subject
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
@@ -212,7 +212,7 @@ Let's add a few changes and see how it looks like:
     To: mark@example.com
     ...
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
@@ -260,7 +260,7 @@ in the order they were added:
     To: mark@example.com
     ...
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
@@ -303,7 +303,7 @@ If we insert yet another comment, it will be sent as a separate email.
     To: mark@example.com
     ...
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
@@ -331,7 +331,7 @@ If we insert yet another comment, it will be sent as a separate email.
     To: mark@example.com
     ...
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
@@ -377,7 +377,7 @@ If we add three comments, three notifications will be sent:
     To: mark@example.com
     ...
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
@@ -397,7 +397,7 @@ If we add three comments, three notifications will be sent:
     To: mark@example.com
     ...
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
@@ -417,7 +417,7 @@ If we add three comments, three notifications will be sent:
     To: mark@example.com
     ...
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
@@ -435,7 +435,7 @@ If we add three comments, three notifications will be sent:
 
     >>> flush_notifications()
 
-If Sample Person does a few changes, and Foo Bar steps in a does a
+If Sample Person does a few changes, and Foo Bar steps in and does a
 change in between, three notifications will be sent:
 
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -465,7 +465,7 @@ change in between, three notifications will be sent:
     To: mark@example.com
     ...
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
@@ -505,7 +505,7 @@ change in between, three notifications will be sent:
     To: mark@example.com
     ...
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
@@ -603,17 +603,17 @@ well:
     ...         print_notification_headers(message)
     ...         print
     To: mark@example.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <2@bugs.launchpad.net>
     Subject: [Bug 2] Re: Blackhole Trash folder
     X-Launchpad-Message-Rationale: Registrant (Debian)
     <BLANKLINE>
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <2@bugs.launchpad.net>
     Subject: [Bug 2] Re: Blackhole Trash folder
     X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
     <BLANKLINE>
     To: test@canonical.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <2@bugs.launchpad.net>
     Subject: [Bug 2] Re: Blackhole Trash folder
     X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
@@ -633,22 +633,22 @@ well:
     X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
     To: foo.bar@canonical.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
     To: mark@example.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     To: test@canonical.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
@@ -760,13 +760,14 @@ We will also need a fresh new bug.
     >>> switch_db_to_launchpad()
     >>> new_bug = ubuntu.createBug(params)
     >>> switch_db_to_bugnotification()
-
     >>> flush_notifications()
 
 If a bug is a duplicate of another bug, a marker gets inserted at the
 top of the email:
 
-    >>> new_bug.duplicateof = bug_one
+    >>> switch_db_to_launchpad()
+    >>> new_bug.markAsDuplicate(bug_one)
+    >>> switch_db_to_bugnotification()
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
@@ -778,59 +779,8 @@ top of the email:
     >>> for bug_notifications, messages in get_email_notifications(notifications):
     ...     for message in messages:
     ...         print_notification(message)
-    To: foo.bar@canonical.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 16] subject
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu) via Bug 1
-    <BLANKLINE>
-    *** This bug is a duplicate of bug 1 ***
-        http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/16
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu (via bug 1).
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: marilize@hbd.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 16] subject
-    X-Launchpad-Message-Rationale: Subscriber @shipit-admins via Bug 1
-    <BLANKLINE>
-    *** This bug is a duplicate of bug 1 ***
-        http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/16
-    You received this bug notification because you are a member of ShipIt
-    Administrators, which is a direct subscriber (via bug 1).
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: mark@example.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 16] subject
-    X-Launchpad-Message-Rationale: Assignee via Bug 1
-    <BLANKLINE>
-    *** This bug is a duplicate of bug 1 ***
-        http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/16
-    You received this bug notification because you are a bug assignee (via
-    bug 1).
-    <BLANKLINE>
-    ----------------------------------------------------------------------
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <16@bugs.launchpad.net>
     Subject: [Bug 16] subject
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
@@ -847,7 +797,7 @@ top of the email:
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <16@bugs.launchpad.net>
     Subject: [Bug 16] subject
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
@@ -863,9 +813,6 @@ top of the email:
     of the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
-
-Also note that notification was sent to Mark as well, since he's a
-subscriber of bug one.
 
     >>> flush_notifications()
 
@@ -898,7 +845,7 @@ inserted at the top of the message body.
     ...     for message in messages:
     ...         print_notification(message)
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug ...] [NEW] Zero-day on Frobulator
     X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
     <BLANKLINE>
@@ -922,7 +869,7 @@ The message is only inserted for new bugs, not for modified bugs:
     ...     for message in messages:
     ...         print_notification(message)
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
     <BLANKLINE>
@@ -991,7 +938,7 @@ makes it write out the emails it sends.
     ...
     INFO    Notifying test@canonical.com about bug 2.
     ...
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     To: test@canonical.com
     Reply-To: Bug 2 <2@bugs.launchpad.net>
     ...
@@ -1001,7 +948,7 @@ makes it write out the emails it sends.
     ...
     INFO    Notifying foo.bar@canonical.com about bug 1.
     ...
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     To: foo.bar@canonical.com
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     ...
@@ -1019,7 +966,7 @@ makes it write out the emails it sends.
     ...
     INFO    Notifying foo.bar@canonical.com about bug 1.
     ...
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     To: foo.bar@canonical.com
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     ...
@@ -1239,6 +1186,16 @@ made.
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message.get('X-Launchpad-Bug-Commenters')
     name12 name16
+
+
+== The X-Launchpad-Bug-Reporter header ==
+
+The X-Launchpad-Bug-Reporter header contains information about the Launchpad
+user who originally reported the bug and opened the bug's first bug task.
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message.get('X-Launchpad-Bug-Reporter')
+    Foo Bar (name16)
 
 
 == Verbose bug notifications ==
@@ -1491,7 +1448,7 @@ these notifications.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: no-priv@canonical.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
     <BLANKLINE>
@@ -1543,7 +1500,7 @@ no comment notifications.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: marilize@hbd.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber @shipit-admins
     <BLANKLINE>
@@ -1605,7 +1562,7 @@ receives these notifications.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: no-priv@canonical.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
     <BLANKLINE>
@@ -1657,7 +1614,7 @@ no notifications created by addChangeNotification().
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: marilize@hbd.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Subscriber @shipit-admins
     <BLANKLINE>

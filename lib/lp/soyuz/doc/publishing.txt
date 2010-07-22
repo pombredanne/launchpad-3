@@ -144,7 +144,7 @@ augments the IBuildSet.getStatusSummaryForBuilds() method to include the
     ...     sourcename='abc', architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
     >>> for build in builds:
-    ...     build.buildstate = BuildStatus.FULLYBUILT
+    ...     build.status = BuildStatus.FULLYBUILT
 
 Create a helper for printing the build status summary:
 
@@ -162,7 +162,8 @@ Create a helper for printing the build status summary:
 
 The underlying method being used here is getUnpublishedBuilds():
 
-    >>> for build in spph.getUnpublishedBuilds():
+    >>> unpublished_builds = spph.getUnpublishedBuilds()
+    >>> for build in sorted(unpublished_builds, key=lambda b:b.title):
     ...     print build.title
     hppa build of abc 666 in ubuntutest breezy-autotest RELEASE
     i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
@@ -202,7 +203,7 @@ Nor will it be included in the unpublished builds:
 By default, only FULLYBUILT builds are included in the returned
 unpublished builds:
 
-    >>> builds[1].buildstate = BuildStatus.SUPERSEDED
+    >>> builds[1].status = BuildStatus.SUPERSEDED
     >>> for build in spph.getUnpublishedBuilds():
     ...     print build.title
 
@@ -217,7 +218,7 @@ But the returned build-states can be set explicitly:
 
 Just switch it back to FULLYBUILT before continuing:
 
-    >>> builds[1].buildstate = BuildStatus.FULLYBUILT
+    >>> builds[1].status = BuildStatus.FULLYBUILT
 
 After publishing the second binary, the status changes to FULLYBUILT as
 per normal:
@@ -256,8 +257,8 @@ that build:
     >>> spph = test_publisher.getPubSource(
     ...     sourcename='def', architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
-    >>> builds[0].buildstate = BuildStatus.SUPERSEDED
-    >>> builds[1].buildstate = BuildStatus.FULLYBUILT
+    >>> builds[0].status = BuildStatus.SUPERSEDED
+    >>> builds[1].status = BuildStatus.FULLYBUILT
     >>> build_status_summary = spph.getStatusSummaryForBuilds()
     >>> print_build_status_summary(build_status_summary)
     FULLYBUILT_PENDING
@@ -410,7 +411,7 @@ test this feature. We will create a publication for a source (foo) and
 two architecture-specific binaries in ubuntu/breezy-autotest.
 
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> source = test_publisher.getPubSource( 
+    >>> source = test_publisher.getPubSource(
     ...     sourcename='ghi',
     ...     architecturehintlist='any',
     ...     status=PackagePublishingStatus.PUBLISHED,
@@ -542,11 +543,8 @@ When we supersede one of the original binary publications, it gets
 excluded from the getPublishedBinaries() results, but not from the
 getBuiltBinaries() result.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-
     >>> a_binary = source.getPublishedBinaries()[0]
-    >>> superseded = a_binary.supersede()
-    >>> syncUpdate(superseded)
+    >>> a_binary.supersede()
 
     >>> len(source.getPublishedBinaries())
     1
@@ -560,7 +558,6 @@ published in the original location.
     >>> deletable = source.getPublishedBinaries()[0]
     >>> deletable.requestDeletion(mark, "go")
     >>> deleted = deletable
-    >>> syncUpdate(deleted)
 
     >>> len(source.getPublishedBinaries())
     0
@@ -576,7 +573,6 @@ verify that the getPublishedBinaries() result is also empty after that.
 
     >>> for bin in copied_source.getPublishedBinaries():
     ...     obsoleted = bin.requestObsolescence()
-    ...     syncUpdate(obsoleted)
 
     >>> len(copied_source.getPublishedBinaries())
     0
@@ -595,7 +591,6 @@ getPublishedBinaries().
     >>> for pub in copied_source.getBuiltBinaries():
     ...     pub.status = PackagePublishingStatus.PUBLISHED
     ...     pub.scheduleddeletiondate = None
-    ...     syncUpdate(pub)
 
 Now we override the first binary publication, the hppa one, to
 component 'universe'.
@@ -630,10 +625,8 @@ publications and the hppa one is the overridden one.
 We have to re-publish the superseded and the deleted publications above
 because it's used below.
 
-    >>> superseded.status = PackagePublishingStatus.PUBLISHED
-    >>> syncUpdate(superseded)
+    >>> a_binary.status = PackagePublishingStatus.PUBLISHED
     >>> deleted.status = PackagePublishingStatus.PUBLISHED
-    >>> syncUpdate(deleted)
 
 
 Copying and inspecting architecture independent binaries
@@ -1148,7 +1141,7 @@ The associated builds and binaries will be created in the context of the
 other PPA.
 
     >>> build = binaries[0].binarypackagerelease.build
-    >>> source_pub = build.sourcepackagerelease.publishings[0]
+    >>> source_pub = build.source_package_release.publishings[0]
     >>> print build.archive.name
     otherppa
 
@@ -1184,7 +1177,7 @@ is correct:
     ...     sourcename='stu', architecturehintlist='any')
     ...     missing_builds = spph.createMissingBuilds()
     ...     for build in missing_builds:
-    ...         build.buildstate = BuildStatus.FULLYBUILT
+    ...         build.status = BuildStatus.FULLYBUILT
     ...         builds.append(build)
     ...     sources.append(spph)
     >>> len(builds)

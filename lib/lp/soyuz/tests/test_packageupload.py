@@ -1,11 +1,10 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
 
 import os
 import shutil
-import unittest
 
 from zope.component import getUtility
 
@@ -273,7 +272,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
             'main/dist-upgrader-all')
         self.assertEquals(
             ['20060302.0120', 'current'], sorted(os.listdir(custom_path)))
-        
+
         # The custom files were also copied to the public librarian
         for customfile in delayed_copy.customfiles:
             self.assertFalse(customfile.libraryfilealias.restricted)
@@ -300,7 +299,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         [pub_record] = pub_records
         [build] = pub_record.getBuilds()
         self.assertEquals(
-            BuildStatus.NEEDSBUILD, build.buildstate)
+            BuildStatus.NEEDSBUILD, build.status)
 
     def test_realiseUpload_for_overridden_component_archive(self):
         # If the component of an upload is overridden to 'Partner' for
@@ -333,7 +332,3 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # the partner archive.
         pub = package_upload.realiseUpload()[0]
         self.assertEqual("partner", pub.archive.name)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

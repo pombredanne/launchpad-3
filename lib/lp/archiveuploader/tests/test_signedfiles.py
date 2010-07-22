@@ -1,14 +1,12 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # arch-tag: f815ad2f-cd34-4399-81a1-c226a949e6b5
 
 import unittest
 import sys
-import os
-import shutil
 from lp.archiveuploader.tests import datadir
 
 
@@ -35,7 +33,7 @@ class TestSignedFiles(unittest.TestCase):
         from lp.archiveuploader.GPGV import TaintedFileNameError
         self.assertRaises(TaintedFileNameError, verify_signed_file, "*", [])
         self.assertRaises(TaintedFileNameError,
-                          verify_signed_file, "foo", [], "*" )
+                          verify_signed_file, "foo", [], "*")
 
     def testCheckExpiredSignedChanges(self):
         """lp.archiveuploader.GPGV.verify_signed_file should raise
@@ -103,11 +101,13 @@ class TestSignedFiles(unittest.TestCase):
         except NoPublicKeyError, err:
             self.assertEquals(err.key, '3AD3DF3EF2D2C028')
 
+
 def test_suite():
     suite = unittest.TestSuite()
     loader = unittest.TestLoader()
     suite.addTest(loader.loadTestsFromTestCase(TestSignedFiles))
     return suite
+
 
 def main(argv):
     suite = test_suite()
@@ -116,6 +116,6 @@ def main(argv):
         return 1
     return 0
 
+
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
-

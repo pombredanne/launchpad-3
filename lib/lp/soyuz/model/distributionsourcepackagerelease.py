@@ -16,11 +16,13 @@ from zope.interface import implements
 
 from storm.expr import Desc
 
+from canonical.database.sqlbase import sqlvalues
+
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from canonical.database.sqlbase import sqlvalues
-
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
@@ -100,11 +102,13 @@ class DistributionSourcePackageRelease:
         # distribution that were built for a PPA but have been published
         # in a main archive.
         builds_for_distro_exprs = (
-            (BinaryPackageBuild.sourcepackagerelease ==
+            (BinaryPackageBuild.source_package_release ==
                 self.sourcepackagerelease),
-            BinaryPackageBuild.distroarchseries == DistroArchSeries.id,
+            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             DistroArchSeries.distroseries == DistroSeries.id,
             DistroSeries.distribution == self.distribution,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id
             )
 
         # First, get all the builds built in a main archive (this will
@@ -112,7 +116,7 @@ class DistributionSourcePackageRelease:
         builds_built_in_main_archives = store.find(
             BinaryPackageBuild,
             builds_for_distro_exprs,
-            BinaryPackageBuild.archive == Archive.id,
+            PackageBuild.archive == Archive.id,
             Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
 
         # Next get all the builds that have a binary published in the
@@ -131,8 +135,7 @@ class DistributionSourcePackageRelease:
 
         return builds_built_in_main_archives.union(
             builds_published_in_main_archives).order_by(
-                Desc(
-                    BinaryPackageBuild.datecreated), Desc(BinaryPackageBuild.id))
+                Desc(BinaryPackageBuild.id))
 
     @property
     def binary_package_names(self):
@@ -140,10 +143,10 @@ class DistributionSourcePackageRelease:
         return BinaryPackageName.select("""
             BinaryPackageName.id =
                 BinaryPackageRelease.binarypackagename AND
-            BinaryPackageRelease.build = Build.id AND
-            Build.sourcepackagerelease = %s
+            BinaryPackageRelease.build = BinaryPackageBuild.id AND
+            BinaryPackageBuild.source_package_release = %s
             """ % sqlvalues(self.sourcepackagerelease.id),
-            clauseTables=['BinaryPackageRelease', 'Build'],
+            clauseTables=['BinaryPackageRelease', 'BinaryPackageBuild'],
             orderBy='name',
             distinct=True)
 
@@ -159,8 +162,8 @@ class DistributionSourcePackageRelease:
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = BinaryPackageName.id AND
-            BinaryPackageRelease.build = Build.id AND
-            Build.sourcepackagerelease = %s
+            BinaryPackageRelease.build = BinaryPackageBuild.id AND
+            BinaryPackageBuild.source_package_release = %s
             """ % sqlvalues(self.distribution,
                             self.distribution.all_distro_archive_ids,
                             self.sourcepackagerelease),
@@ -168,7 +171,7 @@ class DistributionSourcePackageRelease:
             orderBy=['BinaryPackageName.name'],
             clauseTables=['DistroArchSeries', 'DistroSeries',
                           'BinaryPackageRelease', 'BinaryPackageName',
-                          'Build'],
+                          'BinaryPackageBuild'],
             prejoinClauseTables=['BinaryPackageRelease', 'BinaryPackageName'])
         samples = []
         names = set()

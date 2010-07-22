@@ -69,7 +69,7 @@ class DistroArchSeriesBinaryPackageRelease:
         """See `IDistroArchSeriesBinaryPackageRelease`."""
         return DistributionSourcePackageRelease(
             self.distribution,
-            self.build.sourcepackagerelease)
+            self.build.source_package_release)
 
     @property
     def distroarchseriesbinarypackage(self):

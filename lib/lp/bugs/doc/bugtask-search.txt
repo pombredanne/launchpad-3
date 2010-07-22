@@ -92,8 +92,8 @@ and also series-targeted bugs:
 
 === Product bug supervisor ===
 
-If No Privileges is specified as Firefox' bug supervisor, searching for his
-bugs return all of Firefox' bugs.
+If No Privileges is specified as Firefox's bug supervisor, searching for his
+bugs return all of Firefox's bugs.
 
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.ftests import syncUpdate
@@ -989,7 +989,7 @@ We can search for bugs having branches linked to them.
     4 2
     5 1
 
-Similary, we can search for bugs that do not have any linked branches.
+Similarly, we can search for bugs that do not have any linked branches.
 
     >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
     >>> search_params = BugTaskSearchParams(
@@ -1037,7 +1037,7 @@ We mark bug #10 as a duplicate of bug #9.
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> bug_ten = getUtility(IBugSet).get(10)
-    >>> bug_ten.duplicateof = bug_nine
+    >>> bug_ten.markAsDuplicate(bug_nine)
     >>> flush_database_updates()
 
 Searching again reveals bug #9 at the top of the list, since it now has a duplicate.
@@ -1197,6 +1197,174 @@ relevant importance values.
     ...     importance=[BugTaskImportance.LOW, BugTaskImportance.MEDIUM]))
     4 Mozilla Firefox Reflow problems with complex page layouts NEW MEDIUM
     1 Mozilla Firefox Firefox does not support SVG NEW LOW
+
+
+== Searching by structural subscriber ==
+
+The 'structural_subscriber' search parameter allows one to search all the bug
+tasks to which a person is structurally subscribed. A person can be a
+structural subscriber for a product, a product series, a project, a milestone,
+a distribution, a distribution series and a distribution source package. No
+Privileges Person isn't a structural subscriber, so no bug tasks are found:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv_struct_sub = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=no_priv)
+    >>> found_bugtasks = bugtask_set.search(no_priv_struct_sub)
+    >>> found_bugtasks.count()
+    0
+
+Create a new person and make them a subscriber to all Firefox (product) bug
+reports.  Subsequently, we confirm that they are subscribed to all of the
+Firefox bug tasks.
+
+    >>> product_struct_subber = factory.makePerson(
+    ...     name='product-struct-subber')
+    >>> firefox.addBugSubscription(product_struct_subber,
+    ...     product_struct_subber)
+    <StructuralSubscription at ...>
+    >>> product_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=product_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(product_struct_sub_search)
+    >>> found_bugtasks.count()
+    7
+
+Create a new person and subscribe them to all of the bug tasks for a product
+series.  We then test to see that they are subscribed to all of the bug tasks
+for the product series in which they are interested.
+
+    >>> product_series = firefox.getSeries('1.0')
+    >>> all_targeted = BugTaskSearchParams(user=None, omit_targeted=False)
+    >>> series_tasks = product_series.searchTasks(all_targeted)
+    >>> series_struct_subber = factory.makePerson(
+    ...     name='series-struct-subber')
+    >>> product_series.addBugSubscription(series_struct_subber,
+    ...     series_struct_subber)
+    <StructuralSubscription at ...>
+    >>> series_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=series_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(series_struct_sub_search)
+    >>> found_bugtasks.count()
+    2
+
+Create a new product which will be a part of a project group.  A bug is
+created for the product which should then show up for structural subscribers
+of the project group.  Then a new person is created who is subscribed to all
+of the bug reports about the project. Search for bug tasks that this new
+person is subscribed.
+
+    >>> product = factory.makeProduct()
+    >>> bug = factory.makeBug(product=product)
+    >>> project = factory.makeProject()
+    >>> product.project = project
+    >>> project_struct_subber = factory.makePerson(
+    ...     name='project-struct-subber')
+    >>> project.addBugSubscription(project_struct_subber,
+    ...     project_struct_subber)
+    <StructuralSubscription at ...>
+    >>> project_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=project_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(project_struct_sub_search)
+    >>> found_bugtasks.count()
+    1
+
+We will also subscribe this project subscriber to a product that is a part of
+the project and ensure that duplicate bug tasks do not appear in the search
+results.
+
+    >>> product2 = factory.makeProduct()
+    >>> bug = factory.makeBug(product=product2)
+    >>> product2.project = project
+    >>> product2.addBugSubscription(project_struct_subber,
+    ...     project_struct_subber)
+    <StructuralSubscription at ...>
+    >>> project_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=project_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(project_struct_sub_search)
+    >>> found_bugtasks.count()
+    2
+
+Create a new person and subscribe them to all of bug tasks targeted to a
+milestone.  We then test to see that they are subscribed to all of the
+bug tasks for the milestone in which they are interested.
+
+    >>> milestone_struct_subber = factory.makePerson(
+    ...     name='milestone-struct-subber')
+    >>> product_milestone.addBugSubscription(milestone_struct_subber,
+    ...     milestone_struct_subber)
+    <StructuralSubscription at ...>
+    >>> milestone_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=milestone_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(milestone_struct_sub_search)
+    >>> found_bugtasks.count()
+    2
+
+Create another new person and subscribe them to all the Ubuntu bug reports -
+crazy I know.  Then test to see that this poor person is subscribed to all
+bugs with an Ubuntu bug task.
+
+    >>> distro_struct_subber = factory.makePerson(
+    ...     name='distro-struct-subber')
+    >>> ubuntu.addBugSubscription(distro_struct_subber,
+    ...     distro_struct_subber)
+    <StructuralSubscription at ...>
+    >>> distro_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=distro_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(distro_struct_sub_search)
+    >>> found_bugtasks.count()
+    5
+
+Create a new person who will only be subscribed to an Ubuntu series, which is
+something more reasonable than all of Ubuntu.  Test to ensure that this person
+is subscribed to all of the bug tasks about that distro series.
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> distro_series_struct_subber = factory.makePerson(
+    ...     name='distro-series-struct-subber')
+    >>> hoary.addBugSubscription(distro_series_struct_subber,
+    ...     distro_series_struct_subber)
+    <StructuralSubscription at ...>
+    >>> distro_series_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=distro_series_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(distro_series_struct_sub_search)
+    >>> all_targeted = BugTaskSearchParams(user=None, omit_targeted=False)
+    >>> hoary_bugtasks = hoary.searchTasks(all_targeted)
+    >>> found_bugtasks.count() == hoary_bugtasks.count()
+    True
+
+Create a new person and make them a subscriber to all Ubuntu Firefox (a
+distribution source package) bug reports.  Test to see that the new person is
+subscribed to all of the Ubuntu Firefox bug tasks.
+
+    >>> package_struct_subber = factory.makePerson(
+    ...     name='package-struct-subber')
+    >>> ubuntu_firefox.addBugSubscription(package_struct_subber,
+    ...     package_struct_subber)
+    <StructuralSubscription at ...>
+    >>> package_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=package_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(package_struct_sub_search)
+    >>> found_bugtasks.count()
+    1
+
+We'll also subscribe the person who is currently subscribed to a package's bug
+reports, package_struct_subber, to the bug reports of a product series to
+ensure that the structural_subscriber search is returning the set of both bug
+tasks.
+
+    >>> product_series.addBugSubscription(package_struct_subber,
+    ...     package_struct_subber)
+    <StructuralSubscription at ...>
+    >>> package_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=package_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(package_struct_sub_search)
+    >>> combined_bugtasks_count = (ubuntu_firefox_bugs.count () +
+    ...    series_tasks.count())
+    >>> found_bugtasks.count() == combined_bugtasks_count
+    True
+
 
 == Using omit_targeted parameter ==
 

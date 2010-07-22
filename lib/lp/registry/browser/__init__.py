@@ -22,6 +22,7 @@ from storm.store import Store
 
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadEditFormView)
@@ -207,6 +208,8 @@ class RegistryDeleteViewMixin:
         date_time = series.datecreated.strftime('%Y%m%d-%H%M%S')
         series.name = '%s-%s-%s' % (
             series.product.name, series.name, date_time)
+        series.status = SeriesStatus.OBSOLETE
+        series.releasefileglob = None
         series.product = getUtility(ILaunchpadCelebrities).obsolete_junk
 
     def _deleteMilestone(self, milestone):

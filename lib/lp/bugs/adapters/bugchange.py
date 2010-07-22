@@ -366,17 +366,45 @@ class BugDuplicateChange(AttributeChange):
 
     def getBugNotification(self):
         if self.old_value is not None and self.new_value is not None:
-            text = ("** This bug is no longer a duplicate of bug %d\n"
-                    "   %s\n"
-                    "** This bug has been marked a duplicate of bug %d\n"
-                    "   %s" % (self.old_value.id, self.old_value.title,
-                               self.new_value.id, self.new_value.title))
-        elif self.old_value is None:
-            text = ("** This bug has been marked a duplicate of bug %d\n"
-                    "   %s" % (self.new_value.id, self.new_value.title))
-        elif self.new_value is None:
-            text = ("** This bug is no longer a duplicate of bug %d\n"
+            if self.old_value.private:
+                old_value_text = (
+                    "** This bug is no longer a duplicate of private bug "
+                    "%d" % self.old_value.id)
+            else:
+                old_value_text = (
+                    "** This bug is no longer a duplicate of bug %d\n"
                     "   %s" % (self.old_value.id, self.old_value.title))
+            if self.new_value.private:
+                new_value_text = (
+                    "** This bug has been marked a duplicate of private bug "
+                    "%d" % self.new_value.id)
+            else:
+                new_value_text = (
+                    "** This bug has been marked a duplicate of bug %d\n"
+                    "   %s" % (self.new_value.id, self.new_value.title))
+
+            text = "\n".join((old_value_text, new_value_text))
+
+        elif self.old_value is None:
+            if self.new_value.private:
+                text = (
+                    "** This bug has been marked a duplicate of private bug "
+                    "%d" % self.new_value.id)
+            else:
+                text = (
+                    "** This bug has been marked a duplicate of bug %d\n"
+                    "   %s" % (self.new_value.id, self.new_value.title))
+
+        elif self.new_value is None:
+            if self.old_value.private:
+                text = (
+                    "** This bug is no longer a duplicate of private bug "
+                    "%d" % self.old_value.id)
+            else:
+                text = (
+                    "** This bug is no longer a duplicate of bug %d\n"
+                    "   %s" % (self.old_value.id, self.old_value.title))
+
         else:
             raise AssertionError(
                 "There is no change: both the old bug and new bug are None.")

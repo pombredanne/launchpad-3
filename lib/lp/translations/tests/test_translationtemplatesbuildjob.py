@@ -20,7 +20,7 @@ from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, IBuildFarmJobDerived)
+    IBuildFarmJobOld)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branch import IBranchSet
@@ -54,11 +54,10 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         self.specific_job = self.jobset.create(self.branch)
 
     def test_new_TranslationTemplatesBuildJob(self):
-        # TranslationTemplateBuildJob implements IBuildFarmJob,
-        # IBuildFarmJobDerived, and IBranchJob.
+        # TranslationTemplateBuildJob implements IBuildFarmJobOld,
+        # and IBranchJob.
         verifyObject(IBranchJob, self.specific_job)
-        verifyObject(IBuildFarmJobDerived, self.specific_job)
-        verifyObject(IBuildFarmJob, self.specific_job)
+        verifyObject(IBuildFarmJobOld, self.specific_job)
 
         # Each of these jobs knows the branch it will operate on.
         self.assertEqual(self.branch, self.specific_job.branch)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -7,13 +7,15 @@ from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, Object, Text, TextLine)
 from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.declarations import (
+    exported, export_as_webservice_entry, export_read_operation,
+    operation_returns_collection_of)
 
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeries
 from lp.translations.interfaces.rosettastats import IRosettaStats
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
@@ -74,95 +76,55 @@ class TranslationPriority(DBEnumeratedType):
         search or complete listing is requested by the user.  """)
 
 
-class IHasTranslationTemplates(Interface):
-    """An entity that has translation templates attached.
-
-    Examples include `ISourcePackage`, `IDistroSeries`, and `IProductSeries`.
-    """
-
-    has_current_translation_templates = Bool(
-        title=_("Does this object have current translation templates?"),
-        readonly=True)
-
-    def getCurrentTranslationTemplates(just_ids=False):
-        """Return an iterator over all active translation templates.
-
-        A translation template is considered active when both
-        `IPOTemplate`.iscurrent and parent official_rosetta flags
-        are set to True.
-        """
-
-    def getCurrentTranslationFiles(just_ids=False):
-        """Return an iterator over all active translation files.
-
-        A translation file is active if it's attached to an
-        active translation template.
-        """
-
-    def getObsoleteTranslationTemplates():
-        """Return an iterator over its not active translation templates.
-
-        A translation template is considered not active when any of
-        `IPOTemplate`.iscurrent or `IDistribution`.official_rosetta flags
-        are set to False.
-        """
-
-    def getTranslationTemplates():
-        """Return an iterator over all its translation templates.
-
-        The returned templates are either obsolete or current.
-        """
-
-    def getTranslationTemplateFormats():
-        """A list of native formats for all current translation templates.
-        """
-
-
 class IPOTemplate(IRosettaStats):
     """A translation template."""
 
-    id = Int(
-        title=u"The translation template id.",
-        required=True, readonly=True)
+    export_as_webservice_entry(
+        singular_name='translation_template',
+        plural_name='translation_templates')
 
-    name = TextLine(
+    id = exported(Int(
+        title=u"The translation template id.",
+        required=True, readonly=True))
+
+    name = exported(TextLine(
         title=_("Template name"),
         description=_("The name of this PO template, for example "
             "'evolution-2.2'. Each translation template has a "
             "unique name in its package. It's important to get this "
             "correct, because Launchpad will recommend alternative "
             "translations based on the name."),
-        required=True)
+        required=True))
 
-    translation_domain = TextLine(
+    translation_domain = exported(TextLine(
         title=_("Translation domain"),
         description=_("The translation domain for a translation template. "
             "Used with PO file format when generating MO files for inclusion "
             "in language pack or MO tarball exports."),
-        required=True)
+        required=True))
 
-    description = Text(
+    description = exported(Text(
         title=_("Description"),
         description=_("Please provide a brief description of the content "
             "of this translation template, for example, telling translators "
             "if this template contains strings for end-users or other "
             "developers."),
-        required=False)
+        required=False))
 
     header = Text(
         title=_('Header'),
         description=_("The standard template header in its native format."),
         required=True)
 
-    iscurrent = Bool(
+    iscurrent = exported(Bool(
         title=_("Accept translations?"),
         description=_(
             "If unchecked, people can no longer change the template's "
             "translations."),
         required=True,
-        default=True)
+        default=True), exported_as='active')
 
-    owner = Choice(
+    owner = exported(ParticipatingPersonChoice(
         title=_("Owner"),
         required=True,
         description=_(
@@ -170,7 +132,7 @@ class IPOTemplate(IRosettaStats):
             "and change it's status, and can also upload new versions "
             "of the template when a new release is made or when the "
             "translation strings have been changed during development."),
-        vocabulary="ValidOwner")
+        vocabulary="ValidOwner"))
 
     productseries = Choice(
         title=_("Series"),
@@ -209,29 +171,29 @@ class IPOTemplate(IRosettaStats):
         required=False,
         vocabulary="BinaryPackageName")
 
-    languagepack = Bool(
+    languagepack = exported(Bool(
         title=_("Include translations for this template in language packs?"),
         description=_(
             "Check this box if this template is part of a language pack so "
             "its translations should be exported that way."),
         required=True,
-        default=False)
+        default=False), exported_as='exported_in_languagepacks')
 
-    path = TextLine(
+    path = exported(TextLine(
         title=_(
             "Path of the template in the source tree, including filename."),
-        required=False)
+        required=False))
 
     source_file = Object(
         title=_('Source file for this translation template'),
         readonly=True, schema=ILibraryFileAlias)
 
-    source_file_format = Choice(
+    source_file_format = exported(Choice(
         title=_("File format for the source file"),
         required=False,
-        vocabulary=TranslationFileFormat)
+        vocabulary=TranslationFileFormat), exported_as='format')
 
-    priority = Int(
+    priority = exported(Int(
         title=_('Priority'),
         required=True,
         default=0,
@@ -240,7 +202,7 @@ class IPOTemplate(IRosettaStats):
             'there are multiple templates, and you can use this as a way '
             'of indicating which are more important and should be '
             'translated first. Pick any number - higher priority '
-            'templates will generally be listed first.'))
+            'templates will generally be listed first.')))
 
     datecreated = Datetime(
         title=_('When this translation template was created.'), required=True,
@@ -265,8 +227,12 @@ class IPOTemplate(IRosettaStats):
             '''),
         vocabulary='TranslationPermission')
 
-    pofiles = Attribute(
-        _('All `IPOFile` that exist for this template.'))
+    pofiles = exported(
+        CollectionField(
+            title=_("All translation files that exist for this template."),
+            # Really IPOFile, see _schema_circular_imports.py.
+            value_type=Reference(schema=Interface)),
+        exported_as='translation_files')
 
     relatives_by_name = Attribute(
         _('All `IPOTemplate` objects that have the same name asa this one.'))
@@ -287,17 +253,24 @@ class IPOTemplate(IRosettaStats):
 
     product = Object(
         title=_('The `IProduct` to which this translation template belongs.'),
-        required=False, readonly=True, schema=IProduct)
+        required=False, readonly=True,
+        # Really IProduct, see _schema_circular_imports.py.
+        schema=Interface)
 
     distribution = Object(
         title=_(
-            'The `IDistribution` to which this translation template belongs.'
-            ),
+            'The `IDistribution` to which this translation template '
+            'belongs.'),
         readonly=True, schema=IDistribution)
 
-    language_count = Int(
+    messagecount = exported(Int(
+        title=_('The number of translation messages for this template.'),
+        required=True, readonly=True),
+        exported_as='message_count')
+
+    language_count = exported(Int(
         title=_('The number of languages for which we have translations.'),
-        required=True, readonly=True)
+        required=True, readonly=True))
 
     translationtarget = Attribute(
         _('''
@@ -305,9 +278,9 @@ class IPOTemplate(IRosettaStats):
             This will either be an `ISourcePackage` or an `IProductSeries`.
             '''))
 
-    date_last_updated = Datetime(
+    date_last_updated = exported(Datetime(
         title=_('Date for last update'),
-        required=True)
+        required=True))
 
     uses_english_msgids = Bool(
         title=_("Uses English strings as msgids"), readonly=True,
@@ -537,12 +510,14 @@ class IPOTemplateSubset(Interface):
     distroseries = Object(
         title=_(
             'The `IDistroSeries` associated with this subset.'),
-        schema=IDistroSeries)
+        # Really IDistroSeries, see _schema_circular_imports.py.
+        schema=Interface)
 
     productseries = Object(
         title=_(
             'The `IProductSeries` associated with this subset.'),
-        schema=IProductSeries)
+        # Really IProductSeries, see _schema_circular_imports.py.
+        schema=Interface)
 
     iscurrent = Bool(
         title=_("Filter for iscurrent flag."),
@@ -599,9 +574,9 @@ class IPOTemplateSubset(Interface):
     def getClosestPOTemplate(path):
         """Return a `IPOTemplate` with a path closer to given path, or None.
 
-        If there is no `IPOTemplate` with a common path with the given argument,
-        or if there are more than one `IPOTemplate` with the same common path,
-        and both are the closer ones, returns None.
+        If there is no `IPOTemplate` with a common path with the given,
+        argument or if there are more than one `IPOTemplate` with the same
+        common path, and both are the closer ones, returns None.
         """
 
     def findUniquePathlessMatch(filename):
@@ -677,7 +652,8 @@ class IPOTemplateSharingSubset(Interface):
     product = Object(
         title=_(
             'The `IProduct` associated with this subset.'),
-        schema=IProduct)
+        # Really IProduct, see _schema_circular_imports.py.
+        schema=Interface)
 
     sourcepackagename = Object(
         title=_(
@@ -722,3 +698,86 @@ class IPOTemplateWithContent(IPOTemplate):
     content = Bytes(
         title=_("PO Template File to Import"),
         required=True)
+
+
+class IHasTranslationTemplates(Interface):
+    """An entity that has translation templates attached.
+
+    Examples include `ISourcePackage`, `IDistroSeries`, and `IProductSeries`.
+    """
+
+    has_translation_templates = Bool(
+        title=_("Does this object have any translation templates?"),
+        readonly=True)
+
+    has_current_translation_templates = Bool(
+        title=_("Does this object have current translation templates?"),
+        readonly=True)
+
+    def getTemplatesCollection():
+        """Return templates as a `TranslationTemplatesCollection`.
+
+        The collection selects all `POTemplate`s attached to the
+        translation target that implements this interface.
+        """
+
+    def getCurrentTemplatesCollection():
+        """Return `TranslationTemplatesCollection` of current templates.
+
+        A translation template is considered active when both
+        `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
+        containing `Product` or `Distribution` are set to True.
+        """
+        # XXX JeroenVermeulen 2010-07-16 bug=605924: Move the
+        # official_rosetta distinction into browser code.
+
+    def getCurrentTranslationTemplates(just_ids=False):
+        """Return an iterator over all active translation templates.
+
+        :param just_ids: If True, return only the `POTemplate.id` rather
+            than the full `POTemplate`.  Used to save time on retrieving
+            and deserializing the objects from the database.
+
+        A translation template is considered active when both
+        `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
+        containing `Product` or `Distribution` are set to True.
+        """
+        # XXX JeroenVermeulen 2010-07-16 bug=605924: Move the
+        # official_rosetta distinction into browser code.
+
+    def getCurrentTranslationFiles(just_ids=False):
+        """Return an iterator over all active translation files.
+
+        A translation file is active if it's attached to an
+        active translation template.
+        """
+
+    def getObsoleteTranslationTemplates():
+        """Return an iterator over its not active translation templates.
+
+        A translation template is considered not active when any of
+        `IPOTemplate`.iscurrent or `IDistribution`.official_rosetta flags
+        are set to False.
+        """
+
+    @export_read_operation()
+    @operation_returns_collection_of(IPOTemplate)
+    def getTranslationTemplates():
+        """Return an iterator over all its translation templates.
+
+        The returned templates are either obsolete or current.
+        """
+
+    def getTranslationTemplateFormats():
+        """A list of native formats for all current translation templates.
+        """
+
+    def getTemplatesAndLanguageCounts():
+        """List tuples of `POTemplate` and its language count.
+
+        A template's language count is the number of `POFile`s that
+        exist for it.
+        """
+
+# Monkey patch for circular import avoidance done in
+# _schema_circular_imports.py

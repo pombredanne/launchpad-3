@@ -7,9 +7,7 @@ __metaclass__ = type
 
 import os.path
 from textwrap import dedent
-import unittest
 
-from zope.component import getUtility
 import zope.pagetemplate.engine
 from zope.pagetemplate.pagetemplate import PageTemplate
 from zope.publisher.browser import TestRequest
@@ -17,9 +15,7 @@ from zope.publisher.browser import TestRequest
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing.layers import LaunchpadFunctionalLayer, MemcachedLayer
-from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.testing import build_test_suite
-from lp.testing import TestCase
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -59,11 +55,15 @@ def memcacheSetUp(test):
     test.globs['MemcachedLayer'] = MemcachedLayer
 
 
-special = {
-    'tales-cache.txt': LayeredDocFileSuite(
-        '../doc/tales-cache.txt',
+def suite_for_doctest(filename):
+    return LayeredDocFileSuite(
+        '../doc/%s' % filename,
         setUp=memcacheSetUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer),
+        layer=LaunchpadFunctionalLayer)
+
+special = {
+    'tales-cache.txt': suite_for_doctest('tales-cache.txt'),
+    'restful-cache.txt': suite_for_doctest('restful-cache.txt'),
     }
 
 

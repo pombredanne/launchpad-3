@@ -23,6 +23,10 @@ We'll start by adding some attachments to the bug:
     >>> a2 = bug.addAttachment(mark, content, "comment for file with space",
     ...     "file with space.txt",
     ...     content_type='text/plain;\n  name="file with space.txt"')
+    >>> content = StringIO.StringIO("Yes we can!")
+    >>> a3 = bug.addAttachment(mark, content, "comment for patch",
+    ...      "bug-patch.diff", is_patch=True, content_type='text/plain',
+    ...      description="a patch")
 
 Next, we'll cycle through all statuses so the dates are present:
 
@@ -68,6 +72,8 @@ all tasks related to that bug, presented in an easy-to-digest format:
     attachments:
         http://.../file_a.txt text/html
         http://.../file%20with%20space.txt text/plain; name="file with space.txt"
+    patches:
+        http://.../bug-patch.diff text/plain
     tags: 
     subscribers: 
         Steve Alexander (stevea)
@@ -275,6 +281,14 @@ Searching for bugs in a component of a distribution works too.
     >>> print anon_browser.contents
     10
 
+This page is also available for project groups.
+
+    >>> anon_browser.open('http://launchpad.dev/mozilla/+bugs-text')
+    >>> print anon_browser.contents
+    15
+    5
+    4
+
 
 == Private bugs ==
 
@@ -292,6 +306,7 @@ When a bug is private, the textual description reflects this:
     private: yes
     security: yes
     attachments:
+    patches:
     tags: lunch-money
     subscribers:
         Karl Tilbury (karl)

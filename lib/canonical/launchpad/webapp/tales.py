@@ -997,10 +997,10 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             BuildStatus.FAILEDTOUPLOAD: {'src': "/@@/build-failedtoupload"},
             }
 
-        alt = '[%s]' % self._context.buildstate.name
-        title = self._context.buildstate.title
-        source = icon_map[self._context.buildstate].get('src')
-        width = icon_map[self._context.buildstate].get('width', '14')
+        alt = '[%s]' % self._context.status.name
+        title = self._context.status.title
+        source = icon_map[self._context.status].get('src')
+        width = icon_map[self._context.status].get('width', '14')
 
         return self.icon_template % {
             'alt': alt,
@@ -1515,8 +1515,8 @@ class CodeImportFormatterAPI(CustomizableFormatter):
         return url
 
 
-class BuildBaseFormatterAPI(ObjectFormatterAPI):
-    """Adapter providing fmt support for `IBuildBase` objects."""
+class PackageBuildFormatterAPI(ObjectFormatterAPI):
+    """Adapter providing fmt support for `IPackageBuild` objects."""
     def _composeArchiveReference(self, archive):
         if archive.is_ppa:
             return " [%s/%s]" % (
@@ -1604,6 +1604,17 @@ class SourcePackageRecipeFormatterAPI(CustomizableFormatter):
     def _link_summary_values(self):
         return {'name': self._context.name,
                 'owner': self._context.owner.displayname}
+
+
+class SourcePackageRecipeBuildFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for ISourcePackageRecipe objects."""
+
+    _link_summary_template = '%(name)s recipe build [%(owner)s/%(archive)s]'
+
+    def _link_summary_values(self):
+        return {'name': self._context.recipe.base_branch.unique_name,
+                'owner': self._context.archive.owner.name,
+                'archive': self._context.archive.name}
 
 
 class SpecificationFormatterAPI(CustomizableFormatter):

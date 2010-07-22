@@ -1,12 +1,9 @@
-
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bugs."""
 
 __metaclass__ = type
-
-import unittest
 
 from canonical.launchpad.ftests import login
 from canonical.testing import DatabaseFunctionalLayer
@@ -39,6 +36,3 @@ class TestBugIndexedMessages(TestCaseWithFactory):
         # IIndexedMessage.
         for indexed_message in self.bug_2.indexed_messages:
             self.failUnlessEqual(None, indexed_message.parent)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

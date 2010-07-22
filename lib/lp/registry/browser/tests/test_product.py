@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
+import datetime
 import unittest
+
+import pytz
 
 from zope.security.proxy import removeSecurityProxy
 
@@ -101,6 +104,12 @@ class TestProductLicenseMixin(TestCaseWithFactory):
         self.assertEqual(2, len(notifications))
         self.verify_user_email(notifications.pop())
         self.verify_commercial_email(notifications.pop())
+
+    def test__formatDate(self):
+        # Verify the date format.
+        now = datetime.datetime(2005, 6, 15, 0, 0, 0, 0, pytz.UTC)
+        result = self.view._formatDate(now)
+        self.assertEqual('2005-06-15', result)
 
 
 def test_suite():

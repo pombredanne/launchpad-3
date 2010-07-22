@@ -29,6 +29,9 @@ setup(
         'chameleon.core',
         'chameleon.zpt',
         'cssutils',
+        # Required for pydkim
+        'dnspython',
+        'FeedParser',
         'feedvalidator',
         'funkload',
         'launchpadlib',
@@ -42,14 +45,17 @@ setup(
         'lazr.testing',
         'lazr.uri',
         'lazr-js',
+        'manuel',
         'mechanize',
         'meliae',
         'mercurial',
         'mocker',
+        'numpy',
         'oauth',
         'paramiko',
         'python-memcached',
         'pyasn1',
+        'pydkim',
         'python-openid',
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:
@@ -137,6 +143,7 @@ setup(
             'twistd = twisted.scripts.twistd:run',
             'start_librarian '
                 '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
+            'ec2 = devscripts.ec2test.entrypoint:main',
         ]
     ),
 )

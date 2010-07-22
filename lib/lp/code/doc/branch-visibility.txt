@@ -74,7 +74,7 @@ Branches that are private are accessible by the owner and subscribers.
 
 == Visibility due to ownership ==
 
-The owners of the branch always have visiblity of their own branches.
+The owners of the branch always have visibility of their own branches.
 
     >>> branch.private = True
     >>> from canonical.launchpad.webapp.authorization import clear_cache
@@ -138,7 +138,7 @@ to the branch.
     >>> branch.subscribe(ubuntu_team,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
+    ...     CodeReviewNotificationLevel.NOEMAIL, ubuntu_team.teamowner)
     <BranchSubscription ...>
 
     >>> access.checkAccountAuthenticated(jdub.account)

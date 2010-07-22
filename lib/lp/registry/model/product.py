@@ -288,6 +288,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         foreignKey="ProductSeries", dbName="development_focus", notNull=False,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
+    bug_reported_acknowledgement = StringCol(default=None)
     _cached_licenses = None
 
     def _validate_active(self, attr, value):
@@ -656,12 +657,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def bugtargetname(self):
         """See `IBugTarget`."""
         return self.name
-
-    def getLatestBranches(self, quantity=5, visible_by_user=None):
-        """See `IProduct`."""
-        return shortlist(
-            getUtility(IBranchSet).getLatestBranchesForProduct(
-                self, quantity, visible_by_user))
 
     def getPackage(self, distroseries):
         """See `IProduct`."""

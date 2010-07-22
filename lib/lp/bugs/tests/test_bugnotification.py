@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to bug notifications."""
@@ -21,7 +21,8 @@ from lp.bugs.model.bugnotification import BugNotification, BugNotificationSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.mail_helpers import pop_notifications
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
@@ -144,6 +145,56 @@ class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):
             bug=bug, is_comment=False, message=message, recipients=[])
 
 
-def test_suite():
-    """Return the test suite for the tests in this module."""
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestNotificationsForDuplicates(TestCaseWithFactory):
+    """Test who gets notified about actions on duplicate bugs."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestNotificationsForDuplicates, self).setUp(
+            user='test@canonical.com')
+        self.bug = self.factory.makeBug()
+        self.dupe_bug = self.factory.makeBug()
+        self.dupe_bug.markAsDuplicate(self.bug)
+        self.dupe_subscribers = set(
+            self.dupe_bug.getDirectSubscribers() +
+            self.dupe_bug.getIndirectSubscribers())
+
+    def test_comment_notifications(self):
+        # New comments are only sent to subscribers of the duplicate
+        # bug, not to subscribers of the master bug.
+        self.dupe_bug.newMessage(
+            self.dupe_bug.owner, subject='subject', content='content')
+        latest_notification = BugNotification.selectFirst(orderBy='-id')
+        recipients = set(
+            recipient.person
+            for recipient in latest_notification.recipients)
+        self.assertEqual(self.dupe_subscribers, recipients)
+
+    def test_duplicate_edit_notifications(self):
+        # Bug edits for a duplicate are sent to duplicate subscribers only.
+        bug_before_modification = Snapshot(
+            self.dupe_bug, providing=providedBy(self.dupe_bug))
+        self.dupe_bug.description = 'A changed description'
+        notify(ObjectModifiedEvent(
+            self.dupe_bug, bug_before_modification, ['description'],
+            user=self.dupe_bug.owner))
+        latest_notification = BugNotification.selectFirst(orderBy='-id')
+        recipients = set(
+            recipient.person
+            for recipient in latest_notification.recipients)
+        self.assertEqual(self.dupe_subscribers, recipients)
+
+    def test_branch_linked_notification(self):
+        # Notices for branches linked to a duplicate are sent only
+        # to subscribers of the duplicate.
+        #
+        # No one should really do this, but this case covers notices
+        # provided by the Bug.addChange mechanism.
+        branch = self.factory.makeBranch(owner=self.dupe_bug.owner)
+        self.dupe_bug.linkBranch(branch, self.dupe_bug.owner)
+        latest_notification = BugNotification.selectFirst(orderBy='-id')
+        recipients = set(
+            recipient.person
+            for recipient in latest_notification.recipients)
+        self.assertEqual(self.dupe_subscribers, recipients)

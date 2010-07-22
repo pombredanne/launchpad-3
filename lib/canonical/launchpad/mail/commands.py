@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
         IDistributionSourcePackage, EmailProcessingError,
         NotFoundError, CreateBugParams, IPillarNameSet,
         BugTargetNotFound, IProjectGroup, ISourcePackage, IProductSeries,
-        BugTaskStatus, UserCannotUnsubscribePerson)
+        BugTaskStatus)
 from lazr.lifecycle.event import (
     ObjectModifiedEvent, ObjectCreatedEvent)
 from lazr.lifecycle.interfaces import (
@@ -33,6 +33,8 @@ from canonical.launchpad.mail.helpers import (
     get_error_message, get_person_or_team)
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
+
+from lp.app.errors import UserCannotUnsubscribePerson
 
 
 def normalize_arguments(string_args):
@@ -380,30 +382,40 @@ class SummaryEmailCommand(EditEmailCommand):
         return {'title': self.string_args[0]}
 
 
-class DuplicateEmailCommand(EditEmailCommand):
+class DuplicateEmailCommand(EmailCommand):
     """Marks a bug as a duplicate of another bug."""
 
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
 
-    def convertArguments(self, context):
-        """See EmailCommand."""
+    def execute(self, context, current_event):
+        """See IEmailCommand."""
+        self._ensureNumberOfArguments()
         [bug_id] = self.string_args
-        if bug_id == 'no':
+
+        if bug_id != 'no':
+            try:
+                bug = getUtility(IBugSet).getByNameOrID(bug_id)
+            except NotFoundError:
+                raise EmailProcessingError(
+                    get_error_message('no-such-bug.txt', bug_id=bug_id))
+        else:
             # 'no' is a special value for unmarking a bug as a duplicate.
-            return {'duplicateof': None}
-        try:
-            bug = getUtility(IBugSet).getByNameOrID(bug_id)
-        except NotFoundError:
-            raise EmailProcessingError(
-                get_error_message('no-such-bug.txt', bug_id=bug_id))
+            bug = None
+
         duplicate_field = IBug['duplicateof'].bind(context)
         try:
             duplicate_field.validate(bug)
         except ValidationError, error:
             raise EmailProcessingError(error.doc())
 
-        return {'duplicateof': bug}
+        context_snapshot = Snapshot(
+            context, providing=providedBy(context))
+        context.markAsDuplicate(bug)
+        current_event = ObjectModifiedEvent(
+            context, context_snapshot, 'duplicateof')
+        notify(current_event)
+        return bug, current_event
 
 
 class CVEEmailCommand(EmailCommand):

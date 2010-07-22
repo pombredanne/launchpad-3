@@ -32,7 +32,8 @@ from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.login import OpenIDCallbackView, OpenIDLogin
 from canonical.launchpad.webapp.interfaces import IStoreSelector
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import AppServerLayer, DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    AppServerLayer, DatabaseFunctionalLayer, FunctionalLayer)
 
 from lp.registry.interfaces.person import IPerson
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
@@ -60,6 +61,20 @@ class StubbedOpenIDCallbackView(OpenIDCallbackView):
         if not isinstance(current_policy, MasterDatabasePolicy):
             raise AssertionError(
                 "Not using the master store: %s" % current_policy)
+
+
+class FakeConsumer:
+    """An OpenID consumer that stashes away arguments for test instection."""
+    def complete(self, params, requested_url):
+        self.params = params
+        self.requested_url = requested_url
+
+
+class FakeConsumerOpenIDCallbackView(OpenIDCallbackView):
+    """An OpenID handler with fake consumer so arguments can be inspected."""
+    def _getConsumer(self):
+        self.fake_consumer = FakeConsumer()
+        return self.fake_consumer
 
 
 @contextmanager
@@ -111,7 +126,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             view_class=StubbedOpenIDCallbackView):
         openid_response = FakeOpenIDResponse(
             ITestOpenIDPersistentIdentity(account).openid_identity_url,
-            status=response_status, message=response_msg)
+            status=response_status, message=response_msg,
+            email='non-existent@example.com', full_name='Foo User')
         return self._createAndRenderView(
             openid_response, view_class=view_class)
 
@@ -140,7 +156,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # In the common case we just login and redirect to the URL specified
         # in the 'starting_url' query arg.
         person = self.factory.makePerson()
-        view, html = self._createViewWithResponse(person.account)
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createViewWithResponse(person.account)
         self.assertTrue(view.login_called)
         response = view.request.response
         self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
@@ -152,12 +169,64 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # slave DBs.
         self.assertNotIn('last_write', ISession(view.request)['lp.dbpolicy'])
 
+    def test_gather_params(self):
+        # If the currently requested URL includes a query string, the
+        # parameters in the query string must be included when constructing
+        # the params mapping (which is then used to complete the open ID
+        # response).  OpenIDCallbackView._gather_params does that gathering.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=bar',
+            form={'starting_url': 'http://launchpad.dev/after-login'},
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        params = view._gather_params(request)
+        expected_params = {
+            'starting_url': 'http://launchpad.dev/after-login',
+            'foo': 'bar',
+        }
+        self.assertEquals(params, expected_params)
+
+    def test_get_requested_url(self):
+        # The OpenIDCallbackView needs to pass the currently-being-requested
+        # URL to the OpenID library.  OpenIDCallbackView._get_requested_url
+        # returns the URL.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=bar',
+            form={'starting_url': 'http://launchpad.dev/after-login'})
+        view = OpenIDCallbackView(context=None, request=None)
+        url = view._get_requested_url(request)
+        self.assertEquals(url, 'http://example.com?foo=bar')
+
+    def test_open_id_callback_handles_query_string(self):
+        # If the currently requested URL includes a query string, the
+        # parameters in the query string must be included when constructing
+        # the params mapping (which is then used to complete the open ID
+        # response).
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=bar',
+            form={'starting_url': 'http://launchpad.dev/after-login'},
+            environ={'PATH_INFO': '/'})
+        view = FakeConsumerOpenIDCallbackView(object(), request)
+        view.initialize()
+        self.assertEquals(
+            view.fake_consumer.params,
+            {
+                'starting_url': 'http://launchpad.dev/after-login',
+                'foo': 'bar',
+            })
+        self.assertEquals(
+            view.fake_consumer.requested_url,'http://example.com?foo=bar')
+
     def test_personless_account(self):
         # When there is no Person record associated with the account, we
         # create one.
         account = self.factory.makeAccount('Test account')
         self.assertIs(None, IPerson(account, None))
-        view, html = self._createViewWithResponse(account)
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createViewWithResponse(account)
         self.assertIsNot(None, IPerson(account, None))
         self.assertTrue(view.login_called)
         response = view.request.response
@@ -167,7 +236,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
 
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
-        # stuff. 
+        # stuff.
         self.assertLastWriteIsSet(view.request)
 
     def test_unseen_identity(self):
@@ -196,7 +265,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
 
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
-        # stuff. 
+        # stuff.
         self.assertLastWriteIsSet(view.request)
 
     def test_unseen_identity_with_registered_email(self):
@@ -230,7 +299,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
 
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
-        # stuff. 
+        # stuff.
         self.assertLastWriteIsSet(view.request)
 
     def test_deactivated_account(self):
@@ -256,7 +325,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         self.assertEquals(email, account.preferredemail.email)
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
-        # stuff. 
+        # stuff.
         self.assertLastWriteIsSet(view.request)
 
     def test_never_used_account(self):
@@ -278,7 +347,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         self.assertEquals(email, account.preferredemail.email)
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
-        # stuff. 
+        # stuff.
         self.assertLastWriteIsSet(view.request)
 
     def test_suspended_account(self):
@@ -286,7 +355,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # login, but we must not allow that.
         account = self.factory.makeAccount(
             'Test account', status=AccountStatus.SUSPENDED)
-        view, html = self._createViewWithResponse(account)
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createViewWithResponse(account)
         self.assertFalse(view.login_called)
         main_content = extract_text(find_main_content(html))
         self.assertIn('This account has been suspended', main_content)
@@ -333,6 +403,50 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
     def assertLastWriteIsSet(self, request):
         last_write = ISession(request)['lp.dbpolicy']['last_write']
         self.assertTrue(datetime.utcnow() - last_write < timedelta(minutes=1))
+
+
+class TestOpenIDCallbackRedirects(TestCaseWithFactory):
+    layer = FunctionalLayer
+
+    APPLICATION_URL = 'http://example.com'
+    STARTING_URL = APPLICATION_URL + '/start'
+
+    def test_open_id_callback_redirect_from_get(self):
+        # If OpenID callback request was a GET, the starting_url is extracted
+        # correctly.
+        view = OpenIDCallbackView(context=None, request=None)
+        view.request = LaunchpadTestRequest(
+            SERVER_URL=self.APPLICATION_URL,
+            form={'starting_url': self.STARTING_URL})
+        view._redirect()
+        self.assertEquals(
+            httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
+        self.assertEquals(
+            view.request.response.getHeader('Location'), self.STARTING_URL)
+
+    def test_open_id_callback_redirect_from_post(self):
+        # If OpenID callback request was a POST, the starting_url is extracted
+        # correctly.
+        view = OpenIDCallbackView(context=None, request=None)
+        view.request = LaunchpadTestRequest(
+            SERVER_URL=self.APPLICATION_URL, form={'fake': 'value'},
+            QUERY_STRING='starting_url='+self.STARTING_URL)
+        view._redirect()
+        self.assertEquals(
+            httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
+        self.assertEquals(
+            view.request.response.getHeader('Location'), self.STARTING_URL)
+
+    def test_openid_callback_redirect_fallback(self):
+        # If OpenID callback request was a POST or GET with no form or query
+        # string values at all, then the application URL is used.
+        view = OpenIDCallbackView(context=None, request=None)
+        view.request = LaunchpadTestRequest(SERVER_URL=self.APPLICATION_URL)
+        view._redirect()
+        self.assertEquals(
+            httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
+        self.assertEquals(
+            view.request.response.getHeader('Location'), self.APPLICATION_URL)
 
 
 urls_redirected_to = []

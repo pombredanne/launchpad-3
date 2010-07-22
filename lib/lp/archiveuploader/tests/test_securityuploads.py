@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test security uploads use-cases."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import os
-import unittest
 
 from zope.component import getUtility
 
@@ -60,7 +59,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         """Setup environment for staged binaries upload via security policy.
 
         1. Setup queue directory and other basic attributes
-        2. Override policy options to get security policy and to not send emails
+        2. Override policy options to get security policy and not send emails
         3. Setup a common UploadProcessor with the overridden options
         4. Store number of build present before issuing any upload
         5. Upload the source package via security policy
@@ -131,7 +130,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         """Create a build record attached to the base source."""
         spr = self.source_queue.sources[0].sourcepackagerelease
         build = spr.createBuild(
-            distroarchseries=self.distroseries[archtag],
+            distro_arch_series=self.distroseries[archtag],
             pocket=self.pocket, archive=self.distroseries.main_archive)
         self.layer.txn.commit()
         return build
@@ -187,7 +186,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         self.assertEqual(
             u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
         build_used = self._uploadBinary('amd64')
 
@@ -196,7 +195,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
             u'amd64 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
 
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
     def testBuildLookup(self):
         """Check if an available build gets used when it is appropriate.
@@ -219,7 +218,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         self.assertEqual(
             u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
     def testCorrectBuildPassedViaCommandLine(self):
         """Check if command-line build argument gets attached correctly.
@@ -244,7 +243,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
             u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
 
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
     def testWrongBuildPassedViaCommandLine(self):
         """Check if a misapplied passed buildid is correctly identified.
@@ -262,10 +261,4 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
 
         self.assertLogContains(
             "UploadError: Attempt to upload binaries specifying build %d, "
-            "where they don't fit.\n" % (build_candidate.id,))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
-
+            "where they don't fit.\n" % (build_candidate.id, ))

@@ -9,16 +9,17 @@ import os
 import tempfile
 import unittest
 
-from twisted.trial.unittest import TestCase as TrialTestCase
-
 from lp.poppy.twistedsftp import SFTPServer
+from lp.services.sshserver.sftp import FileIsADirectory
+from lp.testing import TestCase
 
 
-class TestSFTPServer(TrialTestCase):
+class TestSFTPServer(TestCase):
 
     def setUp(self):
         self.fs_root = tempfile.mkdtemp()
         self.sftp_server = SFTPServer(None, self.fs_root)
+        super(TestSFTPServer, self).setUp()
 
     def test_gotVersion(self):
         # gotVersion always returns an empty dict, since the server does not
@@ -51,6 +52,13 @@ class TestSFTPServer(TrialTestCase):
         self.assertEqual(test_file.read(), "This is a test")
         test_file.close()
         self.assertEqual(os.stat(file_name).st_mode, 0100654)
+        dir_name = os.path.join(self.sftp_server._current_upload, 'bar/foo')
+        os.makedirs(dir_name)
+        upload_file = self.sftp_server.openFile('bar/foo', None, None)
+        self.assertRaisesWithContent(
+            FileIsADirectory,
+            "File is a directory: '%s'" % dir_name,
+            upload_file.writeChunk, 0, "This is a test")
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
