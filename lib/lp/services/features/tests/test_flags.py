@@ -1,9 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for feature flags.
-
-"""
+"""Tests for feature flags."""
 
 
 from __future__ import with_statement
@@ -15,11 +13,21 @@ from canonical.testing import layers
 from lp.testing import TestCase
 
 from lp.services.features import flags, model
+from lp.services.features.flags import (
+    FeatureController,
+    )
 
 
 notification_name = 'notification.global.text'
 notification_value = u'\N{SNOWMAN} stormy Launchpad weather ahead'
 example_scope = 'beta_user'
+
+
+testdata = [
+    (example_scope, notification_name, notification_value, 100),
+    ('default', 'ui.icing', u'3.0', 100),
+    ('beta_user', 'ui.icing', u'4.0', 300),
+    ]
 
 
 class TestFeatureFlags(TestCase):
@@ -32,35 +40,32 @@ class TestFeatureFlags(TestCase):
             from storm.tracer import debug
             debug(True)
 
+    def populateStore(self):
+        store = model.getFeatureStore()
+        for (scope, flag, value, priority) in testdata:
+            store.add(model.FeatureFlag(
+                scope=unicode(scope),
+                flag=unicode(flag),
+                value=value,
+                priority=priority))
+
     def test_defaultFlags(self):
         # the sample db has no flags set
-        control = flags.FeatureController([])
+        control = FeatureController([])
         self.assertEqual({},
             control.getAllFlags())
 
-    def test_simpleFlags(self):
-        # with some flags set in the db, you can query them through the
-        # FeatureController
-        flag = model.FeatureFlag(
-            scope=unicode(example_scope),
-            flag=unicode(notification_name),
-            value=notification_value,
-            priority=100)
-        model.getFeatureStore().add(flag)
-        control = flags.FeatureController(['beta_user'])
-        self.assertEqual(notification_value,
-            control.getFlag(notification_name))
-
-    def test_setFlags(self):
-        # you can also set flags through a facade
-        control = self.makePopulatedController()
-        self.assertEqual(notification_value,
-            control.getFlag(notification_name))
+    def test_getFlag(self):
+        self.populateStore()
+        control = FeatureController(['default'])
+        self.assertEqual(u'3.0',
+            control.getFlag('ui.icing'))
 
     def test_getAllFlags(self):
         # can fetch all the active flags, and it gives back only the
         # highest-priority settings
-        control = self.makeControllerWithOverrides()
+        self.populateStore()
+        control = FeatureController(['default', 'beta_user'])
         self.assertEqual(
             {'ui.icing': '4.0',
              notification_name: notification_value},
@@ -69,43 +74,22 @@ class TestFeatureFlags(TestCase):
     def test_overrideFlag(self):
         # if there are multiple settings for a flag, and they match multiple
         # scopes, the priorities determine which is matched
-        control = self.makeControllerWithOverrides()
-        control.setScopes(['default'])
+        self.populateStore()
+        default_control = FeatureController(['default'])
         self.assertEqual(
             u'3.0',
-            control.getFlag('ui.icing'))
-        control.setScopes(['default', 'beta_user'])
+            default_control.getFlag('ui.icing'))
+        beta_control = FeatureController(['default', 'beta_user'])
         self.assertEqual(
             u'4.0',
-            control.getFlag('ui.icing'))
+            beta_control.getFlag('ui.icing'))
 
     def test_undefinedFlag(self):
         # if the flag is not defined, we get None
-        control = self.makeControllerWithOverrides()
+        self.populateStore()
+        control = FeatureController(['default', 'beta_user'])
         self.assertIs(None,
             control.getFlag('unknown_flag'))
-        control.setScopes([])
+        no_scope_flags = FeatureController([])
         self.assertIs(None,
-            control.getFlag('ui.icing'))
-
-    def makePopulatedController(self):
-        # make a controller with some test flags
-        control = flags.FeatureController(['beta_user'])
-        control.addSetting(
-            scope=example_scope, flag=notification_name,
-            value=notification_value, priority=100)
-        return control
-
-    def makeControllerWithOverrides(self):
-        control = self.makePopulatedController()
-        control.addSetting(
-            scope='default',
-            flag='ui.icing',
-            value=u'3.0',
-            priority=100)
-        control.addSetting(
-            scope='beta_user',
-            flag='ui.icing',
-            value=u'4.0',
-            priority=300)
-        return control
+            no_scope_flags.getFlag('ui.icing'))

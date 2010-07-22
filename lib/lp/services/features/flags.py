@@ -16,14 +16,6 @@ from storm.locals import (
     )
 
 
-# Intended performance: when this object is first constructed, it will read
-# the whole current feature flags from the database.  This will take a few ms.
-# The controller is then supposed to be held in a thread-local for the
-# duration of the request.  The scopes can be changed over the lifetime of the
-# controller, because we might not know enough to determine all the active
-# scopes when the object's first created.   This isn't validated to work yet.
-    
-
 class FeatureController(object):
     """A FeatureController tells application code what features are active.
 
@@ -44,6 +36,11 @@ class FeatureController(object):
     of code that has consistent configuration values.  For instance there will
     be one per web app request.
 
+    Intended performance: when this object is first constructed, it will read
+    the whole current feature flags from the database.  This will take a few ms.
+    The controller is then supposed to be held in a thread-local for the
+    duration of the request.
+
     See <https://dev.launchpad.net/LEP/FeatureFlags>
     """
 
@@ -51,32 +48,27 @@ class FeatureController(object):
         """Construct a new view of the features for a set of scopes.
         """
         self._store = getFeatureStore()
-        self.scopes = self._preenScopes(scopes)
+        self._scopes = self._preenScopes(scopes)
+        self._cached_flags = self._queryAllFlags()
 
-    def setScopes(self, scopes):
-        self.scopes = self._preenScopes(scopes)
+    def getScopes(self):
+        return frozenset(self._scopes)
 
     def getFlag(self, flag_name):
-        rs = (self._store
-                .find(FeatureFlag,
-                    FeatureFlag.scope.is_in(self.scopes),
-                    FeatureFlag.flag == unicode(flag_name))
-                .order_by(Desc(FeatureFlag.priority)))
-        rs.config(limit=1)
-        for value in rs.values(FeatureFlag.value):
-            return value
-        else:
-            return None
+        return self._cached_flags.get(flag_name)
 
     def getAllFlags(self):
         """Get the feature flags active for the current scopes.
         
         :returns: dict from flag_name (unicode) to value (unicode).
         """
+        return dict(self._cached_flags)
+
+    def _queryAllFlags(self):
         d = {}
         rs = (self._store
                 .find(FeatureFlag,
-                    FeatureFlag.scope.is_in(self.scopes))
+                    FeatureFlag.scope.is_in(self._scopes))
                 .order_by(FeatureFlag.priority)
                 .values(FeatureFlag.flag, FeatureFlag.value))
         for flag, value in rs:
