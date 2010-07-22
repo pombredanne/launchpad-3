@@ -86,16 +86,3 @@ class FeatureController(object):
             else:
                 raise TypeError("invalid scope: %r" % s)
         return us
-
-    def addSetting(self, scope, flag, value, priority):
-        """Add a setting for a flag.
-
-        Note that flag settings are global in the database: they affect all
-        FeatureControllers connected to this database, and they will persist
-        if the database transaction is committed.
-        """
-        flag_obj = FeatureFlag(scope=unicode(scope),
-            flag=unicode(flag),
-            value=value,
-            priority=priority)
-        self._store.add(flag_obj)
