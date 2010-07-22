@@ -47,7 +47,7 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
 
         line_pairs = zip(export_lines, import_lines)
         debug_diff = test_diff(import_lines, export_lines)
-        for lineno, export_line, import_line in line_pairs:
+        for export_line, import_line in line_pairs:
             self.assertEqual(
                 export_line, import_line,
                 "Output doesn't match:\n\n %s" % debug_diff)
