@@ -12,6 +12,7 @@ import os
 import signal
 import smtplib
 import unittest
+import logging
 
 from cStringIO import StringIO
 from urllib import urlopen
@@ -31,6 +32,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer, LayerInvariantError, LayerIsolationError,
     LayerProcessController, LibrarianLayer, MemcachedLayer, ZopelessLayer)
 from lp.services.memcache.client import memcache_client_factory
+from lp.services.log.nullhandler import NullHandler
 
 class BaseTestCase(unittest.TestCase):
     """Both the Base layer tests, as well as the base Test Case
@@ -371,6 +373,8 @@ class LayerProcessControllerInvariantsTestCase(BaseTestCase):
 
     def testSMTPServerIsAvailable(self):
         # Test that the SMTP server is up and running.
+        # Add the NullHandler to silence output from the smtp library.
+        logging.getLogger('smtp').addHandler(NullHandler())
         smtpd = smtplib.SMTP()
         host, port = as_host_port(config.mailman.smtp)
         code, message = smtpd.connect(host, port)

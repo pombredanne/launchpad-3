@@ -9,15 +9,10 @@ import warnings
 import logging
 
 from bzrlib.branch import Branch
+from lp.services.log.nullhandler import NullHandler
 from lp.services.mime import customizeMimetypes
 from zope.security import checker
 
-
-# XXX matsubara 2010-07-16 bug=606303: NullHandler class is available on
-# python 2.7 so when LP is running with it, this class can be removed.
-class NullHandler(logging.Handler):
-    def emit(self, record):
-        pass
 
 def silence_root_logger():
     """Install the NullHandler on the root logger to silence logs."""
