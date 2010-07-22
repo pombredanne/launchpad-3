@@ -382,40 +382,30 @@ class SummaryEmailCommand(EditEmailCommand):
         return {'title': self.string_args[0]}
 
 
-class DuplicateEmailCommand(EmailCommand):
+class DuplicateEmailCommand(EditEmailCommand):
     """Marks a bug as a duplicate of another bug."""
 
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
 
-    def execute(self, context, current_event):
-        """See IEmailCommand."""
-        self._ensureNumberOfArguments()
+    def convertArguments(self, context):
+        """See EmailCommand."""
         [bug_id] = self.string_args
-
-        if bug_id != 'no':
-            try:
-                bug = getUtility(IBugSet).getByNameOrID(bug_id)
-            except NotFoundError:
-                raise EmailProcessingError(
-                    get_error_message('no-such-bug.txt', bug_id=bug_id))
-        else:
+        if bug_id == 'no':
             # 'no' is a special value for unmarking a bug as a duplicate.
-            bug = None
-
+            return {'duplicateof': None}
+        try:
+            bug = getUtility(IBugSet).getByNameOrID(bug_id)
+        except NotFoundError:
+            raise EmailProcessingError(
+                get_error_message('no-such-bug.txt', bug_id=bug_id))
         duplicate_field = IBug['duplicateof'].bind(context)
         try:
             duplicate_field.validate(bug)
         except ValidationError, error:
             raise EmailProcessingError(error.doc())
 
-        context_snapshot = Snapshot(
-            context, providing=providedBy(context))
-        context.markAsDuplicate(bug)
-        current_event = ObjectModifiedEvent(
-            context, context_snapshot, 'duplicateof')
-        notify(current_event)
-        return bug, current_event
+        return {'duplicateof': bug}
 
 
 class CVEEmailCommand(EmailCommand):

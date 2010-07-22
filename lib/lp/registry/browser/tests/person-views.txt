@@ -546,7 +546,7 @@ Multiple bugs and specs are displayed.
 
 But duplicate bugs are never displayed.
 
-    >>> another_bug.markAsDuplicate(bug)
+    >>> another_bug.duplicateof = bug
 
     # Create a new view because we're testing some cached properties.
 
