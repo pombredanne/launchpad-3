@@ -9,8 +9,8 @@ import weakref
 from zope.interface import classProvides
 from zope.component import getUtility, queryAdapter
 from zope.browser.interfaces import IView
-from zope.location.location import LocationProxy
 
+from zope.proxy import removeAllProxies
 from zope.publisher.interfaces import IApplicationRequest
 from zope.security.interfaces import ISecurityPolicy
 from zope.security.checker import CheckerPublic
@@ -140,7 +140,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             # return False already.
             return False
         # Remove security proxies from object to authorize.
-        objecttoauthorize = removeSecurityProxy(objecttoauthorize)
+        objecttoauthorize = removeAllProxies(objecttoauthorize)
 
         participations = [participation
                           for participation in self.participations
@@ -156,16 +156,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                 wd = participation.annotations.setdefault(
                     LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
                     weakref.WeakKeyDictionary())
-                try:
-                    cache = wd.setdefault(objecttoauthorize, {})
-                except TypeError, e:
-                    assert isinstance(objecttoauthorize, LocationProxy), (
-                        "This try/except exists solely because "
-                        "zope.app.apidoc will cause us to try and cache "
-                        "LocationProxy objects, to which we can't have "
-                        "weak refs. If we failed to cache anything else, "
-                        "we need to re-evaluate this try/except.")
-                    cache = {}
+                cache = wd.setdefault(objecttoauthorize, {})
                 if permission in cache:
                     return cache[permission]
             else:

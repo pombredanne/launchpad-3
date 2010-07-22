@@ -16,10 +16,12 @@ __all__ = [
 import binascii
 import hashlib
 import random
+from UserDict import UserDict
 
 from contrib.oauth import OAuthRequest
 
 from zope.annotation.interfaces import IAnnotations
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.interface import implements
 from zope.component import adapts, getUtility
 from zope.event import notify
@@ -323,26 +325,19 @@ class LaunchpadPrincipal:
 
 
 # zope.app.apidoc expects our principals to be adaptable into IAnnotations, so
-# we use this dummy adapter here just to make that code not OOPS.
-class LaunchpadPrincipalAnnotations:
+# we use these dummy adapters here just to make that code not OOPS.
+class TemporaryPrincipalAnnotations(object, UserDict):
     implements(IAnnotations)
     adapts(ILaunchpadPrincipal, IPreferenceGroup)
 
     def __init__(self, principal, pref_group):
-        self.d = {}
-        pass
+        super(TemporaryPrincipalAnnotations, self).__init__()
 
-    def __nonzero__(self):
-        return bool(self.d)
 
-    def __getitem__(self, key):
-        return self.d[key]
-
-    def get(self, key):
-        return self.d.get(key)
-
-    def __setitem__(self, key, value):
-        self.d[key] = value
+class TemporaryUnauthenticatedPrincipalAnnotations(
+        TemporaryPrincipalAnnotations):
+    implements(IAnnotations)
+    adapts(IUnauthenticatedPrincipal, IPreferenceGroup)
 
 
 def get_oauth_authorization(request):

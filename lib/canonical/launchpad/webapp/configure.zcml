@@ -33,15 +33,6 @@
         factory="canonical.launchpad.webapp.publisher.CanonicalAbsoluteURL"
         />
 
-    <!-- Use the default IAbsoluteURL adapter for requests on the apidoc
-         vhost. -->
-    <adapter
-        for="zope.interface.Interface
-             canonical.launchpad.webapp.servers.APIDocBrowserRequest"
-        provides="zope.traversing.browser.interfaces.IAbsoluteURL"
-        factory="zope.traversing.browser.AbsoluteURL"
-        />
-
     <adapter
         for="zope.publisher.interfaces.http.IHTTPRequest"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
