@@ -155,7 +155,3 @@ class TestCacheSuggestivePOTemplatesScript(TestCase):
         (returncode, stdout, stderr) = run_script(
             'cronscripts/cache-suggestive-potemplates.py', ['--dry-run'])
         self.assertEqual(0, returncode)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
