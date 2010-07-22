@@ -85,7 +85,7 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
 
         pot = self.factory.makePOTemplate()
         self._refreshCache()
-        
+
         self.assertContentEqual(cache_before + [pot.id], self._readCache())
 
     def test_product_official_rosetta(self):
@@ -150,6 +150,7 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
 
 class TestCacheSuggestivePOTemplatesScript(TestCase):
     """Test real script run.  Costly, so do only once."""
+
     def test_run_script(self):
         (returncode, stdout, stderr) = run_script(
             'cronscripts/cache-suggestive-potemplates.py', ['--dry-run'])
