@@ -13,6 +13,10 @@
   <include package=".browser"/>
   <authorizations module="lp.code.security" />
 
+  <publisher
+     name="code"
+     factory="lp.code.publisher.code_request_publication_factory"/>
+
   <!-- Branch Merge Queue -->
 
   <class class="lp.code.model.branchmergequeue.SingleBranchMergeQueue">
@@ -981,7 +985,7 @@
   <adapter factory="lp.code.model.linkedbranch.DistributionPackageLinkedBranch" />
 
   <lp:help-folder
-      folder="help" type="canonical.launchpad.layers.CodeLayer" />
+      folder="help" type="lp.code.publisher.CodeLayer" />
 
   <!-- Diffs -->
   <class class="lp.code.model.diff.Diff">
