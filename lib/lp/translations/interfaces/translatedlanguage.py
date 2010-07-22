@@ -4,6 +4,7 @@
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Attribute, Interface
+from zope.interface.common.sequence import IFiniteSequence
 from zope.schema import (
     Choice, Datetime, Object)
 
@@ -54,7 +55,7 @@ class ITranslatedLanguage(Interface):
         schema=IPerson)
 
 
-class IPOFilesByPOTemplates(Interface):
+class IPOFilesByPOTemplates(IFiniteSequence):
     """Iterate `IPOFile`s for (`ILanguage`, `ITranslationTemplateCollection`).
 
     This is a wrapper for Storm ResultSet that enables optimized slicing
@@ -67,3 +68,6 @@ class IPOFilesByPOTemplates(Interface):
 
     def __iter__():
         """Iterates over all `IPOFile`s for given templates."""
+
+    def __len__():
+        """Provides count of `IPOTemplate`s in a template collection."""

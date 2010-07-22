@@ -29,7 +29,7 @@ from lp.translations.interfaces.productserieslanguage import (
 
 
 class BaseSeriesLanguageView(LaunchpadView):
-    """View base class to render translation status for an 
+    """View base class to render translation status for an
     `IDistroSeries` and `IProductSeries`
 
     This class should not be directly instantiated.
@@ -45,13 +45,8 @@ class BaseSeriesLanguageView(LaunchpadView):
         self.series = series
         self.translationgroup = translationgroup
         self.form = self.request.form
-
-        self.batchnav = BatchNavigator(
-            self.series.getCurrentTranslationTemplates(),
-            self.request)
-
-        self.pofiles = self.context.getPOFilesFor(
-            self.batchnav.currentBatch())
+        self.pofiles = self.context.pofiles
+        self.batchnav = BatchNavigator(self.context.pofiles, self.request)
 
     @property
     def translation_group(self):
@@ -77,7 +72,7 @@ class BaseSeriesLanguageView(LaunchpadView):
     @property
     def access_level_description(self):
         """Must not be called when there's no translation group."""
-        
+
         if is_read_only():
             return (
                 "No work can be done on these translations while Launchpad "
@@ -110,8 +105,8 @@ class BaseSeriesLanguageView(LaunchpadView):
                     "<a href='%s'>Translations licensing</a>.") % (
                         translation_license_url)
 
-        if len(self.pofiles) > 0:
-            sample_pofile = self.pofiles[0]
+        if len(self.context.pofiles) > 0:
+            sample_pofile = self.context.pofiles[0]
             if sample_pofile.canEditTranslations(self.user):
                 return "You can add and review translations."
 

@@ -9,11 +9,15 @@ from zope.security.proxy import removeSecurityProxy
 from storm.expr import Coalesce, Desc, Sum
 
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
-from lp.translations.interfaces.translatedlanguage import ITranslatedLanguage
+from lp.translations.interfaces.translatedlanguage import (
+    IPOFilesByPOTemplates, ITranslatedLanguage)
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import POTemplate
 
+
 class POFilesByPOTemplates(object):
+    implements(IPOFilesByPOTemplates)
+
     def __init__(self, templates_collection, language):
         self.templates_collection = templates_collection
         self.language = language
@@ -53,6 +57,9 @@ class POFilesByPOTemplates(object):
         resultset = self._getPOTemplatesAndPOFilesResultSet()
         for pofile in self._getPOFilesForResultSet(resultset):
             yield pofile
+
+    def __len__(self):
+        return self.templates_collection.select(POTemplate).count()
 
 
 class TranslatedLanguageMixin(object):
