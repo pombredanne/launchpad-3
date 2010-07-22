@@ -10,9 +10,9 @@ from __future__ import with_statement
 __metaclass__ = type
 
 import os
-import testtools
 
 from canonical.testing import layers
+from lp.testing import TestCase
 
 from lp.services.features import flags, model
 
@@ -22,7 +22,7 @@ notification_value = u'\N{SNOWMAN} stormy Launchpad weather ahead'
 example_scope = 'beta_user'
 
 
-class TestFeatureFlags(testtools.TestCase):
+class TestFeatureFlags(TestCase):
 
     layer = layers.DatabaseFunctionalLayer
 

@@ -7,16 +7,15 @@
 from __future__ import with_statement
 __metaclass__ = type
 
-import testtools
-
 from canonical.testing import layers
+from lp.testing import TestCase
 from lp.services.features.model import (
     getFeatureStore,
     FeatureFlag,
     )
 
 
-class TestFeatureModel(testtools.TestCase):
+class TestFeatureModel(TestCase):
 
     layer = layers.DatabaseFunctionalLayer
 
