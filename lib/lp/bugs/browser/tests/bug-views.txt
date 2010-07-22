@@ -249,8 +249,7 @@ Bug 2 is not reported in Firefox. Let's mark bug 2 as a dupe of bug 5,
 and see how the returned link changes.
 
     >>> bug_two = bugset.get(2)
-    >>> bug_five = bugset.get(5)
-    >>> bug_two.markAsDuplicate(bug_five)
+    >>> bug_two.duplicateof = 5
 
     >>> bug_page_view = getMultiAdapter(
     ...     (bug_five_in_firefox.bug, request), name="+portlet-duplicates")
@@ -381,7 +380,7 @@ can't know if the user is subscribed or not.
 
     >>> from canonical.launchpad.ftests import syncUpdate
 
-    >>> bug_two.markAsDuplicate(bug_three)
+    >>> bug_two.duplicateof = bug_three
     >>> syncUpdate(bug_two)
 
     >>> bug_menu.subscription().text
@@ -392,7 +391,7 @@ can't know if the user is subscribed or not.
     the current user is a member. So, for Foo Bar, bug #3 has a simple
     Subscribe link initially.
 
-    >>> bug_two.markAsDuplicate(None)
+    >>> bug_two.duplicateof = None
     >>> syncUpdate(bug_two)
 
     >>> login("foo.bar@canonical.com")
@@ -407,7 +406,7 @@ can't know if the user is subscribed or not.
     >>> bug_two.subscribe(ubuntu_team, ubuntu_team)
         <BugSubscription...>
 
-    >>> bug_two.markAsDuplicate(bug_three)
+    >>> bug_two.duplicateof = bug_three
     >>> syncUpdate(bug_two)
 
     >>> bug_menu.subscription().text
