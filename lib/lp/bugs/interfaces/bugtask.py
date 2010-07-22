@@ -1497,7 +1497,7 @@ class IAddBugTaskForm(Interface):
     add_packaging = Bool(
         title=_('Link the package to the upstream project?'),
         description=_('Always suggest this project when adding an '
-                       'upstream bug for this'),
+                      'upstream bug for this'),
         required=True, default=False)
 
 

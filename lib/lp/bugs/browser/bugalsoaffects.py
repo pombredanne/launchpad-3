@@ -151,7 +151,7 @@ class ChooseProductStep(AlsoAffectsStep):
         # Inject the selected product into the form and set the next_step to
         # be used by our multistep controller.
         self.request.form['field.product'] = data['product'].name
-        self.request.form['field.add_packaging'] = data['add_packaging'].name
+        self.request.form['field.add_packaging'] = data['add_packaging']
         self.next_step = ProductBugTaskCreationStep
 
 
