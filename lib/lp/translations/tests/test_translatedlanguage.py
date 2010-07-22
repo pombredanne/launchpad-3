@@ -12,6 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
 from lp.translations.interfaces.translatedlanguage import ITranslatedLanguage
+from lp.translations.model.pofile import DummyPOFile
 from lp.testing import TestCaseWithFactory
 from canonical.testing import ZopelessDatabaseLayer
 
@@ -61,10 +62,27 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         translated_language = self.getTranslatedLanguage(self.language)
         self.assertEqual([], list(translated_language.pofiles))
 
+    def test_pofiles_template_no_pofiles(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        potemplate = self.addPOTemplate()
+        dummy_pofile = potemplate.getDummyPOFile(self.language.code)
+        pofiles = list(translated_language.pofiles)
+        self.assertEqual(1, len(pofiles))
+        #self.assertStatementCount(1, list, translated_language.pofiles)
+
+        # When there are no actual PO files, we get a DummyPOFile object
+        # instead.
+        dummy_pofile = pofiles[0]
+        naked_dummy = removeSecurityProxy(dummy_pofile)
+        self.assertTrue(isinstance(naked_dummy, DummyPOFile))
+        self.assertEqual(self.language, dummy_pofile.language)
+        self.assertEqual(potemplate, dummy_pofile.potemplate)
+
     def test_pofiles_template_with_pofiles(self):
         translated_language = self.getTranslatedLanguage(self.language)
         potemplate = self.addPOTemplate()
         pofile = self.factory.makePOFile(self.language.code, potemplate)
+        #self.assertStatementCount(1, getattr, translated_language, 'pofiles')
         self.assertEqual([pofile], list(translated_language.pofiles))
 
     def test_statistics_empty(self):

@@ -13,6 +13,49 @@ from lp.translations.interfaces.translatedlanguage import ITranslatedLanguage
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import POTemplate
 
+class POFilesByPOTemplates(object):
+    def __init__(self, templates_collection, language):
+        self.templates_collection = templates_collection
+        self.language = language
+
+    def _getDummyOrPOFile(self, potemplate, pofile):
+        if pofile is None:
+            return potemplate.getDummyPOFile(self.language.code)
+        else:
+            return pofile
+
+    def _getPOTemplatesAndPOFilesResultSet(self):
+        current_templates = self.templates_collection
+        pofiles = current_templates.joinOuterPOFile(self.language)
+        results = pofiles.select(POTemplate, POFile).order_by(
+            Desc(POTemplate.priority), POTemplate.name)
+        return results
+
+    def _getPOFilesForResultSet(self, resultset):
+        pofiles_list = []
+        for potemplate, pofile in resultset[selector]:
+            if pofile is None:
+                pofiles_list.append(
+                    potemplate.getDummyPOFile(self.language.code))
+            else:
+                pofiles_list.append(pofile)
+        return pofiles_list
+
+    def __getitem__(self, selector):
+        resultset = self._getPOTemplatesAndPOFilesResultSet()
+        if isinstance(selector, slice):
+            return self._getPOFilesForResultSet(resultset)
+        else:
+            potemplate, pofile = resultset[selector]
+            pofile = self._getDummyOrPOFile(potemplate, pofile)
+            return pofile
+
+    #def __iter__(self):
+    #    resultset = self._getPOTemplatesAndPOFilesResultSet()
+    #    for pofile in self._getPOFilesForResultSet(resultset):
+    #        yield pofile
+
+
 class TranslatedLanguageMixin(object):
     """See `ITranslatedLanguage`."""
     implements(ITranslatedLanguage)
@@ -29,9 +72,7 @@ class TranslatedLanguageMixin(object):
         assert IHasTranslationTemplates.providedBy(self.parent), (
             "Parent object should implement `IHasTranslationTemplates`.")
         current_templates = self.parent.getCurrentTemplatesCollection()
-        pofiles = current_templates.joinPOFile()
-        return pofiles.select(POFile).order_by(
-            Desc(POTemplate.priority), POTemplate.name)
+        return POFilesByPOTemplates(current_templates, self.language)
 
     @property
     def translation_statistics(self):
