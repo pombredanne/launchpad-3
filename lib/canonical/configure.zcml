@@ -99,14 +99,14 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="+code"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         />
 
     <!-- virtual host: translations -->

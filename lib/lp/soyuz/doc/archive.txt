@@ -913,10 +913,8 @@ decreases.
 
     >>> cprov_archive.number_of_sources
     3
-    >>> superseded = cprov_archive.getPublishedSources(
+    >>> cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0].supersede()
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(superseded)
 
     >>> cprov_archive.number_of_sources
     2
@@ -926,9 +924,8 @@ decreases.
 
     >>> cprov_archive.number_of_binaries
     3
-    >>> superseded = cprov_archive.getAllPublishedBinaries(
+    >>> cprov_archive.getAllPublishedBinaries(
     ...     name='mozilla-firefox')[0].supersede()
-    >>> syncUpdate(superseded)
 
     >>> cprov_archive.number_of_binaries
     2
@@ -982,7 +979,6 @@ it continues to be considered 'available for deletion'.
 
     >>> login("celso.providelo@canonical.com")
     >>> removal_candidate.requestDeletion(cprov, 'go away !')
-    >>> syncUpdate(removal_candidate)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     1
@@ -1022,7 +1018,6 @@ binary is also DELETED.
 
     >>> for bin in removal_candidate.getPublishedBinaries():
     ...     bin.requestDeletion(cprov, 'go away !')
-    ...     syncUpdate(bin)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     0

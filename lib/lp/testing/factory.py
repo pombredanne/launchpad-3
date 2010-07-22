@@ -145,7 +145,7 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.processor import ProcessorFamily, ProcessorFamilySet
+from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from lp.testing import (
@@ -332,20 +332,6 @@ class LaunchpadObjectFactory(ObjectFactory):
     When this is done, the returned object should have unique references
     for any other required objects.
     """
-
-    def doAsUser(self, user, factory_method, **factory_args):
-        """Perform a factory method while temporarily logged in as a user.
-
-        :param user: The user to log in as, and then to log out from.
-        :param factory_method: The factory method to invoke while logged in.
-        :param factory_args: Keyword arguments to pass to factory_method.
-        """
-        login(user)
-        try:
-            result = factory_method(**factory_args)
-        finally:
-            logout()
-        return result
 
     def loginAsAnyone(self):
         """Log in as an arbitrary person.
@@ -1812,6 +1798,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         parser = RecipeParser(self.makeRecipeText(*branches))
         return parser.parse()
 
+    def makeSourcePackageRecipeDistroseries(self, name="warty"):
+        """Return a supported Distroseries to use with Source Package Recipes.
+
+        Ew.  This uses sampledata currently, which is the ONLY reason this
+        method exists: it gives us a migration path away from sampledata.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        return ubuntu.getSeries(name)
+
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, name=None,
                                 description=None, branches=(),
@@ -1823,10 +1818,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
         if distroseries is None:
-            distroseries = self.makeDistroSeries()
-            distroseries.nominatedarchindep = distroseries.newArch(
-                'i386', ProcessorFamily.get(1), False, owner,
-                supports_virtualized=True)
+            distroseries = self.makeSourcePackageRecipeDistroseries()
 
         if name is None:
             name = self.getUniqueString().decode('utf8')
@@ -1917,6 +1909,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                  ddd57463774cae9b50e70cd51221281b 185913 ed_0.2.orig.tar.gz
                  f9e1e5f13725f581919e9bfd62272a05 8506 ed_0.2-20.diff.gz
                 """))
+
             class Changes:
                 architectures = ['source']
             logger = QuietFakeLogger()
