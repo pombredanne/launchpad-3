@@ -257,7 +257,7 @@ class OpenIDCallbackView(OpenIDLogin):
         # every form.  Unfortunately that includes forms that have off-site
         # targets and since our OpenID client verifies that no form values have
         # been injected as a security precaution, this breaks logging-in in
-        # certain cercumstances (see bug 597324).  The best we can do at the
+        # certain circumstances (see bug 597324).  The best we can do at the
         # moment is to remove the token before invoking the OpenID library.
         params.pop('csrfmiddlewaretoken', None)
         return params
