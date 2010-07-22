@@ -1503,7 +1503,14 @@ class Bug(SQLBase):
                 field._validate(duplicate_of)
             if self.duplicates:
                 for duplicate in self.duplicates:
+                    # Fire a notify event in model code since moving
+                    # duplicates of a duplicate does not normally fire an
+                    # event.
+                    dupe_before = Snapshot(
+                        duplicate, providing=providedBy(duplicate))
                     duplicate.markAsDuplicate(duplicate_of)
+                    notify(ObjectModifiedEvent(
+                            duplicate, dupe_before, 'duplicateof'))
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
