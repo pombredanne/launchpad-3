@@ -1557,19 +1557,19 @@ class Archive(SQLBase):
     def _getEnabledRestrictedFamilies(self):
         """Retrieve the restricted architecture families this archive can
         build on."""
-        # Main archives are always allowed to build on restricted 
+        # Main archives are always allowed to build on restricted
         # architectures.
         if self.is_main:
             return getUtility(IProcessorFamilySet).getRestricted()
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedfamilies(self)
-        return [family for (family, archive_arch) in restricted_families 
+        return [family for (family, archive_arch) in restricted_families
                 if archive_arch is not None]
 
     def _setEnabledRestrictedFamilies(self, value):
         """Set the restricted architecture families this archive can
         build on."""
-        # Main archives are always allowed to build on restricted 
+        # Main archives are always allowed to build on restricted
         # architectures.
         if self.is_main:
             proc_family_set = getUtility(IProcessorFamilySet)
