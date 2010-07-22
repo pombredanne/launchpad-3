@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisher class."""
@@ -13,7 +13,6 @@ import shutil
 import stat
 import tempfile
 import transaction
-import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -106,18 +105,41 @@ class TestPublisher(TestPublisherBase):
         # Create a file inside archiveroot to ensure we're recursive.
         open(os.path.join(
             publisher._config.archiveroot, 'test_file'), 'w').close()
+        # And a meta file
+        os.makedirs(publisher._config.metaroot)
+        open(os.path.join(publisher._config.metaroot, 'test'), 'w').close()
 
         publisher.deleteArchive()
         root_dir = os.path.join(
             publisher._config.distroroot, test_archive.owner.name,
             test_archive.name)
         self.assertFalse(os.path.exists(root_dir))
+        self.assertFalse(os.path.exists(publisher._config.metaroot))
         self.assertEqual(test_archive.status, ArchiveStatus.DELETED)
         self.assertEqual(test_archive.publish, False)
 
         # Trying to delete it again won't fail, in the corner case where
         # some admin manually deleted the repo.
         publisher.deleteArchive()
+
+    def testDeletingPPAWithoutMetaData(self):
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        test_archive = getUtility(IArchiveSet).new(
+            distribution=self.ubuntutest, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA)
+        publisher = getPublisher(test_archive, None, self.logger)
+
+        self.assertTrue(os.path.exists(publisher._config.archiveroot))
+
+        # Create a file inside archiveroot to ensure we're recursive.
+        open(os.path.join(
+            publisher._config.archiveroot, 'test_file'), 'w').close()
+
+        publisher.deleteArchive()
+        root_dir = os.path.join(
+            publisher._config.distroroot, test_archive.owner.name,
+            test_archive.name)
+        self.assertFalse(os.path.exists(root_dir))
 
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""
@@ -347,7 +369,7 @@ class TestPublisher(TestPublisherBase):
         foo_path = "%s/main/f/foo/foo_1.dsc" % test_pool_dir
         self.assertEqual(
             open(foo_path).read().strip(),
-            'I am supposed to be a embargoed archive')
+            'I am supposed to be a embargoed archive', )
 
         # remove locally created dir
         shutil.rmtree(test_pool_dir)
@@ -672,7 +694,8 @@ class TestPublisher(TestPublisherBase):
         expected_dirty_pockets = [
             ('breezy-autotest', PackagePublishingPocket.RELEASE),
             ('breezy-autotest', PackagePublishingPocket.SECURITY),
-            ('breezy-autotest', PackagePublishingPocket.BACKPORTS)]
+            ('breezy-autotest', PackagePublishingPocket.BACKPORTS),
+            ]
         self.checkDirtyPockets(publisher, expected=expected_dirty_pockets)
 
         # If the distroseries is CURRENT, then the release pocket is not
@@ -685,7 +708,8 @@ class TestPublisher(TestPublisherBase):
 
         expected_dirty_pockets = [
             ('breezy-autotest', PackagePublishingPocket.SECURITY),
-            ('breezy-autotest', PackagePublishingPocket.BACKPORTS)]
+            ('breezy-autotest', PackagePublishingPocket.BACKPORTS),
+            ]
         self.checkDirtyPockets(publisher, expected=expected_dirty_pockets)
 
     def testDeletionDetectionRespectsAllowedSuites(self):
@@ -1179,7 +1203,3 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
 
         # All done, turn test-keyserver off.
         z.tearDown()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

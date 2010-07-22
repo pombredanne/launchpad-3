@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native publication workflow for Soyuz. """
@@ -18,8 +18,10 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
 from lp.archivepublisher.config import Config
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -38,11 +40,12 @@ from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority, PackagePublishingStatus)
+    IPublishingSet, PackagePublishingPriority, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.scripts import FakeLogger
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.fakemethod import FakeMethod
 
 
 class SoyuzTestPublisher:
@@ -266,7 +269,8 @@ class SoyuzTestPublisher:
                        pub_source=None,
                        version='666',
                        architecturespecific=False,
-                       builder=None):
+                       builder=None,
+                       component='main'):
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.distroseries
@@ -284,7 +288,8 @@ class SoyuzTestPublisher:
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket,
                 archive=archive, distroseries=distroseries,
-                version=version, architecturehintlist=architecturehintlist)
+                version=version, architecturehintlist=architecturehintlist,
+                component=component)
         else:
             archive = pub_source.archive
 
@@ -471,9 +476,7 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
         self.temp_dir = self.config.temproot
         self.logger = FakeLogger()
 
-        def message(self, prefix, *stuff, **kw):
-            pass
-        self.logger.message = message
+        self.logger.message = FakeMethod()
         self.disk_pool = DiskPool(self.pool_dir, self.temp_dir, self.logger)
 
     def tearDown(self):
@@ -565,24 +568,6 @@ class TestNativePublishing(TestNativePublishingBase):
         pool_path = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
         self.assertEqual(open(pool_path).read().strip(), 'Hello world')
 
-    def test_publish_ddeb_for_ppas(self):
-        # DDEB publications in PPAs result in a PUBLISHED publishing record
-        # but the corresponding files are *not* dumped in the disk pool/.
-        cprov = getUtility(IPersonSet).getByName('cprov')
-        pub_binary = self.getPubBinaries(
-            filecontent='Hello world', format=BinaryPackageFormat.DDEB,
-            archive=cprov.archive)[0]
-
-        # Publication happens in the database domain.
-        pub_binary.publish(self.disk_pool, self.logger)
-        self.assertEqual(
-            PackagePublishingStatus.PUBLISHED,
-            pub_binary.status)
-
-        # But the DDEB isn't dumped to the repository pool/.
-        pool_path = "%s/main/f/foo/foo-bin_666_all.ddeb" % self.pool_dir
-        self.assertFalse(os.path.exists(pool_path))
-
     def testPublishingOverwriteFileInPool(self):
         """Test if publishOne refuses to overwrite a file in pool.
 
@@ -600,8 +585,18 @@ class TestNativePublishing(TestNativePublishingBase):
 
         pub_source = self.getPubSource(filecontent="Something")
         pub_source.publish(self.disk_pool, self.logger)
+
+        # And an oops should be filed for the error.
+        error_utility = ErrorReportingUtility()
+        error_report = error_utility.getLastOopsReport()
+        fp = StringIO()
+        error_report.write(fp)
+        error_text = fp.getvalue()
+        self.assertTrue("PoolFileOverwriteError" in error_text)
+
         self.layer.commit()
-        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(
+            pub_source.status, PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_dsc_path).read().strip(), 'Hello world')
 
     def testPublishingDifferentContents(self):
@@ -889,7 +884,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """Return a mock source package publishing record for the archive
         and architecture used in this testcase.
 
-        :param architecturehintlist: Architecture hint list (eg. "i386 amd64")
+        :param architecturehintlist: Architecture hint list
+            (e.g. "i386 amd64")
         """
         return super(BuildRecordCreationTests, self).getPubSource(
             archive=self.archive, distroseries=self.distroseries,
@@ -929,8 +925,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restricts_explicitlist(self):
-        """createMissingBuilds() should limit builds targeted at a variety
-        of architectures architecture to those allowed for the archive.
+        """createMissingBuilds() limits builds targeted at a variety of
+        architectures architecture to those allowed for the archive.
         """
         pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
         builds = pubrec.createMissingBuilds()
@@ -958,6 +954,62 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEquals(2, len(builds))
         self.assertEquals(self.avr_distroarch, builds[0].distro_arch_series)
         self.assertEquals(self.sparc_distroarch, builds[1].distro_arch_series)
+
+
+class PublishingSetTests(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(PublishingSetTests, self).setUp()
+        self.distroseries = self.factory.makeDistroSeries()
+        self.archive = self.factory.makeArchive(
+            distribution=self.distroseries.distribution)
+        self.publishing = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.distroseries, archive=self.archive)
+        self.publishing_set = getUtility(IPublishingSet)
+
+    def test_getByIdAndArchive_finds_record(self):
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, self.archive)
+        self.assertEqual(self.publishing, record)
+
+    def test_getByIdAndArchive_finds_record_explicit_source(self):
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, self.archive, source=True)
+        self.assertEqual(self.publishing, record)
+
+    def test_getByIdAndArchive_wrong_archive(self):
+        wrong_archive = self.factory.makeArchive()
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, wrong_archive)
+        self.assertEqual(None, record)
+
+    def makeBinaryPublishing(self):
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=self.distroseries)
+        binary_publishing = self.factory.makeBinaryPackagePublishingHistory(
+            archive=self.archive, distroarchseries=distroarchseries)
+        return binary_publishing
+
+    def test_getByIdAndArchive_wrong_type(self):
+        self.makeBinaryPublishing()
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, self.archive, source=False)
+        self.assertEqual(None, record)
+
+    def test_getByIdAndArchive_finds_binary(self):
+        binary_publishing = self.makeBinaryPublishing()
+        record = self.publishing_set.getByIdAndArchive(
+            binary_publishing.id, self.archive, source=False)
+        self.assertEqual(binary_publishing, record)
+
+    def test_getByIdAndArchive_binary_wrong_archive(self):
+        binary_publishing = self.makeBinaryPublishing()
+        wrong_archive = self.factory.makeArchive()
+        record = self.publishing_set.getByIdAndArchive(
+            binary_publishing.id, wrong_archive, source=False)
+        self.assertEqual(None, record)
 
 
 class TestSourceDomination(TestNativePublishingBase):
@@ -1129,7 +1181,3 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
         # This will supersede both atomically.
         bins[0].supersede()
         self.checkOtherPublications(bins[0], [])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -494,8 +494,12 @@ class Bug(SQLBase):
     @property
     def initial_message(self):
         """See `IBug`."""
-        messages = sorted(self.messages, key=lambda ob: ob.id)
-        return messages[0]
+        store = Store.of(self)
+        messages = store.find(
+            Message,
+            BugMessage.bug == self,
+            BugMessage.message == Message.id).order_by('id')
+        return messages.first()
 
     def followup_subject(self):
         """See `IBug`."""
@@ -673,12 +677,14 @@ class Bug(SQLBase):
         if self.private:
             return []
 
-        dupe_subscribers = set(
-            Person.select("""
-                Person.id = BugSubscription.person AND
-                BugSubscription.bug = Bug.id AND
-                Bug.duplicateof = %d""" % self.id,
-                clauseTables=["Bug", "BugSubscription"]))
+        dupe_details = dict(
+            Store.of(self).find(
+                (Person, Bug),
+                BugSubscription.person == Person.id,
+                BugSubscription.bug == Bug.id,
+                Bug.duplicateof == self.id))
+
+        dupe_subscribers = set([person for person in dupe_details.keys()])
 
         # Direct and "also notified" subscribers take precedence over
         # subscribers from dupes. Note that we don't supply recipients
@@ -688,7 +694,7 @@ class Bug(SQLBase):
 
         if recipients is not None:
             for subscriber in dupe_subscribers:
-                recipients.addDupeSubscriber(subscriber)
+                recipients.addDupeSubscriber(subscriber, dupe_details[subscriber])
 
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
@@ -1487,11 +1493,6 @@ class Bug(SQLBase):
 
         self.updateHeat()
 
-    @property
-    def readonly_duplicateof(self):
-        """See `IBug`."""
-        return self.duplicateof
-
     def markAsDuplicate(self, duplicate_of):
         """See `IBug`."""
         field = DuplicateBug()
@@ -1500,6 +1501,16 @@ class Bug(SQLBase):
         try:
             if duplicate_of is not None:
                 field._validate(duplicate_of)
+            if self.duplicates:
+                for duplicate in self.duplicates:
+                    # Fire a notify event in model code since moving
+                    # duplicates of a duplicate does not normally fire an
+                    # event.
+                    dupe_before = Snapshot(
+                        duplicate, providing=providedBy(duplicate))
+                    duplicate.markAsDuplicate(duplicate_of)
+                    notify(ObjectModifiedEvent(
+                            duplicate, dupe_before, 'duplicateof'))
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for domination.py."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import datetime
-import unittest
 
 from lp.archivepublisher.domination import Dominator
 from lp.archivepublisher.publishing import Publisher
@@ -172,7 +171,3 @@ class TestDominationOfObsoletedSeries(TestDomination):
         TestDomination.setUp(self)
         self.ubuntutest['breezy-autotest'].status = (
             SeriesStatus.OBSOLETE)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

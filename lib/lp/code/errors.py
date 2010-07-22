@@ -8,6 +8,7 @@ __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
     'BuildAlreadyPending',
+    'BuildNotAllowedForDistro',
     'BranchMergeProposalExists',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
@@ -144,3 +145,14 @@ class BuildAlreadyPending(RecipeBuildException):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
             'An identical build of this recipe is already pending.')
+
+
+class BuildNotAllowedForDistro(RecipeBuildException):
+    """A build was requested against an unsupported distroseries."""
+
+    webservice_error(400)
+
+    def __init__(self, recipe, distroseries):
+        RecipeBuildException.__init__(
+            self, recipe, distroseries,
+            'A build against this distro is not allowed.')

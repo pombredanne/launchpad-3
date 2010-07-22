@@ -40,7 +40,8 @@ from lp.registry.interfaces.person import (
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
-    POTemplate)
+    POTemplate,
+    TranslationTemplatesCollection)
 from lp.registry.model.productrelease import ProductRelease
 from lp.translations.model.productserieslanguage import (
     ProductSeriesLanguage)
@@ -50,7 +51,6 @@ from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.packaging import PackagingType
 from lp.blueprints.interfaces.specification import (
@@ -428,45 +428,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             name=name, dateexpected=dateexpected, summary=summary,
             product=self.product, productseries=self, code_name=code_name)
 
-    def getTranslationTemplates(self):
+    def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(
-            productseries=self, orderBy=['-priority', 'name'])
-        return result
-
-    def getCurrentTranslationTemplates(self, just_ids=False):
-        """See `IHasTranslationTemplates`."""
-        store = Store.of(self)
-        if just_ids:
-            looking_for = POTemplate.id
-        else:
-            looking_for = POTemplate
-
-        # Select all current templates for this series, if the Product
-        # actually uses Launchpad Translations.  Otherwise, return an
-        # empty result.
-        result = store.find(looking_for, And(
-            self.product.official_rosetta == True,
-            POTemplate.iscurrent == True,
-            POTemplate.productseries == self))
-        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
+        return TranslationTemplatesCollection().restrictProductSeries(self)
 
     @property
     def potemplate_count(self):
         """See `IProductSeries`."""
         return self.getCurrentTranslationTemplates().count()
-
-    def getObsoleteTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            productseries = %s AND
-            productseries = ProductSeries.id AND
-            ProductSeries.product = Product.id AND
-            (iscurrent IS FALSE OR Product.official_rosetta IS FALSE)
-            ''' % sqlvalues(self),
-            orderBy=['-priority', 'name'],
-            clauseTables = ['ProductSeries', 'Product'])
-        return shortlist(result, 300)
 
     @property
     def productserieslanguages(self):

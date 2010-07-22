@@ -22,6 +22,7 @@ import operator
 import os
 import pytz
 import re
+import sys
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -40,6 +41,8 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
@@ -64,8 +67,7 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IBinaryPackageFilePublishing,
     IBinaryPackagePublishingHistory, IPublishingSet,
     ISourcePackageFilePublishing, ISourcePackagePublishingHistory,
-    PackagePublishingPriority, PackagePublishingStatus,
-    PoolFileOverwriteError)
+    PackagePublishingPriority, PackagePublishingStatus, PoolFileOverwriteError)
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
@@ -88,12 +90,6 @@ class FilePublishingBase:
 
     def publish(self, diskpool, log):
         """See IFilePublishing."""
-        # DDEB publication for PPAs is temporarily disabled, see bug #399444.
-        if (self.archive.is_ppa and
-            self.libraryfilealiasfilename.endswith('.ddeb')):
-            log.debug('Skipping DDEB disk publication.')
-            return
-
         # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
         # when retrieving data from DB.
         source = self.sourcepackagename.encode('utf-8')
@@ -103,22 +99,14 @@ class FilePublishingBase:
         sha1 = filealias.content.sha1
         path = diskpool.pathFor(component, source, filename)
 
-        try:
-            action = diskpool.addFile(
-                component, source, filename, sha1, filealias)
-            if action == diskpool.results.FILE_ADDED:
-                log.debug("Added %s from library" % path)
-            elif action == diskpool.results.SYMLINK_ADDED:
-                log.debug("%s created as a symlink." % path)
-            elif action == diskpool.results.NONE:
-                log.debug(
-                    "%s is already in pool with the same content." % path)
-        except PoolFileOverwriteError, info:
-            log.error("PoolFileOverwriteError: %s. Skipping. This indicates "
-                      "some bad data, and Team Soyuz should be informed. "
-                      "However, publishing of other packages is not affected."
-                      % info)
-            raise info
+        action = diskpool.addFile(component, source, filename, sha1, filealias)
+        if action == diskpool.results.FILE_ADDED:
+            log.debug("Added %s from library" % path)
+        elif action == diskpool.results.SYMLINK_ADDED:
+            log.debug("%s created as a symlink." % path)
+        elif action == diskpool.results.NONE:
+            log.debug(
+                "%s is already in pool with the same content." % path)
 
     @property
     def archive_url(self):
@@ -268,8 +256,13 @@ class ArchivePublisherBase:
         try:
             for pub_file in self.files:
                 pub_file.publish(diskpool, log)
-        except PoolFileOverwriteError:
-            pass
+        except PoolFileOverwriteError, e:
+            message = "PoolFileOverwriteError: %s, skipping." %  e
+            properties = [('error-explanation', message)]
+            request = ScriptRequest(properties)
+            error_utility = ErrorReportingUtility()
+            error_utility.raising(sys.exc_info(), request)
+            log.error('%s (%s)' % (message, request.oopsid))
         else:
             self.setPublished()
 
@@ -1356,7 +1349,7 @@ class PublishingSet:
         return Store.of(archive).find(
             baseclass,
             baseclass.id == id,
-            baseclass.archive == archive.id)
+            baseclass.archive == archive.id).one()
 
     def _extractIDs(self, one_or_more_source_publications):
         """Return a list of database IDs for the given list or single object.
