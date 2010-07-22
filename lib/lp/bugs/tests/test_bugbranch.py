@@ -72,6 +72,28 @@ class TestBugBranch(TestCaseWithFactory):
         bug_branch_2 = bug.linkBranch(branch, self.registrant)
         self.assertEqual(bug_branch, bug_branch_2)
 
+    def test_linking_branch_twice_different_registrants(self):
+        # Calling Bug.linkBranch twice with the branch but different
+        # registrants returns the existing bug branch object rather than
+        # creating a new one.
+        bug = self.factory.makeBug()
+        branch = self.factory.makeBranch()
+        bug_branch = bug.linkBranch(branch, self.registrant)
+        bug_branch_2 = bug.linkBranch(branch, self.factory.makePerson())
+        self.assertEqual(bug_branch, bug_branch_2)
+
+    def test_bug_has_no_branches(self):
+        # Bug.hasBranch returns False for any branch that it is not linked to.
+        bug = self.factory.makeBug()
+        self.assertFalse(bug.hasBranch(self.factory.makeBranch()))
+
+    def test_bug_has_branch(self):
+        # Bug.hasBranch returns False for any branch that it is linked to.
+        bug = self.factory.makeBug()
+        branch = self.factory.makeBranch()
+        bug.linkBranch(branch, self.registrant)
+        self.assertTrue(bug.hasBranch(branch))
+
     def test_adding_branch_changes_date_last_updated(self):
         # Adding a branch to a bug changes IBug.date_last_updated.
         bug = self.factory.makeBug()
