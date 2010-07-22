@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Export module for gettext's .mo file format."""
@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'GettextMOExporter',
-    'POCompiler'
+    'POCompiler',
     ]
 
 import os
@@ -70,7 +70,8 @@ class GettextMOExporter:
             translation_exporter.getExporterProducingTargetFileFormat(
                 TranslationFileFormat.PO))
 
-        storage = ExportFileStorage('application/x-gmo')
+        mime_type = 'application/x-gmo'
+        storage = ExportFileStorage()
 
         for translation_file in translation_files:
             # To generate MO files we need first its PO version and then,
@@ -103,7 +104,7 @@ class GettextMOExporter:
                 # GTranslator.
                 content_type = 'application/x-gmo'
 
-            storage.addFile(file_path, file_extension, exported_file_content)
+            storage.addFile(
+                file_path, file_extension, exported_file_content, mime_type)
 
         return storage.export()
-

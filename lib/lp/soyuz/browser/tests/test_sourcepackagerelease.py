@@ -11,8 +11,6 @@ __all__ = [
     'test_suite',
     ]
 
-import unittest
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import (
@@ -109,6 +107,3 @@ class TestSourcePackageReleaseView(TestCaseWithFactory):
         view = create_initialized_view(
             self.source_package_release, '+copyright')
         self.assertEqual(expected, view.highlighted_copyright)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

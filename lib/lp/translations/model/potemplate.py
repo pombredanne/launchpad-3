@@ -461,8 +461,7 @@ class POTemplate(SQLBase, RosettaStats):
                                "POFile.potemplate = %d AND "
                                "POFile.variant IS NULL" % self.id,
                                clauseTables=['POFile', 'Language'],
-                               distinct=True
-                               )
+                               distinct=True)
 
     def getPOFileByPath(self, path):
         """See `IPOTemplate`."""
@@ -573,7 +572,7 @@ class POTemplate(SQLBase, RosettaStats):
                 product = self.productseries.product
                 clauses.extend([
                     'POTemplate.productseries=ProductSeries.id',
-                    'ProductSeries.product %s' % self._null_quote(product)
+                    'ProductSeries.product %s' % self._null_quote(product),
                     ])
                 clause_tables.append('ProductSeries')
             elif self.distroseries is not None:

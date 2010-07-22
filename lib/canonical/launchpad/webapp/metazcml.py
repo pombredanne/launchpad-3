@@ -10,6 +10,8 @@ import zope.app.publisher.browser.metadirectives
 import zope.configuration.config
 from zope.app.file.image import Image
 from zope.app.pagetemplate.engine import TrustedEngine
+from zope.app.publication.metaconfigure import publisher
+from zope.app.publication.metadirectives import IRequestPublicationDirective
 from zope.component import getUtility
 from zope.component.security import PublicPermission
 from zope.component.zcml import adapter, handler, utility, view
@@ -19,7 +21,7 @@ from zope.interface import Interface, implements
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
-from zope.schema import TextLine
+from zope.schema import Int, TextLine
 from zope.security.checker import Checker, CheckerPublic
 from zope.security.interfaces import IPermission
 from zope.security.permission import Permission
@@ -33,6 +35,7 @@ import z3c.ptcompat.zcml
 from z3c.ptcompat.zcml import page_directive as original_page
 from z3c.ptcompat.zcml import pages_directive as original_pages
 
+from canonical.config import config
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IAuthorization, ICanonicalUrlData, IContextMenu,
@@ -651,3 +654,19 @@ def definePermission(_context, id, title, access_level="write",
                      description=''):
     permission = LaunchpadPermission(id, title, access_level, description)
     utility(_context, ILaunchpadPermission, permission, name=id)
+
+
+class ILaunchpadPublicationDirective(IRequestPublicationDirective):
+
+    priorty = Int(required=False)
+
+_arbitrary_priority = 12
+
+
+def launchpadPublisher(_context, name, factory, methods=['*'],
+                       mimetypes=['*'], priority=None):
+    global _arbitrary_priority
+    if priority is None:
+        _arbitrary_priority += 1
+        priority = _arbitrary_priority
+    publisher(_context, name, factory, methods, mimetypes, priority)
