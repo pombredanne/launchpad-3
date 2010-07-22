@@ -122,10 +122,10 @@ class ImportQueueEntryTest(WindmillTestCase):
 
         # A new template upload for that entry has a path that doesn't
         # match either of the existing templates.
-        base_filename = unicode(self.factory.getUniqueString(prefix='x'))
+        base_filename = self.factory.getUniqueString(prefix='x')
         path = base_filename + '.pot'
         entry = self.factory.makeTranslationImportQueueEntry(
-            path, productseries=productseries)
+            path=path, productseries=productseries)
         url = canonical_url(entry, rootsite='translations')
 
         transaction.commit()
@@ -139,17 +139,13 @@ class ImportQueueEntryTest(WindmillTestCase):
         client.waits.sleep(milliseconds=SLEEP)
 
         # No template is preselected in the templates dropdown.
-        client.waits.forElement(id=u'field.potemplate', timeout=FOR_ELEMENT)
         client.asserts.assertSelected(id=u'field.potemplate', validator=u'')
 
         # The template name and translation domain are pre-set to a
         # guess based on the base filename.
-        client.waits.forElement(id=u'field.name', timeout=FOR_ELEMENT)
-        client.asserts.assertText(
+        client.asserts.assertValue(
             id=u'field.name', validator=base_filename)
-        client.waits.forElement(
-            id=u'field.translation_domain', timeout=FOR_ELEMENT)
-        client.asserts.assertText(
+        client.asserts.assertValue(
             id=u'field.translation_domain', validator=base_filename)
 
         # The user edits the name and translation domain.
@@ -158,41 +154,40 @@ class ImportQueueEntryTest(WindmillTestCase):
 
         # The user selects an existing template from the dropdown.  This
         # updates the name and domain fields.
-        client.select(id=u'field.potemplate', val=u'name1')
-        client.asserts.assertText(id=u'field.name', validator='name1')
-        client.asserts.assertText(
+        client.select(id=u'field.potemplate', option=u'name1')
+        client.asserts.assertValue(id=u'field.name', validator='name1')
+        client.asserts.assertValue(
             id=u'field.translation_domain', validator='domain1')
 
         # When the user returns the dropbox to its original state, the
         # last-entered name and domain come back.
-        client.select(id=u'field.potemplate', val=u'')
-        client.asserts.assertText(id=u'field.name', validator='new-name')
-        client.asserts.assertText(
+        client.select(id=u'field.potemplate', option=u'')
+        client.asserts.assertValue(id=u'field.name', validator='new-name')
+        client.asserts.assertValue(
             id=u'field.translation_domain', validator='new-domain')
 
         # Changing the name and domain to those of an existing domain
         # also updates the dropdown.
         client.type(id=u'field.name', text=u'name1')
         client.type(id=u'field.translation_domain', text=u'domain1')
-        client.asserts.assertSelected(id=u'field.potemplate', val=u'name1')
+        client.asserts.assertSelected(
+            id=u'field.potemplate', validator=u'name1')
 
     def test_import_queue_entry_template_selection_existing_path(self):
         # If a template upload's base path matches the name/domain of an
         # existing template, the templates dropdown has that template
         # pre-selected.
-        template_name = self.factory.getUniqueString()
-        template_path = template_name + '.pot'
+        template_name = self.factory.getUniqueString(prefix='x')
+        path = template_name + '.pot'
         template = self.factory.makePOTemplate(
-            path=template_path, name=template_name,
-            translation_domain=template_name)
+            path=path, name=template_name, translation_domain=template_name)
 
         # A new template upload for that entry has a path that doesn't
         # match either of the existing templates.
         entry = self.factory.makeTranslationImportQueueEntry(
-            path=template_path, productseries=template.productseries,
+            path=path, productseries=template.productseries,
             distroseries=template.distroseries,
             sourcepackagename=template.sourcepackagename)
-        file('/tmp/foo.log','a').write("* %d: %s *\n"%(entry.id,entry.path))
         url = canonical_url(entry, rootsite='translations')
 
         transaction.commit()
