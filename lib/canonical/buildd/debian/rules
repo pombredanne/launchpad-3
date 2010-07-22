@@ -3,7 +3,7 @@
 # Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-export DH_COMPAT=4
+export DH_COMPAT=5
 export DH_OPTIONS
 
 # This is an incomplete debian rules file for making the launchpad-buildd deb
@@ -89,8 +89,10 @@ binary: binary-indep
 clean:
 	dh_clean
 
-package:
+prepare:
 	cp ../launchpad/daemons/tachandler.py launchpad-files/tachandler.py
+
+package: prepare
 	debuild -uc -us -S
 
 build:
