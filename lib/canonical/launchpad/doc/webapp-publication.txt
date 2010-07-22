@@ -372,10 +372,6 @@ the registered factories.)
     BugsBrowserRequest
     BugsPublication
 
-    >>> print_request_and_publication('code.launchpad.dev')
-    CodeBrowserRequest
-    CodePublication
-
     >>> print_request_and_publication('feeds.launchpad.dev')
     FeedsBrowserRequest
     FeedsPublication
@@ -417,12 +413,10 @@ it is also handled by the web service request and publication:
     WebServiceClientRequest
     WebServicePublication
     >>> for subdomain in [
-    ...     'answers', 'blueprints', 'bugs', 'code', 'translations']:
+    ...     'answers', 'blueprints', 'bugs', 'translations']:
     ...     print_request_and_publication(
     ...         '%s.launchpad.dev' % subdomain, method='GET',
     ...         extra_environment={'PATH_INFO': '/api'})
-    WebServiceClientRequest
-    WebServicePublication
     WebServiceClientRequest
     WebServicePublication
     WebServiceClientRequest
