@@ -11,7 +11,6 @@ import datetime
 import re
 import unittest
 
-from pytz import utc
 import transaction
 from storm.locals import Store
 from zope.component import getUtility
@@ -23,7 +22,7 @@ from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
-from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.tests.test_buildbase import (
     TestGetUploadMethodsMixin, TestHandleStatusMixin)

@@ -421,7 +421,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     def test_getMedianBuildDuration(self):
         def set_duration(build, minutes):
-            duration = timedelta( minutes=minutes)
+            duration = timedelta(minutes=minutes)
             build = removeSecurityProxy(build)
             build.date_started = self.factory.getUniqueDate()
             build.date_finished = build.date_started + duration

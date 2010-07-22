@@ -4259,6 +4259,13 @@ INSERT INTO featuredproject (id, pillar_name) VALUES (9, 21);
 ALTER TABLE featuredproject ENABLE TRIGGER ALL;
 
 
+ALTER TABLE featureflag DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE featureflag ENABLE TRIGGER ALL;
+
+
 ALTER TABLE flatpackagesetinclusion DISABLE TRIGGER ALL;
 
 

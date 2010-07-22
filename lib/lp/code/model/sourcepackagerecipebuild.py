@@ -16,15 +16,13 @@ import sys
 from pytz import utc
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import DBEnum
 from canonical.launchpad.browser.librarian import (
     ProxiedLibraryFileAlias)
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 
 from psycopg2 import ProgrammingError
-from storm.locals import Int, Reference, Storm, TimeDelta, Unicode
+from storm.locals import Int, Reference, Storm
 from storm.store import Store
 
 from zope.component import getUtility
@@ -33,7 +31,7 @@ from zope.interface import classProvides, implements
 from canonical.launchpad.webapp import errorlog
 from lp.buildmaster.model.packagebuild import (
     PackageBuild, PackageBuildDerived)
-from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildqueue import BuildQueue

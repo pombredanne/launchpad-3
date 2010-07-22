@@ -152,7 +152,6 @@ from lp.testing import (
     ANONYMOUS,
     login,
     login_as,
-    logout,
     run_with_login,
     temp_dir,
     time_counter,

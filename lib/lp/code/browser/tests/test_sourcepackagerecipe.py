@@ -14,7 +14,6 @@ from pytz import utc
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing.pages import (
     extract_text, find_main_content, find_tags_by_class)
@@ -29,7 +28,7 @@ from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
-    ANONYMOUS, BrowserTestCase, login, logout, person_logged_in)
+    ANONYMOUS, BrowserTestCase, login, logout)
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -494,7 +493,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
     def makeBuildJob(self, recipe):
         """Return a build associated with a buildjob."""
         build = self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa )
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa)
         self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         return build
 

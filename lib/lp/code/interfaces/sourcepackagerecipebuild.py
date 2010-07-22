@@ -17,7 +17,7 @@ from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import export_as_webservice_entry
 
 from zope.interface import Interface
-from zope.schema import Bool, Datetime, Int, Object
+from zope.schema import Bool, Int, Object
 
 from canonical.launchpad import _
 
@@ -83,7 +83,8 @@ class ISourcePackageRecipeBuildSource(Interface):
     def new(distroseries, recipe, requester, archive, date_created=None):
         """Create an `ISourcePackageRecipeBuild`.
 
-        :param distroseries: The `IDistroSeries` that this is building against.
+        :param distroseries: The `IDistroSeries` that this is building
+            against.
         :param recipe: The `ISourcePackageRecipe` that this is building.
         :param requester: The `IPerson` who wants to build it.
         :param date_created: The date this build record was created. If not
