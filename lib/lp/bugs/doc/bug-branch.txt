@@ -21,15 +21,6 @@ BugBranch links a bug and a branch.
     >>> branch = getUtility(IBranchLookup).get(10)
 
 
-== Bugs Related to Branches ==
-
-The bugs related to a branch are accessible via the linked_bugs
-property.
-
-    >>> sorted([bug.id for bug in branch.linked_bugs])
-    [1, 4, 5]
-
-
 == Getting bug branches associated with multiple branches ==
 
 Sometimes we want to get the associated bug branch links for a set of branches.
