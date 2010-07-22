@@ -228,11 +228,22 @@ It implements the IPOTemplate interface.
 
 == getPOFileByPath ==
 
-We can get an IPOFile inside a templage based on its path.
+We can get an IPOFile inside a template based on its path.
 
     >>> pofile = potemplate.getPOFileByPath('es.po')
     >>> print pofile.title
     Spanish (es) translation of evolution-2.2 in Evolution trunk
+
+
+== getDummyPOFile ==
+
+To get an IPOFile object even for languages which don't have a translation
+of this template, we use the getDummyPOFile method, passing in the language.
+
+    >>> xxxx_language = factory.makeLanguage('xxxx')
+    >>> xxxx_pofile = potemplate.getDummyPOFile(xxxx_language)
+    >>> print xxxx_pofile.title
+    Language 'xxxx' (xxxx) translation of evolution-2.2 in Evolution trunk
 
 
 == newPOFile ==

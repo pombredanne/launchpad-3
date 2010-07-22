@@ -59,6 +59,10 @@ class TestPOTemplate(TestCaseWithFactory):
             "missing directory and language code. "
             "(Expected: '%s' Got: '%s')" % (expected, result))
 
+    def test_getDummyPOFile_check_existing(self):
+        # Test basic behaviour of getDummyPOFile.
+        pass
+
     def test_getTranslationCredits(self):
         # getTranslationCredits returns only translation credits.
         self.factory.makePOTMsgSet(self.potemplate, sequence=1)

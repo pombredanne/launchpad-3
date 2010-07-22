@@ -7,6 +7,7 @@ ITranslationMessage object.
     >>> from lp.translations.model.pofile import POFile
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from canonical.launchpad.layers import TranslationsLayer
     >>> from canonical.launchpad.webapp import canonical_url
 
@@ -23,8 +24,8 @@ without the plural form information.
 
     >>> translationmessage = TranslationMessage.get(1)
     >>> pofile = POFile.get(1)
-    >>> pofile_tlh = pofile.potemplate.getDummyPOFile(
-    ...     'tlh')
+    >>> language_tlh = getUtility(ILanguageSet).getLanguageByCode('tlh')
+    >>> pofile_tlh = pofile.potemplate.getDummyPOFile(language_tlh)
     >>> potmsgset = pofile_tlh.potemplate.getPOTMsgSetByMsgIDText(
     ...     u'evolution addressbook')
     >>> current_translationmessage = (
