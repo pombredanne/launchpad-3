@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native publication workflow for Soyuz. """
@@ -18,6 +18,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadZopelessLayer)
@@ -44,6 +45,7 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.scripts import FakeLogger
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.fakemethod import FakeMethod
 
 
 class SoyuzTestPublisher:
@@ -135,7 +137,7 @@ class SoyuzTestPublisher:
                          changes_file_name="foo_666_source.changes",
                          changes_file_content="fake changes file content",
                          upload_status=PackageUploadStatus.DONE):
-        signing_key =  self.person.gpg_keys[0]
+        signing_key = self.person.gpg_keys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, changes_file_name, changes_file_content, archive,
             signing_key)
@@ -472,9 +474,8 @@ class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
         self.pool_dir = self.config.poolroot
         self.temp_dir = self.config.temproot
         self.logger = FakeLogger()
-        def message(self, prefix, *stuff, **kw):
-            pass
-        self.logger.message = message
+
+        self.logger.message = FakeMethod()
         self.disk_pool = DiskPool(self.pool_dir, self.temp_dir, self.logger)
 
     def tearDown(self):
@@ -598,9 +599,18 @@ class TestNativePublishing(TestNativePublishingBase):
 
         pub_source = self.getPubSource(filecontent="Something")
         pub_source.publish(self.disk_pool, self.logger)
+
+        # And an oops should be filed for the error.
+        error_utility = ErrorReportingUtility()
+        error_report = error_utility.getLastOopsReport()
+        fp = StringIO()
+        error_report.write(fp)
+        error_text = fp.getvalue()
+        self.assertTrue("PoolFileOverwriteError" in error_text)
+
         self.layer.commit()
         self.assertEqual(
-            pub_source.status,PackagePublishingStatus.PENDING)
+            pub_source.status, PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_dsc_path).read().strip(), 'Hello world')
 
     def testPublishingDifferentContents(self):
@@ -779,7 +789,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         try:
             copies = tuple(copied)
         except TypeError:
-            copies = (copied,)
+            copies = (copied, )
 
         for copy in copies:
             self.assertEquals(copy.component, pub_record.component)
@@ -889,7 +899,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """Return a mock source package publishing record for the archive
         and architecture used in this testcase.
 
-        :param architecturehintlist: Architecture hint list (e.g. "i386 amd64")
+        :param architecturehintlist: Architecture hint list
+            (e.g. "i386 amd64")
         """
         return super(BuildRecordCreationTests, self).getPubSource(
             archive=self.archive, distroseries=self.distroseries,
@@ -929,8 +940,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restricts_explicitlist(self):
-        """createMissingBuilds() should limit builds targeted at a
-        variety of architectures architecture to those allowed for the archive.
+        """createMissingBuilds() limits builds targeted at a variety of
+        architectures architecture to those allowed for the archive.
         """
         pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
         builds = pubrec.createMissingBuilds()
@@ -1014,7 +1025,3 @@ class PublishingSetTests(TestCaseWithFactory):
         record = self.publishing_set.getByIdAndArchive(
             binary_publishing.id, wrong_archive, source=False)
         self.assertEqual(None, record)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

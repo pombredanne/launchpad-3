@@ -75,7 +75,7 @@ class TestDominator(TestNativePublishingBase):
         # and dominated, the subsequents.
         source_input = {'foo': [dominant_source, dominated_source]}
 
-        dominator._dominateSource(source_input)
+        dominator._dominatePublications(source_input)
         flush_database_updates()
 
         # The dominant version remains correctly published.
@@ -96,7 +96,7 @@ class TestDominator(TestNativePublishingBase):
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
         source_input = {'foo': []}
         self.assertRaises(
-            AssertionError, dominator._dominateSource, source_input)
+            AssertionError, dominator._dominatePublications, source_input)
 
     def testBinariesDomination(self):
         """Test overall binary domination procedure."""
@@ -108,7 +108,7 @@ class TestDominator(TestNativePublishingBase):
         # See comment about domination input format and ordering above.
         binary_input = {'foo-bin': [dominant, dominated]}
 
-        dominator._dominateBinaries(binary_input)
+        dominator._dominatePublications(binary_input)
         flush_database_updates()
 
         # Dominant version remains correctly published.
@@ -129,7 +129,7 @@ class TestDominator(TestNativePublishingBase):
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
         binary_input = {'foo-bin': []}
         self.assertRaises(
-            AssertionError, dominator._dominateBinaries, binary_input)
+            AssertionError, dominator._dominatePublications, binary_input)
 
     def testBinaryDomination(self):
         """Test binary domination unit procedure."""
@@ -138,7 +138,7 @@ class TestDominator(TestNativePublishingBase):
         [dominant_source, dominant, dominated_source,
          dominated] = self.createSimpleDominationContext()
 
-        dominator._dominateBinary(dominated, dominant)
+        dominated.supersede(dominant)
         flush_database_updates()
 
         dominated = self.checkBinaryPublication(
@@ -150,7 +150,7 @@ class TestDominator(TestNativePublishingBase):
     def testBinaryDominationAssertsPendingOrPublished(self):
         """Test binary domination asserts coherent dominated status.
 
-        Normally _dominateBinary only accepts domination candidates in
+        Normally supersede() only accepts domination candidates in
         PUBLISHED or PENDING status, a exception is opened for architecture
         independent binaries because during the iteration they might have
         been already SUPERSEDED with its first publication, when it happens
@@ -165,7 +165,7 @@ class TestDominator(TestNativePublishingBase):
          dominated] = self.createSimpleDominationContext()
 
         # Let's modify the domination candidate, so it will look wrong to
-        # _dominateBinary which will raise because it's a architecture
+        # supersede() which will raise because it's a architecture
         # specific binary publication not in PENDING or PUBLISHED state.
         dominated.status = PackagePublishingStatus.SUPERSEDED
         manual_domination_date = datetime.datetime(
@@ -176,7 +176,7 @@ class TestDominator(TestNativePublishingBase):
         # An error like that in production clearly indicates that something
         # is wrong in the Dominator look-up methods.
         self.assertRaises(
-            AssertionError, dominator._dominateBinary, dominated, dominant)
+            AssertionError, dominated.supersede, dominant)
 
         # The refused publishing record remains the same.
         dominated = self.checkBinaryPublication(
@@ -188,7 +188,7 @@ class TestDominator(TestNativePublishingBase):
         dominated.binarypackagerelease.architecturespecific = False
         flush_database_updates()
 
-        dominator._dominateBinary(dominated, dominant)
+        dominated.supersede(dominant)
         flush_database_updates()
         dominated = self.checkBinaryPublication(
             dominated, PackagePublishingStatus.SUPERSEDED)
@@ -197,14 +197,12 @@ class TestDominator(TestNativePublishingBase):
     def testOtherBinaryPublications(self):
         """Check the basis of architecture independent binary domination.
 
-        We use _getOtherBinaryPublications to identify other publications of
-        the same binarypackagerelease in other architectures (architecture
+        We use _getOtherPublications to identify other publications of the
+        same binarypackagerelease in other architectures (architecture
         independent binaries), they will be dominated during a single step.
 
         See overall details in `testDominationOfOldArchIndepBinaries`.
         """
-        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
-
         # Create architecture independent publications for foo-bin_1.0
         # in i386 & hppa.
         pub_source_archindep = self.getPubSource(
@@ -232,7 +230,7 @@ class TestDominator(TestNativePublishingBase):
 
         # Check if we can reach the i386 publication using
         # _getOtherBinaryPublications over the hppa binary.
-        [found] = list(dominator._getOtherBinaryPublications(hppa_pub))
+        [found] = list(hppa_pub._getOtherPublications())
         self.assertEqual(i386_pub, found)
 
         # Create architecture specific publications for foo-bin_1.1 in
@@ -251,7 +249,7 @@ class TestDominator(TestNativePublishingBase):
         # Check if there is no other publication of the hppa binary package
         # release.
         self.assertEqual(
-            dominator._getOtherBinaryPublications(hppa_pub).count(),
+            hppa_pub._getOtherPublications().count(),
             0)
 
     def testDominationOfOldArchIndepBinaries(self):

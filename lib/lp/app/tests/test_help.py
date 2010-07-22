@@ -10,7 +10,6 @@ from zope.component import getUtility
 
 
 from canonical.testing.layers import FunctionalLayer
-from canonical.launchpad.layers import LaunchpadLayer
 from canonical.launchpad.testing.systemdocs import create_view
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
@@ -21,6 +20,7 @@ from lp.blueprints.publisher import BlueprintsLayer
 from lp.bugs.publisher import BugsLayer
 from lp.code.publisher import CodeLayer
 from lp.translations.publisher import TranslationsLayer
+
 
 # The root of the tree
 ROOT = os.path.realpath(

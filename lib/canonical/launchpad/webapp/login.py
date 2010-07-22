@@ -1,11 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from __future__ import with_statement
-
 """Stuff to do with logging in and logging out."""
+
+from __future__ import with_statement
 
 __metaclass__ = type
 
+import cgi
 import urllib
 
 from datetime import datetime, timedelta
@@ -245,9 +246,25 @@ class OpenIDCallbackView(OpenIDLogin):
     suspended_account_template = ViewPageTemplateFile(
         '../templates/login-suspended-account.pt')
 
+    def _gather_params(self, request):
+        params = dict(request.form)
+        query_string = request.get('QUERY_STRING')
+        if query_string is not None:
+            params.update(cgi.parse_qsl(query_string))
+        return params
+
+    def _get_requested_url(self, request):
+        requested_url = request.getURL()
+        query_string = request.get('QUERY_STRING')
+        if query_string is not None:
+            requested_url += '?' + query_string
+        return requested_url
+
     def initialize(self):
-        self.openid_response = self._getConsumer().complete(
-            self.request.form, self.request.getURL())
+        params = self._gather_params(self.request)
+        requested_url = self._get_requested_url(self.request)
+        consumer = self._getConsumer()
+        self.openid_response = consumer.complete(params, requested_url)
 
     def login(self, account):
         loginsource = getUtility(IPlacelessLoginSource)
@@ -350,7 +367,13 @@ class OpenIDCallbackView(OpenIDLogin):
     def _redirect(self):
         target = self.request.form.get('starting_url')
         if target is None:
-            target = self.getApplicationURL()
+            # If this was a POST, then the starting_url won't be in the form
+            # values, but in the query parameters instead.
+            target = self.request.query_string_params.get('starting_url')
+            if target is None:
+                target = self.request.getApplicationURL()
+            else:
+                target = target[0]
         self.request.response.redirect(target, temporary_if_possible=True)
 
 
