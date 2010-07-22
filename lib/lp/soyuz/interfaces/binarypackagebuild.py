@@ -157,7 +157,7 @@ class IBinaryPackageBuildView(IPackageBuild):
         """Return the corresponding `IBinaryPackageFile` in this context.
 
         :param filename: the filename to look up.
-        :return: the correpsonding `IBinaryPackageFile` if it was found.
+        :return: the corresponding `IBinaryPackageFile` if it was found.
         """
 
 
