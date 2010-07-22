@@ -15,6 +15,7 @@ First, we need some imports.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from canonical.launchpad.layers import TranslationsLayer
 
 All the tests will be submitted as coming from the No Privilege person.
@@ -57,7 +58,8 @@ We know that we want all messages.
 This time, we are going to see what happens if we get an IPOFile without
 the plural form information.
 
-    >>> pofile_tlh = potemplate.getDummyPOFile('tlh')
+    >>> language_tlh = getUtility(ILanguageSet).getLanguageByCode('tlh')
+    >>> pofile_tlh = potemplate.getDummyPOFile(language_tlh)
     >>> form = {'show': 'all' }
     >>> pofile_view = create_view(
     ...     pofile_tlh, '+translate', form=form, layer=TranslationsLayer)
