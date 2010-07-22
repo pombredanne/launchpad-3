@@ -24,7 +24,8 @@ class POFilesByPOTemplates(object):
 
     def _getDummyOrPOFile(self, potemplate, pofile):
         if pofile is None:
-            return potemplate.getDummyPOFile(self.language)
+            return potemplate.getDummyPOFile(self.language,
+                                             check_for_existing=False)
         else:
             return pofile
 

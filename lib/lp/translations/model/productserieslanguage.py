@@ -45,11 +45,11 @@ class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
             self.productseries.displayname)
 
     def messageCount(self):
-        """See `IProductSeriesLanguage`."""
+        """See `IRosettaStats`."""
         return self._translation_statistics['total_count']
 
     def currentCount(self, language=None):
-        """See `IProductSeriesLanguage`."""
+        """See `IRosettaStats`."""
         translated = self._translation_statistics['translated_count']
         new = self._translation_statistics['new_count']
         changed = self._translation_statistics['changed_count']
@@ -57,23 +57,19 @@ class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
         return current
 
     def updatesCount(self, language=None):
-        """See `IProductSeriesLanguage`."""
+        """See `IRosettaStats`."""
         return self._translation_statistics['changed_count']
 
     def rosettaCount(self, language=None):
-        """See `IProductSeriesLanguage`."""
+        """See `IRosettaStats`."""
         new = self._translation_statistics['new_count']
         changed = self._translation_statistics['changed_count']
         rosetta = new - changed
         return rosetta
 
     def unreviewedCount(self):
-        """See `IProductSeriesLanguage`."""
+        """See `IRosettaStats`."""
         return self._translation_statistics['unreviewed_count']
-
-    def getPOFilesFor(self, potemplates):
-        """See `IProductSeriesLanguage`."""
-        return get_pofiles_for(potemplates, self.language, self.variant)
 
 
 class ProductSeriesLanguageSet:
