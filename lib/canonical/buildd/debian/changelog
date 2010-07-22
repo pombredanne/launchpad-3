@@ -4,8 +4,9 @@ launchpad-buildd (67) hardy-cat; urgency=low
   * Use debhelper >= 5 (available in dapper, not yet deprecated in
     maverick).
   * Fix spelling in description.
+  * Install example buildd configuration.
 
- -- Jelmer Vernooij <jelmer@debian.org>  Thu, 22 Jul 2010 18:13:31 +0200
+ -- Jelmer Vernooij <jelmer@debian.org>  Thu, 22 Jul 2010 19:40:31 +0200
 
 launchpad-buildd (66) hardy-cat; urgency=low
 
