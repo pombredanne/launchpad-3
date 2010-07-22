@@ -10,13 +10,67 @@ from zope.event import notify
 from canonical.testing import DatabaseFunctionalLayer
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lp.bugs.interfaces.bugbranch import IBugBranch
-from lp.testing import TestCaseWithFactory
+from lp.bugs.model.bugbranch import BugBranch, BugBranchSet
+from lp.bugs.interfaces.bugbranch import IBugBranch, IBugBranchSet
+from lp.testing import TestCase, TestCaseWithFactory
+
+
+class TestBugBranchSet(TestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_bugbranchset_provides_IBugBranchSet(self):
+        # BugBranchSet objects provide IBugBranchSet.
+        self.assertProvides(BugBranchSet(), IBugBranchSet)
 
 
 class TestBugBranch(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugBranch, self).setUp()
+        # Bug branch linking is generally available to any logged in user.
+        self.registrant = self.factory.loginAsAnyone()
+
+    def test_bugbranch_provides_IBugBranch(self):
+        # BugBranch objects provide IBugBranch.
+        bug_branch = BugBranch(
+            branch=self.factory.makeBranch(), bug=self.factory.makeBug(),
+            registrant=self.registrant)
+        self.assertProvides(bug_branch, IBugBranch)
+
+    def test_linkBranch_returns_IBugBranch(self):
+        # Bug.linkBranch returns an IBugBranch linking the bug to the branch.
+        bug = self.factory.makeBug()
+        branch = self.factory.makeBranch()
+        bug_branch = bug.linkBranch(branch, self.registrant)
+        self.assertEqual(branch, bug_branch.branch)
+        self.assertEqual(bug, bug_branch.bug)
+        self.assertEqual(self.registrant, bug_branch.registrant)
+
+    def test_bug_start_with_no_linked_branches(self):
+        # Bugs have a linked_branches attribute which is initially an empty
+        # collection.
+        bug = self.factory.makeBug()
+        self.assertEqual([], list(bug.linked_branches))
+
+    def test_linkBranch_adds_to_linked_branches(self):
+        # Bug.linkBranch populates the Bug.linked_branches with the created
+        # BugBranch object.
+        bug = self.factory.makeBug()
+        branch = self.factory.makeBranch()
+        bug_branch = bug.linkBranch(branch, self.registrant)
+        self.assertEqual([bug_branch], list(bug.linked_branches))
+
+    def test_linking_branch_twice_returns_same_IBugBranch(self):
+        # Calling Bug.linkBranch twice with the same parameters returns the
+        # same object.
+        bug = self.factory.makeBug()
+        branch = self.factory.makeBranch()
+        bug_branch = bug.linkBranch(branch, self.registrant)
+        bug_branch_2 = bug.linkBranch(branch, self.registrant)
+        self.assertEqual(bug_branch, bug_branch_2)
 
     def test_adding_branch_changes_date_last_updated(self):
         # Adding a branch to a bug changes IBug.date_last_updated.
