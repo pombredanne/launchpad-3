@@ -13,7 +13,7 @@
       tal:content="structure context/escapedtext"
     /><a
       tal:condition="not: context/icon"
-      style="line-height: 20px;"
+      style="line-height: 40px;"
       href="" class="" title=""
       tal:attributes="
         class string:menu-link-${context/name};
@@ -21,7 +21,10 @@
         title context/summary;
         "
       tal:content="structure context/escapedtext"
-    /></tal:link-linked>
+    /><span tal:condition="python: context.configured==True"
+           class="sprite yes">&nbsp;</span><span tal:condition="python: context.configured==False"
+           class="sprite no">&nbsp;</span>
+    </tal:link-linked>
   <tal:link-not-linked
     condition="not: context/linked"><span
       tal:condition="context/icon"

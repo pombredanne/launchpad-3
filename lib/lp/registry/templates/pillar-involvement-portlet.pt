@@ -31,6 +31,27 @@
     </tal:disabled>
   </ul>
 
+  <tal:editor tal:condition="context/required:launchpad.Edit"
+              tal:define="registration view/registration_completeness">
+    <h2>Configuration Progress</h2>
+      <center> <!-- XXX: make the CSS work to center the progress bar. -->
+        <!-- XXX: use a different technique to construct the progress bar. -->
+      <img
+       tal:attributes="alt string:${registration/done}% registration complete;
+                       title string:${registration/done}% registration complete;
+                       width registration/done"
+         src="/@@/green-bar"
+         height="10" style="height: 1em;"
+       /><img
+       tal:attributes="alt string:${registration/undone}% registration incomplete;
+                       title string:${registration/undone}% registration incomplete;
+                       width registration/undone"
+         src="/@@/red-bar"
+         height="10" style="height: 1em;" />
+      </center>
+
+  </tal:editor>
+
   <ul tal:condition="view/configuration_links" style="padding-top: 1em">
     <li tal:repeat="link view/configuration_links">
       <a tal:replace="structure link/fmt:link" />

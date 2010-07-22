@@ -349,7 +349,17 @@ class ProductInvolvementView(PillarView):
     """Encourage configuration of involvement links for projects."""
 
     has_involvement = True
-    visible_disabled_link_names = ['submit_code']
+    show_progress = True
+
+    @property
+    def visible_disabled_link_names(self):
+        """Show all disabled links...except blueprints"""
+        involved_menu = MenuAPI(self).navigation
+        all_links = involved_menu.keys()
+        # The register blueprints link should not be shown since its use is
+        # not encouraged.
+        all_links.remove('register_blueprint')
+        return all_links
 
     @property
     def configuration_links(self):
@@ -357,18 +367,44 @@ class ProductInvolvementView(PillarView):
         overview_menu = MenuAPI(self.context).overview
         series_menu = MenuAPI(self.context.development_focus).overview
         configuration_names = [
-            'configure_answers',
             'configure_bugtracker',
+            'configure_answers',
             'configure_translations',
+            'configure_blueprints',
             ]
         configuration_links = [
             overview_menu[name] for name in configuration_names]
+        # Add the branch configuration in separately.
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure project branch'
         configuration_links.append(set_branch)
+        # XXX - remove the sort to ensure the same order as the links.
         return sorted([
             link for link in configuration_links if link.enabled],
             key=attrgetter('sort_key'))
+
+    @property
+    def registration_completeness(self):
+        """The percent complete for registration."""
+        # XXX - How does a project indicate they do not wish to use LP for a
+        # given area?  The registration should not show it as incomplete.
+        lp_uses = 0
+        interesting_attributes = [
+            'official_malone',
+            'official_answers',
+            'official_rosetta',
+            'official_codehosting',
+            ]
+        from operator import attrgetter
+        for attr in interesting_attributes:
+            op = attrgetter(attr)
+            val = op(self)
+            if val:
+                lp_uses += 1
+        scale = 100
+        done = int(float(lp_uses) / len(interesting_attributes) * scale)
+        undone = scale - done
+        return dict(done=done, undone=undone)
 
 
 class ProductNavigationMenu(NavigationMenu):
@@ -424,7 +460,8 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
     def configure_answers(self):
         text = 'Configure support tracker'
         summary = 'Allow users to ask questions on this project'
-        return Link('+configure-answers', text, summary, icon='edit')
+        return Link('+configure-answers', text, summary, icon='edit',
+                    configured=True)
 
     @enabled_with_permission('launchpad.Edit')
     def configure_blueprints(self):

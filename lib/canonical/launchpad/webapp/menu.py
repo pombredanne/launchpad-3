@@ -102,7 +102,7 @@ class LinkData:
     implements(ILinkData)
 
     def __init__(self, target, text, summary=None, icon=None, enabled=True,
-                 site=None, menu=None):
+                 site=None, menu=None, configured=None):
         """Create a new link to 'target' with 'text' as the link text.
 
         'target' is a relative path, an absolute path, or an absolute url.
@@ -121,6 +121,9 @@ class LinkData:
         'blueprint' for a specific site.
 
         :param menu: The sub menu used by the page that the link represents.
+
+        :parem configured: Whether the item has been configured.  If not None,
+        then show a boolean indicator for configured or not configured.
         """
         self.target = target
         self.text = text
@@ -131,6 +134,7 @@ class LinkData:
         self.enabled = enabled
         self.site = site
         self.menu = menu
+        self.configured = configured
 
 Link = LinkData
 
@@ -170,6 +174,10 @@ class MenuLink:
             return text.escapedtext
         else:
             return cgi.escape(text)
+
+    @property
+    def configured(self):
+        return self._linkdata.configured
 
     @property
     def icon_url(self):
