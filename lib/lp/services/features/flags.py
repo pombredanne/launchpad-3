@@ -30,12 +30,18 @@ class FeatureController(object):
       of the current web request, or the user for whom a job is being run, or
       something similar.
 
-    This presents a higher-level interface over the storm model objects,
-    oriented only towards readers.
+    This presents a higher-level facade that is independent of how the flags
+    are stored.  At the moment they are stored in the database but callers
+    shouldn't need to know about that: they could go into memcachedb or
+    elsewhere in future.
 
     At this level flag names and scope names are presented as strings for
     easier use in Python code, though the values remain unicode.  They
     should always be ascii like Python identifiers.
+
+    One instance of this should be constructed for the lifetime of code that
+    has consistent configuration values.  For instance there will be one per web
+    app request.
 
     See <https://dev.launchpad.net/LEP/FeatureFlags>
     """
@@ -43,33 +49,32 @@ class FeatureController(object):
     def __init__(self, scopes):
         """Construct a new view of the features for a set of scopes.
         """
-        self._collection = model.FeatureFlagCollection()
+        self._store = model.getFeatureStore()
         self.scopes = self._preenScopes(scopes)
 
     def setScopes(self, scopes):
         self.scopes = self._preenScopes(scopes)
 
     def getFlag(self, flag_name):
-        rs = (self._collection
-                .refine(model.FeatureFlag.scope.is_in(self.scopes),
+        rs = (self._store
+                .find(model.FeatureFlag,
+                    model.FeatureFlag.scope.is_in(self.scopes),
                     model.FeatureFlag.flag == unicode(flag_name))
-                .select()
                 .order_by(Desc(model.FeatureFlag.priority)))
-        rs.config(limit=1)
-        if rs.is_empty():
+        row = rs.first()
+        if row is None:
             return None
         else:
-            f = rs.one()
-            return f.value
+            return row.value
 
     def getAllFlags(self):
         """Get the feature flags active for the current scopes.
         
         :returns: dict from flag_name (unicode) to value (unicode).
         """
-        rs = (self._collection
-                .refine(model.FeatureFlag.scope.is_in(self.scopes))
-                .select()
+        rs = (self._store
+                .find(model.FeatureFlag,
+                    model.FeatureFlag.scope.is_in(self.scopes))
                 .order_by(model.FeatureFlag.priority))
         return dict((str(f.flag), f.value) for f in rs)
 
@@ -96,4 +101,4 @@ class FeatureController(object):
             flag=unicode(flag),
             value=value,
             priority=priority)
-        self._collection.store.add(flag_obj)
+        self._store.add(flag_obj)

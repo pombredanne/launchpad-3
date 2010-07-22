@@ -12,7 +12,12 @@ from storm.locals import Int, Storm, Unicode, DateTime
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
-from lp.services.database import collection
+
+def getFeatureStore():
+    """Get Storm store to access feature definitions."""
+    # TODO: This is copied so many times in Launchpad; maybe it should be more
+    # general?
+    return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class FeatureFlag(Storm):
@@ -33,11 +38,3 @@ class FeatureFlag(Storm):
         self.priority = priority
         self.flag = flag
         self.value = value
-
-
-class FeatureFlagCollection(collection.Collection):
-    """Provides easy access to sets of flags."""
-
-    # the Launchpad Collection knows how to find a good store to start from,
-    
-    starting_table = FeatureFlag

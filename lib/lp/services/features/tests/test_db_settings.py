@@ -11,8 +11,8 @@ import testtools
 
 from canonical.testing import layers
 from lp.services.features.model import (
+    getFeatureStore,
     FeatureFlag,
-    FeatureFlagCollection,
     )
 
 
@@ -22,5 +22,5 @@ class TestFeatureModel(testtools.TestCase):
 
     def test_defaultEmptyCollection(self):
         # there are no settings in the sampledata
-        coll = FeatureFlagCollection()
-        self.assertTrue(coll.select().is_empty())
+        store = getFeatureStore()
+        self.assertTrue(store.find(FeatureFlag).is_empty())

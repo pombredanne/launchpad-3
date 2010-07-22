@@ -9,6 +9,7 @@
 from __future__ import with_statement
 __metaclass__ = type
 
+import os
 import testtools
 
 from canonical.testing import layers
@@ -20,9 +21,16 @@ notification_name = 'notification.global.text'
 notification_value = u'\N{SNOWMAN} stormy Launchpad weather ahead'
 example_scope = 'beta_user'
 
+
 class TestFeatureFlags(testtools.TestCase):
 
     layer = layers.DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestFeatureFlags, self).setUp()
+        if os.environ.get("STORM_TRACE", None):
+            from storm.tracer import debug
+            debug(True)
 
     def test_defaultFlags(self):
         # the sample db has no flags set
@@ -38,7 +46,7 @@ class TestFeatureFlags(testtools.TestCase):
             flag=unicode(notification_name),
             value=notification_value,
             priority=100)
-        model.FeatureFlagCollection().store.add(flag)
+        model.getFeatureStore().add(flag)
         control = flags.FeatureController(['beta_user'])
         self.assertEqual(notification_value,
             control.getFlag(notification_name))
