@@ -113,7 +113,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             Make some food!
 
             Recipe information
-            Build daily: True
+            Build schedule: Built daily
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/veggies
             Debian version: 0\+\{revno\}
@@ -309,7 +309,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build daily: False
+            Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: 0\+\{revno\}
@@ -419,8 +419,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build daily:
-            False
+            Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: 0\+\{revno\}
@@ -455,7 +454,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             This recipe .*changes.
 
             Recipe information
-            Build daily: False
+            Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: 0\+\{revno\}
@@ -753,7 +752,6 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             Archive:       PPA named build for Owner
             Series:        Squirrel
             Pocket:        Release
-            Result:        .* in ubuntu 3.14
             Binary builds:
             itanic build of .* 3.14 in ubuntu squirrel RELEASE""",
             main_text)
@@ -765,14 +763,6 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         return self.factory.makeSourcePackageRelease(
             source_package_recipe_build=build, version='3.14',
             component=multiverse)
-
-    def test_render_sourcepackage_release(self):
-        """SourcePackageReleases are shown if set."""
-        release = self.makeBuildAndRelease()
-        main_text = self.getMainText(
-            release.source_package_recipe_build, '+index')
-        self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Result: .* in ubuntu 3.14""", main_text)
 
     def makeBinaryBuild(self, release, architecturetag):
         """Make a binary build with specified release and architecturetag."""
