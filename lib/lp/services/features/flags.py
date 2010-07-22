@@ -63,9 +63,9 @@ class FeatureController(object):
                 .find(FeatureFlag,
                     FeatureFlag.scope.is_in(self.scopes),
                     FeatureFlag.flag == unicode(flag_name))
-                .order_by(Desc(FeatureFlag.priority))
-                .values(FeatureFlag.value))
-        for value in rs:
+                .order_by(Desc(FeatureFlag.priority)))
+        rs.config(limit=1)
+        for value in rs.values(FeatureFlag.value):
             return value
         else:
             return None
