@@ -29,6 +29,7 @@ from sqlobject.sqlbuilder import SQLConstant
 
 from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, Or, SQL
 from storm.sqlobject import SQLObjectResultSet
+from storm.store import EmptyResultSet
 from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
 
 import pytz
@@ -1462,6 +1463,8 @@ class BugTaskSet:
     def findSimilar(self, user, summary, product=None, distribution=None,
                     sourcepackagename=None):
         """See `IBugTaskSet`."""
+        if not summary:
+            return EmptyResultSet()
         # Avoid circular imports.
         from lp.bugs.model.bug import Bug
         search_params = BugTaskSearchParams(user)
@@ -1481,9 +1484,6 @@ class BugTaskSet:
                         sourcepackagename))
         else:
             raise AssertionError('Need either a product or distribution.')
-
-        if not summary:
-            return BugTask.select('1 = 2')
 
         search_params.fast_searchtext = nl_phrase_search(
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
@@ -2068,7 +2068,6 @@ class BugTaskSet:
         clause = 'Bug.id IN (SELECT DISTINCT Bug.id from %s WHERE %s)' % (
             ', '.join(tables), ' AND '.join(clauses))
         return clause
-
 
     def search(self, params, *args):
         """See `IBugTaskSet`."""
