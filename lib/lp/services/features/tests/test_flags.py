@@ -15,6 +15,8 @@ from lp.testing import TestCase
 from lp.services.features import model
 from lp.services.features.flags import (
     FeatureController,
+    getFeatureFlag,
+    per_thread,
     )
 
 
@@ -93,3 +95,14 @@ class TestFeatureFlags(TestCase):
         no_scope_flags = FeatureController([])
         self.assertIs(None,
             no_scope_flags.getFlag('ui.icing'))
+
+    def test_threadGetFlag(self):
+        self.populateStore()
+        # the start-of-request handler will do something like this:
+        per_thread.features = FeatureController(['default', 'beta_user'])
+        try:
+            # then application code can simply ask without needing a context
+            # object
+            self.assertEqual(u'4.0', getFeatureFlag('ui.icing'))
+        finally:
+            per_thread.features = None

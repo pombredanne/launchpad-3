@@ -6,10 +6,26 @@ __all__ = ['FeatureController']
 __metaclass__ = type
 
 
+import threading
+
 from lp.services.features.model import (
     getFeatureStore,
     FeatureFlag,
     )
+
+
+per_thread = threading.local()
+"""Holds the default per-thread feature controller in its .features attribute.
+
+Framework code is responsible for setting this in the appropriate context, eg
+when starting a web request.
+"""
+
+
+def getFeatureFlag(flag):
+    """Get the value of a flag for this thread's scopes.
+    """
+    return per_thread.features.getFlag(flag)
 
 
 class FeatureController(object):
