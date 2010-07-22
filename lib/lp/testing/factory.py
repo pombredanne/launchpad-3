@@ -2727,7 +2727,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
 
 # Some factory methods return simple Python types. We don't add
-# security wrappers for them.
+# security wrappers for them, as well as for objects created by
+# other Python libraries.
 unwrapped_types = (
     DSCFile, InstanceType, Message, datetime, int, str, unicode)
 

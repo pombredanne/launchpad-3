@@ -83,7 +83,7 @@ class TestFactory(TestCaseWithFactory):
 
     def test_is_security_proxied_or_harmless__sequence_harmful_content(self):
         # is_security_proxied_or_harmless() checks all elements
-        # of a sequence. If at least elements are harmful, so is the
+        # of a sequence. If at least one element is harmful, so is the
         # sequence.
         unproxied_person = removeSecurityProxy(self.factory.makePerson())
         self.assertFalse(
