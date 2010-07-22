@@ -9,7 +9,6 @@ import os
 import shutil
 from StringIO import StringIO
 import tempfile
-import unittest
 
 import pytz
 from zope.component import getUtility
