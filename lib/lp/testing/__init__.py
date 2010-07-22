@@ -485,7 +485,6 @@ class TestCaseWithFactory(TestCase):
         self.direct_database_server = False
         self._use_bzr_branch_called = False
 
-
     def getUserBrowser(self, url=None, user=None, password='test'):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
 
