@@ -33,18 +33,16 @@ class FeatureController(object):
       of the current web request, or the user for whom a job is being run, or
       something similar.
 
-    This presents a higher-level facade that is independent of how the flags
-    are stored.  At the moment they are stored in the database but callers
-    shouldn't need to know about that: they could go into memcachedb or
-    elsewhere in future.
+    FeatureController presents a high level interface for application code to
+    query flag values, without it needing to know that they are stored in the database.
 
     At this level flag names and scope names are presented as strings for
     easier use in Python code, though the values remain unicode.  They
     should always be ascii like Python identifiers.
 
-    One instance of this should be constructed for the lifetime of code that
-    has consistent configuration values.  For instance there will be one per web
-    app request.
+    One instance of FeatureController should be constructed for the lifetime
+    of code that has consistent configuration values.  For instance there will
+    be one per web app request.
 
     See <https://dev.launchpad.net/LEP/FeatureFlags>
     """
