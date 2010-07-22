@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+
 from BeautifulSoup import BeautifulSoup, SoupStrainer
 
 from zope.component import getUtility
@@ -66,6 +67,9 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
         self.setUpRegistryExpert()
         view = create_initialized_view(
             self.root, 'index.html', principal=self.expert)
+        # Stub out the getRecentBlogPosts which fetches a blog feed using
+        # urlfetch.
+        view.getRecentBlogPosts = lambda: []
         content = BeautifulSoup(view(), parseOnlyThese=SoupStrainer('a'))
         self.failUnless(
             content.find('a', href='+featuredprojects'),

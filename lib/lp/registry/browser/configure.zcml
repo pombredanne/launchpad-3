@@ -1357,7 +1357,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.product.IProduct"
         name="+code-index"
-        layer="canonical.launchpad.layers.CodeLayer"/>
+        layer="lp.code.publisher.CodeLayer"/>
     <browser:defaultView
         for="lp.registry.interfaces.product.IProduct"
         layer="canonical.launchpad.layers.AnswersLayer"
