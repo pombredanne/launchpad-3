@@ -116,6 +116,10 @@ class BugNotificationRecipientReason(RecipientReason):
             "the registrant for %s" % target.displayname, duplicate_bug)
         return cls(person, person, header, reason)
 
+    def __contains__(self, item):
+        # Hacky hacky
+        return item in self.getReason()
+
 
 class BugNotificationRecipients(NotificationRecipientSet):
     """A set of emails and rationales notified for a bug change.
@@ -176,49 +180,83 @@ class BugNotificationRecipients(NotificationRecipientSet):
 
     def addDupeSubscriber(self, person, duplicate_bug=None):
         """Registers a subscriber of a duplicate of this bug."""
-        if duplicate_bug is None:
-            duplicate_bug = self.duplicateof
-
-        assert duplicate_bug is not None, (
-            "A duplicate subscriber can only be added if the duplicate "
-            "bug is specified.")
-
-        reason = BugNotificationRecipientReason.forDupeSubscriber(
-            person, duplicate_bug)
-        self.add(person, reason, reason.mail_header)
+        reason = "Subscriber of Duplicate"
+        if person.isTeam():
+            text = ("are a member of %s, which is a subscriber "
+                    "of a duplicate bug" % person.displayname)
+            reason += " @%s" % person.name
+        else:
+            text = "are a direct subscriber of a duplicate bug"
+        if duplicate_bug is not None:
+            text += " (%s)" % duplicate_bug.id
+        self._addReason(person, text, reason)
 
     def addDirectSubscriber(self, person):
         """Registers a direct subscriber of this bug."""
-        reason = BugNotificationRecipientReason.forDirectSubscriber(
-            person, self.duplicateof)
-        self.add(person, reason, reason.mail_header)
+        reason = "Subscriber"
+        if person.isTeam():
+            text = ("are a member of %s, which is a direct subscriber"
+                    % person.displayname)
+            reason += " @%s" % person.name
+        else:
+            text = "are a direct subscriber of the bug"
+        self._addReason(person, text, reason)
 
     def addAssignee(self, person):
         """Registers an assignee of a bugtask of this bug."""
-        reason = BugNotificationRecipientReason.forAssignee(
-            person, self.duplicateof)
-        self.add(person, reason, reason.mail_header)
+        reason = "Assignee"
+        if person.isTeam():
+            text = ("are a member of %s, which is a bug assignee"
+                    % person.displayname)
+            reason += " @%s" % person.name
+        else:
+            text = "are a bug assignee"
+        self._addReason(person, text, reason)
 
     def addDistroBugSupervisor(self, person, distro):
         """Registers a distribution bug supervisor for this bug."""
-        reason = BugNotificationRecipientReason.forBugSupervisor(
-            person, distro, self.duplicateof)
-        self.add(person, reason, reason.mail_header)
+        reason = "Bug Supervisor (%s)" % distro.displayname
+        # All displaynames in these reasons should be changed to bugtargetname
+        # (as part of bug 113262) once bugtargetname is finalized for packages
+        # (bug 113258). Changing it before then would be excessively
+        # disruptive.
+        if person.isTeam():
+            text = ("are a member of %s, which is the bug supervisor for %s" %
+                (person.displayname, distro.displayname))
+            reason += " @%s" % person.name
+        else:
+            text = "are the bug supervisor for %s" % distro.displayname
+        self._addReason(person, text, reason)
 
     def addStructuralSubscriber(self, person, target):
         """Registers a structural subscriber to this bug's target."""
-        reason = BugNotificationRecipientReason.forStructuralSubscriber(
-            person, target, self.duplicateof)
-        self.add(person, reason, reason.mail_header)
+        reason = "Subscriber (%s)" % target.displayname
+        if person.isTeam():
+            text = ("are a member of %s, which is subscribed to %s" %
+                (person.displayname, target.displayname))
+            reason += " @%s" % person.name
+        else:
+            text = "are subscribed to %s" % target.displayname
+        self._addReason(person, text, reason)
 
     def addUpstreamBugSupervisor(self, person, upstream):
         """Registers an upstream bug supervisor for this bug."""
-        reason = BugNotificationRecipientReason.forBugSupervisor(
-            person, upstream, self.duplicateof)
-        self.add(person, reason, reason.mail_header)
+        reason = "Bug Supervisor (%s)" % upstream.displayname
+        if person.isTeam():
+            text = ("are a member of %s, which is the bug supervisor for %s" %
+                (person.displayname, upstream.displayname))
+            reason += " @%s" % person.name
+        else:
+            text = "are the bug supervisor for %s" % upstream.displayname
+        self._addReason(person, text, reason)
 
     def addRegistrant(self, person, upstream):
         """Registers an upstream product registrant for this bug."""
-        reason = BugNotificationRecipientReason.forRegistrant(
-            person, upstream, self.duplicateof)
-        self.add(person, reason, reason.mail_header)
+        reason = "Registrant (%s)" % upstream.displayname
+        if person.isTeam():
+            text = ("are a member of %s, which is the registrant for %s" %
+                (person.displayname, upstream.displayname))
+            reason += " @%s" % person.name
+        else:
+            text = "are the registrant for %s" % upstream.displayname
+        self._addReason(person, text, reason)

@@ -95,10 +95,9 @@ class BugNotificationSet:
         store.flush()
         sql_values = []
         for recipient in recipients:
-            recipient_reason, header = recipients.getReason(recipient)
+            reason_body, reason_header = recipients.getReason(recipient)
             sql_values.append('(%s, %s, %s, %s)' % sqlvalues(
-                bug_notification, recipient, header,
-                recipient_reason.getReason()))
+                bug_notification, recipient, reason_header, reason_body))
         # We add all the recipients in a single SQL statement to make
         # this a bit more efficient for bugs with many subscribers.
         store.execute("""

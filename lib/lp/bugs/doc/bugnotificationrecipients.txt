@@ -29,10 +29,10 @@ helper function so we can format this output:
 
   >>> def print_rationales(rationale):
   ...   for address in rationale.getEmails():
-  ...     recipient_reason, header = rationale.getReason(address)
+  ...     text, header = rationale.getReason(address)
   ...     print address
   ...     print "    %s" % header
-  ...     print "    %s" % recipient_reason.getReason()
+  ...     print "    %s" % text
 
 And print them out. The first line is the email address; second is the
 text appropriate to be used in an X- header, and the last is the text
@@ -78,6 +78,9 @@ BugNotificationRecipients instance is created:
 
 Then, subscribers of various types are added:
 
+  >>> foo_bar = personset.getByEmail("foo.bar@canonical.com")
+  >>> recipients.addDupeSubscriber(foo_bar)
+
   >>> test = personset.getByEmail("test@canonical.com")
   >>> recipients.addDirectSubscriber(test)
 
@@ -105,6 +108,9 @@ If we print out the recipients and rationales, here's what we get:
   daf@canonical.com
       Bug Supervisor (Debian)
       You received this bug notification because you are the bug supervisor for Debian.
+  foo.bar@canonical.com
+      Subscriber of Duplicate
+      You received this bug notification because you are a direct subscriber of a duplicate bug.
   marilize@hbd.com
       Bug Supervisor (alsa-utils)
       You received this bug notification because you are the bug supervisor for alsa-utils.
@@ -186,8 +192,7 @@ Here's an example of this situation:
 
   >>> recipients = BugNotificationRecipients()
   >>> testing_spanish_team = personset.getByName("testing-spanish-team")
-  >>> recipients.addDupeSubscriber(
-  ...     testing_spanish_team, duplicate_bug=bug_two)
+  >>> recipients.addDupeSubscriber(testing_spanish_team)
 
   >>> guadamen = personset.getByName("guadamen")
   >>> recipients.addAssignee(guadamen)
@@ -215,8 +220,8 @@ membership is causing us to send mail.
         Bug Supervisor (alsa-utils) @name18
         You received this bug notification because you are a member of Ubuntu Gnome Team, which is the bug supervisor for alsa-utils.
     carlos@canonical.com
-        Subscriber of Duplicate @testing-spanish-team via Bug 2
-        You received this bug notification because you are a member of testing Spanish team, which is a direct subscriber of a duplicate bug (via bug 2).
+        Subscriber of Duplicate @testing-spanish-team
+        You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
     celso.providelo@canonical.com
         Bug Supervisor (Debian) @launchpad-buildd-admins
         You received this bug notification because you are a member of Launchpad Buildd Admins, which is the bug supervisor for Debian.
@@ -224,20 +229,20 @@ membership is causing us to send mail.
         Registrant (gnomebaker) @vcs-imports
         You received this bug notification because you are a member of VCS imports, which is the registrant for gnomebaker.
     foo.bar@canonical.com
-        Subscriber of Duplicate @testing-spanish-team via Bug 2
-        You received this bug notification because you are a member of testing Spanish team, which is a direct subscriber of a duplicate bug (via bug 2).
+        Subscriber of Duplicate @testing-spanish-team
+        You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
     kurem@debian.cz
-        Subscriber of Duplicate @testing-spanish-team via Bug 2
-        You received this bug notification because you are a member of testing Spanish team, which is a direct subscriber of a duplicate bug (via bug 2).
+        Subscriber of Duplicate @testing-spanish-team
+        You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
     limi@plone.org
         Bug Supervisor (alsa-utils) @name18
         You received this bug notification because you are a member of Ubuntu Gnome Team, which is the bug supervisor for alsa-utils.
     marilize@hbd.com
         Subscriber @shipit-admins
-        You received this bug notification because you are a member of ShipIt Administrators, which is a direct subscriber of the bug.
+        You received this bug notification because you are a member of ShipIt Administrators, which is a direct subscriber.
     mark@example.com
-        Subscriber of Duplicate @testing-spanish-team via Bug 2
-        You received this bug notification because you are a member of testing Spanish team, which is a direct subscriber of a duplicate bug (via bug 2).
+        Subscriber of Duplicate @testing-spanish-team
+        You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
     robertc@robertcollins.net
         Registrant (gnomebaker) @vcs-imports
         You received this bug notification because you are a member of VCS imports, which is the registrant for gnomebaker.
@@ -248,8 +253,8 @@ membership is causing us to send mail.
         Subscriber (pmount in debian) @name20
         You received this bug notification because you are a member of Warty Security Team, which is subscribed to pmount in debian.
     tsukimi@quaqua.net
-        Subscriber of Duplicate @testing-spanish-team via Bug 2
-        You received this bug notification because you are a member of testing Spanish team, which is a direct subscriber of a duplicate bug (via bug 2).
+        Subscriber of Duplicate @testing-spanish-team
+        You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
 
 This doesn't help the end-user too much if he's a member of this team
 indirectly (for instance, if he's a member of a team which is in turn a
@@ -285,7 +290,7 @@ Only the first rationale is presented. This is the case even if we
 update this set of recipients with another one:
 
   >>> recipients2 = BugNotificationRecipients()
-  >>> recipients2.addDupeSubscriber(test, duplicate_bug=bug_two)
+  >>> recipients2.addDupeSubscriber(test)
   >>> recipients2.update(recipients)
 
 The rationales for test@canonical.com in the 'recipients' instance just
@@ -296,8 +301,8 @@ don't matter:
       Subscriber
       You received this bug notification because you are a direct subscriber of the bug.
   test@canonical.com
-      Subscriber of Duplicate via Bug 2
-      You received this bug notification because you are a direct subscriber of a duplicate bug (via bug 2).
+      Subscriber of Duplicate
+      You received this bug notification because you are a direct subscriber of a duplicate bug.
 
 This may be seen as a limitation, but you don't want a 10-line rationale
 footer for people who are central to Launchpad, so for now it's the way

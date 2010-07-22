@@ -686,11 +686,15 @@ class Bug(SQLBase):
 
         dupe_subscribers = set([person for person in dupe_details.keys()])
 
-        dupe_subscribers = set()
+        # Direct and "also notified" subscribers take precedence over
+        # subscribers from dupes. Note that we don't supply recipients
+        # here because we are doing this to /remove/ subscribers.
+        dupe_subscribers -= set(self.getDirectSubscribers())
+        dupe_subscribers -= set(self.getAlsoNotifiedSubscribers(level=level))
+
         if recipients is not None:
             for subscriber in dupe_subscribers:
-                recipients.addDupeSubscriber(
-                    subscriber, dupe_details[subscriber])
+                recipients.addDupeSubscriber(subscriber, dupe_details[subscriber])
 
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
