@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -328,14 +328,14 @@ def process_request(person, objects, format, logger):
     any).
     """
     translation_exporter = getUtility(ITranslationExporter)
-    translation_format_exporter = (
-        translation_exporter.getExporterProducingTargetFileFormat(format))
+    requested_objects = list(objects)
 
-    result = ExportResult(person, objects, logger)
+    result = ExportResult(person, requested_objects, logger)
 
     try:
-        exported_file = translation_format_exporter.exportTranslationFiles(
-            generate_translationfiledata(list(objects), format))
+        exported_file = translation_exporter.exportTranslationFiles(
+            generate_translationfiledata(requested_objects, format),
+            target_format=format)
     except (KeyboardInterrupt, SystemExit):
         # We should never catch KeyboardInterrupt or SystemExit.
         raise

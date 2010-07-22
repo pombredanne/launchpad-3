@@ -53,8 +53,6 @@ class GettextMOExporter:
 
     mime_type = 'application/x-gmo'
 
-    format = TranslationFileFormat.MO
-
     def __init__(self, context=None):
         # 'context' is ignored because it's only required by the way the
         # exporters are instantiated but it isn't used by this class.
@@ -83,17 +81,18 @@ class GettextMOExporter:
         # generate the MO one.
         temp_storage = ExportFileStorage()
         gettext_po_exporter.exportTranslationFile(
-            translation_file, temp_storage, ignore_obsolete, force_utf8)
-        exported_file_content = temp_storage.export().read()
+            translation_file, temp_storage, ignore_obsolete=ignore_obsolete,
+            force_utf8=force_utf8)
+        po_export = temp_storage.export()
+        exported_file_content = po_export.read()
 
         if translation_file.is_template:
             # This exporter is not able to handle template files. We
             # include those as .pot files stored in a templates/
             # directory.
-            file_path = 'templates/%s' % os.path.basename(
-                template_exported.path)
+            file_path = 'templates/%s' % os.path.basename(po_export.path)
             content_type = gettext_po_exporter.content_type
-            file_extension = template_exported.file_extension
+            file_extension = po_export.file_extension
         else:
             file_extension = 'mo'
             # Standard layout for MO files is

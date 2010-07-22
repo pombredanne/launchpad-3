@@ -400,8 +400,6 @@ class GettextPOExporterBase:
 class GettextPOExporter(GettextPOExporterBase):
     """Support class to export Gettext .po files."""
 
-    format = TranslationFileFormat.PO
-
     def __init__(self, context=None):
         # 'context' is ignored because it's only required by the way the
         # exporters are instantiated but it isn't used by this class.
@@ -430,8 +428,6 @@ class GettextPOExporter(GettextPOExporterBase):
 
 class GettextPOChangedExporter(GettextPOExporterBase):
     """Support class to export changed Gettext .po files."""
-
-    format = TranslationFileFormat.POCHANGED
 
     exported_header = (
         u"# IMPORTANT: This file does NOT contain a complete PO file "
