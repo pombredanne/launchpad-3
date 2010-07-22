@@ -3,7 +3,6 @@
 
 from datetime import date
 import subprocess
-import unittest
 
 from zope.component import getUtility
 
@@ -128,7 +127,3 @@ class TestScriptRunning(TestCaseWithFactory):
                 [(result.binary_package_release, result.archive, result.day,
                   result.country, result.count) for result in results],
                  key=lambda r: (r[0].id, r[2], r[3].name if r[3] else None)))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

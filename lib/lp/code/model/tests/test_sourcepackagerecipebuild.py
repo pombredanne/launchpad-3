@@ -236,10 +236,25 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(list(recipe.distroseries), [build.distroseries])
 
     def test_makeDailyBuilds_clears_is_stale(self):
-        recipe = self.factory.makeSourcePackageRecipe(build_daily=True,
-            is_stale=True)
+        recipe = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
         SourcePackageRecipeBuild.makeDailyBuilds()[0]
         self.assertFalse(recipe.is_stale)
+
+    def test_makeDailyBuilds_skips_pending(self):
+        """When creating daily builds, skip ones that are already pending."""
+        recipe = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
+        first_distroseries = list(recipe.distroseries)[0]
+        recipe.requestBuild(
+            recipe.daily_build_archive, recipe.owner, first_distroseries,
+            PackagePublishingPocket.RELEASE)
+        second_distroseries = \
+            self.factory.makeSourcePackageRecipeDistroseries("hoary")
+        recipe.distroseries.add(second_distroseries)
+        builds = SourcePackageRecipeBuild.makeDailyBuilds()
+        self.assertEqual(
+            [second_distroseries], [build.distroseries for build in builds])
 
     def test_getRecentBuilds(self):
         """Recent builds match the same person, series and receipe.
@@ -257,6 +272,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             recipe=recipe, distroseries=series)
         self.factory.makeSourcePackageRecipeBuild(
             requester=requester, distroseries=series)
+
         def get_recent():
             Store.of(build).flush()
             return SourcePackageRecipeBuild.getRecentBuilds(
@@ -270,6 +286,22 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         a_second = datetime.timedelta(seconds=1)
         removeSecurityProxy(recent_build).datecreated += a_second
         self.assertContentEqual([recent_build], get_recent())
+
+    def test_destroySelf(self):
+        # ISourcePackageRecipeBuild should make sure to remove jobs and build
+        # queue entries and then invalidate itself.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        build.destroySelf()
+
+    def test_cancelBuild(self):
+        # ISourcePackageRecipeBuild should make sure to remove jobs and build
+        # queue entries and then invalidate itself.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        build.cancelBuild()
+
+        self.assertEqual(
+            BuildStatus.SUPERSEDED,
+            build.status)
 
 
 class TestAsBuildmaster(TestCaseWithFactory):
@@ -299,11 +331,11 @@ class TestAsBuildmaster(TestCaseWithFactory):
         body, footer = message.get_payload(decode=True).split('\n-- \n')
         self.assertEqual(
             'Build person/recipe into ppa for distroseries: Successfully'
-            ' built.\n', body
-            )
+            ' built.\n', body)
 
     def test_handleStatusNotifies(self):
         """"handleStatus causes notification, even if OK."""
+
         def prepare_build():
             queue_record = self.factory.makeSourcePackageRecipeBuildJob()
             build = queue_record.specific_job.build
@@ -312,6 +344,7 @@ class TestAsBuildmaster(TestCaseWithFactory):
             slave = WaitingSlave('BuildStatus.OK')
             queue_record.builder.setSlaveForTesting(slave)
             return build
+
         def assertNotifyOnce(status, build):
             build.handleStatus(status, None, {'filemap': {}})
             self.assertEqual(1, len(pop_notifications()))

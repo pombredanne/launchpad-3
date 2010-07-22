@@ -229,11 +229,13 @@ class DistroArchSeries(SQLBase):
             self, name)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
         """See IHasBuildRecords"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now).
+        # Ignore "binary_only" as for a distro arch series it is only
+        # the binaries that are relevant.
 
         # For consistency we return an empty resultset if arch_tag
         # is provided but doesn't match our architecture.

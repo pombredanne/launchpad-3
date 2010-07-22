@@ -21,7 +21,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, List, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, List, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Tag
@@ -164,7 +164,13 @@ class IHasBugs(Interface):
             title=(
                 u"Search for bugs that are linked to branches or for bugs "
                 "that are not linked to branches."),
-            vocabulary=BugBranchSearch, required=False))
+            vocabulary=BugBranchSearch, required=False),
+        modified_since=Datetime(
+            title=(
+                u"Search for bugs that have been modified since the given "
+                "date."),
+            required=False),
+        )
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
     def searchTasks(search_params, user=None,
@@ -186,7 +192,7 @@ class IHasBugs(Interface):
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
-                    structural_subscriber=None):
+                    structural_subscriber=None, modified_since=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
@@ -273,8 +279,13 @@ class IHasBugHeat(Interface):
     def setMaxBugHeat(heat):
         """Set the max_bug_heat for this context."""
 
-    def recalculateMaxBugHeat():
-        """Recalculate and set the max_bug_heat for this context."""
+    def recalculateBugHeatCache():
+        """Recalculate and set the various bug heat values for this context.
+
+        Several different objects cache max_bug_heat.
+        When DistributionSourcePackage is the target, the total_bug_heat
+        and bug_count are also cached.
+        """
 
 
 class BugDistroSeriesTargetDetails:

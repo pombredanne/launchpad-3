@@ -99,7 +99,7 @@ def search_picker_widget(client, search_text):
                          "//input[@class='yui-picker-search']")
     client.waits.forElement(
         xpath=search_box_xpath,
-        timeout=constants.FOR_ELEMENT)
+        timeout=constants.PAGE_LOAD)
     client.type(text=search_text, xpath=search_box_xpath)
     client.click(
         xpath=u"//table[contains(@class, 'yui-picker') "

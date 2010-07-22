@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0102
@@ -8,9 +8,9 @@ __metaclass__ = type
 from datetime import datetime, timedelta
 import pytz
 from textwrap import dedent
-from unittest import TestLoader
 
 from zope.component import getAdapter, getUtility
+from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.interfaces.pofile import IPOFileSet
@@ -20,7 +20,7 @@ from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus)
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
-from lp.testing import TestCaseWithFactory, verifyObject
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 from canonical.launchpad.webapp.publisher import canonical_url
 
@@ -932,8 +932,7 @@ class TestTranslationCredits(TestCaseWithFactory):
                 imported_credits_text,
                 "\n  ".join(["%s %s" % (person.displayname,
                                         canonical_url(person))
-                             for person in self.pofile.contributors])
-            )
+                             for person in self.pofile.contributors]))
 
     def test_prepareTranslationCredits_extending(self):
         # This test ensures that continuous updates to the translation credits
@@ -1717,7 +1716,7 @@ class TestPOFile(TestCaseWithFactory):
             self.potemplate, testmsg['msgid'], sequence=testmsg['sequence'])
         pomsgset.updateTranslation(
             self.pofile, self.pofile.owner,
-            {0:testmsg['string'],},
+            {0: testmsg['string'], },
             True, None, force_edition_rights=True)
 
     def test_getTranslationRows_sequence(self):
@@ -1738,7 +1737,7 @@ class TestPOFileToTranslationFileDataAdapter(TestCaseWithFactory):
 
     header = dedent("""
         Project-Id-Version: foo
-        Report-Msgid-Bugs-To: 
+        Report-Msgid-Bugs-To:
         POT-Creation-Date: 2007-07-09 03:39+0100
         PO-Revision-Date: 2001-09-09 01:46+0000
         Last-Translator: Kubla Kahn <kk@pleasure-dome.com>
@@ -1841,7 +1840,3 @@ class TestPOFileToTranslationFileDataAdapter(TestCaseWithFactory):
         self.assertEqual(1, translation_file_data.header.number_plural_forms)
         self.assertEqual(
             u"0", translation_file_data.header.plural_form_expression)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

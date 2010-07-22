@@ -256,11 +256,6 @@
                     retractMentoring"/>
         </class>
         <adapter
-            provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-            for="lp.bugs.interfaces.bugtask.IBugTask"
-            factory="lp.bugs.browser.bugtask.BugTaskSOP"
-            permission="zope.Public"/>
-        <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskPrivacyAdapter"
@@ -654,14 +649,14 @@
                     getBugTasksByPackageName
                     users_affected_count
                     users_unaffected_count
-                    readonly_duplicateof
                     users_affected
                     users_unaffected
                     users_affected_count_with_dupes
                     users_affected_with_dupes
                     bug_messages
                     isUserAffected
-                    getHWSubmissions"/>
+                    getHWSubmissions
+                    isExpirable"/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -704,7 +699,6 @@
                     date_last_updated
                     date_made_private
                     datecreated
-                    duplicateof
                     hits
                     hitstimestamp
                     name
@@ -952,7 +946,7 @@
             interface="lp.bugs.interfaces.bugnotification.IBugNotificationRecipient"/>
     </class>
     <class
-        class="canonical.launchpad.mailnotification.BugNotificationRecipients">
+        class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients">
         <allow
             interface="canonical.launchpad.interfaces.INotificationRecipientSet"/>
     </class>

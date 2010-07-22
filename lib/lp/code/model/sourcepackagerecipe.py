@@ -7,10 +7,11 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_buildable_distroseries_set',
     'SourcePackageRecipe',
     ]
 
-from bzrlib.plugins.builder import RecipeParser
+from bzrlib.plugins.builder.recipe import RecipeParser
 from lazr.delegates import delegates
 
 from storm.locals import (
@@ -24,7 +25,9 @@ from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
-from lp.code.errors import TooManyBuilds
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.errors import (BuildAlreadyPending, BuildNotAllowedForDistro,
+    TooManyBuilds)
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
     ISourcePackageRecipeData)
@@ -32,9 +35,22 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
+
+
+def get_buildable_distroseries_set(user):
+    ppas = getUtility(IArchiveSet).getPPAsForUser(user)
+    supported_distros = [ppa.distribution for ppa in ppas]
+    distros = getUtility(IDistroSeriesSet).search()
+
+    buildables = []
+    for distro in distros:
+        if distro.active and distro.distribution in supported_distros:
+            buildables.append(distro)
+    return buildables
 
 
 class NonPPABuildRequest(Exception):
@@ -187,12 +203,24 @@ class SourcePackageRecipe(Storm):
         if archive.purpose != ArchivePurpose.PPA:
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
+
+        buildable_distros = get_buildable_distroseries_set(archive.owner)
+        if distroseries not in buildable_distros:
+            raise BuildNotAllowedForDistro(self, distroseries)
+
         reject_reason = archive.checkUpload(
             requester, self.distroseries, None, component, pocket)
         if reject_reason is not None:
             raise reject_reason
         if self.isOverQuota(requester, distroseries):
             raise TooManyBuilds(self, distroseries)
+        pending = IStore(self).find(SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.recipe_id == self.id,
+            SourcePackageRecipeBuild.distroseries_id == distroseries.id,
+            SourcePackageRecipeBuild.archive_id == archive.id,
+            SourcePackageRecipeBuild.buildstate == BuildStatus.NEEDSBUILD)
+        if pending.any() is not None:
+            raise BuildAlreadyPending(self, distroseries)
 
         build = getUtility(ISourcePackageRecipeBuildSource).new(distroseries,
             self, requester, archive)

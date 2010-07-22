@@ -33,6 +33,7 @@ from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
+from lp.code.errors import BuildAlreadyPending
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
@@ -229,6 +230,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
                     build = recipe.requestBuild(
                         recipe.daily_build_archive, recipe.owner,
                         distroseries, PackagePublishingPocket.RELEASE)
+                except BuildAlreadyPending:
+                    continue
                 except:
                     info = sys.exc_info()
                     errorlog.globalErrorUtility.raising(info)
@@ -237,14 +240,25 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
             recipe.is_stale = False
         return builds
 
-    def destroySelf(self):
+    def _unqueueBuild(self):
+        """Remove the build's queue and job."""
         store = Store.of(self)
-        job = self.buildqueue_record.job
-        store.remove(self.buildqueue_record)
-        store.find(
-            SourcePackageRecipeBuildJob,
-            SourcePackageRecipeBuildJob.build == self.id).remove()
-        store.remove(job)
+        if self.buildqueue_record is not None:
+            job = self.buildqueue_record.job
+            store.remove(self.buildqueue_record)
+            store.find(
+                SourcePackageRecipeBuildJob,
+                SourcePackageRecipeBuildJob.build == self.id).remove()
+            store.remove(job)
+
+    def cancelBuild(self):
+        """See `ISourcePackageRecipeBuild.`"""
+        self._unqueueBuild()
+        self.status = BuildStatus.SUPERSEDED
+
+    def destroySelf(self):
+        self._unqueueBuild()
+        store = Store.of(self)
         store.remove(self)
 
     @classmethod
@@ -304,6 +318,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         # base implementation doesn't notify on success.
         if build.status == BuildStatus.FULLYBUILT:
             build.notify()
+
 
 class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)

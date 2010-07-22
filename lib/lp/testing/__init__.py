@@ -10,20 +10,26 @@ from __future__ import with_statement
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
+    'anonymous_logged_in',
     'build_yui_unittest_suite',
     'BrowserTestCase',
     'capture_events',
+    'celebrity_logged_in',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
     'launchpadlib_for',
     'launchpadlib_credentials_for',
     'login',
+    'login_as',
+    'login_celebrity',
     'login_person',
+    'login_team',
     'logout',
     'map_branch_contents',
     'normalize_whitespace',
     'oauth_access_token_for',
+    'person_logged_in',
     'record_statements',
     'run_with_login',
     'run_with_storm_debug',
@@ -33,12 +39,11 @@ __all__ = [
     'test_tales',
     'time_counter',
     'unlink_source_packages',
-    # XXX: This really shouldn't be exported from here. People should import
-    # it from Zope.
-    'verifyObject',
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
+    'with_celebrity_logged_in',
+    'with_person_logged_in',
     'ws_object',
     'YUIUnitTestCase',
     'ZopeTestInSubProcess',
@@ -69,8 +74,6 @@ from storm.tracer import install_tracer, remove_tracer_type
 import testtools
 import transaction
 
-from twisted.python.util import mergeFunctionMetadata
-
 from windmill.authoring import WindmillTestClient
 
 from zope.component import adapter, getUtility
@@ -85,14 +88,27 @@ from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import branch_id_to_path, get_rw_server
 from lp.registry.interfaces.packaging import IPackagingUtil
-# Import the login and logout functions here as it is a much better
+# Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
-    is_logged_in, login, login_person, logout)
+    anonymous_logged_in,
+    celebrity_logged_in,
+    is_logged_in,
+    login,
+    login_as,
+    login_celebrity,
+    login_person,
+    login_team,
+    logout,
+    person_logged_in,
+    run_with_login,
+    with_anonymous_login,
+    with_celebrity_logged_in,
+    with_person_logged_in,
+    )
 # canonical.launchpad.ftests expects test_tales to be imported from here.
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
@@ -220,11 +236,12 @@ def run_with_storm_debug(function, *args, **kwargs):
 
 class TestCase(testtools.TestCase):
     """Provide Launchpad-specific test facilities."""
+
     def becomeDbUser(self, dbuser):
         """Commit, then log into the database as `dbuser`.
-        
+
         For this to work, the test must run in a layer.
-        
+
         Try to test every code path at least once under a realistic db
         user, or you'll hit privilege violations later on.
         """
@@ -253,11 +270,18 @@ class TestCase(testtools.TestCase):
         """
         return self.id()
 
+    def useContext(self, context):
+        """Use the supplied context in this test.
+
+        The context will be cleaned via addCleanup.
+        """
+        retval = context.__enter__()
+        self.addCleanup(context.__exit__, None, None, None)
+        return retval
+
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
-        tempdir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, tempdir)
-        return tempdir
+        return self.useContext(temp_dir())
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
@@ -433,6 +457,7 @@ class TestCase(testtools.TestCase):
         cwd = os.getcwd()
         os.chdir(tempdir)
         self.addCleanup(os.chdir, cwd)
+        return tempdir
 
     def _unfoldEmailHeader(self, header):
         """Unfold a multiline e-mail header."""
@@ -812,35 +837,6 @@ def get_lsb_information():
     return distinfo
 
 
-def with_anonymous_login(function):
-    """Decorate 'function' so that it runs in an anonymous login."""
-    def wrapped(*args, **kwargs):
-        login(ANONYMOUS)
-        try:
-            return function(*args, **kwargs)
-        finally:
-            logout()
-    return mergeFunctionMetadata(function, wrapped)
-
-
-@contextmanager
-def person_logged_in(person):
-    current_person = getUtility(ILaunchBag).user
-    logout()
-    login_person(person)
-    try:
-        yield
-    finally:
-        logout()
-        login_person(current_person)
-
-
-def run_with_login(person, function, *args, **kwargs):
-    """Run 'function' with 'person' logged in."""
-    with person_logged_in(person):
-        return function(*args, **kwargs)
-
-
 def time_counter(origin=None, delta=timedelta(seconds=5)):
     """A generator for yielding datetime values.
 
@@ -996,6 +992,15 @@ def ws_object(launchpad, obj):
     return launchpad.load(
         obj_url.replace('http://api.launchpad.dev/',
         str(launchpad._root_uri)))
+
+
+@contextmanager
+def temp_dir():
+    """Provide a temporary directory as a ContextManager."""
+    tempdir = tempfile.mkdtemp()
+    yield tempdir
+    shutil.rmtree(tempdir)
+
 
 def unlink_source_packages(product):
     """Remove all links between the product and source packages.

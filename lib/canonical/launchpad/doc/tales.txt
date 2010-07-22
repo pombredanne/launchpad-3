@@ -1175,20 +1175,6 @@ get linkified.  test@canonical.com is hidden:
 Test the 'fmt:' namespace where the context is a dict.
 ------------------------------------------------------
 
-fmt:pagetitle takes a page template CONTEXTS dict, and gives you a
-string for use in the <title> element of a page.
-
-This case ought to apply only to a page template's CONTEXTS dict.
-However, we have to make this namespace available for all dicts, as
-there is no type information to distinguish a page template CONTEXTS
-dict from any other dict.
-
-    >>> class MockPageTemplateFile:
-    ...     filename = '/blah/blah/debug-root-index.pt'
-    >>> CONTEXTS = {'template': MockPageTemplateFile}
-    >>> test_tales('foo/fmt:pagetitle', foo=CONTEXTS)
-    'Launchpad Debug Home Page'
-
 Test the 'fmt:url' namespace for canonical urls.
 
     >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData

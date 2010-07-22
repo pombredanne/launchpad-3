@@ -992,7 +992,7 @@ class BugTask(SQLBase, BugTaskMixin):
         if not self.canTransitionToAssignee(assignee):
             raise UserCannotEditBugTaskAssignee(
                 'Regular users can assign and unassign only themselves and '
-                'their teams. Only project onwers, bug supervisors, drivers '
+                'their teams. Only project owners, bug supervisors, drivers '
                 'and release managers can assign others.')
 
         now = datetime.datetime.now(pytz.UTC)
@@ -1045,8 +1045,8 @@ class BugTask(SQLBase, BugTaskMixin):
         # After the target has changed, we need to recalculate the maximum bug
         # heat for the new and old targets.
         if self.target != target_before_change:
-            target_before_change.recalculateMaxBugHeat()
-            self.target.recalculateMaxBugHeat()
+            target_before_change.recalculateBugHeatCache()
+            self.target.recalculateBugHeatCache()
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1833,6 +1833,11 @@ class BugTaskSet:
             # we don't need to add any clause.
             pass
 
+        if params.modified_since:
+            extra_clauses.append(
+                "Bug.date_last_updated > %s" % (
+                    sqlvalues(params.modified_since,)))
+
         orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
@@ -2260,7 +2265,7 @@ class BugTaskSet:
         transitionToStatus() method. See 'Conjoined Bug Tasks' in
         c.l.doc/bugtasks.txt.
 
-        Only bugtask the specified user has permission to view are
+        Only bugtasks the specified user has permission to view are
         returned. The Janitor celebrity has permission to view all bugs.
         """
         if bug is None:
