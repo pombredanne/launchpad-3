@@ -111,6 +111,8 @@ class TestDominator(TestNativePublishingBase):
         """Domination asserts for not empty input list."""
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
         pubs = {'foo': []}
+        # This isn't a really good exception. It should probably be
+        # something more indicative of bad input.
         self.assertRaises(
             AssertionError, dominator._dominatePublications, pubs)
 
