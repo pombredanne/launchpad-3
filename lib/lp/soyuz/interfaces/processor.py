@@ -55,6 +55,12 @@ class IProcessorFamilySet(Interface):
         :return: A `IProcessorFamily` instance if found, None otherwise.
         """
 
+    def getRestricted():
+        """Return a sequence of all restricted architectures.
+
+        :return: A sequence of `IProcessorFamily` instances.
+        """
+
     def getByProcessorName(name):
         """Given a processor name return the ProcessorFamily it belongs to.
 

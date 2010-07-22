@@ -63,6 +63,9 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
             # interfaces/product.py.
             schema=Interface))
 
+    summary = Attribute(
+        'The summary of binary packages built from this package')
+
     currentrelease = Attribute(
         "The latest published `IDistributionSourcePackageRelease` of a "
         "source package with this name in the distribution or distroseries, "

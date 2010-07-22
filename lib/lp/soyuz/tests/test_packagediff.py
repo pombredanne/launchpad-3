@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -86,7 +85,3 @@ class TestPackageDiffs(TestPackageDiffsBase):
         diff.performDiff()
         # The diff succeeds as expected.
         self.assertEqual(PackageDiffStatus.COMPLETED, diff.status)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

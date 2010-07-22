@@ -21,9 +21,9 @@ from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
-    SourcePackageRecipeView, SourcePackageRecipeRequestBuildsView,
-    SourcePackageRecipeBuildView
-)
+    SourcePackageRecipeView, SourcePackageRecipeRequestBuildsView)
+from lp.code.browser.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuildView)
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
@@ -113,7 +113,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             Make some food!
 
             Recipe information
-            Build daily: True
+            Build schedule: Built daily
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/veggies
             Debian version: 0\+\{revno\}
@@ -150,7 +150,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
 
         self.assertEqual(
-            get_message_text(browser, 1),
+            get_message_text(browser, 2),
             'The bzr-builder instruction "run" is not permitted here.')
 
     def test_create_new_recipe_empty_name(self):
@@ -170,7 +170,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
 
         self.assertEqual(
-            get_message_text(browser, 1), 'Required input is missing.')
+            get_message_text(browser, 2), 'Required input is missing.')
 
     def createRecipe(self, recipe_text, branch=None):
         if branch is None:
@@ -192,10 +192,22 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_create_recipe_bad_text(self):
         # If a user tries to create source package recipe with bad text, they
         # should get an error.
-        browser = self.createRecipe('Foo bar baz')
+        branch = self.factory.makeBranch(name='veggies')
+        package_branch = self.factory.makeBranch(name='packaging')
+
+        browser = self.createRecipe(
+            dedent('''
+                # bzr-builder format 0.2 deb-version 0+{revno}
+                %(branch)s
+                merge %(package_branch)s
+                ''' % {
+                    'branch': branch.bzr_identity,
+                    'package_branch': package_branch.bzr_identity,}),
+            branch=branch)
         self.assertEqual(
-            get_message_text(browser, 1),
-            'The recipe text is not a valid bzr-builder recipe.')
+            get_message_text(browser, 2),
+            "The recipe text is not a valid bzr-builder recipe. "
+            "End of line while looking for '#'")
 
     def test_create_recipe_no_distroseries(self):
         browser = self.getViewBrowser(self.makeBranch(), '+new-recipe')
@@ -205,7 +217,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Build daily').click()
         browser.getControl('Create Recipe').click()
         self.assertEqual(
-            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            extract_text(find_tags_by_class(browser.contents, 'message')[2]),
             'You must specify at least one series for daily builds.')
 
     def test_create_recipe_bad_base_branch(self):
@@ -213,7 +225,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         # branch location, they should get an error.
         browser = self.createRecipe(MINIMAL_RECIPE_TEXT % 'foo')
         self.assertEqual(
-            get_message_text(browser, 1), 'foo is not a branch on Launchpad.')
+            get_message_text(browser, 2), 'foo is not a branch on Launchpad.')
 
     def test_create_recipe_bad_instruction_branch(self):
         # If a user tries to create source package recipe with a bad
@@ -226,7 +238,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         recipe += 'nest packaging foo debian'
         browser = self.createRecipe(recipe, branch)
         self.assertEqual(
-            get_message_text(browser, 1), 'foo is not a branch on Launchpad.')
+            get_message_text(browser, 2), 'foo is not a branch on Launchpad.')
 
     def test_create_dupe_recipe(self):
         # You shouldn't be able to create a duplicate recipe owned by the same
@@ -248,7 +260,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
 
         self.assertEqual(
-            get_message_text(browser, 1),
+            get_message_text(browser, 2),
             'There is already a recipe owned by Master Chef with this name.')
 
 
@@ -297,7 +309,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build daily: False
+            Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: 0\+\{revno\}
@@ -407,8 +419,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build daily:
-            False
+            Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: 0\+\{revno\}
@@ -425,7 +436,6 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             pattern, main_text)
 
 
-
 class TestSourcePackageRecipeView(TestCaseForRecipe):
 
     layer = DatabaseFunctionalLayer
@@ -439,11 +449,12 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Master Chef Recipes cake_recipe
+            .*
             Description
             This recipe .*changes.
 
             Recipe information
-            Build daily: False
+            Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: 0\+\{revno\}
@@ -741,7 +752,6 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             Archive:       PPA named build for Owner
             Series:        Squirrel
             Pocket:        Release
-            Result:        .* in ubuntu 3.14
             Binary builds:
             itanic build of .* 3.14 in ubuntu squirrel RELEASE""",
             main_text)
@@ -753,14 +763,6 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         return self.factory.makeSourcePackageRelease(
             source_package_recipe_build=build, version='3.14',
             component=multiverse)
-
-    def test_render_sourcepackage_release(self):
-        """SourcePackageReleases are shown if set."""
-        release = self.makeBuildAndRelease()
-        main_text = self.getMainText(
-            release.source_package_recipe_build, '+index')
-        self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Result: .* in ubuntu 3.14""", main_text)
 
     def makeBinaryBuild(self, release, architecturetag):
         """Make a binary build with specified release and architecturetag."""

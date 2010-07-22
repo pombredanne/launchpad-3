@@ -53,7 +53,7 @@ class ArchivePopulator(SoyuzScript):
         self, from_archive, from_distribution, from_suite, from_user,
         component, to_distribution, to_suite, to_archive, to_user, reason,
         include_binaries, arch_tags, merge_copy_flag,
-        packageset_delta_flag, packageset_tags):
+        packageset_delta_flag, packageset_tags, nonvirtualized):
         """Create archive, populate it with packages and builds.
 
         Please note: if a component was specified for the origin then the
@@ -212,10 +212,12 @@ class ArchivePopulator(SoyuzScript):
             # before the switch is flipped and build activity starts.
             # Also, builds for copy archives should default to using
             # virtual builders.
+            virtual = not nonvirtualized
             copy_archive = getUtility(IArchiveSet).new(
                 ArchivePurpose.COPY, registrant, name=to_archive,
                 distribution=the_destination.distribution,
-                description=reason, enabled=False, require_virtualized=True)
+                description=reason, enabled=False,
+                require_virtualized=virtual)
             the_destination.archive = copy_archive
             # Associate the newly created copy archive with the processor
             # families specified by the user.
@@ -246,10 +248,6 @@ class ArchivePopulator(SoyuzScript):
                 """Extract the processor family from an `IArchiveArch`."""
                 return removeSecurityProxy(archivearch).processorfamily
 
-            proc_families = [
-                get_family(archivearch) for archivearch
-                in getUtility(IArchiveArchSet).getByArchive(copy_archive)]
-
         # Now instantiate the package copy request that will capture the
         # archive population parameters in the database.
         pcr = getUtility(IPackageCopyRequestSet).new(
@@ -267,12 +265,8 @@ class ArchivePopulator(SoyuzScript):
         if merge_copy_flag:
             pkg_cloner.mergeCopy(the_origin, the_destination)
         else:
-            pkg_cloner.clonePackages(the_origin, the_destination)
-
-        # Create builds for the cloned packages.
-        self._createMissingBuilds(
-            the_destination.distroseries, the_destination.archive,
-            proc_families)
+            pkg_cloner.clonePackages(
+                the_origin, the_destination, proc_families=proc_families)
 
         # Mark the package copy request as completed.
         pcr.markAsCompleted()
@@ -316,12 +310,15 @@ class ArchivePopulator(SoyuzScript):
             raise SoyuzScriptError(
                 "Invalid origin archive name: '%s'" % opts.from_archive)
 
+        # For the love of $DEITY, WTF doesn't this method just accept a
+        # single parameter "opts" ...
         self.populateArchive(
             opts.from_archive, opts.from_distribution, opts.from_suite,
             opts.from_user, opts.component, opts.to_distribution,
             opts.to_suite, opts.to_archive, opts.to_user, opts.reason,
             opts.include_binaries, opts.arch_tags, opts.merge_copy_flag,
-            opts.packageset_delta_flag, opts.packageset_tags)
+            opts.packageset_delta_flag, opts.packageset_tags,
+            opts.nonvirtualized)
 
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.
@@ -390,58 +387,7 @@ class ArchivePopulator(SoyuzScript):
             help=(
                 'Limit to copying packages in the selected packagesets.'))
 
-    def _createMissingBuilds(
-        self, distroseries, archive, proc_families):
-        """Create builds for all cloned source packages.
-
-        :param distroseries: the distro series for which to create builds.
-        :param archive: the archive for which to create builds.
-        :param proc_families: the list of processor families for
-            which to create builds.
-        """
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.publishing import active_publishing_status
-
-        self.logger.info("Processing %s." % distroseries.name)
-
-        # Listify the architectures to avoid hitting this MultipleJoin
-        # multiple times.
-        architectures = list(distroseries.architectures)
-
-        # Filter the list of DistroArchSeries so that only the ones
-        # specified on the command line remain.
-        architectures = [architecture for architecture in architectures
-             if architecture.processorfamily in proc_families]
-
-        if len(architectures) == 0:
-            self.logger.info(
-                "No DistroArchSeries left for %s, done." % distroseries.name)
-            return
-
-        self.logger.info(
-            "Supported architectures: %s." %
-            " ".join(arch_series.architecturetag
-                     for arch_series in architectures))
-
-        # Both, PENDING and PUBLISHED sources will be considered for
-        # as PUBLISHED. It's part of the assumptions made in:
-        # https://launchpad.net/soyuz/+spec/build-unpublished-source
-        sources_published = archive.getPublishedSources(
-            distroseries=distroseries, status=active_publishing_status)
-
-        self.logger.info(
-            "Found %d source(s) published." % sources_published.count())
-
-        def get_spn(pub):
-            """Return the source package name for a publishing record."""
-            return pub.sourcepackagerelease.sourcepackagename.name
-
-        for pubrec in sources_published:
-            builds = pubrec.createMissingBuilds(
-                architectures_available=architectures, logger=self.logger)
-            if len(builds) == 0:
-                self.logger.info("%s has no builds." % get_spn(pubrec))
-            else:
-                self.logger.info(
-                    "%s has %s build(s)." % (get_spn(pubrec), len(builds)))
-            self.txn.commit()
+        self.parser.add_option(
+            "--nonvirtualized", dest="nonvirtualized", default=False,
+            action="store_true",
+            help='Create the archive as nonvirtual if specified.')

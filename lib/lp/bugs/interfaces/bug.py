@@ -183,8 +183,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
         Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
-    duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
-    readonly_duplicateof = exported(
+    duplicateof = exported(
         DuplicateBug(title=_('Duplicate Of'), required=False, readonly=True),
         exported_as='duplicate_of')
     # This is redefined from IPrivacy.private because the attribute is
@@ -277,10 +276,11 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         readonly=True)
     can_expire = exported(
         Bool(
-            title=_("Can the Incomplete bug expire if it becomes inactive? "
+            title=_("Can the Incomplete bug expire? "
                 "Expiration may happen when the bug permits expiration, "
                 "and a bugtask cannot be confirmed."),
-            readonly=True))
+            readonly=True),
+        ('devel', dict(exported=False)), exported=True)
     date_last_message = exported(
         Datetime(title=_("Date of last bug message"),
                  required=False, readonly=True))
@@ -753,8 +753,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     def markUserAffected(user, affected=True):
         """Mark :user: as affected by this bug."""
 
-    @mutator_for(readonly_duplicateof)
-    @operation_parameters(duplicate_of=copy_field(readonly_duplicateof))
+    @mutator_for(duplicateof)
+    @operation_parameters(duplicate_of=copy_field(duplicateof))
     @export_write_operation()
     def markAsDuplicate(duplicate_of):
         """Mark this bug as a duplicate of another."""
@@ -808,6 +808,21 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     def updateHeat():
         """Update the heat for the bug."""
+
+    @operation_parameters(
+        days_old=Int(
+            title=_('Number of days of inactivity for which to check.'),
+            required=False))
+    @export_read_operation()
+    def isExpirable(days_old=None):
+        """Is this bug eligible for expiration and was it last updated
+        more than X days ago?
+
+        If days_old is None the default number of days without activity
+        is used.
+
+        Returns True or False.
+        """
 
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""

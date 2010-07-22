@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -65,7 +65,7 @@ class TestLpQueryDistroScript(unittest.TestCase):
         Check that:
          * return code is ONE,
          * standard output is empty
-         * standard error contains the additional information about the failure.
+         * standard error contains additional information about the failure.
         """
         returncode, out, err = self.runLpQueryDistro(
             extra_args=[])
@@ -103,7 +103,7 @@ class TestLpQueryDistroScript(unittest.TestCase):
         Check if:
          * return code is ONE,
          * standard output is empty
-         * standard error contains the additional information about the failure.
+         * standard error contains additional information about the failure.
         """
         returncode, out, err = self.runLpQueryDistro(
             extra_args=['-s', 'hoary', 'current'])
@@ -257,7 +257,3 @@ class TestLpQueryDistro(unittest.TestCase):
         self.assertEqual(helper.nominated_arch_indep, 'i386')
         self.assertEqual(helper.pocket_suffixes,
                          '-backports -proposed -security -updates')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

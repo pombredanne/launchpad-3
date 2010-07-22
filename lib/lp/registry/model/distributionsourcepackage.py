@@ -158,6 +158,11 @@ class DistributionSourcePackage(BugTargetBase,
             self.sourcepackagename.name, self.distribution.displayname)
 
     @property
+    def summary(self):
+        """See `IDistributionSourcePackage`."""
+        return self.development_version.summary
+
+    @property
     def development_version(self):
         """See `IDistributionSourcePackage`."""
         series = self.distribution.currentseries

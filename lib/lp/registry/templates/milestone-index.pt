@@ -128,8 +128,8 @@
         </div>
 
         <div class="yui-u">
-          <div class="portlet"
-            tal:content="cache:public, view/expire_cache_minutes minute">
+          <div id="milestone-activities" class="portlet"
+            tal:content="cache:private, view/expire_cache_minutes minute">
             <h2>Activities</h2>
 
             <dl>
@@ -197,7 +197,7 @@
       tal:condition="view/release"
       tal:content="structure view/milestone/@@+productrelease-data" />
 
-    <div class="portlet full-page-width">
+    <div id="milestone-specs-bugs" class="portlet full-page-width">
         <h2>
           <span id="specification-count" style="color: #3594bb;"
             tal:content="structure view/specification_count_text">2</span>

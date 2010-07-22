@@ -18,6 +18,7 @@ __all__ = [
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',
+    'CannotRestrictArchitectures',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
     'DistroSeriesNotFound',
@@ -56,6 +57,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.processor import IProcessorFamily
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
@@ -139,6 +141,10 @@ class NoSuchPPA(NameLookupFailed):
 class VersionRequiresName(Exception):
     """Raised on some queries when version is specified but name is not."""
     webservice_error(400) # Bad request.
+
+
+class CannotRestrictArchitectures(Exception):
+    """The architectures for this archive can not be restricted."""
 
 
 class CannotUploadToArchive(Exception):
@@ -368,8 +374,11 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!"))
 
-    arm_builds_allowed = Bool(
-        title=_("Allow ARM builds for this archive"))
+    enabled_restricted_families = CollectionField(
+            title=_("Restricted architecture families this archive can build "
+                    "on"),
+            value_type=Reference(schema=IProcessorFamily),
+            readonly=False)
 
     commercial = exported(
         Bool(
@@ -434,11 +443,24 @@ class IArchivePublic(IHasOwner, IPrivacy):
         Person table indexes while searching.
         """
 
-    def findDepCandidateByName(distroarchseries, name):
-        """Return the last published binarypackage by given name.
+    def findDepCandidates(distro_arch_series, pocket, component,
+                          source_package_name, dep_name):
+        """Return matching binaries in this archive and its dependencies.
 
-        Return the `BinaryPackagePublishingHistory` record by distroarchseries
-        and name, or None if not found.
+        Return all published `IBinaryPackagePublishingHistory` records with
+        the given name, in this archive and dependencies as specified by the
+        given build context, using the usual archive dependency rules.
+
+        We can't just use the first, since there may be other versions
+        published in other dependency archives.
+
+        :param distro_arch_series: the context `IDistroArchSeries`.
+        :param pocket: the context `PackagePublishingPocket`.
+        :param component: the context `IComponent`.
+        :param source_package_name: the context source package name (as text).
+        :param dep_name: the name of the binary package to look up.
+        :return: a sequence of matching `IBinaryPackagePublishingHistory`
+            records.
         """
 
     def removeArchiveDependency(dependency):
@@ -1112,15 +1134,6 @@ class IArchiveView(IHasBuildRecords):
         :return: A new IArchiveAuthToken
         """
 
-    @call_with(person=REQUEST_USER)
-    @export_write_operation()
-    def getPrivateSourcesList(person):
-        """Get a text line that is suitable to be used for a sources.list
-        entry.
-
-        It will create a new IArchiveAuthToken if one doesn't already exist.
-        """
-
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
 
@@ -1556,6 +1569,14 @@ class IArchiveSet(Interface):
 
     def getPrivatePPAs():
         """Return a result set containing all private PPAs."""
+
+    def getCommercialPPAs():
+        """Return a result set containing all commercial PPAs.
+
+        Commercial PPAs are private, but explicitly flagged up as commercial
+        so that they are discoverable by people who wish to buy items
+        from them.
+        """
 
     def getPublicationsInArchives(source_package_name, archive_list,
                                   distribution):

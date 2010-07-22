@@ -9,7 +9,6 @@ __all__ = [
     'test_suite',
     ]
 
-import unittest
 import transaction
 
 from lp.soyuz.model.distroseriesbinarypackage import (
@@ -63,7 +62,3 @@ class TestDistroSeriesBinaryPackage(TestCaseWithFactory):
 
         self.failUnlessEqual(
             'Foo is the best', self.distroseries_binary_package.summary)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
