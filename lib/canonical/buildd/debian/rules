@@ -90,8 +90,6 @@ clean:
 	dh_clean
 
 package:
-	mkdir -p launchpad-files
-	install -m644 $(daemons)/buildd-slave.tac launchpad-files/buildd-slave.tac
 	cp ../launchpad/daemons/tachandler.py launchpad-files/tachandler.py
 	debuild -uc -us -S
 
