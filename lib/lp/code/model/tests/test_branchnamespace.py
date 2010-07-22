@@ -1460,8 +1460,8 @@ class NoPolicies(BranchVisibilityPolicyTestCase):
 
 
 class PolicySimple(BranchVisibilityPolicyTestCase):
-    """Test the visibility policy where the base visibility rule is PUBLIC with
-    one team specified to have PRIVATE branches.
+    """Test the visibility policy where the base visibility rule is PUBLIC
+    with one team specified to have PRIVATE branches.
     """
 
     def setUp(self):
@@ -1505,8 +1505,8 @@ class PolicySimple(BranchVisibilityPolicyTestCase):
 
 
 class PolicyPrivateOnly(BranchVisibilityPolicyTestCase):
-    """Test the visibility policy where the base visibility rule is PUBLIC with
-    one team specified to have the PRIVATE_ONLY rule.
+    """Test the visibility policy where the base visibility rule is PUBLIC
+    with one team specified to have the PRIVATE_ONLY rule.
 
     PRIVATE_ONLY only stops the user from changing the branch from private to
     public and for branch creation behaves in the same maner as the PRIVATE
