@@ -80,9 +80,9 @@ class ImportQueueEntryTest(WindmillTestCase):
         start_url = 'http://translations.launchpad.dev:8085/+imports/1'
         user = lpuser.TRANSLATIONS_ADMIN
         # Go to import queue page logged in as translations admin.
+        user.ensure_login(client)
         client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
-        user.ensure_login(client)
 
         po_only_fields = set(self.FIELDS['PO']) - set(self.FIELDS['POT'])
         pot_only_fields = set(self.FIELDS['POT']) - set(self.FIELDS['PO'])
@@ -133,9 +133,10 @@ class ImportQueueEntryTest(WindmillTestCase):
         # The client reviews the upload.
         client = self.client
         user = lpuser.TRANSLATIONS_ADMIN
+        user.ensure_login(client)
         client.open(url=url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
-        user.ensure_login(client)
+        client.waits.sleep(milliseconds=SLEEP)
 
         # No template is preselected in the templates dropdown.
         client.waits.forElement(id=u'field.potemplate', timeout=FOR_ELEMENT)
@@ -176,17 +177,22 @@ class ImportQueueEntryTest(WindmillTestCase):
         client.asserts.assertSelected(id=u'field.potemplate', val=u'name1')
 
     def test_import_queue_entry_template_selection_existing_path(self):
-        # If a template upload's path matches that of an existing
-        # template, the templates dropdown has that template
+        # If a template upload's base path matches the name/domain of an
+        # existing template, the templates dropdown has that template
         # pre-selected.
-        template = self.factory.makePOTemplate()
+        template_name = self.factory.getUniqueString()
+        template_path = template_name + '.pot'
+        template = self.factory.makePOTemplate(
+            path=template_path, name=template_name,
+            translation_domain=template_name)
 
         # A new template upload for that entry has a path that doesn't
         # match either of the existing templates.
         entry = self.factory.makeTranslationImportQueueEntry(
-            template.path, productseries=template.productseries,
+            path=template_path, productseries=template.productseries,
             distroseries=template.distroseries,
             sourcepackagename=template.sourcepackagename)
+        file('/tmp/foo.log','a').write("* %d: %s *\n"%(entry.id,entry.path))
         url = canonical_url(entry, rootsite='translations')
 
         transaction.commit()
@@ -194,14 +200,14 @@ class ImportQueueEntryTest(WindmillTestCase):
         # The client reviews the upload.
         client = self.client
         user = lpuser.TRANSLATIONS_ADMIN
+        user.ensure_login(client)
         client.open(url=url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
-        user.ensure_login(client)
         client.waits.sleep(milliseconds=SLEEP)
 
         # The matching template is preselected in the templates dropdown.
         client.asserts.assertSelected(
-            id=u'field.potemplate', validator=template.name)
+            id=u'field.potemplate', validator=template_name)
 
 
 IMPORT_STATUS = u"//tr[@id='%d']//span[contains(@class,'status-choice')]"
