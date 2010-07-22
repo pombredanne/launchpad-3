@@ -2,8 +2,10 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   condition="context/enabled">
   <tal:link-linked
-    condition="context/linked"><a
-      href="" class="" title=""
+    condition="context/linked">
+    <table width="100%"><tr>
+        <td width="90%">
+    <a href="" class="" title=""
       tal:condition="context/icon"
       tal:attributes="
         class string:menu-link-${context/name} ${view/sprite_class} ${context/icon};
@@ -21,9 +23,15 @@
         title context/summary;
         "
       tal:content="structure context/escapedtext"
-    /><span tal:condition="python: context.configured==True"
-           class="sprite yes">&nbsp;</span><span tal:condition="python: context.configured==False"
-           class="sprite no">&nbsp;</span>
+    /></td>
+        <td>
+    <span tal:condition="python: context.configured==True"
+           class="sprite yes"></span>
+    <span tal:condition="python: context.configured==False"
+           class="sprite no"></span>
+        </td>
+      </tr>
+    </table>
     </tal:link-linked>
   <tal:link-not-linked
     condition="not: context/linked"><span
