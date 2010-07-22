@@ -65,7 +65,7 @@ class BugNotificationRecipientReason(RecipientReason):
             'Subscriber of Duplicate', person, duplicate_bug)
 
         reason = cls._getReasonTemplate(
-            "a direct subscriber of a duplicate bug (via bug %s)" % 
+            "a direct subscriber of a duplicate bug (via bug %s)" %
                 duplicate_bug.id)
         return cls(person, person, header, reason)
 
@@ -115,10 +115,6 @@ class BugNotificationRecipientReason(RecipientReason):
         reason = cls._getReasonTemplate(
             "the registrant for %s" % target.displayname, duplicate_bug)
         return cls(person, person, header, reason)
-
-    def __contains__(self, item):
-        # Hacky hacky
-        return item in self.getReason()
 
 
 class BugNotificationRecipients(NotificationRecipientSet):
