@@ -129,7 +129,7 @@ as a duplicate of another bug, the count will decrease.
     ...     bugtarget, "Another Test Bug", status=BugTaskStatus.NEW)
     >>> Store.of(another_bug).flush()
     >>> old_counts = bugtarget.getBugCounts(None)
-    >>> another_bug.markAsDuplicate(bug)
+    >>> another_bug.duplicateof = bug
     >>> syncUpdate(another_bug)
     >>> new_counts = bugtarget.getBugCounts(None)
     >>> print_count_difference(

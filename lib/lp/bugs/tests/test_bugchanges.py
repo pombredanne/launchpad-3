@@ -90,10 +90,7 @@ class TestBugChanges(unittest.TestCase):
         :return: The value of `attribute` before modification.
         """
         obj_before_modification = Snapshot(obj, providing=providedBy(obj))
-        if attribute == 'duplicateof':
-            obj.markAsDuplicate(new_value)
-        else:
-            setattr(obj, attribute, new_value)
+        setattr(obj, attribute, new_value)
         notify(ObjectModifiedEvent(
             obj, obj_before_modification, [attribute], self.user))
 
@@ -1307,7 +1304,7 @@ class TestBugChanges(unittest.TestCase):
         duplicate_bug = self.factory.makeBug()
         duplicate_bug_recipients = duplicate_bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA).getRecipients()
-        duplicate_bug.markAsDuplicate(self.bug)
+        duplicate_bug.duplicateof = self.bug
         self.saveOldChanges(duplicate_bug)
         self.changeAttribute(duplicate_bug, 'duplicateof', None)
 
@@ -1338,7 +1335,7 @@ class TestBugChanges(unittest.TestCase):
         bug_two = self.factory.makeBug()
         bug_recipients = self.bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA).getRecipients()
-        self.bug.markAsDuplicate(bug_one)
+        self.bug.duplicateof = bug_one
         self.saveOldChanges()
         self.changeAttribute(self.bug, 'duplicateof', bug_two)
 
