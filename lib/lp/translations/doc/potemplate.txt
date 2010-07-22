@@ -240,10 +240,11 @@ We can get an IPOFile inside a template based on its path.
 To get an IPOFile object even for languages which don't have a translation
 of this template, we use the getDummyPOFile method, passing in the language.
 
-    >>> xxxx_language = factory.makeLanguage('xxxx')
-    >>> xxxx_pofile = potemplate.getDummyPOFile(xxxx_language)
-    >>> print xxxx_pofile.title
-    Language 'xxxx' (xxxx) translation of evolution-2.2 in Evolution trunk
+    >>> xx_language = factory.makeLanguage(
+    ...     'xx@test', name='Test language')
+    >>> xx_pofile = potemplate.getDummyPOFile(xx_language)
+    >>> print xx_pofile.title
+    Test language (xx@test) translation of evolution-2.2 in Evolution trunk
 
 
 == newPOFile ==

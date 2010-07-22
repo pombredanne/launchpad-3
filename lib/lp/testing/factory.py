@@ -1613,6 +1613,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         syncUpdate(series)
         return series
 
+    def makeLanguage(self, language_code=None, name=None):
+        if language_code is None:
+            language_code = self.getUniqueString('lang')
+        if name is None:
+            name = "Language %s" % language_code
+
+        language_set = getUtility(ILanguageSet)
+        return language_set.createLanguage(language_code, name)
+
     def makeLibraryFileAlias(self, filename=None, content=None,
                              content_type='text/plain', restricted=False,
                              expires=None):
