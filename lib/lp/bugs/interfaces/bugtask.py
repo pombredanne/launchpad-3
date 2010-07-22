@@ -787,7 +787,7 @@ class IBugTaskSearchBase(Interface):
         required=False)
     importance = List(
         title=_('Importance'),
-        description=_('Show only bugs with the given importance'
+        description=_('Show only bugs with the given importance '
                       'or list of importances.'),
         value_type=IBugTask['importance'],
         required=False)
@@ -803,8 +803,7 @@ class IBugTaskSearchBase(Interface):
         title=_('Omit bugs marked as duplicate,'), required=False,
         default=True)
     omit_targeted = Bool(
-        title=_('Omit bugs targeted to series'), required=False,
-        default=True)
+        title=_('Omit bugs targeted to a series'), required=False)
     statusexplanation = TextLine(
         title=_("Status notes"), required=False)
     has_patch = Bool(

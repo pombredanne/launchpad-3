@@ -1488,6 +1488,37 @@ the advanced search interface.
     http://.../ubuntu/+bug/2
     http://.../ubuntu/+source/linux-source-2.6.15/+bug/10
 
+It is possible to omit bug tasks targeted to a release in a search, but the
+default is not to hide these.
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> release = factory.makeDistroRelease(distribution=ubuntu,
+    ...         name='inkanyamba')
+    >>> bug = factory.makeBugTask(target=release)
+    >>> logout()
+
+    >>> pprint_collection(webservice.named_get(
+    ...     webservice.getAbsoluteUrl('/ubuntu/inkanyamba'),
+    ...     'searchTasks').jsonBody())
+    start: 0
+    total_size: 1
+    ...
+    ---
+    >>> pprint_collection(webservice.named_get(
+    ...     webservice.getAbsoluteUrl('/ubuntu/inkanyamba'),
+    ...     'searchTasks', omit_targeted=False).jsonBody())
+    start: 0
+    total_size: 1
+    ...
+    ---
+    >>> pprint_collection(webservice.named_get(
+    ...     webservice.getAbsoluteUrl('/ubuntu/inkanyamba'),
+    ...     'searchTasks', omit_targeted=True).jsonBody())
+    start: None
+    total_size: 0
+    ---
 
 Hardware related bug tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
