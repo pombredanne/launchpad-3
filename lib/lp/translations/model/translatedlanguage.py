@@ -31,24 +31,28 @@ class POFilesByPOTemplates(object):
             Desc(POTemplate.priority), POTemplate.name)
         return results
 
-    def _getPOFilesForResultSet(self, resultset):
+    def _getPOFilesForResultSet(self, resultset, selector=None):
         pofiles_list = []
-        for potemplate, pofile in resultset[selector]:
+        if selector is None:
+            results = resultset
+        else:
+            results = resultset[selector]
+        for potemplate, pofile in results:
             pofiles_list.append(self._getDummyOrPOFile(potemplate, pofile))
         return pofiles_list
 
     def __getitem__(self, selector):
         resultset = self._getPOTemplatesAndPOFilesResultSet()
         if isinstance(selector, slice):
-            return self._getPOFilesForResultSet(resultset)
+            return self._getPOFilesForResultSet(resultset, selector)
         else:
             potemplate, pofile = resultset[selector]
             return self._getDummyOrPOFile(potemplate, pofile)
 
-    #def __iter__(self):
-    #    resultset = self._getPOTemplatesAndPOFilesResultSet()
-    #    for pofile in self._getPOFilesForResultSet(resultset):
-    #        yield pofile
+    def __iter__(self):
+        resultset = self._getPOTemplatesAndPOFilesResultSet()
+        for pofile in self._getPOFilesForResultSet(resultset):
+            yield pofile
 
 
 class TranslatedLanguageMixin(object):

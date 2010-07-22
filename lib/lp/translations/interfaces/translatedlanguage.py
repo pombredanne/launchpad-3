@@ -15,13 +15,15 @@ from lp.registry.interfaces.person import IPerson
 __metaclass__ = type
 
 __all__ = [
+    'IPOFilesByPOTemplates',
     'ITranslatedLanguage',
     ]
 
 class ITranslatedLanguage(Interface):
     """Interface for providing translations for context by language.
 
-    It expects `parent` to provide `IHasTranslationTemplates`."""
+    It expects `parent` to provide `IHasTranslationTemplates`.
+    """
 
     language = Object(
         title=_('Language to gather statistics and POFiles for.'),
@@ -50,3 +52,18 @@ class ITranslatedLanguage(Interface):
     last_translator = Object(
         title=_('Last person that translated something in this context.'),
         schema=IPerson)
+
+
+class IPOFilesByPOTemplates(Interface):
+    """Iterate `IPOFile`s for (`ILanguage`, `ITranslationTemplateCollection`).
+
+    This is a wrapper for Storm ResultSet that enables optimized slicing
+    by doing it lazily on the query, thus allowing DummyPOFile objects
+    to be returned while still not doing more than one database query.
+    """
+
+    def __getitem__(selector):
+        """Get an element or slice of `IPOFile`s for given templates."""
+
+    def __iter__():
+        """Iterates over all `IPOFile`s for given templates."""

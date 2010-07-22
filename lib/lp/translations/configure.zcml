@@ -395,6 +395,16 @@
             interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguageSet"/>
     </securedutility>
 
+    <!-- TranslatedLanguage -->
+    <facet
+        facet="translations">
+        <class
+            class="lp.translations.model.translatedlanguage.POFilesByPOTemplates">
+            <allow
+                interface="lp.translations.interfaces.translatedlanguage.IPOFilesByPOTemplates"/>
+        </class>
+    </facet>
+
     <!-- POTemplate -->
     <facet
         facet="translations">
