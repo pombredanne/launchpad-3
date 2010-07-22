@@ -11,22 +11,19 @@ from lp.services.features.model import (
     FeatureFlag,
     )
 
-from storm.locals import (
-    Desc,
-    )
-
 
 class FeatureController(object):
     """A FeatureController tells application code what features are active.
 
-    It does this by meshing together two sources of data: 
+    It does this by meshing together two sources of data:
     - feature flags, typically set by an administrator into the database
-    - feature scopes, which would typically be looked up based on attributes 
+    - feature scopes, which would typically be looked up based on attributes
       of the current web request, or the user for whom a job is being run, or
       something similar.
 
     FeatureController presents a high level interface for application code to
-    query flag values, without it needing to know that they are stored in the database.
+    query flag values, without it needing to know that they are stored in the
+    database.
 
     At this level flag names and scope names are presented as strings for
     easier use in Python code, though the values remain unicode.  They
@@ -37,8 +34,8 @@ class FeatureController(object):
     be one per web app request.
 
     Intended performance: when this object is first constructed, it will read
-    the whole current feature flags from the database.  This will take a few ms.
-    The controller is then supposed to be held in a thread-local for the
+    the whole current feature flags from the database.  This will take a few
+    ms.  The controller is then supposed to be held in a thread-local for the
     duration of the request.
 
     See <https://dev.launchpad.net/LEP/FeatureFlags>
@@ -59,7 +56,7 @@ class FeatureController(object):
 
     def getAllFlags(self):
         """Get the feature flags active for the current scopes.
-        
+
         :returns: dict from flag_name (unicode) to value (unicode).
         """
         return dict(self._cached_flags)
