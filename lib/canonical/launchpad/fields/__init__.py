@@ -302,12 +302,8 @@ class DuplicateBug(BugField):
         bug isn't a duplicate of itself, otherwise
         return False.
         """
-        from lp.bugs.interfaces.bug import IBugSet
-        bugset = getUtility(IBugSet)
         current_bug = self.context
         dup_target = value
-        current_bug_has_dup_refs = bool(bugset.searchAsUser(
-            user=getUtility(ILaunchBag).user, duplicateof=current_bug))
         if current_bug == dup_target:
             raise LaunchpadValidationError(_(dedent("""
                 You can't mark a bug as a duplicate of itself.""")))
@@ -318,13 +314,6 @@ class DuplicateBug(BugField):
                 isn't a duplicate itself.
                 """), mapping={'dup': dup_target.id,
                                'orig': dup_target.duplicateof.id}))
-        elif current_bug_has_dup_refs:
-            raise LaunchpadValidationError(_(dedent("""
-                There are other bugs already marked as duplicates of
-                Bug ${current}.  These bugs should be changed to be
-                duplicates of another bug if you are certain you would
-                like to perform this change."""),
-                mapping={'current': current_bug.id}))
         else:
             return True
 

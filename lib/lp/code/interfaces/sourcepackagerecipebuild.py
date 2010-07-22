@@ -70,6 +70,9 @@ class ISourcePackageRecipeBuild(IPackageBuild):
     def getFileByName(filename):
         """Return the file under +files with specified name."""
 
+    def cancelBuild():
+        """Cancel the build."""
+
     def destroySelf():
         """Delete the build itself."""
 

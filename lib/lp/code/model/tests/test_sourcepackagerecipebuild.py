@@ -232,10 +232,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         recipe.requestBuild(
             recipe.daily_build_archive, recipe.owner, first_distroseries,
             PackagePublishingPocket.RELEASE)
-        second_distroseries = self.factory.makeDistroSeries()
-        second_distroseries.nominatedarchindep = second_distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
-            supports_virtualized=True)
+        second_distroseries = \
+            self.factory.makeSourcePackageRecipeDistroseries("hoary")
         recipe.distroseries.add(second_distroseries)
         builds = SourcePackageRecipeBuild.makeDailyBuilds()
         self.assertEqual(
@@ -257,6 +255,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             recipe=recipe, distroseries=series)
         self.factory.makeSourcePackageRecipeBuild(
             requester=requester, distroseries=series)
+
         def get_recent():
             Store.of(build).flush()
             return SourcePackageRecipeBuild.getRecentBuilds(
@@ -276,6 +275,16 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # queue entries and then invalidate itself.
         build = self.factory.makeSourcePackageRecipeBuild()
         build.destroySelf()
+
+    def test_cancelBuild(self):
+        # ISourcePackageRecipeBuild should make sure to remove jobs and build
+        # queue entries and then invalidate itself.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        build.cancelBuild()
+
+        self.assertEqual(
+            BuildStatus.SUPERSEDED,
+            build.status)
 
 
 class TestAsBuildmaster(TestCaseWithFactory):
@@ -305,11 +314,11 @@ class TestAsBuildmaster(TestCaseWithFactory):
         body, footer = message.get_payload(decode=True).split('\n-- \n')
         self.assertEqual(
             'Build person/recipe into ppa for distroseries: Successfully'
-            ' built.\n', body
-            )
+            ' built.\n', body)
 
     def test_handleStatusNotifies(self):
         """"handleStatus causes notification, even if OK."""
+
         def prepare_build():
             queue_record = self.factory.makeSourcePackageRecipeBuildJob()
             build = queue_record.specific_job.build
@@ -318,6 +327,7 @@ class TestAsBuildmaster(TestCaseWithFactory):
             slave = WaitingSlave('BuildStatus.OK')
             queue_record.builder.setSlaveForTesting(slave)
             return build
+
         def assertNotifyOnce(status, build):
             build.handleStatus(status, None, {'filemap': {}})
             self.assertEqual(1, len(pop_notifications()))

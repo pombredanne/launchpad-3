@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import os
-import unittest
 
 from storm.store import Store
 from zope.component import getUtility
@@ -21,6 +20,7 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 
 
 class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
+
     def setUp(self):
         super(TestSourcePackageRecipeBuildUploads, self).setUp()
 
@@ -69,7 +69,3 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
         self.assertEqual(spr, self.build.source_package_release)
         self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
         self.assertEqual(True, self.build.verifySuccessfulUpload())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

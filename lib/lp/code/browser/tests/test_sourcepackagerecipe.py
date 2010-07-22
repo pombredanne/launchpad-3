@@ -22,9 +22,9 @@ from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
-    SourcePackageRecipeView, SourcePackageRecipeRequestBuildsView,
-    SourcePackageRecipeBuildView
-)
+    SourcePackageRecipeView, SourcePackageRecipeRequestBuildsView)
+from lp.code.browser.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuildView)
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
@@ -194,10 +194,22 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_create_recipe_bad_text(self):
         # If a user tries to create source package recipe with bad text, they
         # should get an error.
-        browser = self.createRecipe('Foo bar baz')
+        branch = self.factory.makeBranch(name='veggies')
+        package_branch = self.factory.makeBranch(name='packaging')
+
+        browser = self.createRecipe(
+            dedent('''
+                # bzr-builder format 0.2 deb-version 0+{revno}
+                %(branch)s
+                merge %(package_branch)s
+                ''' % {
+                    'branch': branch.bzr_identity,
+                    'package_branch': package_branch.bzr_identity,}),
+            branch=branch)
         self.assertEqual(
             get_message_text(browser, 2),
-            'The recipe text is not a valid bzr-builder recipe.')
+            "The recipe text is not a valid bzr-builder recipe. "
+            "End of line while looking for '#'")
 
     def test_create_recipe_no_distroseries(self):
         browser = self.getViewBrowser(self.makeBranch(), '+new-recipe')

@@ -7,10 +7,11 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_buildable_distroseries_set',
     'SourcePackageRecipe',
     ]
 
-from bzrlib.plugins.builder import RecipeParser
+from bzrlib.plugins.builder.recipe import RecipeParser
 from lazr.delegates import delegates
 
 from storm.locals import (
@@ -27,7 +28,8 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
-from lp.code.errors import BuildAlreadyPending, TooManyBuilds
+from lp.code.errors import (BuildAlreadyPending, BuildNotAllowedForDistro,
+    TooManyBuilds)
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
     ISourcePackageRecipeData)
@@ -35,9 +37,22 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
+
+
+def get_buildable_distroseries_set(user):
+    ppas = getUtility(IArchiveSet).getPPAsForUser(user)
+    supported_distros = [ppa.distribution for ppa in ppas]
+    distros = getUtility(IDistroSeriesSet).search()
+
+    buildables = []
+    for distro in distros:
+        if distro.active and distro.distribution in supported_distros:
+            buildables.append(distro)
+    return buildables
 
 
 class NonPPABuildRequest(Exception):
@@ -190,6 +205,11 @@ class SourcePackageRecipe(Storm):
         if archive.purpose != ArchivePurpose.PPA:
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
+
+        buildable_distros = get_buildable_distroseries_set(archive.owner)
+        if distroseries not in buildable_distros:
+            raise BuildNotAllowedForDistro(self, distroseries)
+
         reject_reason = archive.checkUpload(
             requester, self.distroseries, None, component, pocket)
         if reject_reason is not None:

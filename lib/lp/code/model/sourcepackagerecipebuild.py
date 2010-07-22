@@ -191,7 +191,8 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
             recipe.is_stale = False
         return builds
 
-    def destroySelf(self):
+    def _unqueueBuild(self):
+        """Remove the build's queue and job."""
         store = Store.of(self)
         if self.buildqueue_record is not None:
             job = self.buildqueue_record.job
@@ -200,6 +201,15 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                 SourcePackageRecipeBuildJob,
                 SourcePackageRecipeBuildJob.build == self.id).remove()
             store.remove(job)
+
+    def cancelBuild(self):
+        """See `ISourcePackageRecipeBuild.`"""
+        self._unqueueBuild()
+        self.status = BuildStatus.SUPERSEDED
+
+    def destroySelf(self):
+        self._unqueueBuild()
+        store = Store.of(self)
         store.remove(self)
 
     @classmethod
@@ -287,6 +297,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         # base implementation doesn't notify on success.
         if build.status == BuildStatus.FULLYBUILT:
             build.notify()
+
 
 class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)

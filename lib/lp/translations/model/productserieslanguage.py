@@ -6,18 +6,17 @@
 __metaclass__ = type
 
 __all__ = [
-    'DummyProductSeriesLanguage',
     'ProductSeriesLanguage',
     'ProductSeriesLanguageSet',
     ]
 
 from zope.interface import implements
 
-from storm.expr import Sum
+from storm.expr import Coalesce, Sum
 from storm.store import Store
 
 from lp.translations.utilities.rosettastats import RosettaStats
-from lp.translations.model.pofile import DummyPOFile, POFile
+from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import get_pofiles_for, POTemplate
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage, IProductSeriesLanguageSet)
@@ -41,8 +40,8 @@ class ProductSeriesLanguage(RosettaStats):
         # Reset all cached counts.
         self.setCounts()
 
-    def setCounts(self, total=None, imported=None, changed=None, new=None,
-                  unreviewed=None, last_changed=None):
+    def setCounts(self, total=0, imported=0, changed=0, new=0,
+                  unreviewed=0, last_changed=None):
         """See `IProductSeriesLanguage`."""
         self._messagecount = total
         # "currentcount" in RosettaStats conflicts our recent terminology
@@ -54,7 +53,6 @@ class ProductSeriesLanguage(RosettaStats):
         self._unreviewed_count = unreviewed
         if last_changed is not None:
             self._last_changed_date = last_changed
-
 
     def _getMessageCount(self):
         store = Store.of(self.language)
@@ -70,20 +68,16 @@ class ProductSeriesLanguage(RosettaStats):
         """See `IProductSeriesLanguage`."""
         store = Store.of(self.language)
         query = store.find(
-            (Sum(POFile.currentcount),
-              Sum(POFile.updatescount),
-              Sum(POFile.rosettacount),
-              Sum(POFile.unreviewed_count)),
+            (Coalesce(Sum(POFile.currentcount), 0),
+             Coalesce(Sum(POFile.updatescount), 0),
+             Coalesce(Sum(POFile.rosettacount), 0),
+             Coalesce(Sum(POFile.unreviewed_count), 0)),
             POFile.language==self.language,
             POFile.variant==None,
             POFile.potemplate==POTemplate.id,
             POTemplate.productseries==self.productseries,
             POTemplate.iscurrent==True)
         imported, changed, new, unreviewed = query[0]
-        if (imported is None or changed is None or
-            new is None or unreviewed is None):
-            # Set all counts to zero.
-            imported = changed = new = unreviewed = 0
         self.setCounts(self._getMessageCount(), imported, changed,
                        new, unreviewed)
 
@@ -138,40 +132,14 @@ class ProductSeriesLanguage(RosettaStats):
         return get_pofiles_for(potemplates, self.language, self.variant)
 
 
-class DummyProductSeriesLanguage(ProductSeriesLanguage):
-    """See `IProductSeriesLanguage`.
-
-    Implementation of IProductSeriesLanguage for a language with no
-    translations.
-    """
-    implements(IProductSeriesLanguage)
-
-    def __init__(self, productseries, language, variant=None, pofile=None):
-        ProductSeriesLanguage.__init__(
-            self, productseries, language, variant, pofile)
-        self.setCounts(self._getMessageCount(), 0, 0, 0, 0)
-
-    def getPOFilesFor(self, potemplates):
-        """See `IProductSeriesLanguage`."""
-        return [
-            DummyPOFile(template, self.language, self.variant)
-            for template in potemplates
-            ]
-
-
 class ProductSeriesLanguageSet:
     """See `IProductSeriesLanguageSet`.
 
-    Provides a means to get a ProductSeriesLanguage or create a dummy.
+    Provides a means to get a ProductSeriesLanguage.
     """
     implements(IProductSeriesLanguageSet)
 
     def getProductSeriesLanguage(self, productseries, language,
-                                 variant=None):
+                                 variant=None, pofile=None):
         """See `IProductSeriesLanguageSet`."""
-        return ProductSeriesLanguage(productseries, language, variant)
-
-    def getDummy(self, productseries, language, variant=None, pofile=None):
-        """See `IProductSeriesLanguageSet`."""
-        return DummyProductSeriesLanguage(
-            productseries, language, variant, pofile)
+        return ProductSeriesLanguage(productseries, language, variant, pofile)
