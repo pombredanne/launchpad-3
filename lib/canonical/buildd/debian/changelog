@@ -3,8 +3,9 @@ launchpad-buildd (67) hardy-cat; urgency=low
   * Add LSB information to init script.
   * Use debhelper >= 5 (available in dapper, not yet deprecated in
     maverick).
+  * Fix spelling in description.
 
- -- Jelmer Vernooij <jelmer@debian.org>  Thu, 22 Jul 2010 18:09:51 +0200
+ -- Jelmer Vernooij <jelmer@debian.org>  Thu, 22 Jul 2010 18:13:31 +0200
 
 launchpad-buildd (66) hardy-cat; urgency=low
 
