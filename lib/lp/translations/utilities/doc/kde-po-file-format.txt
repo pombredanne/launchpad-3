@@ -370,7 +370,8 @@ Exporting a translation is possible in a very similar way.
     "%d translationes\n"
     "%d translations"
     <BLANKLINE>
-    # Legacy KDE PO files allow multiple messages with same singular msgid.
+    # Legacy KDE PO files allow multiple messages with the same
+    # singular msgid.
     #, c-format
     msgid "%d foo"
     msgstr "no-plural translation %d"
