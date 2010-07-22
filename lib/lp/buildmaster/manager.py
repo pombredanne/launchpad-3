@@ -39,7 +39,6 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 
 
-
 buildd_success_result_map = {
     'ensurepresent': True,
     'build': 'BuilderStatus.BUILDING',
@@ -248,7 +247,7 @@ class SlaveScanner:
     @write_transaction
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
-        
+
         The whole method is wrapped in a transaction, but we do partial
         commits to avoid holding locks on tables.
         """
@@ -259,7 +258,7 @@ class SlaveScanner:
         from lp.buildmaster.interfaces.builder import IBuilderSet
         builder_set = getUtility(IBuilderSet)
         self.builder = builder_set[self.builder_name]
-        
+
         if self.builder.builderok:
             self.builder.updateStatus(self.logger)
             transaction.commit()
@@ -320,7 +319,7 @@ class SlaveScanner:
 
     def resumeAndDispatch(self, slave):
         """Chain the resume and dispatching Deferreds.
-        
+
         `extra_callback` is only set by the test suite.
         """
         if slave is not None:
@@ -467,7 +466,7 @@ class SlaveScanner:
             self.waitOnDeferredList()
             return self.reset_result(slave)
 
-        if isinstance(response, list) and len(response) == 2 :
+        if isinstance(response, list) and len(response) == 2:
             if method in buildd_success_result_map.keys():
                 expected_status = buildd_success_result_map.get(method)
                 status, info = response
@@ -514,7 +513,8 @@ class NewBuildersScanner:
         """See if any new builders were added."""
         # Avoid circular import.
         from lp.buildmaster.interfaces.builder import IBuilderSet
-        new_builders = set(builder.name for builder in getUtility(IBuilderSet))
+        new_builders = set(
+            builder.name for builder in getUtility(IBuilderSet))
         old_builders = set(self.current_builders)
         extra_builders = new_builders.difference(old_builders)
         if len(extra_builders) == 0:
@@ -576,4 +576,3 @@ class BuilddManager(service.Service):
 
         # Return the slave list for the benefit of tests.
         return self.builder_slaves
-
