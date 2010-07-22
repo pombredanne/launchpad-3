@@ -1,3 +1,9 @@
+launchpad-buildd (67ubuntu1) maverick; urgency=low
+
+  * Explicitly use source format 1.0.
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Thu, 22 Jul 2010 19:50:01 +0200
+
 launchpad-buildd (67) hardy-cat; urgency=low
 
   * Add LSB information to init script.
