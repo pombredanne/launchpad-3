@@ -13,52 +13,12 @@ BugBranch links a bug and a branch.
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
-    >>> from canonical.database.sqlbase import flush_database_updates
 
     >>> login("no-priv@canonical.com")
 
     >>> bugset = getUtility(IBugSet)
     >>> bug = bugset.get(1)
     >>> branch = getUtility(IBranchLookup).get(10)
-
-Adding a branch to a bug returns an IBugBranch.
-
-    >>> user = getUtility(IPersonSet).getByEmail("no-priv@canonical.com")
-    >>> bug_branch = bug.linkBranch(branch, user)
-
-    >>> flush_database_updates()
-
-The bug and branch fields of the returned bug_branch should reflect our
-sample data.
-
-    >>> bug_branch.bug.id
-    1
-    >>> bug_branch.branch.id
-    10
-    >>> print bug_branch.registrant.displayname
-    No Privileges Person
-
-    >>> [bug_branch.branch.name for bug_branch in
-    ...  bug.linked_branches]
-    [u'release-0.9.2']
-
-Trying to add a branch that is already linked to a bug will simply
-return the existing BugBranch.
-
-    >>> bug_branch_two = bug.linkBranch(branch, user)
-    >>> bug_branch_two == bug_branch
-    True
-
-You can check if a branch is linked to a bug:
-
-    >>> bug.hasBranch(branch)
-    True
-
-    >>> bug_two = bugset.get(2)
-    >>> bug_two.hasBranch(branch)
-    False
-    >>> branch = getUtility(IBranchLookup).get(1)
-    >>> bug_branch_three = bug.linkBranch(branch, user)
 
 If we make the bug private, no-priv won't be allowed to edit either
 the bug or the BugBranch.
@@ -116,7 +76,7 @@ Calling unlinkBranch() once again is a noop.
 
     >>> bug.unlinkBranch(branch, getUtility(ILaunchBag).user)
 
-    >>> bug_branch = bug.linkBranch(branch, user)
+    >>> bug_branch = bug.linkBranch(branch, getUtility(ILaunchBag).user)
 
 
 == Bugs Related to Branches ==
