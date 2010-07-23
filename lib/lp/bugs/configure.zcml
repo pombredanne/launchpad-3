@@ -12,8 +12,12 @@
     <include
         package=".browser"/>
 
+    <publisher
+       name="bugs"
+       factory="lp.bugs.publisher.bugs_request_publication_factory"/>
+
     <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.BugsLayer" />
+        folder="help" type="lp.bugs.publisher.BugsLayer" />
 
     <class
         class="canonical.launchpad.database.BugActivity">
@@ -649,6 +653,7 @@
                     getBugTasksByPackageName
                     users_affected_count
                     users_unaffected_count
+                    readonly_duplicateof
                     users_affected
                     users_unaffected
                     users_affected_count_with_dupes
@@ -699,6 +704,7 @@
                     date_last_updated
                     date_made_private
                     datecreated
+                    duplicateof
                     hits
                     hitstimestamp
                     name
@@ -979,4 +985,12 @@
     <class class="lp.bugs.model.bug.FileBugData">
         <allow interface="lp.bugs.interfaces.bug.IFileBugData" />
     </class>
+
+  <class class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipientReason">
+    <allow attributes="
+        bug
+        getReason
+        mail_header
+        recipient"/>
+  </class>
 </configure>
