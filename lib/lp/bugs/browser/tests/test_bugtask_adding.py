@@ -70,3 +70,24 @@ class TestProductBugTaskCreationStep(TestCaseWithFactory):
             self.sourcepackagename, self.ubuntu_series,
             self.product.development_focus)
         self.assertTrue(has_packaging)
+
+    def test_register_project_create_upstream_bugtask_with_packaging(self):
+        form = {
+            'field.bug_url': 'http://bugs.foo.org/bugs/show_bug.cgi?id=8',
+            'field.name': 'fruit',
+            'field.displayname': 'Fruit',
+            'field.summary': 'The Fruit summary',
+            'field.add_packaging': 'on',
+            'field.actions.continue': 'Continue',
+            }
+        view = create_initialized_view(
+            self.bug_task, '+affects-new-product', form=form)
+        self.assertEqual([], view.errors)
+        targets = [bugtask.target for bugtask in self.bug.bugtasks
+                   if bugtask.target.name == 'fruit']
+        self.assertEqual(1, len(targets))
+        product = targets[0]
+        has_packaging = self.packaging_util.packagingEntryExists(
+            self.sourcepackagename, self.ubuntu_series,
+            product.development_focus)
+        self.assertTrue(has_packaging)

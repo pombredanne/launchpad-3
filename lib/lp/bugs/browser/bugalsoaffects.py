@@ -675,7 +675,8 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
     schema = IAddBugTaskWithProductCreationForm
     custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
     custom_widget('existing_product', LaunchpadRadioWidget)
-    field_names = ['bug_url', 'displayname', 'name', 'summary']
+    field_names = [
+        'bug_url', 'displayname', 'name', 'summary', 'add_packaging']
     existing_products = None
     MAX_PRODUCTS_TO_DISPLAY = 10
     licenses = [License.DONT_KNOW]

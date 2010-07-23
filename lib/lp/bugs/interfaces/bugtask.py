@@ -1497,7 +1497,7 @@ class IAddBugTaskForm(Interface):
     add_packaging = Bool(
         title=_('Link the package to the upstream project?'),
         description=_('Always suggest this project when adding an '
-                      'upstream bug for this'),
+                      'upstream bug for this package.'),
         required=True, default=False)
 
 
@@ -1514,6 +1514,11 @@ class IAddBugTaskWithProductCreationForm(Interface):
             "followed by letters, dots, hyphens or plusses. e.g. firefox, "
             "linux, gnome-terminal."))
     summary = Summary(title=_('Project summary'), required=True)
+    add_packaging = Bool(
+        title=_('Link the package to the upstream project?'),
+        description=_('Always suggest this project when adding an '
+                      'upstream bug for this package.'),
+        required=True, default=False)
 
 
 class INominationsReviewTableBatchNavigator(ITableBatchNavigator):
