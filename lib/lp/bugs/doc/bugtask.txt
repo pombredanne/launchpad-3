@@ -1375,6 +1375,13 @@ This also works for distributions...
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
+    2: Blackhole Trash folder
+    9: Thunderbird crashes
+    10: another test bug
+    16: a test bug
+    17: a test bug
+    18: New Bug
+
 
 ... and for SourcePackages.
 
@@ -1387,6 +1394,7 @@ This also works for distributions...
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
+    18: New Bug
 
 Private bugs won't show up in the list of similar bugs unless the user
 is a direct subscriber. We'll demonstrate this by creating a new bug

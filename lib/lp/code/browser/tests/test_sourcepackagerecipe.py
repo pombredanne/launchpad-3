@@ -10,6 +10,7 @@ __metaclass__ = type
 from datetime import datetime, timedelta
 from textwrap import dedent
 
+import transaction
 from pytz import utc
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -28,6 +29,7 @@ from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import ANONYMOUS, BrowserTestCase, login, logout
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -44,7 +46,9 @@ class TestCaseForRecipe(BrowserTestCase):
         self.squirrel = self.factory.makeDistroSeries(
             displayname='Secret Squirrel', name='secret', version='100.04',
             distribution=self.ppa.distribution)
-        self.squirrel.nominatedarchindep = self.squirrel.newArch(
+        naked_squirrel = remove_security_proxy_and_shout_at_engineer(
+            self.squirrel)
+        naked_squirrel.nominatedarchindep = self.squirrel.newArch(
             'i386', ProcessorFamily.get(1), False, self.chef,
             supports_virtualized=True)
 
@@ -113,7 +117,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             Make some food!
 
             Recipe information
-            Build daily: True
+            Build schedule: Built daily
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/veggies
             Debian version: 0\+\{revno\}
@@ -244,6 +248,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         # You shouldn't be able to create a duplicate recipe owned by the same
         # person with the same name.
         recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+        transaction.commit()
+        recipe_name = recipe.name
 
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
@@ -254,7 +260,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
         browser.getLink('Create packaging recipe').click()
 
-        browser.getControl(name='field.name').value = recipe.name
+        browser.getControl(name='field.name').value = recipe_name
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Create Recipe').click()
@@ -309,7 +315,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build daily: False
+            Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: 0\+\{revno\}
@@ -419,8 +425,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build daily:
-            False
+            Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: 0\+\{revno\}
@@ -455,7 +460,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             This recipe .*changes.
 
             Recipe information
-            Build daily: False
+            Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: 0\+\{revno\}
@@ -492,7 +497,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
     def makeBuildJob(self, recipe):
         """Return a build associated with a buildjob."""
         build = self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa )
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa)
         self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         return build
 
@@ -525,6 +530,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(
             set([build1, build2, build3, build4, build5, build6]),
             set(view.builds))
+
         def set_day(build, day):
             removeSecurityProxy(build).datebuilt = datetime(
                 2010, 03, day, tzinfo=utc)
@@ -567,7 +573,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
-        woody.nominatedarchindep = woody.newArch(
+        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
+        naked_woody.nominatedarchindep = woody.newArch(
             'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
             supports_virtualized=True)
 
@@ -575,6 +582,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
         browser.getControl('Request builds').click()
+
+        login(ANONYMOUS)
         builds = recipe.getBuilds(True)
         build_distros = [
             build.distroseries.displayname for build in builds]
@@ -599,7 +608,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
-        woody.nominatedarchindep = woody.newArch(
+        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
+        naked_woody.nominatedarchindep = woody.newArch(
             'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
             supports_virtualized=True)
 
@@ -620,7 +630,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
-        woody.nominatedarchindep = woody.newArch(
+        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
+        naked_woody.nominatedarchindep = woody.newArch(
             'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
             supports_virtualized=True)
 
@@ -753,7 +764,6 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             Archive:       PPA named build for Owner
             Series:        Squirrel
             Pocket:        Release
-            Result:        .* in ubuntu 3.14
             Binary builds:
             itanic build of .* 3.14 in ubuntu squirrel RELEASE""",
             main_text)
@@ -765,14 +775,6 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         return self.factory.makeSourcePackageRelease(
             source_package_recipe_build=build, version='3.14',
             component=multiverse)
-
-    def test_render_sourcepackage_release(self):
-        """SourcePackageReleases are shown if set."""
-        release = self.makeBuildAndRelease()
-        main_text = self.getMainText(
-            release.source_package_recipe_build, '+index')
-        self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Result: .* in ubuntu 3.14""", main_text)
 
     def makeBinaryBuild(self, release, architecturetag):
         """Make a binary build with specified release and architecturetag."""
@@ -819,18 +821,20 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         build = self.makeBuild()
         removeSecurityProxy(build).buildlog = (
             self.factory.makeLibraryFileAlias())
+        build_log_url = build.build_log_url
         browser = self.getViewBrowser(build)
         link = browser.getLink('buildlog')
-        self.assertEqual(build.build_log_url, link.url)
+        self.assertEqual(build_log_url, link.url)
 
     def test_uploadlog(self):
         """A link to the upload log is shown if available."""
         build = self.makeBuild()
         removeSecurityProxy(build).upload_log = (
             self.factory.makeLibraryFileAlias())
+        upload_log_url = build.upload_log_url
         browser = self.getViewBrowser(build)
         link = browser.getLink('uploadlog')
-        self.assertEqual(build.upload_log_url, link.url)
+        self.assertEqual(upload_log_url, link.url)
 
 
 class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
