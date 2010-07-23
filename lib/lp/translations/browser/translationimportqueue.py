@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'escape_js_string',
     'TranslationImportQueueEntryNavigation',
     'TranslationImportQueueEntryView',
     'TranslationImportQueueNavigation',
@@ -40,6 +41,13 @@ from lp.translations.utilities.template import make_domain, make_name
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadFormView)
 from canonical.launchpad.validators.name import valid_name
+
+
+def escape_js_string(string):
+    """Escape `string` for use as a string in a JS <script> tag."""
+    return string.replace('\\', '\\\\').replace("'", "\\'").replace(
+        '"', '\\"')
+
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
 
@@ -508,6 +516,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         self.context.setStatus(RosettaImportStatus.APPROVED, self.user)
         self.context.date_status_changed = UTC_NOW
 
+    def _escapeJSString(self, string):
+        """Escape single-quoted `string` for use in a <script> tag."""
+        return string.replace('\\', '\\\\').replace("'", "\\'")
+
     @property
     def js_domain_mapping(self):
         """Return JS code mapping templates' names to translation domains."""
@@ -515,9 +527,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         if target is None:
             contents = ""
         else:
-# XXX: Even with weird characters disallowed, we should escape these.
             contents = ", \n".join([
-                "'%s': '%s'" % (template.name, template.translation_domain)
+                "'%s': '%s'" % (
+                    escape_js_string(template.name),
+                    escape_js_string(template.translation_domain))
                 for template in target.getCurrentTranslationTemplates()
                 ])
         return "var template_domains = {%s};" % contents
