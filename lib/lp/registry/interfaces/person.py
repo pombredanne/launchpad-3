@@ -520,33 +520,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             "should be no bigger than 100kb in size. ")))
     mugshotID = Int(title=_('Mugshot ID'), required=True, readonly=True)
 
-    addressline1 = TextLine(
-            title=_('Address'), required=True, readonly=False,
-            description=_('Your address (Line 1)'))
-    addressline2 = TextLine(
-            title=_('Address'), required=False, readonly=False,
-            description=_('Your address (Line 2)'))
-    city = TextLine(
-            title=_('City'), required=True, readonly=False,
-            description=_('The City/Town/Village/etc to where the CDs should '
-                          'be shipped.'))
-    province = TextLine(
-            title=_('Province'), required=True, readonly=False,
-            description=_('The State/Province/etc to where the CDs should '
-                          'be shipped.'))
-    country = Choice(
-            title=_('Country'), required=True, readonly=False,
-            vocabulary='CountryName',
-            description=_('The Country to where the CDs should be shipped.'))
-    postcode = TextLine(
-            title=_('Postcode'), required=True, readonly=False,
-            description=_('The Postcode to where the CDs should be shipped.'))
-    phone = TextLine(
-            title=_('Phone'), required=True, readonly=False,
-            description=_('[(+CountryCode) number] e.g. (+55) 16 33619445'))
-    organization = TextLine(
-            title=_('Organization'), required=False, readonly=False,
-            description=_('The Organization requesting the CDs'))
     languages = exported(
         CollectionField(
             title=_('List of languages known by this person'),

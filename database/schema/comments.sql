@@ -514,6 +514,22 @@ COMMENT ON INDEX emailaddress__account__key IS 'Ensures that an Account only has
 COMMENT ON TABLE FeaturedProject IS 'A list of featured projects. This table is really just a list of pillarname IDs, if a project''s pillar name is in this list then it is a featured project and will be listed on the Launchpad home page.';
 COMMENT ON COLUMN FeaturedProject.pillar_name IS 'A reference to PillarName.id';
 
+-- FeatureFlag
+
+COMMENT ON TABLE FeatureFlag IS
+    'Configuration that varies by the active scope and that \
+can be changed without restarting Launchpad
+<https://dev.launchpad.net/LEP/FeatureFlags>';
+
+COMMENT ON COLUMN FeatureFlag.scope IS 
+    'Scope in which this setting is active';
+
+COMMENT ON COLUMN FeatureFlag.priority IS 
+    'Higher priority flags override lower';
+
+COMMENT ON COLUMN FeatureFlag.flag IS 
+    'Name of the flag being controlled';
+
 -- KarmaCategory
 
 COMMENT ON TABLE KarmaCategory IS 'A category of karma. This allows us to
@@ -1467,6 +1483,7 @@ COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indic
 COMMENT ON COLUMN BinaryPackageRelease.pre_depends IS 'The list of packages this binary requires to be installed beforehand in apt/dpkg format, as it is in control file "Pre-Depends:" field.';
 COMMENT ON COLUMN BinaryPackageRelease.enhances IS 'The list of packages pointed as "enhanced" after the installation of this package, as it is in control file "Enhances:" field.';
 COMMENT ON COLUMN BinaryPackageRelease.breaks IS 'The list of packages which will be broken by the installtion of this package, as it is in the control file "Breaks:" field.';
+COMMENT ON COLUMN BinaryPackageRelease.debug_package IS 'The corresponding binary package release containing debug symbols for this binary, if any.';
 
 
 -- BinaryPackageFile
