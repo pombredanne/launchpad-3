@@ -29,7 +29,7 @@ if status[0] != 'BuilderStatus.IDLE':
     print "Aborting due to non-IDLE builder."
     sys.exit(1)
 print proxy.build(
-    '1-2', 'sourcepackagerecipe', 'foo',
+    '1-2', 'sourcepackagerecipe', '1ef177161c3cb073e66bf1550931c6fbaa0a94b0',
     {}, {'author_name': u'Steve\u1234',
          'author_email': 'stevea@example.org',
          'suite': distroseries_name,
