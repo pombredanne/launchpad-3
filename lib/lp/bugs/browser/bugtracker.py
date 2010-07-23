@@ -374,38 +374,22 @@ class BugTrackerEditView(LaunchpadEditFormView):
     def cancel_url(self):
         return canonical_url(self.context)
 
-    @property
-    def user_can_reset_watches(self):
-        lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
-        return (
-            check_permission("launchpad.Admin", self.user) or
-            self.user.inTeam(lp_developers))
-
-    def resetBugTrackerWatches(self):
-        """Call the resetWatches() method of the current context.
-
-        :raises `Unauthorized` if the user isn't an admin
-                or a member of the Launchpad Developers team.
-        """
-        if not self.user_can_reset_watches:
-            raise Unauthorized(
-                "You don't have permission to reset all the watches for "
-                "this bug tracker.")
-
-        self.context.resetWatches()
-
     def reschedule_action_condition(self, action):
         """Return True if the user can see the reschedule action."""
+        lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
+        user_can_reset_watches = (
+            check_permission("launchpad.Admin", self.user) or
+            self.user.inTeam(lp_developers))
         return (
             self.context.watches.count() > 0 and
-            self.user_can_reset_watches)
+            user_can_reset_watches)
 
     @action(
         'Reschedule all watches', name='reschedule',
         condition=reschedule_action_condition)
     def rescheduleAction(self, action, data):
         """Reschedule all the watches for the bugtracker."""
-        self.resetBugTrackerWatches()
+        self.context.resetWatches(user=self.user)
         self.request.response.addInfoNotification(
             structured(
                 "All bug watches on %s have been rescheduled." %

@@ -21,6 +21,7 @@ from urllib import splittype, quote
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from sqlobject import (
     BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
@@ -482,8 +483,20 @@ class BugTracker(SQLBase):
 
         return person
 
-    def resetWatches(self, new_next_check=None):
+    def resetWatches(self, user, new_next_check=None):
         """See `IBugTracker`."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        launchpad_developers = celebrities.launchpad_developers
+        admin_team = celebrities.admin
+        janitor = celebrities.janitor
+
+        if (not user.inTeam(admin_team) and
+            not user.inTeam(launchpad_developers) and
+            user != janitor):
+            raise Unauthorized(
+                "You do not have permission to reset the watches for "
+                "this bug tracker.")
+
         if new_next_check is None:
             new_next_check = SQL(
                 "now() at time zone 'UTC' + (random() * interval '1 day')")
