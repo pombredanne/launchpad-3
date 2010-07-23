@@ -89,6 +89,9 @@ class TranslatedLanguageMixin(object):
 
     @property
     def translation_statistics(self):
+        """See `ITranslatedLanguage`."""
+        # This is a temporary translation statistics 'object' to allow
+        # smoother migration from IRosettaStats to something much nicer.
         return self._translation_statistics
 
     def setCounts(self, total, translated, new, changed, unreviewed):

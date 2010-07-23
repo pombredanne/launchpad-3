@@ -791,8 +791,8 @@ class ITranslationTemplatesCollection(Interface):
             join to `POFile`.
         """
 
-    def select():
-        """Blah."""
+    def select(*args):
+        """Return a ResultSet for this collection with values set to args."""
 
 
 # Monkey patch for circular import avoidance done in

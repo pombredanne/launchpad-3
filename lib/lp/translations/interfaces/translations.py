@@ -5,14 +5,12 @@
 
 from lazr.enum import DBEnumeratedType, DBItem
 
-from canonical.launchpad import _
-
 __metaclass__ = type
 
-__all__ = [
+__all__ = (
     'TranslationConstants',
     'TranslationsBranchImportMode',
-    ]
+    )
 
 class TranslationConstants:
     """Set of constants used inside the context of translations."""
@@ -52,4 +50,5 @@ class TranslationsBranchImportMode(DBEnumeratedType):
         Import all translation files (templates and translations)
         found in the branch.
         """)
+
 
