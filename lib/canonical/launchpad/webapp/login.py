@@ -250,9 +250,9 @@ class OpenIDCallbackView(OpenIDLogin):
     def _gather_params(self, request):
         params = dict(request.form)
         for key, value in request.query_string_params.iteritems():
-            assert len(value) <= 1, (
-                'This code can not handle multi-valued fields')
-            params[key] = value[0]
+            if len(value) > 1:
+                raise ValueError(
+                    'Did not expect multi-valued fields.')
 
         # The production OpenID provider has some Django middleware that
         # generates a token used to prevent XSRF attacks and stuffs it into

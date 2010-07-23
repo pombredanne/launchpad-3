@@ -199,6 +199,15 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         params = view._gather_params(request)
         self.assertEquals(params['foo'], u'\u16dd')
 
+    def test_unexpected_multivalue_fields(self):
+        # The parameter gatering doesn't expect to find multi-valued form
+        # field and it reports an error if it finds any.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=1&foo=2',
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        self.assertRaises(ValueError, view._gather_params, request)
 
     def test_csrfmiddlewaretoken_is_ignored(self):
         # Show that the _gather_params filters out the errant
