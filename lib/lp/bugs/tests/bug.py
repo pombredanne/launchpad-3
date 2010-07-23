@@ -196,8 +196,7 @@ def create_old_bug(
     params = CreateBugParams(
         owner=no_priv, title=title, comment='Something is broken.')
     bug = target.createBug(params)
-    if duplicateof is not None:
-        bug.markAsDuplicate(duplicateof)
+    bug.duplicateof = duplicateof
     sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     if with_message is True:
         bug.newMessage(

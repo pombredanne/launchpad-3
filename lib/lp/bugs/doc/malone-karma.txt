@@ -204,7 +204,7 @@ Mark a bug as a duplicate:
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> bug.markAsDuplicate(bug_one)
+    >>> bug.duplicateof = bug_one
 
     (Notice how changing a bug with multiple bugtasks will assign karma to you
     once for each bugtask. This is so because we consider changes in a bug to

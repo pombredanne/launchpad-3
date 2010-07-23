@@ -7,8 +7,8 @@ ITranslationMessage object.
     >>> from lp.translations.model.pofile import POFile
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)
+    >>> from lp.translations.publisher import TranslationsLayer
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
-    >>> from canonical.launchpad.layers import TranslationsLayer
     >>> from canonical.launchpad.webapp import canonical_url
 
 All the tests will be submitted as comming from Kurem, an editor for the POFile
