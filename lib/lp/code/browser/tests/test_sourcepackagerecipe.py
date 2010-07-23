@@ -131,7 +131,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     def test_create_new_recipe_team_owner(self):
         # New recipes can be owned by teams that the user is a member of.
-        self.factory.makeTeam(
+        team = self.factory.makeTeam(
             name='good-chefs', displayname='Good Chefs', members=[self.chef])
         branch = self.makeBranch()
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
@@ -150,28 +150,10 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Owner').displayValue = ['Good Chefs']
         browser.getControl('Create Recipe').click()
 
-        pattern = """\
-            Good Chefs's daily recipe
-            .*
-
-            Description
-            Make some food!
-
-            Recipe information
-            Build schedule: Built daily
-            Owner: Good Chefs
-            Base branch: lp://dev/~chef/ratatouille/veggies
-            Debian version: 0\+\{revno\}
-            Daily build archive: Secret PPA
-            Distribution series: Secret Squirrel
-            .*
-
-            Recipe contents
-            # bzr-builder format 0.2 deb-version 0\+\{revno\}
-            lp://dev/~chef/ratatouille/veggies"""
-        main_text = extract_text(find_main_content(browser.contents))
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            pattern, main_text)
+        login(ANONYMOUS)
+        recipe = team.getRecipe(u'daily')
+        self.assertEqual(team, recipe.owner)
+        self.assertEqual('daily', recipe.name)
 
     def test_create_recipe_forbidden_instruction(self):
         # We don't allow the "run" instruction in our recipes.  Make sure this
