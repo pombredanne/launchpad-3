@@ -18,7 +18,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, TextLine, Timedelta
+from zope.schema import Bool, Choice, Datetime, Int, TextLine, Timedelta
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
@@ -257,6 +257,11 @@ class IBuildFarmJob(IBuildFarmJobOld):
         title=_("Job type"), required=True, readonly=True,
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
+
+    failure_count = Int(
+        title=_("Failure Count"), required=False, readonly=True,
+        default=0,
+        description=_("Number of consecutive failures for this job."))
 
     def getSpecificJob():
         """Return the specific build job associated with this record.
