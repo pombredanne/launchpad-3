@@ -326,12 +326,12 @@ class LaunchpadPrincipal:
 
 # zope.app.apidoc expects our principals to be adaptable into IAnnotations, so
 # we use these dummy adapters here just to make that code not OOPS.
-class TemporaryPrincipalAnnotations(object, UserDict):
+class TemporaryPrincipalAnnotations(UserDict):
     implements(IAnnotations)
     adapts(ILaunchpadPrincipal, IPreferenceGroup)
 
     def __init__(self, principal, pref_group):
-        super(TemporaryPrincipalAnnotations, self).__init__()
+        UserDict.__init__(self)
 
 
 class TemporaryUnauthenticatedPrincipalAnnotations(
