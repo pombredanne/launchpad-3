@@ -45,6 +45,7 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
+from cStringIO import StringIO
 from datetime import datetime, timedelta
 from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
@@ -410,6 +411,17 @@ class TestCase(testtools.TestCase):
         config.push(name, "\n[%s]\n%s\n" % (section, body))
         self.addCleanup(config.pop, name)
 
+    def attachOopses(self):
+        if len(self.oopses) > 0:
+            content_type = testtools.content_type.ContentType(
+                "text", "plain", {"charset": "utf8"})
+            for (i, oops) in enumerate(self.oopses):
+                def get_oops_content():
+                    return oops.get_chunks()
+                content = testtools.content.Content(
+                    content_type, get_oops_content)
+                self.addDetail("oops-%d" % i, content)
+
     def setUp(self):
         testtools.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
@@ -417,6 +429,7 @@ class TestCase(testtools.TestCase):
         # Record the oopses generated during the test run.
         self.oopses = []
         self.installFixture(ZopeEventHandlerFixture(self._recordOops))
+        self.addCleanup(self.attachOopses)
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):
