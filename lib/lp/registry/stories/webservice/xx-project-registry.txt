@@ -847,15 +847,17 @@ Project series entry
 The entry for a project series is available at its canonical URL on the
 virtual host.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> login('test@canonical.com')
     >>> babadoo_owner = factory.makePerson(name='babadoo-owner')
     >>> babadoo = factory.makeProduct(name='babadoo', owner=babadoo_owner)
     >>> foobadoo = factory.makeProductSeries(
     ...     product=babadoo, name='foobadoo', owner=babadoo_owner)
-    >>> foobadoo.summary = u'Foobadoo support for Babadoo'
+    >>> removeSecurityProxy(foobadoo).summary = (
+    ...     u'Foobadoo support for Babadoo')
     >>> fooey = factory.makeAnyBranch(
     ...     product=babadoo, name='fooey', owner=babadoo_owner)
-    >>> foobadoo.branch = fooey
+    >>> removeSecurityProxy(foobadoo).branch = fooey
     >>> logout()
 
     >>> babadoo_foobadoo = webservice.get('/babadoo/foobadoo').jsonBody()

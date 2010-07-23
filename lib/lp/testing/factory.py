@@ -13,8 +13,10 @@ This module should not have any actual tests.
 __metaclass__ = type
 __all__ = [
     'GPGSigningContext',
+    'is_security_proxied_or_harmless',
     'LaunchpadObjectFactory',
     'ObjectFactory',
+    'remove_security_proxy_and_shout_at_engineer',
     ]
 
 from contextlib import nested
@@ -25,18 +27,22 @@ from email.message import Message as EmailMessage
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itertools import count
+from operator import isSequenceType
 import os.path
 from random import randint
 from StringIO import StringIO
+import sys
 from textwrap import dedent
 from threading import local
+from types import InstanceType
 
 import pytz
 
 from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import ComponentLookupError, getUtility
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    builtin_isinstance, Proxy, ProxyFactory, removeSecurityProxy)
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
@@ -325,7 +331,7 @@ class ObjectFactory:
             branch_id, rcstype, url, cvs_root, cvs_module)
 
 
-class LaunchpadObjectFactory(ObjectFactory):
+class BareLaunchpadObjectFactory(ObjectFactory):
     """Factory methods for creating Launchpad objects.
 
     All the factory methods should be callable with no parameters.
@@ -356,7 +362,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         location = PackageLocation(copy_archive, distribution, distroseries,
             pocket)
-        return location
+        return ProxyFactory(location)
 
     def makeAccount(self, displayname, email=None, password=None,
                     status=AccountStatus.ACTIVE,
@@ -744,8 +750,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
         naked_product = removeSecurityProxy(product)
-        return naked_product.newSeries(owner=owner, name=name,
-                                       summary=summary)
+        return ProxyFactory(
+            naked_product.newSeries(owner=owner, name=name, summary=summary))
 
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,
@@ -1034,7 +1040,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
     def makeDiff(self, diff_text=DIFF):
-        return Diff.fromFile(StringIO(diff_text), len(diff_text))
+        return ProxyFactory(Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
     def makePreviewDiff(self, conflicts=u''):
         diff = self.makeDiff()
@@ -1671,7 +1677,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
         series.status = status
-        return series
+        return ProxyFactory(series)
 
     # Most people think of distro releases as distro series.
     makeDistroSeries = makeDistroRelease
@@ -1780,7 +1786,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeRecipeText(self, *branches):
         if len(branches) == 0:
-            branches = (self.makeAnyBranch(),)
+            branches = (self.makeAnyBranch(), )
         base_branch = branches[0]
         other_branches = branches[1:]
         text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
@@ -1943,7 +1949,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             productseries = self.makeProductSeries(owner=owner)
             # Make it use Translations, otherwise there's little point
             # to us creating a template for it.
-            productseries.product.official_rosetta = True
+            removeSecurityProxy(productseries).product.official_rosetta = True
         templateset = getUtility(IPOTemplateSet)
         subset = templateset.getSubset(
             distroseries, sourcepackagename, productseries)
@@ -2718,3 +2724,73 @@ class LaunchpadObjectFactory(ObjectFactory):
         new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
+
+
+# Some factory methods return simple Python types. We don't add
+# security wrappers for them, as well as for objects created by
+# other Python libraries.
+unwrapped_types = (
+    DSCFile, InstanceType, Message, datetime, int, str, unicode)
+
+def is_security_proxied_or_harmless(obj):
+    """Check that the given object is security wrapped or a harmless object."""
+    if obj is None:
+        return True
+    if builtin_isinstance(obj, Proxy):
+        return True
+    if type(obj) in unwrapped_types:
+        return True
+    if isSequenceType(obj):
+        for element in obj:
+            if not is_security_proxied_or_harmless(element):
+                return False
+        return True
+    return False
+
+
+class LaunchpadObjectFactory:
+    """A wrapper around `BareLaunchpadObjectFactory`.
+
+    Ensure that each object created by a `BareLaunchpadObjectFactory` method
+    is either of a simple Python type or is security proxied.
+
+    A warning message is printed to stderr if a factory method creates
+    an object without a security proxy.
+
+    Whereever you see such a warning: fix it!
+    """
+    def __init__(self):
+        self._factory = BareLaunchpadObjectFactory()
+
+    def __getattr__(self, name):
+        attr = getattr(self._factory, name)
+        if callable(attr):
+
+            def guarded_method(*args, **kw):
+                result = attr(*args, **kw)
+                if not is_security_proxied_or_harmless(result):
+                    message = (
+                        "PLEASE FIX: LaunchpadObjectFactory.%s returns an "
+                        "unproxied object." % name)
+                    print >>sys.stderr, message
+                return result
+            return guarded_method
+        else:
+            return attr
+
+
+def remove_security_proxy_and_shout_at_engineer(obj):
+    """Remove an object's security proxy and print a warning.
+
+    A number of LaunchpadObjectFactory methods returned objects without
+    a security proxy. This is now no longer possible, but a number of
+    tests rely on unrestricted access to object attributes.
+
+    This function should only be used in legacy tests which fail because
+    they expect unproxied objects.
+    """
+    print >>sys.stderr, (
+        "\nWarning: called removeSecurityProxy() for %r without a check if "
+        "this reasonable. Look for a call of "
+        "remove_security_proxy_and_shout_at_engineer(some_object)." % obj)
+    return removeSecurityProxy(obj)
