@@ -3,10 +3,10 @@
 
 __metaclass__ = type
 
+import unittest
+import transaction
 from doctest import NORMALIZE_WHITESPACE, ELLIPSIS
 from doctest import DocTestSuite
-
-import unittest
 from urllib2 import HTTPError, Request
 from datetime import datetime, timedelta
 from pytz import utc
@@ -209,6 +209,9 @@ class TestMantis(TestCaseWithFactory):
 
     def setUp(self):
         super(TestMantis, self).setUp()
+        # We need to commit to avoid there being errors from the
+        # checkwatches isolation protection code.
+        transaction.commit()
 
     def test_mantis_login_redirects(self):
         # The Mantis bug tracker needs a special HTTP redirect handler
