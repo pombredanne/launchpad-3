@@ -37,6 +37,7 @@ from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.testing import ANONYMOUS, login, person_logged_in, TestCaseWithFactory
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import pop_notifications
 
@@ -53,7 +54,9 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         distroseries_i386 = distroseries.newArch(
             'i386', ProcessorFamily.get(1), False, person,
             supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
+        naked_distroseries = remove_security_proxy_and_shout_at_engineer(
+            distroseries)
+        naked_distroseries.nominatedarchindep = distroseries_i386
 
         return getUtility(ISourcePackageRecipeBuildSource).new(
             distroseries=distroseries,
@@ -320,7 +323,7 @@ class TestAsBuildmaster(TestCaseWithFactory):
         removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
         IStore(build).flush()
         build.notify()
-        (message,) = pop_notifications()
+        (message, ) = pop_notifications()
         requester = build.requester
         requester_address = format_address(
             requester.displayname, requester.preferredemail.email)

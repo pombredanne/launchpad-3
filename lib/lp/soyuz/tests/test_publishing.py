@@ -43,7 +43,8 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.scripts import FakeLogger
 from lp.testing import TestCaseWithFactory
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import (
+    LaunchpadObjectFactory, remove_security_proxy_and_shout_at_engineer)
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -145,7 +146,10 @@ class SoyuzTestPublisher:
             PackageUploadStatus.DONE: 'setDone',
             PackageUploadStatus.ACCEPTED: 'setAccepted',
             }
-        method = getattr(package_upload, status_to_method[upload_status])
+        naked_package_upload = remove_security_proxy_and_shout_at_engineer(
+            package_upload)
+        method = getattr(
+            naked_package_upload, status_to_method[upload_status])
         method()
 
         return package_upload
@@ -221,7 +225,9 @@ class SoyuzTestPublisher:
             changes_file_name=changes_file_name,
             changes_file_content=changes_file_content,
             upload_status=upload_status)
-        package_upload.addSource(spr)
+        naked_package_upload = remove_security_proxy_and_shout_at_engineer(
+            package_upload)
+        naked_package_upload.addSource(spr)
 
         if filename is None:
             filename = "%s_%s.dsc" % (sourcename, version)
