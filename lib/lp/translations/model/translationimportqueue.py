@@ -8,7 +8,7 @@ __all__ = [
     'collect_import_info',
     'HasTranslationImportsMixin',
     'TranslationImportQueueEntry',
-    'TranslationImportQueue'
+    'TranslationImportQueue',
     ]
 
 import logging
@@ -354,7 +354,7 @@ class TranslationImportQueueEntry(SQLBase):
                 self.sourcepackagename)
         else:
             target = self.productseries.product
-        
+
         return target.getCustomLanguageCode(language_code)
 
     def _guessLanguage(self):
@@ -401,7 +401,7 @@ class TranslationImportQueueEntry(SQLBase):
         :arg sourcepackagename: The ISourcePackageName that uses this
             translation or None if we don't know it.
         """
-        assert (lang_code is not None and translation_domain is not None) , (
+        assert (lang_code is not None and translation_domain is not None), (
             "lang_code and translation_domain cannot be None")
 
         language_set = getUtility(ILanguageSet)
