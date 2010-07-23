@@ -63,6 +63,9 @@ class POFilesByPOTemplates(object):
     def __len__(self):
         return self.templates_collection.select(POTemplate).count()
 
+    def __nonzero__(self):
+        return bool(self.templates_collection.select(POTemplate).any())
+
 
 class TranslatedLanguageMixin(object):
     """See `ITranslatedLanguage`."""

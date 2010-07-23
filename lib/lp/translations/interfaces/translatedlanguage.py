@@ -69,6 +69,9 @@ class IPOFilesByPOTemplates(IFiniteSequence):
     def __getitem__(selector):
         """Get an element or slice of `IPOFile`s for given templates."""
 
+    def __getslice__(start, end):
+        """Deprecated, and implemented through __getitem__."""
+
     def __iter__():
         """Iterates over all `IPOFile`s for given templates."""
 

@@ -35,12 +35,13 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         return self.psl_set.getProductSeriesLanguage(self.productseries,
                                                      language)
 
-    def addPOTemplate(self, number_of_potmsgsets=5):
+    def addPOTemplate(self, number_of_potmsgsets=0, priority=0):
         potemplate = self.factory.makePOTemplate(
             productseries=self.productseries)
         for sequence in range(number_of_potmsgsets):
             self.factory.makePOTMsgSet(potemplate, sequence=sequence+1)
         removeSecurityProxy(potemplate).messagecount = number_of_potmsgsets
+        potemplate.priority = priority
         return potemplate
 
     def test_interface(self):
@@ -68,22 +69,99 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         dummy_pofile = potemplate.getDummyPOFile(self.language)
         pofiles = list(translated_language.pofiles)
         self.assertEqual(1, len(pofiles))
-        self.assertStatementCount(1, list, translated_language.pofiles)
 
         # When there are no actual PO files, we get a DummyPOFile object
         # instead.
         dummy_pofile = pofiles[0]
         naked_dummy = removeSecurityProxy(dummy_pofile)
-        self.assertTrue(isinstance(naked_dummy, DummyPOFile))
+        self.assertEqual(DummyPOFile, type(naked_dummy))
         self.assertEqual(self.language, dummy_pofile.language)
         self.assertEqual(potemplate, dummy_pofile.potemplate)
+
+        # Two queries get executed when listifying
+        # TranslatedLanguageMixin.pofiles: a len() does a count, and
+        # then all POTemplates and POFiles are fetched with the other.
+        self.assertStatementCount(2, list, translated_language.pofiles)
 
     def test_pofiles_template_with_pofiles(self):
         translated_language = self.getTranslatedLanguage(self.language)
         potemplate = self.addPOTemplate()
         pofile = self.factory.makePOFile(self.language.code, potemplate)
-        self.assertStatementCount(1, list, translated_language.pofiles)
         self.assertEqual([pofile], list(translated_language.pofiles))
+
+        # Two queries get executed when listifying
+        # TranslatedLanguageMixin.pofiles: a len() does a count, and
+        # then all POTemplates and POFiles are fetched with the other.
+        self.assertStatementCount(2, list, translated_language.pofiles)
+
+    def test_pofiles_two_templates(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        # Two templates with different priorities so they get sorted
+        # appropriately.
+        potemplate1 = self.addPOTemplate(priority=2)
+        pofile1 = self.factory.makePOFile(self.language.code, potemplate1)
+        potemplate2 = self.addPOTemplate(priority=1)
+        pofile2 = self.factory.makePOFile(self.language.code, potemplate2)
+        self.assertEqual([pofile1, pofile2],
+                         list(translated_language.pofiles))
+
+        # Two queries get executed when listifying
+        # TranslatedLanguageMixin.pofiles: a len() does a count, and
+        # then all POTemplates and POFiles are fetched with the other.
+        self.assertStatementCount(2, list, translated_language.pofiles)
+
+    def test_pofiles_two_templates_one_dummy(self):
+        translated_language = self.getTranslatedLanguage(self.language)
+        # Two templates with different priorities so they get sorted
+        # appropriately.
+        potemplate1 = self.addPOTemplate(priority=2)
+        pofile1 = self.factory.makePOFile(self.language.code, potemplate1)
+        potemplate2 = self.addPOTemplate(priority=1)
+        pofiles = translated_language.pofiles
+        self.assertEqual(pofile1, pofiles[0])
+        dummy_pofile = removeSecurityProxy(pofiles[1])
+        self.assertEqual(DummyPOFile, type(dummy_pofile))
+
+        # Two queries get executed when listifying
+        # TranslatedLanguageMixin.pofiles: a len() does a count, and
+        # then all POTemplates and POFiles are fetched with the other.
+        self.assertStatementCount(2, list, translated_language.pofiles)
+
+    def test_pofiles_slicing(self):
+        # Slicing still works, and always does the same constant number
+        # of queries (1).
+        translated_language = self.getTranslatedLanguage(self.language)
+        # Three templates with different priorities so they get sorted
+        # appropriately.
+        potemplate1 = self.addPOTemplate(priority=2)
+        pofile1 = self.factory.makePOFile(self.language.code, potemplate1)
+        potemplate2 = self.addPOTemplate(priority=1)
+        pofile2 = self.factory.makePOFile(self.language.code, potemplate2)
+        potemplate3 = self.addPOTemplate(priority=0)
+
+        pofiles = translated_language.pofiles[0:2]
+        self.assertEqual([pofile1, pofile2], list(pofiles))
+
+        # Slicing executes only a single query.
+        get_slice = lambda of, start, end: list(of[start:end])
+        self.assertStatementCount(1, get_slice,
+                                  translated_language.pofiles, 1, 3)
+
+    def test_pofiles_slicing_dummies(self):
+        # Slicing includes DummyPOFiles.
+        translated_language = self.getTranslatedLanguage(self.language)
+        # Three templates with different priorities so they get sorted
+        # appropriately.
+        potemplate1 = self.addPOTemplate(priority=2)
+        pofile1 = self.factory.makePOFile(self.language.code, potemplate1)
+        potemplate2 = self.addPOTemplate(priority=1)
+        pofile2 = self.factory.makePOFile(self.language.code, potemplate2)
+        potemplate3 = self.addPOTemplate(priority=0)
+
+        pofiles = translated_language.pofiles[1:3]
+        self.assertEqual(pofile2, pofiles[0])
+        dummy_pofile = removeSecurityProxy(pofiles[1])
+        self.assertEqual(DummyPOFile, type(dummy_pofile))
 
     def test_statistics_empty(self):
         translated_language = self.getTranslatedLanguage(self.language)
