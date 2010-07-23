@@ -1,6 +1,6 @@
 SET client_min_messages=ERROR;
 
-CREATE TABLE SuggestivePOTemplate(potemplate integer UNIQUE);
+CREATE TABLE SuggestivePOTemplate(potemplate integer PRIMARY KEY);
 
 INSERT INTO SuggestivePOTemplate (
     SELECT POTemplate.id
