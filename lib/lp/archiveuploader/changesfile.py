@@ -164,8 +164,6 @@ class ChangesFile(SignableTagFile):
             # CHECKSUM SIZE [COMPONENT/]SECTION PRIORITY FILENAME
             digest, size, component_and_section, priority_name, filename = (
                 fileline.strip().split())
-            source_match = re_issource.match(filename)
-            binary_match = re_isadeb.match(filename)
             filepath = os.path.join(self.dirname, filename)
             try:
                 if self.isCustom(component_and_section):
@@ -176,21 +174,9 @@ class ChangesFile(SignableTagFile):
                         filepath, digest, size, component_and_section,
                         priority_name, self.policy, self.logger)
                 else:
-                    if source_match:
-                        package = source_match.group(1)
-                        if (determine_source_file_type(filename) ==
-                            SourcePackageFileType.DSC):
-                            cls = DSCFile
-                        else:
-                            cls = SourceUploadFile
-                    elif binary_match:
-                        package = binary_match.group(1)
-                        cls = {
-                            BinaryPackageFileType.DEB: DebBinaryUploadFile,
-                            BinaryPackageFileType.DDEB: DdebBinaryUploadFile,
-                            BinaryPackageFileType.UDEB: UdebBinaryUploadFile,
-                            }[determine_binary_file_type(filename)]
-                    else:
+                    package, cls = determine_file_class_and_name(filename)
+
+                    if cls is None:
                         yield UploadError(
                             "Unable to identify file %s (%s) in changes."
                             % (filename, component_and_section))
@@ -357,3 +343,25 @@ class ChangesFile(SignableTagFile):
         return self.changes_comment + changes_author
 
 
+def determine_file_class_and_name(filename):
+    """Determine the name and PackageUploadFile subclass for the filename."""
+    source_match = re_issource.match(filename)
+    binary_match = re_isadeb.match(filename)
+    if source_match:
+        package = source_match.group(1)
+        if (determine_source_file_type(filename) ==
+            SourcePackageFileType.DSC):
+            cls = DSCFile
+        else:
+            cls = SourceUploadFile
+    elif binary_match:
+        package = binary_match.group(1)
+        cls = {
+            BinaryPackageFileType.DEB: DebBinaryUploadFile,
+            BinaryPackageFileType.DDEB: DdebBinaryUploadFile,
+            BinaryPackageFileType.UDEB: UdebBinaryUploadFile,
+            }[determine_binary_file_type(filename)]
+    else:
+        return None, None
+
+    return package, cls
