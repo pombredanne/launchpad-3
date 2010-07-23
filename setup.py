@@ -31,6 +31,7 @@ setup(
         'cssutils',
         # Required for pydkim
         'dnspython',
+        'FeedParser',
         'feedvalidator',
         'funkload',
         'launchpadlib',
@@ -44,6 +45,7 @@ setup(
         'lazr.testing',
         'lazr.uri',
         'lazr-js',
+        'manuel',
         'mechanize',
         'meliae',
         'mercurial',

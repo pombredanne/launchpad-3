@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native publication workflow for Soyuz. """
@@ -9,7 +9,6 @@ import os
 import shutil
 from StringIO import StringIO
 import tempfile
-import unittest
 
 import pytz
 from zope.component import getUtility
@@ -18,8 +17,10 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
 from lp.archivepublisher.config import Config
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -38,11 +39,12 @@ from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority, PackagePublishingStatus)
+    IPublishingSet, PackagePublishingPriority, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.scripts import FakeLogger
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.fakemethod import FakeMethod
 
 
 class SoyuzTestPublisher:
@@ -134,7 +136,7 @@ class SoyuzTestPublisher:
                          changes_file_name="foo_666_source.changes",
                          changes_file_content="fake changes file content",
                          upload_status=PackageUploadStatus.DONE):
-        signing_key =  self.person.gpg_keys[0]
+        signing_key = self.person.gpg_keys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, changes_file_name, changes_file_content, archive,
             signing_key)
@@ -266,7 +268,8 @@ class SoyuzTestPublisher:
                        pub_source=None,
                        version='666',
                        architecturespecific=False,
-                       builder=None):
+                       builder=None,
+                       component='main'):
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.distroseries
@@ -284,7 +287,8 @@ class SoyuzTestPublisher:
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket,
                 archive=archive, distroseries=distroseries,
-                version=version, architecturehintlist=architecturehintlist)
+                version=version, architecturehintlist=architecturehintlist,
+                component=component)
         else:
             archive = pub_source.archive
 
@@ -452,16 +456,17 @@ class SoyuzTestPublisher:
         return source
 
 
-class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
+class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
     layer = LaunchpadZopelessLayer
     dbuser = config.archivepublisher.dbuser
 
     def __init__(self, methodName='runTest'):
-        unittest.TestCase.__init__(self, methodName=methodName)
+        super(TestNativePublishingBase, self).__init__(methodName=methodName)
         SoyuzTestPublisher.__init__(self)
 
     def setUp(self):
         """Setup a pool dir, the librarian, and instantiate the DiskPool."""
+        super(TestNativePublishingBase, self).setUp()
         self.layer.switchDbUser(config.archivepublisher.dbuser)
         self.prepareBreezyAutotest()
         self.config = Config(self.ubuntutest)
@@ -469,13 +474,13 @@ class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
         self.pool_dir = self.config.poolroot
         self.temp_dir = self.config.temproot
         self.logger = FakeLogger()
-        def message(self, prefix, *stuff, **kw):
-            pass
-        self.logger.message = message
+
+        self.logger.message = FakeMethod()
         self.disk_pool = DiskPool(self.pool_dir, self.temp_dir, self.logger)
 
     def tearDown(self):
         """Tear down blows the pool dir away."""
+        super(TestNativePublishingBase, self).tearDown()
         shutil.rmtree(self.config.distroroot)
 
     def getPubSource(self, *args, **kwargs):
@@ -498,48 +503,19 @@ class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
         self.layer.commit()
         return binaries
 
-    def checkSourcePublication(self, source, status):
-        """Assert the source publications has the given status.
-
-        Retrieve an up-to-date record corresponding to the given publication,
-        check and return it.
-        """
-        fresh_source = SourcePackagePublishingHistory.get(source.id)
+    def checkPublication(self, pub, status):
+        """Assert the publication has the given status."""
         self.assertEqual(
-            fresh_source.status, status, "%s is not %s (%s)" % (
-            fresh_source.displayname, status.name, source.status.name))
-        return fresh_source
+            pub.status, status, "%s is not %s (%s)" % (
+            pub.displayname, status.name, pub.status.name))
 
-    def checkBinaryPublication(self, binary, status):
-        """Assert the binary publication has the given status.
+    def checkPublications(self, pubs, status):
+        """Assert the given publications have the given status.
 
-        Retrieve an up-to-date record corresponding to the given publication,
-        check and return it.
+        See `checkPublication`.
         """
-        fresh_binary = BinaryPackagePublishingHistory.get(binary.id)
-        self.assertEqual(
-            fresh_binary.status, status, "%s is not %s (%s)" % (
-            fresh_binary.displayname, status.name, fresh_binary.status.name))
-        return fresh_binary
-
-    def checkBinaryPublications(self, binaries, status):
-        """Assert the binary publications have the given status.
-
-        See `checkBinaryPublication`.
-        """
-        fresh_binaries = []
-        for bin in binaries:
-            bin = self.checkBinaryPublication(bin, status)
-            fresh_binaries.append(bin)
-        return fresh_binaries
-
-    def checkPublications(self, source, binaries, status):
-        """Assert source and binary publications have in the given status.
-
-        See `checkSourcePublication` and `checkBinaryPublications`.
-        """
-        self.checkSourcePublication(source, status)
-        self.checkBinaryPublications(binaries, status)
+        for pub in pubs:
+            self.checkPublication(pub, status)
 
     def checkPastDate(self, date, lag=None):
         """Assert given date is older than 'now'.
@@ -552,6 +528,19 @@ class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
         if lag is not None:
             limit = limit + lag
         self.assertTrue(date < limit, "%s >= %s" % (date, limit))
+
+    def checkSuperseded(self, pubs, supersededby=None):
+        self.checkPublications(pubs, PackagePublishingStatus.SUPERSEDED)
+        for pub in pubs:
+            self.checkPastDate(pub.datesuperseded)
+            if supersededby is not None:
+                if isinstance(pub, BinaryPackagePublishingHistory):
+                    dominant = supersededby.binarypackagerelease.build
+                else:
+                    dominant = supersededby.sourcepackagerelease
+                self.assertEquals(dominant, pub.supersededby)
+            else:
+                self.assertIs(None, pub.supersededby)
 
 
 class TestNativePublishing(TestNativePublishingBase):
@@ -578,24 +567,6 @@ class TestNativePublishing(TestNativePublishingBase):
         pool_path = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
         self.assertEqual(open(pool_path).read().strip(), 'Hello world')
 
-    def test_publish_ddeb_for_ppas(self):
-        # DDEB publications in PPAs result in a PUBLISHED publishing record
-        # but the corresponding files are *not* dumped in the disk pool/.
-        cprov = getUtility(IPersonSet).getByName('cprov')
-        pub_binary = self.getPubBinaries(
-            filecontent='Hello world', format=BinaryPackageFormat.DDEB,
-            archive=cprov.archive)[0]
-
-        # Publication happens in the database domain.
-        pub_binary.publish(self.disk_pool, self.logger)
-        self.assertEqual(
-            PackagePublishingStatus.PUBLISHED,
-            pub_binary.status)
-
-        # But the DDEB isn't dumped to the repository pool/.
-        pool_path = "%s/main/f/foo/foo-bin_666_all.ddeb" % self.pool_dir
-        self.assertFalse(os.path.exists(pool_path))
-
     def testPublishingOverwriteFileInPool(self):
         """Test if publishOne refuses to overwrite a file in pool.
 
@@ -613,9 +584,18 @@ class TestNativePublishing(TestNativePublishingBase):
 
         pub_source = self.getPubSource(filecontent="Something")
         pub_source.publish(self.disk_pool, self.logger)
+
+        # And an oops should be filed for the error.
+        error_utility = ErrorReportingUtility()
+        error_report = error_utility.getLastOopsReport()
+        fp = StringIO()
+        error_report.write(fp)
+        error_text = fp.getvalue()
+        self.assertTrue("PoolFileOverwriteError" in error_text)
+
         self.layer.commit()
         self.assertEqual(
-            pub_source.status,PackagePublishingStatus.PENDING)
+            pub_source.status, PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_dsc_path).read().strip(), 'Hello world')
 
     def testPublishingDifferentContents(self):
@@ -794,7 +774,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         try:
             copies = tuple(copied)
         except TypeError:
-            copies = (copied,)
+            copies = (copied, )
 
         for copy in copies:
             self.assertEquals(copy.component, pub_record.component)
@@ -820,7 +800,6 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
 
         # Adjust the binary package release original component.
         universe = getUtility(IComponentSet)['universe']
-        from zope.security.proxy import removeSecurityProxy
         removeSecurityProxy(binary.binarypackagerelease).component = universe
 
         self.copyAndCheck(
@@ -904,7 +883,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """Return a mock source package publishing record for the archive
         and architecture used in this testcase.
 
-        :param architecturehintlist: Architecture hint list (e.g. "i386 amd64")
+        :param architecturehintlist: Architecture hint list
+            (e.g. "i386 amd64")
         """
         return super(BuildRecordCreationTests, self).getPubSource(
             archive=self.archive, distroseries=self.distroseries,
@@ -944,8 +924,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restricts_explicitlist(self):
-        """createMissingBuilds() should limit builds targeted at a
-        variety of architectures architecture to those allowed for the archive.
+        """createMissingBuilds() limits builds targeted at a variety of
+        architectures architecture to those allowed for the archive.
         """
         pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
         builds = pubrec.createMissingBuilds()
@@ -975,5 +955,228 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEquals(self.sparc_distroarch, builds[1].distro_arch_series)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class PublishingSetTests(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(PublishingSetTests, self).setUp()
+        self.distroseries = self.factory.makeDistroSeries()
+        self.archive = self.factory.makeArchive(
+            distribution=self.distroseries.distribution)
+        self.publishing = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.distroseries, archive=self.archive)
+        self.publishing_set = getUtility(IPublishingSet)
+
+    def test_getByIdAndArchive_finds_record(self):
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, self.archive)
+        self.assertEqual(self.publishing, record)
+
+    def test_getByIdAndArchive_finds_record_explicit_source(self):
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, self.archive, source=True)
+        self.assertEqual(self.publishing, record)
+
+    def test_getByIdAndArchive_wrong_archive(self):
+        wrong_archive = self.factory.makeArchive()
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, wrong_archive)
+        self.assertEqual(None, record)
+
+    def makeBinaryPublishing(self):
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=self.distroseries)
+        binary_publishing = self.factory.makeBinaryPackagePublishingHistory(
+            archive=self.archive, distroarchseries=distroarchseries)
+        return binary_publishing
+
+    def test_getByIdAndArchive_wrong_type(self):
+        self.makeBinaryPublishing()
+        record = self.publishing_set.getByIdAndArchive(
+            self.publishing.id, self.archive, source=False)
+        self.assertEqual(None, record)
+
+    def test_getByIdAndArchive_finds_binary(self):
+        binary_publishing = self.makeBinaryPublishing()
+        record = self.publishing_set.getByIdAndArchive(
+            binary_publishing.id, self.archive, source=False)
+        self.assertEqual(binary_publishing, record)
+
+    def test_getByIdAndArchive_binary_wrong_archive(self):
+        binary_publishing = self.makeBinaryPublishing()
+        wrong_archive = self.factory.makeArchive()
+        record = self.publishing_set.getByIdAndArchive(
+            binary_publishing.id, wrong_archive, source=False)
+        self.assertEqual(None, record)
+
+
+class TestSourceDomination(TestNativePublishingBase):
+    """Test SourcePackagePublishingHistory.supersede() operates correctly."""
+
+    def testSupersede(self):
+        """Check that supersede() without arguments works."""
+        source = self.getPubSource()
+        source.supersede()
+        self.checkSuperseded([source])
+
+    def testSupersedeWithDominant(self):
+        """Check that supersede() with a dominant publication works."""
+        source = self.getPubSource()
+        super_source = self.getPubSource()
+        source.supersede(super_source)
+        self.checkSuperseded([source], super_source)
+
+    def testSupersedingSupersededSourceFails(self):
+        """Check that supersede() fails with a superseded source.
+
+        Sources should not be superseded twice. If a second attempt is made,
+        the Dominator's lookups are buggy.
+        """
+        source = self.getPubSource()
+        super_source = self.getPubSource()
+        source.supersede(super_source)
+        self.checkSuperseded([source], super_source)
+
+        # Manually set a date in the past, so we can confirm that
+        # the second supersede() fails properly.
+        source.datesuperseded = datetime.datetime(
+            2006, 12, 25, tzinfo=pytz.timezone("UTC"))
+        super_date = source.datesuperseded
+
+        self.assertRaises(AssertionError, source.supersede, super_source)
+        self.checkSuperseded([source], super_source)
+        self.assertEquals(super_date, source.datesuperseded)
+
+
+class TestBinaryDomination(TestNativePublishingBase):
+    """Test BinaryPackagePublishingHistory.supersede() operates correctly."""
+
+    def testSupersede(self):
+        """Check that supersede() without arguments works."""
+        bins = self.getPubBinaries(architecturespecific=True)
+        bins[0].supersede()
+        self.checkSuperseded([bins[0]])
+        self.checkPublication(bins[1], PackagePublishingStatus.PENDING)
+
+    def testSupersedeWithDominant(self):
+        """Check that supersede() with a dominant publication works."""
+        bins = self.getPubBinaries(architecturespecific=True)
+        super_bins = self.getPubBinaries(architecturespecific=True)
+        bins[0].supersede(super_bins[0])
+        self.checkSuperseded([bins[0]], super_bins[0])
+        self.checkPublication(bins[1], PackagePublishingStatus.PENDING)
+
+    def testSupersedesArchIndepBinariesAtomically(self):
+        """Check that supersede() supersedes arch-indep binaries atomically.
+
+        Architecture-independent binaries should be removed from all
+        architectures when they are superseded on at least one (bug #48760).
+        """
+        bins = self.getPubBinaries(architecturespecific=False)
+        super_bins = self.getPubBinaries(architecturespecific=False)
+        bins[0].supersede(super_bins[0])
+        self.checkSuperseded(bins, super_bins[0])
+
+    def testAtomicDominationRespectsOverrides(self):
+        """Check that atomic domination only covers identical overrides.
+
+        This is important, as otherwise newly-overridden arch-indep binaries
+        will supersede themselves, and vanish entirely (bug #178102).
+        """
+        bins = self.getPubBinaries(architecturespecific=False)
+
+        universe = getUtility(IComponentSet)['universe']
+        super_bins = []
+        for bin in bins:
+            super_bins.append(bin.changeOverride(new_component=universe))
+
+        bins[0].supersede(super_bins[0])
+        self.checkSuperseded(bins, super_bins[0])
+        self.checkPublications(super_bins, PackagePublishingStatus.PENDING)
+
+    def testSupersedingSupersededArchSpecificBinaryFails(self):
+        """Check that supersede() fails with a superseded arch-dep binary.
+
+        Architecture-specific binaries should not normally be superseded
+        twice. If a second attempt is made, the Dominator's lookups are buggy.
+        """
+        bin = self.getPubBinaries(architecturespecific=True)[0]
+        super_bin = self.getPubBinaries(architecturespecific=True)[0]
+        bin.supersede(super_bin)
+
+        # Manually set a date in the past, so we can confirm that
+        # the second supersede() fails properly.
+        bin.datesuperseded = datetime.datetime(
+            2006, 12, 25, tzinfo=pytz.timezone("UTC"))
+        super_date = bin.datesuperseded
+
+        self.assertRaises(AssertionError, bin.supersede, super_bin)
+        self.checkSuperseded([bin], super_bin)
+        self.assertEquals(super_date, bin.datesuperseded)
+
+    def testSkipsSupersededArchIndependentBinary(self):
+        """Check that supersede() skips a superseded arch-indep binary.
+
+        Since all publications of an architecture-independent binary are
+        superseded atomically, they may be superseded again later. In that
+        case, we skip the domination, leaving the old date unchanged.
+        """
+        bin = self.getPubBinaries(architecturespecific=False)[0]
+        super_bin = self.getPubBinaries(architecturespecific=False)[0]
+        bin.supersede(super_bin)
+        self.checkSuperseded([bin], super_bin)
+
+        # Manually set a date in the past, so we can confirm that
+        # the second supersede() skips properly.
+        bin.datesuperseded = datetime.datetime(
+            2006, 12, 25, tzinfo=pytz.timezone("UTC"))
+        super_date = bin.datesuperseded
+
+        bin.supersede(super_bin)
+        self.checkSuperseded([bin], super_bin)
+        self.assertEquals(super_date, bin.datesuperseded)
+
+
+class TestBinaryGetOtherPublications(TestNativePublishingBase):
+    """Test BinaryPackagePublishingHistory._getOtherPublications() works."""
+
+    def checkOtherPublications(self, this, others):
+        self.assertEquals(
+            set(removeSecurityProxy(this)._getOtherPublications()),
+            set(others))
+
+    def testFindsOtherArchIndepPublications(self):
+        """Arch-indep publications with the same overrides should be found."""
+        bins = self.getPubBinaries(architecturespecific=False)
+        self.checkOtherPublications(bins[0], bins)
+
+    def testDoesntFindArchSpecificPublications(self):
+        """Arch-dep publications shouldn't be found."""
+        bins = self.getPubBinaries(architecturespecific=True)
+        self.checkOtherPublications(bins[0], [bins[0]])
+
+    def testDoesntFindPublicationsInOtherArchives(self):
+        """Publications in other archives shouldn't be found."""
+        bins = self.getPubBinaries(architecturespecific=False)
+        foreign_bins = bins[0].copyTo(
+            bins[0].distroarchseries.distroseries, bins[0].pocket,
+            self.factory.makeArchive())
+        self.checkOtherPublications(bins[0], bins)
+        self.checkOtherPublications(foreign_bins[0], foreign_bins)
+
+    def testDoesntFindPublicationsWithDifferentOverrides(self):
+        """Publications with different overrides shouldn't be found."""
+        bins = self.getPubBinaries(architecturespecific=False)
+        universe = getUtility(IComponentSet)['universe']
+        foreign_bin = bins[0].changeOverride(new_component=universe)
+        self.checkOtherPublications(bins[0], bins)
+        self.checkOtherPublications(foreign_bin, [foreign_bin])
+
+    def testDoesntFindSupersededPublications(self):
+        """Superseded publications shouldn't be found."""
+        bins = self.getPubBinaries(architecturespecific=False)
+        self.checkOtherPublications(bins[0], bins)
+        # This will supersede both atomically.
+        bins[0].supersede()
+        self.checkOtherPublications(bins[0], [])

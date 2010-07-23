@@ -4,11 +4,11 @@
 __metaclass__ = type
 
 from datetime import timedelta
+from doctest import DocTestSuite
 import unittest
 
 from zope.component import getUtility
 from zope.interface import providedBy
-from zope.testing.doctestunit import DocTestSuite
 
 from lazr.lifecycle.snapshot import Snapshot
 
@@ -16,7 +16,7 @@ from lp.hardwaredb.interfaces.hwdb import HWBus, IHWDeviceSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import all, any
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
 
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (

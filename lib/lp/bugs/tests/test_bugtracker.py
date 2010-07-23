@@ -3,7 +3,9 @@
 
 __metaclass__ = type
 
-import transaction
+from doctest import NORMALIZE_WHITESPACE, ELLIPSIS
+from doctest import DocTestSuite
+
 import unittest
 from urllib2 import HTTPError, Request
 from datetime import datetime, timedelta
@@ -12,8 +14,6 @@ from pytz import utc
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
-from zope.testing.doctest import NORMALIZE_WHITESPACE, ELLIPSIS
-from zope.testing.doctestunit import DocTestSuite
 
 from lazr.lifecycle.snapshot import Snapshot
 
@@ -209,7 +209,6 @@ class TestMantis(TestCaseWithFactory):
 
     def setUp(self):
         super(TestMantis, self).setUp()
-        transaction.commit()
 
     def test_mantis_login_redirects(self):
         # The Mantis bug tracker needs a special HTTP redirect handler

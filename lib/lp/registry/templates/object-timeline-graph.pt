@@ -34,7 +34,7 @@
           include_inactive = false;
       }
 
-      LPS.use('lp.registry.timeline', 'node', 'lp.dragscroll', function(Y) {
+      LPS.use('lp.registry.timeline', 'node', 'lp.app.dragscroll', function(Y) {
           Y.on('domready', function(e) {
               if (Y.UA.ie) {
                   return;
@@ -89,7 +89,7 @@
                   });
 
               var drag_scroll_handler =
-                  new Y.lp.dragscroll.DragScrollEventHandler();
+                  new Y.lp.app.dragscroll.DragScrollEventHandler();
               drag_scroll_handler.activate();
           });
       });

@@ -5,11 +5,11 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.layers import BlueprintLayer
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications, ISpecificationTarget)
+from lp.blueprints.publisher import BlueprintsLayer
 from lp.testing import login_person, TestCaseWithFactory
 from lp.testing.views import create_view
 
@@ -58,7 +58,7 @@ class TestHasSpecificationsView(TestCaseWithFactory):
     def verify_involvment(self, context):
         self.assertTrue(IHasSpecifications.providedBy(context))
         view = create_view(
-            context, '+specs', layer=BlueprintLayer, principal=self.user)
+            context, '+specs', layer=BlueprintsLayer, principal=self.user)
         self.assertTrue(
             '<div id="involvement" class="portlet involvement">' in view())
 
@@ -78,7 +78,7 @@ class TestHasSpecificationsView(TestCaseWithFactory):
         context = self.factory.makePerson(name='pistachio')
         self.assertTrue(IHasSpecifications.providedBy(context))
         view = create_view(
-            context, '+specs', layer=BlueprintLayer, principal=self.user)
+            context, '+specs', layer=BlueprintsLayer, principal=self.user)
         self.assertFalse(
             '<div id="involvement" class="portlet involvement">' in view())
 

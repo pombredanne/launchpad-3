@@ -121,7 +121,7 @@ from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, SourcePackageUrgency)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
+from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.interfaces.distributionmirror import (
     MirrorContent, MirrorSpeed)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -132,20 +132,31 @@ from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 
+from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import (
     default_name_by_purpose, IArchiveSet, ArchivePurpose)
-from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.publishing import (
+    PackagePublishingPriority, PackagePublishingStatus)
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.processor import ProcessorFamily, ProcessorFamilySet
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
-from lp.testing import run_with_login, time_counter, login, logout, temp_dir
-
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_as,
+    logout,
+    run_with_login,
+    temp_dir,
+    time_counter,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
@@ -322,19 +333,16 @@ class LaunchpadObjectFactory(ObjectFactory):
     for any other required objects.
     """
 
-    def doAsUser(self, user, factory_method, **factory_args):
-        """Perform a factory method while temporarily logged in as a user.
+    def loginAsAnyone(self):
+        """Log in as an arbitrary person.
 
-        :param user: The user to log in as, and then to log out from.
-        :param factory_method: The factory method to invoke while logged in.
-        :param factory_args: Keyword arguments to pass to factory_method.
+        If you want to log in as a celebrity, including admins, see
+        `lp.testing.login_celebrity`.
         """
-        login(user)
-        try:
-            result = factory_method(**factory_args)
-        finally:
-            logout()
-        return result
+        login(ANONYMOUS)
+        person = self.makePerson()
+        login_as(person)
+        return person
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):
@@ -1791,6 +1799,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         parser = RecipeParser(self.makeRecipeText(*branches))
         return parser.parse()
 
+    def makeSourcePackageRecipeDistroseries(self, name="warty"):
+        """Return a supported Distroseries to use with Source Package Recipes.
+
+        Ew.  This uses sampledata currently, which is the ONLY reason this
+        method exists: it gives us a migration path away from sampledata.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        return ubuntu.getSeries(name)
+
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, name=None,
                                 description=None, branches=(),
@@ -1802,10 +1819,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
         if distroseries is None:
-            distroseries = self.makeDistroSeries()
-            distroseries.nominatedarchindep = distroseries.newArch(
-                'i386', ProcessorFamily.get(1), False, owner,
-                supports_virtualized=True)
+            distroseries = self.makeSourcePackageRecipeDistroseries()
 
         if name is None:
             name = self.getUniqueString().decode('utf8')
@@ -1896,6 +1910,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                  ddd57463774cae9b50e70cd51221281b 185913 ed_0.2.orig.tar.gz
                  f9e1e5f13725f581919e9bfd62272a05 8506 ed_0.2-20.diff.gz
                 """))
+
             class Changes:
                 architectures = ['source']
             logger = QuietFakeLogger()
@@ -2200,9 +2215,10 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRelease(self, archive=None, sourcepackagename=None,
                                  distroseries=None, maintainer=None,
-                                 creator=None, component=None, section=None,
-                                 urgency=None, version=None,
-                                 builddepends=None, builddependsindep=None,
+                                 creator=None, component=None,
+                                 section_name=None, urgency=None,
+                                 version=None, builddepends=None,
+                                 builddependsindep=None,
                                  build_conflicts=None,
                                  build_conflicts_indep=None,
                                  architecturehintlist='all',
@@ -2237,9 +2253,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         if urgency is None:
             urgency = self.getAnySourcePackageUrgency()
 
-        if section is None:
-            section = self.getUniqueString('section')
-        section = getUtility(ISectionSet).ensure(section)
+        section = self.makeSection(name=section_name)
 
         if maintainer is None:
             maintainer = self.makePerson()
@@ -2325,8 +2339,9 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
                                            distroseries=None, maintainer=None,
                                            creator=None, component=None,
-                                           section=None, urgency=None,
-                                           version=None, archive=None,
+                                           section_name=None,
+                                           urgency=None, version=None,
+                                           archive=None,
                                            builddepends=None,
                                            builddependsindep=None,
                                            build_conflicts=None,
@@ -2366,7 +2381,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroseries=distroseries,
             maintainer=maintainer,
             creator=creator, component=component,
-            section=section,
+            section_name=section_name,
             urgency=urgency,
             version=version,
             builddepends=builddepends,
@@ -2394,6 +2409,97 @@ class LaunchpadObjectFactory(ObjectFactory):
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
         # of SSPPH and other useful attributes.
         return SourcePackagePublishingHistory.get(sspph.id)
+
+    def makeBinaryPackagePublishingHistory(self, binarypackagerelease=None,
+                                           distroarchseries=None,
+                                           component=None, section_name=None,
+                                           priority=None, status=None,
+                                           scheduleddeletiondate=None,
+                                           dateremoved=None,
+                                           pocket=None, archive=None):
+        """Make a `BinaryPackagePublishingHistory`."""
+        if distroarchseries is None:
+            if archive is None:
+                distribution = None
+            else:
+                distribution = archive.distribution
+            distroseries = self.makeDistroSeries(distribution=distribution)
+            distroarchseries = self.makeDistroArchSeries(
+                distroseries=distroseries)
+
+        if archive is None:
+            archive = self.makeArchive(
+                distribution=distroarchseries.distroseries.distribution,
+                purpose=ArchivePurpose.PRIMARY)
+
+        if pocket is None:
+            pocket = self.getAnyPocket()
+
+        if status is None:
+            status = PackagePublishingStatus.PENDING
+
+        if priority is None:
+            priority = PackagePublishingPriority.OPTIONAL
+
+        bpr = self.makeBinaryPackageRelease(
+            component=component,
+            section_name=section_name,
+            priority=priority)
+
+        return BinaryPackagePublishingHistory(
+            distroarchseries=distroarchseries,
+            binarypackagerelease=bpr,
+            component=bpr.component,
+            section=bpr.section,
+            status=status,
+            dateremoved=dateremoved,
+            scheduleddeletiondate=scheduleddeletiondate,
+            pocket=pocket,
+            priority=priority,
+            archive=archive)
+
+    def makeBinaryPackageName(self, name=None):
+        if name is None:
+            name = self.getUniqueString("binarypackage")
+        return BinaryPackageName(name=name)
+
+    def makeBinaryPackageRelease(self, binarypackagename=None,
+                                 version=None, build=None,
+                                 binpackageformat=None, component=None,
+                                 section_name=None, priority=None,
+                                 architecturespecific=False,
+                                 summary=None, description=None):
+        """Make a `BinaryPackageRelease`."""
+        if binarypackagename is None:
+            binarypackagename = self.makeBinaryPackageName()
+        if version is None:
+            version = self.getUniqueString("version")
+        if build is None:
+            build = self.makeBinaryPackageBuild()
+        if binpackageformat is None:
+            binpackageformat = BinaryPackageFormat.DEB
+        if component is None:
+            component = self.makeComponent()
+        section = self.makeSection(name=section_name)
+        if priority is None:
+            priority = PackagePublishingPriority.OPTIONAL
+        if summary is None:
+            summary = self.getUniqueString("summary")
+        if description is None:
+            description = self.getUniqueString("description")
+        return BinaryPackageRelease(binarypackagename=binarypackagename,
+                                    version=version, build=build,
+                                    binpackageformat=binpackageformat,
+                                    component=component, section=section,
+                                    priority=priority, summary=summary,
+                                    description=description,
+                                    architecturespecific=architecturespecific)
+
+    def makeSection(self, name=None):
+        """Make a `Section`."""
+        if name is None:
+            name = self.getUniqueString('section')
+        return getUtility(ISectionSet).ensure(name)
 
     def makePackageset(self, name=None, description=None, owner=None,
                        packages=(), distroseries=None):
@@ -2598,13 +2704,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IHWSubmissionDeviceSet).create(
             device_driver_link, submission, parent, hal_device_id)
 
-    def makeSSHKey(self, person=None, keytype=SSHKeyType.RSA):
+    def makeSSHKey(self, person=None):
         """Create a new SSHKey."""
         if person is None:
             person = self.makePerson()
-        return getUtility(ISSHKeySet).new(
-            person=person, keytype=keytype, keytext=self.getUniqueString(),
-            comment=self.getUniqueString())
+        public_key = "ssh-rsa %s %s" % (
+            self.getUniqueString(), self.getUniqueString())
+        return getUtility(ISSHKeySet).new(person, public_key)
 
     def makeBlob(self, blob=None, expires=None):
         """Create a new TemporaryFileStorage BLOB."""

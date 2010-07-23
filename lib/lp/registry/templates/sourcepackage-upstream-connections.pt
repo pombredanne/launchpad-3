@@ -50,7 +50,7 @@
         <tal:yes-no replace="structure series/branch/image:boolean"/>
       </dd>
       <dd title="Series translations auto import"
-          tal:condition="context/getTranslationTemplates"
+          tal:condition="context/has_translation_templates"
           tal:define="bool not:series/translations_autoimport_mode/enumvalue:NO_IMPORT">
         Translations:
         <tal:yes-no replace="structure bool/image:boolean"/>

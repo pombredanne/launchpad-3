@@ -1,9 +1,8 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
 from textwrap import dedent
 from zope.interface.verify import verifyObject
 
@@ -67,7 +66,7 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
             "Expected GettextPOExporter to provide PO format "
             "but got %r instead." % self.translation_exporter.format)
         self.failUnlessEqual(
-            self.translation_exporter.supported_source_formats ,
+            self.translation_exporter.supported_source_formats,
             [TranslationFileFormat.PO, TranslationFileFormat.KDEPO],
             "Expected GettextPOExporter to support PO and KDEPO source "
             "formats but got %r instead." % (
@@ -258,7 +257,7 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
 
                 msgid "Japanese"
                 msgstr "\xc6\xfc\xcb\xdc\xb8\xec"
-                ''')
+                '''),
             ]
         for pofile in pofiles:
             compare(self, pofile)
@@ -470,10 +469,3 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         data.source_comment = "Line One\nLine Two\n"
         self.assertEqual("#. Line One\n#. Line Two",
                          comments_text_representation(data))
-
-
-def test_suite():
-    # Run gettext po exporter doc tests.
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(GettextPOExporterTestCase))
-    return suite
