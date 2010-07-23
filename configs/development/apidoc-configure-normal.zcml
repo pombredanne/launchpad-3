@@ -3,6 +3,7 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:meta="http://namespaces.zope.org/meta"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:apidoc="http://namespaces.zope.org/apidoc"
     i18n_domain="canonical">
 
     <!-- These packages/declarations are required by apidoc. If they are
@@ -52,7 +53,7 @@
     <!-- apidoc.lp.dev breaks if we make IAPIDocRoot subclass ISite, so we
       need to register this view here. -->
     <view
-        for="canonical.launchpad.webapp.interfaces.IAPIDocRoot" 
+        for="canonical.launchpad.webapp.interfaces.IAPIDocRoot"
         type="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
         name=""
         factory="zope.browserresource.resources.Resources"
@@ -78,5 +79,15 @@
     <include package="zope.app.tree" />
     <include package="zope.app.apidoc" />
 
-</configure>
+    <apidoc:rootModule module="canonical" />
+    <apidoc:rootModule module="lp" />
+    <apidoc:rootModule module="lazr" />
+    <apidoc:rootModule module="zc" />
+    <apidoc:rootModule module="wadllib" />
+    <apidoc:rootModule module="martian" />
+    <apidoc:rootModule module="manuel" />
+    <apidoc:rootModule module="chameleon" />
+    <apidoc:rootModule module="bzrlib" />
+    <apidoc:rootModule module="storm" />
 
+</configure>
