@@ -534,7 +534,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN,
-                 visibility=None):
+                 visibility=None, members=None):
         """Create and return a new, arbitrary Team.
 
         :param owner: The person or person name to use as the team's owner.
@@ -550,6 +550,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
         :type visibility: `PersonVisibility`
+        :param members: People or teams to be added to the new team
+        :type members: An iterable of objects implementing IPerson
         :return: The new team
         :rtype: `ITeam`
         """
@@ -573,6 +575,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
+        if members is not None:
+            naked_team = removeSecurityProxy(team)
+            for member in members:
+                naked_team.addMember(member, owner)
         return team
 
     def makePoll(self, team, name, title, proposition):
