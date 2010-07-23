@@ -62,7 +62,7 @@ When we export a single file, we get a .mo file as output.
     >>> storage = ExportFileStorage()
     >>> exporter.exportTranslationFile(translation_file_es, storage)
     >>> exported_file = storage.export()
-    >>> print storage.export().content_type
+    >>> print exported_file.content_type
     application/x-gmo
     >>> is_valid_mofile(exported_file.read())
     True

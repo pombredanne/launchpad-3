@@ -51,6 +51,7 @@ class GettextMOExporter:
     """Support class to export Gettext .mo files."""
     implements(ITranslationFormatExporter)
 
+    # We use x-gmo for consistency with .po editors such as GTranslator.
     mime_type = 'application/x-gmo'
 
     def __init__(self, context=None):
@@ -72,10 +73,6 @@ class GettextMOExporter:
         gettext_po_exporter = (
             translation_exporter.getExporterProducingTargetFileFormat(
                 TranslationFileFormat.PO))
-
-        # We use x-gmo for consistency with .po editors such as
-        # GTranslator.
-        mime_type = 'application/x-gmo'
 
         # To generate MO files we need first its PO version and then,
         # generate the MO one.

@@ -328,9 +328,6 @@ class GettextPOExporterBase:
             if key in seen_keys:
                 # Launchpad can deal with messages that are
                 # identical to gettext, but differ in plural msgid.
-                plural = message.msgid_plural
-                previous_plural = seen_keys[key].msgid_plural
-
                 if not self.msgid_plural_distinguishes_messages:
                     # Suppress messages that are duplicative to
                     # gettext so that gettext doesn't choke on the
