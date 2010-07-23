@@ -1364,25 +1364,3 @@ tasks.
     ...    series_tasks.count())
     >>> found_bugtasks.count() == combined_bugtasks_count
     True
-
-
-== Using omit_targeted parameter ==
-
-Searching for a distribution's series bug tasks combined with the
-omit_targeted parameter.
-
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
-    >>> hoary_cnews = ubuntu_hoary.getSourcePackage('cnews')
-    >>> bug = factory.makeBugTask(target=hoary_cnews)
-    >>> default_results = ubuntu_hoary.searchTasks(None)
-    >>> default_results.count()
-    2
-    >>> not_targeted_results = ubuntu_hoary.searchTasks(None,
-    ...     omit_targeted=True)
-    >>> not_targeted_results.count()
-    0
-    >>> targeted_results = ubuntu_hoary.searchTasks(None,
-    ...     omit_targeted=False)
-    >>> targeted_results.count()
-    2
