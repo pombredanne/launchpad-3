@@ -166,7 +166,8 @@
 
 <tal:template>
   <tal:comment
-    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
+    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests;
+    	    features modules/lp.services.features.flags/summarizeFlags;"
     replace="structure string:&lt;!--
     Facet name: ${view/menu:selectedfacetname}
     Page type: ${view/macro:pagetype}
@@ -175,6 +176,8 @@
     Has side portlets: ${view/macro:pagehas/portlets}
 
     At least ${log}
+
+    Features: ${features}
 
     r${revno}
   --&gt;" />

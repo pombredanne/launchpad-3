@@ -28,6 +28,14 @@ def getFeatureFlag(flag):
     return per_thread.features.getFlag(flag)
 
 
+def summarizeFlags():
+    """Nerd-readable summary of active flags (for page footer)"""
+    if per_thread.features:
+        return repr(per_thread.features.getAllFlags())
+    else:
+        return "(no FeatureController)"
+
+
 class FeatureController(object):
     """A FeatureController tells application code what features are active.
 
