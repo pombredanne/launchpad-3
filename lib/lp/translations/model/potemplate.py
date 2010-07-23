@@ -1672,4 +1672,5 @@ class TranslationTemplatesCollection(Collection):
                 POFile, And(POTemplate.id == POFile.potemplateID,
                             POFile.languageID == language.id))
         else:
-            return self.joinOuter(POFile, POTemplate.id == POFile.potemplateID)
+            return self.joinOuter(
+                POFile, POTemplate.id == POFile.potemplateID)
