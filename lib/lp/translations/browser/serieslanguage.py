@@ -45,8 +45,16 @@ class BaseSeriesLanguageView(LaunchpadView):
         self.series = series
         self.translationgroup = translationgroup
         self.form = self.request.form
-        self.pofiles = self.context.pofiles
-        self.batchnav = BatchNavigator(self.context.pofiles, self.request)
+
+        if IDistroSeriesLanguage.providedBy(self.context):
+            self.batchnav = BatchNavigator(
+                self.series.getCurrentTranslationTemplates(),
+                self.request)
+            self.pofiles = self.context.getPOFilesFor(
+                self.batchnav.currentBatch())
+        else:
+            self.batchnav = BatchNavigator(self.context.pofiles, self.request)
+            self.pofiles = self.batchnav.currentBatch()
 
     @property
     def translation_group(self):
@@ -105,8 +113,8 @@ class BaseSeriesLanguageView(LaunchpadView):
                     "<a href='%s'>Translations licensing</a>.") % (
                         translation_license_url)
 
-        if len(self.context.pofiles) > 0:
-            sample_pofile = self.context.pofiles[0]
+        if len(self.pofiles) > 0:
+            sample_pofile = self.pofiles[0]
             if sample_pofile.canEditTranslations(self.user):
                 return "You can add and review translations."
 
