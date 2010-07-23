@@ -53,7 +53,7 @@ class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
         translated = self._translation_statistics['translated_count']
         new = self._translation_statistics['new_count']
         changed = self._translation_statistics['changed_count']
-        current = translated - (new - changed)
+        current = translated - new - changed
         return current
 
     def updatesCount(self, language=None):
@@ -64,7 +64,7 @@ class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
         """See `IRosettaStats`."""
         new = self._translation_statistics['new_count']
         changed = self._translation_statistics['changed_count']
-        rosetta = new - changed
+        rosetta = new + changed
         return rosetta
 
     def unreviewedCount(self):
