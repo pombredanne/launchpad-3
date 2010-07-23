@@ -493,8 +493,7 @@ def get_query_string_params(request):
 class BasicLaunchpadRequest:
     """Mixin request class to provide stepstogo."""
 
-    implements(
-        IBasicLaunchpadRequest, canonical.launchpad.layers.LaunchpadLayer)
+    implements(IBasicLaunchpadRequest)
 
     def __init__(self, body_instream, environ, response=None):
         self.traversed_objects = []
@@ -569,7 +568,9 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     launchpad request class.
     """
 
-    implements(ILaunchpadBrowserApplicationRequest, ISynchronizer)
+    implements(
+        ILaunchpadBrowserApplicationRequest, ISynchronizer,
+        canonical.launchpad.layers.LaunchpadLayer)
 
     retry_max_count = 5    # How many times we're willing to retry
 
