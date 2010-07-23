@@ -8,11 +8,17 @@
   <body>
     <div metal:fill-slot="main"
         tal:define="current context/currentrelease">
-      <ul class="horizontal">
-        <li>
-          <a tal:replace="structure context/menu:overview/distribution_source_package/fmt:link" />
-        </li>
-      </ul>
+      <div class="top-portlet">
+        <div id="summary"
+          tal:content="structure context/summary/fmt:text-to-html" />
+
+        <ul class="horizontal">
+          <li>
+            <a tal:replace="structure context/menu:overview/distribution_source_package/fmt:link" />
+          </li>
+        </ul>
+      </div>
+
       <div class="portlet">
         <h2>Versions published</h2>
 
@@ -45,6 +51,9 @@
         <ul class="horizontal">
           <li>
             <a tal:replace="structure context/menu:overview/changelog/fmt:link" />
+          </li>
+          <li>
+            <a tal:replace="structure context/menu:overview/copyright/fmt:link" />
           </li>
         </ul>
       </div>

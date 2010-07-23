@@ -171,15 +171,15 @@
             tal:attributes="src string:${lazr_js}/effects/effects.js"></script>
 
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/lp.js"></script>
+            tal:attributes="src string:${lp_js}/app/lp.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/lp-mochi.js"></script>
+            tal:attributes="src string:${lp_js}/app/lp-mochi.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/dragscroll.js"></script>
+            tal:attributes="src string:${lp_js}/app/dragscroll.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/picker.js"></script>
+            tal:attributes="src string:${lp_js}/app/picker.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/mapping.js"></script>
+            tal:attributes="src string:${lp_js}/app/mapping.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/bugs/bugtracker_overlay.js"></script>
     <script type="text/javascript"
@@ -217,14 +217,16 @@
             tal:attributes="src string:${lp_js}/code/productseries-setbranch.js">
     </script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/comment.js"></script>
+            tal:attributes="src string:${lp_js}/app/comment.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/errors.js"></script>
+            tal:attributes="src string:${lp_js}/app/errors.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/team.js"></script>
 
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/translations/importqueue.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/translations/importqueueentry.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/translations/languages.js"></script>
     <script type="text/javascript"

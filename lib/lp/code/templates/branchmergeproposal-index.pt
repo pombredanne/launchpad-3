@@ -229,13 +229,13 @@
   conf = <tal:status-config replace="view/status_config" />
   <!--
   LPS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
-          'lp.code.branchmergeproposal.status', 'lp.comment', function(Y) {
+          'lp.code.branchmergeproposal.status', 'lp.app.comment', function(Y) {
 
     Y.on('load', function() {
         var logged_in = LP.client.links['me'] !== undefined;
 
         if (logged_in) {
-            var comment = new Y.lp.CodeReviewComment();
+            var comment = new Y.lp.app.comment.CodeReviewComment();
             comment.render();
 
             if(Y.UA.ie) {

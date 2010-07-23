@@ -3,10 +3,10 @@
 
 __metaclass__ = type
 
+from doctest import DocTestSuite
 import unittest
 
 from zope.interface import directlyProvides, directlyProvidedBy
-from zope.testing.doctest import DocTestSuite
 
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
