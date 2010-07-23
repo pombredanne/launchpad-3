@@ -341,7 +341,7 @@ subscribed to the dupe target.
     Stuart Bishop
     Ubuntu Team
 
-    >>> linux_source_bug_dupe.markAsDuplicate(linux_source_bug)
+    >>> linux_source_bug_dupe.duplicateof = linux_source_bug
     >>> linux_source_bug_dupe.syncUpdate()
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
@@ -868,7 +868,7 @@ subscriptions themselves, rather than the subscribers.
     ...     comment="one more dupe test description",
     ...     owner=keybuk)
     >>> dupe_ff_bug = firefox.createBug(params)
-    >>> dupe_ff_bug.markAsDuplicate(ff_bug)
+    >>> dupe_ff_bug.duplicateof = ff_bug
     >>> dupe_ff_bug.syncUpdate()
     >>> dupe_ff_bug.subscribe(foobar, lifeless)
     <BugSubscription at ...>

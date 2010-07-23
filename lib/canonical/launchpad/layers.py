@@ -36,10 +36,6 @@ class BugsLayer(LaunchpadLayer):
     """The `BugsLayer` layer."""
 
 
-class CodeLayer(LaunchpadLayer):
-    """The `CodeLayer` layer."""
-
-
 class BlueprintLayer(LaunchpadLayer):
     """The `BlueprintLayer` layer."""
 BlueprintsLayer = BlueprintLayer

@@ -13,6 +13,10 @@
   <include package=".browser"/>
   <authorizations module="lp.code.security" />
 
+  <publisher
+     name="code"
+     factory="lp.code.publisher.code_request_publication_factory"/>
+
   <!-- Branch Merge Queue -->
 
   <class class="lp.code.model.branchmergequeue.SingleBranchMergeQueue">
@@ -981,7 +985,7 @@
   <adapter factory="lp.code.model.linkedbranch.DistributionPackageLinkedBranch" />
 
   <lp:help-folder
-      folder="help" type="canonical.launchpad.layers.CodeLayer" />
+      folder="help" type="lp.code.publisher.CodeLayer" />
 
   <!-- Diffs -->
   <class class="lp.code.model.diff.Diff">
@@ -1013,7 +1017,7 @@
 
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuild">
-    <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"/>
+    <require permission="launchpad.View" interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"/>
     <!-- This is needed for UploadProcessor to run. The permission isn't
          important; launchpad.Edit isn't actually held by anybody. -->
     <require permission="launchpad.Edit" set_attributes="status upload_log" />
@@ -1027,7 +1031,7 @@
 
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob">
-    <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
+    <require permission="launchpad.View" interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
   </class>
 
   <securedutility
@@ -1048,8 +1052,9 @@
   <!-- SourcePackageRecipe -->
   <class
      class="lp.code.model.sourcepackagerecipe.SourcePackageRecipe">
-    <allow
-    interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
+    <require permission="launchpad.View"
+      interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+      />
     <require
        permission="launchpad.Edit"
        set_attributes="
