@@ -1,18 +1,13 @@
-launchpad-buildd (67ubuntu1) maverick; urgency=low
-
-  * Explicitly use source format 1.0.
-
- -- Jelmer Vernooij <jelmer@debian.org>  Thu, 22 Jul 2010 19:50:01 +0200
-
 launchpad-buildd (67) hardy-cat; urgency=low
 
+  * Explicitly use source format 1.0.
   * Add LSB information to init script.
   * Use debhelper >= 5 (available in dapper, not yet deprecated in
     maverick).
   * Fix spelling in description.
   * Install example buildd configuration.
 
- -- Jelmer Vernooij <jelmer@debian.org>  Thu, 22 Jul 2010 19:40:31 +0200
+ -- Jelmer Vernooij <jelmer@canonical.com>  Thu, 22 Jul 2010 19:40:31 +0200
 
 launchpad-buildd (66) hardy-cat; urgency=low
 
