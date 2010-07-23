@@ -127,7 +127,8 @@ to KDE PO format.
 Messages which are preceded with just '_n:' and no space after it are
 not considered plural forms messages.
 
-    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(u'_n:bar\nbars')
+    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'_n:bar\nbars')
     >>> print potmsgset.singular_text
     _n:bar
     bars
@@ -181,7 +182,8 @@ forms. They are simply newline-separated strings.
     ... msgid "_n: %%d foo\n%%d foos"
     ... msgstr "%%d translation\n%%d translationes\n%%d translations"
     ...
-    ... # Legacy KDE PO files allow multiple messages with same singular msgid.
+    ... # Legacy KDE PO files allow multiple messages with the same
+    ... # singular msgid.
     ... msgid "%%d foo"
     ... msgstr "no-plural translation %%d"
     ...
@@ -193,8 +195,8 @@ forms. They are simply newline-separated strings.
     ... ''' % ISO_FORMATTED_DATE
 
 Importing this file succeeds, even if the number of %d printf specifications
-doesn't match: this is because this is now specially handled with KDE PO format
-support.
+doesn't match: this is because this is now specially handled with KDE PO
+format support.
 
     >>> entry = import_pofile_or_potemplate(firefox_serbian_pofile_contents,
     ...                                     carlos,
@@ -368,7 +370,8 @@ Exporting a translation is possible in a very similar way.
     "%d translationes\n"
     "%d translations"
     <BLANKLINE>
-    # Legacy KDE PO files allow multiple messages with same singular msgid.
+    # Legacy KDE PO files allow multiple messages with the same
+    # singular msgid.
     #, c-format
     msgid "%d foo"
     msgstr "no-plural translation %d"
