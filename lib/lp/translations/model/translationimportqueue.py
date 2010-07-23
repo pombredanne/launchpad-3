@@ -23,7 +23,7 @@ from textwrap import dedent
 from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
-from storm.expr import And, Or
+from storm.expr import And, Like, Or
 from storm.locals import Int, Reference
 
 from canonical.database.sqlbase import (
@@ -1306,6 +1306,15 @@ class TranslationImportQueue:
             deletion_clauses.append(And(
                 TranslationImportQueueEntry.status == status,
                 TranslationImportQueueEntry.date_status_changed < cutoff))
+
+        # Also clean out Blocked PO files for Ubuntu that haven't been
+        # touched for a year.  Keep blocked templates because they may
+        # determine the blocking of future translation uploads.
+        blocked_cutoff = now - datetime.timedelta(days=365)
+        deletion_clauses.append(And(
+            TranslationImportQueueEntry.distroseries_id != None,
+            TranslationImportQueueEntry.date_status_changed < blocked_cutoff,
+            Like(TranslationImportQueueEntry.path, '%.po')))
 
         entries = store.find(
             TranslationImportQueueEntry, Or(*deletion_clauses))

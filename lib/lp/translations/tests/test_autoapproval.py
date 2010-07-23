@@ -824,6 +824,65 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
                     self._exists(entry_id),
                     "Queue entry in state '%s' was not removed." % status)
 
+    def test_cleanUpObsoleteEntries_blocked_ubuntu_po(self):
+        # _cleanUpObsoleteEntries deletes Ubuntu entries for gettext
+        # translations that are Blocked if they haven't been touched in
+        # a year.  These entries once made up about half the queue.  As
+        # far as we can tell all these PO files have been auto-blocked
+        # after their template uploads were blocked, so even if they
+        # were ever re-uploaded, they'd just get blocked again.
+        entry = self._makeDistroEntry()
+        entry.path = 'fo.po'
+        entry_id = entry.id
+        self._setStatus(entry, RosettaImportStatus.BLOCKED)
+        now = datetime.now(UTC)
+        entry.dateimported = now - timedelta(days=700)
+
+        # It hasn't been a year yet since the last status chang; the
+        # entry stays in place.
+        entry.date_status_changed = now - timedelta(days=300)
+        with self.beingTheGardener():
+            self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        # A year has passed; the entry gets cleaned up.
+        entry.date_status_changed = now - timedelta(days=400)
+        with self.beingTheGardener():
+            self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertFalse(self._exists(entry_id))
+
+    def test_cleanUpObsoleteEntries_blocked_product_po(self):
+        # _cleanUpObsoleteEntries leaves blocked project uploads in
+        # place.
+        entry = self._makeProductEntry()
+        entry.path = 'fo.po'
+        entry_id = entry.id
+        self._setStatus(entry, RosettaImportStatus.BLOCKED)
+        now = datetime.now(UTC)
+        entry.dateimported = now - timedelta(days=700)
+        entry.date_status_changed = now - timedelta(days=400)
+
+        with self.beingTheGardener():
+            self.queue._cleanUpObsoleteEntries(self.store)
+
+        self.assertTrue(self._exists(entry_id))
+
+    def test_cleanUpObsoleteEntries_blocked_ubuntu_pot(self):
+        # _cleanUpObsoleteEntries leaves blocked Ubuntu templates in
+        # place.
+        entry = self._makeDistroEntry()
+        entry.path = 'foo.pot'
+        entry_id = entry.id
+        self._setStatus(entry, RosettaImportStatus.BLOCKED)
+        now = datetime.now(UTC)
+        entry.dateimported = now - timedelta(days=700)
+        entry.date_status_changed = now - timedelta(days=400)
+
+        with self.beingTheGardener():
+            self.queue._cleanUpObsoleteEntries(self.store)
+
+        self.assertTrue(self._exists(entry_id))
+
     def test_cleanUpInactiveProductEntries(self):
         # After a product is deactivated, _cleanUpInactiveProductEntries
         # will clean up any entries it may have on the queue.
