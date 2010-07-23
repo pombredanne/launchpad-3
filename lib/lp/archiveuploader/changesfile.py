@@ -21,10 +21,13 @@ from lp.archiveuploader.nascentuploadfile import (
     DebBinaryUploadFile, SourceUploadFile, UdebBinaryUploadFile,
     UploadError, UploadWarning, splitComponentAndSection)
 from lp.archiveuploader.utils import (
+    determine_binary_file_type, determine_source_file_type,
     re_isadeb, re_issource, re_changes_file_name)
 from lp.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
-from canonical.launchpad.interfaces import SourcePackageUrgency
+from lp.registry.interfaces.sourcepackage import (SourcePackageFileType,
+    SourcePackageUrgency)
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 
 
 class ChangesFile(SignableTagFile):
@@ -172,42 +175,34 @@ class ChangesFile(SignableTagFile):
                     file_instance = CustomUploadFile(
                         filepath, digest, size, component_and_section,
                         priority_name, self.policy, self.logger)
-                elif source_match:
-                    package = source_match.group(1)
-                    if filename.endswith("dsc"):
-                        file_instance = DSCFile(
-                            filepath, digest, size, component_and_section,
-                            priority_name, package, self.version, self,
-                            self.policy, self.logger)
-                        # Store the DSC because it is very convenient
-                        self.dsc = file_instance
-                    else:
-                        file_instance = SourceUploadFile(
-                            filepath, digest, size, component_and_section,
-                            priority_name, package, self.version, self,
-                            self.policy, self.logger)
-                elif binary_match:
-                    package = binary_match.group(1)
-                    if filename.endswith("udeb"):
-                        file_instance = UdebBinaryUploadFile(
-                            filepath, digest, size, component_and_section,
-                            priority_name, package, self.version, self,
-                            self.policy, self.logger)
-                    elif filename.endswith("ddeb"):
-                        file_instance = DdebBinaryUploadFile(
-                            filepath, digest, size, component_and_section,
-                            priority_name, package, self.version, self,
-                            self.policy, self.logger)
-                    else:
-                        file_instance = DebBinaryUploadFile(
-                            filepath, digest, size, component_and_section,
-                            priority_name, package, self.version, self,
-                            self.policy, self.logger)
                 else:
-                    yield UploadError(
-                        "Unable to identify file %s (%s) in changes."
-                        % (filename, component_and_section))
-                    continue
+                    if source_match:
+                        package = source_match.group(1)
+                        if (determine_source_file_type(filename) ==
+                            SourcePackageFileType.DSC):
+                            cls = DSCFile
+                        else:
+                            cls = SourceUploadFile
+                    elif binary_match:
+                        package = binary_match.group(1)
+                        cls = {
+                            BinaryPackageFileType.DEB: DebBinaryUploadFile,
+                            BinaryPackageFileType.DDEB: DdebBinaryUploadFile,
+                            BinaryPackageFileType.UDEB: UdebBinaryUploadFile,
+                            }[determine_binary_file_type(filename)]
+                    else:
+                        yield UploadError(
+                            "Unable to identify file %s (%s) in changes."
+                            % (filename, component_and_section))
+                        continue
+
+                    file_instance = cls(
+                        filepath, digest, size, component_and_section,
+                        priority_name, package, self.version, self,
+                        self.policy, self.logger)
+
+                    if cls == DSCFile:
+                        self.dsc = file_instance
             except UploadError, error:
                 yield error
             else:
