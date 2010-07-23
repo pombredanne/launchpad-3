@@ -98,6 +98,8 @@ def determine_binary_file_type(filename):
         return BinaryPackageFileType.DEB
     elif filename.endswith(".udeb"):
         return BinaryPackageFileType.UDEB
+    elif filename.endswith(".ddeb"):
+        return BinaryPackageFileType.DDEB
     else:
         return None
 

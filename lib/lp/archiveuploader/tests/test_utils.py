@@ -81,6 +81,11 @@ class TestUtilities(unittest.TestCase):
             determine_binary_file_type('foo_1.0-1_all.deb'),
             BinaryPackageFileType.DEB)
 
+        # .ddeb -> DDEB
+        self.assertEquals(
+            determine_binary_file_type('foo_1.0-1_all.ddeb'),
+            BinaryPackageFileType.DDEB)
+
         # .udeb -> UDEB
         self.assertEquals(
             determine_binary_file_type('foo_1.0-1_all.udeb'),
