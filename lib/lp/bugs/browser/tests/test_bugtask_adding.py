@@ -21,23 +21,23 @@ class TestProductBugTaskCreationStep(TestCaseWithFactory):
 
     def setUp(self):
         super(TestProductBugTaskCreationStep, self).setUp()
-        self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.hoary = self.ubuntu.getSeries('hoary')
+        self.ubuntu_series = getUtility(ILaunchpadCelebrities).ubuntu['hoary']
         self.sourcepackagename = self.factory.makeSourcePackageName('bat')
         self.sourcepackage = self.factory.makeSourcePackage(
-            sourcepackagename=self.sourcepackagename, distroseries=self.hoary)
+            sourcepackagename=self.sourcepackagename,
+            distroseries=self.ubuntu_series)
         self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=self.sourcepackagename, distroseries=self.hoary)
+            sourcepackagename=self.sourcepackagename,
+            distroseries=self.ubuntu_series)
+        self.product = self.factory.makeProduct(name="bat")
+        self.packaging_util = getUtility(IPackagingUtil)
         self.user = self.factory.makePerson()
         login_person(self.user)
         self.bug_task = self.factory.makeBugTask(
             target=self.sourcepackage, owner=self.user)
         self.bug = self.bug_task.bug
-        # Move into tests?
-        self.product = self.factory.makeProduct(name="bat")
-        self.packaging_util = getUtility(IPackagingUtil)
 
-    def test_create_upstream_bugtask(self):
+    def test_create_upstream_bugtask_without_packaging(self):
         form = {
             'field.product': 'bat',
             'field.add_packaging': 'off',
@@ -49,8 +49,12 @@ class TestProductBugTaskCreationStep(TestCaseWithFactory):
             self.bug_task, '+choose-affected-product', form=form)
         self.assertEqual([], view.view.errors)
         self.assertTrue(self.bug.getBugTask(self.product) is not None)
+        has_packaging = self.packaging_util.packagingEntryExists(
+            self.sourcepackagename, self.ubuntu_series,
+            self.product.development_focus)
+        self.assertFalse(has_packaging)
 
-    def test_create_packaging_with_bugtask(self):
+    def test_create_upstream_bugtask_with_packaging(self):
         form = {
             'field.product': 'bat',
             'field.add_packaging': 'on',
@@ -61,7 +65,8 @@ class TestProductBugTaskCreationStep(TestCaseWithFactory):
         view = create_initialized_view(
             self.bug_task, '+choose-affected-product', form=form)
         self.assertEqual([], view.view.errors)
+        self.assertTrue(self.bug.getBugTask(self.product) is not None)
         has_packaging = self.packaging_util.packagingEntryExists(
-            self.sourcepackagename, self.hoary,
+            self.sourcepackagename, self.ubuntu_series,
             self.product.development_focus)
         self.assertTrue(has_packaging)
