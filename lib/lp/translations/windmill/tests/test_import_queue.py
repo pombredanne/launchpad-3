@@ -204,6 +204,33 @@ class ImportQueueEntryTest(WindmillTestCase):
         client.asserts.assertSelected(
             id=u'field.potemplate', validator=template_name)
 
+    def test_import_queue_entry_template_selection_escape(self):
+        # The potemplate dropdown for templates escapes its strings.
+        template = self.factory.makePOTemplate(
+            path='quote.pot', name='quote', translation_domain="\\'")
+
+        # A new template upload for that entry has a path that doesn't
+        # match either of the existing templates.
+        entry = self.factory.makeTranslationImportQueueEntry(
+            path='foo.pot', productseries=template.productseries,
+            distroseries=template.distroseries,
+            sourcepackagename=template.sourcepackagename)
+        url = canonical_url(entry, rootsite='translations')
+
+        transaction.commit()
+
+        client = self.client
+        user = lpuser.TRANSLATIONS_ADMIN
+        user.ensure_login(client)
+        client.open(url=url)
+        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client.waits.sleep(milliseconds=SLEEP)
+
+        client.select(id=u'field.potemplate', option=u'quote')
+
+        client.asserts.assertValue(
+            id=u'field.translation_domain', validator=u"\\'")
+
 
 IMPORT_STATUS = u"//tr[@id='%d']//span[contains(@class,'status-choice')]"
 IMPORT_STATUS_1 = IMPORT_STATUS % 1

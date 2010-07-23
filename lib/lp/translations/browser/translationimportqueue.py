@@ -43,10 +43,20 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.validators.name import valid_name
 
 
+def replace(string, replacement):
+    """In `string,` replace `replacement`[0] with `replacement`[1]."""
+    return string.replace(*replacement)
+
+
 def escape_js_string(string):
     """Escape `string` for use as a string in a JS <script> tag."""
-    return string.replace('\\', '\\\\').replace("'", "\\'").replace(
-        '"', '\\"')
+    replacements = [
+        ('\\', '\\\\'),
+        ('"', '\\"'),
+        ("'", "\\'"),
+        ('\n', '\\n'),
+        ]
+    return reduce(replace, replacements, string)
 
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
