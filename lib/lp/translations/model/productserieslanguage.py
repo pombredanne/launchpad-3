@@ -13,7 +13,6 @@ __all__ = [
 from zope.interface import implements
 
 from lp.translations.utilities.rosettastats import RosettaStats
-from lp.translations.model.potemplate import get_pofiles_for
 from lp.translations.model.translatedlanguage import TranslatedLanguageMixin
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage, IProductSeriesLanguageSet)

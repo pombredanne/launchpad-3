@@ -5,8 +5,7 @@
 
 from zope.interface import Attribute, Interface
 from zope.interface.common.sequence import IFiniteSequence
-from zope.schema import (
-    Choice, Datetime, Object)
+from zope.schema import Datetime, Object
 
 from canonical.launchpad import _
 from lp.services.worlddata.interfaces.language import ILanguage
@@ -19,6 +18,7 @@ __all__ = [
     'IPOFilesByPOTemplates',
     'ITranslatedLanguage',
     ]
+
 
 class ITranslatedLanguage(Interface):
     """Interface for providing translations for context by language.

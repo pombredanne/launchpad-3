@@ -6,7 +6,6 @@ __all__ = ['TranslatedLanguageMixin']
 import pytz
 
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from storm.expr import Coalesce, Desc, Max, Sum
 
@@ -98,12 +97,12 @@ class TranslatedLanguageMixin(object):
         """See `ITranslatedLanguage`."""
         untranslated = total - translated
         self._translation_statistics = {
-            'total_count' : total,
-            'translated_count' : translated,
-            'new_count' : new,
-            'changed_count' : changed,
-            'unreviewed_count' : unreviewed,
-            'untranslated_count' : untranslated,
+            'total_count': total,
+            'translated_count': translated,
+            'new_count': new,
+            'changed_count': changed,
+            'unreviewed_count': unreviewed,
+            'untranslated_count': untranslated,
             }
 
     def recalculateCounts(self):
@@ -116,8 +115,7 @@ class TranslatedLanguageMixin(object):
                            Coalesce(Sum(POFile.updatescount), 0),
                            Coalesce(Sum(POFile.rosettacount), 0),
                            Coalesce(Sum(POFile.unreviewed_count), 0),
-                           Max(POFile.date_changed))
-            )
+                           Max(POFile.date_changed)))
         total, imported, changed, rosetta, unreviewed, date_changed = (
             total_count_results[0])
         translated = imported + rosetta

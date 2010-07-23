@@ -152,7 +152,6 @@ from lp.testing import (
     ANONYMOUS,
     login,
     login_as,
-    logout,
     run_with_login,
     temp_dir,
     time_counter,
@@ -828,7 +827,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
-                'Unrecognized branch type: %r' % (branch_type,))
+                'Unrecognized branch type: %r' % (branch_type, ))
 
         namespace = get_branch_namespace(
             owner, product=product, distroseries=distroseries,
@@ -1790,7 +1789,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeRecipeText(self, *branches):
         if len(branches) == 0:
-            branches = (self.makeAnyBranch(),)
+            branches = (self.makeAnyBranch(), )
         base_branch = branches[0]
         other_branches = branches[1:]
         text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity

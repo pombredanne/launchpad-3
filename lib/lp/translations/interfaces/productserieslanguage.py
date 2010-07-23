@@ -5,9 +5,8 @@
 
 from lazr.restful.fields import Reference
 
-from zope.interface import Attribute, Interface
-from zope.schema import (
-    Choice, Datetime, TextLine)
+from zope.interface import Interface
+from zope.schema import Choice, TextLine
 
 from canonical.launchpad import _
 from lp.translations.interfaces.pofile import IPOFile

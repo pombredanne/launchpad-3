@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
@@ -167,12 +165,12 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         translated_language = self.getTranslatedLanguage(self.language)
 
         expected = {
-            'total_count' : 0,
-            'translated_count' : 0,
-            'new_count' : 0,
-            'changed_count' : 0,
-            'unreviewed_count' : 0,
-            'untranslated_count' : 0,
+            'total_count': 0,
+            'translated_count': 0,
+            'new_count': 0,
+            'changed_count': 0,
+            'unreviewed_count': 0,
+            'untranslated_count': 0,
             }
         self.assertEqual(expected,
                          translated_language.translation_statistics)
@@ -191,12 +189,12 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
             total, translated, new, changed, unreviewed)
 
         expected = {
-            'total_count' : total,
-            'translated_count' : translated,
-            'new_count' : new,
-            'changed_count' : changed,
-            'unreviewed_count' : unreviewed,
-            'untranslated_count' : untranslated,
+            'total_count': total,
+            'translated_count': translated,
+            'new_count': new,
+            'changed_count': changed,
+            'unreviewed_count': unreviewed,
+            'untranslated_count': untranslated,
             }
         self.assertEqual(expected,
                          translated_language.translation_statistics)
@@ -207,12 +205,12 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         translated_language.recalculateCounts()
 
         expected = {
-            'total_count' : 0,
-            'translated_count' : 0,
-            'new_count' : 0,
-            'changed_count' : 0,
-            'unreviewed_count' : 0,
-            'untranslated_count' : 0,
+            'total_count': 0,
+            'translated_count': 0,
+            'new_count': 0,
+            'changed_count': 0,
+            'unreviewed_count': 0,
+            'untranslated_count': 0,
             }
         self.assertEqual(expected,
                          translated_language.translation_statistics)
@@ -377,12 +375,12 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         translated_language.recalculateCounts()
 
         expected = {
-            'total_count' : 5,
-            'translated_count' : 4,
-            'new_count' : 0,
-            'changed_count' : 1,
-            'unreviewed_count' : 3,
-            'untranslated_count' : 1,
+            'total_count': 5,
+            'translated_count': 4,
+            'new_count': 0,
+            'changed_count': 1,
+            'unreviewed_count': 3,
+            'untranslated_count': 1,
             }
         self.assertEqual(expected,
                          translated_language.translation_statistics)
@@ -419,12 +417,12 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         translated_language.recalculateCounts()
 
         expected = {
-            'total_count' : 8,
-            'translated_count' : 7,
-            'new_count' : 2,
-            'changed_count' : 2,
-            'unreviewed_count' : 4,
-            'untranslated_count' : 1,
+            'total_count': 8,
+            'translated_count': 7,
+            'new_count': 2,
+            'changed_count': 2,
+            'unreviewed_count': 4,
+            'untranslated_count': 1,
             }
         self.assertEqual(expected,
                          translated_language.translation_statistics)
@@ -453,13 +451,12 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         translated_language.recalculateCounts()
 
         expected = {
-            'total_count' : 8,
-            'translated_count' : 4,
-            'new_count' : 1,
-            'changed_count' : 1,
-            'unreviewed_count' : 3,
-            'untranslated_count' : 4,
+            'total_count': 8,
+            'translated_count': 4,
+            'new_count': 1,
+            'changed_count': 1,
+            'unreviewed_count': 3,
+            'untranslated_count': 4,
             }
         self.assertEqual(expected,
                          translated_language.translation_statistics)
-
