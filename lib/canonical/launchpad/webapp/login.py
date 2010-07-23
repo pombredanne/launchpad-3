@@ -254,6 +254,7 @@ class OpenIDCallbackView(OpenIDLogin):
                 raise ValueError(
                     'Did not expect multi-valued fields.')
 
+        # XXX benji 2010-07-23 bug=608920
         # The production OpenID provider has some Django middleware that
         # generates a token used to prevent XSRF attacks and stuffs it into
         # every form.  Unfortunately that includes forms that have off-site
