@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -34,6 +34,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.blueprints.model.specificationbranch import (
@@ -78,6 +79,8 @@ from lp.testing import (
     person_logged_in, run_with_login, TestCase, TestCaseWithFactory,
     time_counter)
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.model.translationtemplatesbuildjob import (
+    ITranslationTemplatesBuildJobSource)
 
 
 class TestCodeImport(TestCase):
@@ -534,7 +537,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         jobs = list(getUtility(IBranchUpgradeJobSource).iterReady())
         self.assertEqual(
             jobs,
-            [job,])
+            [job, ])
 
     def test_requestUpgrade_no_upgrade_needed(self):
         # If a branch doesn't need to be upgraded, requestUpgrade raises an
@@ -632,6 +635,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
         branch = self.factory.makeProductBranch(
             product=fooix, owner=eric, name='trunk')
         linked_branch = ICanHasLinkedBranch(future)
+        login_person(fooix.owner)
         linked_branch.setBranch(branch)
         self.assertEqual(
             [linked_branch],
@@ -824,6 +828,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         product = branch.product
         series = self.factory.makeProductSeries(product=product)
         linked_branch = ICanHasLinkedBranch(series)
+        login_person(series.owner)
         linked_branch.setBranch(branch)
         self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
@@ -849,6 +854,7 @@ class TestBzrIdentity(TestCaseWithFactory):
             removeSecurityProxy(branch.product))
         series_link = ICanHasLinkedBranch(series)
         product_link.setBranch(branch)
+        login_person(series.owner)
         series_link.setBranch(branch)
         self.assertBzrIdentity(branch, product_link.bzr_path)
 
@@ -1039,6 +1045,39 @@ class TestBranchDeletion(TestCaseWithFactory):
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
 
+    def test_related_TranslationTemplatesBuildJob_cleaned_out(self):
+        # A TranslationTemplatesBuildJob is a type of BranchJob that
+        # comes with a BuildQueue entry referring to the same Job.
+        # Deleting the branch cleans up the BuildQueue before it can
+        # remove the Job and BranchJob.
+        branch = self.factory.makeAnyBranch()
+        getUtility(ITranslationTemplatesBuildJobSource).create(branch)
+
+        branch.destroySelf(break_references=True)
+
+        Store.of(branch).flush()
+
+    def test_unrelated_TranslationTemplatesBuildJob_intact(self):
+        # No innocent BuildQueue entries are harmed in deleting a
+        # branch.
+        branch = self.factory.makeAnyBranch()
+        other_branch = self.factory.makeAnyBranch()
+        source = getUtility(ITranslationTemplatesBuildJobSource)
+        job = source.create(branch)
+        other_job = source.create(other_branch)
+        store = Store.of(branch)
+
+        branch.destroySelf(break_references=True)
+
+        # The BuildQueue for the job whose branch we deleted is gone.
+        buildqueue = store.find(BuildQueue, BuildQueue.job == job.job)
+        self.assertEqual([], list(buildqueue))
+
+        # The other job's BuildQueue entry is still there.
+        other_buildqueue = store.find(
+            BuildQueue, BuildQueue.job == other_job.job)
+        self.assertNotEqual([], list(other_buildqueue))
+
     def test_createsJobToReclaimSpace(self):
         # When a branch is deleted from the database, a job to remove the
         # branch from disk as well.
@@ -1052,6 +1091,25 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.assertEqual(
             [branch_id],
             [ReclaimBranchSpaceJob(job).branch_id for job in jobs])
+
+    def test_destroySelf_with_SourcePackageRecipe(self):
+        """If branch is a base_branch in a recipe, it is deleted."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        store = Store.of(recipe)
+        recipe.base_branch.destroySelf(break_references=True)
+        # show no DB constraints have been violated
+        store.flush()
+
+    def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
+        """If branch is referred to by a recipe, it is deleted."""
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[branch1, branch2])
+        store = Store.of(recipe)
+        branch2.destroySelf(break_references=True)
+        # show no DB constraints have been violated
+        store.flush()
 
 
 class TestBranchDeletionConsequences(TestCase):
@@ -1347,25 +1405,6 @@ class TestBranchDeletionConsequences(TestCase):
         self.assertEqual(
             {recipe: ('delete', 'This recipe uses this branch.')},
             recipe.base_branch.deletionRequirements())
-
-    def test_destroySelf_with_SourcePackageRecipe(self):
-        """If branch is a base_branch in a recipe, it is deleted."""
-        recipe = self.factory.makeSourcePackageRecipe()
-        store = Store.of(recipe)
-        recipe.base_branch.destroySelf(break_references=True)
-        # show no DB constraints have been violated
-        store.flush()
-
-    def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
-        """If branch is referred to by a recipe, it is deleted."""
-        branch1 = self.factory.makeAnyBranch()
-        branch2 = self.factory.makeAnyBranch()
-        recipe = self.factory.makeSourcePackageRecipe(
-            branches=[branch1, branch2])
-        store = Store.of(recipe)
-        branch2.destroySelf(break_references=True)
-        # show no DB constraints have been violated
-        store.flush()
 
 
 class StackedBranches(TestCaseWithFactory):

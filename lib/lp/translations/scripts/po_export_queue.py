@@ -176,7 +176,6 @@ class ExportResult:
 
         return export_requested_at
 
-
     def _getRequestedExportsNames(self):
         """Return a list of display names for requested exports."""
         requested_names = []
@@ -194,8 +193,8 @@ class ExportResult:
         template = helpers.get_email_template(
             'poexport-failure.txt', 'translations')
         return template % {
-            'person' : self.person.displayname,
-            'request_url' : self.request_url,
+            'person': self.person.displayname,
+            'request_url': self.request_url,
             }
 
     def _getFailedRequestsDescription(self):
@@ -212,15 +211,14 @@ class ExportResult:
     def _getAdminFailureNotificationEmailBody(self):
         """Send an email notification about failed export to admins."""
         template = helpers.get_email_template(
-            'poexport-failure-admin-notification.txt',
-            'translations')
+            'poexport-failure-admin-notification.txt', 'translations')
         failed_requests = self._getFailedRequestsDescription()
         return template % {
-            'person' : self.person.displayname,
-            'person_id' : self.person.name,
-            'request_url' : self.request_url,
-            'failure_message' : self.failure,
-            'failed_requests' : failed_requests,
+            'person': self.person.displayname,
+            'person_id': self.person.name,
+            'request_url': self.request_url,
+            'failure_message': self.failure,
+            'failed_requests': failed_requests,
             }
 
     def _getUnicodeDecodeErrorEmailBody(self):
@@ -230,10 +228,10 @@ class ExportResult:
             'translations')
         failed_requests = self._getFailedRequestsDescription()
         return template % {
-            'person' : self.person.displayname,
-            'person_id' : self.person.name,
-            'request_url' : self.request_url,
-            'failed_requests' : failed_requests,
+            'person': self.person.displayname,
+            'person_id': self.person.name,
+            'request_url': self.request_url,
+            'failed_requests': failed_requests,
             }
 
     def _getSuccessEmailBody(self):
@@ -241,9 +239,9 @@ class ExportResult:
         template = helpers.get_email_template(
             'poexport-success.txt', 'translations')
         return template % {
-            'person' : self.person.displayname,
-            'download_url' : self.url,
-            'request_url' : self.request_url,
+            'person': self.person.displayname,
+            'download_url': self.url,
+            'request_url': self.request_url,
             }
 
     def notify(self):

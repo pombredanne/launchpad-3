@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for debversion."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 # These tests came from sourcerer.
 
 import unittest
+
 
 class Version(unittest.TestCase):
     # Known values that should work
@@ -25,27 +26,27 @@ class Version(unittest.TestCase):
 
     # Known less-than comparisons
     COMPARISONS = (
-        ( "1.0", "1.1" ),
-        ( "1.1", "2.0" ),
-        ( "2.1", "2.10" ),
-        ( "2.2", "2.10" ),
-        ( "1.0", "1:1.0" ),
-        ( "1:9.0", "2:1.0" ),
-        ( "1.0-1", "1.0-2" ),
-        ( "1.0", "1.0-1" ),
-        ( "1a", "1b" ),
-        ( "1a", "2" ),
-        ( "1a", "1." ),
-        ( "1a", "1+" ),
-        ( "1:1a", "1:1:" ),
-        ( "1a-1", "1--1" ) ,
-        ( "1+-1", "1--1" ),
-        ( "1--1", "1.-1" ),
-        ( "1:1.", "1:1:" ),
-        ( "1A", "1a" ),
-        ( "1~", "1" ),
-        ( "1~", "1~a" ),
-        ( "1~a", "1~b" ),
+        ("1.0", "1.1"),
+        ("1.1", "2.0"),
+        ("2.1", "2.10"),
+        ("2.2", "2.10"),
+        ("1.0", "1:1.0"),
+        ("1:9.0", "2:1.0"),
+        ("1.0-1", "1.0-2"),
+        ("1.0", "1.0-1"),
+        ("1a", "1b"),
+        ("1a", "2"),
+        ("1a", "1."),
+        ("1a", "1+"),
+        ("1:1a", "1:1:"),
+        ("1a-1", "1--1"),
+        ("1+-1", "1--1"),
+        ("1--1", "1.-1"),
+        ("1:1.", "1:1:"),
+        ("1A", "1a"),
+        ("1~", "1"),
+        ("1~", "1~a"),
+        ("1~a", "1~b"),
         )
 
     def testAcceptsString(self):
@@ -167,35 +168,36 @@ class Version(unittest.TestCase):
 
 
 class Strcut(unittest.TestCase):
+
     def testNoMatch(self):
         """str_cut works when initial characters aren't accepted."""
         from lp.archivepublisher.debversion import strcut
-        self.assertEquals(strcut("foo", 0, "gh"), ( "", 0 ))
+        self.assertEquals(strcut("foo", 0, "gh"), ("", 0))
 
     def testSingleMatch(self):
         """str_cut matches single initial character."""
         from lp.archivepublisher.debversion import strcut
-        self.assertEquals(strcut("foo", 0, "fgh"), ( "f", 1 ))
+        self.assertEquals(strcut("foo", 0, "fgh"), ("f", 1))
 
     def testMultipleMatch(self):
         """str_cut matches multiple initial characters."""
         from lp.archivepublisher.debversion import strcut
-        self.assertEquals(strcut("foobar", 0, "fo"), ( "foo", 3 ))
+        self.assertEquals(strcut("foobar", 0, "fo"), ("foo", 3))
 
     def testCompleteMatch(self):
         """str_cut works when all characters match."""
         from lp.archivepublisher.debversion import strcut
-        self.assertEquals(strcut("foo", 0, "fo"), ( "foo", 3 ))
+        self.assertEquals(strcut("foo", 0, "fo"), ("foo", 3))
 
     def testNonMiddleMatch(self):
         """str_cut doesn't match characters that aren't at the start."""
         from lp.archivepublisher.debversion import strcut
-        self.assertEquals(strcut("barfooquux", 0, "fo"), ( "", 0 ))
+        self.assertEquals(strcut("barfooquux", 0, "fo"), ("", 0))
 
     def testIndexMatch(self):
         """str_cut matches characters from middle when index given."""
         from lp.archivepublisher.debversion import strcut
-        self.assertEquals(strcut("barfooquux", 3, "fo"), ( "foo", 6 ))
+        self.assertEquals(strcut("barfooquux", 3, "fo"), ("foo", 6))
 
 
 class DebOrder(unittest.TestCase):
@@ -242,7 +244,7 @@ class DebCmpStr(unittest.TestCase):
         "foo+bar",
         "foo-bar",
         "foo.bar",
-        "foo:bar"
+        "foo:bar",
         )
 
     # Non-letter characters in order
@@ -339,6 +341,7 @@ class DebCmpStr(unittest.TestCase):
 
 
 class DebCmp(unittest.TestCase):
+
     def testEmptyString(self):
         """deb_cmp returns 0 for the empty string."""
         from lp.archivepublisher.debversion import deb_cmp
@@ -368,7 +371,3 @@ class DebCmp(unittest.TestCase):
         """deb_cmp works when string potion is empty."""
         from lp.archivepublisher.debversion import deb_cmp
         self.assertEquals(deb_cmp("100", "foo100"), -1)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0231
@@ -17,8 +17,7 @@ __all__ = [
 import datetime
 import pytz
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin
-    )
+    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin)
 from zope.interface import implements
 from zope.component import getAdapter, getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -132,6 +131,7 @@ def _person_has_not_licensed_translations(person):
     else:
         return False
 
+
 def _can_edit_translations(pofile, person):
     """Say if a person is able to edit existing translations.
 
@@ -181,6 +181,7 @@ def _can_edit_translations(pofile, person):
         pofile.translationpermission,
         translators,
         person) or person.inTeam(pofile.owner)
+
 
 def _can_add_suggestions(pofile, person):
     """Whether a person is able to add suggestions.
@@ -315,7 +316,6 @@ class POFileMixIn(RosettaStats):
                                plural_form=plural_form,
                                text=quote_like(text))
         return translation_match
-
 
     def _getTemplateSearchQuery(self, text):
         """Query for finding `text` in msgids of this POFile.
@@ -570,7 +570,7 @@ class POFile(SQLBase, POFileMixIn):
             return u','.join(emails)
         elif credits_type == TranslationCreditsType.KDE_NAMES:
             names = []
-            
+
             if text is not None:
                 if text == u'':
                     text = SPACE
@@ -593,7 +593,7 @@ class POFile(SQLBase, POFileMixIn):
                         text = text[:header_index]
                     else:
                         text += u'\n\n'
-                
+
                 text += LP_CREDIT_HEADER
                 for contributor in self.contributors:
                     text += ("\n  %s %s" %
@@ -604,21 +604,6 @@ class POFile(SQLBase, POFileMixIn):
             raise AssertionError(
                 "Calling prepareTranslationCredits on a message with "
                 "unknown credits type '%s'." % credits_type.title)
-
-    def translated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-        # return iter(TranslationMessage.select('''
-        #     POMsgSet.pofile = %d AND
-        #     POMsgSet.iscomplete=TRUE AND
-        #     POMsgSet.potmsgset = POTMsgSet.id AND
-        #     POTMsgSet.sequence > 0''' % self.id,
-        #     clauseTables = ['POMsgSet']
-        #     ))
-
-    def untranslated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
 
     def _getLanguageVariantClause(self, table='TranslationMessage'):
         if self.variant is None:
@@ -711,7 +696,6 @@ class POFile(SQLBase, POFileMixIn):
         clause_tables.insert(0, POTMsgSet)
         return self._getOrderedPOTMsgSets(clause_tables, query)
 
-
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
         # We get all POTMsgSet.ids with translations, and later
@@ -747,12 +731,12 @@ class POFile(SQLBase, POFileMixIn):
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
         clauses = self._getClausesForPOFileMessages()
-        msgstr_clause =  make_plurals_sql_fragment(
+        msgstr_clause = make_plurals_sql_fragment(
             "TranslationMessage.msgstr%(form)d IS NOT NULL", "OR")
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
             'TranslationMessage.is_current IS NOT TRUE',
-            "(%s)" % msgstr_clause
+            "(%s)" % msgstr_clause,
             ])
 
         variant_clause = self._getLanguageVariantClause(table='diverged')
@@ -908,12 +892,12 @@ class POFile(SQLBase, POFileMixIn):
             conditions.
         """
         query.append('%(table_name)s.msgstr0 IS NOT NULL' % {
-            'table_name' : table_name})
+            'table_name': table_name})
         if self.language.pluralforms > 1:
             plurals_query = ' AND '.join(
                 '%(table_name)s.msgstr%(plural_form)d IS NOT NULL' % {
-                  'plural_form' : plural_form,
-                  'table_name' : table_name
+                  'plural_form': plural_form,
+                  'table_name': table_name,
                 } for plural_form in range(1, self.plural_forms))
             query.append(
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
@@ -1329,7 +1313,7 @@ class DummyPOFile(POFileMixIn):
         self.fuzzyheader = False
         self.lasttranslator = None
         UTC = pytz.timezone('UTC')
-        self.date_changed  = None
+        self.date_changed = None
         self.lastparsed = None
         self.owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 
@@ -1461,14 +1445,6 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def translated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
-    def untranslated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
     def getStatistics(self):
         """See `IPOFile`."""
         return (0, 0, 0, )
@@ -1529,9 +1505,10 @@ class POFileSet:
         assert productseries is None or distroseries is None, (
             'productseries and sourcepackagename/distroseries cannot be used'
             ' at the same time.')
-        assert ((sourcepackagename is None and distroseries is None) or
-                (sourcepackagename is not None and distroseries is not None)
-                ), ('sourcepackagename and distroseries must be None or not'
+        assert (
+            (sourcepackagename is None and distroseries is None) or
+             (sourcepackagename is not None and distroseries is not None)), (
+                'sourcepackagename and distroseries must be None or not'
                    ' None at the same time.')
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -1663,7 +1640,7 @@ class POFileSet:
                     And(MatchingPOT.productseriesID is not None,
                         OtherPOT.productseriesID is not None,
                         (MatchingProductSeries.productID ==
-                         OtherProductSeries.productID)) )))
+                         OtherProductSeries.productID)))))
         results.config(distinct=True)
         return results
 
