@@ -673,10 +673,6 @@
         class="canonical.launchpad.webapp.launchbag.LaunchBagView"
         />
  
-    <utility
-        component="canonical.launchpad.systemhomes.apidocroot"
-        provides="canonical.launchpad.webapp.interfaces.IAPIDocRoot" />
-
     <!-- Resource unnamed view, allowing Z3 preferred spelling
         /@@/launchpad-icon-small to access the images directory -->
     <browser:page

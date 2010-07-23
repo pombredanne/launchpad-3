@@ -37,6 +37,10 @@
       allowed_interface="zope.publisher.interfaces.IPublishTraverse"
       />
 
+    <utility
+        component="canonical.launchpad.systemhomes.apidocroot"
+        provides="canonical.launchpad.webapp.interfaces.IAPIDocRoot" />
+
     <adapter factory="canonical.launchpad.webapp.authentication.TemporaryPrincipalAnnotations" />
     <adapter
       factory="canonical.launchpad.webapp.authentication.TemporaryUnauthenticatedPrincipalAnnotations" />
