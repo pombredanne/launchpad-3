@@ -6,11 +6,13 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
@@ -22,6 +24,22 @@ from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+
+
+class TestBuilder(TestCaseWithFactory):
+    """Basic unit tests for Builder."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_providesInterface(self):
+        # Builder provides IBuilder
+        builder = self.factory.makeBuilder()
+        self.assertProvides(builder, IBuilder)
+
+    def test_default_values(self):
+        builder = self.factory.makeBuilder()
+        flush_database_updates()
+        self.assertEqual(0, builder.failure_count)
 
 
 class TestFindBuildCandidateBase(TestCaseWithFactory):

@@ -246,6 +246,7 @@ class Builder(SQLBase):
     manual = BoolCol(dbName='manual', default=False)
     vm_host = StringCol(dbName='vm_host')
     active = BoolCol(dbName='active', notNull=True, default=True)
+    failure_count = IntCol(dbName='failure_count', default=0, notNull=True)
 
     def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""

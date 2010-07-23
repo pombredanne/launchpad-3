@@ -20,7 +20,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Field, Text, TextLine
+from zope.schema import Bool, Choice, Field, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
@@ -145,6 +145,10 @@ class IBuilder(IHasOwner):
         title=_("Whether or not a builder is available for building "
                 "new jobs. "),
         required=False)
+
+    failure_count = Int(
+        title=_('Failure Count'), required=False, default=0,
+        description=_("Number of consecutive failures for this builder."))
 
     current_build_behavior = Field(
         title=u"The current behavior of the builder for the current job.",
