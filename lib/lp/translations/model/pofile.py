@@ -605,21 +605,6 @@ class POFile(SQLBase, POFileMixIn):
                 "Calling prepareTranslationCredits on a message with "
                 "unknown credits type '%s'." % credits_type.title)
 
-    def translated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-        # return iter(TranslationMessage.select('''
-        #     POMsgSet.pofile = %d AND
-        #     POMsgSet.iscomplete=TRUE AND
-        #     POMsgSet.potmsgset = POTMsgSet.id AND
-        #     POTMsgSet.sequence > 0''' % self.id,
-        #     clauseTables = ['POMsgSet']
-        #     ))
-
-    def untranslated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
     def _getLanguageVariantClause(self, table='TranslationMessage'):
         if self.variant is None:
             clause = '%(table)s.variant IS NULL' % dict(table=table)
@@ -1460,14 +1445,6 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def translated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
-    def untranslated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
     def getStatistics(self):
         """See `IPOFile`."""
         return (0, 0, 0, )
@@ -1528,9 +1505,10 @@ class POFileSet:
         assert productseries is None or distroseries is None, (
             'productseries and sourcepackagename/distroseries cannot be used'
             ' at the same time.')
-        assert ((sourcepackagename is None and distroseries is None) or
-                (sourcepackagename is not None and distroseries is not None)
-                ), ('sourcepackagename and distroseries must be None or not'
+        assert (
+            (sourcepackagename is None and distroseries is None) or
+             (sourcepackagename is not None and distroseries is not None)), (
+                'sourcepackagename and distroseries must be None or not'
                    ' None at the same time.')
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
