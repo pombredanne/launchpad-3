@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.app.form.interfaces import ConversionError
 
 from lp.bugs.browser.bugsupervisor import BugSupervisorEditSchema
@@ -173,7 +171,3 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
             self.product, name='+bugsupervisor', form=form)
         self.assertEqual([], view.errors)
         self.assertEqual(private_team, self.product.bug_supervisor)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

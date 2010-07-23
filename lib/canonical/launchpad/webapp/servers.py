@@ -352,7 +352,7 @@ class VirtualHostRequestPublicationFactory:
         else:
             request_factory = ProtocolErrorRequest
             publication_factory = ProtocolErrorPublicationFactory(
-                405, headers={'Allow':" ".join(self.methods)})
+                405, headers={'Allow': " ".join(self.methods)})
             factories = (request_factory, publication_factory)
 
         return factories
@@ -614,6 +614,7 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         """See `ISynchronizer`."""
         pass
 
+
 class BrowserFormNG:
     """Wrapper that provides IBrowserFormNG around a regular form dict."""
 
@@ -680,6 +681,7 @@ class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
     def install(cls):
         """Install the monkey patch."""
         assert not cls.installed, "Monkey patch is already installed."
+
         def _getFormInput_single(self):
             """Return the submitted form value.
 
@@ -975,9 +977,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
                 userid,
                 pageid,
                 referer,
-                user_agent
-                )
-           )
+                user_agent))
 
 
 http = wsgi.ServerType(
@@ -1014,60 +1014,6 @@ privatexmlrpc = wsgi.ServerType(
 
 class MainLaunchpadPublication(LaunchpadBrowserPublication):
     """The publication used for the main Launchpad site."""
-
-# ---- blueprint
-
-class BlueprintBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.BlueprintLayer)
-
-class BlueprintPublication(LaunchpadBrowserPublication):
-    """The publication used for the Blueprint site."""
-
-# ---- code
-
-class CodePublication(LaunchpadBrowserPublication):
-    """The publication used for the Code site."""
-
-class CodeBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.CodeLayer)
-
-# ---- translations
-
-class TranslationsPublication(LaunchpadBrowserPublication):
-    """The publication used for the Translations site."""
-
-class TranslationsBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.TranslationsLayer)
-
-    def __init__(self, body_instream, environ, response=None):
-        super(TranslationsBrowserRequest, self).__init__(
-            body_instream, environ, response)
-        # Some of the responses from translations vary based on language.
-        self.response.setHeader(
-            'Vary', 'Cookie, Authorization, Accept-Language')
-
-# ---- bugs
-
-class BugsPublication(LaunchpadBrowserPublication):
-    """The publication used for the Bugs site."""
-
-class BugsBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.BugsLayer)
-
-# ---- answers
-
-class AnswersPublication(LaunchpadBrowserPublication):
-    """The publication used for the Answers site."""
-
-class AnswersBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.AnswersLayer)
-
-    def __init__(self, body_instream, environ, response=None):
-        super(AnswersBrowserRequest, self).__init__(
-            body_instream, environ, response)
-        # Many of the responses from Answers vary based on language.
-        self.response.setHeader(
-            'Vary', 'Cookie, Authorization, Accept-Language')
 
 
 class AccountPrincipalMixin:
@@ -1344,10 +1290,10 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
 
 class PublicXMLRPCPublication(LaunchpadBrowserPublication):
     """The publication used for public XML-RPC requests."""
+
     def handleException(self, object, request, exc_info, retry_allowed=True):
         LaunchpadBrowserPublication.handleException(
-                self, object, request, exc_info, retry_allowed
-                )
+                self, object, request, exc_info, retry_allowed)
         OpStats.stats['xml-rpc faults'] += 1
 
     def endRequest(self, request, object):
@@ -1493,17 +1439,11 @@ def register_launchpad_request_publication_factories():
     factories = [
         VWSHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication,
                handle_default_host=True),
-        VWSHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication),
-        VWSHRP('code', CodeBrowserRequest, CodePublication),
-        VWSHRP('translations', TranslationsBrowserRequest,
-               TranslationsPublication),
-        VWSHRP('bugs', BugsBrowserRequest, BugsPublication),
-        VWSHRP('answers', AnswersBrowserRequest, AnswersPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
         WebServiceRequestPublicationFactory(
             'api', WebServiceClientRequest, WebServicePublication),
         XMLRPCRequestPublicationFactory(
-            'xmlrpc', PublicXMLRPCRequest, PublicXMLRPCPublication)
+            'xmlrpc', PublicXMLRPCRequest, PublicXMLRPCPublication),
         ]
 
     if config.launchpad.enable_test_openid_provider:
