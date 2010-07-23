@@ -61,6 +61,9 @@ class IPOFilesByPOTemplates(IFiniteSequence):
     This is a wrapper for Storm ResultSet that enables optimized slicing
     by doing it lazily on the query, thus allowing DummyPOFile objects
     to be returned while still not doing more than one database query.
+
+    It subclasses `IFiniteSequence` so it can easily be used with the
+    BatchNavigator.
     """
 
     def __getitem__(selector):

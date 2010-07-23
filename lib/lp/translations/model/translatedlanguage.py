@@ -16,6 +16,7 @@ from lp.translations.model.potemplate import POTemplate
 
 
 class POFilesByPOTemplates(object):
+    """See `IPOFilesByPOTemplates`."""
     implements(IPOFilesByPOTemplates)
 
     def __init__(self, templates_collection, language):
