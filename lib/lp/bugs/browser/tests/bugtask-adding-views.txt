@@ -66,7 +66,7 @@ If we supply a valid product, it will move on to the next step.
 
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': 'evolution',
-    ...     'field.add_packaging': 'yes',
+    ...     'field.add_packaging': 'off',
     ...     'field.__visited_steps__': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
@@ -187,7 +187,7 @@ include its (and all previous) step_name in field.__visited_steps__.
     >>> form = {
     ...     'field.actions.continue': '1',
     ...     'field.product': u'no-such-product',
-    ...     'field.add_packaging': 'no',
+    ...     'field.add_packaging': 'off',
     ...     'field.__visited_steps__':
     ...         'choose_product|specify_remote_bug_url',
     ...     }
@@ -603,7 +603,7 @@ search link includes the summary only.
 
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': 'frobnitz',
-    ...     'field.add_packaging': 'no',
+    ...     'field.add_packaging': 'off',
     ...     'field.__visited_steps__': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)

@@ -38,6 +38,7 @@ from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
+from lp.registry.interfaces.packaging import IPackagingUtil, PackagingType
 from lp.registry.interfaces.product import (IProductSet, License)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
@@ -113,6 +114,7 @@ class ChooseProductStep(AlsoAffectsStep):
                 # so we can go straight to the page asking for the remote
                 # bug URL.
                 self.request.form['field.product'] = upstream.name
+                self.request.form['field.add_packaging'] = 'off'
                 self.next_step = ProductBugTaskCreationStep
             return
 
@@ -137,7 +139,7 @@ class ChooseProductStep(AlsoAffectsStep):
         self.setFieldError(
             'product',
             structured("""
-                There is no project in Launchpad named "%s". Please 
+                There is no project in Launchpad named "%s". Please
                 <a href="/projects"
                 onclick="YUI().use('event').Event.simulate(
                          document.getElementById('%s'), 'click');
@@ -151,7 +153,10 @@ class ChooseProductStep(AlsoAffectsStep):
         # Inject the selected product into the form and set the next_step to
         # be used by our multistep controller.
         self.request.form['field.product'] = data['product'].name
-        self.request.form['field.add_packaging'] = data['add_packaging']
+        if data['add_packaging']:
+            self.request.form['field.add_packaging'] = 'on'
+        else:
+            self.request.form['field.add_packaging'] = 'off'
         self.next_step = ProductBugTaskCreationStep
 
 
@@ -471,7 +476,7 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         '../templates/bugtask-requestfix-upstream.pt')
 
     label = "Confirm project"
-    target_field_names = ('product',)
+    target_field_names = ('product', 'add_packaging')
     main_action_label = u'Add to Bug Report'
     schema = IAddBugTaskWithUpstreamLinkForm
 
@@ -506,8 +511,7 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
             LinkUpstreamHowOptions.LINK_UPSTREAM:
                 'bug_url',
             LinkUpstreamHowOptions.EMAIL_UPSTREAM_DONE:
-                'upstream_email_address_done'
-            }
+                'upstream_email_address_done'}
 
         # Examine the radio group if it has valid input.
         link_upstream_how = self.widgets['link_upstream_how']
@@ -579,7 +583,15 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
             getUtility(IBugTrackerSet).ensureBugTracker(
                 bug_url, self.user, BugTrackerType.EMAILADDRESS)
             data['bug_url'] = bug_url
-
+        if data['add_packaging']:
+            # Create a packaging link so that Launchpad will suggest the
+            # upstream project to the user.
+            packaging_util = getUtility(IPackagingUtil)
+            packaging_util.createPackaging(
+                productseries=data['product'].development_focus,
+                sourcepackagename=self.context.target.sourcepackagename,
+                distroseries=self.context.target.distribution.currentseries,
+                packaging=PackagingType.PRIME, owner=self.user)
         return super(ProductBugTaskCreationStep, self).main_action(data)
 
     @property
@@ -774,8 +786,7 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
             name=data['name'],
             displayname=data['displayname'], title=data['displayname'],
             summary=data['summary'], licenses=self.licenses,
-            registrant=self.user
-            )
+            registrant=self.user)
         data['product'] = product
         self._createBugTaskAndWatch(data, set_bugtracker=True)
         # Now that the product is configured set the owner to be the registry
