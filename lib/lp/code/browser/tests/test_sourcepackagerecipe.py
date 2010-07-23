@@ -28,8 +28,8 @@ from lp.code.browser.sourcepackagerecipebuild import (
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.testing import (
-    ANONYMOUS, BrowserTestCase, login, logout)
+from lp.testing import ANONYMOUS, BrowserTestCase, login, logout
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -46,7 +46,9 @@ class TestCaseForRecipe(BrowserTestCase):
         self.squirrel = self.factory.makeDistroSeries(
             displayname='Secret Squirrel', name='secret', version='100.04',
             distribution=self.ppa.distribution)
-        self.squirrel.nominatedarchindep = self.squirrel.newArch(
+        naked_squirrel = remove_security_proxy_and_shout_at_engineer(
+            self.squirrel)
+        naked_squirrel.nominatedarchindep = self.squirrel.newArch(
             'i386', ProcessorFamily.get(1), False, self.chef,
             supports_virtualized=True)
 
@@ -528,6 +530,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(
             set([build1, build2, build3, build4, build5, build6]),
             set(view.builds))
+
         def set_day(build, day):
             removeSecurityProxy(build).date_finished = datetime(
                 2010, 03, day, tzinfo=utc)
@@ -570,7 +573,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
-        woody.nominatedarchindep = woody.newArch(
+        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
+        naked_woody.nominatedarchindep = woody.newArch(
             'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
             supports_virtualized=True)
 
@@ -604,7 +608,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
-        woody.nominatedarchindep = woody.newArch(
+        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
+        naked_woody.nominatedarchindep = woody.newArch(
             'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
             supports_virtualized=True)
 
@@ -625,7 +630,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
-        woody.nominatedarchindep = woody.newArch(
+        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
+        naked_woody.nominatedarchindep = woody.newArch(
             'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
             supports_virtualized=True)
 

@@ -45,11 +45,16 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
             if (not line.startswith('"X-Launchpad-Export-Date:') and
                 not line.startswith('"X-Generator: Launchpad'))]
 
-        for i in range(len(import_lines)):
+        line_pairs = zip(export_lines, import_lines)
+        debug_diff = test_diff(import_lines, export_lines)
+        for export_line, import_line in line_pairs:
             self.assertEqual(
-                export_lines[i], import_lines[i],
-                "Output doesn't match:\n\n %s" % test_diff(
-                    import_lines, export_lines))
+                export_line, import_line,
+                "Output doesn't match:\n\n %s" % debug_diff)
+
+        self.assertEqual(
+            len(export_lines), len(import_lines),
+            "Output has excess lines:\n\n %s" % debug_diff)
 
     def testInterface(self):
         """Check whether the object follows the interface."""
