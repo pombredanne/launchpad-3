@@ -568,7 +568,9 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     launchpad request class.
     """
 
-    implements(ILaunchpadBrowserApplicationRequest, ISynchronizer)
+    implements(
+        ILaunchpadBrowserApplicationRequest, ISynchronizer,
+        canonical.launchpad.layers.LaunchpadLayer)
 
     retry_max_count = 5    # How many times we're willing to retry
 
