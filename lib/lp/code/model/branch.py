@@ -40,7 +40,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
 from lp.services.job.model.job import Job
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities, IPrivacy)
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -88,7 +89,7 @@ from lp.services.mail.notificationrecipientset import (
 class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
 
-    implements(IBranch, IBranchNavigationMenu)
+    implements(IBranch, IBranchNavigationMenu, IPrivacy)
     _table = 'Branch'
 
     branch_type = EnumCol(enum=BranchType, notNull=True)
