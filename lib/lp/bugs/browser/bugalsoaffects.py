@@ -222,7 +222,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
             except NoBugTrackerFound:
                 # Delegate to another view which will ask the user if (s)he
                 # wants to create the bugtracker now.
-                if list(self.target_field_names) == ['product']:
+                if 'product' in self.target_field_names:
                     self.next_step = UpstreamBugTrackerCreationStep
                 else:
                     assert 'distribution' in self.target_field_names
@@ -583,7 +583,7 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
             getUtility(IBugTrackerSet).ensureBugTracker(
                 bug_url, self.user, BugTrackerType.EMAILADDRESS)
             data['bug_url'] = bug_url
-        if data['add_packaging']:
+        if data.get('add_packaging', False):
             # Create a packaging link so that Launchpad will suggest the
             # upstream project to the user.
             packaging_util = getUtility(IPackagingUtil)
