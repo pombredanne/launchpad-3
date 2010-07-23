@@ -129,9 +129,9 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
 
-    def test_create_new_recipe_team_owner(self):
-        # New recipes can be owned by teams that the user is a member of.
-        team = self.factory.makeTeam(
+    def test_create_new_recipe_users_teams_as_owner_options(self):
+        # Teams that the user is in are options for the recipe owner.
+        self.factory.makeTeam(
             name='good-chefs', displayname='Good Chefs', members=[self.chef])
         branch = self.makeBranch()
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
@@ -142,6 +142,14 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertEquals(
             ['Good Chefs (good-chefs)', 'Master Chef (chef)'],
             sorted([str(option) for option in options]))
+
+    def test_create_new_recipe_team_owner(self):
+        # New recipes can be owned by teams that the user is a member of.
+        team = self.factory.makeTeam(
+            name='good-chefs', displayname='Good Chefs', members=[self.chef])
+        branch = self.makeBranch()
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create packaging recipe').click()
 
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
