@@ -249,9 +249,11 @@ class OpenIDCallbackView(OpenIDLogin):
 
     def _gather_params(self, request):
         params = dict(request.form)
-        query_string = request.get('QUERY_STRING')
-        if query_string is not None:
-            params.update(cgi.parse_qsl(query_string))
+        for key, value in request.query_string_params.iteritems():
+            assert len(value) <= 1, (
+                'This code can not handle multi-valued fields')
+            params[key] = value[0]
+
         # The production OpenID provider has some Django middleware that
         # generates a token used to prevent XSRF attacks and stuffs it into
         # every form.  Unfortunately that includes forms that have off-site

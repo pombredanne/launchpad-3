@@ -185,6 +185,21 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         }
         self.assertEquals(params, expected_params)
 
+    def test_gather_params_with_unicode_data(self):
+        # If the currently requested URL includes a query string, the
+        # parameters in the query string will be included when constructing
+        # the params mapping (which is then used to complete the open ID
+        # response) and if there are non-ASCII characters in the query string,
+        # they are properly decoded.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=%E1%9B%9D',
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        params = view._gather_params(request)
+        self.assertEquals(params['foo'], u'\u16dd')
+
+
     def test_csrfmiddlewaretoken_is_ignored(self):
         # Show that the _gather_params filters out the errant
         # csrfmiddlewaretoken form field.  See comment in _gather_params for
