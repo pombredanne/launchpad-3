@@ -129,6 +129,50 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
 
+    def test_create_new_recipe_team_owner(self):
+        # New recipes can be owned by teams that the user is a member of.
+        self.factory.makeTeam(
+            name='good-chefs', displayname='Good Chefs', members=[self.chef])
+        branch = self.makeBranch()
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create packaging recipe').click()
+
+        # The options for the owner include the Good Chefs team.
+        options = browser.getControl('Owner').displayOptions
+        self.assertEquals(
+            ['Good Chefs (good-chefs)', 'Master Chef (chef)'],
+            sorted([str(option) for option in options]))
+
+        browser.getControl(name='field.name').value = 'daily'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Build daily').click()
+        browser.getControl('Owner').displayValue = ['Good Chefs']
+        browser.getControl('Create Recipe').click()
+
+        pattern = """\
+            Good Chefs's daily recipe
+            .*
+
+            Description
+            Make some food!
+
+            Recipe information
+            Build schedule: Built daily
+            Owner: Good Chefs
+            Base branch: lp://dev/~chef/ratatouille/veggies
+            Debian version: 0\+\{revno\}
+            Daily build archive: Secret PPA
+            Distribution series: Secret Squirrel
+            .*
+
+            Recipe contents
+            # bzr-builder format 0.2 deb-version 0\+\{revno\}
+            lp://dev/~chef/ratatouille/veggies"""
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
+
     def test_create_recipe_forbidden_instruction(self):
         # We don't allow the "run" instruction in our recipes.  Make sure this
         # is communicated to the user properly.
