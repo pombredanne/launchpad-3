@@ -1494,6 +1494,7 @@ the advanced search interface.
     http://.../ubuntu/+bug/2
     http://.../ubuntu/+source/linux-source-2.6.15/+bug/10
 
+
 Hardware related bug tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
