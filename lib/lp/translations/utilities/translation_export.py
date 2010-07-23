@@ -92,7 +92,8 @@ class TranslationExporter:
             format_exporter = self.getExporterProducingTargetFileFormat(
                 output_format)
             file_content = format_exporter.exportTranslationFile(
-                translation_file, storage)
+                translation_file, storage, ignore_obsolete=ignore_obsolete,
+                force_utf8=force_utf8)
 
         return storage.export()
 
