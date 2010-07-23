@@ -99,9 +99,6 @@
           <metal:heading_nav
             use-macro="context/@@+base-layout-macros/application-buttons"/>
         </div>
-        <div id="registration" class="registering">
-          <metal:registering define-slot="registering" />
-        </div>
       </div>
 
       <div class="yui-t4"
@@ -112,13 +109,17 @@
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
-            <div tal:condition="view/macro:pagehas/applicationtabs">
+            <div class="context-publication"
+              tal:condition="view/macro:pagehas/applicationtabs">
               <h1
                 tal:condition="view/label|nothing"
                 tal:content="view/label"
                 metal:define-slot="heading"
                 >Page Label
               </h1>
+              <div id="registration" class="registering">
+                <metal:registering define-slot="registering" />
+              </div>
               <tal:breadcrumbs replace="structure context/@@+hierarchy">
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>

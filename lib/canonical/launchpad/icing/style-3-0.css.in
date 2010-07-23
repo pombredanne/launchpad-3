@@ -1187,18 +1187,20 @@ div.watermark-apps-portlet span img {
     width: 100%;
     white-space: nowrap;
     }
+.context-publication {
+    margin-bottom: 1em;
+    }
 .registering {
     /* Registered slot */
-    float: right;
-    margin: -0.3em 0 0 0;
-    font-size: 85%;
+    margin: 0 0 0.2em 0;
+    font-style: italic;
+    font-size: 77%;
     color: #666;
     }
 .breadcrumbs {
     margin-left: 0;
     list-style-type: none;
     clear: both;
-    margin-bottom: 2em;
     font-size: 77%;
     }
 .breadcrumbs li {

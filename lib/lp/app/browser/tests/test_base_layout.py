@@ -99,8 +99,6 @@ class TestBaseLayout(TestCaseWithFactory):
         self.assertEqual('/@@/person-logo', watermark.img['src'])
         self.assertEqual('Waffles', watermark.h2.string)
         self.assertEqual('facetmenu', watermark.ul['class'])
-        self.assertEqual(
-            'registering', watermark.find(True, id='registration')['class'])
 
     def test_main_side(self):
         # The main_side layout has everything.
@@ -128,6 +126,8 @@ class TestBaseLayout(TestCaseWithFactory):
         classes = 'tab-overview main_only public yui-skin-sam'.split()
         self.assertEqual(classes, document['class'].split())
         self.verify_watermark(document)
+        self.assertEqual(
+            'registering', document.find(True, id='registration')['class'])
         self.assertEqual(None, document.find(True, id='side-portlets'))
         self.assertEqual('form', document.find(True, id='globalsearch').name)
 
@@ -142,6 +142,8 @@ class TestBaseLayout(TestCaseWithFactory):
         self.verify_watermark(document)
         classes = 'tab-overview searchless public yui-skin-sam'.split()
         self.assertEqual(classes, document['class'].split())
+        self.assertEqual(
+            'registering', document.find(True, id='registration')['class'])
         self.assertEqual(None, document.find(True, id='side-portlets'))
         self.assertEqual(None, document.find(True, id='globalsearch'))
 
@@ -155,6 +157,7 @@ class TestBaseLayout(TestCaseWithFactory):
         self.verify_base_layout_body_parts(document)
         classes = 'tab-overview locationless public yui-skin-sam'.split()
         self.assertEqual(classes, document['class'].split())
+        self.assertEqual(None, document.find(True, id='registration'))
         self.assertEqual(None, document.find(True, id='watermark'))
         self.assertEqual(None, document.find(True, id='side-portlets'))
         self.assertEqual(None, document.find(True, id='globalsearch'))
