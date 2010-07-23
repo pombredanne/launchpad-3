@@ -3,10 +3,12 @@
 
 __all__ = ['TranslatedLanguageMixin']
 
+import pytz
+
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from storm.expr import Coalesce, Desc, Sum
+from storm.expr import Coalesce, Desc, Max, Sum
 
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.translations.interfaces.translatedlanguage import (
@@ -110,12 +112,20 @@ class TranslatedLanguageMixin(object):
                            Coalesce(Sum(POFile.currentcount), 0),
                            Coalesce(Sum(POFile.updatescount), 0),
                            Coalesce(Sum(POFile.rosettacount), 0),
-                           Coalesce(Sum(POFile.unreviewed_count), 0))
+                           Coalesce(Sum(POFile.unreviewed_count), 0),
+                           Max(POFile.date_changed))
             )
-        total, imported, changed, rosetta, unreviewed = total_count_results[0]
+        total, imported, changed, rosetta, unreviewed, date_changed = (
+            total_count_results[0])
         translated = imported + rosetta
         new = rosetta - changed
         self.setCounts(total, translated, new, changed, unreviewed)
+
+        # We have to add a timezone to the otherwise naive-datetime object
+        # (because we've gotten it using Max() aggregate function).
+        if date_changed is not None:
+            date_changed = date_changed.replace(tzinfo=pytz.UTC)
+        self.last_changed_date = date_changed
 
     last_changed_date = None
     last_translator = None

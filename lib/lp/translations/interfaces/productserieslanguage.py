@@ -38,13 +38,6 @@ class IProductSeriesLanguage(IRosettaStats, ITranslatedLanguage):
         title=_("Title for the per-language per-series page."),
         required=False)
 
-    def getPOFilesFor(potemplates):
-        """Return `POFiles` for each of `potemplates`, in the same order.
-
-        For any `POTemplate` that does not have a translation to the
-        required language, a `DummyPOFile` is provided.
-        """
-
 
 class IProductSeriesLanguageSet(Interface):
     """The set of productserieslanguages."""
