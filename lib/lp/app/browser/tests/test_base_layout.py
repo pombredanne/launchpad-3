@@ -26,7 +26,7 @@ from lp.testing import TestCaseWithFactory
 
 
 class TestBaseLayout(TestCaseWithFactory):
-    """Test for the ILaunchpadRoot permission"""
+    """Test the page parts provided by the base-layout.pt."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
