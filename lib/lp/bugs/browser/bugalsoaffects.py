@@ -81,9 +81,19 @@ class ChooseProductStep(AlsoAffectsStep):
         '../templates/bugtask-choose-affected-product.pt')
 
     custom_widget('product', SearchForUpstreamPopupWidget)
-    _field_names = ['product', 'add_packaging']
     label = u"Record as affecting another project"
     step_name = "choose_product"
+
+    @property
+    def _field_names(self):
+        """The fields needed to choose an existing project."""
+        names = ['product']
+        bugtask = self.context
+        is_package_bugtask = IDistributionSourcePackage.providedBy(
+            bugtask.target)
+        if is_package_bugtask and bugtask.target.upstream_product is None:
+            names.append('add_packaging')
+        return names
 
     def initialize(self):
         super(ChooseProductStep, self).initialize()
@@ -153,7 +163,7 @@ class ChooseProductStep(AlsoAffectsStep):
         # Inject the selected product into the form and set the next_step to
         # be used by our multistep controller.
         self.request.form['field.product'] = data['product'].name
-        if data['add_packaging']:
+        if data.get('add_packaging', False):
             self.request.form['field.add_packaging'] = 'on'
         else:
             self.request.form['field.add_packaging'] = 'off'
@@ -675,11 +685,20 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
     schema = IAddBugTaskWithProductCreationForm
     custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
     custom_widget('existing_product', LaunchpadRadioWidget)
-    field_names = [
-        'bug_url', 'displayname', 'name', 'summary', 'add_packaging']
     existing_products = None
     MAX_PRODUCTS_TO_DISPLAY = 10
     licenses = [License.DONT_KNOW]
+
+    @property
+    def field_names(self):
+        """The fields needed to choose an existing project."""
+        names = ['bug_url', 'displayname', 'name', 'summary']
+        bugtask = self.context
+        is_package_bugtask = IDistributionSourcePackage.providedBy(
+            bugtask.target)
+        if is_package_bugtask and bugtask.target.upstream_product is None:
+            names.append('add_packaging')
+        return names
 
     def _loadProductsUsingBugTracker(self):
         """Find products using the bugtracker wich runs on the given URL.
