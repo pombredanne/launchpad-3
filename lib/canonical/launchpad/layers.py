@@ -36,6 +36,10 @@ class DebugLayer(Interface):
     """
 
 
+class APIDocLayer(IBrowserRequest, IDefaultBrowserLayer):
+    """The `APIDocLayer` layer."""
+
+
 class TestOpenIDLayer(LaunchpadLayer):
     """The `TestOpenIDLayer` layer."""
 

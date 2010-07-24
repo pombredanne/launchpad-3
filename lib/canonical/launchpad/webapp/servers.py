@@ -61,7 +61,7 @@ from canonical.launchpad.webapp.authorization import (
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
-    IBasicLaunchpadRequest, IBrowserFormNG,
+    IAPIDocRoot, IBasicLaunchpadRequest, IBrowserFormNG,
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
     INotificationRequest, INotificationResponse, IPlacelessAuthUtility,
     IPlacelessLoginSource, OAuthPermission, UnexpectedFormData)
@@ -1077,6 +1077,16 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.FeedsLayer)
 
 
+# ---- apidoc
+
+class APIDocBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.APIDocLayer)
+
+
+class APIDocBrowserPublication(LaunchpadBrowserPublication):
+    root_object_interface = IAPIDocRoot
+
+
 # ---- testopenid
 
 class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
@@ -1441,6 +1451,10 @@ def register_launchpad_request_publication_factories():
     if config.launchpad.enable_test_openid_provider:
         factories.append(VHRP('testopenid', TestOpenIDBrowserRequest,
                               TestOpenIDBrowserPublication))
+
+    if config.devmode:
+        factories.append(
+            VHRP('apidoc', APIDocBrowserRequest, APIDocBrowserPublication))
 
     # We may also have a private XML-RPC server.
     private_port = None
