@@ -11,6 +11,7 @@ __all__ = ['AuthorizationBase']
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
+from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.announcement import IAnnouncement
@@ -1085,10 +1086,12 @@ class UseApiDoc(AuthorizationBase):
     usedfor = Interface
 
     def checkUnauthenticated(self):
-        return True
+        # We only want this permission to work at all for devmode.
+        return config.devmode
 
     def checkAuthenticated(self, user):
-        return True
+        # We only want this permission to work at all for devmode.
+        return config.devmode
 
 
 class ManageApplicationForEverybody(UseApiDoc):
@@ -1098,6 +1101,16 @@ class ManageApplicationForEverybody(UseApiDoc):
     should be using it.
     """
     permission = 'zope.ManageApplication'
+    usedfor = Interface
+
+
+class ZopeViewForEverybody(UseApiDoc):
+    """This is just to please apidoc.launchpad.dev.
+
+    We do this because zope.app.apidoc uses that permission, but nothing else
+    should be using it.
+    """
+    permission = 'zope.View'
     usedfor = Interface
 
 
