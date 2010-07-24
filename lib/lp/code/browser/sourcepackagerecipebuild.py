@@ -49,7 +49,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def cancel(self):
-        if self.context.buildstate in UNEDITABLE_BUILD_STATES:
+        if self.context.status in UNEDITABLE_BUILD_STATES:
             enabled = False
         else:
             enabled = True
@@ -57,7 +57,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def rescore(self):
-        if self.context.buildstate in UNEDITABLE_BUILD_STATES:
+        if self.context.status in UNEDITABLE_BUILD_STATES:
             enabled = False
         else:
             enabled = True
