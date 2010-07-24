@@ -85,13 +85,17 @@ class ChooseProductStep(AlsoAffectsStep):
     step_name = "choose_product"
 
     @property
-    def _field_names(self):
-        """The fields needed to choose an existing project."""
-        names = ['product']
+    def can_link_package(self):
         bugtask = self.context
         is_package_bugtask = IDistributionSourcePackage.providedBy(
             bugtask.target)
-        if is_package_bugtask and bugtask.target.upstream_product is None:
+        return is_package_bugtask and bugtask.target.upstream_product is None
+
+    @property
+    def _field_names(self):
+        """The fields needed to choose an existing project."""
+        names = ['product']
+        if self.can_link_package:
             names.append('add_packaging')
         return names
 
@@ -690,13 +694,17 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
     licenses = [License.DONT_KNOW]
 
     @property
-    def field_names(self):
-        """The fields needed to choose an existing project."""
-        names = ['bug_url', 'displayname', 'name', 'summary']
+    def can_link_package(self):
         bugtask = self.context
         is_package_bugtask = IDistributionSourcePackage.providedBy(
             bugtask.target)
-        if is_package_bugtask and bugtask.target.upstream_product is None:
+        return is_package_bugtask and bugtask.target.upstream_product is None
+
+    @property
+    def field_names(self):
+        """The fields needed to choose an existing project."""
+        names = ['bug_url', 'displayname', 'name', 'summary']
+        if self.can_link_package:
             names.append('add_packaging')
         return names
 
