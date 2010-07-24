@@ -370,10 +370,12 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
                         productserieslang = (
                             productserieslangset.getProductSeriesLanguage(
                                 self.context, lang, pofile=pofile))
+                        productseriesllang.recalculateCounts()
                     else:
                         productserieslang = (
                             productserieslangset.getProductSeriesLanguage(
                                 self.context, lang))
+                        productseriesllang.recalculateCounts()
                     productserieslangs.append(
                         productserieslang)
 

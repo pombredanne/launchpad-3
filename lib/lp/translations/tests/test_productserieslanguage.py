@@ -89,8 +89,11 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
         self.assertEquals(sr_psl.language, serbian)
         self.assertEquals(sr_psl.pofile, None)
 
-        # Only this POFile is returned by the `pofiles` property.
-        self.assertEquals(list(sr_psl.pofiles), [pofile1])
+        # A POFile is returned where it exists, and a DummyPOFile where
+        # it doesn't.
+        self.assertEquals(2, len(sr_psl.pofiles))
+        self.assertEquals(potemplate2, sr_psl.pofiles[0].potemplate)
+        self.assertEquals(pofile1, sr_psl.pofiles[1])
 
         # If we provide a POFile for the other template, `pofiles`
         # returns both (ordered by decreasing priority).
