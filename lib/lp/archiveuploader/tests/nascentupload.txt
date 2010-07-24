@@ -10,27 +10,13 @@ We need to be logged into the security model in order to get any further
   >>> login('foo.bar@canonical.com')
 
 For the purpose of this test, hoary needs to be an open (development)
-distroseries so that we can upload to it.  It also needs to allow uploads
-to the universe component.
-
-This test normally runs as the "uploader" db user but it does not have
-permission to add a new ComponentSelection, so we temporarily switch to
-"launchpad" to handle this.
+distroseries so that we can upload to it.
 
   >>> from canonical.launchpad.interfaces import (
-  ...     SeriesStatus, IComponentSet, IDistributionSet)
-  >>> from canonical.launchpad.database import ComponentSelection
+  ...     SeriesStatus, IDistributionSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = SeriesStatus.DEVELOPMENT
-  >>> universe = getUtility(IComponentSet)['universe']
-  >>> from canonical.testing import LaunchpadZopelessLayer
-  >>> from canonical.database.sqlbase import commit
-  >>> commit()
-  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-  >>> trash = ComponentSelection(distroseries=hoary, component=universe)
-  >>> commit()
-  >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
 A NascentUpload is a collection of files in a directory. They
 represent what may turn out to be an acceptable upload to a launchpad
@@ -728,7 +714,9 @@ we're using the insecure policy to check everything in it end-to-end. We have
 to set hoary to CURRENT in order to do this because we're not allowed
 to upload to -UPDATES in a DEVELOPMENT series.
 
+  >>> from canonical.testing import LaunchpadZopelessLayer
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+  >>> from canonical.database.sqlbase import commit
   >>> hoary.status = SeriesStatus.CURRENT
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('uploader')
