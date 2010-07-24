@@ -182,6 +182,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         """If the build isn't queued, you can't rescore it."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
         build = self.makeRecipeBuild()
+        build.cancelBuild()
         transaction.commit()
         build_url = canonical_url(build)
         logout()

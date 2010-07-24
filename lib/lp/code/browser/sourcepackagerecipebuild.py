@@ -57,7 +57,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def rescore(self):
-        if self.context.buildqueue_record is None:
+        if self.context.buildstate in UNEDITABLE_BUILD_STATES:
             enabled = False
         else:
             enabled = True
