@@ -114,7 +114,7 @@ class _BaseNamespace:
         # registrant subscription does not cause email to be sent about
         # attribute changes, just merge proposals and code review comments.
         branch.subscribe(
-            registrant,
+            self.owner,
             BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.FULL,
