@@ -253,6 +253,7 @@ class OpenIDCallbackView(OpenIDLogin):
             if len(value) > 1:
                 raise ValueError(
                     'Did not expect multi-valued fields.')
+            params[key] = value[0]
 
         # XXX benji 2010-07-23 bug=608920
         # The production OpenID provider has some Django middleware that
