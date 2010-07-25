@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
+from doctest import DocTestSuite
 from email.Message import Message
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
@@ -13,7 +14,6 @@ import unittest
 
 from canonical.testing import LaunchpadFunctionalLayer
 from sqlobject import SQLObjectNotFound
-from zope.testing.doctestunit import DocTestSuite
 from zope.component import getUtility
 
 from canonical.launchpad.database import (

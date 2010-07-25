@@ -157,29 +157,34 @@ class ErrorReport:
     def __repr__(self):
         return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
-    def write(self, fp):
-        fp.write('Oops-Id: %s\n' % _normalise_whitespace(self.id))
-        fp.write('Exception-Type: %s\n' % _normalise_whitespace(self.type))
-        fp.write('Exception-Value: %s\n' % _normalise_whitespace(self.value))
-        fp.write('Date: %s\n' % self.time.isoformat())
-        fp.write('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
-        fp.write('Branch: %s\n' % self.branch_nick)
-        fp.write('Revision: %s\n' % self.revno)
-        fp.write('User: %s\n' % _normalise_whitespace(self.username))
-        fp.write('URL: %s\n' % _normalise_whitespace(self.url))
-        fp.write('Duration: %s\n' % self.duration)
-        fp.write('Informational: %s\n' % self.informational)
-        fp.write('\n')
+    def get_chunks(self):
+        chunks = []
+        chunks.append('Oops-Id: %s\n' % _normalise_whitespace(self.id))
+        chunks.append('Exception-Type: %s\n' % _normalise_whitespace(self.type))
+        chunks.append('Exception-Value: %s\n' % _normalise_whitespace(self.value))
+        chunks.append('Date: %s\n' % self.time.isoformat())
+        chunks.append('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
+        chunks.append('Branch: %s\n' % self.branch_nick)
+        chunks.append('Revision: %s\n' % self.revno)
+        chunks.append('User: %s\n' % _normalise_whitespace(self.username))
+        chunks.append('URL: %s\n' % _normalise_whitespace(self.url))
+        chunks.append('Duration: %s\n' % self.duration)
+        chunks.append('Informational: %s\n' % self.informational)
+        chunks.append('\n')
         safe_chars = ';/\\?:@&+$, ()*!'
         for key, value in self.req_vars:
-            fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
+            chunks.append('%s=%s\n' % (urllib.quote(key, safe_chars),
                                   urllib.quote(value, safe_chars)))
-        fp.write('\n')
+        chunks.append('\n')
         for (start, end, database_id, statement) in self.db_statements:
-            fp.write('%05d-%05d@%s %s\n' % (
+            chunks.append('%05d-%05d@%s %s\n' % (
                 start, end, database_id, _normalise_whitespace(statement)))
-        fp.write('\n')
-        fp.write(self.tb_text)
+        chunks.append('\n')
+        chunks.append(self.tb_text)
+        return chunks
+
+    def write(self, fp):
+        fp.writelines(self.get_chunks())
 
     @classmethod
     def read(cls, fp):
@@ -215,8 +220,11 @@ class ErrorReport:
             line = line.strip()
             if line == '':
                 break
-            start, end, db_id, statement = re.match(
-                r'^(\d+)-(\d+)(?:@([\w-]+))?\s+(.*)', line).groups()
+            match = re.match(
+                r'^(\d+)-(\d+)(?:@([\w-]+))?\s+(.*)', line)
+            assert match is not None, (
+                "Unable to interpret oops line: %s" % line)
+            start, end, db_id, statement = match.groups()
             if db_id is not None:
                 db_id = intern(db_id) # This string is repeated lots.
             statements.append(
