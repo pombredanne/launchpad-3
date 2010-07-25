@@ -63,6 +63,13 @@ class TestFeatureFlags(TestCase):
         self.assertEqual(u'3.0',
             control.getFlag('ui.icing'))
 
+    def test_getItem(self):
+        # for use in page templates, the flags can be treated as a dict
+        self.populateStore()
+        control = FeatureController(['default'])
+        self.assertEqual(u'3.0',
+            control['ui.icing'])
+
     def test_getAllFlags(self):
         # can fetch all the active flags, and it gives back only the
         # highest-priority settings

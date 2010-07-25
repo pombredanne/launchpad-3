@@ -16,9 +16,9 @@ from lp.services.features.flags import (
 def start_request(event):
     """Register FeatureController."""
     # TODO: determine all the interesting scopes, based on event.request
-    per_thread.features = FeatureController(['default'])
+    event.request.features = per_thread.features = FeatureController(['default'])
 
 
 def end_request(event):
     """Done with this FeatureController."""
-    per_thread.features = None
+    event.request.features = per_thread.features = None

@@ -82,10 +82,14 @@ class FeatureController(object):
     def getFlag(self, flag_name):
         return self._cached_flags.get(flag_name)
 
+    # for ease of use of zope traversal
+    def __getitem__(self, flag_name):
+        return self.getFlag(flag_name)
+
     def getAllFlags(self):
         """Get the feature flags active for the current scopes.
 
-        :returns: dict from flag_name (unicode) to value (unicode).
+        :returns: dict from flag_name (str) to value (unicode).
         """
         return dict(self._cached_flags)
 
