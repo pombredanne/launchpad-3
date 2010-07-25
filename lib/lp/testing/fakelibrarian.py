@@ -1,0 +1,139 @@
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Fake, in-process implementation of the Librarian API."""
+
+__metaclass__ = type
+__all__ = [
+    'FakeLibrarian',
+    ]
+
+import hashlib
+from StringIO import StringIO
+from transaction.interfaces import ISynchronizer
+
+from zope.interface import implements
+
+from canonical.launchpad.database.librarian import (
+    LibraryFileContent, LibraryFileAlias)
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.librarian.interfaces import (
+    DownloadFailed,
+    ILibrarianClient,
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    UploadFailed)
+
+
+class InstrumentedLibraryFileAlias(LibraryFileAlias):
+    """A `ILibraryFileAlias` implementation that fakes library access."""
+
+    file_committed = False
+
+    def checkCommitted(self):
+        """Raise an error if this file has not been committed yet."""
+        if not self.file_committed:
+            raise DownloadFailed(
+                "Attempting to retrieve file '%s' from the fake "
+                "librarian, but the file has not yet been committed to "
+                "storage." % self.filename)
+
+    def open(self, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
+        self.checkCommitted()
+        self._datafile = StringIO(self.content_string)
+
+    def read(self, chunksize=None, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
+        return self._datafile.read(chunksize)
+
+
+class FakeLibrarian(object):
+    """A fake, in-process Librarian.
+
+    This takes the role of both the librarian client and the LibraryFileAlias
+    utility.
+    """
+    implements(
+        ILibrarianClient, ILibraryFileAliasSet, ISynchronizer)
+
+    def __init__(self):
+        self.aliases = {}
+
+    def addFile(self, name, size, file, content_type, expires=None):
+        """See `IFileUploadClient`."""
+        content = file.read()
+        real_size = len(content)
+        if real_size != size:
+            raise UploadFailed(
+                "Uploading '%s' to the fake librarian with incorrect "
+                "size %d; actual size is %d." % (name, size, real_size))
+
+        file_ref = self._makeLibraryFileContent(content)
+        alias = self._makeAlias(file_ref.id, name, content, content_type)
+        self.aliases[alias.id] = alias
+
+        return alias.id
+
+    def remoteAddFile(self, name, size, file, contentType, expires=None):
+        """See `IFileUploadClient`."""
+        return NotImplementedError()
+
+    def getURLForAlias(self, aliasID):
+        """See `IFileDownloadClient`."""
+        raise NotImplementedError()
+
+    def getFileByAlias(self, aliasID,
+                       timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
+        """See `IFileDownloadClient`."""
+        alias = self[aliasID]
+        alias.checkCommitted()
+        return StringIO(alias.content_string)
+
+    def _makeAlias(self, file_id, name, content, content_type):
+        """Create a `LibraryFileAlias`."""
+        alias = InstrumentedLibraryFileAlias(
+            contentID=file_id, filename=name, mimetype=content_type)
+        alias.content_string = content
+        return alias
+
+    def _makeLibraryFileContent(self, content):
+        """Create a `LibraryFileContent`."""
+        size = len(content)
+        sha1 = hashlib.sha1(content).hexdigest()
+        md5 = hashlib.md5(content).hexdigest()
+
+        content_object = LibraryFileContent(filesize=size, sha1=sha1, md5=md5)
+        return content_object
+
+    def create(self, name, size, file, contentType, expires=None,
+               debugID=None, restricted=False):
+        "See `ILibraryFileAliasSet`."""
+        return self.addFile(
+            name, size, file, contentType, expires=expires, debugID=debugID)
+
+    def __getitem__(self, key):
+        "See `ILibraryFileAliasSet`."""
+        alias = self.aliases.get(key)
+        if alias is None:
+            raise DownloadFailed(
+                "Attempting to retrieve file alias %d from the fake "
+                "librarian, who has never heard of it." % key)
+        return alias
+
+    def findBySHA1(self, sha1):
+        "See `ILibraryFileAliasSet`."""
+        for alias in self.aliases.itervalues():
+            if alias.content.sha1 == sha1:
+                return alias
+
+        return None
+
+    def beforeCompletion(self, txn):
+        """See `ISynchronizer`."""
+
+    def afterCompletion(self, txn):
+        """See `ISynchronizer`."""
+        # Note that all files have been committed to storage.
+        for alias in self.aliases.itervalues():
+            alias.file_committed = True
+
+    def newTransaction(self, txn):
+        """See `ISynchronizer`."""

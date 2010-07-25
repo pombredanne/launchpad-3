@@ -1,9 +1,17 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # PyLint doesn't grok Zope interfaces.
 # pylint: disable-msg=E0213
 __metaclass__ = type
+__all__ = [
+    'DownloadFailed',
+    'ILibrarianClient',
+    'IRestrictedLibrarianClient',
+    'LibrarianServerError',
+    'LIBRARIAN_SERVER_DEFAULT_TIMEOUT',
+    'UploadFailed',
+    ]
 
 import signal
 
@@ -35,14 +43,18 @@ class LibrarianServerError(Exception):
 # LibrarianServerError.
 LIBRARIAN_SERVER_DEFAULT_TIMEOUT = 5
 
+
 class IFileUploadClient(Interface):
+    """Upload API for the Librarian client."""
+
     def addFile(name, size, file, contentType, expires=None):
         """Add a file to the librarian.
 
-        :param name: Name to store the file as
-        :param size: Size of the file
-        :param file: File-like object with the content in it
-        :param expires: Expiry time of file, or None to keep until unreferenced
+        :param name: Name to store the file as.
+        :param size: Size of the file.
+        :param file: File-like object with the content in it.
+        :param expires: Expiry time of file, or None to keep until
+            unreferenced.
 
         :raises UploadFailed: If the server rejects the upload for some reason
 
@@ -74,6 +86,8 @@ class IFileUploadClient(Interface):
 
 
 class IFileDownloadClient(Interface):
+    """Download API for the Librarian client."""
+
     def getURLForAlias(aliasID):
         """Returns the URL to the given file"""
 
@@ -87,7 +101,7 @@ class IFileDownloadClient(Interface):
             LibrarianServerError is raised.
         :return: A file-like object to read the file contents from.
         :raises DownloadFailed: If the alias is not found.
-        :raises LibrarianServerError: If the librarain server is
+        :raises LibrarianServerError: If the librarian server is
             unreachable or returns an 5xx HTTPError.
         """
 
@@ -98,4 +112,3 @@ class ILibrarianClient(IFileUploadClient, IFileDownloadClient):
 
 class IRestrictedLibrarianClient(ILibrarianClient):
     """A version of the client that connects to a restricted librarian."""
-
