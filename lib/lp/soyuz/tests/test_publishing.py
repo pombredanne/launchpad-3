@@ -32,7 +32,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
@@ -1158,6 +1158,48 @@ class TestBinaryDomination(TestNativePublishingBase):
         bin.supersede(super_bin)
         self.checkSuperseded([bin], super_bin)
         self.assertEquals(super_date, bin.datesuperseded)
+
+    def testSupersedesCorrespondingDDEB(self):
+        """Check that supersede() takes with it any corresponding DDEB.
+
+        DDEB publications should be superseded when their corresponding DEB
+        is.
+        """
+        getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
+            distribution=self.ubuntutest)
+
+        # Each of these will return (i386 deb, i386 ddeb, hppa deb,
+        # hppa ddeb).
+        bins = self.getPubBinaries(
+            architecturespecific=True, with_debug=True)
+        super_bins = self.getPubBinaries(
+            architecturespecific=True, with_debug=True)
+
+        bins[0].supersede(super_bins[0])
+        self.checkSuperseded(bins[:2], super_bins[0])
+        self.checkPublications(bins[2:], PackagePublishingStatus.PENDING)
+        self.checkPublications(super_bins, PackagePublishingStatus.PENDING)
+
+        bins[2].supersede(super_bins[2])
+        self.checkSuperseded(bins[:2], super_bins[0])
+        self.checkSuperseded(bins[2:], super_bins[2])
+        self.checkPublications(super_bins, PackagePublishingStatus.PENDING)
+
+    def testDDEBsCannotSupersede(self):
+        """Check that DDEBs cannot supersede other publications.
+
+        Since DDEBs are superseded when their DEBs are, there's no need to
+        for them supersede anything themselves. Any such attempt is an error.
+        """
+        getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
+            distribution=self.ubuntutest)
+
+        # This will return (i386 deb, i386 ddeb, hppa deb, hppa ddeb).
+        bins = self.getPubBinaries(
+            architecturespecific=True, with_debug=True)
+        self.assertRaises(AssertionError, bins[0].supersede, bins[1])
 
 
 class TestBinaryGetOtherPublications(TestNativePublishingBase):
