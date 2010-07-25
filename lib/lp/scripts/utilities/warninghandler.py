@@ -150,11 +150,12 @@ no_order_by = []
 other_warnings = []
 
 old_show_warning = warnings.showwarning
-def launchpad_showwarning(message, category, filename, lineno, file=None):
+def launchpad_showwarning(message, category, filename, lineno, file=None,
+                          line=None):
     if file is None:
         file = sys.stderr
     stream = StringIO.StringIO()
-    old_show_warning(message, category, filename, lineno, stream)
+    old_show_warning(message, category, filename, lineno, stream, line=line)
     warning_message = stream.getvalue()
     important_info = find_important_info()
 
@@ -201,7 +202,6 @@ def report_other_warnings():
         print "General warnings."
         for warninginfo in other_warnings:
             print
-            print warninginfo.message,
             print warninginfo
 
 def report_warnings():
