@@ -35,6 +35,7 @@ import sys
 from textwrap import dedent
 from threading import local
 from types import InstanceType
+import warnings
 
 import pytz
 
@@ -2757,6 +2758,15 @@ def is_security_proxied_or_harmless(obj):
     return False
 
 
+class UnproxiedFactoryMethodWarning(UserWarning):
+    """Raised when someone calls an unproxied factory method."""
+
+    def __init__(self, method_name):
+        super(UnproxiedFactoryMethodWarning, self).__init__(
+            "PLEASE FIX: LaunchpadObjectFactory.%s returns an "
+            "unproxied object." % (method_name,))
+
+
 class LaunchpadObjectFactory:
     """A wrapper around `BareLaunchpadObjectFactory`.
 
@@ -2778,10 +2788,8 @@ class LaunchpadObjectFactory:
             def guarded_method(*args, **kw):
                 result = attr(*args, **kw)
                 if not is_security_proxied_or_harmless(result):
-                    message = (
-                        "PLEASE FIX: LaunchpadObjectFactory.%s returns an "
-                        "unproxied object." % name)
-                    print >>sys.stderr, message
+                    warnings.warn(
+                        UnproxiedFactoryMethodWarning(name), stacklevel=1)
                 return result
             return guarded_method
         else:
