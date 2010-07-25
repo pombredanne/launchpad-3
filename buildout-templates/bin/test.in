@@ -161,9 +161,6 @@ warnings.filterwarnings(
     UserWarning
     )
 
-# Any warnings not explicitly silenced are errors
-warnings.filterwarnings('error', append=True)
-
 
 from canonical.ftests import pgsql
 # If this is removed, make sure canonical.ftests.pgsql is updated
