@@ -159,7 +159,6 @@ common words and stop words.
     >>> for faq in target.findSimilarFAQs('How do I use the Answer Tracker'):
     ...     print faq.title
     How to answer a question
-    How to use bug mail
     How to become a Launchpad king
 
 The results are ordered by relevancy. The first document is considered

@@ -622,11 +622,17 @@ So firefox will be removed from the final query:
     >>> nl_phrase_search('how do I do this?', Question)
     ''
 
-The fast code path only removes firefox, ubuntu and launchpad today:
+The fast code path does not remove any terms. Rather it uses an & query over
+all the terms combined with an & query for each ordinal-1 subset of the terms:
 
     >>> nl_phrase_search('system is slow when running firefox on ubuntu',
     ...     Question)
-    u'run|slow|system'
+    u'(firefox&run&slow&system&ubuntu)|(run&slow&system&ubuntu)|(firefox&slow&system&ubuntu)|(firefox&run&system&ubuntu)|(firefox&run&slow&ubuntu)|(firefox&run&slow&system)'
+
+Short queries are not expanded like this:
+
+    >>> nl_phrase_search('system is slow', Question)
+    u'slow&system'
 
 
 ==== Using other constraints ====
@@ -655,10 +661,10 @@ forth parameter:
     ...     ['Product'], fast_enabled=False)
     u'slow|flickr'
 
-When the query only has stop words or common words in it, the returned
-query will be the empty string:
+When the query only has stop words in it, the returned query will be the empty
+string:
 
-    >>> nl_phrase_search('ubuntu will not do it', Question)
+    >>> nl_phrase_search('will not do it', Question)
     ''
 
 When there are no candidate rows, only stemming and stop words removal
@@ -668,7 +674,7 @@ is done.
     0
     >>> nl_phrase_search('firefox is very slow on flickr', Question,
     ...                  'product = -1')
-    u'flickr|slow'
+    u'(firefox&flickr&slow)|(flickr&slow)|(firefox&slow)|(firefox&flickr)'
 
 
 ==== No keywords filtering with few rows ====
@@ -705,4 +711,4 @@ questions:
     ...     'firefox is slow', Question,
     ...     'distribution = %s AND sourcepackagename = %s' % sqlvalues(
     ...     ubuntu, firefox_package.sourcepackagename))
-    u'slow'
+    u'firefox&slow'

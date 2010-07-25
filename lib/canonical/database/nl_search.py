@@ -73,17 +73,30 @@ def nl_phrase_search(phrase, table, constraints='',
 def _nl_phrase_search(terms, table, constraints, extra_constraints_tables):
     """Perform a very simple pruning of the phrase, letting fti do ranking.
 
+    This function groups the terms with & clause, and creates an additional
+    & grouping for each subset of terms created by discarding one term.
+    
+    When there are less than 3 terms, additional groupings are not created.
+
     See nl_phrase_search for the contract of this function.
     """
-    bad_words = set(['firefox', 'ubuntu', 'launchpad'])
     terms = set(terms)
-    filtered_terms = []
-    for term in terms:
-        if term.lower() in bad_words:
-            continue
-        filtered_terms.append(term)
-    # sorted for testing convenience.
-    return '|'.join(sorted(filtered_terms))
+    # As a special case, we don't expand a 2-term search : its very slow and
+    # too noisy at the moment.
+    # sorted for doctesting convenience - should have no impact on tsearch2.
+    if len(terms) < 3:
+        return '&'.join(sorted(terms))
+    # Expand
+    and_groups = [None] * (len(terms) + 1)
+    for pos in range(len(terms) + 1):
+        and_groups[pos] = set(terms)
+    # sorted for doctesting convenience - should have no impact on tsearch2.
+    for pos, term in enumerate(sorted(terms)):
+        and_groups[pos + 1].discard(term)
+    # sorted for doctesting convenience - should have no impact on tsearch2.
+    and_clauses = ['(' + '&'.join(sorted(group)) + ')'
+        for group in and_groups]
+    return '|'.join(and_clauses)
 
 
 def _slow_nl_phrase_search(terms, table, constraints,
