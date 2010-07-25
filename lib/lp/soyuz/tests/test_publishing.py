@@ -275,7 +275,8 @@ class SoyuzTestPublisher:
                        version='666',
                        architecturespecific=False,
                        builder=None,
-                       component='main'):
+                       component='main',
+                       with_debug=False):
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.distroseries
@@ -302,11 +303,25 @@ class SoyuzTestPublisher:
         published_binaries = []
         for build in builds:
             build.builder = builder
+            pub_binaries = []
+            if with_debug:
+                binarypackagerelease_ddeb = self.uploadBinaryForBuild(
+                    build, binaryname + '-dbgsym', filecontent, summary,
+                    description, shlibdep, depends, recommends, suggests,
+                    conflicts, replaces, provides, pre_depends, enhances,
+                    breaks, BinaryPackageFormat.DDEB)
+                pub_binaries += self.publishBinaryInArchive(
+                    binarypackagerelease_ddeb, archive.debug_archive, status,
+                    pocket, scheduleddeletiondate, dateremoved)
+            else:
+                binarypackagerelease_ddeb = None
+
             binarypackagerelease = self.uploadBinaryForBuild(
                 build, binaryname, filecontent, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
-                provides, pre_depends, enhances, breaks, format)
-            pub_binaries = self.publishBinaryInArchive(
+                provides, pre_depends, enhances, breaks, format,
+                binarypackagerelease_ddeb)
+            pub_binaries += self.publishBinaryInArchive(
                 binarypackagerelease, archive, status, pocket,
                 scheduleddeletiondate, dateremoved)
             published_binaries.extend(pub_binaries)
