@@ -1,7 +1,11 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-__all__ = ['FeatureController']
+__all__ = [
+    'FeatureController',
+    'per_thread',
+    ]
+
 
 __metaclass__ = type
 
@@ -9,8 +13,8 @@ __metaclass__ = type
 import threading
 
 from lp.services.features.model import (
-    getFeatureStore,
     FeatureFlag,
+    getFeatureStore,
     )
 
 
