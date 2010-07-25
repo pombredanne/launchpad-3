@@ -14,6 +14,7 @@
     site_message modules/canonical.config/config/launchpad/site_message;
     icingroot string:${rooturl}+icing/rev${revno};
     icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
+    features request/features;
     CONTEXTS python:{'template':template, 'context': context, 'view':view};
   "
 ><metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;" /></metal:doctype>
