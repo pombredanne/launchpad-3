@@ -33,6 +33,17 @@ CREATE TABLE SessionPkgData (
     ) WITHOUT OIDS;
 COMMENT ON TABLE SessionPkgData IS 'Stores the actual session data as a Python pickle.';
 
+CREATE TABLE TimeLimitedToken (
+    url text NOT NULL,
+    token text NOT NULL,
+    created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) WITHOUT OIDS;
+COMMENT ON TABLE TimeLimitedToken IS 'stores tokens for granting access to a single url for a short while. The garbo takes care of cleanups, and we should only have a few thousand at a time. Tokens are handed out just-in-time on the appserver, when a client attempts to dereference a private thing which we do not want to deliver in-line.';
+-- Give the garbo an efficient selection to cleanup
+CREATE INDEX timelimitedtoken_created ON TimeLimitedToken(created);
+-- Give the librarian an efficient lookup
+CREATE INDEX timelimitedtoken_url_token ON TimeLimitedToken(url, token);
+
 CREATE OR REPLACE FUNCTION ensure_session_client_id(p_client_id text)
 RETURNS VOID AS $$
 BEGIN
