@@ -11,7 +11,8 @@ from lp.testing import (
     ANONYMOUS, login, login_person, TestCaseWithFactory)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget, UserCannotSubscribePerson)
+    DeleteSubscriptionError, IStructuralSubscriptionTarget,
+    UserCannotSubscribePerson)
 from lp.registry.model.structuralsubscription import StructuralSubscription
 
 
@@ -68,6 +69,21 @@ class StructuralSubscriptionTestBase:
             self.bug_supervisor_subscriber, self.bug_supervisor_subscriber)
         self.assertIs(subscription1.id, subscription2.id)
 
+    def test_remove_structural_subscription(self):
+        # an unprivileged user cannot unsubscribe a team
+        login_person(self.ordinary_subscriber)
+        self.assertRaises(UserCannotSubscribePerson,
+            self.target.removeBugSubscription,
+            self.team, self.ordinary_subscriber)
+
+    def test_remove_nonexistant_structural_subscription(self):
+        # removing a nonexistant subscription raises a
+        # DeleteSubscriptionError
+        login_person(self.ordinary_subscriber)
+        self.assertRaises(DeleteSubscriptionError,
+            self.target.removeBugSubscription,
+            self.ordinary_subscriber, self.ordinary_subscriber)
+
 
 class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
 
@@ -79,6 +95,18 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
                 self.ordinary_subscriber, self.ordinary_subscriber),
             StructuralSubscription)
 
+    def test_remove_structural_subscription_by_ordinary_user(self):
+        # ordinary users can unsubscribe themselves
+        login_person(self.ordinary_subscriber)
+        self.assertIsInstance(
+            self.target.addBugSubscription(
+                self.ordinary_subscriber, self.ordinary_subscriber),
+            StructuralSubscription)
+        self.assertEqual(
+            self.target.removeBugSubscription(
+                self.ordinary_subscriber, self.ordinary_subscriber),
+            None)
+
     def test_team_structural_subscription_by_team_owner(self):
         # team owners can subscribe their team
         login_person(self.team_owner)
@@ -86,6 +114,18 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
             self.target.addBugSubscription(
                 self.team, self.team_owner),
             StructuralSubscription)
+
+    def test_remove_team_structural_subscription_by_team_owner(self):
+        # team owners can unsubscribe their team
+        login_person(self.team_owner)
+        self.assertIsInstance(
+            self.target.addBugSubscription(
+                self.team, self.team_owner),
+            StructuralSubscription)
+        self.assertEqual(
+            self.target.removeBugSubscription(
+                self.team, self.team_owner),
+            None)
 
 
 class TestStructuralSubscriptionForDistro(StructuralSubscriptionTestBase,
@@ -129,6 +169,17 @@ class TestStructuralSubscriptionForDistro(StructuralSubscriptionTestBase,
         self.assertIsInstance(
                 self.target.addBugSubscription(self.team, self.team_owner),
                     StructuralSubscription)
+
+    def test_distribution_unsubscription_by_bug_supervisor_team(self):
+        # team admins can unsubscribe team if team is bug supervisor
+        removeSecurityProxy(self.target).bug_supervisor = self.team
+        login_person(self.team_owner)
+        self.assertIsInstance(
+                self.target.addBugSubscription(self.team, self.team_owner),
+                    StructuralSubscription)
+        self.assertEqual(
+                self.target.removeBugSubscription(self.team, self.team_owner),
+                    None)
 
     def test_distribution_subscription_without_bug_supervisor(self):
         # for a distribution without a bug supervisor anyone can
