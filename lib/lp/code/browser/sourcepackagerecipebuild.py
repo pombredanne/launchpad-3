@@ -27,6 +27,12 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.services.job.interfaces.job import JobStatus
 
 
+UNEDITABLE_BUILD_STATES = (
+    BuildStatus.FULLYBUILT,
+    BuildStatus.FAILEDTOBUILD,
+    BuildStatus.SUPERSEDED,
+    BuildStatus.FAILEDTOUPLOAD,)
+
 class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
 
     usedfor = ISourcePackageRecipeBuild
@@ -43,7 +49,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def cancel(self):
-        if self.context.buildqueue_record is None:
+        if self.context.status in UNEDITABLE_BUILD_STATES:
             enabled = False
         else:
             enabled = True
@@ -51,7 +57,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def rescore(self):
-        if self.context.buildqueue_record is None:
+        if self.context.status in UNEDITABLE_BUILD_STATES:
             enabled = False
         else:
             enabled = True

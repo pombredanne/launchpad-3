@@ -1,15 +1,16 @@
-= Hierarchical menus =
+Hierarchical menus
+==================
 
 The location bar aids users in navigating the depths of Launchpad.  It
 is built from a list of Breadcrumb objects collected during Zope's
 object-traversal step.
 
-== A simple object hierarchy ==
+A simple object hierarchy
+-------------------------
 
 First, we need a hierarchy of objects to build upon:
 
-    >>> from zope.component import (getMultiAdapter, provideAdapter,
-    ...     queryAdapter)
+    >>> from zope.component import getMultiAdapter, provideAdapter
     >>> from zope.interface import Interface, implements
 
     >>> class ICookbook(Interface):
@@ -56,7 +57,8 @@ Today we'll be cooking with Spam!
     >>> recipe = Recipe('spam', cookbook)
 
 
-== Discovering breadcrumbs ==
+Discovering breadcrumbs
+-----------------------
 
 The Hierarchy class builds the breadcrumbs by looking at each object in
 the request.traversed_objects attribute.  If a traversed object can be
@@ -124,10 +126,11 @@ domains. The `Hierarchy` model copes fine with objects like that.
     >>> cooker_hierarchy = getMultiAdapter(
     ...     (cooker, cooker_request), name='+hierarchy')
     >>> cooker_hierarchy.items
-    [<TextualBreadcrumb url='http://launchpad.dev/+cooker/jamie' text='Jamie'>]
+    [<TextualBreadcrumb url='.../+cooker/jamie' text='Jamie'>]
 
 
-== Displaying breadcrumbs ==
+Displaying breadcrumbs
+----------------------
 
 Breadcrumbs are only displayed if there is more than one breadcrumb, as
 otherwise the breadcrumb will simply replicate the context.title heading
@@ -163,7 +166,8 @@ will not be displayed.
     False
 
 
-== Building IBreadcrumb objects ==
+Building IBreadcrumb objects
+----------------------------
 
 The construction of breadcrumb objects is handled by an IBreadcrumb adapter,
 which adapts a context object and produces an IBreadcrumb object for that
@@ -195,7 +199,8 @@ and Python properties.
         text='Joy of cooking'>
 
 
-== Customizing the hierarchy ==
+Customizing the hierarchy
+-------------------------
 
 We can customize the hierarchy itself by changing the list of objects
 and URLs that it uses to construct the breadcrumbs list.
@@ -216,7 +221,8 @@ consistency across the site.
         text='Spam'>]
 
 
-== Rendering the list ==
+Rendering the list
+------------------
 
 The Hierarchy object is responsible for rendering the HTML for the
 location bar.
@@ -261,5 +267,5 @@ considered to be on the home page if there are no breadcrumbs.
     >>> homepage_hierarchy.items
     []
 
-    >>> print_hierarchy(homepage_hierarchy.render())
-    Location:
+    >>> homepage_hierarchy.render().strip()
+    ''

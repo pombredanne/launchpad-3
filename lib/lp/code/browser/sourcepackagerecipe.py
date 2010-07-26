@@ -302,7 +302,7 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         try:
             source_package_recipe = getUtility(
                 ISourcePackageRecipeSource).new(
-                    self.user, self.user, data['name'], recipe,
+                    self.user, data['owner'], data['name'], recipe,
                     data['description'], data['distros'],
                     data['daily_build_archive'], data['build_daily'])
             Store.of(source_package_recipe).flush()

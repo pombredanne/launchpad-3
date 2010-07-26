@@ -432,10 +432,8 @@ class TestCase(testtools.TestCase):
             content_type = testtools.content_type.ContentType(
                 "text", "plain", {"charset": "utf8"})
             for (i, oops) in enumerate(self.oopses):
-                def get_oops_content():
-                    return oops.get_chunks()
                 content = testtools.content.Content(
-                    content_type, get_oops_content)
+                    content_type, oops.get_chunks)
                 self.addDetail("oops-%d" % i, content)
 
     def setUp(self):
