@@ -261,5 +261,5 @@ considered to be on the home page if there are no breadcrumbs.
     >>> homepage_hierarchy.items
     []
 
-    >>> print_hierarchy(homepage_hierarchy.render())
-    Location:
+    >>> homepage_hierarchy.render().strip()
+    ''

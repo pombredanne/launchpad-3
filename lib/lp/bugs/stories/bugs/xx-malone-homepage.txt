@@ -4,16 +4,8 @@ Say hello to Bugs. :)
   >>> browser.url
   'http://bugs.launchpad.dev/'
 
-  >>> print_location(browser.contents)
-  Hierarchy: None displayed
-  Tabs:
-  * Launchpad Home - http://launchpad.dev/
-  * Code - http://code.launchpad.dev/
-  * Bugs (selected) - http://bugs.launchpad.dev/
-  * Blueprints - http://blueprints.launchpad.dev/
-  * Translations - http://translations.launchpad.dev/
-  * Answers - http://answers.launchpad.dev/
-  Main heading: Bug tracking
+  >>> print browser.title
+  Bug tracking
 
 There are a few related pages linked in a portlet:
 

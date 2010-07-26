@@ -78,26 +78,6 @@ for the new sprint.
   >>> user_browser.url
   'http://launchpad.dev/sprints/ltsponsteroids'
 
-Because sprints are root contexts, an h1 heading is used to display
-the main heading above the application buttons) and the breadcrumbs
-are not displayed.
-
-  >>> print_location(user_browser.contents)
-  Hierarchy: None displayed
-  Tabs:
-  * Overview (selected) - not linked
-  ...
-  * Bugs - not linked
-  * Blueprints - http://blueprints.launchpad.dev/sprints/ltsponsteroids
-  * Translations - not linked
-  * Answers - not linked
-  Main heading: LTSP On Steroids
-
-There is no h1 heading in the main content.
-
-  >>> print find_main_content(user_browser.contents).find('h1')
-  None
-
 Since the sprint's time zone was set to UTC, the dates are displayed in
 that time zone:
 
