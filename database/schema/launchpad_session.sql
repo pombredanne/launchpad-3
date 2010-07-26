@@ -14,3 +14,7 @@ GRANT EXECUTE ON FUNCTION ensure_session_client_id(text) TO session;
 GRANT EXECUTE ON FUNCTION
     set_session_pkg_data(text, text, text, bytea) TO session;
 
+-- Let the session user access file access tokens.
+GRANT SELECT, INSERT, UPDATE, DELETE ON TimeLimitedToken TO session;
+-- And the garbo needs to run on it too.
+GRANT SELECT, DELETE ON TimeLimitedToken TO session;
