@@ -490,8 +490,8 @@ If we mark the bug to which our bug watch is attached as a duplicate of
 another bug, comments won't be synced and the bug won't be linked back
 to the remote bug.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> bug_15 = getUtility(IBugSet).get(15)
-    >>> bug_watch.bug.markAsDuplicate(bug_15)
+    >>> bug_watch.bug.duplicateof = bug_15
+    >>> transaction.commit()
 
     >>> updater.updateBugWatches(remote_system, [bug_watch], now=nowish)

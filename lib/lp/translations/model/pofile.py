@@ -43,6 +43,8 @@ from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from lp.translations.interfaces.translationimporter import (
@@ -604,21 +606,6 @@ class POFile(SQLBase, POFileMixIn):
             raise AssertionError(
                 "Calling prepareTranslationCredits on a message with "
                 "unknown credits type '%s'." % credits_type.title)
-
-    def translated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-        # return iter(TranslationMessage.select('''
-        #     POMsgSet.pofile = %d AND
-        #     POMsgSet.iscomplete=TRUE AND
-        #     POMsgSet.potmsgset = POTMsgSet.id AND
-        #     POTMsgSet.sequence > 0''' % self.id,
-        #     clauseTables = ['POMsgSet']
-        #     ))
-
-    def untranslated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
 
     def _getLanguageVariantClause(self, table='TranslationMessage'):
         if self.variant is None:
@@ -1186,17 +1173,12 @@ class POFile(SQLBase, POFileMixIn):
 
     def export(self, ignore_obsolete=False, force_utf8=False):
         """See `IPOFile`."""
-        # Get the exporter for this translation.
         translation_exporter = getUtility(ITranslationExporter)
-        translation_format_exporter = (
-            translation_exporter.getExporterProducingTargetFileFormat(
-                self.potemplate.source_file_format))
-
-        # Get the export file.
         translation_file_data = getAdapter(
             self, ITranslationFileData, 'all_messages')
-        exported_file = translation_format_exporter.exportTranslationFiles(
-            [translation_file_data], ignore_obsolete, force_utf8)
+        exported_file = translation_exporter.exportTranslationFiles(
+            [translation_file_data], ignore_obsolete=ignore_obsolete,
+            force_utf8=force_utf8)
 
         try:
             file_content = exported_file.read()
@@ -1460,14 +1442,6 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def translated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
-    def untranslated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
     def getStatistics(self):
         """See `IPOFile`."""
         return (0, 0, 0, )
@@ -1528,9 +1502,10 @@ class POFileSet:
         assert productseries is None or distroseries is None, (
             'productseries and sourcepackagename/distroseries cannot be used'
             ' at the same time.')
-        assert ((sourcepackagename is None and distroseries is None) or
-                (sourcepackagename is not None and distroseries is not None)
-                ), ('sourcepackagename and distroseries must be None or not'
+        assert (
+            (sourcepackagename is None and distroseries is None) or
+             (sourcepackagename is not None and distroseries is not None)), (
+                'sourcepackagename and distroseries must be None or not'
                    ' None at the same time.')
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -1674,6 +1649,7 @@ class POFileToTranslationFileDataAdapter:
     def __init__(self, pofile):
         self._pofile = pofile
         self.messages = self._getMessages()
+        self.format = pofile.potemplate.source_file_format
 
     @cachedproperty
     def path(self):

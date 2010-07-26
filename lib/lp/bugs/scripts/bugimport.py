@@ -466,7 +466,7 @@ class BugImporter:
                 self.logger.info(
                     'Marking bug %d as duplicate of bug %d',
                     other_bug.id, bug.id)
-                other_bug.markAsDuplicate(bug)
+                other_bug.duplicateof = bug
             del self.pending_duplicates[bug_id]
         # Process this bug as a duplicate
         if duplicateof is not None:
@@ -478,7 +478,7 @@ class BugImporter:
                 self.logger.info(
                     'Marking bug %d as duplicate of bug %d',
                     bug.id, other_bug.id)
-                bug.markAsDuplicate(other_bug)
+                bug.duplicateof = other_bug
             else:
                 self.pending_duplicates.setdefault(
                     duplicateof, []).append(bug.id)

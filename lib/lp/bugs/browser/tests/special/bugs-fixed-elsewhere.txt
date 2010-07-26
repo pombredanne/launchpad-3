@@ -125,7 +125,7 @@ there are two bugs fixed.
 
 Bugs that are duplicate of other bugs aren't included in the count.
 
-    >>> another_bug.markAsDuplicate(bug)
+    >>> another_bug.duplicateof = bug
     >>> syncUpdate(another_bug)
 
     >>> view.bugs_fixed_elsewhere_count

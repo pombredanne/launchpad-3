@@ -44,12 +44,9 @@ class TestMarkDuplicate(WindmillTestCase):
         client.waits.forElement(
             xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
 
-        # Initially the form overlay is hidden...
+        # Initially the form overlay is hidden
         client.asserts.assertElemJS(
             xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
-
-        # ...and there is an expandable form for editing bug status, etc.
-        client.asserts.assertNode(classname='bug-status-expand')
 
         # Clicking on the mark duplicate link brings up the formoverlay.
         # Entering 1 as the duplicate ID changes the duplicate text.
@@ -69,7 +66,7 @@ class TestMarkDuplicate(WindmillTestCase):
             id='warning-comment-on-duplicate', timeout=constants.FOR_ELEMENT)
 
         # The duplicate can be cleared:
-        client.click(id=u'mark-duplicate-text')
+        client.click(classname=u'menu-link-mark-dupe')
         client.type(text=u'', id=u'field.duplicateof')
         client.click(xpath=CHANGE_BUTTON)
         client.waits.forElement(
@@ -80,7 +77,7 @@ class TestMarkDuplicate(WindmillTestCase):
         client.asserts.assertNotNode(id='warning-comment-on-duplicate')
 
         # Entering a false bug number results in input validation errors
-        client.click(id=u'mark-duplicate-text')
+        client.click(classname=u'menu-link-mark-dupe')
         client.type(text=u'123', id=u'field.duplicateof')
         client.click(xpath=CHANGE_BUTTON)
         error_xpath = (
@@ -108,14 +105,6 @@ class TestMarkDuplicate(WindmillTestCase):
             xpath=u"//h1[@id='bug-title']/span[1]",
             validator=u'Firefox does not support SVG')
 
-        # If someone wants to set the master to dupe another bug, there
-        # is a warning in the dupe widget about this bug having its own
-        # duplicates.
-        client.click(classname='menu-link-mark-dupe')
-        client.asserts.assertTextIn(
-            classname='large-warning', validator=u'This bug has duplicates',
-            timeout=constants.FOR_ELEMENT)
-
         # When we go back to the page for the duplicate bug...
         client.open(url=u'http://bugs.launchpad.dev:8085/bugs/15')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
@@ -125,9 +114,6 @@ class TestMarkDuplicate(WindmillTestCase):
         # ...we see the same warning about commenting on a duplicate bug
         # as the one we saw before.
         client.asserts.assertNode(id='warning-comment-on-duplicate')
-
-        # Duplicate pages also do not have the expandable form on them.
-        client.asserts.assertNotNode(classname='bug-status-expand')
 
         # Once we remove the duplicate mark...
         client.click(id=u'change_duplicate_bug')
