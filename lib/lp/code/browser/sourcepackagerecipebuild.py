@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Text
+from zope.schema import Int
 
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.webapp import (
@@ -140,7 +140,7 @@ class SourcePackageRecipeBuildRescoreView(LaunchpadFormView):
 
     class schema(Interface):
         """Schema for deleting a build."""
-        score = Text(
+        score = Int(
             title=u'Score', required=True,
             description=u'The score of the recipe.')
 
@@ -150,15 +150,6 @@ class SourcePackageRecipeBuildRescoreView(LaunchpadFormView):
     def cancel_url(self):
         return canonical_url(self.context)
     next_url = cancel_url
-
-    def validate(self, data):
-        try:
-            score = int(data['score'])
-        except ValueError:
-            self.setFieldError(
-                'score',
-                'You have specified an invalid value for score. '
-                'Please specify an integer')
 
     @action('Rescore build', name='rescore')
     def request_action(self, action, data):
