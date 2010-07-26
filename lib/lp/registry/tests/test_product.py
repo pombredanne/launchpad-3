@@ -17,6 +17,7 @@ from canonical.launchpad.testing.pages import (
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.ftests import syncUpdate
+from canonical.launchpad.testing.pages import find_tags_by_class
 
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import License
@@ -82,9 +83,11 @@ class TestProductFiles(unittest.TestCase):
             get_feedback_messages(firefox_owner.contents),
             [u"Your file 'foo\xa5.txt' has been uploaded."])
         firefox_owner.open('http://launchpad.dev/firefox/+download')
+
         content = find_main_content(firefox_owner.contents)
-        rows = content.findAll('tr')
-        print
+        tables = find_tags_by_class(str(content), 'listing')
+        rows = tables[1].findAll('tr')
+
         a_list = rows[-1].findAll('a')
         # 1st row
         a_element = a_list[0]
