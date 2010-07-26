@@ -368,14 +368,14 @@ class ProductInvolvementView(PillarView):
         Each app area will be represented in the return dictionary, except
         blueprints which we are not currently promoting.
         """
-        val = {}
-        val['configure_bugtracker'] = (
+        states = {}
+        states['configure_bugtracker'] = (
             self.official_malone or self.context.bugtracker is not None)
-        val['configure_answers'] = self.official_answers
-        val['configure_translations'] = self.official_rosetta
-        val['configure_codehosting'] = (
+        states['configure_answers'] = self.official_answers
+        states['configure_translations'] = self.official_rosetta
+        states['configure_codehosting'] = (
             self.context.development_focus.branch is not None)
-        return val
+        return states
 
     @property
     def configuration_links(self):
@@ -400,16 +400,12 @@ class ProductInvolvementView(PillarView):
         set_branch.configured = (
             config_statuses['configure_codehosting'])
         configuration_links.append(set_branch)
-        # XXX - remove the sort to ensure the same order as the links.
-        return sorted([
-            link for link in configuration_links if link.enabled],
-            key=attrgetter('sort_key'))
+        return [
+            link for link in configuration_links if link.enabled]
 
     @property
     def registration_completeness(self):
         """The percent complete for registration."""
-        # XXX - How does a project indicate they do not wish to use LP for a
-        # given area?  The registration should not show it as incomplete.
         configured = 0
         config_statuses = self.configuration_states
         for key, value in config_statuses.items():
