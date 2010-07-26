@@ -13,6 +13,8 @@ from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAliasWithParent)
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
@@ -2481,3 +2483,23 @@ class EditPackagesetSet(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         return user.in_admin or user.in_ubuntu_techboard
+
+
+class EditLibraryFileAliasWithParent(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ILibraryFileAliasWithParent
+
+    def checkAuthenticated(self, user):
+        """Only persons which can edit an LFA's parent can edit an LFA.
+
+        By default, a LibraryFileAlias does not know about its parent.
+        Such aliases are never editable. Use an adapter to provide a
+        parent object.
+
+        If a parent is known, users which can edit the parent can also
+        edit properties of the LibraryFileAlias.
+        """
+        parent = getattr(self.obj, '__parent__', None)
+        if parent is None:
+            return False
+        return check_permission(self.permission, parent)
