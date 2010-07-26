@@ -14,6 +14,7 @@ from zope.component import getAdapter, getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.translatablemessage import (
     ITranslatableMessage)
@@ -21,6 +22,7 @@ from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus)
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
+from lp.translations.model.pofile import POFilesCollection
 from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -1591,6 +1593,41 @@ class TestPOFileSet(TestCaseWithFactory):
         self.assertContentEqual([pofile], found)
 
 
+class TestPOFilesCollection(TestCaseWithFactory):
+    """Test generic behaviour of POFilesCollection."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestPOFilesCollection, self).setUp()
+        self.language_set = getUtility(ILanguageSet)
+
+    def test_POFilesCollection(self):
+        pofile_collection = POFilesCollection()
+        # There are PO files in the sample data.
+        self.assertTrue(pofile_collection.select().count() > 0)
+
+    def test_POFilesCollection_restrictLanguage_none(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        pofile_collection = POFilesCollection().restrictLanguage(
+            serbian, u'test')
+        self.assertContentEqual([], pofile_collection.select())
+
+    def test_POFilesCollection_restrictLanguage_variant(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        sr_pofile = self.factory.makePOFile(serbian.code, variant=u'test')
+        pofile_collection = POFilesCollection().restrictLanguage(
+            serbian, u'test')
+        self.assertContentEqual([sr_pofile], pofile_collection.select())
+
+    def test_POFilesCollection_restrictLanguage_nonvariant(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        sr_pofile = self.factory.makePOFile(serbian.code, variant=None)
+        pofile_collection = POFilesCollection().restrictLanguage(
+            serbian, u'test')
+        self.assertContentEqual([], pofile_collection.select())
+
+
 class TestPOFileStatistics(TestCaseWithFactory):
     """Test PO files statistics calculation."""
 
@@ -1842,7 +1879,3 @@ class TestPOFileToTranslationFileDataAdapter(TestCaseWithFactory):
         self.assertEqual(1, translation_file_data.header.number_plural_forms)
         self.assertEqual(
             u"0", translation_file_data.header.plural_form_expression)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
