@@ -1598,31 +1598,6 @@ class POFileSet:
         result = store.find((POFile, POTMsgSet), clauses)
         return result.order_by('POFile.id')
 
-    def getPOFilesWithVariant(self, untranslated=False):
-        """See `IPOFileSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        clauses = [
-            TranslationTemplateItem.potemplateID == POFile.potemplateID,
-            POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
-            POTMsgSet.msgid_singular == POMsgID.id,
-            In(POMsgID.msgid, POTMsgSet.credits_message_ids)]
-        if untranslated:
-            message_select = Select(
-                True,
-                And(
-                    TranslationMessage.potmsgsetID == POTMsgSet.id,
-                    TranslationMessage.potemplate == None,
-                    POFile.languageID == TranslationMessage.languageID,
-                    Or(And(
-                        POFile.variant == None,
-                        TranslationMessage.variant == None),
-                       POFile.variant == TranslationMessage.variant),
-                    TranslationMessage.is_current == True),
-                (TranslationMessage))
-            clauses.append(Not(Exists(message_select)))
-        result = store.find((POFile, POTMsgSet), clauses)
-        return result.order_by('POFile.id')
-
     def getPOFilesTouchedSince(self, date):
         """See `IPOFileSet`."""
         # Avoid circular imports.
