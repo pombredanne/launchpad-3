@@ -86,7 +86,7 @@ class TestCaptureOops(TestCaseWithFactory):
         oops = errorlog.globalErrorUtility.getLastOopsReport()
         # We have to serialise and read in again, as that is what
         # getLastOopsReport does, and doing so changes whether the
-        # timezone is in the timestamp
+        # timezone is in the timestamp.
         content = StringIO()
         content.writelines(self.getDetails()['oops-0'].iter_text())
         content.seek(0)
