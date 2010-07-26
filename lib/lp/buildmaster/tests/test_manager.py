@@ -219,7 +219,7 @@ class TestingSlaveScanner(SlaveScanner):
 
 class TestSlaveScanner(TrialTestCase):
     """Tests for the actual build slave manager."""
-    layer = TwistedLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         TrialTestCase.setUp(self)
@@ -399,7 +399,7 @@ class TestSlaveScanner(TrialTestCase):
         successful_response = [
             buildd_success_result_map.get('ensurepresent'), 'cool builder']
         result = self.manager.checkDispatch(
-            successful_response, 'ensurepresent', self.slave)
+            successful_response, 'ensurepresent', slave)
         self.assertEqual(
             None, result, 'Successful dispatch checks should return None')
 
@@ -416,7 +416,7 @@ class TestSlaveScanner(TrialTestCase):
         self.assertIsDispatchFail(result)
         self.assertEqual(
             repr(result),
-            '<foo:http://foo.buildd:8221/> failure (uncool builder)')
+            '<bob:http://foo.buildd:8221/> failure (uncool builder)')
         self.assertEqual(1, bob_builder.failure_count)
         self.assertEqual(
             1, bob_builder.currentjob.specific_job.build.failure_count)
@@ -432,7 +432,7 @@ class TestSlaveScanner(TrialTestCase):
             twisted_failure, 'ensurepresent', slave)
         self.assertIsDispatchReset(result)
         self.assertEqual(
-            '<foo:http://foo.buildd:8221/> reset failure', repr(result))
+            '<bob:http://foo.buildd:8221/> reset failure', repr(result))
         self.assertEqual(2, bob_builder.failure_count)
         self.assertEqual(
             1, bob_builder.currentjob.specific_job.build.failure_count)
@@ -448,7 +448,7 @@ class TestSlaveScanner(TrialTestCase):
             unexpected_response, 'build', slave)
         self.assertIsDispatchFail(result)
         self.assertEqual(
-            '<foo:http://foo.buildd:8221/> failure '
+            '<bob:http://foo.buildd:8221/> failure '
             '(Unexpected response: [1, 2, 3])', repr(result))
         self.assertEqual(2, bob_builder.failure_count)
         self.assertEqual(
@@ -467,7 +467,7 @@ class TestSlaveScanner(TrialTestCase):
             successful_response, 'unknown-method', slave)
         self.assertIsDispatchFail(result)
         self.assertEqual(
-            '<foo:http://foo.buildd:8221/> failure '
+            '<bob:http://foo.buildd:8221/> failure '
             '(Unknown slave method: unknown-method)', repr(result))
         self.assertEqual(1, bob_builder.failure_count)
         self.assertEqual(
@@ -494,7 +494,7 @@ class TestSlaveScanner(TrialTestCase):
         def check_events(results):
             [error] = [r for s, r in results if r is not None]
             self.assertEqual(
-                '<foo:http://foo.buildd:8221/> failure (very broken slave)',
+                '<bob:http://bob.buildd:8221/> failure (very broken slave)',
                 repr(error))
             self.assertTrue(error.processed)
 
@@ -507,7 +507,7 @@ class TestSlaveScanner(TrialTestCase):
             dl.addCallback(check_events)
 
         # A functional slave charged with some interactions.
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
+        slave = RecordingSlave('bob', 'http://bob.buildd:8221/', 'bob.host')
         slave.ensurepresent('arg1', 'arg2', 'arg3')
         slave.build('arg1', 'arg2', 'arg3')
 
@@ -539,7 +539,7 @@ class TestSlaveScanner(TrialTestCase):
         # Create a broken slave and insert interaction that will
         # cause the builder to be marked as fail.
         self.test_proxy = TestingXMLRPCProxy('very broken slave')
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
+        slave = RecordingSlave('bob', 'http://bob.buildd:8221/', 'bob.host')
         slave.ensurepresent('arg1', 'arg2', 'arg3')
         slave.build('arg1', 'arg2', 'arg3')
 

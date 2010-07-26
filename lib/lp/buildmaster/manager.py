@@ -454,6 +454,9 @@ class SlaveScanner:
         `FailDispatchResult`, if it was a communication failure, simply
         reset the slave by returning a `ResetDispatchResult`.
         """
+        # Avoid circular import.
+        from lp.buildmaster.interfaces.builder import IBuilderSet
+
         # XXX these DispatchResult classes are badly named and do the
         # same thing.  We need to fix that.
         self.logger.debug(
@@ -464,6 +467,9 @@ class SlaveScanner:
                 '%s communication failed (%s)' %
                 (slave, response.getErrorMessage()))
             self.waitOnDeferredList()
+            builder = getUtility(IBuilderSet)[slave.name]
+            builder.failure_count += 1
+            builder.currentjob.specific_job.build.failure_count += 1
             return self.reset_result(slave)
 
         if isinstance(response, list) and len(response) == 2:
@@ -482,6 +488,9 @@ class SlaveScanner:
             '%s failed to dispatch (%s)' % (slave, info))
 
         self.waitOnDeferredList()
+        builder = getUtility(IBuilderSet)[slave.name]
+        builder.failure_count += 1
+        builder.currentjob.specific_job.build.failure_count += 1
         return self.fail_result(slave, info)
 
 
