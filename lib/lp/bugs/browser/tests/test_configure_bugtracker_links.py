@@ -8,8 +8,9 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.launchpad.layers import BugsLayer
 from canonical.testing import LaunchpadFunctionalLayer
+
+from lp.bugs.publisher import BugsLayer
 
 from lp.testing import login_person, TestCaseWithFactory
 from lp.testing.views import create_initialized_view

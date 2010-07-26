@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -21,6 +21,7 @@ from lp.soyuz.model.publishing import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.testing.fakemethod import FakeMethod
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -82,8 +83,10 @@ class TestObsoleteDistroseries(unittest.TestCase):
         Allow tests to use a set of default options and pass an
         inactive logger to ObsoleteDistroseries.
         """
-        test_args = ['-s', suite,
-                     '-d', distribution,]
+        test_args = [
+            '-s', suite,
+            '-d', distribution,
+            ]
 
         if confirm_all:
             test_args.append('-y')
@@ -92,9 +95,7 @@ class TestObsoleteDistroseries(unittest.TestCase):
             name='obsolete-distroseries', test_args=test_args)
         # Swallow all log messages.
         obsoleter.logger = FakeLogger()
-        def message(self, prefix, *stuff, **kw):
-            pass
-        obsoleter.logger.message = message
+        obsoleter.logger.message = FakeMethod()
         obsoleter.setupLocation()
         return obsoleter
 
@@ -208,7 +209,3 @@ class TestObsoleteDistroseries(unittest.TestCase):
             binary = BinaryPackagePublishingHistory.get(id)
             self.assertTrue(
                 binary.status != PackagePublishingStatus.OBSOLETE)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
