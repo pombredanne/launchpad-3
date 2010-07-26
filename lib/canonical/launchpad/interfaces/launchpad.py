@@ -61,8 +61,6 @@ __all__ = [
     'IPrivacy',
     'IReadZODBAnnotation',
     'IRosettaApplication',
-    'IStructuralHeaderPresentation',
-    'IStructuralObjectPresentation',
     'IWebServiceApplication',
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
@@ -100,6 +98,7 @@ class ILaunchpadCelebrities(Interface):
     """
     admin = Attribute("The 'admins' team.")
     bazaar_experts = Attribute("The Bazaar Experts team.")
+    software_center_agent = Attribute("The Software Center Agent.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
     buildd_admin = Attribute("The Build Daemon administrator.")
@@ -155,6 +154,9 @@ class IPersonRoles(Interface):
         required=True, readonly=True)
     in_bazaar_experts = Bool(
         title=_("True if this person is a Bazaar expert."),
+        required=True, readonly=True)
+    in_software_center_agent = Bool(
+        title=_("True if this person is the Software Center Agent."),
         required=True, readonly=True)
     in_bug_importer = Bool(
         title=_("True if this person is a bug importer."),
@@ -295,6 +297,9 @@ class IPrivateApplication(ILaunchpadApplication):
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
     bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")
+
+    softwarecenteragent = Attribute(
+        """Software center agent XML-RPC end point.""")
 
 
 class IAuthServerApplication(ILaunchpadApplication):
@@ -480,38 +485,6 @@ class IHasDateCreated(Interface):
     """Something created on a certain date."""
 
     datecreated = Attribute("The date on which I was created.")
-
-
-class IStructuralHeaderPresentation(Interface):
-    """Adapter for common aspects of a structural object's presentation."""
-
-    def getIntroHeading():
-        """Any heading introduction needed (e.g. "Ubuntu source package:")."""
-
-    def getMainHeading():
-        """can be None"""
-
-
-class IStructuralObjectPresentation(IStructuralHeaderPresentation):
-    """Adapter for less common parts of a structural object's presentation."""
-
-    def listChildren(num):
-        """List up to num children.  Return empty string for none of these"""
-
-    def countChildren():
-        """Return the total number of children."""
-
-    def listAltChildren(num):
-        """List up to num alternative children.
-
-        Return None if alt children are not supported.
-        """
-
-    def countAltChildren():
-        """Return the total number of alt children.
-
-        Will be called only if listAltChildren returns something.
-        """
 
 
 class IAppFrontPageSearchForm(Interface):

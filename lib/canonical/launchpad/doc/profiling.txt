@@ -69,7 +69,7 @@ When the environment isn't set, no profile is created.
     >>> print PageTestLayer.profiler
     None
 
-And no stats file is written when the layer is tore down.
+And no stats file is written when the layer is torn down.
 
     >>> PageTestLayer.tearDown()
     >>> os.path.exists(pagetests_profile)
@@ -161,12 +161,6 @@ The OOPS id is referenced in the profiling log's filename.
     >>> profiling_oops_id = '-'.join(profiling_filename.split('-')[1:3])
     >>> profiling_oops_id == logged_oops.id
     True
-
-These profile can be loaded using the pstats module.
-
-    >>> import pstats
-    >>> stats = pstats.Stats(
-    ...     os.path.join(profile_dir, os.listdir(profile_dir)[0]))
 
 Making another request will create another profile.
 

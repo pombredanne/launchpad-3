@@ -82,20 +82,13 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
 
     def doRunBuild(self):
         """Run the build process to build the source package."""
-        currently_building = get_build_path(
-            self._buildid, 'chroot-autobuild/CurrentlyBuilding')
-        splat_file(currently_building,
-            'Suite: %s\n'
-            'Component: %s\n'
-            'Purpose: %s\n'
-            'Build-Debug-Symbols: no\n' %
-            (self.suite, self.component, self.archive_purpose))
         os.makedirs(get_chroot_path(self._buildid, 'work'))
         recipe_path = get_chroot_path(self._buildid, 'work/recipe')
         splat_file(recipe_path, self.recipe_text)
         args = [
-            "buildrecipe.py", self._buildid, self.author_name,
-            self.author_email, self.suite, self.distroseries_name]
+            "buildrecipe.py", self._buildid, self.author_name.encode('utf-8'),
+            self.author_email, self.suite, self.distroseries_name,
+            self.component, self.archive_purpose]
         self.runSubProcess(self.build_recipe_path, args)
 
     def iterate_BUILD_RECIPE(self, retcode):

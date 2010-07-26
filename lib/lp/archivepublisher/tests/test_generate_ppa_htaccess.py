@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the generate_ppa_htaccess.py script. """
@@ -10,7 +10,6 @@ import pytz
 import subprocess
 import sys
 import tempfile
-import unittest
 
 
 from zope.component import getUtility
@@ -127,7 +126,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         expected_contents = [
             "user:XXq2wKiyI43A2",
-            "user2:XXaQB8b5Gtwi."
+            "user2:XXaQB8b5Gtwi.",
             ]
 
         file = open(filename, "r")
@@ -568,7 +567,3 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             "feedback@launchpad.net\n\n"
             "Regards,\n"
             "The Launchpad team")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

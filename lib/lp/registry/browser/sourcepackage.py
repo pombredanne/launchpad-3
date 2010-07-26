@@ -117,7 +117,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'distribution_source_package', 'edit_packaging', 'remove_packaging',
-        'changelog', 'builds', 'set_upstream',
+        'changelog', 'copyright', 'builds', 'set_upstream',
         ]
 
     def distribution_source_package(self):
@@ -128,6 +128,9 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')
+
+    def copyright(self):
+        return Link('+copyright', 'View copyright', icon='info')
 
     def edit_packaging(self):
         return Link('+edit-packaging', 'Change upstream link', icon='edit')

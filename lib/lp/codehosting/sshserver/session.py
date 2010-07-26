@@ -12,16 +12,14 @@ import os
 import urlparse
 
 from zope.event import notify
-from zope.interface import implements
 
-from twisted.conch.interfaces import ISession
-from twisted.conch.ssh import connection
 from twisted.internet.process import ProcessExitedAlready
 from twisted.python import log
 
 from canonical.config import config
 from lp.codehosting import get_bzr_path
 from lp.services.sshserver.events import AvatarEvent
+from lp.services.sshserver.session import DoNothingSession
 
 
 class BazaarSSHStarted(AvatarEvent):
@@ -38,13 +36,11 @@ class ForbiddenCommand(Exception):
     """Raised when a session is asked to execute a forbidden command."""
 
 
-class ExecOnlySession:
+class ExecOnlySession(DoNothingSession):
     """Conch session that only allows executing commands."""
 
-    implements(ISession)
-
     def __init__(self, avatar, reactor, environment=None):
-        self.avatar = avatar
+        super(ExecOnlySession, self).__init__(avatar)
         self.reactor = reactor
         self.environment = environment
         self._transport = None
@@ -71,11 +67,6 @@ class ExecOnlySession:
         """See ISession."""
         if self._transport is not None:
             self._transport.closeStdin()
-
-    def errorWithMessage(self, protocol, msg):
-        protocol.session.writeExtended(
-            connection.EXTENDED_DATA_STDERR, msg)
-        protocol.loseConnection()
 
     def execCommand(self, protocol, command):
         """Executes `command` using `protocol` as the ProcessProtocol.
@@ -114,19 +105,6 @@ class ExecOnlySession:
         """
         args = command.split()
         return args[0], args
-
-    def getPty(self, term, windowSize, modes):
-        """See ISession."""
-        # Do nothing, as we don't provide shell access. openShell will get
-        # called and handle this error message and disconnect.
-
-    def openShell(self, protocol):
-        """See ISession."""
-        self.errorWithMessage(protocol, "No shells on this server.\r\n")
-
-    def windowChanged(self, newWindowSize):
-        """See ISession."""
-        raise NotImplementedError()
 
 
 class RestrictedExecOnlySession(ExecOnlySession):
