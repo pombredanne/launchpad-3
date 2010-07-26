@@ -7,6 +7,7 @@ __all__ = [
     'make_plurals_sql_fragment',
     'make_plurals_fragment',
     'TranslationMessage',
+    'TranslationMessagesCollection',
     'TranslationMessageSet'
     ]
 
@@ -24,6 +25,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from lp.services.database.collection import Collection
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
     TranslationValidationStatus)
@@ -486,3 +488,20 @@ class TranslationMessageSet:
     def selectDirect(self, where=None, order_by=None):
         """See `ITranslationMessageSet`."""
         return TranslationMessage.select(where, orderBy=order_by)
+
+
+class TranslationMessagesCollection(Collection):
+    """A `Collection` of `TranslationMessage`s."""
+    starting_table = TranslationMessage
+
+    def __init__(self, *args, **kwargs):
+        super(TranslationMessagesCollection, self).__init__(*args, **kwargs)
+
+    def restrictLanguage(self, language, variant):
+        """Restrict collection to a specific language."""
+        new_collection = self.refine(
+            TranslationMessage.languageID == language.id,
+            TranslationMessage.variant == variant)
+        return new_collection
+
+

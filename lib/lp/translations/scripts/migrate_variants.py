@@ -18,10 +18,10 @@ from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
-from lp.services.database.collection import Collection
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.services.worlddata.model.language import Language
-from lp.translations.model.translationmessage import TranslationMessage
+from lp.translations.model.translationmessage import (
+    TranslationMessage, TranslationMessagesCollection)
 
 
 class ReplacerMixin:
@@ -80,21 +80,6 @@ class ReplacerMixin:
             self.start_at += done
             self.logger.info("Processed %d/%d of %s." % (
                 self.start_at, self.total, self.title))
-
-
-class TranslationMessagesCollection(Collection):
-    """A `Collection` of `TranslationMessage`."""
-    starting_table = TranslationMessage
-
-    def __init__(self, *args, **kwargs):
-        super(TranslationMessagesCollection, self).__init__(*args, **kwargs)
-
-    def restrictLanguage(self, language, variant):
-        """Restrict collection to a specific language."""
-        new_collection = self.refine(
-            TranslationMessage.languageID == language.id,
-            TranslationMessage.variant == variant)
-        return new_collection
 
 
 class TranslationMessageVariantReplacer(ReplacerMixin):

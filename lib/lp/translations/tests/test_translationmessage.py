@@ -13,6 +13,8 @@ from zope.security.proxy import removeSecurityProxy
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.model.potranslation import POTranslation
+from lp.translations.model.translationmessage import (
+    TranslationMessagesCollection)
 from lp.translations.interfaces.translations import TranslationConstants
 from canonical.testing import ZopelessDatabaseLayer
 
@@ -153,5 +155,38 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
         self.assertEqual(nonclone, None)
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class TestTranslationMessagesCollection(TestCaseWithFactory):
+    """Test generic behaviour of TranslationMessagessCollection."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestTranslationMessagesCollection, self).setUp()
+        self.language_set = getUtility(ILanguageSet)
+
+    def test_TranslationMessagesCollection(self):
+        tm_collection = TranslationMessagesCollection()
+        # There are translation messages in the sample data.
+        self.assertTrue(tm_collection.select().count() > 0)
+
+    def test_TranslationMessagesCollection_restrictLanguage_none(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        tm_collection = TranslationMessagesCollection().restrictLanguage(
+            serbian, u'test')
+        self.assertContentEqual([], tm_collection.select())
+
+    def test_TranslationMessagesCollection_restrictLanguage_variant(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        sr_pofile = self.factory.makePOFile(serbian.code, variant=u'test')
+        message = self.factory.makeTranslationMessage(sr_pofile)
+        tm_collection = TranslationMessagesCollection().restrictLanguage(
+            serbian, u'test')
+        self.assertContentEqual([message], tm_collection.select())
+
+    def test_TranslationMessagesCollection_restrictLanguage_nonvariant(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        sr_pofile = self.factory.makePOFile(serbian.code, variant=None)
+        message = self.factory.makeTranslationMessage(sr_pofile)
+        tm_collection = TranslationMessagesCollection().restrictLanguage(
+            serbian, u'test')
+        self.assertContentEqual([], tm_collection.select())
