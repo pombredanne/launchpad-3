@@ -74,7 +74,17 @@ class AlsoAffectsStep(StepView):
     schema = IAddBugTaskForm
 
 
-class ChooseProductStep(AlsoAffectsStep):
+class LinkPackgingMixin:
+
+    @property
+    def can_link_package(self):
+        bugtask = self.context
+        is_package_bugtask = IDistributionSourcePackage.providedBy(
+            bugtask.target)
+        return is_package_bugtask and bugtask.target.upstream_product is None
+
+
+class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
     """View for choosing a product that is affected by a given bug."""
 
     template = ViewPageTemplateFile(
@@ -83,13 +93,6 @@ class ChooseProductStep(AlsoAffectsStep):
     custom_widget('product', SearchForUpstreamPopupWidget)
     label = u"Record as affecting another project"
     step_name = "choose_product"
-
-    @property
-    def can_link_package(self):
-        bugtask = self.context
-        is_package_bugtask = IDistributionSourcePackage.providedBy(
-            bugtask.target)
-        return is_package_bugtask and bugtask.target.upstream_product is None
 
     @property
     def _field_names(self):
@@ -678,7 +681,8 @@ class UpstreamBugTrackerCreationStep(BugTrackerCreationStep):
         '../templates/bugtask-confirm-bugtracker-creation.pt')
 
 
-class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
+class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
+                                                   LaunchpadFormView):
     """Register a product and indicate this bug affects it.
 
     If there's no bugtracker with the given URL registered in Launchpad, then
@@ -692,13 +696,6 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
     existing_products = None
     MAX_PRODUCTS_TO_DISPLAY = 10
     licenses = [License.DONT_KNOW]
-
-    @property
-    def can_link_package(self):
-        bugtask = self.context
-        is_package_bugtask = IDistributionSourcePackage.providedBy(
-            bugtask.target)
-        return is_package_bugtask and bugtask.target.upstream_product is None
 
     @property
     def field_names(self):

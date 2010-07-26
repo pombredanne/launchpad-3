@@ -1,4 +1,5 @@
-= Adding BugTasks =
+Adding BugTasks
+===============
 
 If a bug occurs in more than one place, you can request a fix in some
 other software. You can request a fix in either a product or a
@@ -448,7 +449,8 @@ package will be converted to the corresponding source package.
     >>> on_created_listener.unregister()
 
 
-== Registering a product while adding a bugtask ==
+Registering a product while adding a bugtask
+============================================
 
 One of the facilities we have when adding a bugtask is the option to target it
 to a newly registered product.  When that option is used, though, we use the
@@ -549,7 +551,9 @@ project in question.
     []
     >>> login('test@canonical.com')
 
-== IAddBugTaskForm Interface Definition ==
+
+IAddBugTaskForm Interface Definition
+====================================
 
 IAddBugTaskForm, which is used as the schema for the views tested above, has
 some attributes which are identical to those of IUpstreamBugTask and
@@ -571,7 +575,8 @@ since doing so has produced OOPSes (bug 129406).
 
 
 
-== Getting the upstream bug filing URL for a product ==
+Getting the upstream bug filing URL for a product
+=================================================
 
 Products that don't use Launchpad for bug tracking can be linked to
 external bug trackers. In order to make it easier for users to file bugs
