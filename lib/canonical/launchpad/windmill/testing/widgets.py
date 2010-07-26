@@ -9,6 +9,7 @@ __all__ = [
     'InlineEditorWidgetTest',
     'InlinePickerWidgetButtonTest',
     'InlinePickerWidgetSearchTest',
+    'OnPageWidget',
     'search_and_select_picker_widget',
     'search_picker_widget',
     ]
