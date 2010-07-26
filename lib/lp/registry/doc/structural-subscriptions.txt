@@ -88,7 +88,7 @@ target and to the target's parent are notified.
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from lp.registry.model.structuralsubscription import (
     ...     BlueprintNotificationLevel, BugNotificationLevel)
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from lp.bugs.mail.bugnotificationrecipients import (
     ...     BugNotificationRecipients)
 
 We define some utility functions for printing out bug subscriptions and

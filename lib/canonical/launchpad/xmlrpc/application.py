@@ -27,6 +27,7 @@ from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication)
+from lp.registry.interfaces.person import ISoftwareCenterAgentApplication
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
@@ -57,6 +58,11 @@ class PrivateApplication:
     def bugs(self):
         """See `IPrivateApplication`."""
         return getUtility(IPrivateMaloneApplication)
+
+    @property
+    def softwarecenteragent(self):
+        """See `IPrivateApplication`."""
+        return getUtility(ISoftwareCenterAgentApplication)
 
 
 class ISelfTest(Interface):

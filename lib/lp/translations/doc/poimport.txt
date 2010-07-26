@@ -684,7 +684,7 @@ entries from the queue. Running at this point, all it does is purge the
 two hand-approved Welsh translations that have just been imported.
 
     >>> import logging
-    >>> from canonical.launchpad.ftests.logger import MockLogger
+    >>> from lp.testing.logger import MockLogger
     >>> process = ImportQueueGardener('approver', test_args=[])
     >>> process.logger = MockLogger()
     >>> process.logger.setLevel(logging.INFO)

@@ -860,7 +860,7 @@ The SearchQuestionsView has two attributes that control the columns of
 the question listing table. Products display the default columns of
 Summary, Created, Submitter, Assignee, and Status.
 
-    >>> from canonical.launchpad.layers import AnswersLayer
+    >>> from lp.answers.publisher import AnswersLayer
     >>> from canonical.launchpad.testing.pages import (
     ...     extract_text, find_tag_by_id)
 

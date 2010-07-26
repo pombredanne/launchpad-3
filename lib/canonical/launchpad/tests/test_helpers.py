@@ -1,10 +1,10 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from doctest import DocTestSuite
 import unittest
 
 from canonical.testing import LaunchpadFunctionalLayer
-from zope.testing.doctest import DocTestSuite
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.interface import implements
 

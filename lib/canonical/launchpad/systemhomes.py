@@ -6,7 +6,7 @@
 __all__ = [
     'AuthServerApplication',
     'BazaarApplication',
-    'CodeImportScheduler',
+    'CodeImportSchedulerApplication',
     'FeedsApplication',
     'MailingListApplication',
     'MaloneApplication',
@@ -47,7 +47,8 @@ from lp.translations.interfaces.translationsoverview import (
 from lp.hardwaredb.interfaces.hwdb import (
     IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
     IHWVendorIDSet, ParameterError)
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.interfaces import (
+    IAPIDocRoot, ICanonicalUrlData)
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugSet, InvalidBugTargetType)
 from lp.code.interfaces.codehosting import ICodehostingApplication
@@ -396,3 +397,11 @@ class WebServiceApplication(ServiceRootResource):
 
 class TestOpenIDApplication:
     implements(ITestOpenIDApplication)
+
+
+class APIDocRoot:
+    implements(IAPIDocRoot)
+    __parent__ = None
+    __name__ = None
+
+apidocroot = APIDocRoot()

@@ -124,12 +124,11 @@ Override information about 'pmount' is pending publication:
 
 Supersede current publication:
 
-   >>> pmount_pubrec = pmount_hoary_i386_released.current_publishing_record
-   >>> superseded_pmount = pmount_pubrec.supersede()
+   >>> pub = pmount_hoary_i386_released.current_publishing_record
+   >>> pub.supersede()
    >>> pmount_hoary_i386.publishing_history.count()
    3
 
-   >>> pub = superseded_pmount
    >>> print pub.status.name, pub.datesuperseded is not None
    SUPERSEDED True
 

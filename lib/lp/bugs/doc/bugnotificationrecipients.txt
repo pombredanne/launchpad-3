@@ -64,13 +64,13 @@ IBug.getBugNotificationRecipients().
 Let's up some data for our test:
 
     >>> from lp.registry.interfaces.person import IPersonSet
-  >>> from canonical.launchpad.mailnotification import (
-  ...     BugNotificationRecipients)
-  >>> debian = Distribution.selectOneBy(name="debian")
-  >>> pmount = debian.getSourcePackage("pmount")
-  >>> alsa_utils = Product.selectOneBy(name="alsa-utils")
-  >>> gnomebaker = Product.selectOneBy(name="gnomebaker")
-  >>> personset = getUtility(IPersonSet)
+    >>> from lp.bugs.mail.bugnotificationrecipients import (
+    ...     BugNotificationRecipients)
+    >>> debian = Distribution.selectOneBy(name="debian")
+    >>> pmount = debian.getSourcePackage("pmount")
+    >>> alsa_utils = Product.selectOneBy(name="alsa-utils")
+    >>> gnomebaker = Product.selectOneBy(name="gnomebaker")
+    >>> personset = getUtility(IPersonSet)
 
 Here's where getBugNotificationRecipients() starts off. First, a
 BugNotificationRecipients instance is created:

@@ -10,6 +10,10 @@
 
   <include package=".browser" />
 
+  <publisher
+     name="answers"
+     factory="lp.answers.publisher.answers_request_publication_factory"/>
+
     <subscriber
         for=".interfaces.question.IQuestion
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
@@ -235,7 +239,7 @@
 
 
   <lp:help-folder
-      folder="help" type="canonical.launchpad.layers.AnswersLayer" />
+      folder="help" type="lp.answers.publisher.AnswersLayer" />
   <adapter
       name="answers"
       provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

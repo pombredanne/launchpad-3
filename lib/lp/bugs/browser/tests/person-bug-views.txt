@@ -515,6 +515,7 @@ Even if the user files a bug against a product with a milestone, the
 list of relevant milestones remains empty.
 
     >>> bug = factory.makeBug(product=product, owner=user)
+    >>> transaction.commit()
 
     >>> print pretty(list(related_bugs_view.searchUnbatched()))
     [<BugTask at ...>]
@@ -525,6 +526,7 @@ Only when a milestone is set for a related bug task does the advanced
 search page allow selection of a milestone.
 
     >>> bug.bugtasks[0].milestone = milestone09
+    >>> transaction.commit()
 
     >>> print pretty(related_bugs_view.getMilestoneWidgetValues())
     [{'checked': False,

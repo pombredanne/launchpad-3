@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -16,7 +16,6 @@ import sys
 from StringIO import StringIO
 import tempfile
 import traceback
-import unittest
 
 from email import message_from_string
 
@@ -74,6 +73,7 @@ class MockOptions:
 
 class MockLogger:
     """Pass as a log object. Record debug calls for later checking."""
+
     def __init__(self):
         self.lines = []
 
@@ -397,19 +397,24 @@ class TestUploadProcessor(TestUploadProcessorBase):
         finally:
             shutil.rmtree(testdir)
 
+    def _makeUpload(self, testdir):
+        """Create a dummy upload for testing the move/remove methods."""
+        upload = tempfile.mkdtemp(dir=testdir)
+        distro = upload + ".distro"
+        f = open(distro, mode="w")
+        f.write("foo")
+        f.close()
+        return upload, distro
+
     def testMoveUpload(self):
         """moveUpload should move the upload directory and .distro file."""
         testdir = tempfile.mkdtemp()
         try:
             # Create an upload, a .distro and a target to move it to.
-            upload = tempfile.mkdtemp(dir=testdir)
-            upload_name = os.path.basename(upload)
-            distro = upload + ".distro"
-            f = open(distro, mode="w")
-            f.write("foo")
-            f.close()
+            upload, distro = self._makeUpload(testdir)
             target = tempfile.mkdtemp(dir=testdir)
             target_name = os.path.basename(target)
+            upload_name = os.path.basename(upload)
 
             # Move it
             self.options.base_fsroot = testdir
@@ -420,6 +425,72 @@ class TestUploadProcessor(TestUploadProcessorBase):
             self.assertTrue(os.path.exists(os.path.join(target, upload_name)))
             self.assertTrue(os.path.exists(os.path.join(
                 target, upload_name + ".distro")))
+            self.assertFalse(os.path.exists(upload))
+            self.assertFalse(os.path.exists(distro))
+        finally:
+            shutil.rmtree(testdir)
+
+    def testMoveProcessUploadAccepted(self):
+        testdir = tempfile.mkdtemp()
+        try:
+            # Create an upload, a .distro and a target to move it to.
+            upload, distro = self._makeUpload(testdir)
+            upload_name = os.path.basename(upload)
+
+            # Remove it
+            self.options.base_fsroot = testdir
+            up = UploadProcessor(self.options, None, self.log)
+            up.moveProcessedUpload(upload, "accepted")
+
+            # Check it was removed, not moved
+            self.assertFalse(os.path.exists(os.path.join(
+                testdir, "accepted")))
+            self.assertFalse(os.path.exists(os.path.join(testdir,
+                "accepted", upload_name + ".distro")))
+            self.assertFalse(os.path.exists(upload))
+            self.assertFalse(os.path.exists(distro))
+        finally:
+            shutil.rmtree(testdir)
+
+    def testMoveProcessUploadFailed(self):
+        """moveProcessedUpload moves if the result was not successful."""
+        testdir = tempfile.mkdtemp()
+        try:
+            # Create an upload, a .distro and a target to move it to.
+            upload, distro = self._makeUpload(testdir)
+            upload_name = os.path.basename(upload)
+
+            # Move it
+            self.options.base_fsroot = testdir
+            up = UploadProcessor(self.options, None, self.log)
+            up.moveProcessedUpload(upload, "rejected")
+
+            # Check it moved
+            self.assertTrue(os.path.exists(os.path.join(testdir,
+                "rejected", upload_name)))
+            self.assertTrue(os.path.exists(os.path.join(testdir,
+                "rejected", upload_name + ".distro")))
+            self.assertFalse(os.path.exists(upload))
+            self.assertFalse(os.path.exists(distro))
+        finally:
+            shutil.rmtree(testdir)
+
+    def testRemoveUpload(self):
+        """RemoveUpload removes the upload directory and .distro file."""
+        testdir = tempfile.mkdtemp()
+        try:
+            # Create an upload, a .distro and a target to move it to.
+            upload, distro = self._makeUpload(testdir)
+            upload_name = os.path.basename(upload)
+
+            # Remove it
+            self.options.base_fsroot = testdir
+            up = UploadProcessor(self.options, None, self.log)
+            up.removeUpload(upload)
+
+            # Check it was removed, not moved
+            self.assertFalse(os.path.exists(os.path.join(
+                testdir, "accepted")))
             self.assertFalse(os.path.exists(upload))
             self.assertFalse(os.path.exists(distro))
         finally:
@@ -665,10 +736,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         to the same filename in the archive.
 
         Such situation happens when a source gets copied to another suite in
-        the same archive. The binary rebuild will have the same (name, version)
-        of the original binary and will certainly have a different content
-        (at least, the ar-compressed timestamps) making it impossible to be
-        published in the archive.
+        the same archive. The binary rebuild will have the same
+        (name, version) of the original binary and will certainly have a
+        different content (at least, the ar-compressed timestamps) making it
+        impossible to be published in the archive.
         """
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
 
@@ -1084,6 +1155,16 @@ class TestUploadProcessor(TestUploadProcessorBase):
             expect_msg in raw_msg,
             "Expected email with %s, got:\n%s" % (expect_msg, raw_msg))
 
+
+        # And an oops should be filed for the error.
+        error_utility = ErrorReportingUtility()
+        error_report = error_utility.getLastOopsReport()
+        fp = StringIO()
+        error_report.write(fp)
+        error_text = fp.getvalue()
+        self.assertTrue(
+            "Unable to find mandatory field 'files' in the changes file" in error_text)
+
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
 
@@ -1149,8 +1230,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check that the sourceful upload to the copy archive is rejected.
         contents = [
-            "Invalid upload path (1/ubuntu) for this policy (insecure)"
-            ]
+            "Invalid upload path (1/ubuntu) for this policy (insecure)"]
         self.assertEmail(contents=contents, recipients=[])
 
     # Uploads that are new should have the component overridden
@@ -1460,7 +1540,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             distroseries=self.ubuntu['grumpy'])
         self.layer.txn.commit()
 
-        foo_ps.add((bar_package,))
+        foo_ps.add((bar_package, ))
         ap_set.newPackagesetUploader(
             self.ubuntu.main_archive, uploader, foo_ps)
 
@@ -1487,7 +1567,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         breezy_ps = ps_set.new(
             u'foo-pkg-set-breezy', u'Packages that require special care.',
             uploader, distroseries=self.breezy)
-        breezy_ps.add((bar_package,))
+        breezy_ps.add((bar_package, ))
         ap_set.newPackagesetUploader(
             self.ubuntu.main_archive, uploader, breezy_ps)
         # The uploader now does have a package set based upload permission
@@ -1727,7 +1807,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         should both have the PGP signature removed.
         """
         uploadprocessor = self.setupBreezyAndGetUploadProcessor(
-	    policy='insecure')
+        policy='insecure')
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
         # ACCEPT the upload
@@ -1742,9 +1822,3 @@ class TestUploadProcessor(TestUploadProcessorBase):
         pubrec.datepublished = UTC_NOW
         queue_item.setDone()
         self.PGPSignatureNotPreserved(archive=self.breezy.main_archive)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
-

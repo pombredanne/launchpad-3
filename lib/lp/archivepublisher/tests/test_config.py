@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Config.py"""
@@ -46,7 +46,7 @@ class TestConfig(unittest.TestCase):
         from lp.archivepublisher.config import Config
         d = Config(self.ubuntutest)
         archs = d.archTagsForSeries("hoary-test")
-        self.assertEquals( len(archs), 2)
+        self.assertEquals(len(archs), 2)
 
     def testDistroConfig(self):
         """Config should have parsed a distro config"""
@@ -54,7 +54,3 @@ class TestConfig(unittest.TestCase):
         d = Config(self.ubuntutest)
         # NOTE: Add checks here when you add stuff in util.py
         self.assertEquals(d.stayofexecution, 5)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -292,18 +292,3 @@ Private teams can be deleted by admins.
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
     Team deleted.
-
-Private membership teams can be deleted by admins, and when they are all
-deleted, we can remove this visibility type.
-
-    >>> login('commercial-member@canonical.com')
-    >>> pm_team = factory.makeTeam(
-    ...     name='sekret', visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
-    >>> login('admin@canonical.com')
-    >>> form = {'field.actions.delete': 'Delete'}
-    >>> view = create_initialized_view(pm_team, '+delete', form=form)
-    >>> view.errors
-    []
-    >>> for notification in view.request.response.notifications:
-    ...     print notification.message
-    Team deleted.

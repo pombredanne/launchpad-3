@@ -1747,6 +1747,29 @@ class PackageUploadCustom(SQLBase):
         debug(logger, "Skipping publishing of static translations.")
         return
 
+    def publish_META_DATA(self, logger=None):
+        """See `IPackageUploadCustom`."""
+        # In the future this could use the existing custom upload file
+        # processing which deals with versioning, etc., but that's too
+        # complicated for our needs right now.  Also, the existing code
+        # assumes that everything is a tarball and tries to unpack it.
+
+        archive = self.packageupload.archive
+        # See the XXX near the import for getPubConfig.
+        archive_config = getPubConfig(archive)
+        dest_file = os.path.join(
+            archive_config.metaroot, self.libraryfilealias.filename)
+        if not os.path.isdir(archive_config.metaroot):
+            os.makedirs(archive_config.metaroot, 0755)
+
+        # At this point we now have a directory of the format:
+        # <person_name>/meta/<ppa_name>
+        # We're ready to copy the file out of the librarian into it.
+
+        file_obj = file(dest_file, "wb")
+        self.libraryfilealias.open()
+        copy_and_close(self.libraryfilealias, file_obj)
+
 
 class PackageUploadSet:
     """See `IPackageUploadSet`"""

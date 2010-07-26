@@ -992,8 +992,9 @@ The build is only allowed to depend on packages published in 'main':
     main
 
     >>> from lp.soyuz.adapters.archivedependencies import (
-    ...     get_components_for_building)
-    >>> print get_components_for_building(depwait_build)
+    ...     get_components_for_context)
+    >>> print get_components_for_context(
+    ...     depwait_build.current_component, depwait_build.pocket)
     ['main']
 
 Thus the 'pmount' dependency remains unsatisfied.
@@ -1041,7 +1042,8 @@ depend on all components of its distribution PRIMARY archive.
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
 
-    >>> print get_components_for_building(depwait_build)
+    >>> print get_components_for_context(
+    ...     depwait_build.current_component, depwait_build.pocket)
     ['main']
 
     >>> print pmount_pub.component.name

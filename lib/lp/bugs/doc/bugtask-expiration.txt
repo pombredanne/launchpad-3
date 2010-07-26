@@ -189,14 +189,12 @@ Let's also make some bugs that almost qualify for expiration.
     >>> milestone_bugtask.bug.can_expire
     False
 
-    # A bugtask can be subject for expiration, even though it is less
-    # than the min_days_old. can_expire indicates whether the bugtask can be
-    # expired in the future, if it doesn't get any further activity.
+    # Create a bugtask that is not old enough to expire
     >>> recent_bugtask = create_old_bug('recent', 31, ubuntu)
     >>> recent_bugtask.bug.permits_expiration
     True
     >>> recent_bugtask.bug.can_expire
-    True
+    False
 
     # A bugtask that is not expirable; while the product uses Launchpad to
     # track bugs, enable_bug_expiration is set to False
@@ -230,8 +228,33 @@ expired. The other bugs do not meet one of the preconditions.
     duplicate        False    61  Incomplete  False     True   False  False
     external         False    61  Incomplete  False     False  False  False
     milestone        False    61  Incomplete  False     False  True   False
-    recent           True     31  Incomplete  False     False  False  False
+    recent           False    31  Incomplete  False     False  False  False
     no_expire        False    61  Incomplete  False     False  False  False
+
+== isExpirable() ==
+
+In addition to can_expire bugs have an isExpirable method to which a custom
+number of days, days_old, can be passed.  days_old is then used with
+findExpirableBugTasks.  This allows projects to create their own janitor using
+a different period for bug expiration.
+
+    # Check to ensure that isExpirable() works without days_old, then set the
+    # bug to Invalid so it doesn't affect the rest of the doctest
+    >>> from lp.bugs.tests.bug import create_old_bug
+    >>> very_old_bugtask = create_old_bug('expirable_distro', 351, ubuntu)
+    >>> very_old_bugtask.bug.isExpirable()
+    True
+    >>> very_old_bugtask.transitionToStatus(
+    ...     BugTaskStatus.INVALID, sample_person)
+
+    # Pass isExpirable() a days_old parameter, then set the bug to Invalid so it
+    # doesn't affect the rest of the doctest
+    >>> from lp.bugs.tests.bug import create_old_bug
+    >>> not_so_old_bugtask = create_old_bug('expirable_distro', 31, ubuntu)
+    >>> not_so_old_bugtask.bug.isExpirable(days_old=14)
+    True
+    >>> not_so_old_bugtask.transitionToStatus(
+    ...     BugTaskStatus.INVALID, sample_person)
 
 
 == findExpirableBugTasks() Part 2 ==
@@ -323,7 +346,7 @@ bugtasks that can expire if they are not confirmed.
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
-    recent       True     31  Incomplete  False     False  False  False
+    recent       False    31  Incomplete  False     False  False  False
 
 Thunderbird has not enabled bug expiration. Even when the min_days_old
 is set to 0, no bugtasks are replaced.
@@ -481,7 +504,7 @@ was expired. The remaining bugtasks are unchanged.
     duplicate        False    61  Incomplete  False     True   False  False
     external         False    61  Incomplete  False     False  False  False
     milestone        False    61  Incomplete  False     False  True   False
-    recent           True     31  Incomplete  False     False  False  False
+    recent           False    31  Incomplete  False     False  False  False
     no_expire        False    61  Incomplete  False     False  False  False
 
 The bugtasks statusexplanation was updated to explain the change in

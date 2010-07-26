@@ -13,7 +13,7 @@ __all__ = [
 
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import Desc, In, Int, Join, SQL
+from storm.locals import Desc, In, Int, Join, Or, SQL
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
@@ -524,13 +524,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getSeries(self, name_or_version):
         """See `IDistribution`."""
-        distroseries = DistroSeries.selectOneBy(
-            distribution=self, name=name_or_version)
-        if distroseries is None:
-            distroseries = DistroSeries.selectOneBy(
-                distribution=self, version=name_or_version)
-            if distroseries is None:
-                raise NoSuchDistroSeries(name_or_version)
+        distroseries = Store.of(self).find(DistroSeries,
+               Or(DistroSeries.name == name_or_version,
+               DistroSeries.version == name_or_version),
+            DistroSeries.distribution == self).one()
+        if not distroseries:
+            raise NoSuchDistroSeries(name_or_version)
         return distroseries
 
     def getDevelopmentSeries(self):
@@ -773,6 +772,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         raise NotFoundError(distroseries_name)
 
+    def getSeriesByStatus(self, status):
+        """See `IDistribution`."""
+        return Store.of(self).find(DistroSeries, 
+            DistroSeries.distribution == self,
+            DistroSeries.status == status)
+
     def getFileByName(self, filename, archive=None, source=True, binary=True):
         """See `IDistribution`."""
         assert (source or binary), "searching in an explicitly empty " \
@@ -797,11 +802,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         raise NotFoundError(filename)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
         """See `IHasBuildRecords`"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now).
+        # The "binary_only" option is not yet supported for
+        # IDistribution.
 
         # Find out the distroarchseries in question.
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
@@ -1251,6 +1258,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             Archive,
             distribution=self,
             purpose=ArchivePurpose.PPA).order_by('id')
+
+    def getCommercialPPAs(self):
+        """See `IDistribution`."""
+        # If we ever see non-Ubuntu PPAs, this will return more than
+        # just the PPAs for the Ubuntu context.
+        return getUtility(IArchiveSet).getCommercialPPAs()
 
     def searchPPAs(self, text=None, show_inactive=False, user=None):
         """See `IDistribution`."""

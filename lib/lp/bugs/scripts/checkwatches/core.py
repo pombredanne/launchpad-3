@@ -539,8 +539,6 @@ class CheckwatchesMaster(WorkingBase):
             'unmodified_remote_ids': sorted(unmodified_remote_ids),
             }
 
-    # XXX gmb 2008-11-07 [bug=295319]
-    #     This method is 186 lines long. It needs to be shorter.
     @commit_before
     def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None,
                          batch_size=None):

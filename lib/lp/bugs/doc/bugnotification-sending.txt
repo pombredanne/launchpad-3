@@ -155,7 +155,7 @@ Let's define a helper function to do that for all pending notifications:
     ...     flush_database_updates()
 
 
-To every message that get sent out, [Bug $bugid] is prefixed to the
+To every message that gets sent out, [Bug $bugid] is prefixed to the
 subject. It gets prefixed only if it's not already present in the
 subject, though, which is often the case when someone replies via email.
 
@@ -437,7 +437,7 @@ If we add three comments, three notifications will be sent:
 
     >>> flush_notifications()
 
-If Sample Person does a few changes, and Foo Bar steps in a does a
+If Sample Person does a few changes, and Foo Bar steps in and does a
 change in between, three notifications will be sent:
 
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -1187,6 +1187,16 @@ made.
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message.get('X-Launchpad-Bug-Commenters')
     name12 name16
+
+
+== The X-Launchpad-Bug-Reporter header ==
+
+The X-Launchpad-Bug-Reporter header contains information about the Launchpad
+user who originally reported the bug and opened the bug's first bug task.
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message.get('X-Launchpad-Bug-Reporter')
+    Foo Bar (name16)
 
 
 == Verbose bug notifications ==

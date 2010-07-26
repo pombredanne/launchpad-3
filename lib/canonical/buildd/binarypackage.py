@@ -55,22 +55,12 @@ class BinaryPackageBuildManager(DebianBuildManager):
                 self._dscfile = f
         if self._dscfile is None:
             raise ValueError, files
-        if 'arch_indep' in extra_args:
-            self.arch_indep = extra_args['arch_indep']
-        else:
-            self.arch_indep = False
-        if 'suite' in extra_args:
-            self.suite = extra_args['suite']
-        else:
-            self.suite = False
-        if 'archive_purpose' in extra_args:
-            self.archive_purpose = extra_args['archive_purpose']
-        else:
-            self.archive_purpose = False
-        if 'build_debug_symbols' in extra_args:
-            self.build_debug_symbols = extra_args['build_debug_symbols']
-        else:
-            self.build_debug_symbols = False
+
+        self.archive_purpose = extra_args.get('archive_purpose')
+        self.suite = extra_args.get('suite')
+        self.component = extra_args['ogrecomponent']
+        self.arch_indep = extra_args.get('arch_indep', False)
+        self.build_debug_symbols = extra_args.get('build_debug_symbols', False)
 
         super(BinaryPackageBuildManager, self).initiate(
             files, chroot, extra_args)
@@ -92,7 +82,7 @@ class BinaryPackageBuildManager(DebianBuildManager):
             args.extend(["--purpose=" + self.archive_purpose])
         if self.build_debug_symbols:
             args.extend(["--build-debug-symbols"])
-        args.extend(["--comp=" + self.ogre])
+        args.extend(["--comp=" + self.component])
         args.extend([self._dscfile])
         self.runSubProcess( self._sbuildpath, args )
 

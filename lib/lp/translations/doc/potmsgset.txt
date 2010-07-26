@@ -447,7 +447,10 @@ Let's focus on handling of messages with plural forms.
 An empty translation does not need to exist in the database.  If not,
 a DummyPOFile is used instead.
 
-    >>> pt_BR_dummypofile = evolution_potemplate.getDummyPOFile('pt_BR')
+    >>> language_pt_BR = getUtility(
+    ...     ILanguageSet).getLanguageByCode('pt_BR')
+    >>> pt_BR_dummypofile = evolution_potemplate.getDummyPOFile(
+    ...     language_pt_BR)
 
 We get a POTMsgSet and verify it's a singular form:
 
@@ -477,7 +480,8 @@ A TranslationMessage knows what language it is in.
 Using another dummy pofile we'll get a POTMsgset that's not a singular
 form:
 
-    >>> apa_dummypofile = evolution_potemplate.getDummyPOFile('apa')
+    >>> language_apa = getUtility(ILanguageSet).getLanguageByCode('apa')
+    >>> apa_dummypofile = evolution_potemplate.getDummyPOFile(language_apa)
     >>> plural_potmsgset = apa_dummypofile.potemplate.getPOTMsgSetByMsgIDText(
     ...     u'%d contact', u'%d contacts')
     >>> print apa_dummypofile.language.code
@@ -498,7 +502,8 @@ back to the most common case:
 
 We can guess the pluralforms for this language through ILanguage.pluralforms:
 
-    >>> ru_dummypofile = evolution_potemplate.getDummyPOFile('ru')
+    >>> language_ru = getUtility(ILanguageSet).getLanguageByCode('ru')
+    >>> ru_dummypofile = evolution_potemplate.getDummyPOFile(language_ru)
     >>> ru_dummy_current = plural_potmsgset.getCurrentDummyTranslationMessage(
     ...     evolution_potemplate, ru_dummypofile.language)
 
@@ -821,7 +826,8 @@ dummy anymore.
     ...     distroseries=ubuntu_hoary).getPOTemplateByName('man')
     >>> potmsgset_untranslated = pmount_man_template.getPOTMsgSetByMsgIDText(
     ...     'test man page')
-    >>> pofile = pmount_man_template.getDummyPOFile('es')
+    >>> language_es = getUtility(ILanguageSet).getLanguageByCode('es')
+    >>> pofile = pmount_man_template.getDummyPOFile(language_es)
     >>> print pofile.title
     Spanish (es) translation of man in Ubuntu Hoary package "pmount"
 

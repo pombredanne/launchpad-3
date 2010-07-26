@@ -7,16 +7,12 @@ __all__ = [
     'LaunchpadBrowserPublication',
     ]
 
-import os
 import re
 import sys
 import thread
 import threading
 import traceback
 import urllib
-
-from cProfile import Profile
-from datetime import datetime
 
 import tickcount
 import transaction
@@ -45,8 +41,7 @@ from zope.security.management import newInteraction
 import canonical.launchpad.layers as layers
 import canonical.launchpad.webapp.adapter as da
 
-from canonical.config import config, dbconfig
-from canonical.mem import memory, resident
+from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.oauth import IOAuthSignedRequest
 from canonical.launchpad.readonly import is_read_only
@@ -54,10 +49,9 @@ from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam)
 from canonical.launchpad.webapp.interfaces import (
     IDatabasePolicy, ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
-    IPlacelessAuthUtility, IPrimaryContext, IStoreSelector, MAIN_STORE,
-    MASTER_FLAVOR, OffsiteFormPostError, NoReferrerError, SLAVE_FLAVOR)
-from canonical.launchpad.webapp.dbpolicy import (
-    DatabaseBlockedPolicy, LaunchpadDatabasePolicy)
+    IPlacelessAuthUtility, IPrimaryContext, IStoreSelector,
+    MASTER_FLAVOR, OffsiteFormPostError, NoReferrerError, StartRequestEvent)
+from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
 from lazr.uri import URI, InvalidURIError
@@ -65,10 +59,6 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
-
-
-class ProfilingOops(Exception):
-    """Fake exception used to log OOPS information when profiling pages."""
 
 
 class LoginRoot:
@@ -144,7 +134,7 @@ class LaunchpadBrowserPublication(
     # revisited.
 
     def beforeTraversal(self, request):
-        self.startProfilingHook()
+        notify(StartRequestEvent(request))
         request._traversalticks_start = tickcount.tickcount()
         threadid = thread.get_ident()
         threadrequestfile = open('thread-%s.request' % threadid, 'w')
@@ -449,6 +439,18 @@ class LaunchpadBrowserPublication(
         ticks = tickcount.difference(
             request._publicationticks_start, tickcount.tickcount())
         request.setInWSGIEnvironment('launchpad.publicationticks', ticks)
+
+        # Calculate SQL statement statistics.
+        sql_statements = da.get_request_statements()
+        sql_milliseconds = sum(
+            endtime - starttime
+                for starttime, endtime, id, sql_statement in sql_statements)
+
+        # Log publication tickcount, sql statement count, and sql time
+        # to the tracelog.
+        tracelog(request, 't', '%d %d %d' % (
+            ticks, len(sql_statements), sql_milliseconds))
+
         # Annotate the transaction with user data. That was done by
         # zope.app.publication.zopepublication.ZopePublication.
         txn = transaction.get()
@@ -642,8 +644,6 @@ class LaunchpadBrowserPublication(
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)
 
-        self.endProfilingHook(request)
-
         da.clear_request_started()
 
         # Maintain operational statistics.
@@ -698,62 +698,6 @@ class LaunchpadBrowserPublication(
             if thread_name != 'MainThread' or name.endswith('-slave'):
                 store.reset()
 
-    def startProfilingHook(self):
-        """Handle profiling.
-
-        If requests profiling start a profiler. If memory profiling is
-        requested, save the VSS and RSS.
-        """
-        if config.profiling.profile_requests:
-            self.thread_locals.profiler = Profile()
-            self.thread_locals.profiler.enable()
-
-        if config.profiling.memory_profile_log:
-            self.thread_locals.memory_profile_start = (memory(), resident())
-
-    def endProfilingHook(self, request):
-        """If profiling is turned on, save profile data for the request."""
-        # Create a timestamp including milliseconds.
-        now = datetime.fromtimestamp(da.get_request_start_time())
-        timestamp = "%s.%d" % (
-            now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
-        pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
-        oopsid = getattr(request, 'oopsid', None)
-
-        if config.profiling.profile_requests:
-            profiler = self.thread_locals.profiler
-            profiler.disable()
-
-            if oopsid is None:
-                # Log an OOPS to get a log of the SQL queries, and other
-                # useful information,  together with the profiling
-                # information.
-                info = (ProfilingOops, None, None)
-                error_utility = getUtility(IErrorReportingUtility)
-                error_utility.raising(info, request)
-                oopsid = request.oopsid
-            filename = '%s-%s-%s-%s.prof' % (
-                timestamp, pageid, oopsid,
-                threading.currentThread().getName())
-
-            profiler.dump_stats(
-                os.path.join(config.profiling.profile_dir, filename))
-
-            # Free some memory.
-            self.thread_locals.profiler = None
-
-        # Dump memory profiling info.
-        if config.profiling.memory_profile_log:
-            log = file(config.profiling.memory_profile_log, 'a')
-            vss_start, rss_start = self.thread_locals.memory_profile_start
-            vss_end, rss_end = memory(), resident()
-            if oopsid is None:
-                oopsid = '-'
-            log.write('%s %s %s %f %d %d %d %d\n' % (
-                timestamp, pageid, oopsid, da.get_request_duration(),
-                vss_start, rss_start, vss_end, rss_end))
-            log.close()
-
 
 class InvalidThreadsConfiguration(Exception):
     """Exception thrown when the number of threads isn't set correctly."""
@@ -805,4 +749,3 @@ def tracelog(request, prefix, msg):
     tracelog = ITraceLog(request, None)
     if tracelog is not None:
         tracelog.log('%s %s' % (prefix, msg.encode('US-ASCII')))
-

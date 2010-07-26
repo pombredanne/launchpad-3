@@ -53,7 +53,13 @@
             template="../templates/bugtarget-portlet-tags-content.pt"
             permission="zope.Public"/>
         <browser:page
-            for="lp.bugs.interfaces.bugtarget.IHasBugs"
+            for="lp.bugs.interfaces.bugtarget.IBugTarget"
+            class="lp.bugs.browser.bugtask.TextualBugTaskSearchListingView"
+            permission="zope.Public"
+            name="+bugs-text"
+            attribute="__call__"/>
+        <browser:page
+            for="lp.registry.interfaces.projectgroup.IProjectGroup"
             class="lp.bugs.browser.bugtask.TextualBugTaskSearchListingView"
             permission="zope.Public"
             name="+bugs-text"

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """cronscripts/buildd-* tests."""
@@ -149,12 +149,12 @@ class TestQueueBuilder(TestCronscriptBase):
         qb = self.getQueueBuilder(distribution='boing')
         self.assertRaises(LaunchpadScriptFailure, qb.calculateDistroseries)
 
-        qb = self.getQueueBuilder(suites=('hoary-test',))
+        qb = self.getQueueBuilder(suites=('hoary-test', ))
         self.assertRaises(LaunchpadScriptFailure, qb.calculateDistroseries)
 
         # A single valid suite argument results in a list with one
         # distroseries (pockets are completely ignored).
-        qb = self.getQueueBuilder(suites=('warty-security',))
+        qb = self.getQueueBuilder(suites=('warty-security', ))
         self.assertEqual(
             ['warty'],
             [distroseries.name
@@ -179,7 +179,7 @@ class TestQueueBuilder(TestCronscriptBase):
         # Restricting the build creation to another distroseries
         # does not create any builds.
         source = self.getSourceWithoutBuilds()
-        queue_builder = self.getQueueBuilder(suites=('warty',))
+        queue_builder = self.getQueueBuilder(suites=('warty', ))
         queue_builder.main()
         self.assertEqual(0, len(source.getBuilds()))
 
@@ -187,7 +187,7 @@ class TestQueueBuilder(TestCronscriptBase):
         # A build is created when queue-builder is restricted to the
         # distroseries where the testing source is published
         source = self.getSourceWithoutBuilds()
-        queue_builder = self.getQueueBuilder(suites=('hoary',))
+        queue_builder = self.getQueueBuilder(suites=('hoary', ))
         queue_builder.main()
         self.assertEqual(1, len(source.getBuilds()))
 
@@ -303,7 +303,3 @@ class TestRetryDepwait(TestCronscriptBase):
             self.getPendingBuilds().count())
         self.assertEqual(depwait_build.status.name, 'NEEDSBUILD')
         self.assertEqual(depwait_build.buildqueue_record.lastscore, 1755)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

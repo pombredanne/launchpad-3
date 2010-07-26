@@ -631,9 +631,12 @@
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_slave_store"
         />
+    <!-- Universal adapter needed here per Bug #591841.
+         We have no way of specifying that all subclasses of
+         storm.locals.Storm implement an Interface. -->
     <adapter
         provides="canonical.launchpad.interfaces.lpstorm.IMasterObject"
-        for="canonical.launchpad.interfaces.lpstorm.IDBObject"
+        for="zope.interface.Interface"
         trusted="yes"
         factory="canonical.launchpad.webapp.adapter.get_object_from_master_store"
         />

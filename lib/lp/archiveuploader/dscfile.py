@@ -13,7 +13,7 @@ __all__ = [
     'SignableTagFile',
     'DSCFile',
     'DSCUploadedFile',
-    'findAndMoveChangelog',
+    'findChangelog',
     'findCopyright',
     ]
 
@@ -205,6 +205,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             self.logger.debug("DSC file can be unsigned.")
         else:
             self.processSignature()
+
+        self.unpacked_dir = None
 
     #
     # Useful properties.
@@ -485,18 +487,19 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             "Verifying uploaded source package by unpacking it.")
 
         # Get a temporary dir together.
-        tmpdir = tempfile.mkdtemp(dir=self.dirname)
+        self.unpacked_dir = tempfile.mkdtemp()
 
         # chdir into it
         cwd = os.getcwd()
-        os.chdir(tmpdir)
-        dsc_in_tmpdir = os.path.join(tmpdir, self.filename)
+        os.chdir(self.unpacked_dir)
+        dsc_in_tmpdir = os.path.join(self.unpacked_dir, self.filename)
 
         package_files = self.files + [self]
         try:
             for source_file in package_files:
-                os.symlink(source_file.filepath,
-                           os.path.join(tmpdir, source_file.filename))
+                os.symlink(
+                    source_file.filepath,
+                    os.path.join(self.unpacked_dir, source_file.filename))
             args = ["dpkg-source", "-sn", "-x", dsc_in_tmpdir]
             dpkg_source = subprocess.Popen(args, stdout=subprocess.PIPE,
                                            stderr=subprocess.PIPE)
@@ -519,8 +522,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # SourcePackageRelease records.
 
         # Check if 'dpkg-source' created only one directory.
-        temp_directories = [dirname for dirname in os.listdir(tmpdir)
-                            if os.path.isdir(dirname)]
+        temp_directories = [
+            dirname for dirname in os.listdir(self.unpacked_dir)
+            if os.path.isdir(dirname)]
         if len(temp_directories) > 1:
             yield UploadError(
                 'Unpacked source contains more than one directory: %r'
@@ -530,31 +534,33 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # name (<sourcename>-<no_epoch(no_revision(version))>).
 
         # Locate both the copyright and changelog files for later processing.
-        for error in findCopyright(self, tmpdir, self.logger):
+        for error in findCopyright(self, self.unpacked_dir, self.logger):
             yield error
 
-        for error in findAndMoveChangelog(self, cwd, tmpdir, self.logger):
+        for error in findChangelog(self, self.unpacked_dir, self.logger):
             yield error
 
         self.logger.debug("Cleaning up source tree.")
+        self.logger.debug("Done")
+
+    def cleanUp(self):
+        if self.unpacked_dir is None:
+            return
         try:
-            shutil.rmtree(tmpdir)
+            shutil.rmtree(self.unpacked_dir)
         except OSError, error:
             # XXX: dsilvers 2006-03-15: We currently lack a test for this.
             if errno.errorcode[error.errno] != 'EACCES':
-                yield UploadError(
+                raise UploadError(
                     "%s: couldn't remove tmp dir %s: code %s" % (
-                    self.filename, tmpdir, error.errno))
+                    self.filename, self.unpacked_dir, error.errno))
             else:
-                yield UploadWarning(
-                    "%s: Couldn't remove tree, fixing up permissions." %
-                    self.filename)
-                result = os.system("chmod -R u+rwx " + tmpdir)
+                result = os.system("chmod -R u+rwx " + self.unpacked_dir)
                 if result != 0:
-                    yield UploadError("chmod failed with %s" % result)
-                shutil.rmtree(tmpdir)
+                    raise UploadError("chmod failed with %s" % result)
+                shutil.rmtree(self.unpacked_dir)
+        self.unpacked_dir = None
 
-        self.logger.debug("Done")
 
     def findBuild(self):
         """Find and return the SourcePackageRecipeBuild, if one is specified.
@@ -735,15 +741,14 @@ def findCopyright(dsc_file, source_dir, logger):
     logger.debug("Copying copyright contents.")
     dsc_file.copyright = open(copyright_file).read().strip()
 
-def findAndMoveChangelog(dsc_file, target_dir, source_dir, logger):
+def findChangelog(dsc_file, source_dir, logger):
     """Find and move any debian/changelog.
 
-    This function finds the changelog file within the source package and
-    moves it to target_dir. The changelog file is later uploaded to the 
-    librarian by DSCFile.storeInDatabase().
+    This function finds the changelog file within the source package. The
+    changelog file is later uploaded to the librarian by
+    DSCFile.storeInDatabase().
 
     :param dsc_file: A DSCFile object where the copyright will be stored.
-    :param target_dir: The directory where the changelog will end up.
     :param source_dir: The directory where the source was extracted.
     :param logger: A logger object for debug output.
     """
@@ -758,9 +763,8 @@ def findAndMoveChangelog(dsc_file, target_dir, source_dir, logger):
         return
 
     # Move the changelog file out of the package direcotry
-    logger.debug("Found changelog contents; moving to root directory")
-    dsc_file.changelog_path = os.path.join(target_dir, "changelog")
-    shutil.move(changelog_file, dsc_file.changelog_path)
+    logger.debug("Found changelog")
+    dsc_file.changelog_path = changelog_file
 
 def check_format_1_0_files(filename, file_type_counts, component_counts,
                            bzip2_count):

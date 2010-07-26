@@ -24,37 +24,6 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 HOURS = 3600
 
 
-def policy_options(optparser):
-    """Add to the optparser all the options which can be used by the policy
-    objects herein.
-    """
-
-    optparser.add_option(
-        "-C", "--context", action="store", dest="context",
-        metavar="CONTEXT", default="insecure",
-        help="The context in which to consider the upload.")
-
-    optparser.add_option(
-        "-d", "--distro", action="store",
-        dest="distro", metavar="DISTRO", default="ubuntu",
-        help="Distribution to give back from")
-
-    optparser.add_option(
-        "-s", "--series", action="store", default=None,
-        dest="distroseries", metavar="DISTROSERIES",
-        help="Distro series to give back from.")
-
-    optparser.add_option(
-        "-b", "--buildid", action="store", type="int",
-        dest="buildid", metavar="BUILD",
-        help="The build ID to which to attach this upload.")
-
-    optparser.add_option(
-        "-a", "--announce", action="store",
-        dest="announcelist", metavar="ANNOUNCELIST",
-        help="Override the announcement list")
-
-
 class UploadPolicyError(Exception):
     """Raised when a specific policy violation occurs."""
 

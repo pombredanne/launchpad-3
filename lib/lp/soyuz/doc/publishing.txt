@@ -547,11 +547,8 @@ When we supersede one of the original binary publications, it gets
 excluded from the getPublishedBinaries() results, but not from the
 getBuiltBinaries() result.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-
     >>> a_binary = source.getPublishedBinaries()[0]
-    >>> superseded = a_binary.supersede()
-    >>> syncUpdate(superseded)
+    >>> a_binary.supersede()
 
     >>> len(source.getPublishedBinaries())
     1
@@ -565,7 +562,6 @@ published in the original location.
     >>> deletable = source.getPublishedBinaries()[0]
     >>> deletable.requestDeletion(mark, "go")
     >>> deleted = deletable
-    >>> syncUpdate(deleted)
 
     >>> len(source.getPublishedBinaries())
     0
@@ -581,7 +577,6 @@ verify that the getPublishedBinaries() result is also empty after that.
 
     >>> for bin in copied_source.getPublishedBinaries():
     ...     obsoleted = bin.requestObsolescence()
-    ...     syncUpdate(obsoleted)
 
     >>> len(copied_source.getPublishedBinaries())
     0
@@ -600,7 +595,6 @@ getPublishedBinaries().
     >>> for pub in copied_source.getBuiltBinaries():
     ...     pub.status = PackagePublishingStatus.PUBLISHED
     ...     pub.scheduleddeletiondate = None
-    ...     syncUpdate(pub)
 
 Now we override the first binary publication, the hppa one, to
 component 'universe'.
@@ -635,10 +629,8 @@ publications and the hppa one is the overridden one.
 We have to re-publish the superseded and the deleted publications above
 because it's used below.
 
-    >>> superseded.status = PackagePublishingStatus.PUBLISHED
-    >>> syncUpdate(superseded)
+    >>> a_binary.status = PackagePublishingStatus.PUBLISHED
     >>> deleted.status = PackagePublishingStatus.PUBLISHED
-    >>> syncUpdate(deleted)
 
 
 Copying and inspecting architecture independent binaries

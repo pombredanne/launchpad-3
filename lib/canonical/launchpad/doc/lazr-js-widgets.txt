@@ -100,7 +100,7 @@ has a vocabulary defined for it.
     ...         null_display_value='Nobody')
 
 An unauthenticated user cannot see the activator's edit button, which
-is revealed by Y.lp.picker.addPickerPatcher.
+is revealed by Y.lp.app.picker.addPickerPatcher.
 
     >>> login(ANONYMOUS)
     >>> widget = create_inline_edit_picker_widget()
@@ -121,7 +121,7 @@ The foo.bar user can see the activator's edit button.
     <span id="inline-picker-activator-id-...">
     ...<div class="yui-activator-message-box yui-activator-hidden" />
     </span>
-    ...Y.lp.picker.addPickerPatcher(...
+    ...Y.lp.app.picker.addPickerPatcher(...
 
 The resource_uri is the canonical_url for the object in
 WebServiceClientRequests.

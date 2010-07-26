@@ -54,7 +54,7 @@ Bug.addChange().
 
 We'll create a test class that actually implements the methods we need.
 
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from lp.bugs.mail.bugnotificationrecipients import (
     ...     BugNotificationRecipients)
 
     >>> example_message = factory.makeMessage(content="Hello, world")

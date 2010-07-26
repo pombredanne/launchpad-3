@@ -59,25 +59,25 @@ def add_options(parser):
 
     parser.add_option("--ppa", action="store_true",
                       dest="ppa", metavar="PPA", default=False,
-                      help="Run only over private PPA archives.")
+                      help="Only run over PPA archives.")
 
     parser.add_option("--private-ppa", action="store_true",
                       dest="private_ppa", metavar="PRIVATEPPA", default=False,
-                      help="Run only over PPA archives.")
+                      help="Only run over private PPA archives.")
 
     parser.add_option("--partner", action="store_true",
                       dest="partner", metavar="PARTNER", default=False,
-                      help="Run only over the partner archive.")
+                      help="Only run over the partner archive.")
 
     parser.add_option("--copy-archive", action="store_true",
                       dest="copy_archive", metavar="COPYARCHIVE",
                       default=False,
-                      help="Run only over the copy archives.")
+                      help="Only run over the copy archives.")
 
     parser.add_option(
         "--primary-debug", action="store_true", default=False,
         dest="primary_debug", metavar="PRIMARYDEBUG",
-        help="Run only over the debug-symbols for primary archive.")
+        help="Only run over the debug-symbols for primary archive.")
 
 
 def run_publisher(options, txn, log=None):

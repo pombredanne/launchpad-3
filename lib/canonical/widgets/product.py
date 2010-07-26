@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'GhostCheckBoxWidget',
     'GhostWidget',
     'LicenseWidget',
     'ProductBugTrackerWidget',
@@ -15,6 +16,7 @@ import cgi
 import math
 
 from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget
@@ -24,26 +26,29 @@ from zope.schema import Choice, Text
 
 from z3c.ptcompat import ViewPageTemplateFile
 
+from lazr.restful.interface import copy_field
+
 from canonical.launchpad.browser.widgets import DescriptionWidget
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.vocabularies.dbobjects import (
-    WebBugTrackerVocabulary)
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import (
-    CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
+    CheckBoxMatrixWidget, LaunchpadRadioWidget)
+from canonical.widgets.popup import BugTrackerPickerWidget
 from canonical.widgets.textwidgets import (
     LowerCaseTextWidget, StrippedTextWidget)
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType, IBugTracker, IBugTrackerSet)
+from lp.registry.interfaces.product import IProduct
 
 
 class ProductBugTrackerWidget(LaunchpadRadioWidget):
     """Widget for selecting a product bug tracker."""
 
     _joinButtonToMessageTemplate = u'%s&nbsp;%s'
+    template = ViewPageTemplateFile('templates/product-bug-tracker.pt')
 
     def __init__(self, field, vocabulary, request):
         # pylint: disable-msg=W0233
@@ -51,19 +56,15 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
 
         # Bug tracker widget.
         self.bugtracker = Choice(
-            vocabulary=WebBugTrackerVocabulary(),
+            vocabulary="WebBugTracker",
             __name__='bugtracker')
-        self.bugtracker_widget = CustomWidgetFactory(LaunchpadDropdownWidget)
+        self.bugtracker_widget = CustomWidgetFactory(BugTrackerPickerWidget)
         setUpWidget(
             self, 'bugtracker', self.bugtracker, IInputWidget,
             prefix=self.name, value=field.context.bugtracker,
             context=field.context)
-        if self.bugtracker_widget.extra is None:
-            self.bugtracker_widget.extra = ''
-        ## Select the corresponding radio option automatically if
-        ## the user selects a bug tracker.
-        self.bugtracker_widget.extra += (
-            ' onchange="selectWidget(\'%s.2\', event);"' % self.name)
+        self.bugtracker_widget.onKeyPress = (
+            "selectWidget('%s.2', event);" % self.name)
 
         # Upstream email address field and widget.
         ## This is to make email address bug trackers appear
@@ -82,7 +83,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         if self.upstream_email_address_widget.extra is None:
             self.upstream_email_address_widget.extra = ''
         self.upstream_email_address_widget.extra += (
-            ' onkeypress="selectWidget(\'%s.3\', event);"' % self.name)
+            ''' onkeypress="selectWidget('%s.3', event);"\n''' % self.name)
 
     def _renderItem(self, index, text, value, name, cssClass, checked=False):
         # This form has a custom need to render their labels separately,
@@ -192,17 +193,19 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             self.upstream_email_address_widget.setRenderedValue(
                 value.baseurl.lstrip('mailto:'))
         external_bugtracker_email_text = "%s %s" % (
-            self._renderLabel("By emailing an upstream bug contact:", 3),
+            self._renderLabel("By emailing an upstream bug contact:\n", 3),
             self.upstream_email_address_widget())
         external_bugtracker_email_arguments = dict(
             index=3, text=external_bugtracker_email_text,
             value="external-email", name=self.name, cssClass=self.cssClass)
 
         # All the choices arguments in order.
-        all_arguments = [malone_item_arguments,
-                         external_bugtracker_arguments,
-                         external_bugtracker_email_arguments,
-                         project_bugtracker_arguments]
+        all_arguments = {
+            'launchpad': malone_item_arguments,
+            'external_bugtracker': external_bugtracker_arguments,
+            'external_email': external_bugtracker_email_arguments,
+            'unknown': project_bugtracker_arguments,
+            }
 
         # Figure out the selected choice.
         if value == field.malone_marker:
@@ -220,12 +223,35 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             selected = project_bugtracker_arguments
 
         # Render.
-        for arguments in all_arguments:
+        for name, arguments in all_arguments.items():
             if arguments is selected:
                 render = self.renderSelectedItem
             else:
                 render = self.renderItem
-            yield render(**arguments)
+            yield (name, render(**arguments))
+
+    def renderValue(self, value):
+        # Render the items with subordinate fields and support markup.
+        self.bug_trackers = dict(self.renderItems(value))
+        self.product = self.context.context
+        # The view must also use GhostWidget for the 'remote_product' field.
+        self.remote_product = copy_field(IProduct['remote_product'])
+        self.remote_product_widget = CustomWidgetFactory(TextWidget)
+        setUpWidget(
+            self, 'remote_product', self.remote_product, IInputWidget,
+            prefix='field', value=self.product.remote_product,
+            context=self.product)
+        # The view must also use GhostWidget for the 'enable_bug_expiration'
+        # field.
+        self.enable_bug_expiration = copy_field(
+            IProduct['enable_bug_expiration'])
+        self.enable_bug_expiration_widget = CustomWidgetFactory(
+            CheckBoxWidget)
+        setUpWidget(
+            self, 'enable_bug_expiration', self.enable_bug_expiration,
+            IInputWidget, prefix='field',
+            value=self.product.enable_bug_expiration, context=self.product)
+        return self.template()
 
 
 class LicenseWidget(CheckBoxMatrixWidget):
@@ -239,33 +265,33 @@ class LicenseWidget(CheckBoxMatrixWidget):
     allow_pending_license = False
 
     CATEGORIES = {
-        'AFFERO'        : 'recommended',
-        'APACHE'        : 'recommended',
-        'BSD'           : 'recommended',
-        'GNU_GPL_V2'    : 'recommended',
-        'GNU_GPL_V3'    : 'recommended',
-        'GNU_LGPL_V2_1' : 'recommended',
-        'GNU_LGPL_V3'   : 'recommended',
-        'MIT'           : 'recommended',
-        'CC_0'          : 'recommended',
-        'ACADEMIC'      : 'more',
-        'ARTISTIC'      : 'more',
-        'ARTISTIC_2_0'  : 'more',
-        'COMMON_PUBLIC' : 'more',
-        'ECLIPSE'       : 'more',
+        'AFFERO': 'recommended',
+        'APACHE': 'recommended',
+        'BSD': 'recommended',
+        'GNU_GPL_V2': 'recommended',
+        'GNU_GPL_V3': 'recommended',
+        'GNU_LGPL_V2_1': 'recommended',
+        'GNU_LGPL_V3': 'recommended',
+        'MIT': 'recommended',
+        'CC_0': 'recommended',
+        'ACADEMIC': 'more',
+        'ARTISTIC': 'more',
+        'ARTISTIC_2_0': 'more',
+        'COMMON_PUBLIC': 'more',
+        'ECLIPSE': 'more',
         'EDUCATIONAL_COMMUNITY': 'more',
-        'MPL'           : 'more',
-        'OPEN_SOFTWARE' : 'more',
-        'PHP'           : 'more',
-        'PUBLIC_DOMAIN' : 'more',
-        'PYTHON'        : 'more',
-        'ZPL'           : 'more',
-        'CC_BY'         : 'more',
-        'CC_BY_SA'      : 'more',
-        'PERL'          : 'deprecated',
-        'OTHER_PROPRIETARY' : 'special',
-        'OTHER_OPEN_SOURCE' : 'special',
-        'DONT_KNOW'     : 'special',
+        'MPL': 'more',
+        'OPEN_SOFTWARE': 'more',
+        'PHP': 'more',
+        'PUBLIC_DOMAIN': 'more',
+        'PYTHON': 'more',
+        'ZPL': 'more',
+        'CC_BY': 'more',
+        'CC_BY_SA': 'more',
+        'PERL': 'deprecated',
+        'OTHER_PROPRIETARY': 'special',
+        'OTHER_OPEN_SOURCE': 'special',
+        'DONT_KNOW': 'special',
         }
 
     items_by_category = None
@@ -407,9 +433,9 @@ class ProductNameWidget(LowerCaseTextWidget):
             return 'text'
 
 
-class GhostWidget(TextWidget):
+class GhostMixin:
     """A simple widget that has no HTML."""
-
+    visible = False
     # This suppresses the stuff above the widget.
     display_label = False
     # This suppresses the stuff underneath the widget.
@@ -419,3 +445,13 @@ class GhostWidget(TextWidget):
     def __call__(self):
         """See `SimpleInputWidget`."""
         return ''
+
+    hidden = __call__
+
+
+class GhostWidget(GhostMixin, TextWidget):
+    """Suppress the rendering of Text input fields."""
+
+
+class GhostCheckBoxWidget(GhostMixin, CheckBoxWidget):
+    """Suppress the rendering of Bool input fields."""

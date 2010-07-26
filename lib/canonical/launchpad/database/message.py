@@ -706,7 +706,6 @@ class DirectEmailAuthorization:
         """
         # Count the number of messages from the sender since the throttle
         # date.
-        store = Store.of(self.sender)
         messages_sent = self._getThrottlers(after).count()
         return messages_sent < config.launchpad.user_to_user_max_messages
 

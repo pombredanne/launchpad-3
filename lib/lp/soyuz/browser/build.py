@@ -317,12 +317,15 @@ def setupCompleteBuilds(batch):
     Return a list of built CompleteBuild instances, or empty
     list if no builds were contained in the received batch.
     """
-    builds = list(batch)
+    builds = [build.getSpecificJob() for build in batch]
     if not builds:
         return []
 
+    # This pre-population of queue entries is only implemented for
+    # IBinaryPackageBuilds.
     prefetched_data = dict()
-    build_ids = [build.id for build in builds]
+    build_ids = [
+        build.id for build in builds if IBinaryPackageBuild.providedBy(build)]
     results = getUtility(IBinaryPackageBuildSet).getQueueEntriesForBuildIDs(
         build_ids)
     for (buildqueue, _builder, build_job) in results:
@@ -350,6 +353,10 @@ class BuildRecordsView(LaunchpadView):
 
     page_title = 'Builds'
 
+    # Currenly most build records views are interested in binaries
+    # only, but subclasses can set this if desired.
+    binary_only = True
+
     @property
     def label(self):
         return 'Builds for %s' % self.context.displayname
@@ -370,10 +377,16 @@ class BuildRecordsView(LaunchpadView):
         # build self.state & self.available_states structures
         self._setupMappedStates(state_tag)
 
+        # By default, we use the binary_only class attribute, but we
+        # ensure it is true if we are passed an arch tag or a name.
+        binary_only = self.binary_only
+        if self.text is not None or self.arch_tag is not None:
+            binary_only = True
+
         # request context build records according the selected state
         builds = self.context.getBuildRecords(
             build_state=self.state, name=self.text, arch_tag=self.arch_tag,
-            user=self.user)
+            user=self.user, binary_only=binary_only)
         self.batchnav = BatchNavigator(builds, self.request)
         # We perform this extra step because we don't what to issue one
         # extra query to retrieve the BuildQueue for each Build (batch item)

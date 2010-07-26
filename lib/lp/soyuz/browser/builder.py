@@ -265,6 +265,7 @@ class BuilderHistoryView(BuildRecordsView):
     __used_for__ = IBuilder
 
     page_title = 'Build history'
+    binary_only = False
 
     @property
     def label(self):

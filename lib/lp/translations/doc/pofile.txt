@@ -27,7 +27,9 @@ Get evolution template for Ubuntu Hoary
 Get Xhosa translation
 
     >>> pofile = potemplate.getPOFileByLang('xh')
-    >>> dummy_pofile = potemplate.getDummyPOFile('pt_BR')
+    >>> language_pt_BR = getUtility(
+    ...     ILanguageSet).getLanguageByCode('pt_BR')
+    >>> dummy_pofile = potemplate.getDummyPOFile(language_pt_BR)
 
 Both implement the IPOFile interface:
 
@@ -99,7 +101,8 @@ if present.
     >>> print potemplate.getPOFileByLang('es').getFullLanguageCode()
     es
 
-    >>> print potemplate.getDummyPOFile('sr', variant=u'Latn'
+    >>> language_sr = getUtility(ILanguageSet).getLanguageByCode('sr')
+    >>> print potemplate.getDummyPOFile(language_sr, variant=u'Latn'
     ...     ).getFullLanguageCode()
     sr@Latn
 
@@ -112,7 +115,7 @@ variant if present.
     >>> print potemplate.getPOFileByLang('es').getFullLanguageName()
     Spanish
 
-    >>> print potemplate.getDummyPOFile('sr', variant=u'Latn'
+    >>> print potemplate.getDummyPOFile(language_sr, variant=u'Latn'
     ...     ).getFullLanguageName()
     Serbian ("Latn" variant)
 
@@ -442,7 +445,8 @@ breakage.
 
 Now, we get an IPOFile that does not have a translation team assigned.
 
-    >>> pofile_cy = potemplate.getDummyPOFile('cy')
+    >>> language_cy = getUtility(ILanguageSet).getLanguageByCode('cy')
+    >>> pofile_cy = potemplate.getDummyPOFile(language_cy)
 
 Valentina Commissari is not a translator for this language and does not
 have permissions.
@@ -611,7 +615,7 @@ When the language has number of plural forms defined, that value is used.
     >>> serbian = getUtility(ILanguageSet)['sr']
     >>> serbian.pluralforms
     3
-    >>> evolution_sr = evolution_pot.getDummyPOFile(serbian.code)
+    >>> evolution_sr = evolution_pot.getDummyPOFile(serbian)
     >>> evolution_sr.plural_forms
     3
 
@@ -621,7 +625,7 @@ the most common number of plural forms:
     >>> divehi = getUtility(ILanguageSet)['dv']
     >>> print divehi.pluralforms
     None
-    >>> evolution_dv = evolution_pot.getDummyPOFile(divehi.code)
+    >>> evolution_dv = evolution_pot.getDummyPOFile(divehi)
     >>> evolution_dv.plural_forms
     2
 

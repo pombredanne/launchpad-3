@@ -24,8 +24,8 @@ so on.
     >>> from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     IBazaarApplication)
-    >>> from lp.bugs.interfaces.malone import IMaloneApplication
     >>> from lp.answers.interfaces.questioncollection import IQuestionSet
+    >>> from lp.bugs.interfaces.malone import IMaloneApplication
 
 The Launchpad homepage.
 

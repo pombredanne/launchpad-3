@@ -1439,7 +1439,7 @@ Invalid status:
         status foo
     ...
     The 'status' command expects any of the following arguments:
-    new, incomplete, invalid, wontfix, expired, confirmed, triaged, inprogress, fixcommitted, fixreleased
+    new, incomplete, opinion, invalid, wontfix, expired, confirmed, triaged, inprogress, fixcommitted, fixreleased
     <BLANKLINE>
     For example:
     <BLANKLINE>

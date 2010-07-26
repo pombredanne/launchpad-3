@@ -143,16 +143,19 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
              psl.last_changed_date),
              stats)
 
-    def test_DummyProductSeriesLanguage(self):
+    def test_dummy_ProductSeriesLanguage(self):
         # With no templates all counts are zero.
-        psl = self.psl_set.getDummy(self.productseries, self.language)
+        psl = self.psl_set.getProductSeriesLanguage(
+            self.productseries, self.language)
         self.failUnless(verifyObject(IProductSeriesLanguage, psl))
         self.assertPSLStatistics(psl, (0, 0, 0, 0, 0, 0, None))
 
         # Adding a single template with 10 messages makes the total
         # count of messages go up to 10.
         potemplate = self.createPOTemplateWithPOTMsgSets(10)
-        psl = self.psl_set.getDummy(self.productseries, self.language)
+        psl = self.psl_set.getProductSeriesLanguage(
+            self.productseries, self.language)
+        psl.recalculateCounts()
         self.assertPSLStatistics(
             psl, (10, 0, 0, 0, 0, 0, None))
 
@@ -168,7 +171,7 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         # Getting PSL through PSLSet gives an uninitialized object.
         psl = self.psl_set.getProductSeriesLanguage(
             self.productseries, self.language)
-        self.assertEquals(psl.messageCount(), None)
+        self.assertEquals(psl.messageCount(), 0)
 
         # So, we need to get it through productseries.productserieslanguages.
         psl = self.productseries.productserieslanguages[0]

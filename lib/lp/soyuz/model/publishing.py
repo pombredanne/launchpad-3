@@ -22,6 +22,7 @@ import operator
 import os
 import pytz
 import re
+import sys
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -37,8 +38,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
@@ -49,12 +53,12 @@ from lp.services.worlddata.model.country import Country
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (BinaryPackageRelease,
     BinaryPackageReleaseDownloadCount)
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus, IBinaryPackageBuildSet)
@@ -63,11 +67,14 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IBinaryPackageFilePublishing,
     IBinaryPackagePublishingHistory, IPublishingSet,
     ISourcePackageFilePublishing, ISourcePackagePublishingHistory,
-    PackagePublishingPriority, PackagePublishingStatus,
-    PoolFileOverwriteError)
+    PackagePublishingPriority, PackagePublishingStatus, PoolFileOverwriteError)
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
+
+
+PENDING = PackagePublishingStatus.PENDING
+PUBLISHED = PackagePublishingStatus.PUBLISHED
 
 
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
@@ -83,12 +90,6 @@ class FilePublishingBase:
 
     def publish(self, diskpool, log):
         """See IFilePublishing."""
-        # DDEB publication for PPAs is temporarily disabled, see bug #399444.
-        if (self.archive.is_ppa and
-            self.libraryfilealiasfilename.endswith('.ddeb')):
-            log.debug('Skipping DDEB disk publication.')
-            return
-
         # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
         # when retrieving data from DB.
         source = self.sourcepackagename.encode('utf-8')
@@ -98,22 +99,14 @@ class FilePublishingBase:
         sha1 = filealias.content.sha1
         path = diskpool.pathFor(component, source, filename)
 
-        try:
-            action = diskpool.addFile(
-                component, source, filename, sha1, filealias)
-            if action == diskpool.results.FILE_ADDED:
-                log.debug("Added %s from library" % path)
-            elif action == diskpool.results.SYMLINK_ADDED:
-                log.debug("%s created as a symlink." % path)
-            elif action == diskpool.results.NONE:
-                log.debug(
-                    "%s is already in pool with the same content." % path)
-        except PoolFileOverwriteError, info:
-            log.error("PoolFileOverwriteError: %s. Skipping. This indicates "
-                      "some bad data, and Team Soyuz should be informed. "
-                      "However, publishing of other packages is not affected."
-                      % info)
-            raise info
+        action = diskpool.addFile(component, source, filename, sha1, filealias)
+        if action == diskpool.results.FILE_ADDED:
+            log.debug("Added %s from library" % path)
+        elif action == diskpool.results.SYMLINK_ADDED:
+            log.debug("%s created as a symlink." % path)
+        elif action == diskpool.results.NONE:
+            log.debug(
+                "%s is already in pool with the same content." % path)
 
     @property
     def archive_url(self):
@@ -263,8 +256,13 @@ class ArchivePublisherBase:
         try:
             for pub_file in self.files:
                 pub_file.publish(diskpool, log)
-        except PoolFileOverwriteError:
-            pass
+        except PoolFileOverwriteError, e:
+            message = "PoolFileOverwriteError: %s, skipping." %  e
+            properties = [('error-explanation', message)]
+            request = ScriptRequest(properties)
+            error_utility = ErrorReportingUtility()
+            error_utility.raising(sys.exc_info(), request)
+            log.error('%s (%s)' % (message, request.oopsid))
         else:
             self.setPublished()
 
@@ -277,7 +275,6 @@ class ArchivePublisherBase:
         """See `IPublishing`."""
         self.status = PackagePublishingStatus.SUPERSEDED
         self.datesuperseded = UTC_NOW
-        return self
 
     def requestDeletion(self, removed_by, removal_comment=None):
         """See `IPublishing`."""
@@ -679,6 +676,25 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return fields
 
+    def supersede(self, dominant=None, logger=None):
+        """See `ISourcePackagePublishingHistory`."""
+        assert self.status in [PUBLISHED, PENDING], (
+            "Should not dominate unpublished source %s" %
+            self.sourcepackagerelease.title)
+
+        super(SourcePackagePublishingHistory, self).supersede()
+
+        if dominant is not None:
+            if logger is not None:
+                logger.debug(
+                    "%s/%s has been judged as superseded by %s/%s" %
+                    (self.sourcepackagerelease.sourcepackagename.name,
+                     self.sourcepackagerelease.version,
+                     dominant.sourcepackagerelease.sourcepackagename.name,
+                     dominant.sourcepackagerelease.version))
+
+            self.supersededby = dominant.sourcepackagerelease
+
     def changeOverride(self, new_component=None, new_section=None):
         """See `ISourcePackagePublishingHistory`."""
         # Check we have been asked to do something
@@ -933,6 +949,73 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return fields
 
+    def _getOtherPublications(self):
+        """Return remaining publications with the same overrides.
+
+        Only considers binary publications in the same archive, distroseries,
+        pocket, component, section and priority context. These publications
+        are candidates for domination if this is an architecture-independent
+        package.
+
+        The override match is critical -- it prevents a publication created
+        by new overrides from superseding itself.
+        """
+        available_architectures = [
+            das.id for das in self.distroarchseries.distroseries.architectures]
+        return IMasterStore(BinaryPackagePublishingHistory).find(
+                BinaryPackagePublishingHistory,
+                BinaryPackagePublishingHistory.status.is_in(
+                    [PUBLISHED, PENDING]),
+                BinaryPackagePublishingHistory.distroarchseries in (
+                    available_architectures),
+                binarypackagerelease=self.binarypackagerelease,
+                archive=self.archive,
+                pocket=self.pocket,
+                component=self.component,
+                section=self.section,
+                priority=self.priority)
+
+    def supersede(self, dominant=None, logger=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        # At this point only PUBLISHED (ancient versions) or PENDING (
+        # multiple overrides/copies) publications should be given. We
+        # tolerate SUPERSEDED architecture-independent binaries, because
+        # they are dominated automatically once the first publication is
+        # processed.
+        if self.status not in [PUBLISHED, PENDING]:
+            assert not self.binarypackagerelease.architecturespecific, (
+                "Should not dominate unpublished architecture specific "
+                "binary %s (%s)" % (
+                self.binarypackagerelease.title,
+                self.distroarchseries.architecturetag))
+            return
+
+        super(BinaryPackagePublishingHistory, self).supersede()
+
+        if dominant is not None:
+            dominant_build = dominant.binarypackagerelease.build
+            distroarchseries = dominant_build.distro_arch_series
+            if logger is not None:
+                logger.debug(
+                    "The %s build of %s has been judged as superseded by the "
+                    "build of %s.  Arch-specific == %s" % (
+                    distroarchseries.architecturetag,
+                    self.binarypackagerelease.title,
+                    dominant_build.source_package_release.title,
+                    self.binarypackagerelease.architecturespecific))
+            # Binary package releases are superseded by the new build,
+            # not the new binary package release. This is because
+            # there may not *be* a new matching binary package -
+            # source packages can change the binaries they build
+            # between releases.
+            self.supersededby = dominant_build
+
+        # If this is architecture-independet, all publications with the same
+        # context and overrides should be dominated simultaneously.
+        if not self.binarypackagerelease.architecturespecific:
+            for dominated in self._getOtherPublications():
+                dominated.supersede(dominant, logger)
+
     def changeOverride(self, new_component=None, new_section=None,
                        new_priority=None):
         """See `IBinaryPackagePublishingHistory`."""
@@ -1161,7 +1244,10 @@ class PublishingSet:
             section=section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW)
-
+        # Import here to prevent import loop.
+        from lp.registry.model.distributionsourcepackage import (
+            DistributionSourcePackage)
+        DistributionSourcePackage.ensure(pub)
         return pub
 
     def getBuildsForSourceIds(
@@ -1263,7 +1349,7 @@ class PublishingSet:
         return Store.of(archive).find(
             baseclass,
             baseclass.id == id,
-            baseclass.archive == archive.id)
+            baseclass.archive == archive.id).one()
 
     def _extractIDs(self, one_or_more_source_publications):
         """Return a list of database IDs for the given list or single object.

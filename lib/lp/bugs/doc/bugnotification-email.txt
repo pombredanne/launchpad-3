@@ -426,7 +426,7 @@ Removing a patch also generates a different notification.
 The Reply-To: and From: addresses used to send email are generated in a
 pair of handy functions defined in mailnotification.py:
 
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from lp.bugs.mail.bugnotificationbuilder import (
     ...     get_bugmail_from_address, get_bugmail_replyto_address)
 
 The Reply-To address generation is straightforward:
@@ -508,9 +508,10 @@ from the bug so that they are not calculated for every recipient.
     X-Launchpad-Bug-Private: yes
     X-Launchpad-Bug-Security-Vulnerability: yes
     X-Launchpad-Bug-Commenters: name12
+    X-Launchpad-Bug-Reporter: Sample Person (name12)
 
 The build() method of a builder accepts a number of parameters and
-returns an instance of email.MIMEText. The most basic invokation of
+returns an instance of email.MIMEText. The most basic invocation of
 this method requires a from address, a to address, a body, a subject
 and a sending date for the mail.
 
