@@ -16,7 +16,7 @@ from zope.security import checker
 
 def silence_root_logger():
     """Install the NullHandler on the root logger to silence logs."""
-    logging.getLogger().addHandler(NullHandler())
+    logging.getLogger('bzr').addHandler(NullHandler())
 
 def dont_wrap_class_and_subclasses(cls):
     checker.BasicTypes.update({cls: checker.NoProxy})
