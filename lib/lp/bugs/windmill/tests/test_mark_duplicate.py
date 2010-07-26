@@ -12,7 +12,7 @@ from canonical.launchpad.windmill.testing import constants, lpuser
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 
-MAIN_FORM_ELEMENT = u'//div[@id="duplicate-form-container"]/table'
+MAIN_FORM_ELEMENT = u'//div[@id="duplicate-form-container"]/div'
 FORM_NOT_VISIBLE = (
     u'element.className.search("yui-lazr-formoverlay-hidden") != -1')
 FORM_VISIBLE = (
