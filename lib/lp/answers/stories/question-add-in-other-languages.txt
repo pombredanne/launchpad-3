@@ -45,8 +45,6 @@ understood by any member of the support community.
     ...     row.first('a').renderContents()
     'Installation of Java Runtime Environment for Mozilla'
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
-    'mailto: problem in webpage'
-    '\xd8\xb9\xd9\x83\xd8\xb3 ...'
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()

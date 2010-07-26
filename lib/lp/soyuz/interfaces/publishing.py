@@ -278,12 +278,7 @@ class IPublishingView(Interface):
         """
 
     def supersede():
-        """Supersede this publication.
-
-        :return: The superseded publishing records, either a
-            `ISourcePackagePublishingHistory` or
-            `IBinaryPackagePublishingHistory`.
-        """
+        """Supersede this publication."""
 
     def requestObsolescence():
         """Make this publication obsolete.
@@ -632,6 +627,15 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         :return: a list of `ILibraryFileAlias`.
         """
 
+    def supersede(dominant=None, logger=None):
+        """Supersede this publication.
+
+        :param dominant: optional `ISourcePackagePublishingHistory` which is
+            triggering the domination.
+        :param logger: optional object to which debug information will be
+            logged.
+        """
+
     def changeOverride(new_component=None, new_section=None):
         """Change the component and/or section of this publication
 
@@ -837,6 +841,15 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         TextLine(
             title=_("Priority Name"),
             required=False, readonly=True))
+
+    def supersede(dominant=None, logger=None):
+        """Supersede this publication.
+
+        :param dominant: optional `IBinaryPackagePublishingHistory` which is
+            triggering the domination.
+        :param logger: optional object to which debug information will be
+            logged.
+        """
 
     def changeOverride(new_component=None, new_section=None,
                        new_priority=None):

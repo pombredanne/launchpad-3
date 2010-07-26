@@ -1142,6 +1142,15 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     usedfor = ICodeImportMachine
 
 
+class DeleteSourcePackageRecipeBuilds(OnlyBazaarExpertsAndAdmins):
+    """Control who can delete SourcePackageRecipeBuilds.
+
+    Access is restricted to members of ~bazaar-experts and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ISourcePackageRecipeBuild
+
+
 class AdminDistributionTranslations(AuthorizationBase):
     """Class for deciding who can administer distribution translations.
 
@@ -1192,15 +1201,12 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
         template = self.obj
         if template.distroseries is not None:
             # Template is on a distribution.
-            distribution = template.distroseries.distribution
-            return (
-                AdminDistributionTranslations(
-                    distribution).checkAuthenticated(user))
-
+            return AdminDistroSeriesTranslations(
+                template.distroseries).checkAuthenticated(user)
         else:
             # Template is on a product.
-            return OnlyRosettaExpertsAndAdmins.checkAuthenticated(
-                self, user)
+            return AdminProductSeriesTranslations(
+                template.productseries).checkAuthenticated(user)
 
 
 class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
@@ -1474,6 +1480,7 @@ class EditPackageBuild(EditBuildFarmJob):
         # If it's a PPA or a copy archive only allow its owner.
         return (self.obj.archive.owner and
                 user.inTeam(self.obj.archive.owner))
+
 
 class EditBinaryPackageBuild(EditPackageBuild):
     permission = 'launchpad.Edit'
@@ -1767,6 +1774,16 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
 
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
+
+
+class AdminProductSeriesTranslations(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IProductSeries
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IProductSeries` translations."""
+
+        return OnlyRosettaExpertsAndAdmins(self.obj).checkAuthenticated(user)
 
 
 class BranchMergeProposalView(AuthorizationBase):
