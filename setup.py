@@ -29,6 +29,9 @@ setup(
         'chameleon.core',
         'chameleon.zpt',
         'cssutils',
+        # Required for pydkim
+        'dnspython',
+        'FeedParser',
         'feedvalidator',
         'funkload',
         'launchpadlib',
@@ -42,6 +45,7 @@ setup(
         'lazr.testing',
         'lazr.uri',
         'lazr-js',
+        'manuel',
         'mechanize',
         'meliae',
         'mercurial',
@@ -51,6 +55,7 @@ setup(
         'paramiko',
         'python-memcached',
         'pyasn1',
+        'pydkim',
         'python-openid',
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:

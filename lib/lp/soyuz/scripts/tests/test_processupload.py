@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -58,7 +58,7 @@ class TestProcessUpload(unittest.TestCase):
         # No scriptactivity should exist before it's run.
         activity = getUtility(
             IScriptActivitySet).getLastActivity('process-upload')
-        self.assertTrue(activity is None,  "'activity' should be None")
+        self.assertTrue(activity is None, "'activity' should be None")
 
         returncode, out, err = self.runProcessUpload()
         self.assertEqual(0, returncode)
@@ -86,20 +86,16 @@ class TestProcessUpload(unittest.TestCase):
         locker.acquire()
 
         returncode, out, err = self.runProcessUpload(
-            extra_args=['-C', 'insecure']
-            )
+            extra_args=['-C', 'insecure'])
 
         # the process-upload call terminated with ERROR and
         # proper log message
         self.assertEqual(1, returncode)
-        self.assertEqual(
-            ['INFO    Creating lockfile: /var/lock/process-upload-insecure.lock',
-             'DEBUG   Lockfile /var/lock/process-upload-insecure.lock in use'
+        self.assertEqual([
+            ('INFO    Creating lockfile: '
+             '/var/lock/process-upload-insecure.lock'),
+            'DEBUG   Lockfile /var/lock/process-upload-insecure.lock in use',
              ], err.splitlines())
 
         # release the locally acquired lockfile
         locker.release()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

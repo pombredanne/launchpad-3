@@ -28,7 +28,7 @@ from lp.testing.factory import GPGSigningContext
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 class TestSignedMessage(TestCaseWithFactory):
-    """Test SignedMessage class correctly extracts the GPG signatures."""
+    """Test SignedMessage class correctly extracts and verifies the GPG signatures."""
 
     layer = DatabaseFunctionalLayer
 

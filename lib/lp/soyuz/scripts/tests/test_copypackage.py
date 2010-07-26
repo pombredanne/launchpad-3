@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1352,8 +1352,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.assertEqual(
             sorted(copied_ids), sorted(pending_ids),
             "The copy did not succeed.\nExpected IDs: %s\nFound IDs: %s" % (
-                sorted(copied_ids), sorted(pending_ids))
-            )
+                sorted(copied_ids), sorted(pending_ids)))
 
     def testCopyBetweenDistroSeries(self):
         """Check the copy operation between distroseries."""
@@ -2275,7 +2274,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             "--ppa", "joe",
             "--ppa-name", "ppa",
             "-s", "%s" % ppa_source.distroseries.name + "-security",
-            "foo"
+            "foo",
             ]
 
         script = UnembargoSecurityPackage(
@@ -2324,7 +2323,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test_args = [
             "--ppa", "cprov",
             "-s", "warty-backports",
-            "foo"
+            "foo",
             ]
 
         script = UnembargoSecurityPackage(
@@ -2641,7 +2640,3 @@ class CopyPackageTestCase(TestCaseWithFactory):
             None,
             checker.checkCopy(test2_source, warty,
             PackagePublishingPocket.RELEASE))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
