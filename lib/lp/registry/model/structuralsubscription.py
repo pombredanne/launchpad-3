@@ -184,6 +184,16 @@ class StructuralSubscriptionTargetMixin:
         # subscription and immediately giving it a full
         # bug notification level. It is useful so long as
         # subscriptions are mainly used to implement bug contacts.
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+
+        if IDistribution.providedBy(self) and (
+           subscriber != self.bug_supervisor
+           and self.bug_supervisor is not None
+           and not subscribed_by.inTeam(admins)):
+            raise UserCannotSubscribePerson(
+                'Only the bug supervisor can subscribe to distribution bugs.')
+
         sub = self.addSubscription(subscriber, subscribed_by)
         sub.bug_notification_level = BugNotificationLevel.COMMENTS
         return sub
