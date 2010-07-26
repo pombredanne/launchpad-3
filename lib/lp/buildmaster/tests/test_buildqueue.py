@@ -220,6 +220,22 @@ class TestBuildQueueSet(TestCaseWithFactory):
             "An active build job must have a builder.")
 
 
+class TestBuildQueue(TestCaseWithFactory):
+    """Unit tests for `BuildQueue`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBuildQueue, self).setUp()
+        self.buildqueue = self.factory.makeSourcePackageRecipeBuildJob()
+
+    def test_markAsBuilding_resets_failure_count(self):
+        builder = self.factory.makeBuilder()
+        builder.failure_count = 2
+        self.buildqueue.markAsBuilding(builder)
+        self.assertEqual(0, builder.failure_count)
+
+
 class TestBuildQueueBase(TestCaseWithFactory):
     """Setup the test publisher and some builders."""
 
