@@ -170,6 +170,7 @@ class BuildQueue(SQLBase):
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
         self.builder = builder
+        builder.failure_count = 0
         if self.job.status != JobStatus.RUNNING:
             self.job.start()
         self.specific_job.jobStarted()
