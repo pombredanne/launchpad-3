@@ -155,6 +155,14 @@ class PillarView(LaunchpadView):
             link for link in important_links if not link.enabled],
             key=attrgetter('sort_key'))
 
+    @property
+    def registration_completeness(self):
+        """The percent complete for registration.
+
+        Not used by all pillars.
+        """
+        return None
+
 
 class PillarBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     """Base class for pillar bugs menus."""

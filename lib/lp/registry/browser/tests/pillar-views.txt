@@ -53,10 +53,12 @@ The view provides a list of enabled links that is rendered by the template.
       <h2>Get Involved</h2>
       <ul class="involvement">
         <li>
-          <a href=... class="...bugs">Report a bug</a>
+          <table...
+          <a href=... class="...bugs">Report a bug</a>...
         </li>
         <li>
-          <a href=... class="...answers">Ask a question</a>
+          <table...
+          <a href=... class="...answers">Ask a question</a>...
         </li>
       </ul>
     ...
@@ -80,13 +82,53 @@ to configure each service.
 
     >>> for link in view.visible_disabled_links:
     ...     print link.name
+    report_bug
+    ask_question
+    help_translate
     submit_code
+
     >>> for link in view.configuration_links:
     ...     print link.name
     configure_answers
     configure_bugtracker
     configure_translations
     set_branch
+
+The registration status is determined with the 'configuration_states'
+property.  Notice that blueprints are not included in the
+configuration links nor the completeness computation as the use of
+blueprints is not promoted.
+
+    >>> for key in sorted(view.configuration_states.keys()):
+    ...     print key, view.configuration_states[key]
+    configure_answers False
+    configure_bugtracker False
+    configure_codehosting False
+    configure_translations False
+
+The percentage of the registration completed can be determined by
+using the 'registration_completeness' property, which returns a
+dictionary, which makes it easy for use in the page template.
+
+    >>> print pretty(view.registration_completeness)
+    {'done': 0,
+     'undone': 100}
+
+Changing the product's official usage is reflected in the view properties.
+
+    >>> product.official_malone = True
+    >>> view = create_view(product, '+get-involved')
+    >>> for key in sorted(view.configuration_states.keys()):
+    ...     print key, view.configuration_states[key]
+    configure_answers False
+    configure_bugtracker True
+    configure_codehosting False
+    configure_translations False
+
+    >>> print pretty(view.registration_completeness)
+    {'done': 25,
+     'undone': 75}
+
 
 Project groups are supported too, but they only display the applications used by
 their products.

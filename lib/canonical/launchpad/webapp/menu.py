@@ -175,9 +175,12 @@ class MenuLink:
         else:
             return cgi.escape(text)
 
-    @property
-    def configured(self):
+    def set_configured(self, value):
+        self._linkdata.configured = value
+    def get_configured(self):
         return self._linkdata.configured
+
+    configured = property(get_configured, set_configured)
 
     @property
     def icon_url(self):
