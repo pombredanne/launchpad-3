@@ -62,8 +62,8 @@ from canonical.launchpad.webapp import (
     stepto)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    GoneError, IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
-    NotFoundError, POSTToNonCanonicalURL)
+    GoneError, IBreadcrumb, ILaunchBag, ILaunchpadRoot,
+    INavigationMenu, NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import PageTemplateContextsAPI

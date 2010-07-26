@@ -24,6 +24,8 @@ class XPIPOExporter(GettextPOExporter):
     """Support class for exporting XPI files as .po files."""
     implements(ITranslationFormatExporter)
 
+    format = TranslationFileFormat.XPIPO
+
     def __init__(self, context=None):
         super(XPIPOExporter, self).__init__(context=context)
         # 'context' is ignored because it's only required by the way the
