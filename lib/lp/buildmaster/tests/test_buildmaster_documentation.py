@@ -33,18 +33,18 @@ def buildmasterSetUp(test):
 def buildmasterTearDown(test):
     logout()
 
+
 special = {
     'builder.txt': LayeredDocFileSuite(
         '../doc/builder.txt',
         setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer,
-        ),
+        layer=LaunchpadFunctionalLayer),
     'buildqueue.txt': LayeredDocFileSuite(
         '../doc/buildqueue.txt',
         setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer,
-        ),
+        layer=LaunchpadFunctionalLayer),
     }
+
 
 def test_suite():
     """Load doctests in this directory.

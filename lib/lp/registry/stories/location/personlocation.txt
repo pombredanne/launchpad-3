@@ -30,8 +30,8 @@ there's a map, and the scripts are loaded.
     >>> print extract_text(find_tag_by_id(markup, 'portlet-map'), skip_tags=[])
     Location
     Time zone: Europe/London...
-    Y.lp.mapping.renderPersonMapSmall(...
+    Y.lp.app.mapping.renderPersonMapSmall(...
     >>> 'src="http://maps.google.com/maps' in markup
     True
-    >>> 'build/lp/mapping.js' in markup
+    >>> 'build/app/mapping.js' in markup
     True

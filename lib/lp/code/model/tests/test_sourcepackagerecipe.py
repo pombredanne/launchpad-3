@@ -45,7 +45,6 @@ from lp.code.model.sourcepackagerecipe import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
-from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS, launchpadlib_for, login, login_person, person_logged_in,
     TestCaseWithFactory, ws_object)
@@ -85,6 +84,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=[distroseries],
             name=name, description=description, builder_recipe=builder_recipe)
+        transaction.commit()
         self.assertEquals(
             (registrant, owner, set([distroseries]), name),
             (recipe.registrant, recipe.owner, set(recipe.distroseries),
@@ -113,6 +113,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # SourcePackageRecipe objects implement ISourcePackageRecipe.
         recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             self.factory.makeRecipe())
+        transaction.commit()
         self.assertProvides(recipe, ISourcePackageRecipe)
 
     def test_base_branch(self):
@@ -121,6 +122,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         builder_recipe = self.factory.makeRecipe(branch)
         sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             builder_recipe)
+        transaction.commit()
         self.assertEquals(branch, sp_recipe.base_branch)
 
     def test_branch_links_created(self):
@@ -130,6 +132,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         builder_recipe = self.factory.makeRecipe(branch)
         sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             builder_recipe)
+        transaction.commit()
         self.assertEquals([branch], list(sp_recipe.getReferencedBranches()))
 
     def test_multiple_branch_links_created(self):
@@ -140,6 +143,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         builder_recipe = self.factory.makeRecipe(branch1, branch2)
         sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             builder_recipe)
+        transaction.commit()
         self.assertEquals(
             sorted([branch1, branch2]),
             sorted(sp_recipe.getReferencedBranches()))
@@ -167,7 +171,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         branch2 = self.factory.makeAnyBranch()
         builder_recipe2 = self.factory.makeRecipe(branch2)
         login_person(sp_recipe.owner.teamowner)
-        #import pdb; pdb.set_trace()
         sp_recipe.builder_recipe = builder_recipe2
         self.assertEquals([branch2], list(sp_recipe.getReferencedBranches()))
 
@@ -297,6 +300,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             name=u'myrecipe', owner=requester)
         series = list(recipe.distroseries)[0]
         archive = self.factory.makeArchive(owner=requester)
+
         def request_build():
             build = recipe.requestBuild(archive, requester, series,
                     PackagePublishingPocket.RELEASE)
@@ -322,10 +326,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             self.factory.makeArchive(owner=recipe.owner), recipe.owner,
             series, PackagePublishingPocket.RELEASE)
         # Varying distroseries allows build.
-        new_distroseries = self.factory.makeDistroSeries()
-        new_distroseries.nominatedarchindep = new_distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, recipe.owner,
-            supports_virtualized=True)
+        new_distroseries = self.factory.makeSourcePackageRecipeDistroseries(
+            "hoary")
         recipe.requestBuild(archive, recipe.owner,
             new_distroseries, PackagePublishingPocket.RELEASE)
         # Changing status of old build allows new build.
@@ -430,6 +432,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         build.buildduration = timedelta(minutes=10)
         self.assertEqual(
             timedelta(minutes=10), recipe.getMedianBuildDuration())
+
         def addBuild(minutes):
             build = removeSecurityProxy(
                 self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
@@ -467,6 +470,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=[distroseries],
             name=name, description=description, builder_recipe=builder_recipe)
+        transaction.commit()
         return recipe.builder_recipe
 
     def check_base_recipe_branch(self, branch, url, revspec=None,
@@ -639,14 +643,19 @@ class TestWebservice(TestCaseWithFactory):
         return MINIMAL_RECIPE_TEXT % branch.bzr_identity
 
     def makeRecipe(self, user=None, owner=None, recipe_text=None):
+        # rockstar 21 Jul 2010 - This function does more commits than I'd like,
+        # but it's the result of the fact that the webservice runs in a
+        # separate thread so doesn't get the database updates without those
+        # commits.
         if user is None:
             user = self.factory.makePerson()
         if owner is None:
             owner = user
-        db_distroseries = self.factory.makeDistroSeries()
+        db_distroseries = self.factory.makeSourcePackageRecipeDistroseries()
         if recipe_text is None:
             recipe_text = self.makeRecipeText()
         db_archive = self.factory.makeArchive(owner=owner, name="recipe-ppa")
+        transaction.commit()
         launchpad = launchpadlib_for('test', user,
                 service_root="http://api.launchpad.dev:8085")
         login(ANONYMOUS)
@@ -691,11 +700,7 @@ class TestWebservice(TestCaseWithFactory):
         """Build requests can be performed."""
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(owner=person)
-        distroseries = self.factory.makeDistroSeries()
-        distroseries_i386 = distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, person,
-            supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
 
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
@@ -708,11 +713,7 @@ class TestWebservice(TestCaseWithFactory):
         """Build requests are rejected if already pending."""
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(owner=person)
-        distroseries = self.factory.makeDistroSeries()
-        distroseries_i386 = distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, person,
-            supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
 
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
@@ -729,11 +730,7 @@ class TestWebservice(TestCaseWithFactory):
         """Build requests are rejected if they exceed quota."""
         person = self.factory.makePerson()
         archives = [self.factory.makeArchive(owner=person) for x in range(6)]
-        distroseries = self.factory.makeDistroSeries()
-        distroseries_i386 = distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, person,
-            supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
 
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
@@ -748,6 +745,21 @@ class TestWebservice(TestCaseWithFactory):
             archive=archive, distroseries=distroseries,
             pocket=PackagePublishingPocket.RELEASE.title)
         self.assertIn('TooManyBuilds', str(e))
+
+    def test_requestBuildRejectUnsupportedDistroSeries(self):
+        """Build requests are rejected if they have a bad distroseries."""
+        person = self.factory.makePerson()
+        archives = [self.factory.makeArchive(owner=person) for x in range(6)]
+        distroseries = self.factory.makeDistroSeries()
+
+        recipe, user, launchpad = self.makeRecipe(person)
+        distroseries = ws_object(launchpad, distroseries)
+        archive = ws_object(launchpad, archives[-1])
+
+        e = self.assertRaises(Exception, recipe.requestBuild,
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
+        self.assertIn('BuildNotAllowedForDistro', str(e))
 
 
 def test_suite():
