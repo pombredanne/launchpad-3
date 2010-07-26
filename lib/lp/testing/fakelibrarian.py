@@ -10,13 +10,19 @@ __all__ = [
 
 import hashlib
 from StringIO import StringIO
+from urlparse import urljoin
+
+import zope.component
+from zope.interface import implements
+import transaction
 from transaction.interfaces import ISynchronizer
 
-from zope.interface import implements
+from canonical.config import config
 
 from canonical.launchpad.database.librarian import (
     LibraryFileContent, LibraryFileAlias)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.librarian.client import get_libraryfilealias_download_path
 from canonical.librarian.interfaces import (
     DownloadFailed,
     ILibrarianClient,
@@ -51,13 +57,38 @@ class FakeLibrarian(object):
     This takes the role of both the librarian client and the LibraryFileAlias
     utility.
     """
-    implements(
-        ILibrarianClient, ILibraryFileAliasSet, ISynchronizer)
+    provided_utilities = (ILibrarianClient, ILibraryFileAliasSet)
+    implements(ISynchronizer, *provided_utilities)
+
+    installed_as_librarian = False
+
+
+    def installAsLibrarian(self):
+        """Install this `FakeLibrarian` as the default Librarian."""
+        if self.installed_as_librarian:
+            return
+
+        transaction.manager.registerSynch(self)
+        for utility in self.provided_utilities:
+            zope.component.provideUtility(self, utility)
+        self.installed_as_librarian = True
+
+    def uninstall(self):
+        """Un-install this `FakeLibrarian` as the default Librarian."""
+        if not self.installed_as_librarian:
+            return
+
+        transaction.manager.unregisterSynch(self)
+        site_manager = zope.component.getGlobalSiteManager()
+        for utility in self.provided_utilities:
+            site_manager.unregisterUtility(self, utility)
+        self.installed_as_librarian = False
 
     def __init__(self):
         self.aliases = {}
+        self.download_url = config.librarian.download_url
 
-    def addFile(self, name, size, file, content_type, expires=None):
+    def addFile(self, name, size, file, contentType, expires=None):
         """See `IFileUploadClient`."""
         content = file.read()
         real_size = len(content)
@@ -67,7 +98,7 @@ class FakeLibrarian(object):
                 "size %d; actual size is %d." % (name, size, real_size))
 
         file_ref = self._makeLibraryFileContent(content)
-        alias = self._makeAlias(file_ref.id, name, content, content_type)
+        alias = self._makeAlias(file_ref.id, name, content, contentType)
         self.aliases[alias.id] = alias
 
         return alias.id
@@ -78,7 +109,9 @@ class FakeLibrarian(object):
 
     def getURLForAlias(self, aliasID):
         """See `IFileDownloadClient`."""
-        raise NotImplementedError()
+        alias = self.aliases.get(aliasID)
+        path = get_libraryfilealias_download_path(aliasID, alias.filename)
+        return urljoin(self.download_url, path)
 
     def getFileByAlias(self, aliasID,
                        timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):

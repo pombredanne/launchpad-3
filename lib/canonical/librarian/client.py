@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'FileDownloadClient',
     'FileUploadClient',
+    'get_libraryfilealias_download_path',
     'LibrarianClient',
     'RestrictedLibrarianClient',
     ]
@@ -31,6 +32,12 @@ from canonical.database.sqlbase import cursor
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT, LibrarianServerError, UploadFailed)
+
+
+def get_libraryfilealias_download_path(aliasID, filename):
+    """Download path for a given `LibraryFileAlias` id and filename."""
+    escaped_name = urllib.quote(filename).replace('/', '%2F')
+    return '/%d/%s' % (int(aliasID), escaped_name)
 
 
 class FileUploadClient:
@@ -225,16 +232,10 @@ class FileUploadClient:
             status, ids = response.split()
             contentID, aliasID = ids.split('/', 1)
 
-            path = '/%d/%s' % (int(aliasID), quote(name))
+            path = get_libraryfilealias_download_path(aliasID, name)
             return urljoin(self.download_url, path)
         finally:
             self._close()
-
-
-def quote(s):
-    # XXX: Robert Collins 2004-09-21: Perhaps filenames with / in them
-    # should be disallowed?
-    return urllib.quote(s).replace('/', '%2F')
 
 
 class _File:
@@ -299,7 +300,7 @@ class FileDownloadClient:
                 'Alias %d cannot be downloaded from this client.' % aliasID)
         if lfa.deleted:
             return None
-        return '/%d/%s' % (aliasID, quote(lfa.filename.encode('utf-8')))
+        return get_libraryfilealias_download_path(aliasID, lfa.filename)
 
     def getURLForAlias(self, aliasID):
         """Returns the url for talking to the librarian about the given

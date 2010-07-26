@@ -6,8 +6,10 @@
 __metaclass__ = type
 
 from StringIO import StringIO
+
 import transaction
 from transaction.interfaces import ISynchronizer
+from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.interfaces import (
@@ -25,11 +27,11 @@ class TestFakeLibrarian(TestCaseWithFactory):
     def setUp(self):
         super(TestFakeLibrarian, self).setUp()
         self.librarian = FakeLibrarian()
-        transaction.manager.registerSynch(self.librarian)
+        self.librarian.installAsLibrarian()
 
     def tearDown(self):
         super(TestFakeLibrarian, self).tearDown()
-        transaction.manager.unregisterSynch(self.librarian)
+        self.librarian.uninstall()
 
     def _storeFile(self):
         """Store a file in the `FakeLibrarian`.
@@ -43,6 +45,8 @@ class TestFakeLibrarian(TestCaseWithFactory):
         return name, text, alias_id
 
     def test_baseline(self):
+        self.assertEqual(self.librarian, getUtility(ILibrarianClient))
+        self.assertEqual(self.librarian, getUtility(ILibraryFileAliasSet))
         self.assertTrue(verifyObject(ILibrarianClient, self.librarian))
         self.assertTrue(verifyObject(ILibraryFileAliasSet, self.librarian))
         self.assertTrue(verifyObject(ISynchronizer, self.librarian))
