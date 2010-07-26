@@ -1193,13 +1193,6 @@ class BranchSet:
 
     implements(IBranchSet)
 
-    def countBranchesWithAssociatedBugs(self):
-        """See `IBranchSet`."""
-        return Branch.select(
-            'NOT Branch.private AND Branch.id = BugBranch.branch',
-            clauseTables=['BugBranch'],
-            distinct=True).count()
-
     def getRecentlyChangedBranches(
         self, branch_count=None,
         lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,

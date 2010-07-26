@@ -732,23 +732,34 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
         self.queue = TranslationImportQueue()
         self.store = IMasterStore(TranslationImportQueueEntry)
 
-    def _makeProductEntry(self):
+    def _makeProductEntry(self, path='foo.pot', status=None):
         """Simulate upload for a product."""
         product = self.factory.makeProduct()
         product.official_rosetta = True
         trunk = product.getSeries('trunk')
-        return self.queue.addOrUpdateEntry(
-            'foo.pot', '# contents', False, product.owner,
-            productseries=trunk)
+        entry = self.queue.addOrUpdateEntry(
+            path, '# contents', False, product.owner, productseries=trunk)
+        if status is not None:
+            entry.status = status
+        return entry
 
-    def _makeDistroEntry(self):
+    def _makeDistroEntry(self, path='bar.pot', status=None):
         """Simulate upload for a distribution package."""
         package = self.factory.makeSourcePackage()
         owner = package.distroseries.owner
-        return self.queue.addOrUpdateEntry(
-            'bar.pot', '# contents', False, owner,
+        entry = self.queue.addOrUpdateEntry(
+            path, '# contents', False, owner,
             sourcepackagename=package.sourcepackagename,
             distroseries=package.distroseries)
+        if status is not None:
+            entry.status = status
+        return entry
+
+    def _ageEntry(self, entry, interval):
+        """Make an entry's timestamps older by a given interval."""
+        entry.dateimported -= interval
+        entry.date_status_changed -= interval
+        entry.syncUpdate()
 
     def _exists(self, entry_id):
         """Is the entry with the given id still on the queue?"""
@@ -789,7 +800,8 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
     def test_cleanUpObsoleteEntries_affected_statuses(self):
         # _cleanUpObsoleteEntries deletes entries in terminal states
         # (Imported, Failed, Deleted) after a few days.  The exact
-        # period depends on the state.
+        # period depends on the state.  Entries in certain other states
+        # get cleaned up after longer periods.
         affected_statuses = [
             RosettaImportStatus.DELETED,
             RosettaImportStatus.FAILED,
@@ -801,28 +813,94 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
             entry = self._makeProductEntry()
             entry.potemplate = self.factory.makePOTemplate()
             maximum_age = translation_import_queue_entry_age[status]
-            # Avoid the exact date here by a day because that could introduce
-            # spurious test failures.
-            almost_oldest_possible_date = (
-                datetime.now(UTC) - maximum_age + timedelta(days=1))
-            self._setStatus(entry, status, almost_oldest_possible_date)
+            self._setStatus(entry, status)
+
+            # A day before the cleanup age for this status, the
+            # entry is left intact.
+            self._ageEntry(entry, maximum_age - timedelta(days=1))
             entry_id = entry.id
 
             # No write or delete action expected, so no reason to switch the
-            # database user. If it writes or deletes, the test has failed
+            # database user.  If it writes or deletes, the test has failed
             # anyway.
             self.queue._cleanUpObsoleteEntries(self.store)
             self.assertTrue(self._exists(entry_id))
 
-            # Now cross the border, again cushioning it by a day.
-            entry.date_status_changed -= timedelta(days=2)
-            entry.syncUpdate()
-
+            # Two days later, the entry is past its cleanup age and will
+            # be removed.
+            self._ageEntry(entry, timedelta(days=2))
             with self.beingTheGardener():
                 self.queue._cleanUpObsoleteEntries(self.store)
                 self.assertFalse(
                     self._exists(entry_id),
                     "Queue entry in state '%s' was not removed." % status)
+
+    def test_cleanUpObsoleteEntries_blocked_ubuntu_po(self):
+        # _cleanUpObsoleteEntries deletes Ubuntu entries for gettext
+        # translations that are Blocked if they haven't been touched in
+        # a year.  These entries once made up about half the queue.  As
+        # far as we can tell all these PO files have been auto-blocked
+        # after their template uploads were blocked, so even if they
+        # were ever re-uploaded, they'd just get blocked again.
+        entry = self._makeDistroEntry(
+            path='fo.po', status=RosettaImportStatus.BLOCKED)
+        self._ageEntry(entry, timedelta(days=300))
+        entry_id = entry.id
+
+        # It hasn't been a year yet since the last status change; the
+        # entry stays in place.
+        with self.beingTheGardener():
+            self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        # Months later, a year has passed; the entry gets cleaned up.
+        self._ageEntry(entry, timedelta(days=100))
+        with self.beingTheGardener():
+            self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertFalse(self._exists(entry_id))
+
+    def test_cleanUpObsoleteEntries_ignores_entry_age(self):
+        # _cleanUpObsoleteEntries looks at date of an entry's last
+        # status change; the upload date does not matter.
+        entry = self._makeDistroEntry(
+            path='fo.po', status=RosettaImportStatus.BLOCKED)
+        entry.dateimported -= timedelta(days=9000)
+        entry_id = entry.id
+
+        with self.beingTheGardener():
+            self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        entry.date_status_changed -= timedelta(days=400)
+        with self.beingTheGardener():
+            self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertFalse(self._exists(entry_id))
+
+    def test_cleanUpObsoleteEntries_blocked_product_po(self):
+        # _cleanUpObsoleteEntries leaves blocked project uploads in
+        # place.
+        entry = self._makeProductEntry(
+            path='fo.po', status=RosettaImportStatus.BLOCKED)
+        self._ageEntry(entry, timedelta(days=400))
+        entry_id = entry.id
+
+        with self.beingTheGardener():
+            self.queue._cleanUpObsoleteEntries(self.store)
+
+        self.assertTrue(self._exists(entry_id))
+
+    def test_cleanUpObsoleteEntries_blocked_ubuntu_pot(self):
+        # _cleanUpObsoleteEntries leaves blocked Ubuntu templates in
+        # place.
+        entry = self._makeDistroEntry(
+            path='foo.pot', status=RosettaImportStatus.BLOCKED)
+        self._ageEntry(entry, timedelta(days=400))
+        entry_id = entry.id
+
+        with self.beingTheGardener():
+            self.queue._cleanUpObsoleteEntries(self.store)
+
+        self.assertTrue(self._exists(entry_id))
 
     def test_cleanUpInactiveProductEntries(self):
         # After a product is deactivated, _cleanUpInactiveProductEntries
