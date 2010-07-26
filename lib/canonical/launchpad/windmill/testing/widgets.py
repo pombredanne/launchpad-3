@@ -20,6 +20,58 @@ from canonical.launchpad.windmill.testing import constants
 from canonical.launchpad.windmill.testing import lpuser
 
 
+class OnPageWidget:
+
+    """A class that represents and interacts with an on-page YUI JavaScript
+    widget.
+    """
+
+    def __init__(self, client, widget_name):
+        """Constructor
+
+        :param client: A WindmillTestClient instance for interacting with pages.
+        :param widget_name: The class name of the YUI widget, like 'yui-picker'.
+        """
+        self.client = client
+        self.widget_name = widget_name
+
+    @property
+    def xpath(self):
+        """The XPATH of this widget, not including the hidden or visible state.
+        """
+        # We include a space after the widget name because @class matches the
+        # /beginning/ of text strings, not whole words!
+        return u"//div[contains(@class, '%s ')]" % self.widget_name
+
+    @property
+    def visible_xpath(self):
+        """The XPATH of the widget when it is visible on page."""
+        subs = dict(name=self.widget_name)
+        # We include a space after the widget name because @class matches the
+        # /beginning/ of text strings, not whole words!
+        return (u"//div[contains(@class, '%(name)s ') "
+                "and not(contains(@class, '%(name)s-hidden'))]" % subs)
+
+    @property
+    def hidden_xpath(self):
+        """The XPATH of the widget when it is hidden."""
+        # We include a space after the widget name because @class matches the
+        # /beginning/ of text strings, not whole words!
+        subs = dict(name=self.widget_name)
+        return (u"//div[contains(@class, '%(name)s ') "
+                "and contains(@class, '%(name)s-hidden')]" % subs)
+
+    def should_be_visible(self):
+        """Check to see if the widget is visible on screen."""
+        self.client.waits.forElement(xpath=self.visible_xpath,
+                                     timeout=constants.FOR_ELEMENT)
+
+    def should_be_hidden(self):
+        """Check to see if the widget is hidden on screen."""
+        self.client.waits.forElement(xpath=self.hidden_xpath,
+                                     timeout=constants.FOR_ELEMENT)
+
+
 class InlineEditorWidgetTest:
     """Test that the inline editor widget is working properly on a page."""
 
