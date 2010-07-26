@@ -934,8 +934,7 @@ class TestTranslationCredits(TestCaseWithFactory):
                 imported_credits_text,
                 "\n  ".join(["%s %s" % (person.displayname,
                                         canonical_url(person))
-                             for person in self.pofile.contributors])
-            )
+                             for person in self.pofile.contributors]))
 
     def test_prepareTranslationCredits_extending(self):
         # This test ensures that continuous updates to the translation credits
