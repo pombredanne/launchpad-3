@@ -18,6 +18,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
+import storm.base
 from storm.locals import Date, Desc, Int, Reference, Store
 
 from canonical.config import config
@@ -241,11 +242,18 @@ class LibraryFileDownloadCount(SQLBase):
     country = Reference(country_id, 'Country.id')
 
 
-class TimeLimitedToken(SQLBase):
+class TimeLimitedToken(storm.base.Storm):
     """A time limited access token for accessing a private file."""
 
-    _table = 'TimeLimitedToken'
+    __storm_table__ = 'TimeLimitedToken'
 
     created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     url = StringCol(notNull=True)
     token = StringCol(notNull=True)
+    __storm_primary__ = ("url", "token")
+
+    def __init__(self, url, token, created=None):
+        """Create a TimeLimitedToken."""
+        self.created = created
+        self.url = url
+        self.token = token
