@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
@@ -56,7 +55,7 @@ class TestMigrateVariants(TestCaseWithFactory):
             [(serbian, u'test'), self.sampledata_language_variant],
             all_langs)
 
-    def test_fetchAllLanguagesWithVariants_pofile_and_translationmessage(self):
+    def test_fetchAllLanguagesWithVariants_pofile_and_translation(self):
         # With both a POFile and TranslationMessage for the same language
         # and variant, the pair is returned only once.
         serbian_pofile = self.factory.makePOFile('sr', variant=u'test')

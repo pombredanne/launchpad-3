@@ -8,7 +8,6 @@ __metaclass__ = type
 from datetime import datetime, timedelta
 import pytz
 from textwrap import dedent
-from unittest import TestLoader
 
 from zope.component import getAdapter, getUtility
 from zope.interface.verify import verifyObject
@@ -1755,7 +1754,7 @@ class TestPOFile(TestCaseWithFactory):
             self.potemplate, testmsg['msgid'], sequence=testmsg['sequence'])
         pomsgset.updateTranslation(
             self.pofile, self.pofile.owner,
-            {0:testmsg['string'],},
+            {0: testmsg['string'], },
             True, None, force_edition_rights=True)
 
     def test_getTranslationRows_sequence(self):
@@ -1776,7 +1775,7 @@ class TestPOFileToTranslationFileDataAdapter(TestCaseWithFactory):
 
     header = dedent("""
         Project-Id-Version: foo
-        Report-Msgid-Bugs-To: 
+        Report-Msgid-Bugs-To:
         POT-Creation-Date: 2007-07-09 03:39+0100
         PO-Revision-Date: 2001-09-09 01:46+0000
         Last-Translator: Kubla Kahn <kk@pleasure-dome.com>

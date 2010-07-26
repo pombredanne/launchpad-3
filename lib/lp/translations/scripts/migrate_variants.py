@@ -1,7 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-
 """Remove 'variant' usage in POFiles and TranslationMessages."""
 
 __metaclass__ = type
@@ -11,8 +10,6 @@ import logging
 
 from zope.component import getUtility
 from zope.interface import implements
-
-from storm.expr import Coalesce, SQLRaw
 
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
@@ -26,6 +23,7 @@ from lp.translations.model.translationmessage import (
 
 class ReplacerMixin:
     """Replaces `language` and `variant` on all contained objects."""
+
     def __init__(self, transaction, logger, title, contents, new_language):
         self.transaction = transaction
         self.logger = logger
@@ -180,4 +178,3 @@ class MigrateVariantsProcess:
             DBLoopTuner(pofile_loop, 5, minimum_chunk_size=10).run()
 
         self.logger.info("Done.")
-
