@@ -90,6 +90,7 @@ clean:
 	dh_clean
 
 prepare:
+	install -m644 $(daemons)/buildd-slave.tac launchpad-files/buildd-slave.tac
 	cp ../launchpad/daemons/tachandler.py launchpad-files/tachandler.py
 
 package: prepare
