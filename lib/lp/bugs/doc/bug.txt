@@ -184,22 +184,18 @@ To search for bugs matching specific criteria, use IBugSet.searchAsUser:
 
     >>> login("foo.bar@canonical.com")
 
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> productset = getUtility(IProductSet)
-    >>> firefox = productset.get(4)
     >>> firefox_test_bug = bugset.get(3)
-    >>> firefox_master_bug = factory.makeBug(product=firefox)
-    >>> firefox_test_bug.markAsDuplicate(firefox_master_bug)
+    >>> firefox_test_bug.duplicateof = firefox_crashes.id
     >>> flush_database_updates()
 
     >>> dups_of_bug_six = bugset.searchAsUser(
-    ...     duplicateof=firefox_master_bug, user=current_user())
+    ...     duplicateof=firefox_crashes, user=current_user())
     >>> print dups_of_bug_six.count()
     1
     >>> dups_of_bug_six[0].id
     3
 
-    >>> firefox_test_bug.markAsDuplicate(None)
+    >>> firefox_test_bug.duplicateof = None
     >>> flush_database_updates()
     >>> dups_of_bug_six = bugset.searchAsUser(
     ...     duplicateof=firefox_crashes, user=current_user())
@@ -430,6 +426,11 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> productset = getUtility(IProductSet)
+    >>> bugset = getUtility(IBugSet)
+
+    >>> firefox = productset.get(4)
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar)
     >>> params.setBugTarget(product=firefox)
@@ -764,7 +765,7 @@ Marking as duplicate.
 
     >>> print firefox_bug.duplicateof
     None
-    >>> firefox_bug.markAsDuplicate(firefox_master_bug)
+    >>> firefox_bug.duplicateof = firefox_crashes
 
     >>> bug_duplicateof_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["duplicateof"])
@@ -1273,7 +1274,7 @@ the master bug increases too.
 
     >>> dupe_affected_user = factory.makePerson(name='sheila-shakespeare')
     >>> dupe_one = factory.makeBug(owner=dupe_affected_user)
-    >>> dupe_one.markAsDuplicate(test_bug)
+    >>> dupe_one.duplicateof = test_bug
     >>> test_bug.users_affected_count_with_dupes
     3
 
@@ -1307,7 +1308,7 @@ master bug's affected count with dups increases.
 
     >>> dupe_affected_other_user = factory.makePerson(name='napoleon-bonaparte')
     >>> dupe_three = factory.makeBug(owner=dupe_affected_other_user)
-    >>> dupe_three.markAsDuplicate(test_bug)
+    >>> dupe_three.duplicateof = test_bug
     >>> test_bug.users_affected_count_with_dupes
     4
 
@@ -1316,7 +1317,7 @@ both marked as duplicates of the master bugs, the master bug's
 user_affected_count still only increments by 1 for that user.
 
     >>> dupe_two = factory.makeBug(owner=dupe_affected_user)
-    >>> dupe_two.markAsDuplicate(test_bug)
+    >>> dupe_two.duplicateof = test_bug
     >>> test_bug.users_affected_count_with_dupes
     4
 
@@ -1470,7 +1471,7 @@ returned rather than the duplicate.
 
     >>> new_bug_3 = bugs[3]
     >>> new_bug_4 = bugs[4]
-    >>> new_bug_3.markAsDuplicate(new_bug_4)
+    >>> new_bug_3.duplicateof = new_bug_4
     >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
     ...     bug_tasks, user=no_priv)
 
@@ -1598,7 +1599,7 @@ personIsSubscribedToDuplicate() will return True.
     >>> dupe = factory.makeBug()
     >>> subscription = dupe.subscribe(person, person)
 
-    >>> dupe.markAsDuplicate(bug)
+    >>> dupe.duplicateof = bug
 
     # Re-fetch the bug so that the fact that it's a duplicate definitely
     # registers.

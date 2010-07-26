@@ -123,8 +123,7 @@ are simple little functions.
     ...     "id", "title", "description", "name",
     ...     "private", "duplicateof", "security_related"]
     >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> latest_bug = factory.makeBug()
-    >>> bug.markAsDuplicate(latest_bug)
+    >>> bug.duplicateof = 1
     >>> bug_edited = ObjectModifiedEvent(bug, old_bug, edit_fields)
     >>> notify(bug_edited)
     >>> latest_activity = bug.activity[-1]
@@ -132,7 +131,7 @@ are simple little functions.
     u'marked as duplicate'
     >>> latest_activity.oldvalue is None
     True
-    >>> latest_activity.newvalue == unicode(latest_bug.id)
+    >>> latest_activity.newvalue == u'1'
     True
 
 
@@ -142,16 +141,15 @@ are simple little functions.
     ...     "id", "title", "description", "name", "private", "duplicateof",
     ...     "security_related"]
     >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> another_bug = factory.makeBug()
-    >>> bug.markAsDuplicate(another_bug)
+    >>> bug.duplicateof = 2
     >>> bug_edited = ObjectModifiedEvent(bug, old_bug, edit_fields)
     >>> notify(bug_edited)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
     u'changed duplicate marker'
-    >>> latest_activity.oldvalue == unicode(latest_bug.id)
+    >>> latest_activity.oldvalue == u'1'
     True
-    >>> latest_activity.newvalue == unicode(another_bug.id)
+    >>> latest_activity.newvalue == u'2'
     True
 
 
@@ -161,13 +159,13 @@ are simple little functions.
     ...     "id", "title", "description", "name", "private", "duplicateof",
     ...     "security_related"]
     >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> bug.markAsDuplicate(None)
+    >>> bug.duplicateof = None
     >>> bug_edited = ObjectModifiedEvent(bug, old_bug, edit_fields)
     >>> notify(bug_edited)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
     u'removed duplicate marker'
-    >>> latest_activity.oldvalue == unicode(another_bug.id)
+    >>> latest_activity.oldvalue == u'2'
     True
     >>> latest_activity.newvalue is None
     True
