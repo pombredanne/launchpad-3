@@ -1,4 +1,5 @@
-= Bug trackers in Launchpad =
+Bug trackers in Launchpad
+=========================
 
 The bug trackers index page has the same navigation as the main Bugs
 page, with the addition of a breadcrumb itself.
