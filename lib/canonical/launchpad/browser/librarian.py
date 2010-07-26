@@ -78,6 +78,9 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
 
     It streams the contents of restricted library files or redirects
     to public ones.
+
+    Note that streaming restricted files is a security concern - they show up
+    in the launchpad.net domain rather than launchpadlibrarian.net.
     """
     implements(IBrowserPublisher)
 
