@@ -638,7 +638,7 @@ class Bugzilla:
                 lpdupe.duplicateof is None):
                 logger.info('Marking %d as a duplicate of %d',
                             lpdupe.id, lpdupe_of.id)
-                lpdupe.markAsDuplicate(lpdupe_of)
+                lpdupe.duplicateof = lpdupe_of
             trans.commit()
 
     def importBugs(self, trans, product=None, component=None, status=None):
