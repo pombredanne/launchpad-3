@@ -131,3 +131,30 @@ class TestMigrateVariants(TestCaseWithFactory):
         pofile_collection = POFilesCollection().restrictLanguage(
             serbian, u'test')
         self.assertContentEqual([], pofile_collection.select())
+
+    def test_TranslationMessagesCollection(self):
+        tm_collection = TranslationMessagesCollection()
+        # There are translation messages in the sample data.
+        self.assertTrue(tm_collection.select().count() > 0)
+
+    def test_TranslationMessagesCollection_restrictLanguage_none(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        tm_collection = TranslationMessagesCollection().restrictLanguage(
+            serbian, u'test')
+        self.assertContentEqual([], tm_collection.select())
+
+    def test_TranslationMessagesCollection_restrictLanguage_variant(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        sr_pofile = self.factory.makePOFile(serbian.code, variant=u'test')
+        message = self.factory.makeTranslationMessage(sr_pofile)
+        tm_collection = TranslationMessagesCollection().restrictLanguage(
+            serbian, u'test')
+        self.assertContentEqual([message], tm_collection.select())
+
+    def test_TranslationMessagesCollection_restrictLanguage_nonvariant(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        sr_pofile = self.factory.makePOFile(serbian.code, variant=None)
+        message = self.factory.makeTranslationMessage(sr_pofile)
+        tm_collection = TranslationMessagesCollection().restrictLanguage(
+            serbian, u'test')
+        self.assertContentEqual([], tm_collection.select())
