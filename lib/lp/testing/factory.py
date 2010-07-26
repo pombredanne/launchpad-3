@@ -828,7 +828,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
-                'Unrecognized branch type: %r' % (branch_type,))
+                'Unrecognized branch type: %r' % branch_type)
 
         namespace = get_branch_namespace(
             owner, product=product, distroseries=distroseries,
@@ -1628,7 +1628,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return library_file_alias
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
-                         members=None, title=None):
+                         members=None, title=None, aliases=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString()
@@ -1643,9 +1643,12 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if members is None:
             members = self.makeTeam(owner)
-        return getUtility(IDistributionSet).new(
+        distro = getUtility(IDistributionSet).new(
             name, displayname, title, description, summary, domainname,
             members, owner)
+        if aliases is not None:
+            removeSecurityProxy(distro).setAliases(aliases)
+        return distro
 
     def makeDistroRelease(self, distribution=None, version=None,
                           status=SeriesStatus.DEVELOPMENT,
@@ -1780,7 +1783,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeRecipeText(self, *branches):
         if len(branches) == 0:
-            branches = (self.makeAnyBranch(),)
+            branches = [self.makeAnyBranch()]
         base_branch = branches[0]
         other_branches = branches[1:]
         text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
