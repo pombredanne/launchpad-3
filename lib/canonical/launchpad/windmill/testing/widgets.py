@@ -23,8 +23,9 @@ from canonical.launchpad.windmill.testing import lpuser
 
 class OnPageWidget:
 
-    """A class that represents and interacts with an on-page YUI JavaScript
-    widget.
+    """A class that represents and interacts with an on-page JavaScript widget.
+
+    The widget is assumed to be a YUI widget controlled by yui-X-hidden classes.
     """
 
     def __init__(self, client, widget_name):
@@ -71,6 +72,48 @@ class OnPageWidget:
         """Check to see if the widget is hidden on screen."""
         self.client.waits.forElement(xpath=self.hidden_xpath,
                                      timeout=constants.FOR_ELEMENT)
+
+
+class SearchPickerWidget(OnPageWidget):
+
+    """A proxy for the yui-picker widget from lazr-js."""
+
+    def __init__(self, client):
+        """Constructor
+
+        :param client: A WindmillTestClient instance.
+        """
+        super(SearchPickerWidget, self).__init__(client, 'yui-picker')
+        self.search_input_xpath = (
+            self.xpath + "//input[@class='yui-picker-search']")
+        self.search_button_xpath = (
+            self.xpath + "//div[@class='yui-picker-search-box']/button")
+
+    def _get_result_xpath_by_number(self, item_number):
+        """Return the XPATH for the given search result number."""
+        item_xpath = "//ul[@class='yui-picker-results']/li[%d]/span" % item_number
+        return self.xpath + item_xpath
+
+    def do_search(self, text):
+        """Enter some text in the search field and click the search button.
+
+        :param text: The text we want to search for.
+        """
+        self.client.waits.forElement(xpath=self.search_input_xpath,
+                                timeout=constants.FOR_ELEMENT)
+        self.client.type(xpath=self.search_input_xpath, text=text)
+        self.client.click(xpath=self.search_button_xpath,
+                          timeout=constants.FOR_ELEMENT)
+
+    def click_result_by_number(self, item_number):
+        """Click on the given result number in the results list.
+
+        :param item_number: The item in the results list we should click on.
+        """
+        item_xpath = self._get_result_xpath_by_number(item_number)
+        self.client.waits.forElement(xpath=item_xpath,
+                                     timeout=constants.FOR_ELEMENT)
+        self.client.click(xpath=item_xpath)
 
 
 class InlineEditorWidgetTest:
@@ -146,29 +189,18 @@ class InlineEditorWidgetTest:
 
 
 def search_picker_widget(client, search_text):
-    """Search in picker widget."""
-    search_box_xpath = (u"//div[contains(@class, 'yui-picker ') "
-                         "and not(contains(@class, 'yui-picker-hidden'))]"
-                         "//input[@class='yui-picker-search']")
-    client.waits.forElement(
-        xpath=search_box_xpath,
-        timeout=constants.PAGE_LOAD)
-    client.type(text=search_text, xpath=search_box_xpath)
-    client.click(
-        xpath=u"//div[contains(@class, 'yui-picker ') "
-               "and not(contains(@class, 'yui-picker-hidden'))]"
-               "//div[@class='yui-picker-search-box']/button")
+    """Search using an on-page picker widget."""
+    picker = SearchPickerWidget(client)
+    picker.should_be_visible()
+    picker.do_search(search_text)
+
 
 def search_and_select_picker_widget(client, search_text, result_index):
-    """Search in picker widget and select item."""
-    search_picker_widget(client, search_text)
-    # Select item at the result_index in the list.
-    item_xpath = (u"//div[contains(@class, 'yui-picker ') "
-                     "and not(contains(@class, 'yui-picker-hidden'))]"
-                     "//ul[@class='yui-picker-results']/li[%d]/span"
-                     % result_index)
-    client.waits.forElement(xpath=item_xpath, timeout=constants.FOR_ELEMENT)
-    client.click(xpath=item_xpath)
+    """Search using an on-page picker widget and click a search result."""
+    picker = SearchPickerWidget(client)
+    picker.should_be_visible()
+    picker.do_search(search_text)
+    picker.click_result_by_number(result_index)
 
 
 class InlinePickerWidgetSearchTest:
