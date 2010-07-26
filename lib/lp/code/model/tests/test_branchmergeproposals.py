@@ -25,6 +25,7 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 
 from canonical.launchpad.interfaces import IPrivacy
 from canonical.launchpad.interfaces.message import IMessageJob
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from lp.code.errors import (
     BadStateTransition, WrongBranchMergeProposal)
@@ -62,6 +63,27 @@ class TestBranchMergeProposalInterface(TestCaseWithFactory):
         """Ensure that BranchMergeProposal implements its interface."""
         bmp = self.factory.makeBranchMergeProposal()
         verifyObject(IBranchMergeProposal, bmp)
+
+
+class TestBranchMergeProposalCanonicalUrl(TestCaseWithFactory):
+    """Tests canonical_url for merge proposals."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_BranchMergeProposal_canoncial_url_base(self):
+        # The URL for a merge proposal starts with the source branch.
+        bmp = self.factory.makeBranchMergeProposal()
+        url = canonical_url(bmp)
+        source_branch_url = canonical_url(bmp.source_branch)
+        self.assertTrue(url.startswith(source_branch_url))
+
+    def test_BranchMergeProposal_canoncial_url_rest(self):
+        # The rest of the URL for a merge proposal is +merge followed by the db id.
+        bmp = self.factory.makeBranchMergeProposal()
+        url = canonical_url(bmp)
+        source_branch_url = canonical_url(bmp.source_branch)
+        rest = url[len(source_branch_url):]
+        self.assertEqual('/+merge/%s' % bmp.id, rest)
 
 
 class TestBranchMergeProposalPrivacy(TestCaseWithFactory):

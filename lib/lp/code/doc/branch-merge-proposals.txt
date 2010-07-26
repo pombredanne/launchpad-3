@@ -441,33 +441,6 @@ that revision.
     Mark Shuttleworth
 
 
-== Interfaces ==
-
-The BranchMergeProposal must implement the IBranchMergeProposal interface.
-
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.code.interfaces.branchmergeproposal import (
-    ...     IBranchMergeProposal)
-    >>> verifyObject(IBranchMergeProposal, merge_proposal)
-    True
-
-
-== Canonical URL ==
-
-The URL of a branch merge proposal is based on the source branch.
-In order to keep the URL managable, the database ID of the merge
-proposal is used.
-
-    >>> login('test@canonical.com')
-    >>> from canonical.launchpad.webapp import canonical_url
-    >>> merge_proposal = source_branch.landing_targets[0]
-    >>> url = canonical_url(merge_proposal)
-    >>> url[url.rfind('/')+1:] == str(merge_proposal.id)
-    True
-    >>> print url
-    http://code.launchpad.dev/~mark/firefox/release-0.9/+merge/...
-
-
 == Deleting merge proposals ==
 
 Deleting merge proposals is done using the deleteProposal() method on
