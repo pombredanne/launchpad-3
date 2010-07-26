@@ -358,9 +358,17 @@ class TestSlaveScanner(TrialTestCase):
             self.assertFalse(result.processed)
         return d.addCallback(check_result)
 
-    def testCheckDispatch(self):
-        """`SlaveScanner.checkDispatch` is chained after dispatch requests.
+    def _setUpSlaveAndBuilder(self):
+        # Helper function to set up a builder and its recording slave.
+        slave = RecordingSlave('bob', 'http://foo.buildd:8221/', 'foo.host')
+        bob_builder = getUtility(IBuilderSet)[slave.name]
+        return slave, bob_builder
 
+    def test_checkDispatch_success(self):
+        # SlaveScanner.checkDispatch returns None for a successful
+        # dispatch.
+
+        """
         If the dispatch request fails or a unknown method is given, it
         returns a `FailDispatchResult` (in the test context) that will
         be evaluated later.
@@ -383,34 +391,58 @@ class TestSlaveScanner(TrialTestCase):
 
         On success dispatching it returns None.
         """
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
+        slave, bob_builder = self._setUpSlaveAndBuilder()
+        bob_builder.failure_count = 0
+        bob_builder.currentjob.specific_job.build.failure_count = 0
 
         # Successful legitimate response, None is returned.
         successful_response = [
             buildd_success_result_map.get('ensurepresent'), 'cool builder']
         result = self.manager.checkDispatch(
-            successful_response, 'ensurepresent', slave)
+            successful_response, 'ensurepresent', self.slave)
         self.assertEqual(
             None, result, 'Successful dispatch checks should return None')
 
-        # Failed legitimate response, results in a `FailDispatchResult`.
+    def test_checkDispatch_first_fail(self):
+        # Failed legitimate response, results in FailDispatchResult and
+        # failure_count on the job and the builder are both incremented.
+        slave, bob_builder = self._setUpSlaveAndBuilder()
+        bob_builder.failure_count = 0
+        bob_builder.currentjob.specific_job.build.failure_count = 0
+
         failed_response = [False, 'uncool builder']
         result = self.manager.checkDispatch(
             failed_response, 'ensurepresent', slave)
         self.assertIsDispatchFail(result)
         self.assertEqual(
-            '<foo:http://foo.buildd:8221/> failure (uncool builder)',
-            repr(result))
+            repr(result),
+            '<foo:http://foo.buildd:8221/> failure (uncool builder)')
+        self.assertEqual(1, bob_builder.failure_count)
+        self.assertEqual(
+            1, bob_builder.currentjob.specific_job.build.failure_count)
 
+    def test_checkDispatch_second_reset_fail_by_builder(self):
         # Twisted Failure response, results in a `ResetDispatchResult`.
+        slave, bob_builder = self._setUpSlaveAndBuilder()
+        bob_builder.failure_count = 1
+        bob_builder.currentjob.specific_job.build.failure_count = 0
+
         twisted_failure = Failure(ConnectionClosed('Boom!'))
         result = self.manager.checkDispatch(
             twisted_failure, 'ensurepresent', slave)
         self.assertIsDispatchReset(result)
         self.assertEqual(
             '<foo:http://foo.buildd:8221/> reset failure', repr(result))
+        self.assertEqual(2, bob_builder.failure_count)
+        self.assertEqual(
+            1, bob_builder.currentjob.specific_job.build.failure_count)
 
+    def test_checkDispatch_second_comms_fail_by_builder(self):
         # Unexpected response, results in a `FailDispatchResult`.
+        slave, bob_builder = self._setUpSlaveAndBuilder()
+        bob_builder.failure_count = 1
+        bob_builder.currentjob.specific_job.build.failure_count = 0
+
         unexpected_response = [1, 2, 3]
         result = self.manager.checkDispatch(
             unexpected_response, 'build', slave)
@@ -418,14 +450,28 @@ class TestSlaveScanner(TrialTestCase):
         self.assertEqual(
             '<foo:http://foo.buildd:8221/> failure '
             '(Unexpected response: [1, 2, 3])', repr(result))
+        self.assertEqual(2, bob_builder.failure_count)
+        self.assertEqual(
+            1, bob_builder.currentjob.specific_job.build.failure_count)
 
-        # Unknown method was given, results in a `FailDispatchResult`
+    def test_checkDispatch_second_comms_fail_by_job(self):
+        # Unknown method was given, results in a `FailDispatchResult`.
+        # This could be caused by a faulty job which would fail the job.
+        slave, bob_builder = self._setUpSlaveAndBuilder()
+        bob_builder.failure_count = 0
+        bob_builder.currentjob.specific_job.build.failure_count = 1
+
+        successful_response = [
+            buildd_success_result_map.get('ensurepresent'), 'cool builder']
         result = self.manager.checkDispatch(
             successful_response, 'unknown-method', slave)
         self.assertIsDispatchFail(result)
         self.assertEqual(
             '<foo:http://foo.buildd:8221/> failure '
             '(Unknown slave method: unknown-method)', repr(result))
+        self.assertEqual(1, bob_builder.failure_count)
+        self.assertEqual(
+            2, bob_builder.currentjob.specific_job.build.failure_count)
 
     def test_initiateDispatch(self):
         """Check `dispatchBuild` in various scenarios.
