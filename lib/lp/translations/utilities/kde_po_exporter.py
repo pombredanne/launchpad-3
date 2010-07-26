@@ -33,6 +33,8 @@ class KdePOExporter(GettextPOExporter):
 
     msgid_plural_distinguishes_messages = True
 
+    format = TranslationFileFormat.KDEPO
+
     def __init__(self, context=None):
         super(KdePOExporter, self).__init__(context=context)
         # See GettextPOExporter.__init__ for explanation of `context`.

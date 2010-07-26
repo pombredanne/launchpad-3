@@ -27,17 +27,6 @@
     <include package="lazr.uri" />
     <include package="canonical.librarian" />
 
-    <interface
-        name="launchpad"
-        interface="canonical.launchpad.layers.LaunchpadLayer"
-        type="zope.publisher.interfaces.browser.IBrowserSkinType"
-        />
-
-    <!-- Set via overrides -->
-
-    <browser:defaultSkin
-        name="launchpad" />
-
     <!-- The default Zope 3 configuration of the SimpleComponentTraverser is
         that it applies to any object that provides Interface.
         This excludes objects that we're using just as instances of classes

@@ -21,6 +21,12 @@ class TestBranchSubscriptions(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_owner_subscribed(self):
+        # The owner of a branch is subscribed to the branch.
+        branch = self.factory.makeBranch()
+        [subscription] = list(branch.subscriptions)
+        self.assertEqual(branch.owner, subscription.person)
+
     def test_subscribed_by_set(self):
         """The user subscribing is recorded along the subscriber."""
         subscriber = self.factory.makePerson()
