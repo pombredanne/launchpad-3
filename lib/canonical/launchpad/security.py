@@ -1082,11 +1082,25 @@ class EditAnnouncement(AuthorizationBase):
 
 
 class UseApiDoc(AuthorizationBase):
+    """This is just to please apidoc.launchpad.dev."""
     permission = 'zope.app.apidoc.UseAPIDoc'
     usedfor = Interface
 
+    def checkUnauthenticated(self):
+        return True
+
     def checkAuthenticated(self, user):
         return True
+
+
+class ManageApplicationForEverybody(UseApiDoc):
+    """This is just to please apidoc.launchpad.dev.
+
+    We do this because zope.app.apidoc uses that permission, but nothing else
+    should be using it.
+    """
+    permission = 'zope.ManageApplication'
+    usedfor = Interface
 
 
 class OnlyBazaarExpertsAndAdmins(AuthorizationBase):
@@ -1144,6 +1158,15 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     usedfor = ICodeImportMachine
 
 
+class DeleteSourcePackageRecipeBuilds(OnlyBazaarExpertsAndAdmins):
+    """Control who can delete SourcePackageRecipeBuilds.
+
+    Access is restricted to members of ~bazaar-experts and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ISourcePackageRecipeBuild
+
+
 class AdminDistributionTranslations(AuthorizationBase):
     """Class for deciding who can administer distribution translations.
 
@@ -1194,15 +1217,12 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
         template = self.obj
         if template.distroseries is not None:
             # Template is on a distribution.
-            distribution = template.distroseries.distribution
-            return (
-                AdminDistributionTranslations(
-                    distribution).checkAuthenticated(user))
-
+            return AdminDistroSeriesTranslations(
+                template.distroseries).checkAuthenticated(user)
         else:
             # Template is on a product.
-            return OnlyRosettaExpertsAndAdmins.checkAuthenticated(
-                self, user)
+            return AdminProductSeriesTranslations(
+                template.productseries).checkAuthenticated(user)
 
 
 class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
@@ -1476,6 +1496,7 @@ class EditPackageBuild(EditBuildFarmJob):
         # If it's a PPA or a copy archive only allow its owner.
         return (self.obj.archive.owner and
                 user.inTeam(self.obj.archive.owner))
+
 
 class EditBinaryPackageBuild(EditPackageBuild):
     permission = 'launchpad.Edit'
@@ -1771,6 +1792,16 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
             self.obj.distribution).checkAuthenticated(user))
 
 
+class AdminProductSeriesTranslations(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IProductSeries
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IProductSeries` translations."""
+
+        return OnlyRosettaExpertsAndAdmins(self.obj).checkAuthenticated(user)
+
+
 class BranchMergeProposalView(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBranchMergeProposal
@@ -2062,6 +2093,10 @@ class ViewArchive(AuthorizationBase):
             if archive_subs:
                 return True
 
+        # The software center agent can view commercial archives
+        if self.obj.commercial:
+            return user.in_software_center_agent
+
         return False
 
     def checkUnauthenticated(self):
@@ -2099,6 +2134,10 @@ class AppendArchive(AuthorizationBase):
             self.obj.distribution == celebrities.ubuntu and
             user.in_ubuntu_security):
             return True
+
+        # The software center agent can change commercial archives
+        if self.obj.commercial:
+            return user.in_software_center_agent
 
         return False
 

@@ -1,11 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from __future__ import with_statement
-
 """Stuff to do with logging in and logging out."""
+
+from __future__ import with_statement
 
 __metaclass__ = type
 
+import cgi
 import urllib
 
 from datetime import datetime, timedelta
@@ -32,10 +33,9 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from canonical.launchpad.interfaces.account import AccountSuspendedError
 from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
-from lp.registry.interfaces.person import IPerson, PersonCreationRationale
+from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.error import SystemErrorView
@@ -199,7 +199,7 @@ class OpenIDLogin(LaunchpadView):
         return_to = "%s?%s" % (return_to, starting_url)
         form_html = self.openid_request.htmlMarkup(trust_root, return_to)
 
-        # The consumer.begin() call above will insert rows into the 
+        # The consumer.begin() call above will insert rows into the
         # OpenIDAssociations table, but since this will be a GET request, the
         # transaction would be rolled back, so we need an explicit commit
         # here.
@@ -246,9 +246,37 @@ class OpenIDCallbackView(OpenIDLogin):
     suspended_account_template = ViewPageTemplateFile(
         '../templates/login-suspended-account.pt')
 
+    def _gather_params(self, request):
+        params = dict(request.form)
+        for key, value in request.query_string_params.iteritems():
+            if len(value) > 1:
+                raise ValueError(
+                    'Did not expect multi-valued fields.')
+            params[key] = value[0]
+
+        # XXX benji 2010-07-23 bug=608920
+        # The production OpenID provider has some Django middleware that
+        # generates a token used to prevent XSRF attacks and stuffs it into
+        # every form.  Unfortunately that includes forms that have off-site
+        # targets and since our OpenID client verifies that no form values have
+        # been injected as a security precaution, this breaks logging-in in
+        # certain circumstances (see bug 597324).  The best we can do at the
+        # moment is to remove the token before invoking the OpenID library.
+        params.pop('csrfmiddlewaretoken', None)
+        return params
+
+    def _get_requested_url(self, request):
+        requested_url = request.getURL()
+        query_string = request.get('QUERY_STRING')
+        if query_string is not None:
+            requested_url += '?' + query_string
+        return requested_url
+
     def initialize(self):
-        self.openid_response = self._getConsumer().complete(
-            self.request.form, self.request.getURL())
+        params = self._gather_params(self.request)
+        requested_url = self._get_requested_url(self.request)
+        consumer = self._getConsumer()
+        self.openid_response = consumer.complete(params, requested_url)
 
     def login(self, account):
         loginsource = getUtility(IPlacelessLoginSource)
@@ -278,23 +306,14 @@ class OpenIDCallbackView(OpenIDLogin):
             "No email address or full name found in sreg response")
         return email_address, full_name
 
-    def _createAccount(self, openid_identifier, email_address, full_name):
-        account, email = getUtility(IAccountSet).createAccountAndEmail(
-            email_address, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
-            full_name, password=None, openid_identifier=openid_identifier)
-        return account
-
     def processPositiveAssertion(self):
         """Process an OpenID response containing a positive assertion.
 
-        We'll get the account with the given OpenID identifier (creating one 
-        if it doesn't already exist) and act according to the account's state:
-          - If the account is suspended, we stop and render an error page;
-          - If the account is deactivated, we reactivate it and proceed;
-          - If the account is active, we just proceed.
+        We'll get the person and account with the given OpenID
+        identifier (creating one if necessary), and then login using
+        that account.
 
-        After that we ensure there's an IPerson associated with the account
-        and login using that account.
+        If the account is suspended, we stop and render an error page.
 
         We also update the 'last_write' key in the session if we've done any
         DB writes, to ensure subsequent requests use the master DB and see
@@ -302,56 +321,23 @@ class OpenIDCallbackView(OpenIDLogin):
         """
         identifier = self.openid_response.identity_url.split('/')[-1]
         should_update_last_write = False
-        email_set = getUtility(IEmailAddressSet)
         # Force the use of the master database to make sure a lagged slave
         # doesn't fool us into creating a Person/Account when one already
         # exists.
-        with MasterDatabasePolicy():
-            try:
-                account = getUtility(IAccountSet).getByOpenIDIdentifier(
-                    identifier)
-            except LookupError:
-                # The two lines below are duplicated a few more lines down,
-                # but to avoid this duplication we'd have to refactor most of
-                # our tests to provide an SREG response, which would be rather
-                # painful.
-                email_address, full_name = self._getEmailAddressAndFullName()
-                email = email_set.getByEmail(email_address)
-                if email is None:
-                    # We got an OpenID response containing a positive
-                    # assertion, but we don't have an account for the
-                    # identifier or for the email address.  We'll create one.
-                    account = self._createAccount(
-                        identifier, email_address, full_name)
-                else:
-                    account = email.account
-                    assert account is not None, (
-                        "This email address should have an associated "
-                        "account.")
-                    removeSecurityProxy(account).openid_identifier = (
-                        identifier)
-                should_update_last_write = True
+        person_set = getUtility(IPersonSet)
+        email_address, full_name = self._getEmailAddressAndFullName()
+        try:
+            person, db_updated = person_set.getOrCreateByOpenIDIdentifier(
+                identifier, email_address, full_name,
+                comment='when logging in to Launchpad.',
+                creation_rationale=(
+                    PersonCreationRationale.OWNER_CREATED_LAUNCHPAD))
+            should_update_last_write = db_updated
+        except AccountSuspendedError:
+            return self.suspended_account_template()
 
-            if account.status == AccountStatus.SUSPENDED:
-                return self.suspended_account_template()
-            elif account.status in [AccountStatus.DEACTIVATED,
-                                    AccountStatus.NOACCOUNT]:
-                comment = 'Reactivated by the user'
-                password = '' # Needed just to please reactivate() below.
-                email_address, dummy = self._getEmailAddressAndFullName()
-                email = email_set.getByEmail(email_address)
-                if email is None:
-                    email = email_set.new(email_address, account=account)
-                removeSecurityProxy(account).reactivate(
-                    comment, password, removeSecurityProxy(email))
-            else:
-                # Account is active, so nothing to do.
-                pass
-            if IPerson(account, None) is None:
-                removeSecurityProxy(account).createPerson(
-                    PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-                should_update_last_write = True
-            self.login(account)
+        with MasterDatabasePolicy():
+            self.login(person.account)
 
         if should_update_last_write:
             # This is a GET request but we changed the database, so update
@@ -393,7 +379,13 @@ class OpenIDCallbackView(OpenIDLogin):
     def _redirect(self):
         target = self.request.form.get('starting_url')
         if target is None:
-            target = self.getApplicationURL()
+            # If this was a POST, then the starting_url won't be in the form
+            # values, but in the query parameters instead.
+            target = self.request.query_string_params.get('starting_url')
+            if target is None:
+                target = self.request.getApplicationURL()
+            else:
+                target = target[0]
         self.request.response.redirect(target, temporary_if_possible=True)
 
 

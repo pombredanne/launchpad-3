@@ -451,13 +451,14 @@ class ArchiveCruftChecker:
                 dasbp = distroarchseries.getBinaryPackage(binarypackagename)
                 dasbpr = dasbp.currentrelease
                 try:
-                    sbpph = dasbpr.current_publishing_record.supersede()
+                    bpph = dasbpr.current_publishing_record
+                    bpph.supersede()
                     # We're blindly removing for all arches, if it's not there
                     # for some, that's fine ...
                 except NotFoundError:
                     pass
                 else:
-                    version = sbpph.binarypackagerelease.version
+                    version = bpph.binarypackagerelease.version
                     self.logger.info ("Removed %s_%s from %s/%s ... "
                                       % (package, version,
                                          self.distroseries.name,

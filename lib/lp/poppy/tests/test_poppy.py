@@ -92,11 +92,8 @@ class SFTPServer:
             public_key = f.read()
         finally:
             f.close()
-        kind, key_text, comment = public_key.split(' ', 2)
         sshkeyset = getUtility(ISSHKeySet)
-        # Assume it's an RSA key for now, ignoring the actual value in the
-        # file.
-        key = sshkeyset.new(person, SSHKeyType.RSA, key_text, comment)
+        key = sshkeyset.new(person, public_key)
         transaction.commit()
         return key
 

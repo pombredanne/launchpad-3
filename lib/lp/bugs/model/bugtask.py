@@ -29,6 +29,7 @@ from sqlobject.sqlbuilder import SQLConstant
 
 from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, Or, SQL
 from storm.sqlobject import SQLObjectResultSet
+from storm.store import EmptyResultSet
 from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
 
 import pytz
@@ -1045,8 +1046,8 @@ class BugTask(SQLBase, BugTaskMixin):
         # After the target has changed, we need to recalculate the maximum bug
         # heat for the new and old targets.
         if self.target != target_before_change:
-            target_before_change.recalculateMaxBugHeat()
-            self.target.recalculateMaxBugHeat()
+            target_before_change.recalculateBugHeatCache()
+            self.target.recalculateBugHeatCache()
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1462,6 +1463,8 @@ class BugTaskSet:
     def findSimilar(self, user, summary, product=None, distribution=None,
                     sourcepackagename=None):
         """See `IBugTaskSet`."""
+        if not summary:
+            return EmptyResultSet()
         # Avoid circular imports.
         from lp.bugs.model.bug import Bug
         search_params = BugTaskSearchParams(user)
@@ -1481,9 +1484,6 @@ class BugTaskSet:
                         sourcepackagename))
         else:
             raise AssertionError('Need either a product or distribution.')
-
-        if not summary:
-            return BugTask.select('1 = 2')
 
         search_params.fast_searchtext = nl_phrase_search(
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
@@ -2069,7 +2069,6 @@ class BugTaskSet:
             ', '.join(tables), ' AND '.join(clauses))
         return clause
 
-
     def search(self, params, *args):
         """See `IBugTaskSet`."""
         store_selector = getUtility(IStoreSelector)
@@ -2265,7 +2264,7 @@ class BugTaskSet:
         transitionToStatus() method. See 'Conjoined Bug Tasks' in
         c.l.doc/bugtasks.txt.
 
-        Only bugtask the specified user has permission to view are
+        Only bugtasks the specified user has permission to view are
         returned. The Janitor celebrity has permission to view all bugs.
         """
         if bug is None:
