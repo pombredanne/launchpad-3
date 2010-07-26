@@ -78,8 +78,6 @@
           <dd><span tal:replace="context/pocket/title">Release</span></dd>
       </dl>
       <dl>
-        <dt tal:condition="context/source_package_release">Result:</dt>
-        <dd tal:condition="context/source_package_release" tal:content="structure context/source_package_release/fmt:link"></dd>
         <dt>Binary builds:</dt>
         <dd tal:repeat="binary view/binary_builds"
             tal:content="structure binary/fmt:link">
@@ -167,6 +165,15 @@
       >
       <a tal:replace="structure link/fmt:link" />
     </div>
+    <div
+      style="margin-top: 1.5em"
+      tal:define="context_menu view/context/menu:context;
+                  link context_menu/rescore"
+      tal:condition="link/enabled"
+      >
+      <a tal:replace="structure link/fmt:link" />
+    </div>
+
 
   </metal:macro>
 

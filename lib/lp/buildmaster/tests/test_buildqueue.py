@@ -6,7 +6,6 @@
 
 from datetime import datetime, timedelta
 from pytz import utc
-from unittest import TestLoader
 
 from zope import component
 from zope.component import getGlobalSiteManager, getUtility
@@ -37,6 +36,7 @@ from lp.testing.fakemethod import FakeMethod
 
 def find_job(test, name, processor='386'):
     """Find build and queue instance for the given source and processor."""
+
     def processor_matches(bq):
         if processor is None:
             return (bq.processor is None)
@@ -57,6 +57,7 @@ def find_job(test, name, processor='386'):
 
 def nth_builder(test, bq, n):
     """Find nth builder that can execute the given build."""
+
     def builder_key(job):
         """Access key for builders capable of running the given job."""
         return (getattr(job.processor, 'id', None), job.virtualized)
@@ -81,6 +82,7 @@ def assign_to_builder(test, job_name, builder_number, processor='386'):
 
 def print_build_setup(builds):
     """Show the build set-up for a particular test."""
+
     def processor_name(bq):
         return ('None' if bq.processor is None else bq.processor.name)
 
@@ -328,6 +330,7 @@ class TestBuildQueueBase(TestCaseWithFactory):
 class SingleArchBuildsBase(TestBuildQueueBase):
     """Set up a test environment with builds that target a single
     processor."""
+
     def setUp(self):
         """Set up some native x86 builds for the test archive."""
         super(SingleArchBuildsBase, self).setUp()
@@ -400,13 +403,13 @@ class SingleArchBuildsBase(TestBuildQueueBase):
             bq = build.buildqueue_record
             bq.lastscore = score
             bq.estimated_duration = timedelta(seconds=duration)
-        # print_build_setup(self.builds)
 
 
 class TestBuilderData(SingleArchBuildsBase):
     """Test the retrieval of builder related data. The latter is required
     for job dispatch time estimations irrespective of job processor
     architecture and virtualization setting."""
+
     def test_builder_data(self):
         # Make sure the builder numbers are correct. The builder data will
         # be the same for all of our builds.
@@ -525,6 +528,7 @@ class TestBuilderData(SingleArchBuildsBase):
 class TestMinTimeToNextBuilder(SingleArchBuildsBase):
     """Test estimated time-to-builder with builds targetting a single
     processor."""
+
     def test_min_time_to_next_builder(self):
         """When is the next builder capable of running the job at the head of
         the queue becoming available?"""
@@ -619,6 +623,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
 
 class MultiArchBuildsBase(TestBuildQueueBase):
     """Set up a test environment with builds and multiple processors."""
+
     def setUp(self):
         """Set up some native x86 builds for the test archive."""
         super(MultiArchBuildsBase, self).setUp()
@@ -708,11 +713,11 @@ class MultiArchBuildsBase(TestBuildQueueBase):
             bq = build.buildqueue_record
             bq.lastscore = score
             bq.estimated_duration = timedelta(seconds=duration)
-        # print_build_setup(self.builds)
 
 
 class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
     """Test estimated time-to-builder with builds and multiple processors."""
+
     def disabled_test_min_time_to_next_builder(self):
         """When is the next builder capable of running the job at the head of
         the queue becoming available?"""
@@ -842,6 +847,7 @@ class TestBuildQueueDuration(TestCaseWithFactory):
 class TestJobClasses(TestCaseWithFactory):
     """Tests covering build farm job type classes."""
     layer = LaunchpadZopelessLayer
+
     def setUp(self):
         """Set up a native x86 build for the test archive."""
         super(TestJobClasses, self).setUp()
@@ -893,6 +899,7 @@ class TestJobClasses(TestCaseWithFactory):
 
     def test_OtherTypeClasses(self):
         """Other job type classes are picked up as well."""
+
         class FakeBranchBuild(BuildFarmJobDerived):
             pass
 
@@ -920,6 +927,7 @@ class TestJobClasses(TestCaseWithFactory):
             site_manager = getGlobalSiteManager()
             site_manager.unregisterUtility(
                 FakeBranchBuild, IBuildFarmJob, 'BRANCHBUILD')
+
 
 class TestPlatformData(TestCaseWithFactory):
     """Tests covering the processor/virtualized properties."""
@@ -970,6 +978,7 @@ class TestPlatformData(TestCaseWithFactory):
 class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
     """Test estimated job delays with various processors."""
     score_increment = 2
+
     def setUp(self):
         """Add 2 'build source package from recipe' builds to the mix.
 
@@ -1013,7 +1022,6 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # Assign the same score to the '386' vim and apg build jobs.
         _apg_build, apg_job = find_job(self, 'apg', '386')
         apg_job.lastscore = 1024
-        # print_build_setup(self.builds)
 
     def disabled_test_job_delay_for_binary_builds(self):
         # One of four builders for the 'flex' build is immediately available.
@@ -1160,6 +1168,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
     """Test estimated job delays with various processors."""
     score_increment = 2
+
     def setUp(self):
         """Add more processor-independent jobs to the mix, make the '386' jobs
         virtual.
@@ -1344,7 +1353,3 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         assign_to_builder(self, 'xxr-daptup', 1, None)
         postgres_build, postgres_job = find_job(self, 'postgres', '386')
         check_estimate(self, postgres_job, 120)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

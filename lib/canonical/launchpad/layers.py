@@ -28,27 +28,6 @@ class LaunchpadLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The `LaunchpadLayer` layer."""
 
 
-class TranslationsLayer(LaunchpadLayer):
-    """The `TranslationsLayer` layer."""
-
-
-class BugsLayer(LaunchpadLayer):
-    """The `BugsLayer` layer."""
-
-
-class CodeLayer(LaunchpadLayer):
-    """The `CodeLayer` layer."""
-
-
-class BlueprintLayer(LaunchpadLayer):
-    """The `BlueprintLayer` layer."""
-BlueprintsLayer = BlueprintLayer
-
-
-class AnswersLayer(LaunchpadLayer):
-    """The `AnswersLayer` layer."""
-
-
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
 
@@ -87,4 +66,3 @@ class FeedsLayer(LaunchpadLayer):
 
 class WebServiceLayer(IWebServiceLayer, LaunchpadLayer):
     """The layer for web service requests."""
-

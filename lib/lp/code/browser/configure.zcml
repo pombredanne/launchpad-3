@@ -18,11 +18,11 @@
 
   <browser:defaultView
       for="lp.registry.interfaces.product.IProductSet"
-      layer="canonical.launchpad.layers.CodeLayer"
+      layer="lp.code.publisher.CodeLayer"
       name="+project-cloud"/>
   <browser:page
       for="lp.registry.interfaces.product.IProductSet"
-      layer="canonical.launchpad.layers.CodeLayer"
+      layer="lp.code.publisher.CodeLayer"
       name="+project-cloud"
       class="lp.code.browser.bazaar.BazaarProductView"
       template="../templates/code-in-branches.pt"
@@ -87,7 +87,7 @@
         <browser:defaultView
             for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
             name="+index"
-            layer="canonical.launchpad.layers.CodeLayer"/>
+            layer="lp.code.publisher.CodeLayer"/>
         <browser:page
             for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
             class="lp.code.browser.codeimportmachine.CodeImportMachineView"
@@ -109,7 +109,7 @@
         <browser:defaultView
             for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
             name="+index"
-            layer="canonical.launchpad.layers.CodeLayer"/>
+            layer="lp.code.publisher.CodeLayer"/>
         <browser:page
             for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
             class="lp.code.browser.codeimportmachine.CodeImportMachineSetView"
@@ -685,7 +685,7 @@
         <browser:defaultView
             for="lp.code.interfaces.codeimport.ICodeImportSet"
             name="+index"
-            layer="canonical.launchpad.layers.CodeLayer"/>
+            layer="lp.code.publisher.CodeLayer"/>
         <browser:page
             for="lp.code.interfaces.codeimport.ICodeImportSet"
             class="lp.code.browser.codeimport.CodeImportSetView"
@@ -717,7 +717,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         name="+branches"
-        layer="canonical.launchpad.layers.CodeLayer"/>
+        layer="lp.code.publisher.CodeLayer"/>
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         class="lp.code.browser.branchlisting.SourcePackageBranchesView"
@@ -804,7 +804,7 @@
                 PersonBranchesMenu"/>
         <browser:defaultView
             for="lp.registry.interfaces.person.IPerson"
-            layer="canonical.launchpad.layers.CodeLayer"
+            layer="lp.code.publisher.CodeLayer"
             name="+branches"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
@@ -914,22 +914,22 @@
 
     <browser:defaultView
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         name="+branches"/>
 
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         name="+code-index"/>
 
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         name="+branches"/>
 
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         name="+branches"/>
 
     <browser:url
@@ -956,7 +956,7 @@
 
     <browser:defaultView
         for="lp.registry.interfaces.personproduct.IPersonProduct"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         name="+branches" />
 
     <browser:page
@@ -1099,7 +1099,7 @@
         <browser:defaultView
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             name="+index"
-            layer="canonical.launchpad.layers.CodeLayer"/>
+            layer="lp.code.publisher.CodeLayer"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeView"
@@ -1117,7 +1117,7 @@
         <browser:defaultView
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
             name="+index"
-            layer="canonical.launchpad.layers.CodeLayer"/>
+            layer="lp.code.publisher.CodeLayer"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildView"
@@ -1128,6 +1128,12 @@
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildCancelView"
             name="+cancel"
+            template="../../app/templates/generic-edit.pt"
+            permission="launchpad.View"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+            class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildRescoreView"
+            name="+rescore"
             template="../../app/templates/generic-edit.pt"
             permission="launchpad.View"/>
         <browser:menus
@@ -1195,14 +1201,14 @@
     </facet>
   <securedutility
     name="BuildableDistroSeries"
-    component="lp.code.browser.sourcepackagerecipe.buildable_distroseries_vocabulary"
+    component="lp.code.vocabularies.sourcepackagerecipe.buildable_distroseries_vocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
   <securedutility
     name="TargetPPAs"
-    component="lp.code.browser.sourcepackagerecipe.target_ppas_vocabulary"
+    component="lp.code.vocabularies.sourcepackagerecipe.target_ppas_vocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>

@@ -35,7 +35,7 @@ import subprocess
 import time
 import weakref
 
-from bzrlib.plugins.builder import RecipeParser
+from bzrlib.plugins.builder.recipe import RecipeParser
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import alsoProvides, implementer, implements
 from zope.component import adapter, getUtility
@@ -2272,9 +2272,11 @@ class Person(
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         builder_recipe = RecipeParser(recipe_text).parse()
-        return SourcePackageRecipe.new(
+        recipe = SourcePackageRecipe.new(
             registrant, self, name, builder_recipe, description, distroseries,
             daily_build_archive, build_daily)
+        Store.of(recipe).flush()
+        return recipe
 
     def getRecipe(self, name):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
