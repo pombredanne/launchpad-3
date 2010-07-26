@@ -239,3 +239,13 @@ class LibraryFileDownloadCount(SQLBase):
     count = Int(allow_none=False)
     country_id = Int(name='country', allow_none=True)
     country = Reference(country_id, 'Country.id')
+
+
+class TimeLimitedToken(SQLBase):
+    """A time limited access token for accessing a private file."""
+
+    _table = 'TimeLimitedToken'
+
+    created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    url = StringCol(notNull=True)
+    token = StringCol(notNull=True)
