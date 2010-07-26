@@ -12,6 +12,7 @@ __all__ = [
     'POFileSet',
     'POFileToChangedFromPackagedAdapter',
     'POFileToTranslationFileDataAdapter',
+    'POFilesCollection',
     ]
 
 import datetime
@@ -36,6 +37,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
+from lp.services.database.collection import Collection
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.interfaces.pofile import IPOFile, IPOFileSet
 from lp.translations.interfaces.potmsgset import (
@@ -1596,6 +1598,31 @@ class POFileSet:
         result = store.find((POFile, POTMsgSet), clauses)
         return result.order_by('POFile.id')
 
+    def getPOFilesWithVariant(self, untranslated=False):
+        """See `IPOFileSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        clauses = [
+            TranslationTemplateItem.potemplateID == POFile.potemplateID,
+            POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
+            POTMsgSet.msgid_singular == POMsgID.id,
+            In(POMsgID.msgid, POTMsgSet.credits_message_ids)]
+        if untranslated:
+            message_select = Select(
+                True,
+                And(
+                    TranslationMessage.potmsgsetID == POTMsgSet.id,
+                    TranslationMessage.potemplate == None,
+                    POFile.languageID == TranslationMessage.languageID,
+                    Or(And(
+                        POFile.variant == None,
+                        TranslationMessage.variant == None),
+                       POFile.variant == TranslationMessage.variant),
+                    TranslationMessage.is_current == True),
+                (TranslationMessage))
+            clauses.append(Not(Exists(message_select)))
+        result = store.find((POFile, POTMsgSet), clauses)
+        return result.order_by('POFile.id')
+
     def getPOFilesTouchedSince(self, date):
         """See `IPOFileSet`."""
         # Avoid circular imports.
@@ -1842,3 +1869,18 @@ class POFileToChangedFromPackagedAdapter(POFileToTranslationFileDataAdapter):
     def __init__(self, pofile):
         self._pofile = pofile
         self.messages = self._getMessages(True)
+
+
+class POFilesCollection(Collection):
+    """A `Collection` of `TranslationMessage`."""
+    starting_table = POFile
+
+    def __init__(self, *args, **kwargs):
+        super(POFilesCollection, self).__init__(*args, **kwargs)
+
+    def restrictLanguage(self, language, variant):
+        """Restrict collection to a specific language."""
+        new_collection = self.refine(
+            POFile.languageID == language.id,
+            POFile.variant == variant)
+        return new_collection

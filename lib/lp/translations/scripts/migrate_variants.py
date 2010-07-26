@@ -21,8 +21,65 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.services.database.collection import Collection
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.services.worlddata.model.language import Language
-from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.model.translationmessage import TranslationMessage
+
+
+class ReplacerMixin:
+    """Replaces `language` and `variant` on all contained objects."""
+    def __init__(self, transaction, logger, title, contents, new_language):
+        self.transaction = transaction
+        self.logger = logger
+        self.start_at = 0
+
+        self.title = title
+        self.language = new_language
+        self.contents = contents
+        self.logger.info(
+            "Figuring out %ss that need fixing: "
+            "this may take a while..." % title)
+        self.total = len(self.contents)
+        self.logger.info(
+            "Fixing up a total of %d %ss." % (self.total, self.title))
+
+    def isDone(self):
+        """See `ITunableLoop`."""
+        # When the main loop hits the end of the list of objects,
+        # it sets start_at to None.
+        return self.start_at is None
+
+    def getNextBatch(self, chunk_size):
+        """Return a batch of objects to work with."""
+        end_at = self.start_at + int(chunk_size)
+        self.logger.debug(
+            "Getting %s[%d:%d]..." % (self.title, self.start_at, end_at))
+        return self.contents[self.start_at: end_at]
+
+    def __call__(self, chunk_size):
+        """See `ITunableLoop`.
+
+        Retrieve a batch of objects in ascending id order, and switch
+        all of them to self.language and no variant.
+        """
+        contents = self.getNextBatch(chunk_size)
+
+        done = 0
+        for content in contents:
+            done += 1
+            self.logger.debug(
+                "Processing %d (out of %d)" % (
+                    self.start_at + done, self.total))
+            content.language = self.language
+            content.variant = None
+
+        self.transaction.commit()
+        self.transaction.begin()
+
+        if done == 0:
+            self.start_at = None
+        else:
+            self.start_at += done
+            self.logger.info("Processed %d/%d of %s." % (
+                self.start_at, self.total, self.title))
 
 
 class TranslationMessagesCollection(Collection):
@@ -40,70 +97,29 @@ class TranslationMessagesCollection(Collection):
         return new_collection
 
 
-class TranslationMessageVariantReplacer:
+class TranslationMessageVariantReplacer(ReplacerMixin):
     """Replaces language on all `TranslationMessage`s with variants."""
     implements(ITunableLoop)
 
     def __init__(self, transaction, logger, language, variant, new_language):
-        self.transaction = transaction
-        self.logger = logger
-        self.start_at = 0
+        tm_collection = TranslationMessagesCollection().restrictLanguage(
+            language, variant)
+        super(TranslationMessageVariantReplacer, self).__init__(
+            transaction, logger, 'TranslationMessage',
+            list(tm_collection.select()), new_language)
 
-        tm_collection = TranslationMessagesCollection(
-            ).restrictLanguage(language, variant)
-        self.language = new_language
-        self.messages = tm_collection.select()
-        self.logger.info(
-            "Figuring out TranslationMessages that need fixing: "
-            "this may take a while...")
-        self.total = self.messages.count()
-        self.logger.info(
-            "Fixing up a total of %d translation messages." % self.total)
 
-    def isDone(self):
-        """See `ITunableLoop`."""
-        # When the main loop hits the end of the list of TranslationMessages,
-        # it sets start_at to None.
-        return self.start_at is None
+class POFileVariantReplacer(ReplacerMixin):
+    """Replaces language on all `TranslationMessage`s with variants."""
+    implements(ITunableLoop)
 
-    def getNextBatch(self, chunk_size):
-        """Return a batch of TranslationMessages to work with."""
-        end_at = self.start_at + int(chunk_size)
-        self.logger.debug(
-            "Getting TranslationMessages[%d:%d]..." % (self.start_at, end_at))
-        return self.messages[0: int(chunk_size)]
-
-    def __call__(self, chunk_size):
-        """See `ITunableLoop`.
-
-        Retrieve a batch of `POFile`s in ascending id order, and mark
-        all of their translation credits as translated.
-        """
-        messages = self.getNextBatch(chunk_size)
-
-        done = 0
-        for message in messages:
-            done += 1
-            self.logger.debug(
-                "Processing %d (out of %d)" % (
-                    self.start_at + done, self.total))
-            message.language = self.language
-            message.variant = None
-            if done % 100 == 0:
-                self.transaction.commit()
-                self.logger.info("Committed. New transaction.")
-                self.transaction.begin()
-
-        self.transaction.commit()
-        self.logger.info("Committed. All done.")
-        self.transaction.begin()
-
-        if done == 0:
-            self.start_at = None
-        else:
-            self.start_at += done
-            self.logger.info("Processed %d/%d of messages." % (
-                self.start_at, self.total))
+    def __init__(self, transaction, logger, language, variant, new_language):
+        from lp.translations.model.pofile import POFilesCollection
+        pofile_collection = POFilesCollection().restrictLanguage(
+            language, variant)
+        super(POFileVariantReplacer, self).__init__(
+            transaction, logger, 'POFile',
+            list(pofile_collection.select()), new_language)
 
 
 class MigrateVariantsProcess:
@@ -159,17 +175,24 @@ class MigrateVariantsProcess:
         return language_variants
 
     def run(self):
-        for language, variant in self.fetchAllLanguagesWithVariants():
+        language_variants = self.fetchAllLanguagesWithVariants()
+        if len(language_variants) == 0:
+            self.logger.info("Nothing to do.")
+        for language, variant in language_variants:
             self.logger.info(
                 "Migrating %s (%s@%s)..." % (
                     language.englishname, language.code, variant))
             new_language = self.getOrCreateLanguage(language, variant)
 
-            loop = TranslationMessageVariantReplacer(
+            tm_loop = TranslationMessageVariantReplacer(
                 self.transaction, self.logger,
                 language, variant, new_language)
+            DBLoopTuner(tm_loop, 5, minimum_chunk_size=100).run()
 
-            DBLoopTuner(loop, 5).run()
+            pofile_loop = POFileVariantReplacer(
+                self.transaction, self.logger,
+                language, variant, new_language)
+            DBLoopTuner(pofile_loop, 5, minimum_chunk_size=10).run()
 
         self.logger.info("Done.")
 
