@@ -859,8 +859,8 @@ class TestDispatchResult(unittest.TestCase):
         self.assertEqual('does not work!', builder.failnotes)
 
 
-POLL_INTERVAL=0.5
-POLL_REPEAT=20
+POLL_INTERVAL=1
+POLL_REPEAT=10
 
 def is_file_growing(filename):
     """Poll the file size to see if it grows."""
@@ -910,6 +910,26 @@ class TestBuilddManagerScript(unittest.TestCase):
         test_setup.sendSignal(signal.SIGUSR1)
         self.assertTrue(is_file_growing(logfilepath))
         self.assertTrue(os.access(rotated_logfilepath, os.F_OK))
+        
+        test_setup.tearDown()
+
+    def testBuilddManagerLoggingNoRotation(self):
+        # The twistd process does not perform its own rotation.
+        # By default twistd will rotate log files that grow beyond
+        # 1000000 bytes but this is deactivated for the buildd manager.
+        test_setup = BuilddManagerTestSetup()
+        logfilepath = test_setup.logfile
+        rotated_logfilepath = logfilepath+'.1'
+        # Prefill the log file to just under 1000000 bytes.
+        test_setup.precreateLogfile(
+            "2010-07-27 12:36:54+0200 [-] Starting scanning cycle.\n", 18518)
+        test_setup.setUp()
+        # The process loggs to the logfile.
+        self.assertTrue(is_file_growing(logfilepath))
+        # No rotation occured.
+        self.assertFalse(
+            os.access(rotated_logfilepath, os.F_OK),
+            "Twistd's log file was rotated by twistd.")
         
         test_setup.tearDown()
 

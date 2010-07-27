@@ -21,6 +21,12 @@ from lp.services.osutils import remove_tree
 class BuilddManagerTestSetup(TacTestSetup):
     """Setup BuilddManager for use by functional tests."""
 
+    logfilecontent = None
+
+    def precreateLogfile(self, content, repeat=1):
+        """Precreate a logfile in the root."""
+        self.logfilecontent = content*repeat 
+
     def setUpRoot(self):
         """Create `TacTestSetup.root` for storing the log and pid files.
 
@@ -28,6 +34,8 @@ class BuilddManagerTestSetup(TacTestSetup):
         """
         remove_tree(self.root)
         os.makedirs(self.root)
+        if self.logfilecontent is not None:
+            open(self.logfile, "w").write(self.logfilecontent)
 
     @property
     def root(self):
