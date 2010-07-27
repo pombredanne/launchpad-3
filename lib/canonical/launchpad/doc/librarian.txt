@@ -9,6 +9,18 @@ content use a LibraryFileAlias. Private content is supported as well - for that
 tokens are added to permit access for a limited time by a client - each time a
 client attempts to dereference a private LibraryFileAlias a token is emitted.
 
+= Deployment notes =
+
+(These may seem a bit out of place - they are, but they need to be written down
+somewhere, and the deployment choices inform the implementation choices).
+
+The basics are simple: The librarian talks to clients. However restricted file
+access makes things a little more complex. As the librarian itself doesn't do
+SSL processing, and we want restricted files to be kept confidential the
+librarian will need a hint from the SSL front end that SSL was in fact used.
+The semi standard header Front-End-Https can be used for this if we filter it
+in incoming requests from clients.
+
 == setUp ==
 
    >>> from canonical.database.sqlbase import session_store
