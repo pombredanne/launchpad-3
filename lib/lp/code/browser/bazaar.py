@@ -41,10 +41,6 @@ class BazaarApplicationView(LaunchpadView):
         return getUtility(IProductSet).getProductsWithBranches().count()
 
     @property
-    def branches_with_bugs_count(self):
-        return getUtility(IBranchSet).countBranchesWithAssociatedBugs()
-
-    @property
     def import_count(self):
         return getUtility(ICodeImportSet).search(
             review_status=CodeImportReviewStatus.REVIEWED).count()

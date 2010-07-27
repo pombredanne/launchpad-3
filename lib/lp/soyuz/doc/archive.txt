@@ -913,10 +913,8 @@ decreases.
 
     >>> cprov_archive.number_of_sources
     3
-    >>> superseded = cprov_archive.getPublishedSources(
+    >>> cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0].supersede()
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(superseded)
 
     >>> cprov_archive.number_of_sources
     2
@@ -926,9 +924,8 @@ decreases.
 
     >>> cprov_archive.number_of_binaries
     3
-    >>> superseded = cprov_archive.getAllPublishedBinaries(
+    >>> cprov_archive.getAllPublishedBinaries(
     ...     name='mozilla-firefox')[0].supersede()
-    >>> syncUpdate(superseded)
 
     >>> cprov_archive.number_of_binaries
     2
@@ -982,7 +979,6 @@ it continues to be considered 'available for deletion'.
 
     >>> login("celso.providelo@canonical.com")
     >>> removal_candidate.requestDeletion(cprov, 'go away !')
-    >>> syncUpdate(removal_candidate)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     1
@@ -1022,7 +1018,6 @@ binary is also DELETED.
 
     >>> for bin in removal_candidate.getPublishedBinaries():
     ...     bin.requestDeletion(cprov, 'go away !')
-    ...     syncUpdate(bin)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     0
@@ -1290,10 +1285,15 @@ Attempts to remove a non-existent dependency results in a AssertionError.
 The IArchive interface includes a convenience method for creating a
 package copy request:
 
+    >>> from lp.testing.factory import (
+    ...     remove_security_proxy_and_shout_at_engineer)
     >>> requestor = factory.makePerson(name='me-copy')
     >>> copy_target = factory.makeCopyArchiveLocation(
     ...     distribution=ubuntu, name='my-copy-archive', owner=requestor)
-    >>> pcr = ubuntu.main_archive.requestPackageCopy(copy_target, requestor)
+    >>> naked_copy_target = remove_security_proxy_and_shout_at_engineer(
+    ...     copy_target)
+    >>> pcr = ubuntu.main_archive.requestPackageCopy(
+    ...     naked_copy_target, requestor)
     >>> print pcr
     Package copy request
     source = primary/hoary/-/RELEASE
@@ -1306,7 +1306,7 @@ package copy request:
 The requestPackageCopy method can also take an optional suite name:
 
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
-    ...     copy_target, requestor, suite="hoary-updates");
+    ...     naked_copy_target, requestor, suite="hoary-updates");
     >>> print package_copy_request
     Package copy request
     source = primary/hoary/-/UPDATES
@@ -1417,9 +1417,9 @@ use to retrieve files from it.
 
 COPY archives use a URL format of <distro-name>-<archive-name>:
 
-    >>> print copy_target.archive.is_copy
+    >>> print naked_copy_target.archive.is_copy
     True
-    >>> print copy_target.archive.archive_url
+    >>> print naked_copy_target.archive.archive_url
     http://rebuild-test.internal/ubuntu-my-copy-archive/ubuntu
 
 If the archive is private, the url may be different as private PPAs

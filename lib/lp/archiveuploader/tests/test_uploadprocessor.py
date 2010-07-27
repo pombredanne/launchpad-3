@@ -1155,6 +1155,16 @@ class TestUploadProcessor(TestUploadProcessorBase):
             expect_msg in raw_msg,
             "Expected email with %s, got:\n%s" % (expect_msg, raw_msg))
 
+
+        # And an oops should be filed for the error.
+        error_utility = ErrorReportingUtility()
+        error_report = error_utility.getLastOopsReport()
+        fp = StringIO()
+        error_report.write(fp)
+        error_text = fp.getvalue()
+        self.assertTrue(
+            "Unable to find mandatory field 'files' in the changes file" in error_text)
+
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
 

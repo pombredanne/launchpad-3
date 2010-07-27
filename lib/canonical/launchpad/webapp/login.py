@@ -1,11 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from __future__ import with_statement
-
 """Stuff to do with logging in and logging out."""
+
+from __future__ import with_statement
 
 __metaclass__ = type
 
+import cgi
 import urllib
 
 from datetime import datetime, timedelta
@@ -245,9 +246,37 @@ class OpenIDCallbackView(OpenIDLogin):
     suspended_account_template = ViewPageTemplateFile(
         '../templates/login-suspended-account.pt')
 
+    def _gather_params(self, request):
+        params = dict(request.form)
+        for key, value in request.query_string_params.iteritems():
+            if len(value) > 1:
+                raise ValueError(
+                    'Did not expect multi-valued fields.')
+            params[key] = value[0]
+
+        # XXX benji 2010-07-23 bug=608920
+        # The production OpenID provider has some Django middleware that
+        # generates a token used to prevent XSRF attacks and stuffs it into
+        # every form.  Unfortunately that includes forms that have off-site
+        # targets and since our OpenID client verifies that no form values have
+        # been injected as a security precaution, this breaks logging-in in
+        # certain circumstances (see bug 597324).  The best we can do at the
+        # moment is to remove the token before invoking the OpenID library.
+        params.pop('csrfmiddlewaretoken', None)
+        return params
+
+    def _get_requested_url(self, request):
+        requested_url = request.getURL()
+        query_string = request.get('QUERY_STRING')
+        if query_string is not None:
+            requested_url += '?' + query_string
+        return requested_url
+
     def initialize(self):
-        self.openid_response = self._getConsumer().complete(
-            self.request.form, self.request.getURL())
+        params = self._gather_params(self.request)
+        requested_url = self._get_requested_url(self.request)
+        consumer = self._getConsumer()
+        self.openid_response = consumer.complete(params, requested_url)
 
     def login(self, account):
         loginsource = getUtility(IPlacelessLoginSource)
@@ -350,7 +379,13 @@ class OpenIDCallbackView(OpenIDLogin):
     def _redirect(self):
         target = self.request.form.get('starting_url')
         if target is None:
-            target = self.getApplicationURL()
+            # If this was a POST, then the starting_url won't be in the form
+            # values, but in the query parameters instead.
+            target = self.request.query_string_params.get('starting_url')
+            if target is None:
+                target = self.request.getApplicationURL()
+            else:
+                target = target[0]
         self.request.response.redirect(target, temporary_if_possible=True)
 
 

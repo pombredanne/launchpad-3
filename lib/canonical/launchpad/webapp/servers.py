@@ -61,7 +61,7 @@ from canonical.launchpad.webapp.authorization import (
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
-    IBasicLaunchpadRequest, IBrowserFormNG,
+    IAPIDocRoot, IBasicLaunchpadRequest, IBrowserFormNG,
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
     INotificationRequest, INotificationResponse, IPlacelessAuthUtility,
     IPlacelessLoginSource, OAuthPermission, UnexpectedFormData)
@@ -568,7 +568,9 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     launchpad request class.
     """
 
-    implements(ILaunchpadBrowserApplicationRequest, ISynchronizer)
+    implements(
+        ILaunchpadBrowserApplicationRequest, ISynchronizer,
+        canonical.launchpad.layers.LaunchpadLayer)
 
     retry_max_count = 5    # How many times we're willing to retry
 
@@ -1136,6 +1138,16 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.FeedsLayer)
 
 
+# ---- apidoc
+
+class APIDocBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.APIDocLayer)
+
+
+class APIDocBrowserPublication(LaunchpadBrowserPublication):
+    root_object_interface = IAPIDocRoot
+
+
 # ---- testopenid
 
 class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
@@ -1500,12 +1512,6 @@ def register_launchpad_request_publication_factories():
     factories = [
         VWSHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication,
                handle_default_host=True),
-        VWSHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication),
-        VWSHRP('code', CodeBrowserRequest, CodePublication),
-        VWSHRP('translations', TranslationsBrowserRequest,
-               TranslationsPublication),
-        VWSHRP('bugs', BugsBrowserRequest, BugsPublication),
-        VWSHRP('answers', AnswersBrowserRequest, AnswersPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
         WebServiceRequestPublicationFactory(
             'api', WebServiceClientRequest, WebServicePublication),
@@ -1516,6 +1522,10 @@ def register_launchpad_request_publication_factories():
     if config.launchpad.enable_test_openid_provider:
         factories.append(VHRP('testopenid', TestOpenIDBrowserRequest,
                               TestOpenIDBrowserPublication))
+
+    if config.devmode:
+        factories.append(
+            VHRP('apidoc', APIDocBrowserRequest, APIDocBrowserPublication))
 
     # We may also have a private XML-RPC server.
     private_port = None
