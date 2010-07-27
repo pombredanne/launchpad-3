@@ -33,7 +33,8 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.librarian.db import write_transaction
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
+from lp.buildmaster.interfaces.buildbase import (
+    BuildStatus, BUILDD_MANAGER_LOG_NAME)
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
@@ -162,6 +163,50 @@ class BaseDispatchResult:
         if job is not None:
             job.reset()
 
+    def _getBuilder(self):
+        # Helper to return the builder given the slave for this request.
+        # Avoiding circular imports.
+        from lp.buildmaster.interfaces.builder import IBuilderSet
+        return getUtility(IBuilderSet)[self.slave.name]
+
+    def assessFailureCounts(self):
+        """View builder/job failure_count and work out which needs to die.
+        
+        :return: True if we disabled something, False if we did not.
+        """
+        # Avoiding circular imports.
+        builder = self._getBuilder()
+        build_job = builder.currentjob.specific_job.build
+
+        if builder.failure_count == build_job.failure_count:
+            # This is either the first failure for this job on this
+            # builder, or by some chance the job was re-dispatched to
+            # the same builder.  This make it impossible to determine
+            # whether the job or the builder is at fault, so don't fail
+            # either, yet.
+            return False
+
+        if builder.failure_count > build_job.failure_count:
+            # The builder has failed more than the jobs it's been
+            # running, so let's disable it and re-schedule the build.
+            builder.failBuilder(self.info)
+            self._cleanJob(builder.currentjob)
+            return True
+        else:
+            # The job is the culprit!  Override its status to 'failed'
+            # to make sure it won't get automatically dispatched again,
+            # and remove the buildqueue request.  The failure should
+            # have already caused any relevant slave data to be stored
+            # on the build record so don't worry about that here.
+            build_job.status = BuildStatus.FAILEDTOBUILD
+            builder.currentjob.destroySelf()
+
+            # N.B. We could try and call _handleStatus_PACKAGEFAIL here
+            # but that would cause us to query the slave for its status
+            # again, and if the slave is non-responsive it holds up the
+            # next buildd scan.
+            return True
+
     def ___call__(self):
         raise NotImplementedError(
             "Call sites must define an evaluation method.")
@@ -180,10 +225,7 @@ class FailDispatchResult(BaseDispatchResult):
 
     @write_transaction
     def __call__(self):
-        # Avoiding circular imports.
-        from lp.buildmaster.interfaces.builder import IBuilderSet
-
-        builder = getUtility(IBuilderSet)[self.slave.name]
+        builder = self._getBuilder()
         builder.failBuilder(self.info)
         self._cleanJob(builder.currentjob)
 
@@ -200,10 +242,7 @@ class ResetDispatchResult(BaseDispatchResult):
 
     @write_transaction
     def __call__(self):
-        # Avoiding circular imports.
-        from lp.buildmaster.interfaces.builder import IBuilderSet
-
-        builder = getUtility(IBuilderSet)[self.slave.name]
+        builder = self._getBuilder()
         # Builders that fail to reset should be disabled as per bug
         # 563353.
         # XXX Julian bug=586362

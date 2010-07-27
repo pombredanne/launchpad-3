@@ -878,6 +878,54 @@ class TestDispatchResult(unittest.TestCase):
         self.assertEqual(None, builder.currentjob)
         self.assertEqual('does not work!', builder.failnotes)
 
+    def _setup_failing_dispatch_result(self):
+        # assessFailureCounts should fail jobs or builders depending on
+        # whether it sees the failure_counts on each increasing.
+        builder, job_id = self._getBuilder('bob')
+        slave = RecordingSlave(builder.name, builder.url, builder.vm_host)
+        result = FailDispatchResult(slave, 'does not work!')
+        return builder, result
+
+    def test_assessFailureCounts_equal_failures(self):
+        # Basic case where the failure counts are equal.
+        builder, result = self._setup_failing_dispatch_result()
+        build = builder.currentjob.specific_job.build
+        builder.failure_count = 2
+        build.failure_count = 2
+        disabled = result.assessFailureCounts()
+        self.assertFalse(disabled)
+        self.assertTrue(builder.builderok)
+        # This is only NEEDSBUILD because assessFailureCounts doesn't
+        # touch the status unless there's a failure, it's reset
+        # elsewhere.
+        self.assertEqual('BUILDING', build.status.name)
+
+    def test_assessFailureCounts_job_failed(self):
+        # Case where the job has failed more than the builder.
+        builder, result = self._setup_failing_dispatch_result()
+        build = builder.currentjob.specific_job.build
+        build.failure_count = 2
+        builder.failure_count = 1
+        disabled = result.assessFailureCounts()
+        self.assertTrue(disabled)
+        self.assertTrue(builder.builderok)
+        self.assertEqual('FAILEDTOBUILD', build.status.name)
+
+    def test_assessFailureCounts_builder_failed(self):
+        # Case where the builder has failed more than the job.
+        builder, result = self._setup_failing_dispatch_result()
+        build = builder.currentjob.specific_job.build
+        build.failure_count = 2
+        builder.failure_count = 3
+        disabled = result.assessFailureCounts()
+        self.assertTrue(disabled)
+        self.assertFalse(builder.builderok)
+        self.assertTrue(builder.currentjob is None)
+        # This is only BUILDING because assessFailureCounts doesn't
+        # touch the status unless there's a failure, it's reset
+        # elsewhere.
+        self.assertEqual('NEEDSBUILD', build.status.name)
+
 
 class TestBuilddManager(TrialTestCase):
 
