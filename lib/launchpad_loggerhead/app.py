@@ -252,7 +252,7 @@ def make_error_utility():
 #  - Andrew Bennetts, 2010-07-27.
 _oops_html_template = '''\
 <html>
-<head>Oops! %(oopsid)s</head>
+<head><title>Oops! %(oopsid)s</title></head>
 <body>
 <h1>Oops!</h1>
 <p>Something broke while generating the page.
@@ -264,8 +264,67 @@ and quote OOPS-ID <strong>%(oopsid)s</strong>
 
 
 _error_status = '500 Internal Server Error'
-_error_headers = [('Content-Type:', 'text/html')]
+_error_headers = [('Content-Type', 'text/html')]
 
+
+class WrappedStartResponse(object):
+    """Wraps start_response (from a WSGI request) to keep track of whether
+    start_response was called (and whether the callable it returns has been
+    called).
+    
+    Used by oops_middleware.
+    """
+
+    def __init__(self, start_response):
+        self._real_start_response = start_response
+        self.response_start = None
+        self._write_callable = None
+
+    @property
+    def body_started(self):
+        return self._write_callable is not None
+
+    def start_response(self, status, headers, exc_info=None):
+        # Just keep a note of the values we were called with for now.  We don't
+        # need to invoke the real start_response until the response body
+        # starts.
+        self.response_start = (status, headers)
+        if exc_info is not None:
+            self.response_start += (exc_info,)
+        return self.write_wrapper
+
+    def really_start(self):
+        self._write_callable = self._real_start_response(*self.response_start)
+
+    def write_wrapper(self, data):
+        if self._write_callable is None:
+            self.really_start()
+        self._write_callable(data)
+
+    def generate_oops(self, environ, error_utility):
+        """Generate an OOPS.
+
+        :returns: True if the error page was sent to the user, and False if it
+            couldn't (i.e. if the response body was already started).
+        """
+        oopsid = report_oops(environ, error_utility)
+        if self.body_started:
+            return False
+        write = self._real_start_response(_error_status, _error_headers)
+        write(_oops_html_template % {'oopsid': oopsid})
+        return True
+
+
+def report_oops(environ, error_utility):
+    # XXX: We should capture more per-request information to include in
+    # the OOPS here, e.g. duration, user, etc.  But even an OOPS with
+    # just a traceback and URL is better than nothing.
+    #   - Andrew Bennetts, 2010-07-27.
+    request = ScriptRequest(
+        [], URL=construct_url(environ))
+    error_utility.raising(sys.exc_info(), request)
+    return request.oopsid
+        
 
 def oops_middleware(app):
     """Middleware to log an OOPS if the request fails.
@@ -275,55 +334,30 @@ def oops_middleware(app):
     """
     error_utility = make_error_utility()
     def wrapped_app(environ, start_response):
-        response_start = [None]
-        body_started = []
-        real_write = []
-        def wrapped_start_response(status, headers, exc_info=None):
-            response_start[0] = (status, headers, exc_info)
-            def write(chunk):
-                if not real_write:
-                    real_write.append(start_response(*response_start[0]))
-                real_write[0](chunk)
-                return real_write[0]
-            return write
-        def report_oops():
-            # XXX: We should capture more per-request information to include in
-            # the OOPS here, e.g. duration, user, etc.  But even an OOPS with
-            # just a traceback and URL is better than nothing.
-            #   - Andrew Bennetts, 2010-07-27.
-            request = ScriptRequest(
-                [], URL=construct_url(environ))
-            error_utility.raising(sys.exc_info(), request)
-            return request.oopsid
+        wrapped = WrappedStartResponse(start_response)
         # Start processing this request
         try:
-            app_iter = app(environ, wrapped_start_response)
+            app_iter = iter(app(environ, wrapped.start_response))
         except:
-            oopsid = report_oops()
-            if body_started:
-                # We've already started sending a response, so... just give
-                # up.
-                raise
-            start_response(_error_headers, _error_headers)
-            yield _oops_html_template % {'oopsid': oopsid}
-            return
+            error_page_sent = wrapped.generate_oops(environ, error_utility)
+            if error_page_sent:
+                return
+            # Could not send error page to user, so... just give up.
+            raise
         # Start yielding the response
         while True:
             try:
-                yield app_iter.next()
+                data = app_iter.next()
             except StopIteration:
                 return
             except:
-                oopsid = report_oops()
-                if body_started:
-                    # We've already started sending a response, so... just give
-                    # up.
-                    raise
-                start_response(_error_headers, _error_headers)
-                yield _oops_html_template % {'oopsid': oopsid}
-                return
+                error_page_sent = wrapped.generate_oops(environ, error_utility)
+                if error_page_sent:
+                    return
+                # Could not send error page to user, so... just give up.
+                raise
             else:
-                if not body_started:
-                    start_response(*response_start[0])
-                    body_started.append(True)
+                if not wrapped.body_started:
+                    wrapped.really_start()
+                yield data
     return wrapped_app
