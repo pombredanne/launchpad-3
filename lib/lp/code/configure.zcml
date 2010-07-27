@@ -13,6 +13,10 @@
   <include package=".browser"/>
   <authorizations module="lp.code.security" />
 
+  <publisher
+     name="code"
+     factory="lp.code.publisher.code_request_publication_factory"/>
+
   <!-- Branch Merge Queue -->
 
   <class class="lp.code.model.branchmergequeue.SingleBranchMergeQueue">
@@ -435,129 +439,29 @@
   <class class="lp.code.model.branch.Branch">
     <require
         permission="launchpad.View"
-        attributes="id
-                    branch_type
-                    name
-                    url
-                    composePublicURL
-                    whiteboard
-                    target
-                    mirror_status_message
-                    private
-                    registrant
-                    owner
-                    description
-                    author
-                    reviewer
-                    code_reviewer
-                    isPersonTrustedReviewer
-                    product
-                    unique_name
-                    displayname
-                    sort_key
-                    lifecycle_status
-                    last_mirrored
-                    last_mirrored_id
-                    last_mirror_attempt
-                    mirror_failures
-                    pull_disabled
-                    next_mirror_time
-                    last_scanned
-                    last_scanned_id
-                    revision_count
-                    bug_branches
-                    linked_bugs
-                    getLinkedBugsAndTasks
-                    linkBug
-                    unlinkBug
-                    spec_links
-                    linkSpecification
-                    unlinkSpecification
-                    revision_history
-                    subscriptions
-                    subscribers
-                    date_created
-                    date_last_modified
-                    latest_revisions
-                    landing_targets
-                    landing_candidates
-                    dependent_branches
-                    _createMergeProposal
-                    addLandingTarget
-                    scheduleDiffUpdates
-                    getMergeQueue
-                    getRevisionsSince
-                    code_is_browseable
-                    browse_source_url
-                    code_import
-                    bzr_identity
-                    canBeDeleted
-                    deletionRequirements
-                    associatedProductSeries
-                    getProductSeriesPushingTranslations
-                    associatedSuiteSourcePackages
-                    branchIdentities
-                    branchLinks
-                    subscribe
-                    getSubscription
-                    hasSubscription
-                    unsubscribe
-                    getSubscriptionsByLevel
-                    getBranchRevision
-                    getMainlineBranchRevisions
-                    getMergeProposals
-                    getStackedBranches
-                    createBranchRevision
-                    getTipRevision
-                    updateScannedDetails
-                    getNotificationRecipients
-                    getScannerData
-                    getPullURL
-                    getInternalBzrUrl
-                    getBzrBranch
-                    requestMirror
-                    startMirroring
-                    mirrorFailed
-                    branch_format
-                    repository_format
-                    control_format
-                    stacked_on
-                    createBranchRevisionFromIDs
-                    distroseries
-                    sourcepackagename
-                    addToLaunchBag
-                    distribution
-                    sourcepackage
-                    codebrowse_url
-                    merge_queue
-                    namespace
-                    pending_writes
-                    commitsForDays
-                    needs_upgrading
-                    upgrade_pending
-                    getUpgradeFormat
-                    isBranchMergeable
-                    visibleByUser
-                    getRecipes
-                    "/>
+        interface="canonical.launchpad.interfaces.launchpad.IPrivacy
+                   lp.code.interfaces.branch.IBranchAnyone
+                   lp.code.interfaces.branch.IBranchEditableAttributes
+                   lp.code.interfaces.branch.IBranchPublic
+                   lp.code.interfaces.branch.IBranchView
+                   "/>
     <require
         permission="launchpad.Edit"
-        attributes="destroySelf destroySelfBreakReferences setPrivate
-                    setOwner setTarget requestUpgrade branchChanged"
-        set_attributes="name url mirror_status_message
-                        description lifecycle_status
-                        last_mirrored last_mirrored_id last_mirror_attempt
-                        mirror_failures pull_disabled next_mirror_time
-                        last_scanned last_scanned_id revision_count branch_type
-                        reviewer branch_format repository_format
-                        control_format stacked_on merge_queue
-                        merge_control_status"/>
+        interface="lp.code.interfaces.branch.IBranchEdit"
+        set_schema="lp.code.interfaces.branch.IBranchEditableAttributes"
+        attributes="setPrivate"
+        set_attributes="branch_format control_format repository_format
+                        branch_type
+                        last_scanned last_scanned_id
+                        last_mirrored last_mirrored_id next_mirror_time
+                        revision_count merge_queue mirror_failures
+                        stacked_on mirror_status_message"/>
     <require
         permission="launchpad.AnyPerson"
-        set_attributes="whiteboard"/>
+        set_schema="lp.code.interfaces.branch.IBranchAnyone"/>
     <require
         permission="zope.Public"
-        set_attributes="date_last_modified"/>
+        set_schema="lp.code.interfaces.branch.IBranchPublic"/>
   </class>
   <adapter
       for="lp.code.interfaces.branch.IBranch"
@@ -588,6 +492,9 @@
   <subscriber
       for="lp.codehosting.scanner.events.ITipChanged"
       handler="lp.codehosting.scanner.bzrsync.schedule_translation_upload"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.bzrsync.update_recipes"/>
   <subscriber
       for="lp.codehosting.scanner.events.IRevisionsRemoved"
       handler="lp.codehosting.scanner.email.send_removed_revision_emails"/>
@@ -978,7 +885,7 @@
   <adapter factory="lp.code.model.linkedbranch.DistributionPackageLinkedBranch" />
 
   <lp:help-folder
-      folder="help" type="canonical.launchpad.layers.CodeLayer" />
+      folder="help" type="lp.code.publisher.CodeLayer" />
 
   <!-- Diffs -->
   <class class="lp.code.model.diff.Diff">
@@ -1010,7 +917,7 @@
 
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuild">
-    <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"/>
+    <require permission="launchpad.View" interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"/>
     <!-- This is needed for UploadProcessor to run. The permission isn't
          important; launchpad.Edit isn't actually held by anybody. -->
     <require permission="launchpad.Edit" set_attributes="buildstate upload_log" />
@@ -1024,7 +931,7 @@
 
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob">
-    <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
+    <require permission="launchpad.View" interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
   </class>
 
   <securedutility
@@ -1045,19 +952,22 @@
   <!-- SourcePackageRecipe -->
   <class
      class="lp.code.model.sourcepackagerecipe.SourcePackageRecipe">
-    <allow
-    interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
+    <require permission="launchpad.View"
+      interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+      />
     <require
        permission="launchpad.Edit"
        set_attributes="
            build_daily
            builder_recipe
+           daily_build_archive
            date_last_modified
            description
            distroseries
            name
            owner
-           sourcepackagename"/>
+           sourcepackagename
+           is_stale"/>
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">

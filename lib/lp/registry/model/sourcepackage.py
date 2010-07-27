@@ -39,7 +39,8 @@ from lp.soyuz.model.distroseriessourcepackagerelease import (
 from lp.registry.model.packaging import Packaging
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
-    POTemplate)
+    POTemplate,
+    TranslationTemplatesCollection)
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
@@ -297,6 +298,18 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             self.sourcepackagename.name, self.distroseries.displayname)
 
     @property
+    def summary(self):
+        """See `ISourcePackage`."""
+        releases = self.releases
+        if len(releases) == 0:
+            return None
+        current = releases[0]
+        name_summaries = [
+            '%s: %s' % (binary.name, binary.summary)
+            for binary in current.sample_binary_packages]
+        return '\n'.join(name_summaries)
+
+    @property
     def distribution(self):
         return self.distroseries.distribution
 
@@ -508,15 +521,17 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return not self.__eq__(other)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
+        """See `IHasBuildRecords`"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now and this method only returns records for SPRs in a
         # distribution).
         # We also ignore the name parameter (required as part of the
-        # IHasBuildRecords interface) and use our own name.
+        # IHasBuildRecords interface) and use our own name and the
+        # binary_only parameter as a source package can only have
+        # binary builds.
 
-        """See `IHasBuildRecords`"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
 
@@ -605,39 +620,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         else:
             return distribution.main_archive
 
-    def getTranslationTemplates(self):
+    def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(
-            distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename)
-        return result.orderBy(['-priority', 'name'])
-
-    def getCurrentTranslationTemplates(self, just_ids=False):
-        """See `IHasTranslationTemplates`."""
-        store = Store.of(self.sourcepackagename)
-        if just_ids:
-            looking_for = POTemplate.id
-        else:
-            looking_for = POTemplate
-
-        result = store.find(looking_for, And(
-            POTemplate.iscurrent == True,
-            POTemplate.distroseries == self.distroseries,
-            POTemplate.sourcepackagename == self.sourcepackagename,
-            self.distroseries.distribution.official_rosetta == True))
-        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
-
-    def getObsoleteTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            distroseries = %s AND
-            sourcepackagename = %s AND
-            distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
-            ''' % sqlvalues(self.distroseries, self.sourcepackagename),
-            clauseTables = ['DistroSeries', 'Distribution'])
-        return shortlist(result.orderBy(['-priority', 'name']), 300)
+        collection = TranslationTemplatesCollection()
+        collection = collection.restrictDistroSeries(self.distroseries)
+        return collection.restrictSourcePackageName(self.sourcepackagename)
 
     def getBranch(self, pocket):
         """See `ISourcePackage`."""

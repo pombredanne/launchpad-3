@@ -72,7 +72,7 @@
 
       <p
          id="can-expire"
-         tal:condition="context/bug/can_expire"
+         tal:condition="python: context.bug.isExpirable(days_old=0)"
          >
         <tal:expiration_message replace="view/expiration_message" />
         (<a href="https://help.launchpad.net/BugExpiry">find out why</a>)
@@ -160,7 +160,8 @@
                       id="edit-tags-cancel" style="display: none"
                       type="button">Cancel</button>
            </form>
-           <a href="/+help/tag-help.html" target="help" class="icon"><img src="/@@/maybe" alt="help" /></a>
+           <a href="/+help/tag-help.html" target="help" class="sprite maybe">&nbsp;
+             <span class="invisible-link">Tag help</span></a>
           </div>
           <div id="add-bug-tags"
                tal:attributes="class python: ('tags-container ' +
@@ -169,7 +170,8 @@
             <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
               Add tags
             </a>
-            <a href="/+help/tag-help.html" target="help" class="icon"><img src="/@@/maybe" alt="help" /></a>
+            <a href="/+help/tag-help.html" target="help" class="sprite maybe">&nbsp;
+             <span class="invisible-link">Tag help</span></a>
           </div>
 
         <div class="clearfix"></div>
@@ -227,6 +229,14 @@
               <metal:comment-box
                   metal:use-macro="context/@@bugcomment-macros/activity-box" />
           </tal:is-activity>
+
+          <tal:is-break
+             define="num_hidden comment_or_activity/num_hidden|nothing"
+             condition="num_hidden">
+              <metal:comment-box
+                  metal:use-macro="context/@@bugcomment-macros/break" />
+          </tal:is-break>
+
         </tal:comment>
         <div style="float: right;">
           <tal:activity_log
@@ -277,8 +287,8 @@
                 button.style.display = 'none';
               </script>
               <script type="text/javascript">
-                LPS.use('lp.comment', function(Y) {
-                    var comment = new Y.lp.Comment();
+                LPS.use('lp.app.comment', function(Y) {
+                    var comment = new Y.lp.app.comment.Comment();
                     comment.render();
                 });
               </script>
@@ -299,7 +309,9 @@
             tal:condition="view/visible_comments_truncated_for_display">
           <div class="informational message">
             Displaying first <span
-            tal:replace="view/visible_comments_for_display/count:len" />
+            tal:replace="view/visible_oldest_comments_for_display/count:len">23</span>
+            and last <span
+            tal:replace="view/visible_newest_comments_for_display/count:len">32</span>
             comments.
             <tal:what-next
                 define="view_all_href

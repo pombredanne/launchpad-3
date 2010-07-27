@@ -10,6 +10,7 @@ from zope.interface import classProvides
 from zope.component import getUtility, queryAdapter
 from zope.browser.interfaces import IView
 
+from zope.proxy import removeAllProxies
 from zope.publisher.interfaces import IApplicationRequest
 from zope.security.interfaces import ISecurityPolicy
 from zope.security.checker import CheckerPublic
@@ -138,8 +139,11 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             # We will not be able to lookup an adapter for this, so we can
             # return False already.
             return False
-        # Remove security proxies from object to authorize.
-        objecttoauthorize = removeSecurityProxy(objecttoauthorize)
+        # Remove all proxies from object to authorize. The security proxy is
+        # removed for obvious reasons but we also need to remove the location
+        # proxy (which is used on apidoc.lp.dev) because otherwise we can't
+        # create a weak reference to our object in our security policy cache.
+        objecttoauthorize = removeAllProxies(objecttoauthorize)
 
         participations = [participation
                           for participation in self.participations

@@ -3,8 +3,9 @@
 
 __metaclass__ = type
 
+from doctest import DocTestSuite
+
 from canonical.ftests.pgsql import PgTestSetup
-from zope.testing.doctest import DocTestSuite
 
 def setUp(test):
 

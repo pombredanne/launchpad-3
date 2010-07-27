@@ -344,9 +344,7 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
 
         Produces a list containing a ProductSeriesLanguage object for
         each language this product has been translated into, and for each
-        of the user's preferred languages. Where the series has no
-        ProductSeriesLanguage for that language, we use a
-        DummyProductSeriesLanguage.
+        of the user's preferred languages.
         """
 
         if self.context.potemplate_count == 0:
@@ -368,12 +366,14 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
                         pot = self.context.getCurrentTranslationTemplates()[0]
                         pofile = pot.getPOFileByLang(lang.code)
                         if pofile is None:
-                            pofile = pot.getDummyPOFile(lang.code)
-                        productserieslang = productserieslangset.getDummy(
-                            self.context, lang, pofile=pofile)
+                            pofile = pot.getDummyPOFile(lang)
+                        productserieslang = (
+                            productserieslangset.getProductSeriesLanguage(
+                                self.context, lang, pofile=pofile))
                     else:
-                        productserieslang = productserieslangset.getDummy(
-                            self.context, lang)
+                        productserieslang = (
+                            productserieslangset.getProductSeriesLanguage(
+                                self.context, lang))
                     productserieslangs.append(
                         productserieslang)
 

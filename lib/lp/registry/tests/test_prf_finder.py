@@ -344,6 +344,17 @@ class ExtractVersionTestCase(unittest.TestCase):
         version = extract_version('bzr-1.15_beta1.tar.gz')
         self.assertEqual(version, '1.15-beta1')
 
+    def test_extract_version_ignores_uncommon_names(self):
+        """Unknown file extension is not included in version."""
+        # Bug #412015. If there is no filename extension that Launchpad
+        # understands after the version number, we have a dud match.
+        version = extract_version('bzr-1.15_beta1.tar.gz.asc')
+        self.assertEqual(version, None)
+        version = extract_version('bzr-1.15_beta1.tar.7z')
+        self.assertEqual(version, None)
+        version = extract_version('bzr-1.15_beta1.bckup')
+        self.assertEqual(version, None)
+
     def test_extract_version_debian_name(self):
         """Verify that the debian-style .orig suffix is handled."""
         version = extract_version('emacs-21.10.orig.tar.gz')
