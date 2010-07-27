@@ -856,9 +856,10 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         build = self.makeBuild()
         removeSecurityProxy(build).log = (
             self.factory.makeLibraryFileAlias())
+        build_log_url = build.log_url
         browser = self.getViewBrowser(build)
         link = browser.getLink('buildlog')
-        self.assertEqual(build.log_url, link.url)
+        self.assertEqual(build_log_url, link.url)
 
     def test_uploadlog(self):
         """A link to the upload log is shown if available."""
