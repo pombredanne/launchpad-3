@@ -36,6 +36,7 @@ from textwrap import dedent
 from threading import local
 from types import InstanceType
 
+from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 import pytz
 
 from twisted.python.util import mergeFunctionMetadata
@@ -2745,7 +2746,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
 unwrapped_types = (
-    DSCFile, InstanceType, Message, datetime, int, str, unicode)
+    DSCFile, InstanceType, Message, datetime, int, str, unicode,
+    BaseRecipeBranch)
 
 def is_security_proxied_or_harmless(obj):
     """Check that the given object is security wrapped or a harmless object."""

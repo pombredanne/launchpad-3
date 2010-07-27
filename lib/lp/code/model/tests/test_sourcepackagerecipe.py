@@ -32,8 +32,8 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
-    BuildAlreadyPending, ForbiddenInstruction, TooManyBuilds,
-    TooNewRecipeFormat)
+    BuildAlreadyPending, ForbiddenInstruction, PrivateBranchRecipe,
+    TooManyBuilds, TooNewRecipeFormat)
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -72,24 +72,49 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             registrant=registrant, owner=owner, distroseries=[distroseries],
             name=name, description=description, builder_recipe=builder_recipe)
 
+    def makeRecipeComponents(self, branches=()):
+        registrant = self.factory.makePerson()
+        return dict(
+            registrant=registrant,
+            owner = self.factory.makeTeam(owner=registrant),
+            distroseries = [self.factory.makeDistroSeries()],
+            name = self.factory.getUniqueString(u'recipe-name'),
+            description = self.factory.getUniqueString(u'recipe-description'),
+            builder_recipe = self.factory.makeRecipe(*branches))
+
     def test_creation(self):
         # The metadata supplied when a SourcePackageRecipe is created is
         # present on the new object.
-        registrant = self.factory.makePerson()
-        owner = self.factory.makeTeam(owner=registrant)
-        distroseries = self.factory.makeDistroSeries()
-        name = self.factory.getUniqueString(u'recipe-name')
-        description = self.factory.getUniqueString(u'recipe-description')
-        builder_recipe = self.factory.makeRecipe()
-        recipe = getUtility(ISourcePackageRecipeSource).new(
-            registrant=registrant, owner=owner, distroseries=[distroseries],
-            name=name, description=description, builder_recipe=builder_recipe)
+        components = self.makeRecipeComponents()
+        recipe = getUtility(ISourcePackageRecipeSource).new(**components)
         transaction.commit()
         self.assertEquals(
-            (registrant, owner, set([distroseries]), name),
+            (components['registrant'], components['owner'],
+             set(components['distroseries']), components['name']),
             (recipe.registrant, recipe.owner, set(recipe.distroseries),
              recipe.name))
         self.assertEqual(True, recipe.is_stale)
+
+    def test_creation_private_base_branch(self):
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            branch = self.factory.makeAnyBranch(private=True, owner=owner)
+            components = self.makeRecipeComponents(branches=[branch])
+            recipe_source = getUtility(ISourcePackageRecipeSource)
+            self.assertRaises(
+                PrivateBranchRecipe, recipe_source.new, **components)
+
+    def test_creation_private_referenced_branch(self):
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            base_branch = self.factory.makeAnyBranch(owner=owner)
+            referenced_branch = self.factory.makeAnyBranch(
+                private=True, owner=owner)
+            branches = [base_branch, referenced_branch]
+            components = self.makeRecipeComponents(branches=branches)
+            recipe_source = getUtility(ISourcePackageRecipeSource)
+            self.assertRaises(
+                PrivateBranchRecipe, recipe_source.new, **components)
 
     def test_exists(self):
         # Test ISourcePackageRecipeSource.exists
@@ -690,6 +715,29 @@ class TestWebservice(TestCaseWithFactory):
         recipe = self.makeRecipe()[0]
         recipe.setRecipeText(recipe_text=recipe_text2)
         self.assertEqual(recipe_text2, recipe.recipe_text)
+
+    def test_setRecipeText_private_base_branch(self):
+        source_package_recipe = self.factory.makeSourcePackageRecipe()
+        with person_logged_in(source_package_recipe.owner):
+            branch = self.factory.makeAnyBranch(
+                private=True, owner=source_package_recipe.owner)
+            recipe_text = self.factory.makeRecipeText(branch)
+            self.assertRaises(
+                PrivateBranchRecipe, source_package_recipe.setRecipeText,
+                recipe_text)
+
+    def test_setRecipeText_private_referenced_branch(self):
+        source_package_recipe = self.factory.makeSourcePackageRecipe()
+        with person_logged_in(source_package_recipe.owner):
+            base_branch = self.factory.makeAnyBranch(
+                owner=source_package_recipe.owner)
+            referenced_branch = self.factory.makeAnyBranch(
+                private=True, owner=source_package_recipe.owner)
+            recipe_text = self.factory.makeRecipeText(
+                base_branch, referenced_branch)
+            self.assertRaises(
+                PrivateBranchRecipe, source_package_recipe.setRecipeText,
+                recipe_text)
 
     def test_getRecipe(self):
         """Person.getRecipe returns the named recipe."""
