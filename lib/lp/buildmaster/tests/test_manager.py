@@ -5,6 +5,7 @@
 
 import os
 import signal
+import time
 import transaction
 import unittest
 
@@ -858,14 +859,59 @@ class TestDispatchResult(unittest.TestCase):
         self.assertEqual('does not work!', builder.failnotes)
 
 
+POLL_INTERVAL=0.5
+POLL_REPEAT=20
+
+def is_file_growing(filename):
+    """Poll the file size to see if it grows."""
+    last_size = None
+    for poll in range(POLL_REPEAT+1):
+        try:
+            statinfo = os.stat(filename)
+            if last_size is None:
+                last_size = statinfo.st_size
+            elif statinfo.st_size > last_size:
+                return True
+            else:
+                # The file should not be shrinking.
+                assert statinfo.st_size == last_size
+        except OSError:
+            if poll == POLL_REPEAT:
+                # Propagate only on the last loop, i.e. give up.
+                raise
+        time.sleep(POLL_INTERVAL)
+    return False
+
+
 class TestBuilddManagerScript(unittest.TestCase):
 
     layer = LaunchpadScriptLayer
 
     def testBuilddManagerRuns(self):
-        # Ensure `buildd-manager.tac` starts and stops correctly.
+        # The `buildd-manager.tac` starts and stops correctly.
         BuilddManagerTestSetup().setUp()
         BuilddManagerTestSetup().tearDown()
+
+    def testBuilddManagerLogging(self):
+        # The twistd process loggs as execpected.
+        test_setup = BuilddManagerTestSetup()
+        logfilepath = test_setup.logfile
+        test_setup.setUp()
+        # The process loggs to its logfile.
+        self.assertTrue(is_file_growing(logfilepath))
+        # After rotating the log, the process keeps using the old file, no
+        # new file is created.
+        rotated_logfilepath = logfilepath+'.1'
+        os.rename(logfilepath, rotated_logfilepath)
+        self.assertTrue(is_file_growing(rotated_logfilepath))
+        self.assertFalse(os.access(logfilepath, os.F_OK))
+        # Upon receiving the USR1 signal, the process will re-open its log
+        # file at the old location.
+        test_setup.sendSignal(signal.SIGUSR1)
+        self.assertTrue(is_file_growing(logfilepath))
+        self.assertTrue(os.access(rotated_logfilepath, os.F_OK))
+        
+        test_setup.tearDown()
 
 
 def test_suite():
