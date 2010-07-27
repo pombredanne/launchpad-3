@@ -516,11 +516,16 @@ class CodeHandler:
                 except NotStacked:
                     # We don't currently support pulling in the revisions if
                     # the source branch exists and isn't stacked.
+                    # XXX Tim Penhey 2010-07-27 bug 610292
+                    # We should fail here and return an oops email to the user.
                     return db_source
                 self._pullRevisionsFromMergeDirectiveIntoSourceBranch(
                     md, target_url, bzr_source)
                 # Get the puller to pull the branch into the mirrored area.
                 db_source.requestMirror()
+                db_source.branchChanged(
+                    stacked_url, 
+                    )
             return db_source
         finally:
             lp_server.stop_server()
