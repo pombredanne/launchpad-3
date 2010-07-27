@@ -140,7 +140,6 @@ hostnames=$(cat <<EOF
     translations.launchpad.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
-    vostok.dev
 EOF
     )
 
@@ -154,6 +153,14 @@ if [ $? -ne 0 ]; then
 127.0.0.99      bazaar.launchpad.dev
 " | sudo tee -a /etc/hosts > /dev/null
   echo "bazaar.launchpad.dev added to /etc/hosts"
+fi
+
+grep -q "^127.0.0.77" /etc/hosts
+if [ $? -ne 0 ]; then
+  echo "
+127.0.0.77      vostok.dev archive.vostok.dev
+" | sudo tee -a /etc/hosts > /dev/null
+  echo "vostok.dev added to /etc/hosts"
 fi
 
 # Enable relevant Ubuntu package repositories
