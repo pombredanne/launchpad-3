@@ -45,7 +45,20 @@ def _format_enum(num, format, format_string=None, description=None):
     return DBItem(num, format_string, description)
 
 
-class BranchFormat(DBEnumeratedType):
+class BazaarFormatEnum(DBEnumeratedType):
+    """Base class for the format enums."""
+
+    @classmethod
+    def get_enum(klass, format_name):
+        """Find the matching enum value for the format name specified."""
+        for value in klass.items:
+            if value.title == format_name:
+                return value
+        else:
+            return klass.UNRECOGNIZED
+
+
+class BranchFormat(BazaarFormatEnum):
     """Branch on-disk format.
 
     This indicates which (Bazaar) format is used on-disk.  The list must be
@@ -81,7 +94,7 @@ class BranchFormat(DBEnumeratedType):
         107, "Bazaar-NG Loom branch format 7\n", "Loom branch format 7")
 
 
-class RepositoryFormat(DBEnumeratedType):
+class RepositoryFormat(BazaarFormatEnum):
     """Repository on-disk format.
 
     This indicates which (Bazaar) format is used on-disk.  The list must be
@@ -194,7 +207,7 @@ class RepositoryFormat(DBEnumeratedType):
     BZR_CHK_2A = _format_enum(415, RepositoryFormat2a)
 
 
-class ControlFormat(DBEnumeratedType):
+class ControlFormat(BazaarFormatEnum):
     """Control directory (BzrDir) format.
 
     This indicates what control directory format is on disk.  Must be updated
