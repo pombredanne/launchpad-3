@@ -96,13 +96,14 @@ class FeatureController(object):
         """
         self._known_scopes = Memoize(scope_check_callback)
         self._known_flags = Memoize(self._checkFlag)
-        self._store = getFeatureStore()
-        self._rules = self._loadRules()
+        # rules are read from the database the first time they're needed
+        self._rules = None
 
     def getFlag(self, flag):
         return self._known_flags.lookup(flag)
 
     def _checkFlag(self, flag):
+        self._needRules()
         if flag in self._rules:
             for scope, value in self._rules[flag]:
                 if self._known_scopes.lookup(scope):
@@ -131,11 +132,13 @@ class FeatureController(object):
         shouldn't normally be used by code that only wants to know about one
         or a few flags.
         """
+        self._needRules()
         return dict((f, self.getFlag(f)) for f in self._rules)
 
     def _loadRules(self):
+        store = getFeatureStore()
         d = {}
-        rs = (self._store
+        rs = (store
                 .find(FeatureFlag)
                 .order_by(Desc(FeatureFlag.priority))
                 .values(FeatureFlag.flag, FeatureFlag.scope,
@@ -143,6 +146,10 @@ class FeatureController(object):
         for flag, scope, value in rs:
             d.setdefault(str(flag), []).append((str(scope), value))
         return d
+
+    def _needRules(self):
+        if self._rules is None:
+            self._rules = self._loadRules()
 
     def usedFlags(self):
         """Return dict of flags used in this controller so far.
