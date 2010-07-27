@@ -13,6 +13,9 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
+from hashlib import md5
+import random
+
 import pytz
 
 from zope.component import getUtility
@@ -269,7 +272,16 @@ class TimeLimitedToken(storm.base.Storm):
         :return: A url fragment token ready to be attached to the url.
             e.g. 'a%20token'
         """
-        token = "literal"
+        # We use random.random to get a string which varies reasonably, and we
+        # hash it to distribute it widely and get a easily copy and pastable
+        # single string (nice for debugging). The randomness is not a key
+        # factor here: as long as tokens are not guessable, they are hidden by
+        # https, not exposed directly in the API (tokens will be allocated by
+        # the appropriate objects), not by direct access to the
+        # TimeLimitedToken class.
+        baseline = str(random.random())
+        hashed = md5(baseline).hexdigest()
+        token = hashed
         store = session_store()
         store.add(TimeLimitedToken(url, token))
         # XXX: Check this statement, RobertCollins 20100728
