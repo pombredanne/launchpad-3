@@ -11,9 +11,6 @@ import transaction
 import unittest
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
-from bzrlib import errors as bzr_errors
-from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
 from bzrlib.workingtree import WorkingTree
 from storm.store import Store
