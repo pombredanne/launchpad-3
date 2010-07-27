@@ -11,9 +11,6 @@ import transaction
 import unittest
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
-from bzrlib import errors as bzr_errors
-from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
 from bzrlib.workingtree import WorkingTree
 from storm.store import Store
@@ -893,7 +890,6 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         target_tree.branch.set_public_branch(db_target_branch.bzr_identity)
         target_tree.commit('rev1')
         # Make sure that the created branch has been mirrored.
-        db_target_branch.startMirroring()
         removeSecurityProxy(db_target_branch).branchChanged(
             '', 'rev1', None, None, None)
         source_tree = target_tree.bzrdir.sprout('source').open_workingtree()
