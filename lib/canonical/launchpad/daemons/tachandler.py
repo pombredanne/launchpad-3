@@ -30,7 +30,6 @@ from twisted.python import log
 # This file is used by launchpad-buildd, so it cannot import any
 # Launchpad code!
 
-
 def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
     """Kill process 'pid' with SIGTERM. If it doesn't die, SIGKILL it.
 
@@ -113,6 +112,7 @@ twistd_script = os.path.abspath(os.path.join(
 
 LOG_MAGIC = 'daemon ready!'
 
+
 class TacException(Exception):
     """Error raised by TacTestSetup."""
 
@@ -122,6 +122,7 @@ class TacTestSetup:
 
     You can override setUpRoot to set up a root directory for the daemon.
     """
+
     def setUp(self, spew=False, umask=None):
         # Before we run, we want to make sure that we have cleaned up any
         # previous runs. Although tearDown() should have been called already,
@@ -239,8 +240,8 @@ class TacTestSetup:
 
 class ReadyService(service.Service):
     """Service that logs a 'ready!' message once the reactor has started."""
+
     def startService(self):
         from twisted.internet import reactor
         reactor.addSystemEventTrigger('after', 'startup', log.msg, LOG_MAGIC)
         service.Service.startService(self)
-

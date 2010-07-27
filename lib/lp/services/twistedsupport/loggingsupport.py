@@ -34,7 +34,6 @@ from canonical.librarian.utils import copy_and_close
 
 class OOPSLoggingObserver(log.PythonLoggingObserver):
     """A version of `PythonLoggingObserver` that logs OOPSes for errors."""
-
     # XXX: JonathanLange 2008-12-23 bug=314959: As best as I can tell, this
     # ought to be a log *handler*, not a feature of the bridge from
     # Twisted->Python logging. Ask Michael about this.
@@ -193,15 +192,18 @@ class LoggingProxy(xmlrpc.Proxy):
         deferred = xmlrpc.Proxy.callRemote(self, method, *args)
         return deferred.addBoth(_logResult)
 
+
 class RotatableFileLogObserver(object):
     """A log observer that uses a log file and reopens it on SIGUSR1."""
+
     implements(log.ILogObserver)
 
     def __init__(self, logfilename):
         if logfilename is None:
             logFile = sys.stdout
         else:
-            logFile = logfile.LogFile.fromFullPath(logfilename, rotateLength=None)
+            logFile = logfile.LogFile.fromFullPath(
+                logfilename, rotateLength=None)
             # Override if signal is set to None or SIG_DFL (0)
             if not signal.getsignal(signal.SIGUSR1):
                 def signalHandler(signal, frame):

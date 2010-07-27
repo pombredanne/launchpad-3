@@ -859,13 +859,10 @@ class TestDispatchResult(unittest.TestCase):
         self.assertEqual('does not work!', builder.failnotes)
 
 
-POLL_INTERVAL=1
-POLL_REPEAT=10
-
-def is_file_growing(filename):
+def is_file_growing(filename, poll_interval=1, poll_repeat=10):
     """Poll the file size to see if it grows."""
     last_size = None
-    for poll in range(POLL_REPEAT+1):
+    for poll in range(poll_repeat+1):
         try:
             statinfo = os.stat(filename)
             if last_size is None:
@@ -876,10 +873,10 @@ def is_file_growing(filename):
                 # The file should not be shrinking.
                 assert statinfo.st_size == last_size
         except OSError:
-            if poll == POLL_REPEAT:
+            if poll == poll_repeat:
                 # Propagate only on the last loop, i.e. give up.
                 raise
-        time.sleep(POLL_INTERVAL)
+        time.sleep(poll_interval)
     return False
 
 
@@ -910,7 +907,6 @@ class TestBuilddManagerScript(unittest.TestCase):
         test_setup.sendSignal(signal.SIGUSR1)
         self.assertTrue(is_file_growing(logfilepath))
         self.assertTrue(os.access(rotated_logfilepath, os.F_OK))
-        
         test_setup.tearDown()
 
     def testBuilddManagerLoggingNoRotation(self):
@@ -930,7 +926,6 @@ class TestBuilddManagerScript(unittest.TestCase):
         self.assertFalse(
             os.access(rotated_logfilepath, os.F_OK),
             "Twistd's log file was rotated by twistd.")
-        
         test_setup.tearDown()
 
 

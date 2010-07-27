@@ -25,7 +25,7 @@ class BuilddManagerTestSetup(TacTestSetup):
 
     def precreateLogfile(self, content, repeat=1):
         """Precreate a logfile in the root."""
-        self.logfilecontent = content*repeat 
+        self.logfilecontent = content*repeat
 
     def setUpRoot(self):
         """Create `TacTestSetup.root` for storing the log and pid files.
