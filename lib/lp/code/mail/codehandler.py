@@ -39,6 +39,7 @@ from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI
+from lp.code.bzr import get_branch_formats
 from lp.code.enums import BranchType, CodeReviewVote
 from lp.code.errors import BranchMergeProposalExists, UserNotBranchReviewer
 from lp.code.interfaces.branch import BranchCreationException
@@ -522,7 +523,9 @@ class CodeHandler:
                 self._pullRevisionsFromMergeDirectiveIntoSourceBranch(
                     md, target_url, bzr_source)
                 # Get the puller to pull the branch into the mirrored area.
-                db_source.requestMirror()
+                formats = get_branch_formats(bzr_source)
+                db_source.branchChanged(
+                    stacked_url, bzr_source.last_revision(), *formats)
             return db_source
         finally:
             lp_server.stop_server()
