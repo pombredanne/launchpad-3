@@ -84,12 +84,30 @@ You can conditionally show some text like this::
     <a href="http://www.surveymonkey.com/s/launchpadsummer2010">Take our survey!</a>
   </tal:survey>
 
-You can use the built-in TAL feature of prepending ``not:`` to the condition, and for flags that have a value you could use them in ``tal:replace`` or ``tal:attributes``.  
+You can use the built-in TAL feature of prepending ``not:`` to the
+condition, and for flags that have a value you could use them in
+``tal:replace`` or ``tal:attributes``.  
 
 If you just want to simply insert some text taken from a feature, say
 something like::
 
   Message of the day: ${motd.text}
+
+Templates can also check whether the request is in a particular scope, but
+before using this consider whether the code will always be bound to that
+scope or whether it would be more correct to define a new feature::
+
+  <p tal:condition="feature_scopes/server.staging">
+    Staging server: all data will be discarded daily!</p>
+
+Checking flags in code
+**********************
+
+The Zope traversal code establishes a `FeatureController` for the duration
+of a request.  The object can be obtained through either
+`request.features` or `lp.services.features.per_thread.features`.  This
+provides various useful methods including `getFlag` to look up one feature
+(memoized), and `isInScope` to check one scope (also memoized).
 
 Debugging feature usage
 ***********************
@@ -97,9 +115,6 @@ Debugging feature usage
 The flags active during a page request, and the scopes that were looked
 up are visible in the comment at the bottom of every standard Launchpad
 page.
-
-Checking flags in code
-**********************
 
 Defining scopes
 ***************
