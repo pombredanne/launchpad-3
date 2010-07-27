@@ -42,7 +42,6 @@ class TestArchiveWebservice(TestCaseWithFactory):
     def test_checkUpload_bad_pocket(self):
         # Make sure a 403 error and not an OOPS is returned when
         # CannotUploadToPocket is raised when calling checkUpload.
-        # Remove the security proxy because IPerson.name is protected.
 
         # When we're on Python 2.7, this code will be much nicer as
         # assertRaises is a context manager so you can do something like
@@ -62,7 +61,7 @@ class TestArchiveWebservice(TestCaseWithFactory):
         self.assertIn(
             "Not permitted to upload to the UPDATES pocket in a series "
             "in the 'DEVELOPMENT' state.", e.content)
-            
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
