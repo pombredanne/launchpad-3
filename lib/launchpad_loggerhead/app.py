@@ -263,11 +263,15 @@ and quote OOPS-ID <strong>%(oopsid)s</strong>
 </p></body></html>'''
 
 
+_error_status = '500 Internal Server Error'
+_error_headers = [('Content-Type:', 'text/html')]
+
+
 def oops_middleware(app):
     """Middleware to log an OOPS if the request fails.
 
     If the request fails before the response body has started then this returns
-    a basic error page with the OOPS ID to the user (and status code 200).
+    a basic HTML error page with the OOPS ID to the user (and status code 500).
     """
     error_utility = make_error_utility()
     def wrapped_app(environ, start_response):
@@ -300,7 +304,7 @@ def oops_middleware(app):
                 # We've already started sending a response, so... just give
                 # up.
                 raise
-            start_response('200 OK', [('Content-Type:', 'text/html')])
+            start_response(_error_headers, _error_headers)
             yield _oops_html_template % {'oopsid': oopsid}
             return
         # Start yielding the response
@@ -315,7 +319,7 @@ def oops_middleware(app):
                     # We've already started sending a response, so... just give
                     # up.
                     raise
-                start_response('200 OK', [('Content-Type:', 'text/html')])
+                start_response(_error_headers, _error_headers)
                 yield _oops_html_template % {'oopsid': oopsid}
                 return
             else:
