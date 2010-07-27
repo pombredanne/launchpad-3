@@ -14,18 +14,18 @@ from bzrlib.tests import TestCaseInTempDir
 class TestBazaarFormatEnum(TestCase):
     """Tests for the bazaar formats."""
 
-    def test_branch_format_default(self):
-        # The default branch format is unrecognized.
+    def test_branch_format_unrecognized(self):
+        # Unknown branch formats are unrecognized.
         format = BranchFormat.get_enum('no-idea')
         self.assertEqual(BranchFormat.UNRECOGNIZED, format)
 
-    def test_control_format_default(self):
-        # The default control format is unrecognized.
+    def test_control_format_unrecognized(self):
+        # Unknown control formats are unrecognized.
         format = ControlFormat.get_enum('no-idea')
         self.assertEqual(ControlFormat.UNRECOGNIZED, format)
 
-    def test_repository_format_default(self):
-        # The default repository format is unrecognized.
+    def test_repository_format_unrecognized(self):
+        # Unknown repository formats are unrecognized.
         format = RepositoryFormat.get_enum('no-idea')
         self.assertEqual(RepositoryFormat.UNRECOGNIZED, format)
 
