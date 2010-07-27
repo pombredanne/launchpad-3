@@ -12,7 +12,7 @@ from canonical.database.sqlbase import block_implicit_flushes
 
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import IDistribution
 from lp.answers.interfaces.questionenums import QuestionAction
 
 
@@ -102,4 +102,3 @@ def faq_edited(faq, event):
     context = get_karma_context_parameters(faq.target)
     if old_faq.content != faq.content or old_faq.title != faq.title:
         user.assignKarma('faqedited', **context)
-
