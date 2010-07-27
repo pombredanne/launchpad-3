@@ -374,8 +374,8 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
                 # XXX: bug=592513 We shouldn't be hardcoding "run" here.
                 self.setFieldError(
                     'recipe_text',
-                    'The bzr-builder instruction "run" is not permitted here.'
-                    )
+                    'The bzr-builder instruction "run" is not permitted'
+                    ' here.')
                 return
             except PrivateBranchRecipe, e:
                 self.setFieldError('recipe_text', str(e))

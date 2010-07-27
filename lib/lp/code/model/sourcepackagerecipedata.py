@@ -148,7 +148,7 @@ class SourcePackageRecipeData(Storm):
                     SourcePackageRecipeData.base_branch == branch),
                 Select(
                     SourcePackageRecipeData.sourcepackage_recipe_id,
-                    And (
+                    And(
                         _SourcePackageRecipeDataInstruction.recipe_data_id ==
                         SourcePackageRecipeData.id,
                         _SourcePackageRecipeDataInstruction.branch == branch)
