@@ -256,11 +256,6 @@
                     retractMentoring"/>
         </class>
         <adapter
-            provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-            for="lp.bugs.interfaces.bugtask.IBugTask"
-            factory="lp.bugs.browser.bugtask.BugTaskSOP"
-            permission="zope.Public"/>
-        <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskPrivacyAdapter"
@@ -661,7 +656,8 @@
                     users_affected_with_dupes
                     bug_messages
                     isUserAffected
-                    getHWSubmissions"/>
+                    getHWSubmissions
+                    isExpirable"/>
             <require
                 permission="launchpad.Edit"
                 attributes="

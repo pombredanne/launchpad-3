@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -68,7 +68,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
     def setUpTranslationImportQueueForTemplate(self):
         """Return an ITranslationImportQueueEntry for testing purposes."""
         # Get the file to import.
-        en_US_xpi =  get_en_US_xpi_file_to_import('en-US')
+        en_US_xpi = get_en_US_xpi_file_to_import('en-US')
 
         # Attach it to the import queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
@@ -137,7 +137,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
             "  </Description>\n"
             "</RDF>\n"
 
-            #.  This is a DTD file inside a subdirectory 
+            #.  This is a DTD file inside a subdirectory
             #: jar:chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.title)
             msgctxt "main/subdir/test2.dtd"
             msgid "MENU"
@@ -180,13 +180,13 @@ class XPIPOExporterTestCase(unittest.TestCase):
             msgid "FooZilla!"
             msgstr ""
 
-            #.  Translators, don't play with fire! 
+            #.  Translators, don't play with fire!
             #: jar:chrome/en-US.jar!/test1.dtd(foozilla.play.fire)
             msgctxt "main/test1.dtd"
             msgid "Do you want to play with fire?"
             msgstr ""
 
-            #.  This is just a comment, not a comment for translators 
+            #.  This is just a comment, not a comment for translators
             #: jar:chrome/en-US.jar!/test1.dtd(foozilla.play.ice)
             msgctxt "main/test1.dtd"
             msgid "Play with ice?"
@@ -217,6 +217,3 @@ class XPIPOExporterTestCase(unittest.TestCase):
 
         output = exported_template.read().decode("utf-8")
         self._compareExpectedAndExported(expected_template, output)
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

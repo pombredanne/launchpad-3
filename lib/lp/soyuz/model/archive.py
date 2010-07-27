@@ -37,6 +37,7 @@ from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table)
@@ -47,6 +48,7 @@ from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount)
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.component import Component
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
@@ -219,7 +221,7 @@ class Archive(SQLBase):
     def _get_arm_builds_enabled(self):
         """Check whether ARM builds are allowed for this archive."""
         archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
         arm = getUtility(IProcessorFamilySet).getByName('arm')
         for (family, archive_arch) in restricted_families:
             if family == arm:
@@ -231,7 +233,7 @@ class Archive(SQLBase):
     def _set_arm_builds_enabled(self, value):
         """Set whether ARM builds are enabled for this archive."""
         archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
         arm = getUtility(IProcessorFamilySet).getByName('arm')
         for (family, archive_arch) in restricted_families:
             if family == arm:
@@ -807,30 +809,32 @@ class Archive(SQLBase):
         self.sources_cached = sources_cached.count()
         self.binaries_cached = binaries_cached.count()
 
-    def findDepCandidateByName(self, distroarchseries, name):
+    def findDepCandidates(self, distro_arch_series, pocket, component,
+                          source_package_name, dep_name):
         """See `IArchive`."""
-        archives = []
-        if self.is_ppa:
-            archives.append(self.distribution.main_archive.id)
-        archives.append(self.id)
-        archives.extend(
-            IResultSet(self.dependencies).values(
-            ArchiveDependency.dependencyID))
+        deps = expand_dependencies(
+            self, distro_arch_series.distroseries, pocket, component,
+            source_package_name)
+        archive_clause = Or([And(
+            BinaryPackagePublishingHistory.archiveID == archive.id,
+            BinaryPackagePublishingHistory.pocket == pocket,
+            Component.name.is_in(components))
+            for (archive, pocket, components) in deps])
 
         store = ISlaveStore(BinaryPackagePublishingHistory)
-        candidate = store.find(
+        return store.find(
             BinaryPackagePublishingHistory,
-            BinaryPackageName.name == name,
+            BinaryPackageName.name == dep_name,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.distroarchseries ==
-                distroarchseries,
-            In(BinaryPackagePublishingHistory.archiveID, archives),
+                distro_arch_series,
             BinaryPackagePublishingHistory.status ==
-                PackagePublishingStatus.PUBLISHED
-            ).order_by(Desc(BinaryPackagePublishingHistory.id))
-        return candidate.first()
+                PackagePublishingStatus.PUBLISHED,
+            BinaryPackagePublishingHistory.componentID == Component.id,
+            archive_clause).order_by(
+                Desc(BinaryPackagePublishingHistory.id))
 
     def getArchiveDependency(self, dependency):
         """See `IArchive`."""
@@ -1433,14 +1437,6 @@ class Archive(SQLBase):
         store.add(archive_auth_token)
         return archive_auth_token
 
-    def getPrivateSourcesList(self, person):
-        """See `IArchive`."""
-
-        token = self.getAuthToken(person)
-        if token is None:
-            token = self.newAuthToken(person)
-        return token.archive_url
-
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):
         """See `IArchive`."""
@@ -1603,7 +1599,7 @@ class Archive(SQLBase):
         if self.is_main:
             return getUtility(IProcessorFamilySet).getRestricted()
         archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
         return [family for (family, archive_arch) in restricted_families
                 if archive_arch is not None]
 
@@ -1618,7 +1614,7 @@ class Archive(SQLBase):
                 raise CannotRestrictArchitectures("Main archives can not "
                         "be restricted to certain architectures")
         archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
         for (family, archive_arch) in restricted_families:
             if family in value and archive_arch is None:
                 archive_arch_set.new(self, family)

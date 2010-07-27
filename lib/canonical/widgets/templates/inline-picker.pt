@@ -9,12 +9,12 @@
 </span>
 <script tal:condition="view/can_write"
         tal:content="structure string:
-YUI().use('lp.picker', function(Y) {
+YUI().use('lp.app.picker', function(Y) {
     if (Y.UA.ie) {
         return;
     }
 
-    Y.lp.picker.addPickerPatcher(
+    Y.lp.app.picker.addPickerPatcher(
         ${view/vocabulary_name},
         ${view/resource_uri},
         ${view/json_attribute},

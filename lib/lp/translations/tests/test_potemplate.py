@@ -1,9 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
-from unittest import TestLoader
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -35,8 +33,7 @@ class TestPOTemplate(TestCaseWithFactory):
         self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "directory and language code. "
-            "(Expected: '%s' Got: '%s')" % (expected, result)
-            )
+            "(Expected: '%s' Got: '%s')" % (expected, result))
 
         self.potemplate.path = "testdir/messages.pot"
         expected = "testdir/testdomain-eo@VARIANT.po"
@@ -44,8 +41,7 @@ class TestPOTemplate(TestCaseWithFactory):
         self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "directory, language code and variant. "
-            "(Expected: '%s' Got: '%s')" % (expected, result)
-            )
+            "(Expected: '%s' Got: '%s')" % (expected, result))
 
         self.potemplate.path = "/messages.pot"
         expected = "/testdomain-eo.po"
@@ -53,8 +49,7 @@ class TestPOTemplate(TestCaseWithFactory):
         self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "leading slash and language code. "
-            "(Expected: '%s' Got: '%s')" % (expected, result)
-            )
+            "(Expected: '%s' Got: '%s')" % (expected, result))
 
         self.potemplate.path = "messages.pot"
         expected = "testdomain-eo.po"
@@ -62,8 +57,7 @@ class TestPOTemplate(TestCaseWithFactory):
         self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "missing directory and language code. "
-            "(Expected: '%s' Got: '%s')" % (expected, result)
-            )
+            "(Expected: '%s' Got: '%s')" % (expected, result))
 
     def test_getTranslationCredits(self):
         # getTranslationCredits returns only translation credits.
@@ -71,7 +65,7 @@ class TestPOTemplate(TestCaseWithFactory):
         gnome_credits = self.factory.makePOTMsgSet(
             self.potemplate, sequence=2, singular=u"translator-credits")
         kde_credits = self.factory.makePOTMsgSet(
-            self.potemplate, sequence=3, 
+            self.potemplate, sequence=3,
             singular=u"Your emails", context=u"EMAIL OF TRANSLATORS")
         self.factory.makePOTMsgSet(self.potemplate, sequence=4)
 
@@ -81,6 +75,7 @@ class TestPOTemplate(TestCaseWithFactory):
 
 class EquivalenceClassTestMixin:
     """Helper for POTemplate equivalence class tests."""
+
     def _compareResult(self, expected, actual):
         """Compare equivalence-classes set to expectations.
 
@@ -115,7 +110,7 @@ class TestProductTemplateEquivalenceClasses(TestCaseWithFactory,
             productseries=self.stable, name='foo')
 
         classes = self.subset.groupEquivalentPOTemplates()
-        expected = { ('foo', None): [trunk_template, stable_template] }
+        expected = {('foo', None): [trunk_template, stable_template]}
         self._compareResult(expected, classes)
 
     def test_DifferentlyNamedProductTemplatesAreNotEquivalent(self):
@@ -143,13 +138,13 @@ class TestProductTemplateEquivalenceClasses(TestCaseWithFactory,
             productseries=external_series, name='foo')
 
         classes = self.subset.groupEquivalentPOTemplates()
-        expected = { ('foo', None): [template1] }
+        expected = {('foo', None): [template1]}
         self._compareResult(expected, classes)
 
         external_subset = getUtility(IPOTemplateSet).getSharingSubset(
             product=external_series.product)
         classes = external_subset.groupEquivalentPOTemplates()
-        expected = { ('foo', None): [template2] }
+        expected = {('foo', None): [template2]}
         self._compareResult(expected, classes)
 
     def test_GetSharingPOTemplates(self):
@@ -440,7 +435,3 @@ class TestGetPOFilesFor(TestCaseWithFactory):
         pofiles = get_pofiles_for([self.potemplate], self.greek)
         pofile = pofiles[0]
         self.assertTrue(isinstance(pofile, DummyPOFile))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -2265,7 +2265,7 @@ class BugTaskSet:
         transitionToStatus() method. See 'Conjoined Bug Tasks' in
         c.l.doc/bugtasks.txt.
 
-        Only bugtask the specified user has permission to view are
+        Only bugtasks the specified user has permission to view are
         returned. The Janitor celebrity has permission to view all bugs.
         """
         if bug is None:

@@ -514,6 +514,22 @@ COMMENT ON INDEX emailaddress__account__key IS 'Ensures that an Account only has
 COMMENT ON TABLE FeaturedProject IS 'A list of featured projects. This table is really just a list of pillarname IDs, if a project''s pillar name is in this list then it is a featured project and will be listed on the Launchpad home page.';
 COMMENT ON COLUMN FeaturedProject.pillar_name IS 'A reference to PillarName.id';
 
+-- FeatureFlag
+
+COMMENT ON TABLE FeatureFlag IS
+    'Configuration that varies by the active scope and that \
+can be changed without restarting Launchpad
+<https://dev.launchpad.net/LEP/FeatureFlags>';
+
+COMMENT ON COLUMN FeatureFlag.scope IS 
+    'Scope in which this setting is active';
+
+COMMENT ON COLUMN FeatureFlag.priority IS 
+    'Higher priority flags override lower';
+
+COMMENT ON COLUMN FeatureFlag.flag IS 
+    'Name of the flag being controlled';
+
 -- KarmaCategory
 
 COMMENT ON TABLE KarmaCategory IS 'A category of karma. This allows us to
