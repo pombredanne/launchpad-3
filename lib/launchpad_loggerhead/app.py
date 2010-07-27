@@ -268,17 +268,20 @@ def oops_middleware(app):
 
     If the request fails before the response body has started then this returns
     a basic error page with the OOPS ID to the user (and status code 200).
-
-    Strictly speaking this isn't 100% correct WSGI middleware, because it
-    doesn't respect the return value from start_response (the 'write'
-    callable), but using that return value is deprecated and nothing in our
-    codebrowse stack uses that.
     """
     error_utility = make_error_utility()
     def wrapped_app(environ, start_response):
         response_start = [None]
+        body_started = []
+        real_write = []
         def wrapped_start_response(status, headers, exc_info=None):
             response_start[0] = (status, headers, exc_info)
+            def write(chunk):
+                if not real_write:
+                    real_write.append(start_response(*response_start[0]))
+                real_write[0](chunk)
+                return real_write[0]
+            return write
         def report_oops():
             # XXX: We should capture more per-request information to include in
             # the OOPS here, e.g. duration, user, etc.  But even an OOPS with
@@ -293,11 +296,14 @@ def oops_middleware(app):
             app_iter = app(environ, wrapped_start_response)
         except:
             oopsid = report_oops()
+            if body_started:
+                # We've already started sending a response, so... just give
+                # up.
+                raise
             start_response('200 OK', [('Content-Type:', 'text/html')])
             yield _oops_html_template % {'oopsid': oopsid}
             return
         # Start yielding the response
-        body_started = False
         while True:
             try:
                 yield app_iter.next()
@@ -315,5 +321,5 @@ def oops_middleware(app):
             else:
                 if not body_started:
                     start_response(*response_start[0])
-                    body_started = True
+                    body_started.append(True)
     return wrapped_app
