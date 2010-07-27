@@ -9,6 +9,7 @@ __all__ = [
     'LibraryFileAliasSet',
     'LibraryFileContent',
     'LibraryFileDownloadCount',
+    'TimeLimitedToken',
     ]
 
 from datetime import datetime, timedelta

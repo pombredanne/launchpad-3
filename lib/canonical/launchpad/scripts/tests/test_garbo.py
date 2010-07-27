@@ -8,7 +8,6 @@ __all__ = []
 
 from datetime import datetime, timedelta
 import time
-import unittest
 
 from pytz import UTC
 from storm.expr import Min, SQL
@@ -19,11 +18,13 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import THIRTY_DAYS_AGO, UTC_NOW
+from canonical.database import sqlbase
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.database.librarian import TimeLimitedToken
 from lp.code.enums import CodeImportResultStatus
 from lp.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.scripts.garbo import (
@@ -530,7 +531,18 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(bug.attachments.count(), 0)
 
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_TimeLimitedTokenPruner(self):
+        # Ensure there are no tokens
+        store = sqlbase.session_store()
+        map(store.remove, store.find(TimeLimitedToken))
+        store.flush()
+        self.assertEqual(0, len(list(store.find(TimeLimitedToken,
+            url="sample url", token="foo"))))
+        store.add(TimeLimitedToken(url="sample url", token="foo",
+            created=datetime(2008, 01, 01, tzinfo=UTC)))
+        store.commit()
+        self.assertEqual(1, len(list(store.find(TimeLimitedToken,
+            url="sample url", token="foo"))))
+        self.runDaily()
+        self.assertEqual(0, len(list(store.find(TimeLimitedToken,
+            url="sample url", token="foo"))))
