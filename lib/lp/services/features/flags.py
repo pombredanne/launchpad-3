@@ -143,3 +143,12 @@ class FeatureController(object):
         for flag, scope, value in rs:
             d.setdefault(str(flag), []).append((str(scope), value))
         return d
+
+    def usedFlags(self):
+        """Return dict of flags used in this controller so far.
+        """
+        return dict(self._known_flags._known)
+
+    def usedScopes(self):
+        """Return {scope: active} for scopes that have been used so far."""
+        return dict(self._known_scopes._known)

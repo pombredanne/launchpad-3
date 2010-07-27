@@ -74,6 +74,11 @@ class TestFeatureFlags(TestCase):
         self.assertEqual(u'3.0',
             control['ui.icing'])
         self.assertEqual(['beta_user', 'default'], call_log)
+        # after looking this up the value is known and the scopes are
+        # positively and negatively cached
+        self.assertEqual({'ui.icing': u'3.0'}, control.usedFlags())
+        self.assertEqual(dict(beta_user=False, default=True),
+            control.usedScopes())
 
     def test_getAllFlags(self):
         # can fetch all the active flags, and it gives back only the
@@ -98,7 +103,8 @@ class TestFeatureFlags(TestCase):
         self.assertEqual(
             u'3.0',
             default_control.getFlag('ui.icing'))
-        beta_control, call_log = self.makeControllerInScopes(['beta_user', 'default'])
+        beta_control, call_log = self.makeControllerInScopes(
+            ['beta_user', 'default'])
         self.assertEqual(
             u'4.0',
             beta_control.getFlag('ui.icing'))
@@ -106,7 +112,8 @@ class TestFeatureFlags(TestCase):
     def test_undefinedFlag(self):
         # if the flag is not defined, we get None
         self.populateStore()
-        control, call_log = self.makeControllerInScopes(['beta_user', 'default'])
+        control, call_log = self.makeControllerInScopes(
+            ['beta_user', 'default'])
         self.assertIs(None,
             control.getFlag('unknown_flag'))
         no_scope_flags, call_log = self.makeControllerInScopes([])
@@ -116,7 +123,8 @@ class TestFeatureFlags(TestCase):
     def test_threadGetFlag(self):
         self.populateStore()
         # the start-of-request handler will do something like this:
-        per_thread.features, call_log = self.makeControllerInScopes(['default', 'beta_user'])
+        per_thread.features, call_log = self.makeControllerInScopes(
+            ['default', 'beta_user'])
         try:
             # then application code can simply ask without needing a context
             # object
@@ -140,5 +148,9 @@ class TestFeatureFlags(TestCase):
         f, call_log = self.makeControllerInScopes([])
         self.assertEqual(None, f.getFlag('unknown'))
         # no scopes need to be checked because it's just not in the database
+        # and there's no point checking
         self.assertEqual({}, f._known_scopes._known)
-        # XXX: look it up again and check the scope's evaluated only once
+        self.assertEquals([], call_log)
+        # however, this we have now negative-cached the flag
+        self.assertEqual(dict(unknown=None), f.usedFlags())
+        self.assertEqual(dict(), f.usedScopes())
