@@ -194,7 +194,7 @@ def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/',
     browser.getControl(name='field.name').value = team_name
     browser.getControl('Display Name').value = displayname
     if private:
-        browser.getControl('Visibility').value = ['PRIVATE_MEMBERSHIP']
+        browser.getControl('Visibility').value = ['PRIVATE']
         browser.getControl(name='field.subscriptionpolicy').value = [
             'RESTRICTED']
     else:

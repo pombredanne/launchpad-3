@@ -37,6 +37,7 @@ __all__ = [
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
+    'validate_person',
     'validate_public_person',
     ]
 
@@ -109,7 +110,7 @@ class PrivatePersonLinkageError(ValueError):
 
 
 @block_implicit_flushes
-def validate_person(obj, attr, value, validate_func):
+def validate_person_common(obj, attr, value, validate_func):
     """Validate the person using the supplied function."""
     if value is None:
         return None
@@ -120,7 +121,7 @@ def validate_person(obj, attr, value, validate_func):
     # DB. This needs cleaning up.
     from lp.registry.model.person import Person
     person = Person.get(value)
-    if validate_func(person):
+    if not validate_func(person):
         raise PrivatePersonLinkageError(
             "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
             % (person.name, person.visibility.name,
@@ -128,13 +129,20 @@ def validate_person(obj, attr, value, validate_func):
     return value
 
 
+def validate_person(obj, attr, value):
+    """Validate the person is a real person with no other restrictions."""
+    def validate(person):
+        return IPerson.providedBy(person)
+    return validate_person_common(obj, attr, value, validate)
+
+
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
 
     def validate(person):
-        return not is_public_person(person)
+        return is_public_person(person)
 
-    return validate_person(obj, attr, value, validate)
+    return validate_person_common(obj, attr, value, validate)
 
 
 class PersonalStanding(DBEnumeratedType):

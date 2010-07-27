@@ -769,7 +769,7 @@ address.
 
 Almost all teams have the word 'team' as part of their names, so a search
 for 'team' should give us some of them.  Notice that the
-PRIVATE_MEMBERSHIP_TEAM 'myteam' is not included in the results.
+PRIVATE_TEAM 'myteam' is not included in the results.
 
     >>> login_person(sample_person)
     >>> ephemeral = factory.makeTeam(owner=foo_bar, name='ephemeral-team')

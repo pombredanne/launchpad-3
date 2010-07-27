@@ -1809,8 +1809,7 @@ class ArchiveActivateView(LaunchpadFormView):
     def is_private_team(self):
         """Is the person a private team?
 
-        :return: True only if visibility is PRIVATE.  False is returned when
-        the visibility is PUBLIC and PRIVATE_MEMBERSHIP.
+        :return: True only if visibility is PRIVATE.
         :rtype: bool
         """
         return self.context.visibility == PersonVisibility.PRIVATE
@@ -1881,7 +1880,7 @@ class ArchiveAdminView(BaseArchiveEditView):
     def updateContextFromData(self, data):
         """Update context from form data.
 
-        If the user did not specify a buildd secret but marked the 
+        If the user did not specify a buildd secret but marked the
         archive as private, generate a secret for them.
         """
         if data['private'] and data['buildd_secret'] is None:
@@ -1958,8 +1957,7 @@ class ArchiveAdminView(BaseArchiveEditView):
     def owner_is_private_team(self):
         """Is the owner a private team?
 
-        :return: True only if visibility is PRIVATE.  False is returned when
-        the visibility is PUBLIC and PRIVATE_MEMBERSHIP.
+        :return: True only if visibility is PRIVATE.
         :rtype: bool
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
@@ -2028,4 +2026,3 @@ class ArchiveDeleteView(LaunchpadFormView):
         self.request.response.addInfoNotification(
             "Deletion of '%s' has been requested and the repository will be "
             "removed shortly." % self.context.title)
-

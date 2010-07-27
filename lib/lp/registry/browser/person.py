@@ -4002,12 +4002,11 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
         and this team's visibility is either None or PUBLIC.
         """
         # Joining a moderated team will put you on the proposed_members
-        # list. If it is a private membership team, you are not allowed
-        # to view the proposed_members attribute until you are an
-        # active member; therefore, it would look like the join button
-        # is broken. Either private membership teams should always have a
-        # restricted subscription policy, or we need a more complicated
-        # permission model.
+        # list. If it is a private team, you are not allowed to view the
+        # proposed_members attribute until you are an active member;
+        # therefore, it would look like the join button is broken. Either
+        # private teams should always have a restricted subscription policy,
+        # or we need a more complicated permission model.
         if not (self.context.visibility is None
                 or self.context.visibility == PersonVisibility.PUBLIC):
             return False

@@ -7,5 +7,8 @@ x Remove PRIVATE_MEMBERSHIP enum
 x Remove is_private_membership_person
 x Remove ParticipatingPersonChoice and use PersonChoice
 x Remove validate_person_not_private_membership and replace with validate_person
+x Convert sampledata so that no visibility=20 teams exist.  Query for
+   person and lp_person to ensure they are gone.
+X Ensure use of myteam in test data is for PRIVATE
+x Look for XXX 602773
 Remove all instance of PRIVATE_MEMBERSHIP
-Look for XXX 602773
