@@ -183,7 +183,8 @@ class BaseDispatchResult:
             # builder, or by some chance the job was re-dispatched to
             # the same builder.  This make it impossible to determine
             # whether the job or the builder is at fault, so don't fail
-            # either, yet.
+            # either.  We reset the builder and job to try again.
+            self._cleanJob(builder.currentjob)
             return False
 
         if builder.failure_count > build_job.failure_count:
@@ -225,9 +226,7 @@ class FailDispatchResult(BaseDispatchResult):
 
     @write_transaction
     def __call__(self):
-        builder = self._getBuilder()
-        builder.failBuilder(self.info)
-        self._cleanJob(builder.currentjob)
+        self.assessFailureCounts()
 
 
 class ResetDispatchResult(BaseDispatchResult):
@@ -511,7 +510,7 @@ class SlaveScanner:
                 (slave, response.getErrorMessage()))
             self.waitOnDeferredList()
             self._incrementFailureCounts(slave)
-            return self.reset_result(slave)
+            return self.fail_result(slave)
 
         if isinstance(response, list) and len(response) == 2:
             if method in buildd_success_result_map.keys():

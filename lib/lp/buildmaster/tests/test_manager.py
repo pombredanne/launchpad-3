@@ -828,22 +828,23 @@ class TestDispatchResult(unittest.TestCase):
 
         return builder, job.id
 
-    def assertJobIsClean(self, job_id):
-        """Re-fetch the `IBuildQueue` record and check if it's clean."""
-        job = getUtility(IBuildQueueSet).get(job_id)
-        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
-        self.assertEqual('NEEDSBUILD', build.status.name)
-        self.assertEqual(None, job.builder)
-        self.assertEqual(None, job.date_started)
-        self.assertEqual(None, job.logtail)
+    def assertBuildqueueIsClean(self, buildqueue):
+        # Check that the buildqueue is reset.
+        self.assertEqual(None, buildqueue.builder)
+        self.assertEqual(None, buildqueue.date_started)
+        self.assertEqual(None, buildqueue.logtail)
+
+    def assertBuilderIsClean(self, builder):
+        # Check that the builder is ready for a new build.
+        self.assertTrue(builder.builderok)
+        self.assertTrue(builder.failnotes is None)
+        self.assertTrue(builder.currentjob is None)
 
     def testResetDispatchResult(self):
-        """`ResetDispatchResult` clean any existing jobs.
-
-        Although it keeps the builder active in pool.
-        """
+        # Test that `ResetDispatchResult` calls assessFailureCounts().
         builder, job_id = self._getBuilder('bob')
         builder.builderok = True
+        builder.failure_count = 1
 
         # Setup a interaction to satisfy 'write_transaction' decorator.
         login(ANONYMOUS)
@@ -887,44 +888,52 @@ class TestDispatchResult(unittest.TestCase):
         return builder, result
 
     def test_assessFailureCounts_equal_failures(self):
-        # Basic case where the failure counts are equal.
+        # Basic case where the failure counts are equal and the job is
+        # reset to try again & the builder is not failed.
         builder, result = self._setup_failing_dispatch_result()
-        build = builder.currentjob.specific_job.build
+        buildqueue = builder.currentjob
+        build = buildqueue.specific_job.build
         builder.failure_count = 2
         build.failure_count = 2
         disabled = result.assessFailureCounts()
+
         self.assertFalse(disabled)
-        self.assertTrue(builder.builderok)
-        # This is only NEEDSBUILD because assessFailureCounts doesn't
-        # touch the status unless there's a failure, it's reset
-        # elsewhere.
-        self.assertEqual('BUILDING', build.status.name)
+        self.assertBuilderIsClean(builder)
+        self.assertEqual('NEEDSBUILD', build.status.name)
+        self.assertBuildqueueIsClean(buildqueue)
 
     def test_assessFailureCounts_job_failed(self):
         # Case where the job has failed more than the builder.
         builder, result = self._setup_failing_dispatch_result()
-        build = builder.currentjob.specific_job.build
+        buildqueue = builder.currentjob
+        build = buildqueue.specific_job.build
         build.failure_count = 2
         builder.failure_count = 1
         disabled = result.assessFailureCounts()
+
         self.assertTrue(disabled)
-        self.assertTrue(builder.builderok)
+        self.assertBuilderIsClean(builder)
         self.assertEqual('FAILEDTOBUILD', build.status.name)
+        # The buildqueue should have been removed entirely.
+        self.assertEqual(
+            None, getUtility(IBuildQueueSet).getByBuilder(builder),
+            "Buildqueue was not removed when it should be.")
 
     def test_assessFailureCounts_builder_failed(self):
         # Case where the builder has failed more than the job.
         builder, result = self._setup_failing_dispatch_result()
-        build = builder.currentjob.specific_job.build
+        buildqueue = builder.currentjob
+        build = buildqueue.specific_job.build
         build.failure_count = 2
         builder.failure_count = 3
         disabled = result.assessFailureCounts()
+
         self.assertTrue(disabled)
         self.assertFalse(builder.builderok)
+        self.assertEqual('does not work!', builder.failnotes)
         self.assertTrue(builder.currentjob is None)
-        # This is only BUILDING because assessFailureCounts doesn't
-        # touch the status unless there's a failure, it's reset
-        # elsewhere.
         self.assertEqual('NEEDSBUILD', build.status.name)
+        self.assertBuildqueueIsClean(buildqueue)
 
 
 class TestBuilddManager(TrialTestCase):
