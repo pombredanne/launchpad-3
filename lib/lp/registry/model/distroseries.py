@@ -335,13 +335,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         condition = SQL(conditions + "AND packaging.id IS NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC', SourcePackageName.name)
-        return results.config(distinct=True)
-#        return [{
-#                 'package': SourcePackage(
-#                    sourcepackagename=spn, distroseries=self),
-#                 'bug_count': bug_count,
-#                 'total_messages': total_messages}
-#                for (spn, score, bug_count, total_messages) in results]
+        results = results.config(distinct=True)
+
+        def decorator(result):
+            spn, score, bug_count, total_messages = result
+            return {
+                'package': SourcePackage(
+                    sourcepackagename=spn, distroseries=self),
+                'bug_count': bug_count,
+                'total_messages': total_messages,
+                }
+        return DecoratedResultSet(results, decorator)
 
     def getPrioritizedPackagings(self):
         """See `IDistroSeries`.
