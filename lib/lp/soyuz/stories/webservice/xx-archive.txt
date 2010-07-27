@@ -379,18 +379,7 @@ And ``checkUpload`` now also no longer passes:
     ...
     InsufficientUploadRights: The signer of this package is lacking the upload rights for the source package, component or package set in question.
 
-``checkUpload`` will also return an error if the pocket is not open
-for uploads.
 
-    >>> response = user_webservice.named_get(
-    ...     ubuntu['main_archive_link'], 'checkUpload', 
-    ...     distroseries=grumpy['self_link'],
-    ...     sourcepackagename='mozilla-firefox', pocket='Updates',
-    ...     component='main', person=name12['self_link'])
-    >>> print(response)
-    HTTP/1.1 403 Forbidden
-    ...
-    CannotUploadToPocket: Not permitted to upload to the UPDATES pocket in a series in the 'EXPERIMENTAL' state.
 
 Only the archive owners can add or remove component-uploaders.
 
