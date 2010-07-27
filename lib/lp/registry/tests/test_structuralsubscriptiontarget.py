@@ -250,6 +250,7 @@ class TestStructuralSubscriptionForDistroSeries(
         self.target = self.factory.makeDistroSeries()
         self.target = ProxyFactory(self.target)
 
+
 def distributionSourcePackageSetUp(test):
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -257,26 +258,31 @@ def distributionSourcePackageSetUp(test):
     test.globs['other_target'] = ubuntu.getSourcePackage('pmount')
     test.globs['filebug'] = bugtarget_filebug
 
+
 def productSetUp(test):
     setUp(test)
     test.globs['target'] = getUtility(IProductSet).getByName('firefox')
     test.globs['filebug'] = bugtarget_filebug
+
 
 def distributionSetUp(test):
     setUp(test)
     test.globs['target'] = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['filebug'] = bugtarget_filebug
 
+
 def milestone_filebug(milestone, summary, status=None):
     bug = bugtarget_filebug(milestone.target, summary, status=status)
     bug.bugtasks[0].milestone = milestone
     return bug
+
 
 def milestoneSetUp(test):
     setUp(test)
     firefox = getUtility(IProductSet).getByName('firefox')
     test.globs['target'] = firefox.getMilestone('1.0')
     test.globs['filebug'] = milestone_filebug
+
 
 def distroseries_sourcepackage_filebug(distroseries, summary, status=None):
     params = CreateBugParams(
@@ -290,11 +296,13 @@ def distroseries_sourcepackage_filebug(distroseries, summary, status=None):
     nomination.approve(distroseries.distribution.owner)
     return bug
 
+
 def distroSeriesSourcePackageSetUp(test):
     setUp(test)
     test.globs['target'] = (
         getUtility(IDistributionSet).getByName('ubuntu').getSeries('hoary'))
     test.globs['filebug'] = distroseries_sourcepackage_filebug
+
 
 def test_suite():
     """Return the `IStructuralSubscriptionTarget` TestSuite."""

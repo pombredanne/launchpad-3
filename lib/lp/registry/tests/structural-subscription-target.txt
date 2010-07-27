@@ -62,7 +62,7 @@ we use getSubscriptions.
 
 
 === Structural subscriptions and indirect bug subscriptions ===
- 
+
     >>> bug = filebug(target, 'test bug one')
     >>> indirect_subscribers = set(
     ...     subscriber.name for subscriber in bug.getIndirectSubscribers())
