@@ -7,7 +7,7 @@ changed, this will change in the future though.
 Changing the status:
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> login('foo.bar@canonical.com')
@@ -69,7 +69,7 @@ notifications were sent.
 
 Let's set a different approver and add a subscriber.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> mark = getUtility(IPersonSet).getByEmail('mark@example.com')
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> svg_support.approver = mark

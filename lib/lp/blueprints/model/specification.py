@@ -520,7 +520,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 return
 
     def isSubscribed(self, person):
-        """See canonical.launchpad.interfaces.ISpecification."""
+        """See lp.blueprints.interfaces.specification.ISpecification."""
         if person is None:
             return False
 
@@ -872,5 +872,5 @@ class SpecificationSet(HasSpecificationsMixin):
         return dependencies
 
     def get(self, spec_id):
-        """See canonical.launchpad.interfaces.ISpecificationSet."""
+        """See lp.blueprints.interfaces.specification.ISpecificationSet."""
         return Specification.get(spec_id)

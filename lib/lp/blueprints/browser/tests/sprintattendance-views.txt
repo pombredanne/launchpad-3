@@ -7,7 +7,7 @@ handling.
 
     >>> from lp.blueprints.browser.sprintattendance import (
     ...     BaseSprintAttendanceAddView)
-    >>> from canonical.launchpad.interfaces import ISprintSet
+    >>> from lp.blueprints.interfaces.sprint import ISprintSet
 
     >>> ubz = getUtility(ISprintSet)['ubz']
     >>> sprint_attendance_view = create_view(ubz, name='+attend')

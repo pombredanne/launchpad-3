@@ -11,14 +11,14 @@ intended to communicate this.
 
 First we import the classes required to test the view:
 
-  >>> from datetime import datetime
-  >>> from pytz import timezone
-  >>> from zope.component import getUtility, getMultiAdapter
-  >>> from canonical.launchpad.interfaces import (
-  ...     ISprintSet, IPersonSet, IProductSet)
-  >>> from lp.blueprints.browser.sprint import SprintMeetingExportView
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
+    >>> from datetime import datetime
+    >>> from pytz import timezone
+    >>> from zope.component import getUtility, getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.blueprints.interfaces.sprint import ISprintSet
+    >>> from lp.blueprints.browser.sprint import SprintMeetingExportView
 
 Look up a few Launchpad objects to be used in the tests
 

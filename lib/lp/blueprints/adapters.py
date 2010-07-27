@@ -11,7 +11,7 @@ from lp.blueprints.interfaces.specification import ISpecificationDelta
 
 
 class SpecificationDelta:
-    """See canonical.launchpad.interfaces.ISpecificationDelta."""
+    """See lp.blueprints.interfaces.specification.ISpecificationDelta."""
     implements(ISpecificationDelta)
     def __init__(self, specification, user, title=None,
         summary=None, whiteboard=None, specurl=None, productseries=None,

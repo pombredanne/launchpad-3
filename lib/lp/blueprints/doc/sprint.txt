@@ -3,7 +3,8 @@
 Sprints or meetings can be coordinated using Launchpad.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import ISprintSet, IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.blueprints.interfaces.sprint import ISprintSet
     >>> sprintset = getUtility(ISprintSet)
 
 To find a sprint by name, use:
@@ -13,8 +14,10 @@ To find a sprint by name, use:
 The major pillars, product, distribution and project, have some properties
 which give us the sprints relevant to them.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, IProjectGroupSet, IDistributionSet)
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+
     >>> productset = getUtility(IProductSet)
     >>> projectset = getUtility(IProjectGroupSet)
     >>> distroset = getUtility(IDistributionSet)
@@ -68,7 +71,8 @@ approved, not ones where the only specs are proposed.  So, we'll change
 the specs related to the Ubuntu "futurista" sprint to "proposed", and
 then check the coming sprints and all sprints.
 
-    >>> from canonical.launchpad.interfaces import SprintSpecificationStatus
+    >>> from lp.blueprints.interfaces.sprintspecification import (
+    ...     SprintSpecificationStatus)
 
 We're directly using the database classes here, bypassing the security
 proxies because this is just set-up for the next step, it's not the exact
@@ -101,9 +105,9 @@ related to a sprint.
 Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
- >>> ubz = sprintset["ubz"]
+    >>> ubz = sprintset["ubz"]
 
- >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
 
 
 First, there should be no informational specs for ubz:
@@ -151,8 +155,9 @@ And if we ask just for specs, we get them all
 
 Inactive products are excluded from the listings.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login
+
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("foo.bar@canonical.com")
 

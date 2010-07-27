@@ -9,14 +9,15 @@ All Milestone creation and retrieval is done through IMilestoneSet.
 IMilestoneSet can be accessed as a utility.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> from lp.blueprints.interfaces.specification import (
+    ...     ISpecificationSet, SpecificationDefinitionStatus,
+    ...     SpecificationImplementationStatus, SpecificationPriority)
     >>> specset = getUtility(ISpecificationSet)
 
 To create a new Specification, use ISpecificationSet.new:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, SpecificationDefinitionStatus,
-    ...     SpecificationImplementationStatus, SpecificationPriority)
+    >>> from lp.registry.interfaces.product import IProductSet
+
     >>> productset = getUtility(IProductSet)
     >>> upstream_firefox = productset.get(4)
     >>> from lp.registry.model.person import Person
@@ -57,7 +58,8 @@ this the specification target.
 
 We attach now a spec to a distribution.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> mark = Person.byName('mark')
     >>> ubuspec = specset.new('fix-spec-permissions',
@@ -104,7 +106,7 @@ When we modify a specification, we can get a delta of the changes using
 ISpecification.getDelta(). If there are no changes, None will be
 returned:
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from zope.interface import providedBy
     >>> unmodified_spec = Snapshot(ubuspec, providing=providedBy(ubuspec))
@@ -232,7 +234,7 @@ can ask for its dependencies, or the specs which it blocks. And you can ask
 for the full set of dependencies-and-their-dependencies, as well as the full
 set of specs-which-block-this-one-and-all-the-specs-that-block-them-too.
 
- >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
  >>> efourx = getUtility(IProductSet).getByName('firefox').getSpecification('e4x')
  >>> for spec in efourx.dependencies: print spec.name
  svg-support
@@ -322,7 +324,7 @@ discussion of the spec.
 
  >>> for subscriber in canvas.subscribers: print subscriber.name
 
- >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
  >>> jdub = getUtility(IPersonSet).getByName('jdub')
  >>> sub = canvas.subscribe(jdub, jdub, False)
  >>> print sub.essential

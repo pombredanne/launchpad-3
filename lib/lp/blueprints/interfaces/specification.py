@@ -27,9 +27,7 @@ __all__ = [
 
 
 from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_write_operation, operation_parameters, operation_returns_entry)
-from lazr.restful.fields import Reference
+    export_as_webservice_entry)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
@@ -40,7 +38,6 @@ from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.registry.interfaces.role import IHasOwner
-from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
