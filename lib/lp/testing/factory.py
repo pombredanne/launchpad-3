@@ -1121,7 +1121,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             branch.createBranchRevision(sequence, revision)
             parent = revision
             parent_ids = [parent.revision_id]
-        branch.startMirroring()
+        if branch.branch_type not in (BranchType.REMOTE, BranchType.HOSTED):
+            branch.startMirroring()
         removeSecurityProxy(branch).branchChanged(
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
