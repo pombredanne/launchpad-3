@@ -5,18 +5,13 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.app.form.interfaces import ConversionError
-
-import transaction
 
 from lp.bugs.browser.bugsupervisor import BugSupervisorEditSchema
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import login, login_person, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 from canonical.testing import DatabaseFunctionalLayer
-from canonical.launchpad.fields import PrivateMembershipTeamNotAllowed
 
 
 class TestBugSupervisorEditView(TestCaseWithFactory):
@@ -65,16 +60,7 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(self.product.bug_supervisor, self.owner)
         notifications = view.request.response.notifications
-        self.assertEqual(1, len(notifications))
-        expected = (
-            'Successfully changed the bug supervisor to '
-            '<a href="http://launchpad.dev/~splat">&lt;splat /&gt;</a>.'
-            '<br /><a href="http://launchpad.dev/~splat">&lt;splat /&gt;</a> '
-            'has also been subscribed to bug notifications for '
-            '&lt;boing /&gt;.<br />You can '
-            '<a href="http://launchpad.dev/boing/+subscribe">change '
-            'the subscriptions</a> for &lt;boing /&gt; at any time.')
-        self.assertEqual(expected, notifications.pop().message)
+        self.assertEqual(0, len(notifications))
 
     def test_owner_appoint_self_from_another(self):
         self.product.setBugSupervisor(self.team, self.owner)
@@ -114,23 +100,6 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
             self.product, name='+bugsupervisor', form=form)
         self.assertEqual([], view.errors)
         self.assertEqual(private_team, self.product.bug_supervisor)
-
-    def test_owner_cannot_appoint_his_private_membership_team(self):
-        private_membership_team = self.factory.makeTeam(
-            owner=self.owner,
-            visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
-        # Commit the transaction so the team will exist after the failed view
-        # initialization calls abort.
-        transaction.commit()
-        login('admin@canonical.com')
-        form = self._makeForm(private_membership_team)
-        view = create_initialized_view(
-            self.product, name='+bugsupervisor', form=form)
-        self.assertTrue(
-            type(view.errors[0].errors) is PrivateMembershipTeamNotAllowed)
-        self.assertEqual("You must choose a valid person or team to be the "
-                         "bug supervisor for &lt;boing /&gt;.",
-                         view.errors[1])
 
     def test_owner_cannot_appoint_another_team(self):
         team = self.factory.makeTeam(name='smack', displayname='<smack />')
@@ -202,23 +171,3 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
             self.product, name='+bugsupervisor', form=form)
         self.assertEqual([], view.errors)
         self.assertEqual(private_team, self.product.bug_supervisor)
-
-    def test_admin_cannot_appoint_private_membership_team(self):
-        private_membership_team = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
-        # Commit the transaction so the team will exist after the failed view
-        # initialization calls abort.
-        transaction.commit()
-        login('admin@canonical.com')
-        form = self._makeForm(private_membership_team)
-        view = create_initialized_view(
-            self.product, name='+bugsupervisor', form=form)
-        self.assertTrue(
-            type(view.errors[0].errors) is PrivateMembershipTeamNotAllowed)
-        self.assertEqual("You must choose a valid person or team to be the "
-                         "bug supervisor for &lt;boing /&gt;.",
-                         view.errors[1])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

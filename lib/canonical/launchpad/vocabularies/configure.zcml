@@ -95,6 +95,18 @@
 
 
   <securedutility
+    name="WebBugTracker"
+    component="canonical.launchpad.vocabularies.WebBugTrackerVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="canonical.launchpad.vocabularies.WebBugTrackerVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+  <securedutility
     name="BugWatch"
     component="canonical.launchpad.vocabularies.BugWatchVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"

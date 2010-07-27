@@ -12,8 +12,12 @@
     <include
         package=".browser"/>
 
+    <publisher
+       name="bugs"
+       factory="lp.bugs.publisher.bugs_request_publication_factory"/>
+
     <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.BugsLayer" />
+        folder="help" type="lp.bugs.publisher.BugsLayer" />
 
     <class
         class="canonical.launchpad.database.BugActivity">
@@ -255,11 +259,6 @@
                     offerMentoring
                     retractMentoring"/>
         </class>
-        <adapter
-            provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-            for="lp.bugs.interfaces.bugtask.IBugTask"
-            factory="lp.bugs.browser.bugtask.BugTaskSOP"
-            permission="zope.Public"/>
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
             for="lp.bugs.interfaces.bugtask.IBugTask"
@@ -661,7 +660,8 @@
                     users_affected_with_dupes
                     bug_messages
                     isUserAffected
-                    getHWSubmissions"/>
+                    getHWSubmissions
+                    isExpirable"/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -952,7 +952,7 @@
             interface="lp.bugs.interfaces.bugnotification.IBugNotificationRecipient"/>
     </class>
     <class
-        class="canonical.launchpad.mailnotification.BugNotificationRecipients">
+        class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients">
         <allow
             interface="canonical.launchpad.interfaces.INotificationRecipientSet"/>
     </class>
@@ -968,18 +968,6 @@
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
-
-    <!-- CalculateBugHeatJobs -->
-    <class class="lp.bugs.model.bugheat.CalculateBugHeatJob">
-        <allow interface="lp.bugs.interfaces.bugjob.IBugJob" />
-        <allow interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJob"/>
-    </class>
-    <securedutility
-        component="lp.bugs.model.bugheat.CalculateBugHeatJob"
-        provides="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource">
-        <allow
-            interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource"/>
-    </securedutility>
 
     <!-- ProcessApportBlobJobs -->
     <class class="lp.bugs.model.apportjob.ProcessApportBlobJob">
@@ -997,4 +985,12 @@
     <class class="lp.bugs.model.bug.FileBugData">
         <allow interface="lp.bugs.interfaces.bug.IFileBugData" />
     </class>
+
+  <class class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipientReason">
+    <allow attributes="
+        bug
+        getReason
+        mail_header
+        recipient"/>
+  </class>
 </configure>

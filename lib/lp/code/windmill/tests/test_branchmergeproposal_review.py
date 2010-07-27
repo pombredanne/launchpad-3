@@ -14,7 +14,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.windmill.testing import lpuser
 from canonical.launchpad.windmill.testing.widgets import (
     search_and_select_picker_widget)
-from canonical.uuid import generate_uuid
+from uuid import uuid1
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import login_person, WindmillTestCase
 
@@ -78,7 +78,7 @@ class TestReviewCommenting(WindmillTestCase):
         client.waits.forElement(xpath=ADD_COMMENT_BUTTON)
         # Generate a unique piece of text, so we can run the test multiple
         # times, without resetting the db.
-        new_comment_text = generate_uuid()
+        new_comment_text = str(uuid1())
         client.type(text=new_comment_text, id="field.comment")
         client.click(xpath=ADD_COMMENT_BUTTON)
         # A PRE inside a boardCommentBody, itself somewhere in the
@@ -116,7 +116,7 @@ class TestReviewCommenting(WindmillTestCase):
         self.open_proposal_page(client, proposal)
         client.waits.forElement(xpath=ADD_COMMENT_BUTTON)
 
-        new_comment_text = generate_uuid()
+        new_comment_text = str(uuid1())
         client.type(text=new_comment_text, id="field.comment")
         client.select(id=u'field.vote', val=u'APPROVE')
         client.click(xpath=ADD_COMMENT_BUTTON)

@@ -668,6 +668,9 @@ class POTMsgSet(SQLBase):
                 imported_message.is_imported = False
                 imported_message.is_current = False
                 imported_message.potemplate = None
+                if imported_message != new_message:
+                    Store.of(imported_message).add_flush_order(
+                        imported_message, new_message)
             if not (force_diverged or force_shared):
                 # If there was an imported message, keep the same
                 # divergence/shared state unless something was forced.
@@ -682,10 +685,14 @@ class POTMsgSet(SQLBase):
         # Change actual is_current flag only if it validates ok.
         if new_message.validation_status == TranslationValidationStatus.OK:
             if make_current:
-                # Deactivate previous diverged message.
                 if (current_message is not None and
                     current_message.potemplate is not None):
+                    # Deactivate previous diverged message.
                     current_message.is_current = False
+                    if current_message != new_message:
+                        Store.of(current_message).add_flush_order(
+                            current_message, new_message)
+
                     # Do not "converge" a diverged imported message since
                     # there might be another shared imported message.
                     if not current_message.is_imported:

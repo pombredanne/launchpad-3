@@ -10,7 +10,10 @@ __metaclass__ = type
 __all__ = [
     'IBuildFarmJob',
     'IBuildFarmJobOld',
+    'IBuildFarmJobSet',
     'IBuildFarmJobSource',
+    'InconsistentBuildFarmJobError',
+    'ISpecificBuildFarmJob',
     'BuildFarmJobType',
     ]
 
@@ -25,6 +28,15 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.soyuz.interfaces.processor import IProcessor
+
+
+class InconsistentBuildFarmJobError(Exception):
+    """Raised when a BuildFarmJob is in an inconsistent state.
+
+    For example, if a BuildFarmJob has a job type for which no adapter
+    is yet implemented. Or when adapting the BuildFarmJob to a specific
+    type of build job (such as a BinaryPackageBuild) fails.
+    """
 
 
 class BuildFarmJobType(DBEnumeratedType):
@@ -246,7 +258,24 @@ class IBuildFarmJob(IBuildFarmJobOld):
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
 
+    def getSpecificJob():
+        """Return the specific build job associated with this record.
+
+        :raises InconsistentBuildFarmJobError: if a specific job could not be
+            returned.
+        """
+
     title = exported(TextLine(title=_("Title"), required=False))
+
+    was_built = Attribute("Whether or not modified by the builddfarm.")
+
+
+class ISpecificBuildFarmJob(IBuildFarmJob):
+    """A marker interface with which to define adapters for IBuildFarmJob.
+
+    This enables the registered adapters for ISpecificBuildFarmJob to be
+    iterated when calculating IBuildFarmJob.specific_job.
+    """
 
 
 class IBuildFarmJobSource(Interface):
@@ -261,4 +290,18 @@ class IBuildFarmJobSource(Interface):
         :param processor: An optional processor for this job.
         :param virtualized: An optional boolean indicating whether
             this job should be run virtualized.
+        """
+
+
+class IBuildFarmJobSet(Interface):
+    """A utility representing a set of build farm jobs."""
+
+    def getBuildsForBuilder(builder_id, status=None, user=None):
+        """Return `IBuildFarmJob` records touched by a builder.
+
+        :param builder_id: The id of the builder for which to find builds.
+        :param status: If given, limit the search to builds with this status.
+        :param user: If given, this will be used to determine private builds
+            that should be included.
+        :return: a `ResultSet` representing the requested builds.
         """
