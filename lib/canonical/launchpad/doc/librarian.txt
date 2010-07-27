@@ -1,5 +1,14 @@
 = Librarian Access =
 
+The librarian is a file storage service for launchpad. Conceptually similar to
+other file storage API's like S3, it is used to store binary or large content -
+bug attachments, package builds, images and so on.
+
+Content in the librarian can be exposed at different urls. To expose some
+content use a LibraryFileAlias. Private content is supported as well - for that
+tokens are added to permit access for a limited time by a client - each time a
+client attempts to dereference a private LibraryFileAlias a token is emitted.
+
 == setUp ==
 
    >>> from canonical.database.sqlbase import session_store
