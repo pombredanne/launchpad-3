@@ -5,6 +5,7 @@
 # Use with "twistd2.4 -y <file.tac>", e.g. "twistd -noy server.tac"
 
 from twisted.application import service
+from twisted.scripts.twistd import ServerOptions
 from twisted.web import server
 
 from lp.buildmaster.manager import BuilddManager
@@ -17,9 +18,12 @@ from canonical.lp import initZopeless
 execute_zcml_for_scripts()
 initZopeless(dbuser=config.builddmaster.dbuser)
 
+options = ServerOptions()
+options.parseOptions()
+
 application = service.Application('BuilddManager')
 application.addComponent(
-    RotatableFileLogObserver('buildd-manager.log'), ignoreClass=1)
+    RotatableFileLogObserver(options.get('logfile')), ignoreClass=1)
 
 # Service that announces when the daemon is ready.
 tachandler.ReadyService().setServiceParent(application)
