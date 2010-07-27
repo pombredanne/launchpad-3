@@ -24,7 +24,6 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.interfaces import ILibraryFileAlias
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.authorization import check_permission
@@ -99,6 +98,9 @@ class RedirectPerhapsWithTokenLibraryFileAliasView(LaunchpadView):
             "RedirectPerhapsWithTokenLibraryFileAliasView can not operate on "
             "deleted librarian files, since their URL is undefined.")
         if self.context.restricted:
+            # Avoids a circular import seen in
+            # scripts/ftests/librarianformatter.txt
+            from canonical.launchpad.database.librarian import TimeLimitedToken
             token = TimeLimitedToken.allocate(self.context.https_url)
             final_url = self.context.https_url + '?token=%s' % token
             return RedirectionView(final_url, self.request), ()
