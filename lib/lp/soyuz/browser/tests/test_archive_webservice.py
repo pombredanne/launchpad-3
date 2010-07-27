@@ -9,12 +9,12 @@ from lazr.restfulclient.errors import HTTPError
 from lp.testing import (
     celebrity_logged_in, launchpadlib_for, TestCaseWithFactory)
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing import LaunchpadFunctionalLayer, PageTestLayer
+from canonical.testing import DatabaseFunctionalLayer
 from lp.soyuz.interfaces.archive import ArchivePurpose
 
 
 class TestArchiveWebservice(TestCaseWithFactory):
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
