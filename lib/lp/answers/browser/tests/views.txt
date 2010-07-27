@@ -4,8 +4,8 @@ Several views are used to handle the various operations on a question.
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProductSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> question_three = ubuntu.getQuestion(3)
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -632,7 +632,7 @@ Note also that the vocabulary will always contain the current question's
 language in the vocabulary, even if this language would not be selected
 by the previous rules.
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> afar = getUtility(ILanguageSet)['aa_DJ']
     >>> question_three.language = afar
     >>> vocab = QuestionLanguageVocabularyFactory(view)(question_three)
@@ -772,7 +772,7 @@ can tweak the search and filter the results:
 Specific views can provide a default filter by returning the default
 search parameters to use in the getDefaultFilter() method:
 
-    >>> from canonical.launchpad.interfaces import QuestionStatus
+    >>> from lp.answers.interfaces.questionenums import QuestionStatus
     >>> MyCustomSearchQuestionsView.default_filter = {
     ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID],
     ...     'language' : search_view.user_support_languages}
@@ -958,7 +958,7 @@ register himself or the Ubuntu Team as answer contact for ubuntu:
     >>> login('jeff.waugh@ubuntulinux.com')
     >>> jeff_waugh = getUtility(ILaunchBag).user
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> jeff_waugh in ubuntu_team.getDirectAdministrators()
     True

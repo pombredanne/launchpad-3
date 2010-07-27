@@ -25,14 +25,19 @@ from zope.security.proxy import removeSecurityProxy
 
 from lazr.lifecycle.interfaces import (
     IObjectCreatedEvent, IObjectModifiedEvent)
-from canonical.launchpad.interfaces import (
-    IDistributionSet, ILanguageSet, ILaunchBag, InvalidQuestionStateError,
-    IQuestion, IQuestionMessage, QuestionAction, QuestionStatus)
-from lp.registry.interfaces.person import IPerson, IPersonSet
+
 from canonical.launchpad.ftests import login, login_person, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.authorization import clear_cache
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.answers.interfaces.questionenums import QuestionAction, QuestionStatus
+from lp.answers.interfaces.question import (
+    InvalidQuestionStateError, IQuestion)
+from lp.answers.interfaces.questionmessage import IQuestionMessage
 
 
 class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
@@ -106,8 +111,8 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
         """Helper for transition guard tests.
 
         Helper that verifies that the Question guard_name attribute
-        is True when the question status is one listed in statuses_expected_true
-        and False otherwise.
+        is True when the question status is one listed in
+        statuses_expected_true and False otherwise.
         """
         for status in QuestionStatus.items:
             if status != self.question.status:

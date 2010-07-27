@@ -19,7 +19,7 @@ somebody are subject to expiration.
     # Sanity check in case somebody modifies the question sampledata and
     # forget to update this script.
     >>> from lp.answers.model.question import Question
-    >>> from canonical.launchpad.interfaces import QuestionStatus
+    >>> from lp.answers.interfaces.questionenums import QuestionStatus
     >>> Question.select('status IN (%i,%i)' % (
     ...     QuestionStatus.OPEN.value, QuestionStatus.NEEDSINFO.value)).count()
     9
@@ -40,8 +40,9 @@ somebody are subject to expiration.
     >>> now = datetime.now(UTC)
     >>> two_weeks_ago = now - timedelta(days=14)
     >>> a_month_ago = now - timedelta(days=31)
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchBag, IPersonSet, IQuestionSet)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.answers.interfaces.questioncollection import IQuestionSet
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
 
@@ -94,7 +95,8 @@ somebody are subject to expiration.
     >>> removeSecurityProxy(old_open_question).faq = faq
 
     # A question linked to an non-Invalid bug is not expirable.
-    >>> from canonical.launchpad.interfaces import BugTaskStatus, IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> fixed_bug = getUtility(IBugSet).get(9)
     >>> bugtasks = fixed_bug.bugtasks
     >>> bugtasks[1].transitionToStatus(BugTaskStatus.INVALID, no_priv)

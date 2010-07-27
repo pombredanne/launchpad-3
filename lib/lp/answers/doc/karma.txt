@@ -7,8 +7,8 @@ points.
 These karma points are assigned to a user when he performs one of the
 actions we consider to be a reasonable contribution.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IProductSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.model.karma import KarmaCategory
     >>> answers_category = KarmaCategory.byName('answers')
     >>> answers_karma_actions = answers_category.karmaactions
@@ -141,7 +141,7 @@ also receives karma.
 We do not grant karma for status change made outside of workflow:
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import QuestionStatus
+    >>> from lp.answers.interfaces.questionenums import QuestionStatus
     >>> msg = firefox_question.setStatus(
     ...     foo_bar, QuestionStatus.OPEN, 'That rejection was an error.',
     ...     datecreated=now.next())

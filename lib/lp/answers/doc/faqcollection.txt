@@ -11,7 +11,7 @@ name space. That way we can verify that multiple implementation provide
 the interface correctly.)
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import IFAQCollection
+    >>> from lp.answers.interfaces.faqcollection import IFAQCollection
 
     >>> verifyObject(IFAQCollection, collection)
     True
@@ -26,7 +26,7 @@ Since not all IFAQCollections are IFAQTarget, we rely on the harness
 to provide us with a newFAQ() function that can be used to add a FAQ to
 the collection.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> no_priv = personset.getByName('no-priv')
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
@@ -79,8 +79,8 @@ It returns None when there is FAQ with that ID in the context:
 It also returns None when using the ID of a FAQ that isn't in the
 requested collection:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchBag)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu != collection
     True
@@ -164,7 +164,7 @@ It takes a value from the FAQSort enumerated type. For example, the
 FAQSort.NEWEST_FIRST can be used to sort the results of a text
 search by date of creation (most recent first):
 
-    >>> from canonical.launchpad.interfaces import FAQSort
+    >>> from lp.answers.interfaces.faqcollection import FAQSort
     >>> for faq in collection.searchFAQs(
     ...         search_text='install', sort=FAQSort.NEWEST_FIRST):
     ...     print faq.title

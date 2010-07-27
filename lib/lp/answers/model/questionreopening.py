@@ -22,8 +22,9 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces import IQuestionReopening, QuestionStatus
 from lp.registry.interfaces.person import validate_public_person
+from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.interfaces.questionreopening import IQuestionReopening
 
 
 class QuestionReopening(SQLBase):

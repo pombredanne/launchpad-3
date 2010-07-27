@@ -11,14 +11,14 @@ DistributionSourcePackages.
     >>> login('test@canonical.com')
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.answers.interfaces.questiontarget import IQuestionTarget
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> verifyObject(IQuestionTarget, firefox)
     True
-
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> verifyObject(IQuestionTarget, ubuntu)
     True
@@ -59,7 +59,6 @@ XXX sinzui 2007-04-24. #108240 SourcePackages should not be QuestionTargets
 You create a new question by calling the newQuestion() method of an
 IQuestionTarget attribute.
 
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> firefox_question = firefox.newQuestion(
     ...     sample_person, "Firefox question", "Unable to use Firefox")
@@ -217,7 +216,8 @@ method.
 That method returns an INotificationRecipientSet, containing the direct
 subscribers along with the rationale for contacting them.
 
-    >>> from canonical.launchpad.interfaces import INotificationRecipientSet
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     INotificationRecipientSet)
     >>> verifyObject(INotificationRecipientSet, subscribers)
     True
     >>> def print_reason(subscribers):
@@ -348,7 +348,7 @@ Bug linking
 Question implements the IBugLinkTarget interface which makes it possible
 to link bug report to question.
 
-    >>> from canonical.launchpad.interfaces import IBugLinkTarget
+    >>> from lp.bugs.interfaces.buglink import IBugLinkTarget
     >>> verifyObject(IBugLinkTarget, firefox_question)
     True
 

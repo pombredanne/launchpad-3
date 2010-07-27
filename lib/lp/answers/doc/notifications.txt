@@ -7,7 +7,7 @@ notification looks like:
 
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectCreatedEvent
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
@@ -78,7 +78,8 @@ contains in short format the reason for the user to be contacted.
 Register the Ubuntu Team as Ubuntu's answer contact, so that they get
 notified about the changes as well:
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet, IPersonSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
     >>> ubuntu.addAnswerContact(ubuntu_team)
@@ -218,7 +219,7 @@ After receiving that notification, Foo Bar unassigned himself:
 If we create a bug from the question, it will be reported as a
 bug that has been linked to it:
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
 
     >>> login('no-priv@canonical.com')
     >>> unmodified_question = Snapshot(
@@ -437,7 +438,7 @@ Notification received by the owner:
 display.)
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> email_msg = getUtility(IMessageSet).fromText(
     ...     subject=(
     ...         "Re: [Question %d]: Installer doesn't work on "
@@ -695,7 +696,7 @@ Notification received by the owner:
 
 === Notifications for setStatus() ===
 
-    >>> from canonical.launchpad.interfaces import QuestionStatus
+    >>> from lp.answers.interfaces.questionenums import QuestionStatus
     >>> login('foo.bar@canonical.com')
     >>> message = ubuntu_question.setStatus(
     ...     foo_bar, QuestionStatus.SOLVED, "The rejection was a mistake.")
@@ -743,7 +744,7 @@ When a user links a FAQ to a question, the notification includes that
 information before the message.
 
     >>> login('no-priv@canonical.com')
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_question = firefox.newQuestion(
     ...     no_priv, 'How can I play Flash?', 'I want Flash!')
@@ -878,7 +879,7 @@ receive notifications related to it.
     >>> sorted([lang.code for lang in ubuntu.getSupportedLanguages()])
     [u'en', u'pt_BR']
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> login('test@canonical.com')
     >>> pt_BR_question = ubuntu.newQuestion(
     ...     sample_person, title=(

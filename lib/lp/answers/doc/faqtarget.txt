@@ -8,7 +8,7 @@ Projects that can host a FAQ provides the IFAQTarget.
 
     >>> from zope.interface.verify import verifyObject
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import IFAQTarget
+    >>> from lp.answers.interfaces.faqtarget import IFAQTarget
 
     # removeSecurityProxy() is needed because some attributes are
     # protected.
@@ -24,7 +24,7 @@ That method is only available to a user who has 'launchpad.Moderate' on
 the target.
 
     >>> login('no-priv@canonical.com')
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> check_permission('launchpad.Moderate', target)
     False
@@ -49,7 +49,7 @@ or one of its answer contacts is authorized to create a new FAQ.
     >>> removeSecurityProxy(target).owner = old_owner
 
     # An answer contact must have a preferred language registered.
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> no_priv.addLanguage(getUtility(ILanguageSet)['en'])
     >>> clear_cache() # clear authorization cache for check_permission
     >>> target.addAnswerContact(no_priv)
@@ -62,7 +62,7 @@ or one of its answer contacts is authorized to create a new FAQ.
 
 The returned object provides the IFAQ interface:
 
-    >>> from canonical.launchpad.interfaces import IFAQ
+    >>> from lp.answers.interfaces.faq import IFAQ
     >>> verifyObject(IFAQ, faq)
     True
 
@@ -114,8 +114,8 @@ It also returns None when asking an ID for a FAQ that isn't in the
 requested target:
 
     # Create a FAQ on Ubuntu.
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchBag)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu != target
     True
