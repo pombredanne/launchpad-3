@@ -1,3 +1,4 @@
+
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -27,21 +28,6 @@ def profiled(func):
                 _update_profile_stats(cls, func, time.time() - start_time)
         else:
             return func(cls, *args, **kw)
-    return profiled_func
-
-
-def profiled_method(func):
-    """Decorator that automatically profiles invocations of the method."""
-    def profiled_func(self, *args, **kw):
-        global _profile_stats_filename
-        if _profile_stats_filename is not None:
-            start_time = time.time()
-            try:
-                return func(self, *args, **kw)
-            finally:
-                _update_profile_stats(self.__class__, func, time.time() - start_time)
-        else:
-            return func(self, *args, **kw)
     return profiled_func
 
 
