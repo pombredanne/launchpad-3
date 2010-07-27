@@ -927,6 +927,9 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         # branch that is created is an empty hosted branch.  The new branch
         # will not have a mirror requested as there are no revisions, and
         # there is no branch created in the hosted area.
+
+        # XXX Tim Penhey 2010-07-27 bug 610292
+        # We should fail here and return an oops email to the user.
         self.useBzrBranches()
         branch, source, message = self._createTargetSourceAndBundle(
             format="pack-0.92")
@@ -960,7 +963,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         bmp = self._processMergeDirective(message)
         source_bzr_branch = self._openBazaarBranchAsClient(bmp.source_branch)
         self.assertEqual(BranchType.HOSTED, bmp.source_branch.branch_type)
-        self.assertIsNot(None, bmp.source_branch.next_mirror_time)
+        self.assertTrue(bmp.source_branch.pending_writes)
         self.assertEqual(
             source.last_revision(), source_bzr_branch.last_revision())
 

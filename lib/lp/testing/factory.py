@@ -44,6 +44,8 @@ from zope.component import ComponentLookupError, getUtility
 from zope.security.proxy import (
     builtin_isinstance, Proxy, ProxyFactory, removeSecurityProxy)
 
+from bzrlib.merge_directive import MergeDirective2
+
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -2615,7 +2617,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             context also contains the password and gpg signing mode.
         :param sender: The `Person` that is sending the email.
         """
-        from bzrlib.merge_directive import MergeDirective2
         md = MergeDirective2.from_objects(
             source_branch.repository, source_branch.last_revision(),
             public_branch=source_branch.get_public_branch(),
@@ -2746,7 +2747,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
 unwrapped_types = (
-    DSCFile, InstanceType, Message, datetime, int, str, unicode)
+    DSCFile, InstanceType, MergeDirective2, Message, datetime, int, str, unicode)
 
 def is_security_proxied_or_harmless(obj):
     """Check that the given object is security wrapped or a harmless object."""

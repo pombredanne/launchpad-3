@@ -9,6 +9,7 @@ __all__ = [
     'ControlFormat',
     'CURRENT_BRANCH_FORMATS',
     'CURRENT_REPOSITORY_FORMATS',
+    'get_branch_formats',
     'RepositoryFormat',
     ]
 
@@ -249,3 +250,16 @@ CURRENT_REPOSITORY_FORMATS = (
     RepositoryFormat.BZR_CHK1,
     RepositoryFormat.BZR_CHK2,
     RepositoryFormat.BZR_CHK_2A)
+
+
+def get_branch_formats(bzr_branch):
+    """Return a tuple of format enumerations for the bazaar branch.
+
+    :returns: tuple of (ControlFormat, BranchFormat, RepositoryFormat)
+    """
+    control_string = bzr_branch.bzrdir._format.get_format_string()
+    branch_string = bzr_branch._format.get_format_string()
+    repository_string = bzr_branch.repository._format.get_format_string()
+    return (ControlFormat.get_enum(control_string),
+            BranchFormat.get_enum(branch_string),
+            RepositoryFormat.get_enum(repository_string))
