@@ -7,10 +7,31 @@ __metaclass__ = type
 
 from lp.code.bzr import (
     BranchFormat, ControlFormat, get_branch_formats, RepositoryFormat)
+from lp.testing import TestCase
 from bzrlib.tests import TestCaseInTempDir
 
 
+class TestBazaarFormatEnum(TestCase):
+    """Tests for the bazaar formats."""
+
+    def test_branch_format_default(self):
+        # The default branch format is unrecognized.
+        format = BranchFormat.get_enum('no-idea')
+        self.assertEqual(BranchFormat.UNRECOGNIZED, format)
+
+    def test_control_format_default(self):
+        # The default control format is unrecognized.
+        format = ControlFormat.get_enum('no-idea')
+        self.assertEqual(ControlFormat.UNRECOGNIZED, format)
+
+    def test_repository_format_default(self):
+        # The default repository format is unrecognized.
+        format = RepositoryFormat.get_enum('no-idea')
+        self.assertEqual(RepositoryFormat.UNRECOGNIZED, format)
+
+
 class TestGetBranchFormats(TestCaseInTempDir):
+    """Tests for lp.code.bzr.get_branch_formats."""
 
     def test_get_branch_format_2a(self):
         # Test the 2a branch format.
