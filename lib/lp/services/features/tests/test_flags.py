@@ -12,11 +12,13 @@ import os
 from canonical.testing import layers
 from lp.testing import TestCase
 
-from lp.services.features import model
+from lp.services.features import (
+    getFeatureFlag,
+    model,
+    per_thread,
+    )
 from lp.services.features.flags import (
     FeatureController,
-    getFeatureFlag,
-    per_thread,
     )
 
 

@@ -3,42 +3,18 @@
 
 __all__ = [
     'FeatureController',
-    'per_thread',
     ]
 
 
 __metaclass__ = type
 
 
-import threading
 from storm.locals import Desc
 
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
-
-
-per_thread = threading.local()
-"""Holds the default per-thread feature controller in its .features attribute.
-
-Framework code is responsible for setting this in the appropriate context, eg
-when starting a web request.
-"""
-
-
-def getFeatureFlag(flag):
-    """Get the value of a flag for this thread's scopes.
-    """
-    return per_thread.features.getFlag(flag)
-
-
-def summarizeFlags():
-    """Nerd-readable summary of active flags (for page footer)"""
-    if per_thread.features:
-        return repr(per_thread.features.getAllFlags())
-    else:
-        return "(no FeatureController)"
 
 
 class Memoize(object):

@@ -9,9 +9,11 @@ __metaclass__ = type
 
 import canonical.config
 
+from lp.services.features import (
+    per_thread,
+    )
 from lp.services.features.flags import (
     FeatureController,
-    per_thread,
     )
 
 
@@ -23,13 +25,13 @@ class ScopesFromRequest(object):
 
     def lookup(self, scope_name):
         parts = scope_name.split('.')
-        if len(parts) == 2 and parts[0] == 'server':
-            return canonical.config.config['launchpad']['is_' + parts[1]]
+        if len(parts) == 2:
+            if parts[0] == 'server':
+                return canonical.config.config['launchpad']['is_' + parts[1]]
 
 
 def start_request(event):
     """Register FeatureController."""
-    # TODO: determine all the interesting scopes, based on event.request
     event.request.features = per_thread.features = FeatureController(
         ScopesFromRequest(event.request).lookup)
 

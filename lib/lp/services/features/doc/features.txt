@@ -7,7 +7,7 @@ Introduction
 
 The point of feature flags is to let us turn some features of Launchpad on
 and off without changing the code or restarting the application, and to
-expose different features to different subsets of users.  
+expose different features to different subsets of users.
 
 See <https://dev.launchpad.net/LEP/FeatureFlags> for more discussion and
 rationale.
@@ -21,7 +21,7 @@ Internal model for feature flags
 A feature flag maps from a *name* to a *value*.  The specific value used
 for a particular request is determined by a set of zero or more *scopes*
 that apply to that request, by finding the *rule* with the highest
-*priority*. 
+*priority*.
 
 Flags are defined by a *name* that typically looks like a Python
 identifier, for example ``notification.global.text``.  A definition is
@@ -61,7 +61,8 @@ the flags likely to affect a feature.
 
 So for any flag we want to say:
 
-* What application area does this affect? (malone, survey, questions, code, etc)
+* What application area does this affect? (malone, survey, questions,
+  code, etc)
 
 * What specific feature does it change?
 
@@ -81,12 +82,12 @@ You can conditionally show some text like this::
 
   <tal:survey condition="features/user_survey.enabled">
     &nbsp;&bull;&nbsp;
-    <a href="http://www.surveymonkey.com/s/launchpadsummer2010">Take our survey!</a>
+    <a href="http://survey.example.com/">Take our survey!</a>
   </tal:survey>
 
 You can use the built-in TAL feature of prepending ``not:`` to the
 condition, and for flags that have a value you could use them in
-``tal:replace`` or ``tal:attributes``.  
+``tal:replace`` or ``tal:attributes``.
 
 If you just want to simply insert some text taken from a feature, say
 something like::
@@ -108,6 +109,9 @@ of a request.  The object can be obtained through either
 `request.features` or `lp.services.features.per_thread.features`.  This
 provides various useful methods including `getFlag` to look up one feature
 (memoized), and `isInScope` to check one scope (also memoized).
+
+As a convenience, `lp.services.features.getFeatureFlag` looks up a single
+flag in the thread default controller.
 
 Debugging feature usage
 ***********************
