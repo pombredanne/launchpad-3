@@ -55,6 +55,16 @@ class Memoize(object):
         return v
 
 
+class ScopeDict(object):
+    """Allow scopes to be looked up by getitem"""
+
+    def __init__(self, features):
+        self.features = features
+
+    def __getitem__(self, scope_name):
+        return self.features.isInScope(scope_name)
+
+
 class FeatureController(object):
     """A FeatureController tells application code what features are active.
 
@@ -98,6 +108,7 @@ class FeatureController(object):
         self._known_flags = Memoize(self._checkFlag)
         # rules are read from the database the first time they're needed
         self._rules = None
+        self.scopes = ScopeDict(self)
 
     def getFlag(self, flag):
         return self._known_flags.lookup(flag)

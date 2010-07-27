@@ -154,3 +154,11 @@ class TestFeatureFlags(TestCase):
         # however, this we have now negative-cached the flag
         self.assertEqual(dict(unknown=None), f.usedFlags())
         self.assertEqual(dict(), f.usedScopes())
+
+    def testScopeDict(self):
+        # can get scopes as a dict, for use by "feature_scopes/server.demo"
+        f, call_log = self.makeControllerInScopes(['beta_user'])
+        self.assertEqual(True, f.scopes['beta_user'])
+        self.assertEqual(False, f.scopes['alpha_user'])
+        self.assertEqual(True, f.scopes['beta_user'])
+        self.assertEqual(['beta_user', 'alpha_user'], call_log)
