@@ -268,4 +268,4 @@ considered to be on the home page if there are no breadcrumbs.
     []
 
     >>> homepage_hierarchy.render().strip()
-    ''
+    u''
