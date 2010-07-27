@@ -15,6 +15,7 @@ from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.testing.pages import (
     extract_text, find_tag_by_id, find_main_content, find_tags_by_class,
@@ -220,7 +221,7 @@ def summarize_bugtasks(bugtasks):
     """Summarize a sequence of bugtasks."""
     bugtaskset = getUtility(IBugTaskSet)
     expirable_bugtasks = list(bugtaskset.findExpirableBugTasks(
-        0, getUtility(ILaunchpadCelebrities).janitor))
+        config.malone.days_before_expiration, getUtility(ILaunchpadCelebrities).janitor))
     print 'ROLE  EXPIRE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
     for bugtask in sorted(set(bugtasks), key=attrgetter('id')):
         if len(bugtask.bug.bugtasks) == 1:

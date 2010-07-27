@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -176,7 +176,6 @@ class ExportResult:
 
         return export_requested_at
 
-
     def _getRequestedExportsNames(self):
         """Return a list of display names for requested exports."""
         requested_names = []
@@ -194,8 +193,8 @@ class ExportResult:
         template = helpers.get_email_template(
             'poexport-failure.txt', 'translations')
         return template % {
-            'person' : self.person.displayname,
-            'request_url' : self.request_url,
+            'person': self.person.displayname,
+            'request_url': self.request_url,
             }
 
     def _getFailedRequestsDescription(self):
@@ -212,15 +211,14 @@ class ExportResult:
     def _getAdminFailureNotificationEmailBody(self):
         """Send an email notification about failed export to admins."""
         template = helpers.get_email_template(
-            'poexport-failure-admin-notification.txt',
-            'translations')
+            'poexport-failure-admin-notification.txt', 'translations')
         failed_requests = self._getFailedRequestsDescription()
         return template % {
-            'person' : self.person.displayname,
-            'person_id' : self.person.name,
-            'request_url' : self.request_url,
-            'failure_message' : self.failure,
-            'failed_requests' : failed_requests,
+            'person': self.person.displayname,
+            'person_id': self.person.name,
+            'request_url': self.request_url,
+            'failure_message': self.failure,
+            'failed_requests': failed_requests,
             }
 
     def _getUnicodeDecodeErrorEmailBody(self):
@@ -230,10 +228,10 @@ class ExportResult:
             'translations')
         failed_requests = self._getFailedRequestsDescription()
         return template % {
-            'person' : self.person.displayname,
-            'person_id' : self.person.name,
-            'request_url' : self.request_url,
-            'failed_requests' : failed_requests,
+            'person': self.person.displayname,
+            'person_id': self.person.name,
+            'request_url': self.request_url,
+            'failed_requests': failed_requests,
             }
 
     def _getSuccessEmailBody(self):
@@ -241,9 +239,9 @@ class ExportResult:
         template = helpers.get_email_template(
             'poexport-success.txt', 'translations')
         return template % {
-            'person' : self.person.displayname,
-            'download_url' : self.url,
-            'request_url' : self.request_url,
+            'person': self.person.displayname,
+            'download_url': self.url,
+            'request_url': self.request_url,
             }
 
     def notify(self):
@@ -328,14 +326,14 @@ def process_request(person, objects, format, logger):
     any).
     """
     translation_exporter = getUtility(ITranslationExporter)
-    translation_format_exporter = (
-        translation_exporter.getExporterProducingTargetFileFormat(format))
+    requested_objects = list(objects)
 
-    result = ExportResult(person, objects, logger)
+    result = ExportResult(person, requested_objects, logger)
 
     try:
-        exported_file = translation_format_exporter.exportTranslationFiles(
-            generate_translationfiledata(list(objects), format))
+        exported_file = translation_exporter.exportTranslationFiles(
+            generate_translationfiledata(requested_objects, format),
+            target_format=format)
     except (KeyboardInterrupt, SystemExit):
         # We should never catch KeyboardInterrupt or SystemExit.
         raise

@@ -230,29 +230,28 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             processor=processor, manual=False, builderok=True).count()
         if num_arch_builders > 1:
             sub_query += """
-                AND EXISTS (SELECT true
-                WHERE ((
-                    SELECT COUNT(binarypackagebuild2.id)
-                    FROM BinaryPackageBuild binarypackagebuild2,
-                         PackageBuild packagebuild2,
-                         BuildFarmJob buildfarmjob2,
-                         DistroArchSeries distroarchseries2
-                    WHERE
-                        binarypackagebuild2.package_build =
-                            packagebuild2.id AND
-                        packagebuild2.archive = packagebuild.archive AND
-                        archive.purpose = %s AND
-                        archive.private IS FALSE AND
-                        binarypackagebuild2.distro_arch_series =
-                            distroarchseries2.id AND
-                        distroarchseries2.processorfamily = %s AND
-                        packagebuild2.build_farm_job = buildfarmjob2.id AND
-                        buildfarmjob2.status = %s) + 1::numeric)
-                    *100 / %s
-                    < 80)
+            AND Archive.id NOT IN (
+                SELECT Archive.id
+                FROM PackageBuild, BuildFarmJob, Archive,
+                    BinaryPackageBuild, DistroArchSeries
+                WHERE
+                    PackageBuild.build_farm_job = BuildFarmJob.id
+                    AND BinaryPackageBuild.package_build = PackageBuild.id
+                    AND BinaryPackageBuild.distro_arch_series
+                        = DistroArchSeries.id
+                    AND DistroArchSeries.processorfamily = %s
+                    AND BuildFarmJob.status = %s
+                    AND PackageBuild.archive = Archive.id
+                    AND Archive.purpose = %s
+                    AND Archive.private IS FALSE
+                GROUP BY Archive.id
+                HAVING (
+                    (count(*)+1) * 100.0 / %s
+                    ) >= 80
+                )
             """ % sqlvalues(
-                ArchivePurpose.PPA, processor.family,
-                BuildStatus.BUILDING, num_arch_builders)
+                processor.family, BuildStatus.BUILDING,
+                ArchivePurpose.PPA, num_arch_builders)
 
         return sub_query
 

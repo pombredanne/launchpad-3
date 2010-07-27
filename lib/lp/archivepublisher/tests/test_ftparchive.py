@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ftparchive.py"""
@@ -30,10 +30,11 @@ def sanitize_apt_ftparchive_Sources_output(text):
     # apt-ftparchive Sources file content, such that the output of lucid
     # apt-ftparchive is the same as on karmic.
     return re.subn(r'(?sm)^Checksums-.*?(?=^[^ ])', '', text)[0]
-    
+
 
 class SamplePublisher:
     """Publisher emulation test class."""
+
     def __init__(self, archive):
         self.archive = archive
 
@@ -155,7 +156,7 @@ class TestFTPArchive(unittest.TestCase):
             hoary, PackagePublishingPocket.RELEASE)
         expectedBinaries = [
             ('pmount', 'hoary', 'main', 'base', 'extra'),
-            ('pmount', 'hoary', 'universe', 'editors', 'important')
+            ('pmount', 'hoary', 'universe', 'editors', 'important'),
             ]
         self.assertEqual(expectedBinaries, list(published_binaries))
 
@@ -220,9 +221,13 @@ class TestFTPArchive(unittest.TestCase):
 
         binary_files = fa.getBinaryFiles(
             hoary, PackagePublishingPocket.RELEASE)
-        expected_files = [
-            ('pmount', 'hoary', 'pmount_1.9-1_all.deb', 'main', 'binary-hppa')
-            ]
+        expected_files = [(
+            'pmount',
+            'hoary',
+            'pmount_1.9-1_all.deb',
+            'main',
+            'binary-hppa',
+            )]
         self.assertEqual(expected_files, list(binary_files))
 
     def test_publishFileLists(self):
@@ -230,7 +235,7 @@ class TestFTPArchive(unittest.TestCase):
         fa = self._setUpFTPArchiveHandler()
 
         source_files = FakeSelectResult(
-            [('foo', 'hoary-test',  'foo.dsc', 'main')])
+            [('foo', 'hoary-test', 'foo.dsc', 'main')])
         binary_files = FakeSelectResult(
             [('foo', 'hoary-test', 'foo.deb', 'main', 'binary-i386')])
         fa.publishFileLists(source_files, binary_files)
@@ -252,14 +257,14 @@ class TestFTPArchive(unittest.TestCase):
 
         # Calculate overrides.
         source_overrides = FakeSelectResult(
-            [('foo', 'hoary-test', 'main', 'misc'),])
+            [('foo', 'hoary-test', 'main', 'misc'), ])
         binary_overrides = FakeSelectResult(
             [('foo', 'hoary-test', 'main', 'misc', 'extra')])
         fa.publishOverrides(source_overrides, binary_overrides)
 
         # Calculate filelists.
         source_files = FakeSelectResult(
-            [('foo', 'hoary-test',  'foo.dsc', 'main')])
+            [('foo', 'hoary-test', 'foo.dsc', 'main')])
         binary_files = FakeSelectResult(
             [('foo', 'hoary-test', 'foo.deb', 'main', 'binary-i386')])
         fa.publishFileLists(source_files, binary_files)
@@ -376,8 +381,3 @@ class TestFTouch(unittest.TestCase):
         f.close()
 
         self.assertEqual("", contents)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

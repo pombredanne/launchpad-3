@@ -10,13 +10,10 @@ __metaclass__ = type
 
 
 __all__ = [
-    'ForbiddenInstruction',
     'ISourcePackageRecipe',
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
     'MINIMAL_RECIPE_TEXT',
-    'TooManyBuilds',
-    'TooNewRecipeFormat',
     ]
 
 
@@ -43,37 +40,9 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
-    # bzr-builder format 0.2 deb-version 1.0
+    # bzr-builder format 0.2 deb-version 0+{revno}
     %s
     ''')
-
-class ForbiddenInstruction(Exception):
-    """A forbidden instruction was found in the recipe."""
-
-    def __init__(self, instruction_name):
-        super(ForbiddenInstruction, self).__init__()
-        self.instruction_name = instruction_name
-
-
-class TooManyBuilds(Exception):
-    """A build was requested that exceeded the quota."""
-
-    def __init__(self, recipe, distroseries):
-        self.recipe = recipe
-        self.distroseries = distroseries
-        msg = (
-            'You have exceeded your quota for recipe %s for distroseries %s'
-            % (self.recipe, distroseries))
-        Exception.__init__(self, msg)
-
-
-class TooNewRecipeFormat(Exception):
-    """The format of the recipe supplied was too new."""
-
-    def __init__(self, supplied_format, newest_supported):
-        super(TooNewRecipeFormat, self).__init__()
-        self.supplied_format = supplied_format
-        self.newest_supported = newest_supported
 
 
 class ISourcePackageRecipeData(Interface):
@@ -102,8 +71,8 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
 
     id = Int()
 
-    daily_build_archive = Reference(
-        IArchive, title=_("The archive to use for daily builds."))
+    daily_build_archive = exported(Reference(
+        IArchive, title=_("The archive to use for daily builds.")))
 
     date_created = Datetime(required=True, readonly=True)
     date_last_modified = Datetime(required=True, readonly=True)
@@ -125,8 +94,9 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         Reference(IDistroSeries), title=_("The distroseries this recipe will"
             " build a source package for"),
         readonly=False)
-    build_daily = Bool(
-        title=_("If true, the recipe should be built daily."))
+    build_daily = exported(Bool(
+        title=_("Build daily")))
+    is_stale = Bool(title=_('Recipe is stale.'))
 
     name = exported(TextLine(
             title=_("Name"), required=True,
@@ -182,7 +152,7 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
             False, select all builds that are not pending.
         """
 
-    def getLastBuild(self):
+    def getLastBuild():
         """Return the the most recent build of this recipe."""
 
     def destroySelf():

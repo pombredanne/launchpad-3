@@ -72,7 +72,8 @@ user is informed about it.
   >>> for message in find_tags_by_class(user_browser.contents, 'message'):
   ...     print extract_text(message)
   There is 1 error.
-  http://bugzilla.mozilla.org/ is already registered in Launchpad.
+  http://bugzilla.mozilla.org/ is already registered in Launchpad
+  as "The Mozilla.org Bug Tracker" (mozilla.org).
 
 The same happens if the requested URL is aliased to another bug
 tracker. Aliases can be edited once a bug tracker has been added, but
@@ -94,7 +95,8 @@ for now we'll dig directly to the database.
   >>> for message in find_tags_by_class(user_browser.contents, 'message'):
   ...     print extract_text(message)
   There is 1 error.
-  http://alias.example.com/ is already registered in Launchpad.
+  http://alias.example.com/ is already registered in Launchpad
+  as "GnomeGBug GTracker" (gnome-bugzilla).
 
 After successfully registering the bug tracker, the user is redirected
 to the bug tracker page.
@@ -201,7 +203,8 @@ tracker uses.
   >>> for message in get_feedback_messages(user_browser.contents):
   ...     print message
   There is 1 error.
-  http://bugzilla.mozilla.org/ is already registered in Launchpad.
+  http://bugzilla.mozilla.org/ is already registered in Launchpad
+  as "The Mozilla.org Bug Tracker" (mozilla.org).
 
 If the user inadvertently enters an invalid URL, they are shown an
 informative error message explaining why it is invalid.
@@ -304,7 +307,8 @@ bugtracker.
   >>> for message in get_feedback_messages(user_browser.contents):
   ...     print message
   There is 1 error.
-  http://bugzilla.mozilla.org/ is already registered in Launchpad.
+  http://bugzilla.mozilla.org/ is already registered in Launchpad
+  as "The Mozilla.org Bug Tracker" (mozilla.org).
 
 Multiple aliases can be entered by separating URLs with whitespace.
 
@@ -668,8 +672,7 @@ First we need to change a project group and a project to use our new
 bug tracker:
 
   >>> admin_browser.open('http://launchpad.dev/mozilla/+edit')
-  >>> admin_browser.getControl('Bug Tracker:').displayValue = [
-  ...     'A test Bugzilla Tracker']
+  >>> admin_browser.getControl('Bug Tracker:').value = 'testbugzilla'
   >>> admin_browser.getControl('Change Details').click()
 
   >>> admin_browser.open(
@@ -677,7 +680,7 @@ bug tracker:
   >>> admin_browser.getControl(name='field.bugtracker'
   ...     ).displayValue = ['In a registered bug tracker:']
   >>> admin_browser.getControl(name='field.bugtracker.bugtracker'
-  ...     ).displayValue = ['A test Bugzilla Tracker']
+  ...     ).value = 'testbugzilla'
   >>> admin_browser.getControl('Change').click()
 
 Now the Mozilla Project and Jokosher will appear in the Related

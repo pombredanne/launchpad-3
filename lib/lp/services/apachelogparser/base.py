@@ -85,7 +85,7 @@ def parse_file(fd, start_position, logger, get_download_key):
     """
     # Seek file to given position, read all lines.
     fd.seek(start_position)
-    line = fd.readline()
+    next_line = fd.readline()
 
     parsed_bytes = start_position
 
@@ -97,16 +97,17 @@ def parse_file(fd, start_position, logger, get_download_key):
     max_parsed_lines = getattr(
         config.launchpad, 'logparser_max_parsed_lines', None)
 
-    while line:
+    while next_line:
         if max_parsed_lines is not None and parsed_lines >= max_parsed_lines:
             break
+
+        line = next_line
 
         # Always skip the last line as it may be truncated since we're
         # rsyncing live logs, unless there is only one line for us to
         # parse, in which case This probably means we're dealing with a
         # logfile that has been rotated already, so it should be safe to
         # parse its last line.
-        next_line = ''
         try:
             next_line = fd.next()
         except StopIteration:
@@ -161,7 +162,11 @@ def parse_file(fd, start_position, logger, get_download_key):
             logger.error('Error (%s) while parsing "%s"' % (e, line))
             break
 
-        line = next_line
+
+    if parsed_lines > 0:
+        logger.info('Parsed %d lines resulting in %d download stats.' % (
+            parsed_lines, len(downloads)))
+
     return downloads, parsed_bytes
 
 

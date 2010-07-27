@@ -8,6 +8,7 @@ from __future__ import with_statement
 __metaclass__ = type
 
 import datetime
+import re
 import unittest
 
 from pytz import utc
@@ -16,10 +17,12 @@ from storm.locals import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
-
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.testing import verifyObject
 from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.tests.test_buildbase import (
@@ -28,9 +31,15 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.mail.sendmail import format_address
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.testing import ANONYMOUS, login, person_logged_in, TestCaseWithFactory
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestSourcePackageRecipeBuild(TestCaseWithFactory):
@@ -45,7 +54,9 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         distroseries_i386 = distroseries.newArch(
             'i386', ProcessorFamily.get(1), False, person,
             supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
+        naked_distroseries = remove_security_proxy_and_shout_at_engineer(
+            distroseries)
+        naked_distroseries.nominatedarchindep = distroseries_i386
 
         return getUtility(ISourcePackageRecipeBuildSource).new(
             distroseries=distroseries,
@@ -60,6 +71,10 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         spb = self.makeSourcePackageRecipeBuild()
         self.assertProvides(spb, IBuildBase)
         self.assertProvides(spb, ISourcePackageRecipeBuild)
+
+    def test_implements_interface(self):
+        build = self.makeSourcePackageRecipeBuild()
+        verifyObject(ISourcePackageRecipeBuild, build)
 
     def test_saves_record(self):
         # A source package recipe build can be stored in the database
@@ -150,7 +165,6 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(
             datetime.timedelta(minutes=5), spb.estimateDuration())
 
-
     def test_datestarted(self):
         """Datestarted is taken from job if not specified in the build.
 
@@ -188,13 +202,62 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
     def test_binary_builds(self):
         """The binary_builds property should be populated automatically."""
         spb = self.factory.makeSourcePackageRecipeBuild()
+        multiverse = self.factory.makeComponent(name='multiverse')
         spr = self.factory.makeSourcePackageRelease(
-            source_package_recipe_build=spb)
+            source_package_recipe_build=spb, component=multiverse)
         self.assertEqual([], list(spb.binary_builds))
         binary = self.factory.makeBinaryPackageBuild(spr)
         self.factory.makeBinaryPackageBuild()
         Store.of(binary).flush()
         self.assertEqual([binary], list(spb.binary_builds))
+
+    def test_manifest(self):
+        """Manifest should start empty, but accept SourcePackageRecipeData."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = recipe.requestBuild(
+            recipe.daily_build_archive, recipe.owner,
+            list(recipe.distroseries)[0], PackagePublishingPocket.RELEASE)
+        self.assertIs(None, build.manifest)
+        self.assertIs(None, build.getManifestText())
+        manifest_text = self.factory.makeRecipeText()
+        removeSecurityProxy(build).setManifestText(manifest_text)
+        self.assertEqual(manifest_text, build.getManifestText())
+        self.assertIsNot(None, build.manifest)
+        IStore(build).flush()
+        manifest_text = self.factory.makeRecipeText()
+        removeSecurityProxy(build).setManifestText(manifest_text)
+        self.assertEqual(manifest_text, build.getManifestText())
+        removeSecurityProxy(build).setManifestText(None)
+        self.assertIs(None, build.manifest)
+
+    def test_makeDailyBuilds(self):
+        self.assertEqual([],
+            SourcePackageRecipeBuild.makeDailyBuilds())
+        recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
+        build = SourcePackageRecipeBuild.makeDailyBuilds()[0]
+        self.assertEqual(recipe, build.recipe)
+        self.assertEqual(list(recipe.distroseries), [build.distroseries])
+
+    def test_makeDailyBuilds_clears_is_stale(self):
+        recipe = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
+        SourcePackageRecipeBuild.makeDailyBuilds()[0]
+        self.assertFalse(recipe.is_stale)
+
+    def test_makeDailyBuilds_skips_pending(self):
+        """When creating daily builds, skip ones that are already pending."""
+        recipe = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
+        first_distroseries = list(recipe.distroseries)[0]
+        recipe.requestBuild(
+            recipe.daily_build_archive, recipe.owner, first_distroseries,
+            PackagePublishingPocket.RELEASE)
+        second_distroseries = \
+            self.factory.makeSourcePackageRecipeDistroseries("hoary")
+        recipe.distroseries.add(second_distroseries)
+        builds = SourcePackageRecipeBuild.makeDailyBuilds()
+        self.assertEqual(
+            [second_distroseries], [build.distroseries for build in builds])
 
     def test_getRecentBuilds(self):
         """Recent builds match the same person, series and receipe.
@@ -212,6 +275,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             recipe=recipe, distroseries=series)
         self.factory.makeSourcePackageRecipeBuild(
             requester=requester, distroseries=series)
+
         def get_recent():
             Store.of(build).flush()
             return SourcePackageRecipeBuild.getRecentBuilds(
@@ -225,6 +289,75 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         a_second = datetime.timedelta(seconds=1)
         removeSecurityProxy(recent_build).datecreated += a_second
         self.assertContentEqual([recent_build], get_recent())
+
+    def test_destroySelf(self):
+        # ISourcePackageRecipeBuild should make sure to remove jobs and build
+        # queue entries and then invalidate itself.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        build.destroySelf()
+
+    def test_cancelBuild(self):
+        # ISourcePackageRecipeBuild should make sure to remove jobs and build
+        # queue entries and then invalidate itself.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        build.cancelBuild()
+
+        self.assertEqual(
+            BuildStatus.SUPERSEDED,
+            build.status)
+
+
+class TestAsBuildmaster(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_notify(self):
+        """Notify sends email."""
+        person = self.factory.makePerson(name='person')
+        cake = self.factory.makeSourcePackageRecipe(
+            name=u'recipe', owner=person)
+        pantry = self.factory.makeArchive(name='ppa')
+        secret = self.factory.makeDistroSeries(name=u'distroseries')
+        build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=cake, distroseries=secret, archive=pantry)
+        removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
+        IStore(build).flush()
+        build.notify()
+        (message, ) = pop_notifications()
+        requester = build.requester
+        requester_address = format_address(
+            requester.displayname, requester.preferredemail.email)
+        self.assertEqual(
+            requester_address, re.sub(r'\n\t+', ' ', message['To']))
+        self.assertEqual('Successfully built: recipe for distroseries',
+            message['Subject'])
+        body, footer = message.get_payload(decode=True).split('\n-- \n')
+        self.assertEqual(
+            'Build person/recipe into ppa for distroseries: Successfully'
+            ' built.\n', body)
+
+    def test_handleStatusNotifies(self):
+        """"handleStatus causes notification, even if OK."""
+
+        def prepare_build():
+            queue_record = self.factory.makeSourcePackageRecipeBuildJob()
+            build = queue_record.specific_job.build
+            removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
+            queue_record.builder = self.factory.makeBuilder()
+            slave = WaitingSlave('BuildStatus.OK')
+            queue_record.builder.setSlaveForTesting(slave)
+            return build
+
+        def assertNotifyOnce(status, build):
+            build.handleStatus(status, None, {'filemap': {}})
+            self.assertEqual(1, len(pop_notifications()))
+        for status in ['PACKAGEFAIL', 'OK']:
+            assertNotifyOnce(status, prepare_build())
+        build = prepare_build()
+        removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
+        result=True)
+        assertNotifyOnce('OK', prepare_build())
+
 
 class MakeSPRecipeBuildMixin:
     """Provide the common makeBuild method returning a queued build."""

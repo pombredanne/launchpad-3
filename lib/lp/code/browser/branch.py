@@ -25,7 +25,6 @@ __all__ = [
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
-    'DecoratedBug',
     'RegisterBranchMergeProposalView',
     'TryImportAgainView',
     ]
@@ -45,7 +44,6 @@ from zope.interface import Interface, implements, providedBy
 from zope.publisher.interfaces import NotFound
 from zope.schema import Bool, Choice, Text
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
-from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -77,10 +75,11 @@ from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 
-from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
+from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
     BranchLifecycleStatus, BranchType,
@@ -325,21 +324,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         return Link('+new-recipe', text, enabled=enabled, icon='add')
 
 
-class DecoratedBug:
-    """Provide some additional attributes to a normal bug."""
-    delegates(IBug)
-
-    def __init__(self, context, branch):
-        self.context = context
-        self.branch = branch
-
-    @property
-    def bugtask(self):
-        """Return the bugtask for the branch project, or the default bugtask.
-        """
-        return self.branch.target.getBugTask(self.context)
-
-
 class BranchView(LaunchpadView, FeedsMixin):
 
     __used_for__ = IBranch
@@ -356,6 +340,10 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     def initialize(self):
         self.notices = []
+        # Replace our context with a decorated branch, if it is not already
+        # decorated.
+        if not isinstance(self.context, DecoratedBranch):
+            self.context = DecoratedBranch(self.context)
 
     def user_is_subscribed(self):
         """Is the current user subscribed to this branch?"""
@@ -420,13 +408,6 @@ class BranchView(LaunchpadView, FeedsMixin):
             return self.context.bzr_identity
         else:
             return None
-
-    def edit_link_url(self):
-        """Target URL of the Edit link used in the actions portlet."""
-        # XXX: DavidAllouche 2005-12-02 bug=5313:
-        # That should go away when bug #5313 is fixed.
-        linkdata = BranchContextMenu(self.context).edit()
-        return '%s/%s' % (canonical_url(self.context), linkdata.target)
 
     @property
     def user_can_upload(self):
@@ -517,8 +498,12 @@ class BranchView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def linked_bugs(self):
         """Return a list of DecoratedBugs linked to the branch."""
-        return [DecoratedBug(bug, self.context)
-            for bug in self.context.linked_bugs]
+        bugs = self.context.linked_bugs
+        if self.context.is_series_branch:
+            bugs = [
+                bug for bug in bugs
+                if bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES]
+        return bugs
 
     @cachedproperty
     def latest_code_import_results(self):

@@ -8,20 +8,24 @@ import unittest
 import transaction
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.karma import IKarmaCacheManager
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.browser.person import PersonEditView, PersonView
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.karma import KarmaCategory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.soyuz.interfaces.archive import ArchiveStatus
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import TestCaseWithFactory, login_person
-from lp.testing.views import create_view
+from lp.testing.views import create_initialized_view, create_view
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -291,7 +295,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('Subscribed', participation['subscribed'])
 
-    def test_active_participations_with_private_team(self):
+    def test_active_participations_with_direct_private_team(self):
         # Users cannot see private teams that they are not members of.
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
         login_person(team.teamowner)
@@ -307,6 +311,25 @@ class TestPersonParticipationView(TestCaseWithFactory):
         view = create_view(
             self.user, name='+participation', principal=observer)
         self.assertEqual(0, len(view.active_participations))
+
+    def test_active_participations_with_indirect_private_team(self):
+        # Users cannot see private teams that they are not members of.
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        direct_team = self.factory.makeTeam(owner=team.teamowner)
+        login_person(team.teamowner)
+        direct_team.addMember(self.user, team.teamowner)
+        team.addMember(direct_team, team.teamowner)
+        # The team is included in active_participations.
+        login_person(self.user)
+        view = create_view(
+            self.user, name='+participation', principal=self.user)
+        self.assertEqual(2, len(view.active_participations))
+        # The team is not included in active_participations.
+        observer = self.factory.makePerson()
+        login_person(observer)
+        view = create_view(
+            self.user, name='+participation', principal=observer)
+        self.assertEqual(1, len(view.active_participations))
 
     def test_active_participations_indirect_membership(self):
         # Verify the path of indirect membership.
@@ -335,6 +358,194 @@ class TestPersonParticipationView(TestCaseWithFactory):
         participations = self.view.active_participations
         self.assertEqual(1, len(participations))
         self.assertEqual(True, self.view.has_participations)
+
+
+class TestPersonRelatedSoftwareView(TestCaseWithFactory):
+    """Test the related software view."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonRelatedSoftwareView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.factory.makeGPGKey(self.user)
+        self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.warty = self.ubuntu.getSeries('warty')
+        self.view = create_initialized_view(self.user, '+related-software')
+
+    def publishSource(self, archive, maintainer):
+        publisher = SoyuzTestPublisher()
+        publisher.person = self.user
+        login('foo.bar@canonical.com')
+        for count in range(0, self.view.max_results_to_display + 3):
+            source_name = "foo" + str(count)
+            publisher.getPubSource(
+                sourcename=source_name,
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=archive,
+                maintainer = maintainer,
+                creator = self.user,
+                distroseries=self.warty)
+        login(ANONYMOUS)
+
+    def test_view_helper_attributes(self):
+        # Verify view helper attributes.
+        self.assertEqual('Related software', self.view.page_title)
+        self.assertEqual('summary_list_size', self.view._max_results_key)
+        self.assertEqual(
+            config.launchpad.summary_list_size,
+            self.view.max_results_to_display)
+
+    def test_tableHeaderMessage(self):
+        limit = self.view.max_results_to_display
+        expected = 'Displaying first %s packages out of 100 total' % limit
+        self.assertEqual(expected, self.view._tableHeaderMessage(100))
+        expected = '%s packages' % limit
+        self.assertEqual(expected, self.view._tableHeaderMessage(limit))
+        expected = '1 package'
+        self.assertEqual(expected, self.view._tableHeaderMessage(1))
+
+    def test_latest_uploaded_ppa_packages_with_stats(self):
+        # Verify number of PPA packages to display.
+        ppa = self.factory.makeArchive(owner=self.user)
+        self.publishSource(ppa, self.user)
+        count = len(self.view.latest_uploaded_ppa_packages_with_stats)
+        self.assertEqual(self.view.max_results_to_display, count)
+
+    def test_latest_maintained_packages_with_stats(self):
+        # Verify number of maintained packages to display.
+        self.publishSource(self.warty.main_archive, self.user)
+        count = len(self.view.latest_maintained_packages_with_stats)
+        self.assertEqual(self.view.max_results_to_display, count)
+
+    def test_latest_uploaded_nonmaintained_packages_with_stats(self):
+        # Verify number of non maintained packages to display.
+        maintainer = self.factory.makePerson()
+        self.publishSource(self.warty.main_archive, maintainer)
+        count = len(
+            self.view.latest_uploaded_but_not_maintained_packages_with_stats)
+        self.assertEqual(self.view.max_results_to_display, count)
+
+
+class TestPersonMaintainedPackagesView(TestCaseWithFactory):
+    """Test the maintained packages view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonMaintainedPackagesView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.view = create_initialized_view(self.user, '+maintained-packages')
+
+    def test_view_helper_attributes(self):
+        # Verify view helper attributes.
+        self.assertEqual('Maintained Packages', self.view.page_title)
+        self.assertEqual('default_batch_size', self.view._max_results_key)
+        self.assertEqual(
+            config.launchpad.default_batch_size,
+            self.view.max_results_to_display)
+
+
+class TestPersonUploadedPackagesView(TestCaseWithFactory):
+    """Test the maintained packages view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonUploadedPackagesView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.view = create_initialized_view(self.user, '+uploaded-packages')
+
+    def test_view_helper_attributes(self):
+        # Verify view helper attributes.
+        self.assertEqual('Uploaded packages', self.view.page_title)
+        self.assertEqual('default_batch_size', self.view._max_results_key)
+        self.assertEqual(
+            config.launchpad.default_batch_size,
+            self.view.max_results_to_display)
+
+
+class TestPersonPPAPackagesView(TestCaseWithFactory):
+    """Test the maintained packages view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonPPAPackagesView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.view = create_initialized_view(self.user, '+ppa-packages')
+
+    def test_view_helper_attributes(self):
+        # Verify view helper attributes.
+        self.assertEqual('PPA packages', self.view.page_title)
+        self.assertEqual('default_batch_size', self.view._max_results_key)
+        self.assertEqual(
+            config.launchpad.default_batch_size,
+            self.view.max_results_to_display)
+
+
+class TestPersonRelatedProjectsView(TestCaseWithFactory):
+    """Test the maintained packages view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonRelatedProjectsView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.view = create_initialized_view(self.user, '+related-projects')
+
+    def test_view_helper_attributes(self):
+        # Verify view helper attributes.
+        self.assertEqual('Related projects', self.view.page_title)
+        self.assertEqual('default_batch_size', self.view._max_results_key)
+        self.assertEqual(
+            config.launchpad.default_batch_size,
+            self.view.max_results_to_display)
+
+
+class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
+    """The related software views display links to failed builds."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonRelatedSoftwareFailedBuild, self).setUp()
+        self.user = self.factory.makePerson()
+
+        # First we need to publish some PPA packages with failed builds
+        # for this person.
+        # XXX michaeln 2010-06-10 bug=592050.
+        # Strangely, the builds need to be built in the context of a
+        # main archive to reproduce bug 591010 for which this test was
+        # written to demonstrate.
+        login('foo.bar@canonical.com')
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        ppa = self.factory.makeArchive(owner=self.user)
+        src_pub = publisher.getPubSource(
+            creator=self.user, maintainer=self.user, archive=ppa)
+        binaries = publisher.getPubBinaries(
+            pub_source=src_pub)
+        self.build = binaries[0].binarypackagerelease.build
+        self.build.status = BuildStatus.FAILEDTOBUILD
+        self.build.archive = publisher.distroseries.main_archive
+        login(ANONYMOUS)
+
+    def test_related_software_with_failed_build(self):
+        # The link to the failed build is displayed.
+        self.view = create_view(self.user, name='+related-software')
+        html = self.view()
+        self.assertTrue(
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
+
+    def test_related_ppa_packages_with_failed_build(self):
+        # The link to the failed build is displayed.
+        self.view = create_view(self.user, name='+ppa-packages')
+        html = self.view()
+        self.assertTrue(
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
 
 
 def test_suite():

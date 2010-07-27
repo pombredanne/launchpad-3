@@ -8,35 +8,29 @@ themselves as bug supervisors and teams they administer.
     >>> sample_browser.addHeader("Authorization",
     ...                          "Basic test@canonical.com:test")
 
-    >>> sample_browser.open("http://localhost:9000/firefox/+bugsupervisor")
+    >>> sample_browser.open(
+    ...     "http://bugs.launchpad.dev/firefox/+bugsupervisor")
     >>> sample_browser.getControl(name="field.bug_supervisor").value = (
     ...                           "test@canonical.com")
     >>> sample_browser.getControl("Change").click()
 
-He is now redircted to the main product page, and he sees a confirmation
+He is now redirected to the main product page, and he sees a confirmation
 message.
 
-    >>> print sample_browser.url
-    http://localhost:9000/firefox
-    >>> print extract_text(sample_browser.contents)
-    Mozilla Firefox in Launchpad
-    ...
-    Successfully changed the bug supervisor to Sample Person.
-    ...
+    >>> print extract_text(find_tag_by_id(
+    ...     sample_browser.contents, 'bug-supervisor'))
+    Bug supervisor: Sample Person
 
 Another example, this time with a team that has no "preferred email" set.
 
-    >>> sample_browser.open("http://localhost:9000/firefox/+bugsupervisor")
+    >>> sample_browser.open(
+    ...     "http://bugs.launchpad.dev/firefox/+bugsupervisor")
     >>> sample_browser.getControl(name="field.bug_supervisor").value = (
     ...     "landscape-developers")
     >>> sample_browser.getControl("Change").click()
-    >>> print sample_browser.url
-    http://localhost:9000/firefox
-    >>> print extract_text(sample_browser.contents)
-    Mozilla Firefox in Launchpad
-    ...
-    Successfully changed the bug supervisor to Landscape Developers.
-    ...
+    >>> print extract_text(find_tag_by_id(
+    ...     sample_browser.contents, 'bug-supervisor'))
+    Bug supervisor: Landscape Developers
 
 Launchpad administrators can appoint anybody.
 
@@ -44,12 +38,10 @@ Launchpad administrators can appoint anybody.
     >>> admin_browser.addHeader("Authorization",
     ...                          "Basic foo.bar@canonical.com:test")
 
-    >>> admin_browser.open("http://localhost:9000/firefox/+bugsupervisor")
+    >>> admin_browser.open("http://bugs.launchpad.dev/firefox/+bugsupervisor")
     >>> admin_browser.getControl(name="field.bug_supervisor").value = (
     ...                           "robertc@robertcollins.net")
     >>> admin_browser.getControl("Change").click()
-    >>> print extract_text(admin_browser.contents)
-    Mozilla Firefox in Launchpad
-    ...
-    Successfully changed the bug supervisor to Robert Collins.
-    ...
+    >>> print extract_text(find_tag_by_id(
+    ...     admin_browser.contents, 'bug-supervisor'))
+    Bug supervisor: Robert Collins

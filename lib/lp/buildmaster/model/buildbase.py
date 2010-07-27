@@ -3,9 +3,11 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from __future__ import with_statement
 
 """Common build base classes."""
+
+
+from __future__ import with_statement
 
 __metaclass__ = type
 
@@ -40,7 +42,8 @@ from lp.registry.interfaces.pocket import pocketsuffix
 UPLOAD_LOG_FILENAME = 'uploader.log'
 
 
-def handle_status_for_build(build, status, librarian, slave_status):
+def handle_status_for_build(build, status, librarian, slave_status,
+                            build_class=None):
     """Find and call the correct method for handling the build status.
 
     This is extracted from build base so that the implementation
@@ -48,7 +51,9 @@ def handle_status_for_build(build, status, librarian, slave_status):
     """
     logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
 
-    method = getattr(BuildBase, '_handleStatus_' + status, None)
+    if build_class is None:
+        build_class = BuildBase
+    method = getattr(build_class, '_handleStatus_' + status, None)
 
     if method is None:
         logger.critical("Unknown BuildStatus '%s' for builder '%s'"
@@ -150,7 +155,8 @@ class BuildBase:
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
-        return handle_status_for_build(self, status, librarian, slave_status)
+        return handle_status_for_build(
+            self, status, librarian, slave_status, self.__class__)
 
     @staticmethod
     def _handleStatus_OK(build, librarian, slave_status, logger):

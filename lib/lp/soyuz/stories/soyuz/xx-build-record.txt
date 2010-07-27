@@ -288,7 +288,7 @@ retrying the build is not a possibility anymore.
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
     Needs building
-    Start in ... (0) Rescore build What's this?
+    Start in ... (...) Rescore build What's this?
 
     >>> admin_browser.getLink("Retry this build").click()
     Traceback (most recent call last):

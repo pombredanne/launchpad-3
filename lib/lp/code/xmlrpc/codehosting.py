@@ -33,7 +33,7 @@ from canonical.launchpad.xmlrpc.helpers import return_fault
 
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
-from lp.code.enums import BranchType
+from lp.code.enums import BranchType, match_enum_title
 from lp.code.interfaces.branch import BranchCreationException
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (

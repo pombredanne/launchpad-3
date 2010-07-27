@@ -260,6 +260,8 @@ class CustomUploadFile(NascentUploadFile):
         'raw-ddtp-tarball': PackageUploadCustomFormat.DDTP_TARBALL,
         'raw-translations-static':
             PackageUploadCustomFormat.STATIC_TRANSLATIONS,
+        'raw-meta-data' :
+            PackageUploadCustomFormat.META_DATA,
         }
 
     @property

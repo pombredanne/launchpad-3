@@ -255,14 +255,19 @@ mistake.
 
     >>> from datetime import datetime
     >>> from pytz import UTC
+    >>> from lp.testing.factory import (
+    ...     remove_security_proxy_and_shout_at_engineer)
 
     >>> product = factory.makeProduct(name="field", displayname='Field')
     >>> productseries = factory.makeProductSeries(
     ...     product=product, name='rabbit')
+    >>> productseries.releasefileglob = 'http://eg.dom/rabbit/*'
 
     # Hack the creation date for testing purposes.
     >>> test_date = datetime(2009, 05, 01, 19, 34, 24, tzinfo=UTC)
-    >>> productseries.datecreated = test_date
+    >>> naked_productseries = remove_security_proxy_and_shout_at_engineer(
+    ...     productseries)
+    >>> naked_productseries.datecreated = test_date
 
 Users without edit permission cannot access the view.
 
@@ -466,6 +471,13 @@ avoid conflicts. The linked branch is removed.
     True
     >>> print productseries.name
     field-rabbit-20090501-193424
+
+The series status is set to obsolete and the releasefileglob was set to None.
+
+    >>> print productseries.status.title
+    Obsolete
+    >>> print productseries.releasefileglob
+    None
 
 A series cannot be deleted if it is has translation templates.
 

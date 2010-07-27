@@ -61,8 +61,7 @@ hosted_branches: $(PY)
 $(API_INDEX): $(BZR_VERSION_INFO)
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
-	mv $(APIDOC_DIR).tmp/* $(APIDOC_DIR)
-	rmdir $(APIDOC_DIR).tmp
+	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
 
@@ -153,7 +152,7 @@ jsbuild: jsbuild_lazr bin/jsbuild bin/jssize
 		-s lib/canonical/launchpad/javascript \
 		-b $(LP_BUILT_JS_ROOT) \
 		$(shell $(HERE)/utilities/yui-deps.py) \
-		$(shell $(HERE)/utilities/lp-deps.py) \
+		$(shell $(PY) $(HERE)/utilities/lp-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
 	${SHHH} bin/jssize
 
@@ -250,7 +249,7 @@ run_codehosting: check_schema inplace stop hosted_branches
 	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
 
 
-start_librarian: build
+start_librarian: compile
 	bin/start_librarian
 
 stop_librarian:
@@ -340,7 +339,7 @@ clean: clean_js clean_buildout
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
-	$(RM) $(APIDOC_DIR)/wadl*.xml $(APIDOC_DIR)/*.html
+	$(RM) -rf $(APIDOC_DIR)
 	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) +config-overrides.zcml

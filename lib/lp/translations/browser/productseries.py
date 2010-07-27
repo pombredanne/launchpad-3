@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E1002
 
@@ -24,6 +24,7 @@ from bzrlib.revision import NULL_REVISION
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_tar_filename
 from canonical.launchpad.webapp import (
@@ -343,9 +344,7 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
 
         Produces a list containing a ProductSeriesLanguage object for
         each language this product has been translated into, and for each
-        of the user's preferred languages. Where the series has no
-        ProductSeriesLanguage for that language, we use a
-        DummyProductSeriesLanguage.
+        of the user's preferred languages.
         """
 
         if self.context.potemplate_count == 0:
@@ -367,12 +366,14 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
                         pot = self.context.getCurrentTranslationTemplates()[0]
                         pofile = pot.getPOFileByLang(lang.code)
                         if pofile is None:
-                            pofile = pot.getDummyPOFile(lang.code)
-                        productserieslang = productserieslangset.getDummy(
-                            self.context, lang, pofile=pofile)
+                            pofile = pot.getDummyPOFile(lang)
+                        productserieslang = (
+                            productserieslangset.getProductSeriesLanguage(
+                                self.context, lang, pofile=pofile))
                     else:
-                        productserieslang = productserieslangset.getDummy(
-                            self.context, lang)
+                        productserieslang = (
+                            productserieslangset.getProductSeriesLanguage(
+                                self.context, lang))
                     productserieslangs.append(
                         productserieslang)
 
@@ -394,7 +395,7 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         return (translation_group is not None and
                 translation_group.translation_guide_url is not None)
 
-    @property
+    @cachedproperty
     def single_potemplate(self):
         """Does this ProductSeries have exactly one POTemplate."""
         return self.context.potemplate_count == 1

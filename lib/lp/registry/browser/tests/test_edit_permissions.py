@@ -55,10 +55,10 @@ class EditViewPermissionBase(TestCaseWithFactory):
         view = create_initialized_view(self.target, '+edit')
         self.assertTrue(check_permission('launchpad.Edit', view))
 
-    def test_registry_expert_can_edit(self):
+    def test_registry_expert_cannot_edit(self):
         login_person(self.registry_admin)
         view = create_initialized_view(self.target, '+edit')
-        self.assertTrue(check_permission('launchpad.Edit', view))
+        self.assertFalse(check_permission('launchpad.Edit', view))
 
 
 class PersonEditViewPermissionTestCase(EditViewPermissionBase):

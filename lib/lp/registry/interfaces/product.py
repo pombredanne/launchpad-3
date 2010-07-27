@@ -663,9 +663,10 @@ class IProductPublic(
 
     remote_product = exported(
         TextLine(
-            title=_('Remote project'), required=False,
+            title=_('Remote bug tracker project id'), required=False,
             description=_(
-                "The ID of this project on its remote bug tracker.")))
+                "Some bug trackers host multiple projects at the same URL "
+                "and require an identifier for the specific project.")))
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
@@ -683,9 +684,6 @@ class IProductPublic(
             specified.
         :return: None
         """
-
-    def getLatestBranches(quantity=5):
-        """Latest <quantity> branches registered for this product."""
 
     def getPackage(distroseries):
         """Return a package in that distroseries for this product."""
@@ -731,8 +729,8 @@ class IProductPublic(
 
 
 class IProduct(
-    IHasBugSupervisor, IProductEditRestricted, 
-    IProductProjectReviewRestricted, IProductDriverRestricted, 
+    IHasBugSupervisor, IProductEditRestricted,
+    IProductProjectReviewRestricted, IProductDriverRestricted,
     IProductPublic, IRootContext, IStructuralSubscriptionTarget):
     """A Product.
 

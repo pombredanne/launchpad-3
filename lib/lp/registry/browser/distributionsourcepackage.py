@@ -41,6 +41,7 @@ from lp.answers.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
+from lp.registry.browser.pillar import PillarBugsMenu
 from lp.soyuz.browser.sourcepackagerelease import (
     extract_bug_numbers, extract_email_addresses, linkify_changelog)
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -107,15 +108,11 @@ class DistributionSourcePackageOverviewMenu(
 
 
 class DistributionSourcePackageBugsMenu(
-        DistributionSourcePackageOverviewMenu):
+    PillarBugsMenu, DistributionSourcePackageLinksMixin):
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
     links = ['filebug', 'subscribe']
-
-    def filebug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='bug')
 
 
 class DistributionSourcePackageNavigation(Navigation,
@@ -478,6 +475,7 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
     schema = IDistributionSourcePackage
     field_names = [
         'bug_reporting_guidelines',
+        'bug_reported_acknowledgement',
         ]
 
     @property
