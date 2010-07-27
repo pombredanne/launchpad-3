@@ -841,8 +841,9 @@ class TestDispatchResult(unittest.TestCase):
         self.assertTrue(builder.currentjob is None)
 
     def testResetDispatchResult(self):
-        # Test that `ResetDispatchResult` calls assessFailureCounts().
+        # Test that `ResetDispatchResult` resets the builder and job.
         builder, job_id = self._getBuilder('bob')
+        buildqueue_id = builder.currentjob.id
         builder.builderok = True
         builder.failure_count = 1
 
@@ -852,32 +853,26 @@ class TestDispatchResult(unittest.TestCase):
         result = ResetDispatchResult(slave)
         result()
 
-        self.assertJobIsClean(job_id)
+        buildqueue = getUtility(IBuildQueueSet).get(buildqueue_id)
+        self.assertBuildqueueIsClean(buildqueue)
 
         # XXX Julian
         # Disabled test until bug 586362 is fixed.
         #self.assertFalse(builder.builderok)
-        self.assertEqual(None, builder.currentjob)
+        self.assertBuilderIsClean(builder)
 
     def testFailDispatchResult(self):
-        """`FailDispatchResult` excludes the builder from pool.
-
-        It marks the build as failed (builderok=False) and clean any
-        existing jobs.
-        """
+        # Test that `FailDispatchResult` calls assessFailureCounts().
         builder, job_id = self._getBuilder('bob')
 
         # Setup a interaction to satisfy 'write_transaction' decorator.
         login(ANONYMOUS)
         slave = RecordingSlave(builder.name, builder.url, builder.vm_host)
         result = FailDispatchResult(slave, 'does not work!')
+        result.assessFailureCounts = FakeMethod()
+        self.assertEqual(0, result.assessFailureCounts.call_count)
         result()
-
-        self.assertJobIsClean(job_id)
-
-        self.assertFalse(builder.builderok)
-        self.assertEqual(None, builder.currentjob)
-        self.assertEqual('does not work!', builder.failnotes)
+        self.assertEqual(1, result.assessFailureCounts.call_count)
 
     def _setup_failing_dispatch_result(self):
         # assessFailureCounts should fail jobs or builders depending on
