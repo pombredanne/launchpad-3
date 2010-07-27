@@ -19,7 +19,7 @@ from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
-    ContentNameField, ParticipatingPersonChoice, Title)
+    ContentNameField, PersonChoice, Title)
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.code.interfaces.branch import IBranch
@@ -129,12 +129,12 @@ class IProductSeriesPublic(
         exported_as='date_created')
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
             description=_('Project owner, either a valid Person or Team')))
 
     driver = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_("Release manager"),
             description=_(
                 "The person or team responsible for decisions about features "

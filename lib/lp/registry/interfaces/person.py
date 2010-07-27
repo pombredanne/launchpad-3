@@ -37,7 +37,6 @@ __all__ = [
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
-    'validate_person_not_private_membership',
     'validate_public_person',
     ]
 
@@ -67,7 +66,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
-    StrippedTextLine, is_private_membership_person, is_public_person)
+    StrippedTextLine, is_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.launchpad import (
@@ -136,11 +135,6 @@ def validate_public_person(obj, attr, value):
         return not is_public_person(person)
 
     return validate_person(obj, attr, value, validate)
-
-
-def validate_person_not_private_membership(obj, attr, value):
-    """Validate that the person (value) is not a private membership team."""
-    return validate_person(obj, attr, value, is_private_membership_person)
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -378,13 +372,13 @@ class PersonVisibility(DBEnumeratedType):
         Everyone can view all the attributes of this person.
         """)
 
-    PRIVATE_MEMBERSHIP = DBItem(20, """
-        Private Membership
+    ## PRIVATE_MEMBERSHIP = DBItem(20, """
+    ##     Private Membership
 
-        Only Launchpad admins and team members can view the
-        membership list for this team. The team is severely restricted in the
-        roles it can assume.
-        """)
+    ##     Only Launchpad admins and team members can view the
+    ##     membership list for this team. The team is severely restricted in the
+    ##     roles it can assume.
+    ##     """)
 
     PRIVATE = DBItem(30, """
         Private

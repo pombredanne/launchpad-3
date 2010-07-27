@@ -88,8 +88,7 @@ from lp.registry.interfaces.sourcepackagename import (
 from canonical.launchpad.searchbuilder import (
     all, any, greater_than, NULL, not_equals)
 from lp.registry.interfaces.person import (
-    IPerson, validate_person_not_private_membership,
-    validate_public_person)
+    IPerson, validate_person, validate_public_person)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, SLAVE_FLAVOR, NotFoundError)
 
@@ -455,7 +454,7 @@ def validate_status(self, attr, value):
 def validate_assignee(self, attr, value):
     value = validate_conjoined_attribute(self, attr, value)
     # Check if this assignee is public.
-    return validate_person_not_private_membership(self, attr, value)
+    return validate_person(self, attr, value)
 
 
 @block_implicit_flushes

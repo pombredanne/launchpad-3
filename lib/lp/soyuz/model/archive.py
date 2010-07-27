@@ -103,8 +103,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership)
+from lp.registry.interfaces.person import validate_person
 
 
 class Archive(SQLBase):
@@ -114,7 +113,7 @@ class Archive(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person, notNull=True)
 
     def _validate_archive_name(self, attr, value):
         """Only allow renaming of COPY archives.
@@ -1594,7 +1593,7 @@ class Archive(SQLBase):
     def _getEnabledRestrictedFamilies(self):
         """Retrieve the restricted architecture families this archive can
         build on."""
-        # Main archives are always allowed to build on restricted 
+        # Main archives are always allowed to build on restricted
         # architectures.
         if self.is_main:
             return getUtility(IProcessorFamilySet).getRestricted()
@@ -1606,7 +1605,7 @@ class Archive(SQLBase):
     def _setEnabledRestrictedFamilies(self, value):
         """Set the restricted architecture families this archive can
         build on."""
-        # Main archives are always allowed to build on restricted 
+        # Main archives are always allowed to build on restricted
         # architectures.
         if self.is_main:
             proc_family_set = getUtility(IProcessorFamilySet)

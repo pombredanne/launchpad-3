@@ -2,3 +2,10 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+x Remove PRIVATE_MEMBERSHIP enum
+x Remove is_private_membership_person
+x Remove ParticipatingPersonChoice and use PersonChoice
+x Remove validate_person_not_private_membership and replace with validate_person
+Remove all instance of PRIVATE_MEMBERSHIP
+Look for XXX 602773

@@ -23,7 +23,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ParticipatingPersonChoice, PublicPersonChoice)
+    PersonChoice, PublicPersonChoice)
 from lp.registry.interfaces.person import IPerson
 
 from lazr.restful.declarations import (
@@ -105,7 +105,7 @@ class IStructuralSubscription(Interface):
         title=_('Distribution series'), required=False, readonly=True)
     sourcepackagename = Int(
         title=_('Source package name'), required=False, readonly=True)
-    subscriber = exported(ParticipatingPersonChoice(
+    subscriber = exported(PersonChoice(
         title=_('Subscriber'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person subscribed.")))
     subscribed_by = exported(PublicPersonChoice(

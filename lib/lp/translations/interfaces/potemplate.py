@@ -12,7 +12,7 @@ from lazr.restful.declarations import (
     exported, export_as_webservice_entry, export_read_operation,
     operation_returns_collection_of)
 
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from canonical.launchpad.fields import PersonChoice
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.registry.interfaces.distribution import IDistribution
@@ -124,7 +124,7 @@ class IPOTemplate(IRosettaStats):
         required=True,
         default=True), exported_as='active')
 
-    owner = exported(ParticipatingPersonChoice(
+    owner = exported(PersonChoice(
         title=_("Owner"),
         required=True,
         description=_(
