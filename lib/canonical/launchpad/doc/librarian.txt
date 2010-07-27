@@ -1,5 +1,10 @@
 = Librarian Access =
 
+== setUp ==
+
+   >>> from canonical.database.sqlbase import session_store
+   >>> from canonical.launchpad.database.librarian import TimeLimitedToken
+
 == High Level ==
 
     >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
@@ -446,10 +451,9 @@ A librarian file has a default view that should redirect to the download URL.
     True
 
 
-== StreamOrRedirectLibraryFileAliasView ==
+== File views setup ==
 
-This special view allows call sites to stream restricted `LibraryFileAlias`
-contents directly from launchpad instances.
+We need some files to test different ways of accessing them.
 
     >>> filename = 'public.txt'
     >>> content = 'PUBLIC'
@@ -463,10 +467,96 @@ contents directly from launchpad instances.
     ...     filename, len(content), StringIO(content), 'text/plain',
     ...     NEVER_EXPIRES, restricted=True)
 
+    # Create a new LibraryFileAlias not referencing any LibraryFileContent
+    # record. Such records are considered as being deleted.
+    >>> from canonical.launchpad.database import LibraryFileAlias
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    >>> deleted_file = LibraryFileAlias(
+    ...     content=None, filename='deleted.txt',
+    ...     mimetype='text/plain')
+    >>> ignore = store.add(deleted_file)
+
 Commit the just-created files.
 
     >>> from canonical.database.sqlbase import commit
     >>> commit()
+
+    >>> deleted_file = getUtility(ILibraryFileAliasSet)[deleted_file.id]
+    >>> print deleted_file.deleted
+    True
+
+Clear out existing tokens for these test urls.
+
+   >>> _ = session_store().find(TimeLimitedToken, TimeLimitedToken.url in
+   ...     (public_file.http_url, public_file.https_url,
+   ...      restricted_file.http_url, restricted_file.https_url)).remove()
+
+== RedirectPerhapsWithTokenLibraryFileAliasView ==
+
+This special view allows granting access to restricted `LibraryFileAlias`
+objects on the launchpadlibrarian. All requests get redirected, restricted
+files have an access token allocated.
+
+This view implements `IBrowserPublisher` which allows us to use it in
+traversals.
+
+    >>> from canonical.launchpad.browser.librarian import (
+    ...     RedirectPerhapsWithTokenLibraryFileAliasView)
+
+    >>> empty_request = LaunchpadTestRequest()
+    >>> restricted_view = RedirectPerhapsWithTokenLibraryFileAliasView(
+    ...     restricted_file, empty_request)
+
+    >>> from zope.publisher.interfaces.browser import IBrowserPublisher
+    >>> verifyObject(IBrowserPublisher, restricted_view)
+    True
+
+When the context file is a restricted `LibraryFileAlias`, traversal causes an
+access token to be allocated and a redirection to https to be issued.
+
+    >>> view, extra = restricted_view.browserDefault(empty_request)
+    >>> print view
+    <...RedirectionView...>
+    >>> view.target
+    'https://...restricted.txt?token=...'
+    >>> https_url = restricted_file.https_url
+    >>> view.target.endswith(session_store().find(TimeLimitedToken,
+    ...     url=https_url).any().token)
+    True
+
+Otherwise, no token is allocated and a redirection is issued to the http url.
+
+    >>> public_view = RedirectPerhapsWithTokenLibraryFileAliasView(
+    ...     public_file, empty_request)
+    >>> verifyObject(IBrowserPublisher, public_view)
+    True
+    >>> view, extra = public_view.browserDefault(empty_request)
+    >>> print view
+    <...RedirectionView ...>
+    >>> view.target == public_file.http_url
+    True
+    >>> view.target
+    'http://.../public.txt'
+
+Deleted files cannot be handled by the view and it raises an appropriate
+AssertionError when it gets traversed.
+
+    >>> deleted_view = RedirectPerhapsWithTokenLibraryFileAliasView(
+    ...     deleted_file, empty_request)
+
+    >>> view, extra = deleted_view.browserDefault(empty_request)
+    Traceback (most recent call last):
+    ...
+    AssertionError: RedirectPerhapsWithTokenLibraryFileAliasView can not
+    operate on deleted librarian files, since their URL is undefined.
+
+== StreamOrRedirectLibraryFileAliasView ==
+
+This special view allows call sites to stream restricted `LibraryFileAlias`
+contents directly from launchpad instances.
 
 This view  implements `IBrowserPublisher` which allows us to use it in
 traversals.
@@ -566,23 +656,6 @@ public `LibraryFileAlias` the traversal chain is extended with a
 
 Files in this condition cannot be handled by the view and it raises an
 appropriate AssertionError when it gets traversed.
-
-    # Create a new LibraryFileAlias not referencing any LibraryFileContent
-    # record. Such records are considered as being deleted.
-    >>> from canonical.launchpad.database import LibraryFileAlias
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-
-    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-    >>> deleted_file = LibraryFileAlias(
-    ...     content=None, filename='deleted.txt',
-    ...     mimetype='text/plain')
-    >>> ignore = store.add(deleted_file)
-    >>> store.commit()
-
-    >>> deleted_file = getUtility(ILibraryFileAliasSet)[deleted_file.id]
-    >>> print deleted_file.deleted
-    True
 
     >>> deleted_view = StreamOrRedirectLibraryFileAliasView(
     ...     deleted_file, empty_request)

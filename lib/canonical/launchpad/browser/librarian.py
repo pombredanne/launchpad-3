@@ -12,6 +12,7 @@ __all__ = [
     'LibraryFileAliasView',
     'ProxiedLibraryFileAlias',
     'StreamOrRedirectLibraryFileAliasView',
+    'RedirectPerhapsWithTokenLibraryFileAliasView',
     ]
 
 import os
@@ -23,6 +24,7 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.interfaces import ILibraryFileAlias
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.authorization import check_permission
@@ -71,6 +73,40 @@ class LibraryFileAliasMD5View(LaunchpadView):
         """Return the plain text MD5 signature"""
         self.request.response.setHeader('Content-type', 'text/plain')
         return '%s %s' % (self.context.content.md5, self.context.filename)
+
+
+class RedirectPerhapsWithTokenLibraryFileAliasView(LaunchpadView):
+    """Redirect clients to the librarian giving private files an access token.
+
+    This is a replacement for StreamOrRedirectLibraryFileAliasView which has
+    some implementation downsides that can lead to timeouts or slow requrests
+    on the appservers.
+    """
+    implements(IBrowserPublisher)
+
+    __used_for__ = ILibraryFileAlias
+
+    def browserDefault(self, request):
+        """Decides whether to allocate a token when redirecting the client.
+
+        Only restricted file contents are granted a token to avoid writing to
+        the session db for anonymous content which is the bulk of the librarian
+        content.
+        """
+        # Cloned from the streaming code, but perhaps better to just return
+        # None / signal 404 ? -- RobertCollins 20100727
+        assert not self.context.deleted, (
+            "RedirectPerhapsWithTokenLibraryFileAliasView can not operate on "
+            "deleted librarian files, since their URL is undefined.")
+        if self.context.restricted:
+            token = TimeLimitedToken.allocate(self.context.https_url)
+            final_url = self.context.https_url + '?token=%s' % token
+            return RedirectionView(final_url, self.request), ()
+        return RedirectionView(self.context.http_url, self.request), ()
+
+    def publishTraverse(self, request, name):
+        """See `IBrowserPublisher` - can't traverse below a file."""
+        raise NotFound(name, self.context)
 
 
 class StreamOrRedirectLibraryFileAliasView(LaunchpadView):

@@ -23,6 +23,7 @@ import storm.base
 from storm.locals import Date, Desc, Int, Reference, Store
 
 from canonical.config import config
+from canonical.database.sqlbase import session_store
 from canonical.launchpad.interfaces import (
     ILibraryFileAlias, ILibraryFileAliasSet, ILibraryFileContent,
     ILibraryFileDownloadCount, IMasterStore)
@@ -259,3 +260,21 @@ class TimeLimitedToken(storm.base.Storm):
             self.created = created
         self.url = url
         self.token = token
+
+    @staticmethod
+    def allocate(url):
+        """Allocate a token for url.
+
+        :param url: A url bytestring.
+        :return: A url fragment token ready to be attached to the url.
+            e.g. 'a%20token'
+        """
+        token = "literal"
+        store = session_store()
+        store.add(TimeLimitedToken(url, token))
+        # XXX: Check this statement, RobertCollins 20100728
+        # The session isn't part of the main transaction model.
+        # If it is part of the overall ztransaction stuff we could / should
+        # just flush.
+        store.commit()
+        return token
