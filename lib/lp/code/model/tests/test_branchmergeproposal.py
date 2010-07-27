@@ -70,14 +70,14 @@ class TestBranchMergeProposalCanonicalUrl(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_BranchMergeProposal_canoncial_url_base(self):
+    def test_BranchMergeProposal_canonical_url_base(self):
         # The URL for a merge proposal starts with the source branch.
         bmp = self.factory.makeBranchMergeProposal()
         url = canonical_url(bmp)
         source_branch_url = canonical_url(bmp.source_branch)
         self.assertTrue(url.startswith(source_branch_url))
 
-    def test_BranchMergeProposal_canoncial_url_rest(self):
+    def test_BranchMergeProposal_canonical_url_rest(self):
         # The rest of the URL for a merge proposal is +merge followed by the db id.
         bmp = self.factory.makeBranchMergeProposal()
         url = canonical_url(bmp)
