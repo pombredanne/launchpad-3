@@ -86,6 +86,15 @@ class NamespaceMixin:
             BranchLifecycleStatus.EXPERIMENTAL, branch.lifecycle_status)
         self.assertEqual(whiteboard, branch.whiteboard)
 
+    def test_createBranch_subscribes_owner(self):
+        owner = self.factory.makeTeam()
+        namespace = self.getNamespace(owner)
+        branch_name = self.factory.getUniqueString()
+        registrant = owner.teamowner
+        branch = namespace.createBranch(
+            BranchType.HOSTED, branch_name, registrant)
+        self.assertEqual([owner], list(branch.subscribers))
+
     def test_getBranches_no_branches(self):
         # getBranches on an IBranchNamespace returns a result set of branches
         # in that namespace. If there are no branches, the result set is
@@ -1451,8 +1460,8 @@ class NoPolicies(BranchVisibilityPolicyTestCase):
 
 
 class PolicySimple(BranchVisibilityPolicyTestCase):
-    """Test the visibility policy where the base visibility rule is PUBLIC with
-    one team specified to have PRIVATE branches.
+    """Test the visibility policy where the base visibility rule is PUBLIC
+    with one team specified to have PRIVATE branches.
     """
 
     def setUp(self):
@@ -1496,8 +1505,8 @@ class PolicySimple(BranchVisibilityPolicyTestCase):
 
 
 class PolicyPrivateOnly(BranchVisibilityPolicyTestCase):
-    """Test the visibility policy where the base visibility rule is PUBLIC with
-    one team specified to have the PRIVATE_ONLY rule.
+    """Test the visibility policy where the base visibility rule is PUBLIC
+    with one team specified to have the PRIVATE_ONLY rule.
 
     PRIVATE_ONLY only stops the user from changing the branch from private to
     public and for branch creation behaves in the same maner as the PRIVATE

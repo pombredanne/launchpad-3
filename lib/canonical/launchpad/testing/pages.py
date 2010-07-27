@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """Testing infrastructure for page tests."""
 
 # Stop lint warning about not initializing TestCase parent on
@@ -9,6 +11,7 @@
 
 __metaclass__ = type
 
+import doctest
 import os
 import pdb
 import pprint
@@ -26,10 +29,7 @@ from urlparse import urljoin
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
 from zope.testbrowser.testing import Browser
-from zope.testing import doctest
 from zope.security.proxy import removeSecurityProxy
-
-from launchpadlib.launchpad import Launchpad
 
 from canonical.launchpad.interfaces import (
     IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities,
@@ -787,6 +787,7 @@ def setUpGlobs(test):
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
     test.globs['stop'] = stop
+    test.globs['with_statement'] = with_statement
     test.globs['ws_uncache'] = ws_uncache
 
 

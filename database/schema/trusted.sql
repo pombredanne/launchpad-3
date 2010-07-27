@@ -144,6 +144,12 @@ $$
         LIMIT 1
         """, 1).nrows() > 0
     if stats_reset:
+        # The database stats have been reset. We cannot calculate
+        # deltas because we do not know when this happened. So we trash
+        # our records as they are now useless to us. We could be more
+        # sophisticated about this, but this should only happen
+        # when an admin explicitly resets the statistics or if the
+        # database is rebuilt.
         plpy.notice("Stats wraparound. Purging DatabaseTableStats")
         plpy.execute("DELETE FROM DatabaseTableStats")
     else:
@@ -158,7 +164,8 @@ $$
             SELECT
                 CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
                 schemaname, relname, seq_scan, seq_tup_read,
-                idx_scan, idx_tup_fetch, n_tup_ins, n_tup_upd, n_tup_del,
+                coalesce(idx_scan, 0), coalesce(idx_tup_fetch, 0),
+                n_tup_ins, n_tup_upd, n_tup_del,
                 n_tup_hot_upd, n_live_tup, n_dead_tup, last_vacuum,
                 last_autovacuum, last_analyze, last_autoanalyze
             FROM pg_catalog.pg_stat_user_tables;
@@ -1429,7 +1436,16 @@ CREATE OR REPLACE FUNCTION lp_mirror_person_ins() RETURNS trigger
 SECURITY DEFINER LANGUAGE plpgsql AS
 $$
 BEGIN
-    INSERT INTO lp_Person SELECT NEW.*;
+    INSERT INTO lp_Person (
+        id, displayname, teamowner, teamdescription, name, language, fti,
+        defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy,
+        merged, datecreated, homepage_content, icon, mugshot,
+        hide_email_addresses, creation_rationale, creation_comment,
+        registrant, logo, renewal_policy, personal_standing,
+        personal_standing_reason, mail_resumption_date,
+        mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates,
+        visibility, verbose_bugnotifications, account) 
+        SELECT NEW.*;
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
 $$;
@@ -1495,14 +1511,6 @@ BEGIN
         subscriptionpolicy = NEW.subscriptionpolicy,
         merged = NEW.merged,
         datecreated = NEW.datecreated,
-        addressline1 = NEW.addressline1,
-        addressline2 = NEW.addressline2,
-        organization = NEW.organization,
-        city = NEW.city,
-        province = NEW.province,
-        country = NEW.country,
-        postcode = NEW.postcode,
-        phone = NEW.phone,
         homepage_content = NEW.homepage_content,
         icon = NEW.icon,
         mugshot = NEW.mugshot,

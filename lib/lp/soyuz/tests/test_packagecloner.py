@@ -423,7 +423,7 @@ class PackageClonerTests(TestCaseWithFactory):
             tuples = []
             for source_key in source_keys:
                 source = getUtility(IPublishingSet).getByIdAndArchive(
-                    source_key, archive, source=True).one()
+                    source_key, archive, source=True)
                 self.assertNotEqual(source, None, "Got a non-existant "
                         "source publishing record: %d" % source_key)
                 naked_source = removeSecurityProxy(source)

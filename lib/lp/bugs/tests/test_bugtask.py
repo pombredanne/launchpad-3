@@ -3,19 +3,22 @@
 
 __metaclass__ = type
 
+from datetime import timedelta
+from doctest import DocTestSuite
 import unittest
 
 from zope.component import getUtility
 from zope.interface import providedBy
-from zope.testing.doctestunit import DocTestSuite
 
 from lazr.lifecycle.snapshot import Snapshot
 
 from lp.hardwaredb.interfaces.hwdb import HWBus, IHWDeviceSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import all, any
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
 
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskSearchParams, BugTaskStatus)
 from lp.bugs.model.bugtask import build_tag_search_clause
@@ -28,7 +31,7 @@ from lp.testing import (
 
 class TestBugTaskDelta(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTaskDelta, self).setUp()
@@ -66,7 +69,6 @@ class TestBugTaskDelta(TestCaseWithFactory):
 
     def test_get_bugwatch_delta(self):
         # Exercise getDelta() with a change to bugwatch.
-        user = self.factory.makePerson()
         bug_task = self.factory.makeBugTask()
         bug_task_before_modification = Snapshot(
             bug_task, providing=providedBy(bug_task))
@@ -501,12 +503,12 @@ class TestBugTaskHardwareSearch(TestCaseWithFactory):
             [bugtask.bug.id for bugtask in bugtasks])
 
 
-class TestBugTaskPermissionsToSetAssigneeBase(TestCaseWithFactory):
+class TestBugTaskPermissionsToSetAssigneeMixin:
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        """Crate the test setup.
+        """Create the test setup.
 
         We need
         - bug task targets (a product and a product series, or
@@ -516,7 +518,7 @@ class TestBugTaskPermissionsToSetAssigneeBase(TestCaseWithFactory):
           owners, bug supervisors, drivers
         - bug tasks for the targets
         """
-        super(TestBugTaskPermissionsToSetAssigneeBase, self).setUp()
+        super(TestBugTaskPermissionsToSetAssigneeMixin, self).setUp()
         self.target_owner_member = self.factory.makePerson()
         self.target_owner_team = self.factory.makeTeam(
             owner=self.target_owner_member)
@@ -555,6 +557,14 @@ class TestBugTaskPermissionsToSetAssigneeBase(TestCaseWithFactory):
         self.target_bugtask = bug.getBugTask(self.target)
         self.target_bugtask.transitionToAssignee(self.regular_user)
         logout()
+
+    def makeTarget(self):
+        """Create a target and a series.
+
+        The target and series must be assigned as attributes of self:
+        'self.target' and 'self.series'.
+        """
+        raise NotImplementedError(self.makeTarget)
 
     def test_userCanSetAnyAssignee_anonymous_user(self):
         # Anonymous users cannot set anybody as an assignee.
@@ -700,7 +710,7 @@ class TestBugTaskPermissionsToSetAssigneeBase(TestCaseWithFactory):
 
 
 class TestProductBugTaskPermissionsToSetAssignee(
-    TestBugTaskPermissionsToSetAssigneeBase):
+    TestBugTaskPermissionsToSetAssigneeMixin, TestCaseWithFactory):
 
     def makeTarget(self):
         """Create a product and a product series."""
@@ -709,7 +719,7 @@ class TestProductBugTaskPermissionsToSetAssignee(
 
 
 class TestDistributionBugTaskPermissionsToSetAssignee(
-    TestBugTaskPermissionsToSetAssigneeBase):
+    TestBugTaskPermissionsToSetAssigneeMixin, TestCaseWithFactory):
 
     def makeTarget(self):
         """Create a distribution and a distroseries."""
@@ -718,14 +728,73 @@ class TestDistributionBugTaskPermissionsToSetAssignee(
         self.series = self.factory.makeDistroSeries(self.target)
 
 
+class TestBugTaskSearch(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def login(self):
+        # Log in as an arbitrary person.
+        person = self.factory.makePerson()
+        login_person(person)
+        self.addCleanup(logout)
+        return person
+
+    def makeBugTarget(self):
+        """Make an arbitrary bug target with no tasks on it."""
+        return IBugTarget(self.factory.makeProduct())
+
+    def test_no_tasks(self):
+        # A brand new bug target has no tasks.
+        target = self.makeBugTarget()
+        self.assertEqual([], list(target.searchTasks(None)))
+
+    def test_new_task_shows_up(self):
+        # When we create a new bugtask on the target, it shows up in
+        # searchTasks.
+        target = self.makeBugTarget()
+        self.login()
+        task = self.factory.makeBugTask(target=target)
+        self.assertEqual([task], list(target.searchTasks(None)))
+
+    def test_modified_since_excludes_earlier_bugtasks(self):
+        # When we search for bug tasks that have been modified since a certain
+        # time, tasks for bugs that have not been modified since then are
+        # excluded.
+        target = self.makeBugTarget()
+        self.login()
+        task = self.factory.makeBugTask(target=target)
+        date = task.bug.date_last_updated + timedelta(days=1)
+        result = target.searchTasks(None, modified_since=date)
+        self.assertEqual([], list(result))
+
+    def test_modified_since_includes_later_bugtasks(self):
+        # When we search for bug tasks that have been modified since a certain
+        # time, tasks for bugs that have been modified since then are
+        # included.
+        target = self.makeBugTarget()
+        self.login()
+        task = self.factory.makeBugTask(target=target)
+        date = task.bug.date_last_updated - timedelta(days=1)
+        result = target.searchTasks(None, modified_since=date)
+        self.assertEqual([task], list(result))
+
+    def test_modified_since_includes_later_bugtasks_excludes_earlier(self):
+        # When we search for bugs that have been modified since a certain
+        # time, tasks for bugs that have been modified since then are
+        # included, tasks that have not are excluded.
+        target = self.makeBugTarget()
+        self.login()
+        task1 = self.factory.makeBugTask(target=target)
+        date = task1.bug.date_last_updated
+        task1.bug.date_last_updated -= timedelta(days=1)
+        task2 = self.factory.makeBugTask(target=target)
+        task2.bug.date_last_updated += timedelta(days=1)
+        result = target.searchTasks(None, modified_since=date)
+        self.assertEqual([task2], list(result))
+
+
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestBugTaskDelta))
-    suite.addTest(unittest.makeSuite(TestBugTaskTagSearchClauses))
-    suite.addTest(unittest.makeSuite(TestBugTaskHardwareSearch))
-    suite.addTest(unittest.makeSuite(
-        TestProductBugTaskPermissionsToSetAssignee))
-    suite.addTest(unittest.makeSuite(
-        TestDistributionBugTaskPermissionsToSetAssignee))
+    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
     suite.addTest(DocTestSuite('lp.bugs.model.bugtask'))
     return suite

@@ -43,8 +43,8 @@ If there are not any branches, a helpful message is shown.
       by registering a Mirrored branch. Read more.
     Launchpad can also act as a primary location for Bazaar branches of
       Gnome Applets. Read more.
-    Launchpad can import code from CVS or Subversion into Bazaar branches.
-      Read more.
+    Launchpad can import code from CVS, Subversion, Mercurial or Git
+      into Bazaar branches. Read more.
 
 The 'Read more' links go to the help wiki.
 

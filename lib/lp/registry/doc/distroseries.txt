@@ -449,7 +449,7 @@ total_bugs, and total_messages (translatable messages).
 
     >>> for summary in hoary.getPrioritizedUnlinkedSourcePackages():
     ...     print  summary['package'].name
-    ...     print '%(total_bugs)s %(total_messages)s' % summary
+    ...     print '%(bug_count)s %(total_messages)s' % summary
     pmount  0  64
     alsa-utils  0  0
     cnews  0  0
@@ -593,17 +593,17 @@ Override information about 'pmount' is pending publication:
 Supersede previous netapplet publication:
 
    >>> last_published = netapplet_srcrel.publishing_history[1]
-   >>> superseded_netapplet = last_published.supersede()
+   >>> last_published.supersede()
    >>> flush_database_updates()
 
    >>> netapplet_srcrel.publishing_history.count()
    2
 
-   >>> print superseded_netapplet.status.name
+   >>> print last_published.status.name
    SUPERSEDED
 
    >>> from canonical.database.sqlbase import get_transaction_timestamp
-   >>> superseded_netapplet.datesuperseded == get_transaction_timestamp()
+   >>> last_published.datesuperseded == get_transaction_timestamp()
    True
 
 

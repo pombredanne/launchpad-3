@@ -20,6 +20,7 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.windmill.testing import TranslationsWindmillLayer
 from lp.testing import WindmillTestCase
 
+
 class ImportQueueEntryTest(WindmillTestCase):
     """Test that the entries in the import queue can switch types."""
 
@@ -42,13 +43,14 @@ class ImportQueueEntryTest(WindmillTestCase):
         'field.potemplate',
         'field.language',
     ]
+
     def _getHiddenTRXpath(self, field_id):
         if field_id in self.SELECT_FIELDS:
             input_tag = 'select'
         else:
             input_tag = 'input'
         return (
-            u"//tr[contains(@class,'dont_show_fields')]"
+            u"//tr[contains(@class,'unseen')]"
             u"//%s[@id='%s']" % (input_tag, field_id)
                 )
 
@@ -87,8 +89,7 @@ class ImportQueueEntryTest(WindmillTestCase):
         # the first ones are hidden. Finally, all fields are hidden if the
         # file type is unspecified.
         client.waits.forElement(id=u'field.file_type', timeout=u'8000')
-        client.asserts.assertSelected(id=u'field.file_type',
-                                           validator=u'POT')
+        client.asserts.assertSelected(id=u'field.file_type', validator=u'POT')
         self._assertAllFieldsVisible(client, 'POT')
         self._assertAllFieldsHidden(client, 'PO')
 
@@ -104,6 +105,7 @@ class ImportQueueEntryTest(WindmillTestCase):
 IMPORT_STATUS = u"//tr[@id='%d']//span[contains(@class,'status-choice')]"
 IMPORT_STATUS_1 = IMPORT_STATUS % 1
 OPEN_CHOICELIST = u"//div[contains(@class, 'yui-ichoicelist-content')]"
+
 
 class ImportQueueStatusTest(WindmillTestCase):
     """Test that the entries in the import queue can switch types."""

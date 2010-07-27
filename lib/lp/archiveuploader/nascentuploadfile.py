@@ -260,6 +260,8 @@ class CustomUploadFile(NascentUploadFile):
         'raw-ddtp-tarball': PackageUploadCustomFormat.DDTP_TARBALL,
         'raw-translations-static':
             PackageUploadCustomFormat.STATIC_TRANSLATIONS,
+        'raw-meta-data' :
+            PackageUploadCustomFormat.META_DATA,
         }
 
     @property
@@ -370,6 +372,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
     """Base methods for binary upload modeling."""
 
     format = None
+    ddeb_file = None
 
     # Capitalised because we extract these directly from the control file.
     mandatory_fields = set(["Package", "Architecture", "Version"])
@@ -862,6 +865,12 @@ class BaseBinaryUploadFile(PackageUploadFile):
         binary_name = getUtility(
             IBinaryPackageNameSet).getOrCreateByName(self.package)
 
+        if self.ddeb_file:
+            debug_package = build.getBinaryPackageFileByName(
+                self.ddeb_file.filename).binarypackagerelease
+        else:
+            debug_package = None
+
         binary = build.createBinaryPackageRelease(
             binarypackagename=binary_name,
             version=self.control_version,
@@ -883,7 +892,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             breaks=encoded.get('Breaks', ''),
             essential=is_essential,
             installedsize=installedsize,
-            architecturespecific=architecturespecific)
+            architecturespecific=architecturespecific,
+            debug_package=debug_package)
 
         library_file = self.librarian.create(self.filename,
              self.size, open(self.filepath, "rb"), self.content_type,
@@ -930,22 +940,6 @@ class DebBinaryUploadFile(BaseBinaryUploadFile):
 
 
 class DdebBinaryUploadFile(DebBinaryUploadFile):
-    """Represents an uploaded binary package file in ddeb format.
-
-    DDEBs are never considered 'NEW', they don't require review since
-    they are automatically generated.
-    """
+    """Represents an uploaded binary package file in ddeb format."""
     format = BinaryPackageFormat.DDEB
-
-    # Override the 'new' flag in a way any values set are ignored and
-    # it always return False.
-    def _get_new(self):
-        """DDEBs are never considered NEW."""
-        return False
-
-    def _set_new(self, value):
-        """DDEBs cannot be made NEW."""
-        pass
-
-    new = property(
-        _get_new, _set_new, doc="DDEBs are never flagged as NEW.")
+    deb_file = None

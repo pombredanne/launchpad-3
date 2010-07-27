@@ -9,6 +9,7 @@ import transaction
 
 from textwrap import dedent
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from bzrlib.errors import NotBranchError
@@ -19,6 +20,8 @@ from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import ZopelessAppServerLayer
 
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet, TeamMembershipStatus)
 from lp.testing import map_branch_contents, TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 
@@ -232,7 +235,34 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
         exporter._handleUnpushedBranch(productseries)
 
-        # This completes successfully.
+        # _handleUnpushedBranch completes successfully.  There are no
+        # database changes still pending in the ORM that are going to
+        # fail either.
+        transaction.commit()
+
+    def test_handleUnpushedBranch_is_privileged_to_contact_team(self):
+        # Notifying a branch owner that is a team can require other
+        # database privileges.  The script also has these privileges.
+        exporter = ExportTranslationsToBranch(test_args=[])
+        exporter.logger = QuietFakeLogger()
+        productseries = self.factory.makeProductSeries()
+        email = self.factory.getUniqueEmailAddress()
+        team_member = self.factory.makePerson(email=email)
+        branch_owner = self.factory.makeTeam()
+        getUtility(ITeamMembershipSet).new(
+            team_member, branch_owner, TeamMembershipStatus.APPROVED,
+            branch_owner.teamowner)
+        productseries.translations_branch = self.factory.makeBranch(
+            owner=branch_owner)
+        exporter._exportToBranch = FakeMethod(failure=NotBranchError("Ow"))
+
+        self.becomeDbUser('translationstobranch')
+
+        exporter._handleUnpushedBranch(productseries)
+
+        # _handleUnpushedBranch completes successfully.  There are no
+        # database changes still pending in the ORM that are going to
+        # fail either.
         transaction.commit()
 
 

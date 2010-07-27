@@ -26,6 +26,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from lp.translations.interfaces.translations import (
@@ -113,7 +114,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
         self.useBzrBranches(direct_database=True)
 
         tree_location = tempfile.mkdtemp()
-        self.addCleanup(lambda: shutil.rmtree(tree_location)) 
+        self.addCleanup(lambda: shutil.rmtree(tree_location))
 
         branch, tree = self.create_branch_and_tree(
             tree_location=tree_location)
@@ -331,7 +332,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
         job = RevisionMailJob.create(
             branch, 0, 'from@example.com', 'hello', False, 'subject')
         job.run()
-        (mail,) = pop_notifications()
+        (mail, ) = pop_notifications()
         self.assertEqual('0', mail['X-Launchpad-Branch-Revision-Number'])
         self.assertEqual('from@example.com', mail['from'])
         self.assertEqual('subject', mail['subject'])
@@ -344,7 +345,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
             'To unsubscribe from this branch go to'
             ' %(url)s/+edit-subscription\n' % {
                 'url': canonical_url(branch),
-                'identity': branch.bzr_identity
+                'identity': branch.bzr_identity,
                 },
             mail.get_payload(decode=True))
 
@@ -454,7 +455,9 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             except bzr_errors.NoSuchRevision:
                 revno = None
             if existing is not None:
-                BranchRevision.delete(existing.id)
+                branchrevision = IMasterStore(branch).find(
+                    BranchRevision, BranchRevision.id == existing.id)
+                branchrevision.remove()
             branch.createBranchRevision(revno, revision)
 
     def create3CommitsBranch(self):
@@ -913,7 +916,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self.series = None
 
     def _makeBranchWithTreeAndFile(self, file_name, file_content = None):
-        return self._makeBranchWithTreeAndFiles(((file_name, file_content),))
+        return self._makeBranchWithTreeAndFiles(((file_name, file_content), ))
 
     def _makeBranchWithTreeAndFiles(self, files):
         """Create a branch with a tree that contains the given files.
@@ -984,7 +987,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
 
     def _runJobWithFile(self, import_mode, file_name, file_content = None):
         return self._runJobWithFiles(
-            import_mode, ((file_name, file_content),))
+            import_mode, ((file_name, file_content), ))
 
     def _runJobWithFiles(self, import_mode, files,
                          do_upload_translations=False):
@@ -1018,8 +1021,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         pot_name = "foo.pot"
         entries = self._runJobWithFiles(
             TranslationsBranchImportMode.IMPORT_TEMPLATES,
-            ((pot_name,), ('eo.po',), ('README',))
-            )
+            ((pot_name,), ('eo.po',), ('README',)))
         self.assertEqual(len(entries), 1)
         entry = entries[0]
         self.assertEqual(pot_name, entry.path)
@@ -1058,8 +1060,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         pot_name = "en-US.xpi"
         entries = self._runJobWithFiles(
             TranslationsBranchImportMode.IMPORT_TEMPLATES,
-            ((pot_name,), ('eo.xpi',), ('README',))
-            )
+            ((pot_name,), ('eo.xpi',), ('README',)))
         self.assertEqual(len(entries), 1)
         entry = entries[0]
         self.assertEqual(pot_name, entry.path)
@@ -1108,7 +1109,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         pot_name = "foo.pot"
         revision_id = self._makeBranchWithTreeAndFiles(
             ((pot_name,), ('eo.po',), ('README',)))
-        self._commitFilesToTree(((pot_name,),))
+        self._commitFilesToTree(((pot_name, ), ))
         entries = self._runJob(
             TranslationsBranchImportMode.IMPORT_TEMPLATES, revision_id)
         self.assertEqual(len(entries), 1)
@@ -1120,8 +1121,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         # not configured to do so.
         entries = self._runJobWithFiles(
             TranslationsBranchImportMode.NO_IMPORT,
-            (('foo.pot',), ('eo.po',), ('README',))
-            )
+            (('foo.pot',), ('eo.po',), ('README',)))
         self.assertEqual([], entries)
 
     def test_upload_translations(self):
@@ -1183,7 +1183,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         # only POTemplate object in the database, if there is only one such
         # object for this product series.
         self._makeBranchWithTreeAndFiles(
-            [('foo.pot', None),('bar.pot', None)])
+            [('foo.pot', None), ('bar.pot', None)])
         self._makeProductSeries(TranslationsBranchImportMode.IMPORT_TEMPLATES)
         self.factory.makePOTemplate(self.series, path='foo.pot')
         self.factory.makePOTemplate(self.series, path='bar.pot')
@@ -1352,7 +1352,6 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         os.makedirs(branch_path)
         self.runReadyJobs()
         self.assertFalse(os.path.exists(branch_path))
-
 
 
 def test_suite():

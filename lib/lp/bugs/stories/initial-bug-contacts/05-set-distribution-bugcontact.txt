@@ -11,17 +11,17 @@ to change the bug supervisor.
   ...
   LinkNotFoundError
 
-Now we login as Colin...
+Collin is an an Ubuntu owner and can set the bug supervisor role.
 
   >>> colin_browser = setupBrowser(
   ...     auth='Basic colin.watson@ubuntulinux.com:test')
-  >>> colin_browser.open('http://launchpad.dev/ubuntu/+bugs')
+  >>> colin_browser.open('http://bugs.launchpad.dev/ubuntu/+bugs')
 
-...and we can see that the link is there.
+...and he can see that the link on Ubuntu's bugs page.
 
   >>> bug_supervisor_link = colin_browser.getLink("Change bug supervisor")
   >>> bug_supervisor_link.url
-  'http://launchpad.dev/ubuntu/+bugsupervisor'
+  'http://bugs.launchpad.dev/ubuntu/+bugsupervisor'
 
 Anyone with launchpad.Edit permission can edit the distribution bug
 supervisor, but most users can select only themselves and the teams they
@@ -30,7 +30,7 @@ bug supervisor.
 
   >>> bug_supervisor_link.click()
   >>> colin_browser.url
-  'http://launchpad.dev/ubuntu/+bugsupervisor'
+  'http://bugs.launchpad.dev/ubuntu/+bugsupervisor'
 
 The bug supervisor page takes just one simple value: the bug supervisor email
 or nickname. Let's set colin.watson@ubuntulinux.com as the bug supervisor for
@@ -40,13 +40,8 @@ Ubuntu.
   ...     ' colin.watson@ubuntulinux.com ')
   >>> colin_browser.getControl("Change").click()
 
-And then we're redirected to the distribution page.
+And then collin is redirected to the distribution bugs page.
 
-    >>> colin_browser.url
-    'http://launchpad.dev/ubuntu'
-
-    >>> for message in get_feedback_messages(colin_browser.contents):
-    ...     print extract_text(message)
-    Successfully changed the bug supervisor to Colin Watson.
-    Colin Watson has also been subscribed to bug notifications for Ubuntu.
-    You can change the subscriptions for Ubuntu at any time.
+    >>> print extract_text(find_tag_by_id(
+    ...     colin_browser.contents, 'bug-supervisor'))
+    Bug supervisor: Colin Watson

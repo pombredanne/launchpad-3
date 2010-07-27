@@ -24,7 +24,8 @@ from canonical.launchpad import _
 from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
-from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
+from lp.code.interfaces.sourcepackagerecipe import (
+    ISourcePackageRecipe, ISourcePackageRecipeData)
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.services.job.interfaces.job import IJob
@@ -59,6 +60,13 @@ class ISourcePackageRecipeBuild(IBuildBase):
         schema=ISourcePackageRecipe, required=True,
         title=_("The recipe being built."))
 
+    manifest = Object(
+        schema=ISourcePackageRecipeData, title=_(
+            'A snapshot of the recipe for this build.'))
+
+    def getManifestText():
+        """The text of the manifest for this build."""
+
     source_package_release = Reference(
         ISourcePackageRelease, title=_("The produced source package release"),
         readonly=True)
@@ -67,6 +75,12 @@ class ISourcePackageRecipeBuild(IBuildBase):
 
     def getFileByName(filename):
         """Return the file under +files with specified name."""
+
+    def cancelBuild():
+        """Cancel the build."""
+
+    def destroySelf():
+        """Delete the build itself."""
 
 
 class ISourcePackageRecipeBuildSource(Interface):

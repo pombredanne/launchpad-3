@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,7 +8,6 @@ import os
 import subprocess
 import sys
 import time
-import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -29,6 +28,7 @@ from lp.soyuz.scripts.ftpmaster import PackageLocationError, SoyuzScriptError
 from lp.soyuz.scripts.populate_archive import ArchivePopulator
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.faketransaction import FakeTransaction
 
 
 def get_spn(build):
@@ -114,7 +114,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             '--to-distribution', distro_name, '--to-suite', 'hoary',
             '--to-archive', archive_name, '--to-user', 'salgado', '--reason',
             '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '--component', 'main'
             ]
 
         # Start archive population now!
@@ -149,7 +148,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self, archive_name=None, suite='hoary', user='salgado',
         exists_before=None, exists_after=None, exception_type=None,
         exception_text=None, extra_args=None, copy_archive_name=None,
-        reason=None, output_substr=None):
+        reason=None, output_substr=None, nonvirtualized=False):
         """Run the script to test.
 
         :type archive_name: `str`
@@ -180,11 +179,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             the script
         :param output_substr: this must be part of the script's output
         """
-        class FakeZopeTransactionManager:
-            def commit(self):
-                pass
-            def begin(self):
-                pass
 
         if copy_archive_name is None:
             now = int(time.time())
@@ -212,7 +206,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         script_args = [
             '--from-distribution', distro_name, '--from-suite', suite,
             '--to-distribution', distro_name, '--to-suite', suite,
-            '--to-archive', archive_name, '--to-user', user
+            '--to-archive', archive_name, '--to-user', user,
             ]
 
         # Empty reason string indicates that the '--reason' command line
@@ -223,6 +217,9 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             reason = "copy archive, %s" % datetime.ctime(datetime.utcnow())
             script_args.extend(['--reason', reason])
 
+        if nonvirtualized:
+            script_args.append('--nonvirtualized')
+
         if extra_args is not None:
             script_args.extend(extra_args)
 
@@ -231,7 +228,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             test_args=script_args)
 
         script.logger = BufferLogger()
-        script.txn = FakeZopeTransactionManager()
+        script.txn = FakeTransaction()
 
         if exception_type is not None:
             self.assertRaisesWithContent(
@@ -322,6 +319,14 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             exception_text="Could not find packageset No such package set"
             " (in the specified distro series): '%s'." % unknown_packageset)
 
+    def testNonvirtualized(self):
+        """--nonvirtualized means the archive won't require virtualization."""
+        copy_archive = self.runScript(
+            archive_name="copy-archive-test", exists_before=False,
+            exists_after=True, nonvirtualized=True,
+            extra_args=['-a', '386'])
+        self.assertFalse(copy_archive.require_virtualized)
+
     def testPackagesetDelta(self):
         """Try to calculate the delta between two source package sets."""
         hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
@@ -383,9 +388,10 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             # The set of packages that were superseded in the target archive.
             obsolete=set(['alsa-utils 1.0.9a-4ubuntu1 in hoary']),
             # The set of packages that are new/fresher in the source archive.
-            new=set(['alsa-utils 2.0 in hoary',
-                     'new-in-second-round 1.0 in hoary'])
-            )
+            new=set([
+                'alsa-utils 2.0 in hoary',
+                'new-in-second-round 1.0 in hoary',
+                ]))
 
         # Now populate a 3rd copy archive from the first ubuntu/hoary
         # snapshot.
@@ -413,9 +419,10 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             # The set of packages that were superseded in the target archive.
             obsolete=set(['alsa-utils 1.0.9a-4ubuntu1 in hoary']),
             # The set of packages that are new/fresher in the source archive.
-            new=set(['alsa-utils 2.0 in hoary',
-                     'new-in-second-round 1.0 in hoary'])
-            )
+            new=set([
+                'alsa-utils 2.0 in hoary',
+                'new-in-second-round 1.0 in hoary',
+                ]))
 
     def testUnknownOriginArchive(self):
         """Try copy archive population with a unknown origin archive.
@@ -548,6 +555,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
     def testBuildsPendingAndSuspended(self):
         """All builds in the new copy archive are pending and suspended."""
+
         def build_in_wrong_state(build):
             """True if the given build is not (pending and suspended)."""
             return not (
@@ -574,7 +582,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         #   - binary build: pending
         #   - job: suspended
         builds_in_wrong_state = filter(build_in_wrong_state, builds)
-        self.assertEqual (
+        self.assertEqual(
             [], builds_in_wrong_state,
             "The binary builds generated for the target copy archive "
             "should all be pending and suspended. However, at least one of "
@@ -688,6 +696,3 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # Make sure the source to be copied are the ones we expect (this
         # should break in case of a sample data change/corruption).
         self.assertEqual(src_names, self.expected_src_names)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

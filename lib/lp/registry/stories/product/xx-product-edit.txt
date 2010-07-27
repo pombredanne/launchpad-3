@@ -235,17 +235,20 @@ Regular Joes can't edit any old project:
     ...
     Unauthorized:...
 
-If we add them to the Registry Experts team:
+Even if we add them to the Registry Experts team:
 
     >>> admin_browser.open("http://launchpad.dev/~registry/+addmember")
     >>> admin_browser.getControl('New member').value = 'no-priv'
     >>> admin_browser.getControl('Add Member').click()
 
-They now can edit projects.
+They still cannot edit projects.
 
     >>> browser.open('http://launchpad.dev/firefox/+edit')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
 
-But they still can't access +admin.
+And they still can't access +admin.
 
     >>> browser.open('http://launchpad.dev/firefox/+admin')
     Traceback (most recent call last):

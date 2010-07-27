@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -71,10 +71,20 @@ def _filter_ubuntu_translation_file(filename):
 
     filename = filename[len(source_prefix):]
 
-    if filename.startswith('debian/po/'):
-        # Skip filenames in debian/po/*.  They're from debconf
-        # translations, which are treated separately in Ubuntu.
-        return None
+    blocked_prefixes = [
+        # Translations for use by debconf--not used in Ubuntu.
+        'debian/po/',
+        # Debian Installer translations--treated separately.
+        'd-i/',
+        # Documentation--not translatable in Launchpad.
+        'help/',
+        'man/po/',
+        'man/po4a/',
+        ]
+
+    for prefix in blocked_prefixes:
+        if filename.startswith(prefix):
+            return None
 
     return filename
 
