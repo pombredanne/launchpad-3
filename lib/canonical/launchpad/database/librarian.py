@@ -255,6 +255,7 @@ class TimeLimitedToken(storm.base.Storm):
 
     def __init__(self, url, token, created=None):
         """Create a TimeLimitedToken."""
-        self.created = created
+        if created is not None:
+            self.created = created
         self.url = url
         self.token = token

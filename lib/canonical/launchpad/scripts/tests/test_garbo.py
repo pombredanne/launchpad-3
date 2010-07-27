@@ -537,12 +537,16 @@ class TestGarbo(TestCaseWithFactory):
         map(store.remove, store.find(TimeLimitedToken))
         store.flush()
         self.assertEqual(0, len(list(store.find(TimeLimitedToken,
-            url="sample url", token="foo"))))
+            url="sample url"))))
+        # One to clean and one to keep
         store.add(TimeLimitedToken(url="sample url", token="foo",
             created=datetime(2008, 01, 01, tzinfo=UTC)))
+        store.add(TimeLimitedToken(url="sample url", token="bar")),
         store.commit()
-        self.assertEqual(1, len(list(store.find(TimeLimitedToken,
-            url="sample url", token="foo"))))
+        self.assertEqual(2, len(list(store.find(TimeLimitedToken,
+            url="sample url"))))
         self.runDaily()
         self.assertEqual(0, len(list(store.find(TimeLimitedToken,
             url="sample url", token="foo"))))
+        self.assertEqual(1, len(list(store.find(TimeLimitedToken,
+            url="sample url", token="bar"))))
