@@ -3,6 +3,7 @@
 
 import logging
 import os
+import sys
 import threading
 import urllib
 import urlparse
@@ -26,6 +27,8 @@ from paste.httpexceptions import (
 from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, LAUNCHPAD_ANONYMOUS)
 from lp.codehosting.vfs import get_lp_server
@@ -227,3 +230,90 @@ class RootApp:
                 bzr_branch.unlock()
         finally:
             lp_server.stop_server()
+
+
+def make_oops_logging_exception_hook(error_utility, request):
+    """Make a hook for logging OOPSes."""
+    def log_oops():
+        error_utility.raising(sys.exc_info(), request)
+    return log_oops
+
+
+def make_error_utility():
+    """Make an error utility for logging errors from codebrowse."""
+    error_utility = ErrorReportingUtility()
+    error_utility.configure('codebrowse')
+    return error_utility
+
+
+# XXX: This HTML template should be replaced with the same one that lpnet uses
+# for reporting OOPSes to users, or at least something that looks similar.  But
+# even this is better than the "Internal Server Error" you'd get otherwise.
+#  - Andrew Bennetts, 2010-07-27.
+_oops_html_template = '''\
+<html>
+<head>Oops! %(oopsid)s</head>
+<body>
+<h1>Oops!</h1>
+<p>Something broke while generating the page.
+Please try again in a few minutes, and if the problem persists file a bug at
+<a href="https://bugs.launchpad.net/launchpad-code"
+>https://bugs.launchpad.net/launchpad-code</a>
+and quote OOPS-ID <strong>%(oopsid)s</strong>
+</p></body></html>'''
+
+
+def oops_middleware(app):
+    """Middleware to log an OOPS if the request fails.
+
+    If the request fails before the response body has started then this returns
+    a basic error page with the OOPS ID to the user (and status code 200).
+
+    Strictly speaking this isn't 100% correct WSGI middleware, because it
+    doesn't respect the return value from start_response (the 'write'
+    callable), but using that return value is deprecated and nothing in our
+    codebrowse stack uses that.
+    """
+    error_utility = make_error_utility()
+    def wrapped_app(environ, start_response):
+        response_start = [None]
+        def wrapped_start_response(status, headers, exc_info=None):
+            response_start[0] = (status, headers, exc_info)
+        def report_oops():
+            # XXX: We should capture more per-request information to include in
+            # the OOPS here, e.g. duration, user, etc.  But even an OOPS with
+            # just a traceback and URL is better than nothing.
+            #   - Andrew Bennetts, 2010-07-27.
+            request = ScriptRequest(
+                [], URL=construct_url(environ))
+            error_utility.raising(sys.exc_info(), request)
+            return request.oopsid
+        # Start processing this request
+        try:
+            app_iter = app(environ, wrapped_start_response)
+        except:
+            oopsid = report_oops()
+            start_response('200 OK', [('Content-Type:', 'text/html')])
+            yield _oops_html_template % {'oopsid': oopsid}
+            return
+        # Start yielding the response
+        body_started = False
+        while True:
+            try:
+                yield app_iter.next()
+            except StopIteration:
+                return
+            except:
+                oopsid = report_oops()
+                if body_started:
+                    # We've already started sending a response, so... just give
+                    # up.
+                    raise
+                start_response('200 OK', [('Content-Type:', 'text/html')])
+                yield _oops_html_template % {'oopsid': oopsid}
+                return
+            else:
+                if not body_started:
+                    start_response(*response_start[0])
+                    body_started = True
+    return wrapped_app
