@@ -1,11 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the permissions for uploading to an archive."""
 
 __metaclass__ = type
-
-import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -27,7 +25,7 @@ class TestComponents(TestCaseWithFactory):
         # By default, a person cannot upload to any component of an archive.
         archive = self.factory.makeArchive()
         person = self.factory.makePerson()
-        self.assertEqual(set(), 
+        self.assertEqual(set(),
             set(archive.getComponentsForUploader(person)))
 
     def test_components_for_person_with_permissions(self):
@@ -242,7 +240,3 @@ class TestPermission(TestCaseWithFactory):
         component = self.factory.makeComponent()
         self.assertCannotUpload(u"%s is disabled." % (archive.displayname),
             archive.owner, spn, archive, component)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

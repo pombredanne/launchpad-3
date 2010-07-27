@@ -1,11 +1,10 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
 
 import os
 import shutil
-import unittest
 
 from zope.component import getUtility
 
@@ -333,7 +332,3 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # the partner archive.
         pub = package_upload.realiseUpload()[0]
         self.assertEqual("partner", pub.archive.name)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

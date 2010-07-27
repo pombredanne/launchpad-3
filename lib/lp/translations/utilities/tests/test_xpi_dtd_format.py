@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import unittest
 
-from lp.translations.utilities.mozilla_xpi_importer import DtdFile
+from lp.translations.utilities.mozilla_dtd_parser import DtdFile
 from lp.translations.interfaces.translationimporter import (
     TranslationFormatInvalidInputError)
 

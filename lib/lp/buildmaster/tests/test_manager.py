@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the renovated slave scanner aka BuilddManager."""
@@ -229,12 +229,15 @@ class TestBuilddManager(TrialTestCase):
 
         # Stop cyclic execution and record the end of the cycle.
         self.stopped = False
+
         def testNextCycle():
             self.stopped = True
+
         self.manager.nextCycle = testNextCycle
 
         # Return the testing Proxy version.
         self.test_proxy = TestingXMLRPCProxy()
+
         def testGetProxyForSlave(slave):
             return self.test_proxy
         self.manager._getProxyForSlave = testGetProxyForSlave
@@ -271,6 +274,7 @@ class TestBuilddManager(TrialTestCase):
         # When `finishCycle` is called, and it is called after all build
         # slave interaction, active deferreds are consumed.
         events = self.manager.finishCycle()
+
         def check_events(results):
             # The cycle was stopped (and in the production the next cycle
             # would have being scheduled).
@@ -335,14 +339,17 @@ class TestBuilddManager(TrialTestCase):
         # slave by calling self.reset_result(slave)().
 
         reset_result_calls = []
+
         class LoggingResetResult(BaseDispatchResult):
             """A DispatchResult that logs calls to itself.
 
             This *must* subclass BaseDispatchResult, otherwise finishCycle()
             won't treat it like a dispatch result.
             """
+
             def __init__(self, slave, info=None):
                 self.slave = slave
+
             def __call__(self):
                 reset_result_calls.append(self.slave)
 
@@ -500,6 +507,7 @@ class TestBuilddManager(TrialTestCase):
         self.assertEqual(2, len(self.manager._deferreds))
 
         events = self.manager.finishCycle()
+
         def check_no_events(results):
             errors = [
                 r for s, r in results if isinstance(r, BaseDispatchResult)]
@@ -521,6 +529,7 @@ class TestBuilddManager(TrialTestCase):
             self.test_proxy.calls)
 
         events = self.manager.finishCycle()
+
         def check_events(results):
             [error] = [r for s, r in results if r is not None]
             self.assertEqual(
@@ -927,7 +936,3 @@ class TestBuilddManagerScript(unittest.TestCase):
             os.access(rotated_logfilepath, os.F_OK),
             "Twistd's log file was rotated by twistd.")
         test_setup.tearDown()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,11 +1,10 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
 
 from datetime import datetime, timedelta
 import pytz
-import unittest
 
 from storm.store import Store
 from zope.component import getUtility
@@ -91,7 +90,6 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         previous_build.date_started = None
         self.assertEqual(60, self.build.estimateDuration().seconds)
 
-
     def addFakeBuildLog(self):
         lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
         removeSecurityProxy(self.build).log = lfa
@@ -161,16 +159,16 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
     def _setupSimpleDepwaitContext(self):
         """Use `SoyuzTestPublisher` to setup a simple depwait context.
 
-        Return an `IBinaryPackageBuild` in MANUALDEWAIT state and depending on a
-        binary that exists and is reachable.
+        Return an `IBinaryPackageBuild` in MANUALDEWAIT state and depending
+        on a binary that exists and is reachable.
         """
-        test_publisher = SoyuzTestPublisher()
-        test_publisher.prepareBreezyAutotest()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
 
-        depwait_source = test_publisher.getPubSource(
+        depwait_source = self.publisher.getPubSource(
             sourcename='depwait-source')
 
-        test_publisher.getPubBinaries(
+        self.publisher.getPubBinaries(
             binaryname='dep-bin',
             status=PackagePublishingStatus.PUBLISHED)
 
@@ -220,7 +218,6 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
                 BinaryPackageBuild,
                 BinaryPackageBuild.id == depwait_build_id).count(),
             1)
-
 
     def testUpdateDependenciesWorks(self):
         # Calling `IBinaryPackageBuild.updateDependencies` makes the build
@@ -272,6 +269,41 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         self.layer.txn.commit()
         depwait_build.updateDependencies()
         self.assertEquals(depwait_build.dependencies, '')
+
+    def testVersionedDependencies(self):
+        # `IBinaryPackageBuild.updateDependencies` supports versioned
+        # dependencies. A build will not be retried unless the candidate
+        # complies with the version restriction.
+        # In this case, dep-bin 666 is available. >> 666 isn't
+        # satisified, but >= 666 is.
+        depwait_build = self._setupSimpleDepwaitContext()
+        self.layer.txn.commit()
+
+        depwait_build.dependencies = u'dep-bin (>> 666)'
+        depwait_build.updateDependencies()
+        self.assertEquals(depwait_build.dependencies, u'dep-bin (>> 666)')
+        depwait_build.dependencies = u'dep-bin (>= 666)'
+        depwait_build.updateDependencies()
+        self.assertEquals(depwait_build.dependencies, u'')
+
+    def testVersionedDependencyOnOldPublication(self):
+        # `IBinaryPackageBuild.updateDependencies` doesn't just consider
+        # the latest publication. There may be older publications which
+        # satisfy the version constraints (in other archives or pockets).
+        # In this case, dep-bin 666 and 999 are available, so both = 666
+        # and = 999 are satisfied.
+        depwait_build = self._setupSimpleDepwaitContext()
+        self.publisher.getPubBinaries(
+            binaryname='dep-bin', version='999',
+            status=PackagePublishingStatus.PUBLISHED)
+        self.layer.txn.commit()
+
+        depwait_build.dependencies = u'dep-bin (= 666)'
+        depwait_build.updateDependencies()
+        self.assertEquals(depwait_build.dependencies, u'')
+        depwait_build.dependencies = u'dep-bin (= 999)'
+        depwait_build.updateDependencies()
+        self.assertEquals(depwait_build.dependencies, u'')
 
 
 class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
@@ -429,7 +461,3 @@ class TestGetUploadMethodsForBinaryPackageBuild(
 class TestHandleStatusForBinaryPackageBuild(
     MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
     """IBuildBase.handleStatus works with binary builds."""
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
