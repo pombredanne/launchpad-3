@@ -12,7 +12,7 @@ CREATE TABLE ArchiveJob (
     id serial PRIMARY KEY,
     -- FK to the `Job` record with the "generic" data about this archive
     -- job.
-    job integer NOT NULL CONSTRAINT archivejob__job__fk REFERENCES job,
+    job integer NOT NULL CONSTRAINT archivejob__job__fk REFERENCES job ON DELETE CASCADE,
     -- FK to the associated `Archive` record.
     archive integer NOT NULL CONSTRAINT archivejob__archive__fk REFERENCES archive,
     -- The particular type of archive job
