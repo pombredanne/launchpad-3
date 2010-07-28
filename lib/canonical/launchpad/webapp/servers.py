@@ -1019,65 +1019,6 @@ privatexmlrpc = wsgi.ServerType(
 class MainLaunchpadPublication(LaunchpadBrowserPublication):
     """The publication used for the main Launchpad site."""
 
-# ---- blueprint
-
-class BlueprintBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.BlueprintLayer)
-
-
-class BlueprintPublication(LaunchpadBrowserPublication):
-    """The publication used for the Blueprint site."""
-
-# ---- code
-
-class CodePublication(LaunchpadBrowserPublication):
-    """The publication used for the Code site."""
-
-
-class CodeBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.CodeLayer)
-
-# ---- translations
-
-class TranslationsPublication(LaunchpadBrowserPublication):
-    """The publication used for the Translations site."""
-
-
-class TranslationsBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.TranslationsLayer)
-
-    def __init__(self, body_instream, environ, response=None):
-        super(TranslationsBrowserRequest, self).__init__(
-            body_instream, environ, response)
-        # Some of the responses from translations vary based on language.
-        self.response.setHeader(
-            'Vary', 'Cookie, Authorization, Accept-Language')
-
-# ---- bugs
-
-class BugsPublication(LaunchpadBrowserPublication):
-    """The publication used for the Bugs site."""
-
-
-class BugsBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.BugsLayer)
-
-# ---- answers
-
-class AnswersPublication(LaunchpadBrowserPublication):
-    """The publication used for the Answers site."""
-
-
-class AnswersBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.AnswersLayer)
-
-    def __init__(self, body_instream, environ, response=None):
-        super(AnswersBrowserRequest, self).__init__(
-            body_instream, environ, response)
-        # Many of the responses from Answers vary based on language.
-        self.response.setHeader(
-            'Vary', 'Cookie, Authorization, Accept-Language')
-
 
 class AccountPrincipalMixin:
     """Mixin for publication that works with person-less accounts."""
