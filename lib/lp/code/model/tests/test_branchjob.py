@@ -299,7 +299,6 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             new_branch.repository._format.get_format_string(),
             'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
 
-
     def test_db_user_can_request_scan(self):
         # The database user that does the upgrade needs to be able to request
         # a scan of the branch.
