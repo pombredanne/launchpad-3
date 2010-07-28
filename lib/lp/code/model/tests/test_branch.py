@@ -1954,11 +1954,11 @@ class TestPendingWrites(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         self.assertEqual(False, branch.pending_writes)
 
-    def test_requestMirror_for_hosted(self):
-        # If a hosted branch has a requested mirror, then someone has just
-        # pushed something up. Therefore, pending writes.
+    def test_branchChanged_for_hosted(self):
+        # If branchChanged has been called with a new tip revision id, there
+        # are pending writes.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        branch.requestMirror()
+        branch.branchChanged('', 'new-tip', None, None, None)
         self.assertEqual(True, branch.pending_writes)
 
     def test_requestMirror_for_imported(self):
