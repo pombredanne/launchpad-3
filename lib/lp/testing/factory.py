@@ -160,7 +160,6 @@ from lp.testing import (
     ANONYMOUS,
     login,
     login_as,
-    logout,
     run_with_login,
     temp_dir,
     time_counter,
@@ -1882,7 +1881,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             requester=requester,
             pocket=pocket,
             date_created=date_created)
-        removeSecurityProxy(spr_build).buildstate = status
+        removeSecurityProxy(spr_build).status = status
         return spr_build
 
     def makeSourcePackageRecipeBuildJob(
