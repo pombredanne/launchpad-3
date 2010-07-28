@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This script performs nightly chores. It should be run from
@@ -77,9 +77,6 @@ python -S update-pkgcache.py -q
 
 echo == Product Release Finder `date` ==
 python -S product-release-finder.py -q
-
-echo == Updating suggestive translation templates cache `date` ==
-python -S cache-suggestive-potemplates.py -q
 
 
 rm -f $LOCK

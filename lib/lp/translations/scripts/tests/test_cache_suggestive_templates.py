@@ -9,15 +9,12 @@ import transaction
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests.script import run_script
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
 from canonical.testing.layers import ZopelessDatabaseLayer
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.scripts.cachesuggestivepotemplates import (
-    CacheSuggestivePOTemplates)
 
 
 class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
@@ -61,21 +58,6 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
         self.utility.wipeSuggestivePOTemplatesCache()
         self.utility.populateSuggestivePOTemplatesCache()
         self.assertNotEqual([], self._readCache())
-
-    def test_main(self):
-        # The main method repopulates the cache, and commits.
-        self._refreshCache()
-        cache_before = self._readCache()
-
-        pot = self.factory.makePOTemplate()
-        CacheSuggestivePOTemplates(test_args=['-q']).main()
-
-        # main() committed, so aborting here has no effect.
-        transaction.abort()
-
-        cache_after = self._readCache()
-        self.assertNotEqual(cache_before, cache_after)
-        self.assertContentEqual(cache_before + [pot.id], cache_after)
 
     def test_new_template_appears(self):
         # A new template appears in the cache on the next refresh.
@@ -135,22 +117,3 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
         self._refreshCache()
 
         self.assertEqual(cache_before, self._readCache())
-
-    def test_dry_run(self):
-        # The --dry-run option inhibits any real database changes.
-        self._refreshCache()
-        cache_before = self._readCache()
-
-        potemplate = self.factory.makePOTemplate()
-        CacheSuggestivePOTemplates(test_args=['--dry-run', '-q']).main()
-
-        self.assertEqual(cache_before, self._readCache())
-
-
-class TestCacheSuggestivePOTemplatesScript(TestCase):
-    """Test real script run.  Costly, so do only once."""
-
-    def test_run_script(self):
-        (returncode, stdout, stderr) = run_script(
-            'cronscripts/cache-suggestive-potemplates.py', ['--dry-run'])
-        self.assertEqual(0, returncode)
