@@ -22,14 +22,13 @@ from canonical.launchpad.windmill.testing import lpuser
 
 
 class OnPageWidget:
-
     """A class that represents and interacts with an on-page JavaScript widget.
 
     The widget is assumed to be a YUI widget controlled by yui-X-hidden classes.
     """
 
     def __init__(self, client, widget_name):
-        """Constructor
+        """Constructor.
 
         :param client: A WindmillTestClient instance for interacting with pages.
         :param widget_name: The class name of the YUI widget, like 'yui-picker'.
@@ -39,7 +38,7 @@ class OnPageWidget:
 
     @property
     def xpath(self):
-        """The XPATH of this widget, not including the hidden or visible state.
+        """The XPath of this widget, not including the hidden or visible state.
         """
         # We include a space after the widget name because @class matches the
         # /beginning/ of text strings, not whole words!
@@ -47,7 +46,7 @@ class OnPageWidget:
 
     @property
     def visible_xpath(self):
-        """The XPATH of the widget when it is visible on page."""
+        """The XPath of the widget when it is visible on page."""
         subs = dict(name=self.widget_name)
         # We include a space after the widget name because @class matches the
         # /beginning/ of text strings, not whole words!
@@ -56,7 +55,7 @@ class OnPageWidget:
 
     @property
     def hidden_xpath(self):
-        """The XPATH of the widget when it is hidden."""
+        """The XPath of the widget when it is hidden."""
         # We include a space after the widget name because @class matches the
         # /beginning/ of text strings, not whole words!
         subs = dict(name=self.widget_name)
@@ -75,11 +74,10 @@ class OnPageWidget:
 
 
 class SearchPickerWidget(OnPageWidget):
-
     """A proxy for the yui-picker widget from lazr-js."""
 
     def __init__(self, client):
-        """Constructor
+        """Constructor.
 
         :param client: A WindmillTestClient instance.
         """
@@ -90,7 +88,7 @@ class SearchPickerWidget(OnPageWidget):
             self.xpath + "//div[@class='yui-picker-search-box']/button")
 
     def _get_result_xpath_by_number(self, item_number):
-        """Return the XPATH for the given search result number."""
+        """Return the XPath for the given search result number."""
         item_xpath = "//ul[@class='yui-picker-results']/li[%d]/span" % item_number
         return self.xpath + item_xpath
 
