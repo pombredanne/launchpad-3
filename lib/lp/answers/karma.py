@@ -72,10 +72,10 @@ def question_comment_added(questionmessage, event):
             questionmessage.owner, question, karma_action)
 
 
-# XXX flacoste 2007-07-13 bug=125849:
-# This should go away once bug #125849 is fixed.
 def get_karma_context_parameters(context):
     """Return the proper karma context parameters based on the object."""
+    # XXX flacoste 2007-07-13 bug=125849:
+    # This should go away once bug #125849 is fixed.
     params = dict(product=None, distribution=None)
     if IProduct.providedBy(context):
         params['product'] = context

@@ -539,7 +539,6 @@ copied to the question.
     >>> from pytz import UTC
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 
     >>> now = datetime.now(UTC)
     >>> target = getUtility(IProductSet)['jokosher']

@@ -1,4 +1,5 @@
-= Questions Expiration =
+Questions Expiration
+====================
 
 It is not productive to have questions lying around forever in
 the Answer Tracker. That's why we have a script which runs daily to
@@ -21,7 +22,8 @@ somebody are subject to expiration.
     >>> from lp.answers.model.question import Question
     >>> from lp.answers.interfaces.questionenums import QuestionStatus
     >>> Question.select('status IN (%i,%i)' % (
-    ...     QuestionStatus.OPEN.value, QuestionStatus.NEEDSINFO.value)).count()
+    ...     QuestionStatus.OPEN.value,
+    ...     QuestionStatus.NEEDSINFO.value)).count()
     9
 
     # By default, all open and needs info question should expire. Make

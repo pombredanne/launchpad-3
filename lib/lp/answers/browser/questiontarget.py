@@ -661,7 +661,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             answer_contacts).intersection(self.administrated_teams)
         return {
             'want_to_be_answer_contact': user in answer_contacts,
-            'answer_contact_teams': list(answer_contact_teams)
+            'answer_contact_teams': list(answer_contact_teams),
             }
 
     @action(_('Continue'), name='update')
@@ -723,8 +723,8 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         english = getUtility(ILaunchpadCelebrities).english
         if person_or_team.isTeam():
             person_or_team.addLanguage(english)
-            team_mapping = {'name' : person_or_team.name,
-                            'displayname' : person_or_team.displayname}
+            team_mapping = {'name': person_or_team.name,
+                            'displayname': person_or_team.displayname}
             msgid = _("English was added to ${displayname}'s "
                       '<a href="/~${name}/+editlanguages">preferred '
                       'languages</a>.',
@@ -741,7 +741,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             msgid = _('<a href="/people/+me/+editlanguages">Your preferred '
                       'languages</a> were updated to include your browser '
                       'languages: $languages.',
-                      mapping={'languages' : language_str})
+                      mapping={'languages': language_str})
             response.addNotification(structured(msgid))
 
 
@@ -777,7 +777,6 @@ class QuestionTargetTraversalMixin:
             raise NotFoundError(name)
         return self.redirectSubTree(canonical_url(question))
 
-
     @stepto('+ticket')
     def redirect_ticket(self):
         """Use RedirectionNavigation to redirect to +question.
@@ -789,15 +788,13 @@ class QuestionTargetTraversalMixin:
         return self.redirectSubTree(target)
 
 
-
-# XXX flacoste 2007-07-08 bug=125851:
-# This menu shouldn't "extend" FAQCollectionMenu.
-# But this is needed because of limitations in the current menu architecture.
-# Menu should be built by merging all menus applying to the context object
-# (-based on the interfaces it provides).
 class QuestionCollectionAnswersMenu(FAQCollectionMenu):
     """Base menu definition for QuestionCollection searchable by owner."""
-
+    # XXX flacoste 2007-07-08 bug=125851:
+    # This menu shouldn't "extend" FAQCollectionMenu.
+    # architecture. But this is needed because of limitations in the current
+    # menu  Menu should be built by merging all menus applying to the context
+    # object (-based on the interfaces it provides).
     usedfor = ISearchableByQuestionOwner
     facet = 'answers'
     links = FAQCollectionMenu.links + [

@@ -31,5 +31,3 @@ class QuestionSubscription(SQLBase):
     person = ForeignKey(
         dbName='person', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-
-

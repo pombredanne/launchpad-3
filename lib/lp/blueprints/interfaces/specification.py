@@ -22,7 +22,7 @@ __all__ = [
     'SpecificationImplementationStatus',
     'SpecificationLifecycleStatus',
     'SpecificationPriority',
-    'SpecificationSort'
+    'SpecificationSort',
     ]
 
 
@@ -122,7 +122,8 @@ class SpecificationImplementationStatus(DBEnumeratedType):
     GOOD = DBItem(70, """
         Good progress
 
-        The feature is considered on track for delivery in the targeted release.
+        The feature is considered on track for delivery in the targeted
+        release.
         """)
 
     BETA = DBItem(75, """
@@ -145,8 +146,8 @@ class SpecificationImplementationStatus(DBEnumeratedType):
     AWAITINGDEPLOYMENT = DBItem(85, """
         Deployment
 
-        The implementation has been done, and can be deployed in the production
-        environment, but this has not yet been done by the system
+        The implementation has been done, and can be deployed in the
+        production environment, but this has not yet been done by the system
         administrators. (This status is typically used for Web services where
         code is not released but instead is pushed into production.
         """)
@@ -438,8 +439,8 @@ class SpecificationDefinitionStatus(DBEnumeratedType):
     NEW = DBItem(40, """
         New
 
-        No thought has yet been given to implementation strategy, dependencies,
-        or presentation/UI issues.
+        No thought has yet been given to implementation strategy,
+        dependencies, or presentation/UI issues.
         """)
 
     SUPERSEDED = DBItem(60, """
@@ -556,8 +557,7 @@ class INewSpecification(Interface):
         description=_(
             "May contain lower-case letters, numbers, and dashes. "
             "It will be used in the specification url. "
-            "Examples: mozilla-type-ahead-find, postgres-smart-serial.")
-        )
+            "Examples: mozilla-type-ahead-find, postgres-smart-serial."))
     title = Title(
         title=_('Title'), required=True, description=_(
             "Describe the feature as clearly as possible in up to 70 "
@@ -877,7 +877,6 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         """Return the SpecificationBranch link for the branch, or None."""
 
 
-# Interfaces for containers
 class ISpecificationSet(IHasSpecifications):
     """A container for specifications."""
 

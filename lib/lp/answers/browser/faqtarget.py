@@ -17,6 +17,7 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.widgets import TokensTextWidget
 from lp.answers.interfaces.faq import IFAQ
 
+
 class FAQTargetNavigationMixin:
     """Navigation mixin for `IFAQTarget`."""
 
@@ -50,4 +51,3 @@ class FAQCreateView(LaunchpadFormView):
             self.user, data['title'], data['content'],
             keywords=data['keywords'])
         self.next_url = canonical_url(faq)
-
