@@ -220,8 +220,12 @@ won't work, so we email a notification to the branch owner.
     >>> from email import message_from_string
     >>> from lp.services.mail import stub
     >>> from lp.codehosting.vfs import get_rw_server
+    >>> from lp.testing.factory import (
+    ...     remove_security_proxy_and_shout_at_engineer)
     >>> productseries = factory.makeProductSeries()
-    >>> productseries.translations_branch = factory.makeBranch()
+    >>> naked_productseries = remove_security_proxy_and_shout_at_engineer(
+    ...     productseries)
+    >>> naked_productseries.translations_branch = factory.makeBranch()
     >>> template = factory.makePOTemplate(productseries=productseries)
     >>> potmsgset = factory.makePOTMsgSet(template)
     >>> pofile = removeSecurityProxy(

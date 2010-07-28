@@ -2504,7 +2504,7 @@ class PersonSet:
                     creation_rationale, comment=comment)
                 db_updated = True
 
-        return IPerson(account), db_updated
+            return IPerson(account), db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
