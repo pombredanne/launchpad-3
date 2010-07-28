@@ -1958,7 +1958,8 @@ class TestPendingWrites(TestCaseWithFactory):
         # If branchChanged has been called with a new tip revision id, there
         # are pending writes.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        branch.branchChanged('', 'new-tip', None, None, None)
+        with person_logged_in(branch.owner):
+            branch.branchChanged('', 'new-tip', None, None, None)
         self.assertEqual(True, branch.pending_writes)
 
     def test_requestMirror_for_imported(self):
