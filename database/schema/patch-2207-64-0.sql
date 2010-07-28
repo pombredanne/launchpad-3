@@ -24,4 +24,4 @@ CREATE TABLE ArchiveJob (
 ALTER TABLE ArchiveJob ADD CONSTRAINT archivejob__job__key UNIQUE (job);
 CREATE INDEX archivejob__archive__job_type__idx ON ArchiveJob(archive, job_type);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 64, 0);
