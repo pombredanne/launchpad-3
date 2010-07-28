@@ -526,10 +526,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         self.context.setStatus(RosettaImportStatus.APPROVED, self.user)
         self.context.date_status_changed = UTC_NOW
 
-    def _escapeJSString(self, string):
-        """Escape single-quoted `string` for use in a <script> tag."""
-        return string.replace('\\', '\\\\').replace("'", "\\'")
-
     @property
     def js_domain_mapping(self):
         """Return JS code mapping templates' names to translation domains."""
