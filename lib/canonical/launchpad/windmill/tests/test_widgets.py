@@ -11,7 +11,6 @@ from canonical.launchpad.windmill.testing.widgets import OnPageWidget
 from lp.testing import TestCase
 from mocker import Mocker, KWARGS
 
-mocker = Mocker()
 
 class TestOnPageWidget(TestCase):
 
@@ -36,13 +35,16 @@ class TestOnPageWidget(TestCase):
 
 class TestWidgetVisibility(TestCase):
 
+    def setUp(self):
+        super(TestWidgetVisibility, self).setUp()
+        self.mocker = Mocker()
+
     def make_client_with_expected_visibility(self, expected_visibility_attr):
         widget = OnPageWidget(None, 'widget')
         expected_value = getattr(widget, expected_visibility_attr)
 
         # Set up the Mock
-        client = mocker.mock()
-        self.addCleanup(mocker.reset)
+        client = self.mocker.mock()
 
         # Expectation
         client.waits.forElement(KWARGS, xpath=expected_value)
@@ -51,12 +53,12 @@ class TestWidgetVisibility(TestCase):
 
     def test_widget_visible_check(self):
         client = self.make_client_with_expected_visibility('visible_xpath')
-        with mocker:
+        with self.mocker:
             widget = OnPageWidget(client, 'widget')
             widget.should_be_visible()
 
     def test_widget_hidden_check(self):
         client = self.make_client_with_expected_visibility('hidden_xpath')
-        with mocker:
+        with self.mocker:
             widget = OnPageWidget(client, 'widget')
             widget.should_be_hidden()
