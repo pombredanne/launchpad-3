@@ -573,7 +573,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         build = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
 
         # The master verifies the status to confirm successful upload.
-        build.buildstate = BuildStatus.FULLYBUILT
+        build.status = BuildStatus.FULLYBUILT
         # If this upload is successful, any existing log is wrong and
         # unuseful.
         build.upload_log = None

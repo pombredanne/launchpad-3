@@ -1392,19 +1392,10 @@ COMMENT ON COLUMN SourcePackageRecipeDistroSeries.sourcepackagerecipe IS 'The pr
 
 COMMENT ON TABLE SourcePackageRecipeBuild IS 'The build record for the process of building a source package as described by a recipe.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.distroseries IS 'The distroseries the build was for.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.build_state IS 'The state of the build.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.date_built IS 'When the build record was processed.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.build_duration IS 'How long this build took to be processed.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.build_log IS 'Points to the build_log file stored in librarian.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.builder IS 'Points to the builder which has once processed it.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.package_build IS 'The package_build with the base information about this build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS 'Who requested the build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.manifest IS 'The evaluated recipe that was built.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.archive IS 'The archive the source package will be built in and uploaded to.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.pocket IS 'The pocket the source package will be built in and uploaded to.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.dependencies IS 'The missing build dependencies, if any.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.upload_log IS 'The output from uploading the source package to the archive.';
 
 -- SourcePackageRecipeBuildJob
 
