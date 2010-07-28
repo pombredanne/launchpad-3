@@ -35,7 +35,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-
+from lp.testing import TestCase as LaunchpadTestCase
 
 class TestRecordingSlaves(TrialTestCase):
     """Tests for the recording slave class."""
@@ -906,7 +906,7 @@ def is_file_growing(filepath, poll_interval=1, poll_repeat=10):
     return False
 
 
-class TestBuilddManagerScript(unittest.TestCase):
+class TestBuilddManagerScript(LaunchpadTestCase):
 
     layer = LaunchpadScriptLayer
 
