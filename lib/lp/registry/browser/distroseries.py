@@ -180,7 +180,6 @@ class DistroSeriesOverviewMenu(
 
     # A search link isn't needed because the distro series overview
     # has a search form.
-
     def answers(self):
         text = 'Ask a question'
         url = canonical_url(self.context.distribution) + '/+addquestion'
@@ -332,7 +331,7 @@ class DistroSeriesView(MilestoneOverlayMixin):
 
     @cachedproperty
     def needs_linking(self):
-        """Return a list of 10 packages most in need of upstream linking.""" 
+        """Return a list of 10 packages most in need of upstream linking."""
         return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
 
     milestone_can_release = False
