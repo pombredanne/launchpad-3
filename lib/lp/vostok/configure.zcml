@@ -11,8 +11,7 @@
      name="vostok"
      factory="lp.vostok.publisher.vostok_request_publication_factory"
      methods="*"
-     mimetypes="*"
-     priority="150" />
+     mimetypes="*" />
 
   <securedutility
      class="lp.vostok.publisher.VostokRoot"
