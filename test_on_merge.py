@@ -165,39 +165,8 @@ def setup_test_database():
 
 def run_test_process():
     """Start the testrunner process and return its exit code."""
-    # Fork a child process so that we get a new process ID that we can
-    # guarantee is not currently in use as a process group leader. This
-    # addresses the case where this script has been started directly in the
-    # shell using "python foo.py" or "./foo.py".
-    pid = os.fork()
-    if pid != 0:
-        # We are the parent process, so we'll wait for our child process to
-        # do the heavy lifting for us.
-        pid, status = os.wait()
-
-        if os.WIFEXITED(status):
-            return os.WEXITSTATUS(status)
-        else:
-            # We should not reach this code unless something segfaulted in
-            # our child process, or it recieved a signal from some outside
-            # force.
-            raise RuntimeError(
-                "Oops!  The test watchdog was killed by signal %s" % (
-                    os.WTERMSIG(status)))
-
     print 'Running tests.'
     os.chdir(HERE)
-
-    # Play shenanigans with our process group. We want to kill off our child
-    # groups while at the same time not slaughtering ourselves!
-    original_process_group = os.getpgid(0)
-
-    # Make sure we are not already the process group leader.  Otherwise this
-    # trick won't work.
-    assert original_process_group != os.getpid()
-
-    # Change our process group to match our PID, as per POSIX convention.
-    os.setpgrp()
 
     # We run the test suite under a virtual frame buffer server so that the
     # JavaScript integration test suite can run.
@@ -209,18 +178,19 @@ def run_test_process():
     command_line = ' '.join(cmd)
     print "Running command:", command_line
 
-    # Run the test suite and return the error code
+    # Run the test suite.  Make the suite the leader of a new process group
+    # so that we can signal the group without signaling ourselves.
     xvfb_proc = Popen(
-        command_line, stdin=PIPE, stdout=PIPE, stderr=STDOUT, shell=True)
-    xvfb_proc.stdin.close()
-
-    # Restore our original process group, thus removing ourselves from
-    # os.killpg's target list.  Our child process and its children will retain
-    # the process group number matching our PID.
-    os.setpgid(0, original_process_group)
+        command_line,
+        stdout=PIPE,
+        stderr=STDOUT,
+        preexec_fn=os.setpgrp)
 
     # This code is very similar to what takes place in Popen._communicate(),
     # but this code times out if there is no activity on STDOUT for too long.
+    # This keeps us from blocking when reading from a hung testrunner, allows
+    # us to time out if the child process hangs, and avoids issues when using
+    # Popen.communicate() with large data sets.
     open_readers = set([xvfb_proc.stdout])
     while open_readers:
         rlist, wlist, xlist = select(open_readers, [], [], TIMEOUT)
@@ -263,10 +233,13 @@ def cleanup_hung_testrunner(process):
         "output for %d seconds." % TIMEOUT)
     print "Forcibly shutting down the test suite"
 
-    # This guarantees the process' group will die.  In rare cases
+    # This guarantees the process will die.  In rare cases
     # a child process may survive this if they are in a different
     # process group and they ignore the signals we send their parent.
-    nice_killpg(process)
+    nice_killpg(process.pid)
+
+    # The process should absolutely be dead now.
+    assert process.poll() is not None
 
     # Drain the subprocess's stdout and stderr.
     print "The dying processes left behind the following output:"
@@ -276,10 +249,8 @@ def cleanup_hung_testrunner(process):
     print "---------------- END OUTPUT ----------------"
 
 
-def nice_killpg(process):
+def nice_killpg(pgid):
     """Kill a Unix process group using increasingly harmful signals."""
-    pgid = os.getpgid(process.pid)
-
     try:
         print "Process group %d will be killed" % pgid
 
@@ -292,26 +263,9 @@ def nice_killpg(process):
             # Give the processes some time to shut down.
             time.sleep(3)
 
-            # Poll our original child process so that the Popen object can
-            # capture the process' exit code. If we do not do this now it
-            # will be lost by the following call to os.waitpid(). Note that
-            # this also reaps every process in the process group!
-            process.poll()
-
-            # This call will raise ESRCH if the group is empty, or ECHILD if
-            # the group has already been reaped. The exception will exit the
-            # loop for us.
-            os.waitpid(-pgid, os.WNOHANG)   # Check for survivors.
-
-            print "Some processes ignored our signal!"
-
     except OSError, exc:
         if exc.errno == errno.ESRCH:
             # We tried to call os.killpg() and found the group to be empty.
-            pass
-        elif exc.errno == errno.ECHILD:
-            # We tried to poll the process group with os.waitpid() and found
-            # it was empty.
             pass
         else:
             raise
