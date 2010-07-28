@@ -11,8 +11,7 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.copyarchivejob import CopyArchiveJob
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.testing import (
-    celebrity_logged_in, person_logged_in, TestCaseWithFactory)
+from lp.testing import celebrity_logged_in, TestCaseWithFactory
 
 
 class CopyArchiveJobTests(TestCaseWithFactory):
