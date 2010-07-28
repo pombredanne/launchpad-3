@@ -759,7 +759,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             my-recipe
             Build status
             Needs building
-            Start in .*
+            Start in .* \\(9876\\) What's this?.*
             Estimated finish in .*
             Build details
             Recipe:        Recipe my-recipe for Owner
