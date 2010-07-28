@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -2059,7 +2059,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         for_distro = not (distroseries is None and sourcepackagename is None)
         for_project = productseries is not None
-        if not for_distro and not for_project and potemplate is not None:
+        has_template = (potemplate is not None)
+        if has_template and not for_distro and not for_project:
             # Copy target from template.
             distroseries = potemplate.distroseries
             sourcepackagename = potemplate.sourcepackagename
