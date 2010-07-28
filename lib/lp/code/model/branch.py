@@ -851,8 +851,7 @@ class Branch(SQLBase, BzrIdentityMixin):
              self.branch_type == BranchType.IMPORTED
              and self.next_mirror_time is not None)
         # XXX 2010-04-22, MichaelHudson: This should really look for a branch
-        # scan job. Yes because if the scan job fails, the branch gets stuck
-        # in updating.
+        # scan job.
         pulled_but_not_scanned = self.last_mirrored_id != self.last_scanned_id
         pull_in_progress = (
             self.last_mirror_attempt is not None
