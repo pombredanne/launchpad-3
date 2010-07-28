@@ -380,14 +380,6 @@ class PersonVisibility(DBEnumeratedType):
         Everyone can view all the attributes of this person.
         """)
 
-    ## PRIVATE_MEMBERSHIP = DBItem(20, """
-    ##     Private Membership
-
-    ##     Only Launchpad admins and team members can view the
-    ##     membership list for this team. The team is severely restricted in the
-    ##     roles it can assume.
-    ##     """)
-
     PRIVATE = DBItem(30, """
         Private
 
