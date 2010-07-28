@@ -422,7 +422,7 @@ class TestSlaveScanner(TrialTestCase):
             1, bob_builder.currentjob.specific_job.build.failure_count)
 
     def test_checkDispatch_second_reset_fail_by_builder(self):
-        # Twisted Failure response, results in a `ResetDispatchResult`.
+        # Twisted Failure response, results in a `FailDispatchResult`.
         slave, bob_builder = self._setUpSlaveAndBuilder()
         bob_builder.failure_count = 1
         bob_builder.currentjob.specific_job.build.failure_count = 0
@@ -430,9 +430,9 @@ class TestSlaveScanner(TrialTestCase):
         twisted_failure = Failure(ConnectionClosed('Boom!'))
         result = self.manager.checkDispatch(
             twisted_failure, 'ensurepresent', slave)
-        self.assertIsDispatchReset(result)
+        self.assertIsDispatchFail(result)
         self.assertEqual(
-            '<bob:http://foo.buildd:8221/> reset failure', repr(result))
+            '<bob:http://foo.buildd:8221/> failure (None)', repr(result))
         self.assertEqual(2, bob_builder.failure_count)
         self.assertEqual(
             1, bob_builder.currentjob.specific_job.build.failure_count)
