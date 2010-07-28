@@ -29,6 +29,7 @@ from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import ANONYMOUS, BrowserTestCase, login, logout
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -45,7 +46,9 @@ class TestCaseForRecipe(BrowserTestCase):
         self.squirrel = self.factory.makeDistroSeries(
             displayname='Secret Squirrel', name='secret', version='100.04',
             distribution=self.ppa.distribution)
-        self.squirrel.nominatedarchindep = self.squirrel.newArch(
+        naked_squirrel = remove_security_proxy_and_shout_at_engineer(
+            self.squirrel)
+        naked_squirrel.nominatedarchindep = self.squirrel.newArch(
             'i386', ProcessorFamily.get(1), False, self.chef,
             supports_virtualized=True)
 
@@ -128,6 +131,40 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
+
+    def test_create_new_recipe_users_teams_as_owner_options(self):
+        # Teams that the user is in are options for the recipe owner.
+        self.factory.makeTeam(
+            name='good-chefs', displayname='Good Chefs', members=[self.chef])
+        branch = self.makeBranch()
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create packaging recipe').click()
+
+        # The options for the owner include the Good Chefs team.
+        options = browser.getControl('Owner').displayOptions
+        self.assertEquals(
+            ['Good Chefs (good-chefs)', 'Master Chef (chef)'],
+            sorted([str(option) for option in options]))
+
+    def test_create_new_recipe_team_owner(self):
+        # New recipes can be owned by teams that the user is a member of.
+        team = self.factory.makeTeam(
+            name='good-chefs', displayname='Good Chefs', members=[self.chef])
+        branch = self.makeBranch()
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl(name='field.name').value = 'daily'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Build daily').click()
+        browser.getControl('Owner').displayValue = ['Good Chefs']
+        browser.getControl('Create Recipe').click()
+
+        login(ANONYMOUS)
+        recipe = team.getRecipe(u'daily')
+        self.assertEqual(team, recipe.owner)
+        self.assertEqual('daily', recipe.name)
 
     def test_create_recipe_forbidden_instruction(self):
         # We don't allow the "run" instruction in our recipes.  Make sure this
@@ -494,7 +531,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
     def makeBuildJob(self, recipe):
         """Return a build associated with a buildjob."""
         build = self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa )
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa)
         self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         return build
 
@@ -527,6 +564,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(
             set([build1, build2, build3, build4, build5, build6]),
             set(view.builds))
+
         def set_day(build, day):
             removeSecurityProxy(build).datebuilt = datetime(
                 2010, 03, day, tzinfo=utc)
@@ -569,7 +607,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
-        woody.nominatedarchindep = woody.newArch(
+        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
+        naked_woody.nominatedarchindep = woody.newArch(
             'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
             supports_virtualized=True)
 
@@ -603,7 +642,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
-        woody.nominatedarchindep = woody.newArch(
+        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
+        naked_woody.nominatedarchindep = woody.newArch(
             'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
             supports_virtualized=True)
 
@@ -624,7 +664,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
-        woody.nominatedarchindep = woody.newArch(
+        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
+        naked_woody.nominatedarchindep = woody.newArch(
             'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
             supports_virtualized=True)
 

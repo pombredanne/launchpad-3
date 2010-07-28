@@ -24,6 +24,7 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
@@ -285,7 +286,9 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.linkPackage('hot')
         self.makeSeriesPackage('cold')
         product_series = self.linkPackage('cold')
-        product_series.product.bugtraker = self.factory.makeBugTracker()
+        naked_product_series = remove_security_proxy_and_shout_at_engineer(
+            product_series)
+        naked_product_series.product.bugtraker = self.factory.makeBugTracker()
         packagings = self.series.getPrioritizedlPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'hot', u'cold', u'linked']
@@ -296,7 +299,9 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.linkPackage('translatable')
         self.makeSeriesPackage('withbranch')
         product_series = self.linkPackage('withbranch')
-        product_series.branch = self.factory.makeBranch()
+        naked_product_series = remove_security_proxy_and_shout_at_engineer(
+            product_series)
+        naked_product_series.branch = self.factory.makeBranch()
         packagings = self.series.getPrioritizedlPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'withbranch']
@@ -308,8 +313,10 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.linkPackage('translatable')
         self.makeSeriesPackage('importabletranslatable')
         product_series = self.linkPackage('importabletranslatable')
-        product_series.branch = self.factory.makeBranch()
-        product_series.translations_autoimport_mode = (
+        naked_product_series = remove_security_proxy_and_shout_at_engineer(
+            product_series)
+        naked_product_series.branch = self.factory.makeBranch()
+        naked_product_series.translations_autoimport_mode = (
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         packagings = self.series.getPrioritizedlPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
@@ -343,7 +350,9 @@ class TestDistroSeriesSet(TestCaseWithFactory):
 
         new_distroseries = (
             self.factory.makeDistroRelease(name=u"sampleseries"))
-        new_distroseries.hide_all_translations = False
+        naked_new_distroseries = remove_security_proxy_and_shout_at_engineer(
+            new_distroseries)
+        naked_new_distroseries.hide_all_translations = False
         transaction.commit()
         translatables = self._get_translatables()
         self.failUnlessEqual(
@@ -365,7 +374,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
                 translatables,
                 self._ref_translatables(u"sampleseries")))
 
-        new_distroseries.hide_all_translations = True
+        naked_new_distroseries.hide_all_translations = True
         transaction.commit()
         translatables = self._get_translatables()
         self.failUnlessEqual(

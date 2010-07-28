@@ -1113,6 +1113,7 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
 
     def tearDown(self):
         """Purge the archive root location. """
+        super(TestPublisherRepositorySignatures, self).tearDown()
         if self.archive_publisher is not None:
             shutil.rmtree(self.archive_publisher._config.distsroot)
 

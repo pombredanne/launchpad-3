@@ -1,23 +1,22 @@
 <configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:i18n="http://namespaces.zope.org/i18n"
-    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
-    i18n_domain="launchpad">
+   xmlns="http://namespaces.zope.org/zope"
+   xmlns:browser="http://namespaces.zope.org/browser"
+   xmlns:i18n="http://namespaces.zope.org/i18n"
+   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+   i18n_domain="launchpad">
 
-    <include package=".browser" />
+  <include package=".browser" />
 
-    <publisher
-        name="vostok"
-        factory="lp.vostok.publisher.vostok_request_publication_factory"
-        methods="*"
-        mimetypes="*"
-        priority="150" />
+  <publisher
+     name="vostok"
+     factory="lp.vostok.publisher.vostok_request_publication_factory"
+     methods="*"
+     mimetypes="*"
+     priority="150" />
 
-    <securedutility
-        class="lp.vostok.publisher.VostokRoot"
-        provides="lp.vostok.publisher.IVostokRoot">
-        <allow interface="lp.vostok.publisher.IVostokRoot" />
-    </securedutility>
-
+  <securedutility
+     class="lp.vostok.publisher.VostokRoot"
+     provides="lp.vostok.publisher.IVostokRoot">
+    <allow interface="lp.vostok.publisher.IVostokRoot" />
+  </securedutility>
 </configure>
