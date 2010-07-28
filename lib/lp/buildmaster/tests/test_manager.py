@@ -37,6 +37,7 @@ from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase as LaunchpadTestCase
 
+
 class TestRecordingSlaves(TrialTestCase):
     """Tests for the recording slave class."""
     layer = TwistedLayer
