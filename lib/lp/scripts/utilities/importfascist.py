@@ -21,7 +21,6 @@ def text_lines_to_set(text):
     return set(line.strip() for line in text.splitlines() if line.strip())
 
 
-# zope.testing.doctest: called as part of creating a DocTestSuite.
 permitted_database_imports = text_lines_to_set("""
     canonical.archivepublisher.deathrow
     canonical.archivepublisher.domination
@@ -38,7 +37,7 @@ permitted_database_imports = text_lines_to_set("""
     lp.registry.vocabularies
     canonical.librarian.client
     canonical.librarian.db
-    zope.testing.doctest
+    doctest
     """)
 
 
@@ -57,6 +56,7 @@ warned_database_imports = text_lines_to_set("""
 # __all__. The following dict maps from such modules to a list of attributes
 # that are allowed to be imported, whether or not they are in __all__.
 valid_imports_not_in_all = {
+    'bzrlib.lsprof': set(['BzrProfiler']),
     'cookielib': set(['domain_match']),
     'email.Utils': set(['mktime_tz']),
     'openid.fetchers': set(['Urllib2Fetcher']),

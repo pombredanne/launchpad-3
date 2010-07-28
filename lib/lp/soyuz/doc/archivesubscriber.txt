@@ -21,6 +21,7 @@ First, create a person 'joesmith' and a team 'team_cprov':
     ...                               email="john@example.com")
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
+    >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
     >>> team_cprov = factory.makeTeam(cprov, "Team Cprov")
     >>> johnsmith.join(team_cprov)
     >>> logout()
@@ -309,7 +310,7 @@ Now print out all subscriptions with their tokens for joesmith:
 There's a also related method on IPerson that will return the archive URLs
 for the activated tokens.
 
-    >>> for url in joesmith.getArchiveSubscriptionURLs():
+    >>> for url in joesmith.getArchiveSubscriptionURLs(joesmith):
     ...     print url
     http://joesmith:test_token@private-ppa.launchpad.dev/cprov/p3a/ubuntu
 
@@ -317,10 +318,10 @@ This method can only be used by someone with launchpad.Edit on the context
 IPerson:
 
     >>> login("no-priv@canonical.com")
-    >>> urls = joesmith.getArchiveSubscriptionURLs()
+    >>> urls = joesmith.getArchiveSubscriptionURLs(no_priv)
     Traceback (most recent call last):
     ...
-    Unauthorized: ... 'getArchiveSubscriptionURLs', 'launchpad.Edit')
+    Unauthorized
 
 Deactivated tokens are not included with the returned token for a
 subscription:

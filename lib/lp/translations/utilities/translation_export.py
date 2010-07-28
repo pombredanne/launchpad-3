@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Components for exporting translation files."""
@@ -17,6 +17,7 @@ import tarfile
 import tempfile
 import time
 from StringIO import StringIO
+
 from zope.component import subscribers
 from zope.interface import implements
 
@@ -27,12 +28,13 @@ from lp.translations.interfaces.translationexporter import (
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 
+
 class ExportedTranslationFile:
     """See `IExportedTranslationFile`."""
     implements(IExportedTranslationFile)
 
     def __init__(self, content_file):
-        self._content_file  = content_file
+        self._content_file = content_file
         self.content_type = None
         self.path = None
         self.file_extension = None
@@ -78,6 +80,24 @@ class TranslationExporter:
                 return exporter
 
         return None
+
+    def exportTranslationFiles(self, translation_files, target_format=None,
+                               ignore_obsolete=False, force_utf8=False):
+        """See `ITranslationExporter`."""
+        storage = ExportFileStorage()
+        for translation_file in translation_files:
+            if target_format is None:
+                output_format = translation_file.format
+            else:
+                output_format = target_format
+            format_exporter = self.getExporterProducingTargetFileFormat(
+                output_format)
+            file_content = format_exporter.exportTranslationFile(
+                translation_file, storage, ignore_obsolete=ignore_obsolete,
+                force_utf8=force_utf8)
+
+        return storage.export()
+
 
 # A note about tarballs, StringIO and unicode. SQLObject returns unicode
 # values for columns which are declared as StringCol. We have to be careful
@@ -178,7 +198,8 @@ class StorageStrategy:
     Storage for single files is implemented by `SingleFileStorageStrategy`;
     multiple files go into a `TarballFileStorageStrategy`.
     """
-    def addFile(self, path, extension, content):
+
+    def addFile(self, path, extension, content, mime_type):
         """Add a file to be stored."""
         raise NotImplementedError()
 
@@ -208,18 +229,15 @@ class SingleFileStorageStrategy(StorageStrategy):
 
     path = None
     extension = None
-    mimetype = None
 
-    def __init__(self, mimetype):
-        self.mimetype = mimetype
-
-    def addFile(self, path, extension, content):
+    def addFile(self, path, extension, content, mime_type):
         """See `StorageStrategy`."""
         assert path is not None, "Storing file without path."
         assert self.path is None, "Multiple files added; expected just one."
         self.path = path
         self.extension = extension
         self.content = content
+        self.mime_type = mime_type
 
     def isEmpty(self):
         """See `StorageStrategy`."""
@@ -238,7 +256,7 @@ class SingleFileStorageStrategy(StorageStrategy):
         output = ExportedTranslationFile(StringIO(self.content))
         output.path = self.path
         # We use x-po for consistency with other .po editors like GTranslator.
-        output.content_type = self.mimetype
+        output.content_type = self.mime_type
         output.file_extension = self.extension
         return output
 
@@ -251,6 +269,8 @@ class TarballFileStorageStrategy(StorageStrategy):
     as soon as it is added.  There is no need to keep the full contents of the
     tarball in memory at any single time.
     """
+    mime_type = 'application/x-gtar'
+
     empty = False
 
     def __init__(self, single_file_storage=None):
@@ -258,11 +278,13 @@ class TarballFileStorageStrategy(StorageStrategy):
         self.buffer = tempfile.TemporaryFile()
         self.tar_writer = LaunchpadWriteTarFile(self.buffer)
         if single_file_storage is not None:
-            self.addFile(single_file_storage.path,
-                single_file_storage.extension, single_file_storage.content)
+            self.addFile(
+                single_file_storage.path, single_file_storage.extension,
+                single_file_storage.content, single_file_storage.mime_type)
 
-    def addFile(self, path, extension, content):
+    def addFile(self, path, extension, content, mime_type):
         """See `StorageStrategy`."""
+        # Tarballs don't store MIME types, so ignore that.
         self.empty = False
         self.tar_writer.add_file(path, content)
 
@@ -288,19 +310,20 @@ class TarballFileStorageStrategy(StorageStrategy):
         # For tar.gz files, the standard content type is application/x-gtar.
         # You can see more info on
         #   http://en.wikipedia.org/wiki/List_of_archive_formats
-        output.content_type = 'application/x-gtar'
+        output.content_type = self.mime_type
         output.file_extension = 'tar.gz'
         return output
 
 
 class ExportFileStorage:
     """Store files to export, either as tarball or plain single file."""
-    def __init__(self, mimetype):
+
+    def __init__(self):
         # Start out with a single file.  We can replace that strategy later if
         # we get more than one file.
-        self._store = SingleFileStorageStrategy(mimetype)
+        self._store = SingleFileStorageStrategy()
 
-    def addFile(self, path, extension, content):
+    def addFile(self, path, extension, content, mime_type):
         """Add file to be stored.
 
         :param path: location and name of this file, relative to root of tar
@@ -312,10 +335,9 @@ class ExportFileStorage:
             # We're still using a single-file storage strategy, but we just
             # received our second file.  Switch to tarball strategy.
             self._store = TarballFileStorageStrategy(self._store)
-        self._store.addFile(path, extension, content)
+        self._store.addFile(path, extension, content, mime_type)
 
     def export(self):
         """Export as `ExportedTranslationFile`."""
         assert not self._store.isEmpty(), "Got empty list of files to export."
         return self._store.export()
-
