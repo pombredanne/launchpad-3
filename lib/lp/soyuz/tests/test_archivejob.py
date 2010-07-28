@@ -1,6 +1,6 @@
 import unittest
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 from lp.soyuz.interfaces.archivejob import ArchiveJobType
 from lp.soyuz.model.archivejob import ArchiveJob, ArchiveJobDerived
@@ -10,7 +10,7 @@ from lp.testing import TestCaseWithFactory
 class ArchiveJobTestCase(TestCaseWithFactory):
     """Test case for basic ArchiveJob gubbins."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
     def test_instantiate(self):
         # ArchiveJob.__init__() instantiates a ArchiveJob instance.
@@ -34,7 +34,7 @@ class ArchiveJobTestCase(TestCaseWithFactory):
 class ArchiveJobDerivedTestCase(TestCaseWithFactory):
     """Test case for the ArchiveJobDerived class."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
     def test_create_explodes(self):
         # ArchiveJobDerived.create() will blow up because it needs to be

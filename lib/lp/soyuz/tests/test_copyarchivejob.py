@@ -1,9 +1,7 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadZopelessLayer
-
-from lp.testing import TestCaseWithFactory
+from canonical.testing import DatabaseFunctionalLayer
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -13,12 +11,14 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.copyarchivejob import CopyArchiveJob
 from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.testing import (
+    celebrity_logged_in, person_logged_in, TestCaseWithFactory)
 
 
 class CopyArchiveJobTests(TestCaseWithFactory):
     """Tests for CopyArchiveJob."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
     def test_getOopsVars(self):
         archive = self.factory.makeArchive()
@@ -289,7 +289,8 @@ class CopyArchiveJobTests(TestCaseWithFactory):
             distroseries=distroseries, architecturetag="i386",
             processorfamily=ProcessorFamilySet().getByName("x86"),
             supports_virtualized=True)
-        distroseries.nominatedarchindep = das
+        with celebrity_logged_in('admin'):
+            distroseries.nominatedarchindep = das
         target_archive_owner = self.factory.makePerson()
         target_archive = self.factory.makeArchive(
             purpose=ArchivePurpose.COPY, owner=target_archive_owner,
@@ -298,17 +299,18 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         return source_archive, target_archive, distroseries
 
     def checkPublishedSources(self, expected, archive, series):
-        sources = archive.getPublishedSources(
-            distroseries=series,
-            status=(
-                PackagePublishingStatus.PENDING,
-                PackagePublishingStatus.PUBLISHED))
-        actual = []
-        for source in sources:
-            source = removeSecurityProxy(source)
-            actual.append(
-                (source.source_package_name, source.source_package_version))
-        self.assertEqual(sorted(expected), sorted(actual))
+        # We need to be admin as the archive is disabled at this point.
+        with celebrity_logged_in('admin'):
+            sources = archive.getPublishedSources(
+                distroseries=series,
+                status=(
+                    PackagePublishingStatus.PENDING,
+                    PackagePublishingStatus.PUBLISHED))
+            actual = []
+            for source in sources:
+                actual.append(
+                    (source.source_package_name, source.source_package_version))
+            self.assertEqual(sorted(expected), sorted(actual))
 
     def test_run(self):
         """Test that CopyArchiveJob.run() actually copies the archive.
