@@ -258,6 +258,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             'Bazaar-NG Knit Repository Format 1')
 
         job = BranchUpgradeJob.create(db_branch)
+        self.becomeDbUser(config.upgrade_branches.dbuser)
         job.run()
         new_branch = Branch.open(tree.branch.base)
         self.assertEqual(
@@ -289,6 +290,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             source_branch_transport.clone('backup.bzr'))
 
         job = BranchUpgradeJob.create(db_branch)
+        self.becomeDbUser(config.upgrade_branches.dbuser)
         job.run()
 
         new_branch = Branch.open(tree.branch.base)
