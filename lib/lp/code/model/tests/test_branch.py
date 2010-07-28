@@ -1980,7 +1980,7 @@ class TestPendingWrites(TestCaseWithFactory):
         # If a branch has been pulled (mirrored) but not scanned, then we have
         # yet to load the revisions into the database. This means there are
         # pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
@@ -1990,7 +1990,7 @@ class TestPendingWrites(TestCaseWithFactory):
     def test_pulled_and_scanned(self):
         # If a branch has been pulled and scanned, then there are no pending
         # writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
@@ -2004,14 +2004,14 @@ class TestPendingWrites(TestCaseWithFactory):
     def test_first_mirror_started(self):
         # If we have started mirroring the branch for the first time, then
         # there are probably pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         self.assertEqual(True, branch.pending_writes)
 
     def test_following_mirror_started(self):
         # If we have started mirroring the branch, then there are probably
         # pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
