@@ -35,7 +35,7 @@ class TestRegistration(TestCase):
         # The root object for requests to the vostok host is an instance of
         # VostokRoot.
         request, publication = get_request_and_publication(
-            host=config.vhost.code.hostname)
+            host=config.vhost.vostok.hostname)
         self.assertProvides(request, VostokLayer)
         # XXX This shouldn't be needed:
         # XXX Use test traverse instead?
