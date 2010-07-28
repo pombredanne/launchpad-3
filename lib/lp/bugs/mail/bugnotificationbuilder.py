@@ -91,8 +91,9 @@ class BugNotificationBuilder:
     up-front.
     """
 
-    def __init__(self, bug):
+    def __init__(self, bug, event_creator=None):
         self.bug = bug
+        self.event_creator = event_creator
 
         # Pre-calculate common headers.
         self.common_headers = [
@@ -140,7 +141,15 @@ class BugNotificationBuilder:
         # and the original bug task for filtering
         self.common_headers.append(
             ('X-Launchpad-Bug-Reporter',
-             '%s (%s)' % ( bug.owner.displayname, bug.owner.name )))
+             '%s (%s)' % (bug.owner.displayname, bug.owner.name)))
+
+        # Add the -Bug-Modifier header to identify the person who
+        # modified the bug report
+        if event_creator:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Modifier',
+                    '%s (%s)' % (event_creator.displayname,
+                        event_creator.name)))
 
     def build(self, from_address, to_address, body, subject, email_date,
               rationale=None, references=None, message_id=None):
