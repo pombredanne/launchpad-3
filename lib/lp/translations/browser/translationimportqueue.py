@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'escape_js_string',
     'TranslationImportQueueEntryNavigation',
     'TranslationImportQueueEntryView',
     'TranslationImportQueueNavigation',
@@ -40,6 +41,23 @@ from lp.translations.utilities.template import make_domain, make_name
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadFormView)
 from canonical.launchpad.validators.name import valid_name
+
+
+def replace(string, replacement):
+    """In `string,` replace `replacement`[0] with `replacement`[1]."""
+    return string.replace(*replacement)
+
+
+def escape_js_string(string):
+    """Escape `string` for use as a string in a JS <script> tag."""
+    replacements = [
+        ('\\', '\\\\'),
+        ('"', '\\"'),
+        ("'", "\\'"),
+        ('\n', '\\n'),
+        ]
+    return reduce(replace, replacements, string)
+
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
 
@@ -232,8 +250,8 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
     def initialize(self):
         """Remove some fields based on the entry handled."""
         self.field_names = ['file_type', 'path', 'sourcepackagename',
-                            'name', 'translation_domain', 'languagepack',
                             'potemplate', 'potemplate_name',
+                            'name', 'translation_domain', 'languagepack',
                             'language', 'variant']
 
         if self.context.productseries is not None:
@@ -507,6 +525,21 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         self.context.setStatus(RosettaImportStatus.APPROVED, self.user)
         self.context.date_status_changed = UTC_NOW
+
+    @property
+    def js_domain_mapping(self):
+        """Return JS code mapping templates' names to translation domains."""
+        target = self.import_target
+        if target is None:
+            contents = ""
+        else:
+            contents = ", \n".join([
+                "'%s': '%s'" % (
+                    escape_js_string(template.name),
+                    escape_js_string(template.translation_domain))
+                for template in target.getCurrentTranslationTemplates()
+                ])
+        return "var template_domains = {%s};" % contents
 
 
 class TranslationImportQueueNavigation(GetitemNavigation):
