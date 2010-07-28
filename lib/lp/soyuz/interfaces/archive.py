@@ -166,6 +166,7 @@ class InvalidPocketForPartnerArchive(CannotUploadToArchive):
 
 class CannotUploadToPocket(Exception):
     """Returned when a pocket is closed for uploads."""
+    webservice_error(403) # Forbidden.
 
     def __init__(self, distroseries, pocket):
         Exception.__init__(self,

@@ -101,6 +101,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         """If the build isn't queued, you can't cancel it."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
         build = self.makeRecipeBuild()
+        build.cancelBuild()
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -161,8 +162,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
         self.assertEqual(
             extract_text(find_tags_by_class(browser.contents, 'message')[1]),
-            'You have specified an invalid value for score. '
-            'Please specify an integer')
+            'Invalid integer data')
 
     def test_rescore_build_not_admin(self):
         """No one but admins can rescore a build."""
@@ -181,6 +181,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         """If the build isn't queued, you can't rescore it."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
         build = self.makeRecipeBuild()
+        build.cancelBuild()
         transaction.commit()
         build_url = canonical_url(build)
         logout()

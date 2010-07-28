@@ -15,10 +15,9 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import Or, And, Select, Sum, In, Desc
+from storm.expr import And, Desc, Or, Select, Sum
 from storm.locals import Count, Join
 from storm.store import Store
-from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import alsoProvides, implements

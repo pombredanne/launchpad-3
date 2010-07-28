@@ -39,6 +39,7 @@ from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI
+from lp.code.bzr import get_branch_formats
 from lp.code.enums import BranchType, CodeReviewVote
 from lp.code.errors import BranchMergeProposalExists, UserNotBranchReviewer
 from lp.code.interfaces.branch import BranchCreationException
@@ -516,11 +517,15 @@ class CodeHandler:
                 except NotStacked:
                     # We don't currently support pulling in the revisions if
                     # the source branch exists and isn't stacked.
+                    # XXX Tim Penhey 2010-07-27 bug 610292
+                    # We should fail here and return an oops email to the user.
                     return db_source
                 self._pullRevisionsFromMergeDirectiveIntoSourceBranch(
                     md, target_url, bzr_source)
                 # Get the puller to pull the branch into the mirrored area.
-                db_source.requestMirror()
+                formats = get_branch_formats(bzr_source)
+                db_source.branchChanged(
+                    stacked_url, bzr_source.last_revision(), *formats)
             return db_source
         finally:
             lp_server.stop_server()
