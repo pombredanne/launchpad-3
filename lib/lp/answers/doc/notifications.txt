@@ -113,9 +113,9 @@ will be sent.
     ...     ubuntu_question, providing=providedBy(ubuntu_question))
     >>> ubuntu_question.title = "Installer doesn't work on a Mac"
     >>> ubuntu_question.description = """I insert the install CD in the CD-ROM
-    >>> drive, but it won't boot.
-    >>> 
-    >>> It boots straight into MacOS 9."""
+    ... drive, but it won't boot.
+    ...
+    ... It boots straight into MacOS 9."""
     >>> libstdcplusplus_sourcepackage = ubuntu.getSourcePackage('libstdc++')
     >>> ubuntu_question.target = libstdcplusplus_sourcepackage
     >>> notify(ObjectModifiedEvent(
@@ -392,7 +392,7 @@ a notification.
 The notification for new messages on the question contain a 'References'
 header to the previous message for threading purpose.
 
-    references = notifications[0]['References']
+    >>> references = notifications[0]['References']
     >>> print references
     <...>
 

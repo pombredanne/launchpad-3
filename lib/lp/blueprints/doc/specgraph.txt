@@ -18,7 +18,7 @@ SpecGraph to keep track of the nodes that have been added.
     >>> g.url_pattern_for_testing = 'http://whatever/%s'
 
     >>> class Spec(object):
-    >>> 
+    ...
     ...     def __init__(self, name,
     ...             is_complete=False, title=None, assignee=None):
     ...         self.name = name
@@ -401,5 +401,3 @@ The dependency graph image is rendered correctly when Popen is restored.
 
     >>> len(image) != fail_over_image_length
     True
-
-

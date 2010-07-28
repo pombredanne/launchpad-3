@@ -776,9 +776,9 @@ keeping those searchable.
 
     >>> from canonical.launchpad.browser import SearchQuestionsView
     >>> class MyCustomSearchQuestionsView(SearchQuestionsView):
-    >>> 
+    ...
     ...     default_filter = {}
-    >>> 
+    ...
     ...     def getDefaultFilter(self):
     ...         return dict(**self.default_filter)
 
