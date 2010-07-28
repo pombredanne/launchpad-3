@@ -21,11 +21,11 @@ class TestRegistration(TestCase):
 
     layer = FunctionalLayer
 
-    def test_code_request_provides_code_layer(self):
-        # The request constructed for requests to the code hostname provides
-        # CodeLayer.
+    def test_vostok_request_provides_vostok_layer(self):
+        # The request constructed for requests to the vostok hostname provides
+        # VostokLayer.
         request, publication = get_request_and_publication(
-            host=config.vhost.code.hostname)
+            host=config.vhost.vostok.hostname)
         self.assertProvides(request, VostokLayer)
 
 
