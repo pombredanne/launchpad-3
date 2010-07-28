@@ -26,7 +26,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.person import (
     IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility)
-from canonical.launchpad.database import Bug, BugTask, BugSubscription
+from canonical.launchpad.database import Bug
 from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
 from lp.registry.model.karma import KarmaCategory

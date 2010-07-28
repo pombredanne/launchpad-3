@@ -357,6 +357,7 @@ class IProductReleasePublic(Interface):
         Raises a NotFoundError if no matching ProductReleaseFile exists.
         """
 
+
 class IProductRelease(IProductReleaseEditRestricted,
                       IProductReleasePublic):
     """A specific release (i.e. version) of a product.
@@ -365,6 +366,7 @@ class IProductRelease(IProductReleaseEditRestricted,
     """
 
     export_as_webservice_entry('project_release')
+
 
 # Set the schema for IProductReleaseFile now that IProductRelease is defined.
 IProductReleaseFile['productrelease'].schema = IProductRelease

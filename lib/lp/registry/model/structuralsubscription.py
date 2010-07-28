@@ -104,11 +104,12 @@ class StructuralSubscription(SQLBase):
         elif self.distroseries is not None:
             return self.distroseries
         else:
-            raise AssertionError, 'StructuralSubscription has no target.'
+            raise AssertionError('StructuralSubscription has no target.')
 
 
 class StructuralSubscriptionTargetMixin:
     """Mixin class for implementing `IStructuralSubscriptionTarget`."""
+
     @property
     def _target_args(self):
         """Target Arguments.

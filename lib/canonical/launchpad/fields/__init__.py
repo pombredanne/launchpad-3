@@ -171,7 +171,8 @@ class IURIField(ITextLine):
 
          * whitespace is stripped from the input value
          * if the field requires (or forbids) a trailing slash on the URI,
-           ensures that the widget ends in a slash (or doesn't end in a slash).
+           ensures that the widget ends in a slash (or doesn't end in a
+           slash).
          * the URI is canonicalized.
          """
 

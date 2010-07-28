@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -292,6 +292,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         user.item
         where item is a component or a source package name,
         """
+
         def get_url_param(param_name):
             """Return the URL parameter with the given name or None."""
             param_seq = self.request.query_string_params.get(param_name)
@@ -371,6 +372,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
 
 class ArchiveMenuMixin:
+
     def ppa(self):
         text = 'View PPA'
         return Link(canonical_url(self.context), text, icon='info')
@@ -522,6 +524,7 @@ class ArchiveViewBase(LaunchpadView):
     @cachedproperty
     def repository_usage(self):
         """Return a dictionary with usage details of this repository."""
+
         def package_plural(control):
             if control == 1:
                 return 'package'
@@ -628,7 +631,6 @@ class ArchiveViewBase(LaunchpadView):
         copy_requests = getUtility(
             IPackageCopyRequestSet).getByTargetArchive(self.context)
         return list(copy_requests)
-
 
     @property
     def disabled_warning_message(self):
@@ -737,7 +739,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         # If the request included a filter, try to use it - if it's
         # invalid we use the default instead.
         vocab = self.widgets[filter_name].vocabulary
-        if vocab.by_token.has_key(requested_filter[0]):
+        if requested_filter[0] in vocab.by_token:
             return vocab.getTermByToken(requested_filter[0]).value
         else:
             return getattr(self, default_filter_attr)
@@ -1159,6 +1161,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
             structured(notification, comment=comment))
 
         self.setNextURL()
+
 
 class DestinationArchiveDropdownWidget(LaunchpadDropdownWidget):
     """Redefining default display value as 'This PPA'."""
@@ -1859,6 +1862,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
     def validate_save(self, action, data):
         """Default save validation does nothing."""
         pass
+
 
 class ArchiveEditView(BaseArchiveEditView):
 

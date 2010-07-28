@@ -49,19 +49,23 @@ class BugNotificationLevel(DBEnumeratedType):
     LIFECYCLE = DBItem(20, """
         Lifecycle
 
-        Only send a low volume of notifications about new bugs registered, bugs removed or bug targetting.
+        Only send a low volume of notifications about new bugs registered,
+        bugs removed or bug targetting.
         """)
 
     METADATA = DBItem(30, """
         Details
 
-        Send bug lifecycle notifications, as well as notifications about changes to the bug's details like status and description.
+        Send bug lifecycle notifications, as well as notifications about
+        changes to the bug's details like status and description.
         """)
 
     COMMENTS = DBItem(40, """
         Discussion
 
-        Send bug lifecycle notifications, detail change notifications and notifications about new events in the bugs's discussion, like new comments.
+        Send bug lifecycle notifications, detail change notifications and
+        notifications about new events in the bugs's discussion, like new
+        comments.
         """)
 
 
@@ -80,13 +84,15 @@ class BlueprintNotificationLevel(DBEnumeratedType):
     LIFECYCLE = DBItem(20, """
         Lifecycle
 
-        Only send a low volume of notifications about new blueprints registered, blueprints accepted or blueprint targetting.
+        Only send a low volume of notifications about new blueprints
+        registered, blueprints accepted or blueprint targetting.
         """)
 
     METADATA = DBItem(30, """
         Details
 
-        Send blueprint lifecycle notifications, as well as notifications about changes to the blueprints's details like status and description.
+        Send blueprint lifecycle notifications, as well as notifications about
+        changes to the blueprints's details like status and description.
         """)
 
 
