@@ -9,10 +9,12 @@ CREATE TEMPORARY TABLE NewBuildFarmJob AS SELECT
 INSERT INTO BuildFarmJob SELECT id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, build_state, build_log, job_type FROM NewBuildFarmJob;
 
 CREATE TEMPORARY TABLE NewPackageBuild AS SELECT
-  nextval('packagebuild_id_seq') AS id, NewBuildFarmJob.id AS new_build_farm_job, archive, pocket, upload_log, dependencies, SourcePackageRecipeBuild.id AS sprb_id FROM SourcePackageRecipeBuild, NewBuildFarmJob;
+  nextval('packagebuild_id_seq') AS id, NewBuildFarmJob.id AS build_farm_job, archive, pocket, upload_log, dependencies, SourcePackageRecipeBuild.id AS sprb_id FROM SourcePackageRecipeBuild, NewBuildFarmJob;
+
+INSERT INTO PackageBuild SELECT id, build_farm_job, archive, pocket, upload_log, dependencies FROM NewPackageBuild;
 
 ALTER TABLE SourcePackageRecipeBuild
-  ADD COLUMN package_build INTEGER REFERENCES PackageBuild NOT NULL;
+  ADD COLUMN package_build INTEGER REFERENCES PackageBuild;
 
 UPDATE SourcePackageRecipebuild
   SET package_build=NewPackageBuild.id
@@ -26,4 +28,4 @@ ALTER TABLE SourcePackageRecipeBuild
   DROP COLUMN build_state, DROP COLUMN build_log, DROP COLUMN archive,
   DROP COLUMN pocket, DROP COLUMN upload_log, DROP COLUMN dependencies;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 75, 0);
