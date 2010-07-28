@@ -37,7 +37,6 @@ __all__ = [
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
-    'validate_person',
     'validate_public_person',
     ]
 
@@ -127,13 +126,6 @@ def validate_person_common(obj, attr, value, validate_func):
             % (person.name, person.visibility.name,
                obj, getattr(obj, 'name', None)))
     return value
-
-
-def validate_person(obj, attr, value):
-    """Validate the person is a real person with no other restrictions."""
-    def validate(person):
-        return IPerson.providedBy(person)
-    return validate_person_common(obj, attr, value, validate)
 
 
 def validate_public_person(obj, attr, value):
