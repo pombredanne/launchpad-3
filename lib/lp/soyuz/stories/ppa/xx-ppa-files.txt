@@ -51,7 +51,7 @@ Create a corresponding binary publication and its changesfile.
     >>> deb_file = binary_pubs[0].binarypackagerelease.files[0].libraryfile
 
     >>> [build] = test_source.getBuilds()
-    >>> build.datebuilt = build.datecreated
+    >>> build.date_finished = build.date_created
 
 Create a buildlog and a binary upload_log.
 
@@ -60,7 +60,7 @@ Create a buildlog and a binary upload_log.
     ...     'test-pkg_1.0_FULLYBUILT.txt.gz')
     >>> buildlog = test_publisher.addMockFile(
     ...     buildlog_name, filecontent='bogus buildlog', restricted=True)
-    >>> build.buildlog = buildlog
+    >>> build.log = buildlog
 
     >>> upload_log_name = 'upload_%d_log.txt' % build.id
     >>> upload_log = test_publisher.addMockFile(
@@ -114,12 +114,12 @@ Links to files accessible via +files/ proxy in the PPA page.
 Links to files accessible via +files/ proxy in the Build page.
 
     >>> builds_links = [
-    ...     ('see the log', build.buildlog),
+    ...     ('see the log', build.log),
     ...     ]
 
     >>> build_links = [
     ...     ('test-bin_1.0_i386.changes', build.upload_changesfile),
-    ...     ('buildlog', build.buildlog),
+    ...     ('buildlog', build.log),
     ...     ('uploadlog', build.upload_log),
     ...     ]
 

@@ -6,6 +6,7 @@
 from datetime import timedelta
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -13,9 +14,8 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, IBuildFarmJobDerived)
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -27,7 +27,7 @@ from lp.testing import TestCaseWithFactory
 def find_job(test, name, processor='386'):
     """Find build and queue instance for the given source and processor."""
     for build in test.builds:
-        if (build.sourcepackagerelease.name == name
+        if (build.source_package_release.name == name
             and build.processor.name == processor):
             return (build, build.buildqueue_record)
     return (None, None)
@@ -204,7 +204,8 @@ class TestBuildPackageJob(TestBuildJobBase):
             duration += 60
             bq = build.buildqueue_record
             bq.lastscore = score
-            bq.estimated_duration = timedelta(seconds=duration)
+            removeSecurityProxy(bq).estimated_duration = timedelta(
+                seconds=duration)
 
     def test_processor(self):
         # Test that BuildPackageJob returns the correct processor.
@@ -234,7 +235,12 @@ class TestBuildPackageJob(TestBuildJobBase):
         build, bq = find_job(self, 'gcc', '386')
         build_farm_job = bq.specific_job
         self.assertProvides(build_farm_job, IBuildPackageJob)
-        self.assertProvides(build_farm_job, IBuildFarmJob)
-        self.assertProvides(build_farm_job, IBuildFarmJobDerived)
+        self.assertProvides(build_farm_job, IBuildFarmBuildJob)
 
-
+    def test_jobStarted(self):
+        # Starting a build updates the status.
+        build, bq = find_job(self, 'gcc', '386')
+        build_package_job = bq.specific_job
+        build_package_job.jobStarted()
+        self.failUnlessEqual(
+            BuildStatus.BUILDING, build_package_job.build.status)

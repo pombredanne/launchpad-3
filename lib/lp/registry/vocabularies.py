@@ -26,6 +26,7 @@ __metaclass__ = type
 __all__ = [
     'ActiveMailingListVocabulary',
     'AdminMergeablePersonVocabulary',
+    'AllUserTeamsParticipationVocabulary',
     'CommercialProjectsVocabulary',
     'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
@@ -289,8 +290,7 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
-        return SimpleTerm(
-            obj, obj.name, '%s (%s)' % (obj.displayname, obj.name))
+        return SimpleTerm(obj, obj.name, obj.unique_displayname)
 
     def __iter__(self):
         kw = {}
@@ -756,6 +756,27 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
                 "ValidTeamOwnerVocabulary's context must provide IPerson "
                 "or IPersonSet.")
         ValidPersonOrTeamVocabulary.__init__(self, context)
+
+
+class AllUserTeamsParticipationVocabulary(ValidTeamVocabulary):
+    """The set of teams where the current user is a member.
+
+    Other than UserTeamsParticipationVocabulary, this vocabulary includes
+    private teams.
+    """
+
+    displayname = 'Select a Team of which you are a member'
+
+    def __init__(self, context):
+        super(AllUserTeamsParticipationVocabulary, self).__init__(context)
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            self.extra_clause = False
+        else:
+            self.extra_clause = AND(
+                super(AllUserTeamsParticipationVocabulary, self).extra_clause,
+                TeamParticipation.person == user.id,
+                TeamParticipation.team == Person.id)
 
 
 class PersonActiveMembershipVocabulary:

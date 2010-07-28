@@ -126,9 +126,9 @@ class LocationWidget(BrowserWidget, InputWidget):
             show_marker=self.show_marker)
         return """
             <script type="text/javascript">
-                YUI().use('node', 'lp.mapping', function(Y) {
+                YUI().use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
-                        Y.lp.mapping.renderPersonMap(
+                        Y.lp.app.mapping.renderPersonMap(
                             %(center_lat)s, %(center_lng)s, %(displayname)s,
                             '%(name)s', '%(logo_html)s', '%(geoname)s',
                             '%(lat_name)s', '%(lng_name)s', '%(tz_name)s',

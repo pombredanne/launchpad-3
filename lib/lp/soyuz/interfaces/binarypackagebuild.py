@@ -16,11 +16,13 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Int, Object, Text
+from zope.schema import Bool, Int, Text
 from lazr.enum import EnumeratedType, Item
 
 from canonical.launchpad import _
-from lp.buildmaster.interfaces.buildbase import IBuildBase
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.packagebuild import (
+    IPackageBuild)
 from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory)
@@ -38,21 +40,26 @@ class CannotBeRescored(Exception):
     _message_prefix = "Cannot rescore build"
 
 
-class IBinaryPackageBuildView(IBuildBase):
+class IBinaryPackageBuildView(IPackageBuild):
     """A Build interface for items requiring launchpad.View."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
-    processor = Object(
+    package_build = Reference(
+        title=_('Package build'), schema=IPackageBuild, required=True,
+        readonly=True, description=_('The base package build'))
+
+    # Overridden from IBuildFarmJob to ensure required is True.
+    processor = Reference(
         title=_("Processor"), schema=IProcessor,
         required=True, readonly=True,
         description=_("The Processor where this build should be built."))
 
-    sourcepackagerelease = Object(
+    source_package_release = Reference(
         title=_('Source'), schema=ISourcePackageRelease,
         required=True, readonly=True,
         description=_("The SourcePackageRelease requested to build."))
 
-    distroarchseries = Object(
+    distro_arch_series = Reference(
         title=_("Architecture"),
         # Really IDistroArchSeries
         schema=Interface,
@@ -67,8 +74,7 @@ class IBinaryPackageBuildView(IBuildBase):
             required=False, readonly=True,
             description=_("The current source publication for this build.")))
 
-    distroseries = Attribute("Direct parent needed by CanonicalURL")
-    was_built = Attribute("Whether or not modified by the builddfarm.")
+    distro_series = Attribute("Direct parent needed by CanonicalURL")
     arch_tag = exported(
         Text(title=_("Architecture tag"), required=False))
     distributionsourcepackagerelease = Attribute("The page showing the "
@@ -92,10 +98,6 @@ class IBinaryPackageBuildView(IBuildBase):
             title=_("Can Be Retried"), required=False, readonly=True,
             description=_(
                 "Whether or not this build record can be retried.")))
-
-    calculated_buildstart = Attribute(
-        "Emulates a buildstart timestamp by calculating it from "
-        "datebuilt - buildduration.")
 
     is_virtualized = Attribute(
         "Whether or not this build requires a virtual build host or not.")
@@ -212,6 +214,21 @@ class BuildSetStatus(EnumeratedType):
 
 class IBinaryPackageBuildSet(Interface):
     """Interface for BinaryPackageBuildSet"""
+
+    def new(distro_arch_series, source_package_release, processor,
+            archive, pocket, status=BuildStatus.NEEDSBUILD,
+            date_created=None):
+        """Create a new `IBinaryPackageBuild`.
+
+        :param distro_arch_series: An `IDistroArchSeries`.
+        :param source_package_release: An `ISourcePackageRelease`.
+        :param processor: An `IProcessor`.
+        :param archive: An `IArchive` in which context the build is built.
+        :param pocket: An item of `PackagePublishingPocket`.
+        :param status: A `BuildStatus` item indicating the builds status.
+        :param date_created: An optional datetime to ensure multiple builds
+            in the same transaction don't all get the same UTC_NOW.
+        """
 
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """Return a build for a SourcePackageRelease and an ArchTag"""

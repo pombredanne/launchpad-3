@@ -206,20 +206,9 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             if branch is None:
                 return faults.NoBranchWithID(branch_id)
 
-            def match_title(enum, title, default):
-                for value in enum.items:
-                    if value.title == title:
-                        return value
-                else:
-                    return default
-
-            control_format = match_title(
-                ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
-            branch_format = match_title(
-                BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
-            repository_format = match_title(
-                RepositoryFormat, repository_string,
-                RepositoryFormat.UNRECOGNIZED)
+            control_format = ControlFormat.get_enum(control_string)
+            branch_format = BranchFormat.get_enum(branch_string)
+            repository_format = RepositoryFormat.get_enum(repository_string)
 
             if requester == LAUNCHPAD_SERVICES:
                 branch = removeSecurityProxy(branch)

@@ -64,6 +64,7 @@ host.
     active: True
     active_milestones_collection_link: u'http://.../mozilla/active_milestones'
     all_milestones_collection_link: u'http://.../mozilla/all_milestones'
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     bug_tracker_link: None
     date_created: u'...'
@@ -150,6 +151,7 @@ Projects are available at their canonical URL on the API virtual host.
     active_milestones_collection_link: u'http://.../firefox/active_milestones'
     all_milestones_collection_link: u'http://.../firefox/all_milestones'
     brand_link: u'http://.../firefox/brand'
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     bug_supervisor_link: None
     bug_tracker_link: None
@@ -212,6 +214,7 @@ several that are not available to non-privileged users marked as
     active_milestones_collection_link: u'http://.../firefox/active_milestones'
     all_milestones_collection_link: u'http://.../firefox/all_milestones'
     brand_link: u'http://.../firefox/brand'
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     bug_supervisor_link: None
     bug_tracker_link: None
@@ -844,23 +847,28 @@ Project series entry
 The entry for a project series is available at its canonical URL on the
 virtual host.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> login('test@canonical.com')
     >>> babadoo_owner = factory.makePerson(name='babadoo-owner')
     >>> babadoo = factory.makeProduct(name='babadoo', owner=babadoo_owner)
     >>> foobadoo = factory.makeProductSeries(
     ...     product=babadoo, name='foobadoo', owner=babadoo_owner)
-    >>> foobadoo.summary = u'Foobadoo support for Babadoo'
+    >>> removeSecurityProxy(foobadoo).summary = (
+    ...     u'Foobadoo support for Babadoo')
     >>> fooey = factory.makeAnyBranch(
     ...     product=babadoo, name='fooey', owner=babadoo_owner)
-    >>> foobadoo.branch = fooey
+    >>> removeSecurityProxy(foobadoo).branch = fooey
     >>> logout()
 
     >>> babadoo_foobadoo = webservice.get('/babadoo/foobadoo').jsonBody()
     >>> pprint_entry(babadoo_foobadoo)
     active: True
-    active_milestones_collection_link: u'http://.../babadoo/foobadoo/active_milestones'
-    all_milestones_collection_link: u'http://.../babadoo/foobadoo/all_milestones'
+    active_milestones_collection_link:
+            u'http://.../babadoo/foobadoo/active_milestones'
+    all_milestones_collection_link:
+            u'http://.../babadoo/foobadoo/all_milestones'
     branch_link: u'http://.../~babadoo-owner/babadoo/fooey'
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     date_created: u'...'
     display_name: u'foobadoo'
@@ -870,6 +878,7 @@ virtual host.
     official_bug_tags: []
     owner_link: u'http://.../~babadoo-owner'
     project_link: u'http://.../babadoo'
+    release_finder_url_pattern: None
     releases_collection_link: u'http://.../babadoo/foobadoo/releases'
     resource_type_link: u'...'
     self_link: u'http://.../babadoo/foobadoo'
@@ -1088,12 +1097,15 @@ virtual host.
     >>> pprint_entry(result)
     date_uploaded: u'2005-06-06T08:59:51.926792+00:00'
     description: None
-    file_link: u'http://.../firefox/trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz/file'
+    file_link:
+        u'http://.../firefox/trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz/file'
     file_type: u'Code Release Tarball'
     project_release_link: u'http://.../firefox/trunk/0.9.2'
     resource_type_link: u'http://.../#project_release_file'
-    self_link: u'http://.../firefox/trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz'
-    signature_link: u'http://.../firefox/trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz/signature'
+    self_link:
+        u'http://.../firefox/trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz'
+    signature_link:
+        u'http://.../trunk/0.9.2/+file/firefox_0.9.2.orig.tar.gz/signature'
 
 The actual file redirects to the librarian when accessed.
 
@@ -1240,6 +1252,8 @@ through the API.
 
     >>> logout()
 
+    >>> from lazr.restful.interfaces import IRepresentationCache
+    >>> ws_uncache(mmm)
     >>> mmm = webservice.get("/mega-money-maker").jsonBody()
     >>> print mmm['display_name']
     Mega Money Maker

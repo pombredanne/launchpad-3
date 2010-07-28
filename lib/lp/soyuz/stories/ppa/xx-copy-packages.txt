@@ -295,7 +295,7 @@ build created during the copy is ready to be dispatched.
     i386 build of pmount 0.1-1 : PPA for James Blackwell : James Blackwell
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
-    i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
+    i386 build of pmount 0.1-1 in ubuntu hoary RELEASE ...
     James Blackwell
     PPA for James Blackwell
     i386 build of pmount 0.1-1
@@ -549,7 +549,7 @@ broken package.
 James uses the 'delete-packages' interface in his PPA to delete the
 'pmount' source in hoary.
 
-    >>> jblack_browser.getLink('PPA').click()
+    >>> jblack_browser.getLink('Cancel').click()
     >>> jblack_browser.getLink('Delete packages').click()
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -974,7 +974,7 @@ in No Privileges' PPA.
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> [build] = jblack_friends_foo_src.createMissingBuilds()
     >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
-    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> build.status = BuildStatus.FAILEDTOBUILD
 
     >>> flush_database_updates()
     >>> logout()

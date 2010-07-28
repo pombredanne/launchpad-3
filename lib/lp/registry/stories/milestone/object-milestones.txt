@@ -199,7 +199,8 @@ Firefox product:
 
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Thank you for your bug report...
     >>> bug_1_url = browser.url
 
@@ -209,7 +210,8 @@ Firefox product:
 
     >>> browser.getControl('Further information').value = 'Test Bug 2'
     >>> browser.getControl('Submit').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Thank you for your bug report...
     >>> bug_2_url = browser.url
 

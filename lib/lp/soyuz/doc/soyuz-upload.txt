@@ -386,8 +386,6 @@ Check the four uploads all ended up where we expected.
   >>> for i in range(0, 4):
   ...     find_upload_dir_result(i + 1)
   'failed'
-  'accepted'
-  'accepted'
   'failed'
 
 Also check the upload folders contain all the files we uploaded.
@@ -396,7 +394,9 @@ Also check the upload folders contain all the files we uploaded.
 # above around line 313.
 
   >>> for i, sent_filenames in enumerate(uploads):
-  ...     upload_dir = find_upload_dir_path( i + 1)
+  ...     upload_dir = find_upload_dir_path(i + 1)
+  ...     if upload_dir is None:
+  ...         continue
   ...     distro_upload_dir = os.path.join(upload_dir, 'ubuntutest')
   ...     assert len(os.listdir(distro_upload_dir)) == len(sent_filenames)
   ...     for filename in sent_filenames:

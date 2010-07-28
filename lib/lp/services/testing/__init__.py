@@ -16,11 +16,10 @@ __all__ = [
     'build_test_suite',
     ]
 
+import doctest
 import logging
 import os
 import unittest
-
-from zope.testing import doctest
 
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (

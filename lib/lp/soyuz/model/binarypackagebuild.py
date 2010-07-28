@@ -11,21 +11,21 @@ import datetime
 import logging
 import operator
 
+from storm.locals import Int, Reference
+from storm.store import EmptyResultSet
+
 from zope.interface import implements
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from storm.expr import (
     Desc, In, Join, LeftJoin)
 from storm.store import Store
-from sqlobject import (
-    StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, IN
+from sqlobject import SQLObjectNotFound
 
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
+from canonical.launchpad.browser.librarian import (
+    ProxiedLibraryFileAlias)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.database.librarian import (
@@ -34,6 +34,7 @@ from canonical.launchpad.helpers import (
      get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.lpstorm import IMasterObject, ISlaveStore
 from canonical.launchpad.mail import (
     simple_sendmail, format_address)
 from canonical.launchpad.webapp import canonical_url
@@ -43,16 +44,17 @@ from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
-from lp.buildmaster.model.buildbase import BuildBase
+from lp.buildmaster.interfaces.packagebuild import (
+    IPackageBuildSource)
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.buildmaster.model.packagebuild import (
+    PackageBuild, PackageBuildDerived)
 from lp.services.job.model.job import Job
-from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus, CannotBeRescored, IBinaryPackageBuild,
     IBinaryPackageBuildSet)
-from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.buildmaster.model.builder import Builder
@@ -63,37 +65,41 @@ from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadBuild)
 
 
-class BinaryPackageBuild(BuildBase, SQLBase):
-    implements(IBuildBase, IBinaryPackageBuild)
-    _table = 'Build'
+def get_binary_build_for_build_farm_job(build_farm_job):
+    """Factory method to returning a binary for a build farm job."""
+    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    find_spec = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
+    resulting_tuple = store.find(
+        find_spec,
+        BinaryPackageBuild.package_build == PackageBuild.id,
+        PackageBuild.build_farm_job == BuildFarmJob.id,
+        BuildFarmJob.id == build_farm_job.id).one()
+
+    if resulting_tuple is None:
+        return None
+
+    # We specifically return a proxied BinaryPackageBuild so that we can
+    # be sure it has the correct proxy.
+    return ProxyFactory(resulting_tuple[0])
+
+
+class BinaryPackageBuild(PackageBuildDerived, SQLBase):
+    implements(IBinaryPackageBuild)
+    _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
 
     build_farm_job_type = BuildFarmJobType.PACKAGEBUILD
 
-    datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
-    processor = ForeignKey(dbName='processor', foreignKey='Processor',
-        notNull=True)
-    distroarchseries = ForeignKey(dbName='distroarchseries',
-        foreignKey='DistroArchSeries', notNull=True)
-    buildstate = EnumCol(dbName='buildstate', notNull=True,
-                         schema=BuildStatus)
-    sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
-        foreignKey='SourcePackageRelease', notNull=True)
-    datebuilt = UtcDateTimeCol(dbName='datebuilt', default=None)
-    buildduration = IntervalCol(dbName='buildduration', default=None)
-    buildlog = ForeignKey(dbName='buildlog', foreignKey='LibraryFileAlias',
-        default=None)
-    builder = ForeignKey(dbName='builder', foreignKey='Builder',
-        default=None)
-    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
-                     notNull=True)
-    dependencies = StringCol(dbName='dependencies', default=None)
-    archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
+    package_build_id = Int(name='package_build', allow_none=False)
+    package_build = Reference(package_build_id, 'PackageBuild.id')
 
-    date_first_dispatched = UtcDateTimeCol(dbName='date_first_dispatched')
-
-    upload_log = ForeignKey(
-        dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
+    distro_arch_series_id = Int(name='distro_arch_series', allow_none=False)
+    distro_arch_series = Reference(
+        distro_arch_series_id, 'DistroArchSeries.id')
+    source_package_release_id = Int(
+        name='source_package_release', allow_none=False)
+    source_package_release = Reference(
+        source_package_release_id, 'SourcePackageRelease.id')
 
     @property
     def buildqueue_record(self):
@@ -110,9 +116,9 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         results = store.find(
             SourcePackagePublishingHistory,
             SourcePackagePublishingHistory.archive == self.archive,
-            SourcePackagePublishingHistory.distroseries == self.distroseries,
+            SourcePackagePublishingHistory.distroseries == self.distro_series,
             SourcePackagePublishingHistory.sourcepackagerelease ==
-                self.sourcepackagerelease)
+                self.source_package_release)
         return results.order_by(
             Desc(SourcePackagePublishingHistory.id)).first()
 
@@ -130,7 +136,7 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         #assert latest_publication is not None, (
         #    'Build %d lacks a corresponding source publication.' % self.id)
         if latest_publication is None:
-            return self.sourcepackagerelease.component
+            return self.source_package_release.component
 
         return latest_publication.component
 
@@ -173,7 +179,7 @@ class BinaryPackageBuild(BuildBase, SQLBase):
             (PackageUpload, LibraryFileAlias, LibraryFileContent),
             PackageUploadBuild.build == self,
             PackageUpload.archive == self.archive,
-            PackageUpload.distroseries == self.distroseries)
+            PackageUpload.distroseries == self.distro_series)
 
         # Return the unique `PackageUpload` record that corresponds to the
         # upload of the result of this `Build`, load the `LibraryFileAlias`
@@ -182,14 +188,14 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         return DecoratedResultSet(results, operator.itemgetter(0)).one()
 
     @property
-    def distroseries(self):
+    def distro_series(self):
         """See `IBuild`"""
-        return self.distroarchseries.distroseries
+        return self.distro_arch_series.distroseries
 
     @property
     def distribution(self):
         """See `IBuild`"""
-        return self.distroarchseries.distroseries.distribution
+        return self.distro_series.distribution
 
     @property
     def is_virtualized(self):
@@ -197,30 +203,47 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         return self.archive.require_virtualized
 
     @property
-    def is_private(self):
-        """See `IBuildBase`"""
-        return self.archive.private
-
-    @property
     def title(self):
         """See `IBuild`"""
         return '%s build of %s %s in %s %s %s' % (
-            self.distroarchseries.architecturetag,
-            self.sourcepackagerelease.name,
-            self.sourcepackagerelease.version,
-            self.distribution.name, self.distroseries.name, self.pocket.name)
+            self.distro_arch_series.architecturetag,
+            self.source_package_release.name,
+            self.source_package_release.version,
+            self.distribution.name, self.distro_series.name, self.pocket.name)
 
     @property
     def was_built(self):
         """See `IBuild`"""
-        return self.buildstate not in [BuildStatus.NEEDSBUILD,
-                                       BuildStatus.BUILDING,
-                                       BuildStatus.SUPERSEDED]
+        return self.status not in [BuildStatus.NEEDSBUILD,
+                                   BuildStatus.BUILDING,
+                                   BuildStatus.SUPERSEDED]
 
     @property
     def arch_tag(self):
         """See `IBuild`."""
-        return self.distroarchseries.architecturetag
+        return self.distro_arch_series.architecturetag
+
+    @property
+    def log_url(self):
+        """See `IPackageBuild`.
+
+        Overridden here for the case of builds for distro archives,
+        currently only supported for binary package builds.
+        """
+        if self.log is None:
+            return None
+        return ProxiedLibraryFileAlias(self.log, self).http_url
+
+    @property
+    def upload_log_url(self):
+        """See `IPackageBuild`.
+
+        Overridden here for the case of builds for distro archives,
+        currently only supported for binary package builds.
+        """
+        if self.upload_log is None:
+            return None
+        return ProxiedLibraryFileAlias(self.upload_log, self).http_url
 
     @property
     def distributionsourcepackagerelease(self):
@@ -230,8 +253,8 @@ class BinaryPackageBuild(BuildBase, SQLBase):
             DistributionSourcePackageRelease)
 
         return DistributionSourcePackageRelease(
-            distribution=self.distroarchseries.distroseries.distribution,
-            sourcepackagerelease=self.sourcepackagerelease)
+            distribution=self.distribution,
+            sourcepackagerelease=self.source_package_release)
 
     @property
     def binarypackages(self):
@@ -251,7 +274,7 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         from canonical.launchpad.database import (
             DistroArchSeriesBinaryPackageRelease)
         return [DistroArchSeriesBinaryPackageRelease(
-            self.distroarchseries, bp)
+            self.distro_arch_series, bp)
             for bp in self.binarypackages]
 
     @property
@@ -260,12 +283,12 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         # First check that the slave scanner would pick up the build record
         # if we reset it.  PPA and Partner builds are always ok.
         if (self.archive.purpose == ArchivePurpose.PRIMARY and
-            not self.distroseries.canUploadToPocket(self.pocket)):
+            not self.distro_series.canUploadToPocket(self.pocket)):
             # The slave scanner would not pick this up, so it cannot be
             # re-tried.
             return False
 
-        failed_buildstates = [
+        failed_statuses = [
             BuildStatus.FAILEDTOBUILD,
             BuildStatus.MANUALDEPWAIT,
             BuildStatus.CHROOTWAIT,
@@ -274,29 +297,21 @@ class BinaryPackageBuild(BuildBase, SQLBase):
 
         # If the build is currently in any of the failed states,
         # it may be retried.
-        return self.buildstate in failed_buildstates
+        return self.status in failed_statuses
 
     @property
     def can_be_rescored(self):
         """See `IBuild`."""
-        return self.buildstate is BuildStatus.NEEDSBUILD
-
-    @property
-    def calculated_buildstart(self):
-        """See `IBuild`."""
-        assert self.datebuilt and self.buildduration, (
-            "value is not suitable for this build record (%d)"
-            % self.id)
-        return self.datebuilt - self.buildduration
+        return self.status is BuildStatus.NEEDSBUILD
 
     def retry(self):
         """See `IBuild`."""
         assert self.can_be_retried, "Build %s cannot be retried" % self.id
-        self.buildstate = BuildStatus.NEEDSBUILD
-        self.datebuilt = None
-        self.buildduration = None
+        self.status = BuildStatus.NEEDSBUILD
+        self.date_finished = None
+        self.date_started = None
         self.builder = None
-        self.buildlog = None
+        self.log = None
         self.upload_log = None
         self.dependencies = None
         self.queueBuild()
@@ -372,33 +387,25 @@ class BinaryPackageBuild(BuildBase, SQLBase):
     def _isDependencySatisfied(self, token):
         """Check if the given dependency token is satisfied.
 
-        Check if the dependency exists, if its version constraint is
-        satisfied and if it is reachable in the build context.
+        Check if the dependency exists and that its version constraint is
+        satisfied.
         """
         name, version, relation = self._parseDependencyToken(token)
 
-        dep_candidate = self.archive.findDepCandidateByName(
-            self.distroarchseries, name)
+        # There may be several published versions in the available
+        # archives and pockets. If any one of them satisifies our
+        # constraints, the dependency is satisfied.
+        dep_candidates = self.archive.findDepCandidates(
+            self.distro_arch_series, self.pocket, self.current_component,
+            self.source_package_release.sourcepackagename.name, name)
 
-        if not dep_candidate:
-            return False
+        for dep_candidate in dep_candidates:
+            if self._checkDependencyVersion(
+                dep_candidate.binarypackagerelease.version, version,
+                relation):
+                return True
 
-        if not self._checkDependencyVersion(
-            dep_candidate.binarypackageversion, version, relation):
-            return False
-
-        # Only PRIMARY archive build dependencies should be restricted
-        # to the ogre_components. Both PARTNER and PPA can reach
-        # dependencies from all components in the PRIMARY archive.
-        # Moreover, PARTNER and PPA component domain is single, i.e,
-        # PARTNER only contains packages in 'partner' component and PPAs
-        # only contains packages in 'main' component.
-        ogre_components = get_components_for_building(self)
-        if (self.archive.purpose == ArchivePurpose.PRIMARY and
-            dep_candidate.component not in ogre_components):
-            return False
-
-        return True
+        return False
 
     def _toAptFormat(self, token):
         """Rebuild dependencies line in apt format."""
@@ -427,7 +434,7 @@ class BinaryPackageBuild(BuildBase, SQLBase):
             if not self._isDependencySatisfied(token)]
 
         # Update dependencies line
-        self.dependencies = ", ".join(remaining_deps)
+        self.dependencies = u", ".join(remaining_deps)
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
@@ -464,36 +471,42 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         # in a PPA or copy archive).
         archives = [self.archive.id]
         if self.archive.purpose != ArchivePurpose.PRIMARY:
-            archives.append(self.distroarchseries.main_archive.id)
+            archives.append(self.distro_arch_series.main_archive.id)
 
         # Look for all sourcepackagerelease instances that match the name
         # and get the (successfully built) build records for this
         # package.
         completed_builds = BinaryPackageBuild.select("""
-            Build.sourcepackagerelease = SourcePackageRelease.id AND
-            Build.id != %s AND
-            Build.buildduration IS NOT NULL AND
+            BinaryPackageBuild.source_package_release = SourcePackageRelease.id AND
+            BinaryPackageBuild.id != %s AND
+            BinaryPackageBuild.distro_arch_series = %s AND
             SourcePackageRelease.sourcepackagename = SourcePackageName.id AND
             SourcePackageName.name = %s AND
-            distroarchseries = %s AND
-            archive IN %s AND
-            buildstate = %s
-            """ % sqlvalues(self, self.sourcepackagerelease.name,
-                            self.distroarchseries, archives,
+            BinaryPackageBuild.package_build = PackageBuild.id AND
+            PackageBuild.archive IN %s AND
+            PackageBuild.build_farm_job = BuildFarmJob.id AND
+            BuildFarmJob.date_finished IS NOT NULL AND
+            BuildFarmJob.status = %s
+            """ % sqlvalues(self, self.distro_arch_series,
+                            self.source_package_release.name, archives,
                             BuildStatus.FULLYBUILT),
-            orderBy=['-datebuilt', '-id'],
-            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
+            orderBy=['-BuildFarmJob.date_finished', '-id'],
+            clauseTables=['PackageBuild', 'BuildFarmJob', 'SourcePackageName',
+                          'SourcePackageRelease'])
 
+        estimated_duration = None
         if completed_builds.count() > 0:
-            # Historic build data exists, use the most recent value.
+            # Historic build data exists, use the most recent value -
+            # assuming it has valid data.
             most_recent_build = completed_builds[0]
-            estimated_duration = most_recent_build.buildduration
-        else:
+            estimated_duration = most_recent_build.duration
+
+        if estimated_duration is None:
             # Estimate the build duration based on package size if no
             # historic build data exists.
 
             # Get the package size in KB.
-            package_size = self.sourcepackagerelease.getPackageSize()
+            package_size = self.source_package_release.getPackageSize()
 
             if package_size > 0:
                 # Analysis of previous build data shows that a build rate
@@ -539,15 +552,16 @@ class BinaryPackageBuild(BuildBase, SQLBase):
             config.builddmaster.default_sender_address)
 
         extra_headers = {
-            'X-Launchpad-Build-State': self.buildstate.name,
+            'X-Launchpad-Build-State': self.status.name,
             'X-Launchpad-Build-Component' : self.current_component.name,
-            'X-Launchpad-Build-Arch' : self.distroarchseries.architecturetag,
+            'X-Launchpad-Build-Arch' :
+                self.distro_arch_series.architecturetag,
             }
 
         # XXX cprov 2006-10-27: Temporary extra debug info about the
         # SPR.creator in context, to be used during the service quarantine,
         # notify_owner will be disabled to avoid *spamming* Debian people.
-        creator = self.sourcepackagerelease.creator
+        creator = self.source_package_release.creator
         extra_headers['X-Creator-Recipient'] = ",".join(
             get_contact_email_addresses(creator))
 
@@ -562,7 +576,7 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         #     * the package build (failure) occurred in the original
         #       archive.
         package_was_not_copied = (
-            self.archive == self.sourcepackagerelease.upload_archive)
+            self.archive == self.source_package_release.upload_archive)
 
         if package_was_not_copied and config.builddmaster.notify_owner:
             if (self.archive.is_ppa and creator.inTeam(self.archive.owner)
@@ -574,7 +588,7 @@ class BinaryPackageBuild(BuildBase, SQLBase):
                 # Non-PPA notifications inform the creator regardless.
                 recipients = recipients.union(
                     get_contact_email_addresses(creator))
-            dsc_key = self.sourcepackagerelease.dscsigningkey
+            dsc_key = self.source_package_release.dscsigningkey
             if dsc_key:
                 recipients = recipients.union(
                     get_contact_email_addresses(dsc_key.owner))
@@ -613,13 +627,13 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         # with the state in the build worflow, maybe by having an
         # IBuild.statusReport property, which could also be used in the
         # respective page template.
-        if self.buildstate in [
+        if self.status in [
             BuildStatus.NEEDSBUILD, BuildStatus.SUPERSEDED]:
             # untouched builds
             buildduration = 'not available'
             buildlog_url = 'not available'
             builder_url = 'not available'
-        elif self.buildstate == BuildStatus.BUILDING:
+        elif self.status == BuildStatus.BUILDING:
             # build in process
             buildduration = 'not finished'
             buildlog_url = 'see builder page'
@@ -627,11 +641,11 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         else:
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
-                self.buildduration).approximateduration()
-            buildlog_url = self.build_log_url
+                self.duration).approximateduration()
+            buildlog_url = self.log_url
             builder_url = canonical_url(self.builder)
 
-        if self.buildstate == BuildStatus.FAILEDTOUPLOAD:
+        if self.status == BuildStatus.FAILEDTOUPLOAD:
             assert extra_info is not None, (
                 'Extra information is required for FAILEDTOUPLOAD '
                 'notifications.')
@@ -641,10 +655,10 @@ class BinaryPackageBuild(BuildBase, SQLBase):
 
         template = get_email_template('build-notification.txt')
         replacements = {
-            'source_name': self.sourcepackagerelease.name,
-            'source_version': self.sourcepackagerelease.version,
-            'architecturetag': self.distroarchseries.architecturetag,
-            'build_state': self.buildstate.title,
+            'source_name': self.source_package_release.name,
+            'source_version': self.source_package_release.version,
+            'architecturetag': self.distro_arch_series.architecturetag,
+            'build_state': self.status.title,
             'build_duration': buildduration,
             'buildlog_url': buildlog_url,
             'builder_url': builder_url,
@@ -678,7 +692,7 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         if filename.endswith('.changes'):
             file_object = self.upload_changesfile
         elif filename.endswith('.txt.gz'):
-            file_object = self.buildlog
+            file_object = self.log
         elif filename.endswith('_log.txt'):
             file_object = self.upload_log
         elif filename.endswith('deb'):
@@ -691,15 +705,39 @@ class BinaryPackageBuild(BuildBase, SQLBase):
 
         raise NotFoundError(filename)
 
+    def getSpecificJob(self):
+        """See `IBuildFarmJob`."""
+        # If we are asked to adapt an object that is already a binary
+        # package build, then don't hit the db.
+        return self
+
 
 class BinaryPackageBuildSet:
     implements(IBinaryPackageBuildSet)
 
+    def new(self, distro_arch_series, source_package_release, processor,
+            archive, pocket, status=BuildStatus.NEEDSBUILD,
+            date_created=None):
+        """See `IBinaryPackageBuildSet`."""
+        # Create the PackageBuild to which the new BinaryPackageBuild
+        # will delegate.
+        package_build = getUtility(IPackageBuildSource).new(
+            BinaryPackageBuild.build_farm_job_type,
+            archive.require_virtualized, archive, pocket, processor,
+            status, date_created=date_created)
+
+        binary_package_build = BinaryPackageBuild(
+            package_build=package_build,
+            distro_arch_series=distro_arch_series,
+            source_package_release=source_package_release)
+        return binary_package_build
+
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
         """See `IBinaryPackageBuildSet`"""
         clauseTables = ['DistroArchSeries']
-        query = ('Build.sourcepackagerelease = %s '
-                 'AND Build.distroarchseries = DistroArchSeries.id '
+        query = ('BinaryPackageBuild.source_package_release = %s '
+                 'AND BinaryPackageBuild.distro_arch_series = '
+                     'DistroArchSeries.id '
                  'AND DistroArchSeries.architecturetag = %s'
                  % sqlvalues(sourcepackagereleaseID, archtag)
                  )
@@ -719,11 +757,13 @@ class BinaryPackageBuildSet:
             return None
 
         archseries_ids = [d.id for d in archseries]
-
-        return BinaryPackageBuild.select(
-            AND(BinaryPackageBuild.q.buildstate==BuildStatus.NEEDSBUILD,
-                IN(BinaryPackageBuild.q.distroarchseriesID, archseries_ids))
-            )
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            BinaryPackageBuild,
+            In(BinaryPackageBuild.distro_arch_series_id, archseries_ids),
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.status == BuildStatus.NEEDSBUILD)
 
     def handleOptionalParamsForBuildQueries(
         self, queries, tables, status=None, name=None, pocket=None,
@@ -745,19 +785,25 @@ class BinaryPackageBuildSet:
             query clause if present.
         """
 
+        # Ensure the underlying buildfarmjob and package build tables
+        # are included.
+        queries.append('BinaryPackageBuild.package_build = PackageBuild.id')
+        queries.append('PackageBuild.build_farm_job = BuildFarmJob.id')
+        tables.extend(['PackageBuild', 'BuildFarmJob'])
+
         # Add query clause that filters on build state if the latter is
         # provided.
         if status is not None:
-            queries.append('Build.buildstate=%s' % sqlvalues(status))
+            queries.append('BuildFarmJob.status=%s' % sqlvalues(status))
 
         # Add query clause that filters on pocket if the latter is provided.
         if pocket:
-            queries.append('Build.pocket=%s' % sqlvalues(pocket))
+            queries.append('PackageBuild.pocket=%s' % sqlvalues(pocket))
 
         # Add query clause that filters on architecture tag if provided.
         if arch_tag is not None:
             queries.append('''
-                Build.distroarchseries = DistroArchSeries.id AND
+                BinaryPackageBuild.distro_arch_series = DistroArchSeries.id AND
                 DistroArchSeries.architecturetag = %s
             ''' % sqlvalues(arch_tag))
             tables.extend(['DistroArchSeries'])
@@ -766,7 +812,8 @@ class BinaryPackageBuildSet:
         # latter is provided.
         if name is not None:
             queries.append('''
-                Build.sourcepackagerelease = SourcePackageRelease.id AND
+                BinaryPackageBuild.source_package_release =
+                    SourcePackageRelease.id AND
                 SourcePackageRelease.sourcepackagename = SourcePackageName.id
                 AND SourcepackageName.name LIKE '%%' || %s || '%%'
             ''' % quote_like(name))
@@ -784,7 +831,7 @@ class BinaryPackageBuildSet:
 
         # This code MUST match the logic in the Build security adapter,
         # otherwise users are likely to get 403 errors, or worse.
-        queries.append("Archive.id = Build.archive")
+        queries.append("Archive.id = PackageBuild.archive")
         clauseTables.append('Archive')
         if user is not None:
             if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
@@ -802,7 +849,7 @@ class BinaryPackageBuildSet:
 
         return BinaryPackageBuild.select(
             " AND ".join(queries), clauseTables=clauseTables,
-            orderBy=["-Build.datebuilt", "id"])
+            orderBy=["-BuildFarmJob.date_finished", "id"])
 
     def getBuildsForArchive(self, archive, status=None, name=None,
                             pocket=None, arch_tag=None):
@@ -818,9 +865,9 @@ class BinaryPackageBuildSet:
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
         if status == BuildStatus.SUPERSEDED or status is None:
-            orderBy = ["-Build.datecreated"]
+            orderBy = ["-BuildFarmJob.date_created"]
         else:
-            orderBy = ["-Build.datebuilt"]
+            orderBy = ["-BuildFarmJob.date_finished"]
         # All orders fallback to id if the primary order doesn't succeed
         orderBy.append("id")
 
@@ -836,32 +883,35 @@ class BinaryPackageBuildSet:
         """See `IBinaryPackageBuildSet`."""
         # If not distroarchseries was found return empty list
         if not arch_ids:
-            # XXX cprov 2006-09-08: returning and empty SelectResult to make
-            # the callsites happy as bjorn suggested. However it would be
-            # much clearer if we have something like SQLBase.empty() for this
-            return BinaryPackageBuild.select("2=1")
+            return EmptyResultSet()
 
         clauseTables = []
 
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
-            condition_clauses = [('distroarchseries=%s'
+            condition_clauses = [('distro_arch_series=%s'
                                   % sqlvalues(arch_ids[0]))]
         else:
-            condition_clauses = [('distroarchseries IN %s'
+            condition_clauses = [('distro_arch_series IN %s'
                                   % sqlvalues(arch_ids))]
+
+        condition_clauses.extend([
+            "BinaryPackageBuild.package_build = PackageBuild.id",
+            "PackageBuild.build_farm_job = BuildFarmJob.id"
+            ])
 
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
         # and share it with ISourcePackage.getBuildRecords()
 
         # exclude gina-generated and security (dak-made) builds
-        # buildstate == FULLYBUILT && datebuilt == null
+        # status == FULLYBUILT && datebuilt == null
         if status == BuildStatus.FULLYBUILT:
-            condition_clauses.append("Build.datebuilt IS NOT NULL")
+            condition_clauses.append("BuildFarmJob.date_finished IS NOT NULL")
         else:
             condition_clauses.append(
-                "(Build.buildstate <> %s OR Build.datebuilt IS NOT NULL)"
+                "(BuildFarmJob.status <> %s OR "
+                " BuildFarmJob.date_finished IS NOT NULL)"
                 % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
@@ -870,15 +920,16 @@ class BinaryPackageBuildSet:
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
         if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
-            orderBy = ["-BuildQueue.lastscore", "Build.id"]
+            orderBy = ["-BuildQueue.lastscore", "BinaryPackageBuild.id"]
             clauseTables.append('BuildQueue')
             clauseTables.append('BuildPackageJob')
-            condition_clauses.append('BuildPackageJob.build = Build.id')
+            condition_clauses.append(
+                'BuildPackageJob.build = BinaryPackageBuild.id')
             condition_clauses.append('BuildPackageJob.job = BuildQueue.job')
         elif status == BuildStatus.SUPERSEDED or status is None:
-            orderBy = ["-Build.datecreated"]
+            orderBy = ["-BuildFarmJob.date_created"]
         else:
-            orderBy = ["-Build.datebuilt"]
+            orderBy = ["-BuildFarmJob.date_finished"]
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
@@ -890,7 +941,7 @@ class BinaryPackageBuildSet:
         clauseTables.append("Archive")
         condition_clauses.append("""
             Archive.purpose IN (%s) AND
-            Archive.id = Build.archive
+            Archive.id = PackageBuild.archive
             """ % ','.join(
                 sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 
@@ -912,11 +963,20 @@ class BinaryPackageBuildSet:
         logger = logging.getLogger('retry-depwait')
 
         # Get the MANUALDEPWAIT records for all archives.
-        candidates = BinaryPackageBuild.selectBy(
-            buildstate=BuildStatus.MANUALDEPWAIT,
-            distroarchseries=distroarchseries)
+        store = ISlaveStore(BinaryPackageBuild)
 
-        candidates_count = candidates.count()
+        candidates = store.find(
+            BinaryPackageBuild,
+            BinaryPackageBuild.distro_arch_series == distroarchseries,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.status == BuildStatus.MANUALDEPWAIT)
+
+        # Materialise the results right away to avoid hitting the
+        # database multiple times.
+        candidates = list(candidates)
+
+        candidates_count = len(candidates)
         if candidates_count == 0:
             logger.info("No MANUALDEPWAIT record found.")
             return
@@ -927,6 +987,9 @@ class BinaryPackageBuildSet:
         for build in candidates:
             if not build.can_be_retried:
                 continue
+            # We're changing 'build' so make sure we have an object from
+            # the master store.
+            build = IMasterObject(build)
             build.updateDependencies()
             if build.dependencies:
                 logger.debug(
@@ -944,17 +1007,19 @@ class BinaryPackageBuildSet:
             return []
 
         query = """
-            sourcepackagerelease IN %s AND
-            archive.id = build.archive AND
-            archive.purpose != %s
+            source_package_release IN %s AND
+            package_build = packagebuild.id AND
+            archive.id = packagebuild.archive AND
+            archive.purpose != %s AND
+            packagebuild.build_farm_job = buildfarmjob.id
             """ % sqlvalues(sourcepackagerelease_ids, ArchivePurpose.PPA)
 
         if buildstate is not None:
-            query += "AND buildstate = %s" % sqlvalues(buildstate)
+            query += "AND buildfarmjob.status = %s" % sqlvalues(buildstate)
 
         return BinaryPackageBuild.select(
-            query, orderBy=["-datecreated", "id"],
-            clauseTables=["Archive"])
+            query, orderBy=["-buildfarmjob.date_created", "id"],
+            clauseTables=["Archive", "PackageBuild", "BuildFarmJob"])
 
     def getStatusSummaryForBuilds(self, builds):
         """See `IBinaryPackageBuildSet`."""
@@ -964,7 +1029,7 @@ class BinaryPackageBuildSet:
             wanted = []
             for state in states:
                 candidates = [build for build in builds
-                                if build.buildstate == state]
+                                if build.status == state]
                 wanted.extend(candidates)
             return wanted
 
@@ -1027,24 +1092,30 @@ class BinaryPackageBuildSet:
         origin = (
             BinaryPackageBuild,
             LeftJoin(
+                PackageBuild,
+                BinaryPackageBuild.package_build == PackageBuild.id),
+            LeftJoin(
+                BuildFarmJob,
+                PackageBuild.build_farm_job == BuildFarmJob.id),
+            LeftJoin(
                 SourcePackageRelease,
                 (SourcePackageRelease.id ==
-                    BinaryPackageBuild.sourcepackagereleaseID)),
+                    BinaryPackageBuild.source_package_release_id)),
             LeftJoin(
                 SourcePackageName,
                 SourcePackageName.id
                     == SourcePackageRelease.sourcepackagenameID),
             LeftJoin(LibraryFileAlias,
-                     LibraryFileAlias.id == BinaryPackageBuild.buildlogID),
+                     LibraryFileAlias.id == BuildFarmJob.log_id),
             LeftJoin(LibraryFileContent,
                      LibraryFileContent.id == LibraryFileAlias.contentID),
             LeftJoin(
                 Builder,
-                Builder.id == BinaryPackageBuild.builderID),
+                Builder.id == BuildFarmJob.builder_id),
             )
         result_set = store.using(*origin).find(
             (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
-             LibraryFileContent, Builder),
+             LibraryFileContent, Builder, PackageBuild, BuildFarmJob),
             In(BinaryPackageBuild.id, build_ids))
 
         # Force query execution so that the ancillary data gets fetched
@@ -1093,17 +1164,21 @@ class BinaryPackageBuildSet:
         arch_ids = [d.id for d in archseries]
 
         query = """
-           Build.distroarchseries IN %s AND
-           Build.buildstate = %s AND
+           BinaryPackageBuild.distro_arch_series IN %s AND
+           BinaryPackageBuild.package_build = PackageBuild.id AND
+           PackageBuild.build_farm_job = BuildFarmJob.id AND
+           BuildFarmJob.status = %s AND
            BuildQueue.job_type = %s AND
            BuildQueue.job = BuildPackageJob.job AND
-           BuildPackageJob.build = build.id AND
+           BuildPackageJob.build = BinaryPackageBuild.id AND
            BuildQueue.builder IS NULL
         """ % sqlvalues(
             arch_ids, BuildStatus.NEEDSBUILD, BuildFarmJobType.PACKAGEBUILD)
 
         candidates = BuildQueue.select(
-            query, clauseTables=['Build', 'BuildPackageJob'],
+            query, clauseTables=[
+                'BinaryPackageBuild', 'PackageBuild', 'BuildFarmJob',
+                'BuildPackageJob'],
             orderBy=['-BuildQueue.lastscore'])
 
         return candidates

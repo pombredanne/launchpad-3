@@ -22,7 +22,7 @@ from socket import getfqdn
 from string import Template
 
 from storm.info import ClassAlias
-from storm.expr import And, LeftJoin
+from storm.expr import And, Join, LeftJoin
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
@@ -467,15 +467,13 @@ class MailingList(SQLBase):
         # are allowed to post to the mailing list.
         tables = (
             Person,
-            LeftJoin(Account, Account.id == Person.accountID),
-            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.personID == Person.id),
-            LeftJoin(MailingList,
-                     MailingList.teamID == TeamParticipation.teamID),
+            Join(Account, Account.id == Person.accountID),
+            Join(EmailAddress, EmailAddress.personID == Person.id),
+            Join(TeamParticipation, TeamParticipation.personID == Person.id),
+            Join(MailingList, MailingList.teamID == TeamParticipation.teamID),
             )
         team_members = store.using(*tables).find(
-            (EmailAddress, Person),
+            EmailAddress,
             And(TeamParticipation.team == self.team,
                 MailingList.status != MailingListStatus.INACTIVE,
                 Person.teamowner == None,
@@ -489,13 +487,12 @@ class MailingList(SQLBase):
         # global approvals.
         tables = (
             Person,
-            LeftJoin(Account, Account.id == Person.accountID),
-            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
-            LeftJoin(MessageApproval,
-                     MessageApproval.posted_byID == Person.id),
+            Join(Account, Account.id == Person.accountID),
+            Join(EmailAddress, EmailAddress.personID == Person.id),
+            Join(MessageApproval, MessageApproval.posted_byID == Person.id),
             )
         approved_posters = store.using(*tables).find(
-            (EmailAddress, Person),
+            EmailAddress,
             And(MessageApproval.mailing_list == self,
                 MessageApproval.status.is_in(MESSAGE_APPROVAL_STATUSES),
                 EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
@@ -509,8 +506,7 @@ class MailingList(SQLBase):
         # email_address.person.displayname, so the prejoin to Person is
         # critical to acceptable performance.  Indeed, without the prejoin, we
         # were getting tons of timeout OOPSes.  See bug 259440.
-        for email_address, person in team_members.union(approved_posters):
-            yield email_address
+        return team_members.union(approved_posters)
 
     def holdMessage(self, message):
         """See `IMailingList`."""
@@ -713,14 +709,11 @@ class MailingListSet:
         Team = ClassAlias(Person)
         tables = (
             Person,
-            LeftJoin(Account, Account.id == Person.accountID),
-            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.personID == Person.id),
-            LeftJoin(MailingList,
-                     MailingList.teamID == TeamParticipation.teamID),
-            LeftJoin(Team,
-                     Team.id == MailingList.teamID),
+            Join(Account, Account.id == Person.accountID),
+            Join(EmailAddress, EmailAddress.personID == Person.id),
+            Join(TeamParticipation, TeamParticipation.personID == Person.id),
+            Join(MailingList, MailingList.teamID == TeamParticipation.teamID),
+            Join(Team, Team.id == MailingList.teamID),
             )
         team_ids = set(
             team.id for team in store.find(
@@ -729,20 +722,13 @@ class MailingListSet:
                     Person.teamowner != None))
             )
         team_members = store.using(*tables).find(
-            (EmailAddress, MailingList, Person, Team),
+            (Team.name, Person.displayname, EmailAddress.email),
             And(TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
                 Person.teamowner == None,
                 EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
                 Account.status == AccountStatus.ACTIVE,
                 ))
-        # Sort allowed posters by team/mailing list.
-        by_team = {}
-        for address, mailing_list, person, team in team_members:
-            assert team.name in team_names, (
-                'Unexpected team name in results: %s' % team.name)
-            value = (person.displayname, address.email)
-            by_team.setdefault(team.name, set()).add(value)
         # Second, find all of the email addresses for all of the people who
         # have been explicitly approved for posting to the team mailing lists.
         # This occurs as part of first post moderation, but since they've
@@ -750,31 +736,32 @@ class MailingListSet:
         # for three global approvals.
         tables = (
             Person,
-            LeftJoin(Account, Account.id == Person.accountID),
-            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
-            LeftJoin(MessageApproval,
-                     MessageApproval.posted_byID == Person.id),
-            LeftJoin(MailingList,
+            Join(Account, Account.id == Person.accountID),
+            Join(EmailAddress, EmailAddress.personID == Person.id),
+            Join(MessageApproval, MessageApproval.posted_byID == Person.id),
+            Join(MailingList,
                      MailingList.id == MessageApproval.mailing_listID),
-            LeftJoin(Team,
-                     Team.id == MailingList.teamID),
+            Join(Team, Team.id == MailingList.teamID),
             )
         list_ids = set(
             mailing_list.id for mailing_list in store.find(
                 MailingList,
                 MailingList.teamID.is_in(team_ids)))
         approved_posters = store.using(*tables).find(
-            (EmailAddress, MessageApproval, Person, Team),
+            (Team.name, Person.displayname, EmailAddress.email),
             And(MessageApproval.mailing_listID.is_in(list_ids),
                 MessageApproval.status.is_in(MESSAGE_APPROVAL_STATUSES),
                 EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
                 Account.status == AccountStatus.ACTIVE,
                 ))
-        for address, message_approval, person, team in approved_posters:
-            assert team.name in team_names, (
-                'Unexpected team name in results: %s' % team.name)
-            value = (person.displayname, address.email)
-            by_team.setdefault(team.name, set()).add(value)
+        # Sort allowed posters by team/mailing list.
+        by_team = {}
+        all_posters = team_members.union(approved_posters)
+        for team_name, person_displayname, email in all_posters:
+            assert team_name in team_names, (
+                'Unexpected team name in results: %s' % team_name)
+            value = (person_displayname, email)
+            by_team.setdefault(team_name, set()).add(value)
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():

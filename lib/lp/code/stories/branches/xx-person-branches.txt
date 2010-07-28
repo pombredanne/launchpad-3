@@ -107,7 +107,7 @@ Now we'll create another branch, and unsubscribe the owner from it.
 
     >>> login(ANONYMOUS)
     >>> b2 = factory.makeAnyBranch(owner=eric)
-    >>> ignored = b2.unsubscribe(eric)
+    >>> ignored = b2.unsubscribe(eric, eric)
     >>> logout()
 
     >>> eric_browser.open('http://code.launchpad.dev/~eric')

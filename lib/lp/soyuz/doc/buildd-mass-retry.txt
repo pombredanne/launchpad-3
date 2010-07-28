@@ -25,7 +25,7 @@ The available types can be combined acording the situation.
 
 The script provides dry-run mode (-N).
 
-See build.txt for more information about IBuild.retry().
+See binarypackagebuild.txt for more information about IBuild.retry().
 
 Passing only suite, request retry on all failed states:
 

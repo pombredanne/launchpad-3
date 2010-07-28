@@ -15,11 +15,14 @@ First let's create a copy archive:
 
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
+    >>> from lp.testing.factory import (
+    ...     remove_security_proxy_and_shout_at_engineer)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> copy_location = factory.makeCopyArchiveLocation(
     ...     distribution=ubuntu,
     ...     name="intrepid-security-rebuild")
-    >>> copy_archive = copy_location.archive
+    >>> copy_archive = remove_security_proxy_and_shout_at_engineer(
+    ...     copy_location).archive
 
 And let's create two views to compare:
 
@@ -65,8 +68,10 @@ IPackageCopyRequest's associated with an archive:
     0
 
     # Create a copy-request to Celso's PPA.
+    >>> naked_copy_location = remove_security_proxy_and_shout_at_engineer(
+    ...     copy_location)
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
-    ...     copy_location, copy_archive.owner)
+    ...     naked_copy_location, copy_archive.owner)
 
     >>> len(copy_archive_view.package_copy_requests)
     1
@@ -361,7 +366,7 @@ Let's set some builds appropriately to see the results.
     >>> warty_hppa = getUtility(IDistributionSet)['ubuntu']['warty']['hppa']
     >>> source = view.filtered_sources[0]
     >>> ignore = source.sourcepackagerelease.createBuild(
-    ...     distroarchseries=warty_hppa, archive=view.context,
+    ...     distro_arch_series=warty_hppa, archive=view.context,
     ...     pocket=source.pocket)
     >>> builds = getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
     ...     view.context)
@@ -374,9 +379,9 @@ Let's set some builds appropriately to see the results.
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
     >>> login('foo.bar@canonical.com')
-    >>> builds[0].buildstate = BuildStatus.NEEDSBUILD
-    >>> builds[1].buildstate = BuildStatus.BUILDING
-    >>> builds[2].buildstate = BuildStatus.BUILDING
+    >>> builds[0].status = BuildStatus.NEEDSBUILD
+    >>> builds[1].status = BuildStatus.BUILDING
+    >>> builds[2].status = BuildStatus.BUILDING
     >>> login(ANONYMOUS)
 
     >>> view.num_pkgs_building
@@ -386,7 +391,7 @@ Adding a second waiting build for the cdrkit does not add to the number
 of packages that are currently building.
 
     >>> login('foo.bar@canonical.com')
-    >>> builds[4].buildstate = BuildStatus.NEEDSBUILD
+    >>> builds[4].status = BuildStatus.NEEDSBUILD
     >>> login(ANONYMOUS)
     >>> view.num_pkgs_building
     {'building': 2, 'waiting': 1, 'total': 3}
@@ -395,7 +400,7 @@ But as soon as one of cdrkit's builds start, the package is considered
 to be building:
 
     >>> login('foo.bar@canonical.com')
-    >>> builds[4].buildstate = BuildStatus.BUILDING
+    >>> builds[4].status = BuildStatus.BUILDING
     >>> login(ANONYMOUS)
     >>> view.num_pkgs_building
     {'building': 3, 'waiting': 0, 'total': 3}

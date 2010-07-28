@@ -156,9 +156,9 @@
         <tal:defines define="bugtracker product_or_distro/getExternalBugTracker">
           <h3>
             Are you sure this bug is in <acronym class="explain"
-            style="color: inherit" title="the original developer of
-            the software">upstream</acronym> <span
-            tal:replace="product_or_distro/displayname" />?
+            style="color: inherit"
+            title="the original developer of the software">upstream</acronym>
+            <span tal:replace="product_or_distro/displayname" />?
           </h3>
           <tal:distro-source-pacakges
               condition="product_or_distro/distrosourcepackages">
@@ -198,8 +198,8 @@
           </tal:not-distro-source-packages>
           <tal:has-bugtracker condition="bugtracker">
             <p id="bugtarget-upstream-bugtracker-info">
-              Bugs in <abbr title="the original developer of the
-              software" class="explain">upstream</abbr>
+              Bugs in <abbr title="the original developer of the software"
+              class="explain">upstream</abbr>
               <span tal:replace="product_or_distro/displayname">
                 Alsa Utils
               </span>
@@ -353,7 +353,7 @@
       tal:condition="guidelines">
     <td colspan="2" id="bug-reporting-guidelines">
       <tal:guidelines repeat="guideline guidelines">
-        <h3><span tal:replace="guideline/source" /> guidelines:</h3>
+        <h3><span tal:replace="guideline/source" /> bug reporting guidelines:</h3>
         <div tal:content="structure guideline/content/fmt:text-to-html" />
       </tal:guidelines>
     </td>
@@ -422,7 +422,8 @@
                       content="bug/date_last_updated/fmt:approximatedate">
                     2007-07-03
                   </tal:last-updated>
-                  <a class="view-bug-link" tal:attributes="href bug/fmt:url"
+                  <a class="view-bug-link" target="_blank"
+		      tal:attributes="href bug/fmt:url"
                   >view this bug</a>
                 </span>
               </div>

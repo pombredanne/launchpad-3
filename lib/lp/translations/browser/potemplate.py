@@ -55,6 +55,7 @@ from lp.translations.interfaces.translationimporter import (
     ITranslationImporter)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, GetitemNavigation,
     LaunchpadView, LaunchpadEditFormView, Link, Navigation, NavigationMenu,
@@ -90,7 +91,9 @@ class POTemplateNavigation(Navigation):
         elif self.request.method in ['GET', 'HEAD']:
             # It's just a query, get a fake one so we don't create new
             # POFiles just because someone is browsing the web.
-            return self.context.getDummyPOFile(name, requester=user)
+            language = getUtility(ILanguageSet).getLanguageByCode(name)
+            return self.context.getDummyPOFile(language, requester=user,
+                                               check_for_existing=False)
         else:
             # It's a POST.
             # XXX CarlosPerelloMarin 2006-04-20 bug=40275: We should
@@ -763,8 +766,8 @@ class POTemplateSubsetNavigation(Navigation):
     def traverse(self, name):
         """Return the IPOTemplate associated with the given name."""
 
-        assert self.request.method in ['GET', 'HEAD', 'POST'], (
-            'We only know about GET, HEAD, and POST')
+        assert self.request.method in ['GET', 'HEAD', 'PATCH', 'POST'], (
+            'We only know about GET, HEAD, PATCH and POST')
 
         # Get the requested potemplate.
         potemplate = self.context.getPOTemplateByName(name)
@@ -774,18 +777,17 @@ class POTemplateSubsetNavigation(Navigation):
 
         # Get whether the target for the requested template is officially
         # using Launchpad Translations.
-        if potemplate.distribution is not None:
-            official_rosetta = potemplate.distribution.official_rosetta
-        elif potemplate.product is not None:
-            official_rosetta = potemplate.product.official_rosetta
+        if potemplate.distribution is None:
+            product_or_distro = potemplate.productseries.product
         else:
-            raise AssertionError('Unknown context for %s' % potemplate.title)
+            product_or_distro = potemplate.distroseries.distribution
+        official_rosetta = product_or_distro.official_rosetta
 
-        if ((official_rosetta and potemplate.iscurrent) or
-            check_permission('launchpad.Edit', potemplate)):
-            # The target is using officially Launchpad Translations and the
-            # template is available to be translated, or the user is a is a
-            # Launchpad administrator in which case we show everything.
+        if official_rosetta and potemplate.iscurrent:
+            # This template is available for translation.
+            return potemplate
+        elif check_permission('launchpad.Edit', potemplate):
+            # User has Edit privileges for this template and can access it.
             return potemplate
         else:
             raise NotFoundError(name)
@@ -807,6 +809,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
     productseries = None
     label = "Translation templates"
     page_title = "All templates"
+    can_edit = None
+    can_admin = None
 
     def initialize(self, series, is_distroseries=True):
         self.is_distroseries = is_distroseries
@@ -814,6 +818,10 @@ class BaseSeriesTemplatesView(LaunchpadView):
             self.distroseries = series
         else:
             self.productseries = series
+        self.can_admin = check_permission(
+            'launchpad.TranslationsAdmin', series)
+        self.can_edit = (
+            self.can_admin or check_permission('launchpad.Edit', series))
 
     def iter_templates(self):
         potemplateset = getUtility(IPOTemplateSet)
@@ -827,10 +835,3 @@ class BaseSeriesTemplatesView(LaunchpadView):
             return "active-template"
         else:
             return "inactive-template"
-
-    def isVisible(self, template):
-        if (template.iscurrent or
-            check_permission('launchpad.Edit', template)):
-            return True
-        else:
-            return False

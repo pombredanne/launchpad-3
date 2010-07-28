@@ -109,6 +109,9 @@
             name="+changelog"
             template="../templates/sourcepackagerelease-changelog.pt"/>
         <browser:page
+            name="+copyright"
+            template="../templates/sourcepackagerelease-copyright.pt"/>
+        <browser:page
             name="+files"
             facet="overview"
             template="../templates/sourcepackagerelease-files.pt"/>
@@ -725,6 +728,14 @@
             name="+changelog"
             facet="overview"
             template="../templates/sourcepackage-changelog.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+            class=
+                "lp.soyuz.browser.sourcepackage.SourcePackageCopyrightView"
+            permission="zope.Public"
+            name="+copyright"
+            facet="overview"
+            template="../templates/sourcepackage-copyright.pt"/>
         <browser:pages
             for="lp.registry.interfaces.sourcepackage.ISourcePackage"
             permission="zope.Public"
@@ -807,7 +818,7 @@
         />
     <browser:url
         for="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"
-        path_expression="string:+binaryhits/${binary_package_release/name}/${binary_package_release/version}/${binary_package_release/build/distroarchseries/architecturetag}/${day}/${country/iso3166code2|string:unknown}"
+        path_expression="string:+binaryhits/${binary_package_release/name}/${binary_package_release/version}/${binary_package_release/build/distro_arch_series/architecturetag}/${day}/${country/iso3166code2|string:unknown}"
         attribute_to_parent="archive"
         />
 

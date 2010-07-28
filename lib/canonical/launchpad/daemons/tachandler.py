@@ -30,7 +30,6 @@ from twisted.python import log
 # This file is used by launchpad-buildd, so it cannot import any
 # Launchpad code!
 
-
 def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
     """Kill process 'pid' with SIGTERM. If it doesn't die, SIGKILL it.
 
@@ -70,23 +69,30 @@ def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
         pass
 
 
+def get_pid_from_file(pidfile_path):
+    """Retrieve the PID from the given file, if it exists, None otherwise."""
+    if not os.path.exists(pidfile_path):
+        return None
+    # Get the pid.
+    pid = open(pidfile_path, 'r').read().split()[0]
+    try:
+        pid = int(pid)
+    except ValueError:
+        # pidfile contains rubbish
+        return None
+    return pid
+
+
 def kill_by_pidfile(pidfile_path, poll_interval=0.1, num_polls=50):
     """Kill a process identified by the pid stored in a file.
 
     The pid file is removed from disk.
     """
-    if not os.path.exists(pidfile_path):
-        return
     try:
-        # Get the pid.
-        pid = open(pidfile_path, 'r').read().split()[0]
-        try:
-            pid = int(pid)
-        except ValueError:
-            # pidfile contains rubbish
+        pid = get_pid_from_file(pidfile_path)
+        if pid is None:
             return
-
-        two_stage_kill(pid)
+        two_stage_kill(pid, poll_interval, num_polls)
     finally:
         remove_if_exists(pidfile_path)
 
@@ -106,6 +112,7 @@ twistd_script = os.path.abspath(os.path.join(
 
 LOG_MAGIC = 'daemon ready!'
 
+
 class TacException(Exception):
     """Error raised by TacTestSetup."""
 
@@ -115,7 +122,8 @@ class TacTestSetup:
 
     You can override setUpRoot to set up a root directory for the daemon.
     """
-    def setUp(self, spew=False):
+
+    def setUp(self, spew=False, umask=None):
         # Before we run, we want to make sure that we have cleaned up any
         # previous runs. Although tearDown() should have been called already,
         # we can't guarantee it.
@@ -138,6 +146,8 @@ class TacTestSetup:
                 '--pidfile', self.pidfile, '--logfile', self.logfile]
         if spew:
             args.append('--spew')
+        if umask is not None:
+            args.extend(('--umask', umask))
 
         # Run twistd, and raise an error if the return value is non-zero or
         # stdout/stderr are written to.
@@ -195,6 +205,13 @@ class TacTestSetup:
         pidfile = self.pidfile
         kill_by_pidfile(pidfile)
 
+    def sendSignal(self, sig):
+        """Send the given signal to the tac process."""
+        pid = get_pid_from_file(self.pidfile)
+        if pid is None:
+            return
+        os.kill(pid, sig)
+
     def setUpRoot(self):
         """Override this.
 
@@ -223,8 +240,8 @@ class TacTestSetup:
 
 class ReadyService(service.Service):
     """Service that logs a 'ready!' message once the reactor has started."""
+
     def startService(self):
         from twisted.internet import reactor
         reactor.addSystemEventTrigger('after', 'startup', log.msg, LOG_MAGIC)
         service.Service.startService(self)
-

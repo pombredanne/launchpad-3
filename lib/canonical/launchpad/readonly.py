@@ -47,7 +47,7 @@ def is_read_only():
     request's annotations for a read-only key
     (READ_ONLY_MODE_ANNOTATIONS_KEY), and if it exists we'll just return its
     value.
-    
+
     If there's no request or the key doesn't exist, we check for the presence
     of a read-only.txt file in the root of our tree, set the read-only key in
     the request's annotations (when there is a request), update

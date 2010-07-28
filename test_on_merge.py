@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5 -S
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -203,10 +203,9 @@ def run_test_process():
     # JavaScript integration test suite can run.
     cmd = [
         'xvfb-run',
-        '-s',
-        "'-screen 0 1024x768x24'",
+        "--error-file=/var/tmp/xvfb-errors.log",
+        "--server-args='-screen 0 1024x768x24'",
         os.path.join(HERE, 'bin', 'test')] + sys.argv[1:]
-
     command_line = ' '.join(cmd)
     print "Running command:", command_line
 

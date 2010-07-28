@@ -30,7 +30,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
         branch.subscribe(branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL, branch.registrant)
         tree_transport = tree.bzrdir.root_transport
         tree_transport.put_bytes("hello.txt", "Hello World\n")
         tree.add('hello.txt')

@@ -29,6 +29,9 @@ setup(
         'chameleon.core',
         'chameleon.zpt',
         'cssutils',
+        # Required for pydkim
+        'dnspython',
+        'FeedParser',
         'feedvalidator',
         'funkload',
         'launchpadlib',
@@ -42,14 +45,17 @@ setup(
         'lazr.testing',
         'lazr.uri',
         'lazr-js',
+        'manuel',
         'mechanize',
         'meliae',
         'mercurial',
         'mocker',
+        'numpy',
         'oauth',
         'paramiko',
         'python-memcached',
         'pyasn1',
+        'pydkim',
         'python-openid',
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:
@@ -65,6 +71,7 @@ setup(
         'z3c.pt',
         'z3c.ptcompat',
         'zc.zservertracelog',
+        'zope.app.apidoc',
         'zope.app.appsetup',
         'zope.app.component',
         'zope.app.dav', # ./package-includes/dav-configure.zcml
@@ -72,7 +79,9 @@ setup(
         'zope.app.exception',
         'zope.app.file',
         'zope.app.form',
+        'zope.app.onlinehelp',
         'zope.app.pagetemplate',
+        'zope.app.preference',
         'zope.app.publication',
         'zope.app.publisher',
         'zope.app.security',
@@ -80,6 +89,7 @@ setup(
         'zope.app.server',
         'zope.app.session',
         'zope.app.testing',
+        'zope.app.tree',
         'zope.app.zcmlfiles',
         'zope.app.wsgi',
         'zope.app.zapi',
@@ -96,6 +106,7 @@ setup(
         'zope.hookable', # indirect, via zope.app.component
         'zope.lifecycleevent',
         'zope.location',
+        'zope.login',
         'zope.pagetemplate',
         'zope.publisher',
         'zope.proxy',
@@ -137,6 +148,7 @@ setup(
             'twistd = twisted.scripts.twistd:run',
             'start_librarian '
                 '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
+            'ec2 = devscripts.ec2test.entrypoint:main',
         ]
     ),
 )

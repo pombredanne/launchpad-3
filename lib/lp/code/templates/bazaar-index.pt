@@ -40,7 +40,7 @@
       </form>
       <p id="application-summary">
         Launchpad can host your project&#8217;s source code
-        using the <a href="http://bazaar-vcs.org/">Bazaar</a>
+        using the <a href="http://bazaar.canonical.com/">Bazaar</a>
         version control system.
         We also import
         <tal:XXX condition="nothing">
@@ -127,11 +127,7 @@
           </a>
         </div>
         <div>
-          <strong tal:content="view/branches_with_bugs_count">12</strong>
-          branches associated with bug reports
-        </div>
-        <div>
-          Launchpad uses <a href="http://bazaar-vcs.org/">Bazaar</a>
+          Launchpad uses <a href="http://bazaar.canonical.com/">Bazaar</a>
           <tal:version tal:content="view/bzr_version">2.0</tal:version>.
         </div>
       </div>

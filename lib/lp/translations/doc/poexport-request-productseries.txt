@@ -7,7 +7,7 @@
 
 This is a dummy logger class to capture the export's log messages.
 
-    >>> from canonical.launchpad.ftests.logger import MockLogger
+    >>> from lp.testing.logger import MockLogger
     >>> from lp.registry.model.person import Person
     >>> person = Person.selectOneBy(name='name12')
 

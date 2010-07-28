@@ -207,8 +207,9 @@ subscribed.
     [u'name12', u'name16']
 
 Finally, reassigning a public bug to a different product will subscribe
-the new security contact, if present. Let's set stub to the security
-contact for thunderbird to see how this works.
+the new security contact, if present and if the original bug was marked
+as a security issue. Let's set stub to the security contact for
+thunderbird to see how this works.
 
     >>> thunderbird = productset.get(8)
     >>> print thunderbird.name
@@ -241,16 +242,39 @@ and notice that the subscription list doesn't change:
     >>> subscriber_names(bug)
     [u'name12', u'name16']
 
-But publish the same event again, when the bug is marked public, and
-stub will be added to the subscriber list:
+Also verify the same event again, when marked public does cause
+stub to get subscribed:
 
     >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
+
+    >>> bug.security_related
     True
 
     >>> notify(bug_product_changed)
 
     >>> subscriber_names(bug)
     [u'name12', u'name16', u'stub']
+
+But if it is not a security issue originally, stub does not get
+subscribed when moving it to the new project.
+
+    >>> bug.unsubscribe(stub, stub)
+
+    >>> subscriber_names(bug)
+    [u'name12', u'name16']
+
+    >>> bug.setSecurityRelated(False)
+    True
+
+    >>> bug.security_related
+    False
+
+    >>> notify(bug_product_changed)
+
+    >>> subscriber_names(bug)
+    [u'name12', u'name16']
+
 
 When a bug becomes security-related, the security contacts for the pillars it
 affects are subscribed to it.

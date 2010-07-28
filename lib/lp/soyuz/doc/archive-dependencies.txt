@@ -97,7 +97,7 @@ A proper name for this "model" would be 'cross-component-dependency'.
     ...     'main', 'restricted', 'universe', 'multiverse', 'partner']
 
     >>> from lp.soyuz.adapters.archivedependencies import (
-    ...     get_components_for_building)
+    ...     get_components_for_context)
 
     >>> ogre_pub = test_publisher.getPubSource(sourcename='ogre')
     >>> [ogre_build] = ogre_pub.createMissingBuilds()
@@ -111,7 +111,8 @@ A proper name for this "model" would be 'cross-component-dependency'.
     ...         syncUpdate(ogre_pub)
     ...         flush_database_caches()
     ...         components_term = " ".join(
-    ...             get_components_for_building(ogre_build))
+    ...             get_components_for_context(
+    ...                 ogre_build.current_component, ogre_build.pocket))
     ...         print '%10s | %s' % (ogre_build.current_component.name,
     ...                              components_term)
 
@@ -205,8 +206,9 @@ expected content for building the just-created source.
     ...     get_sources_list_for_building)
 
     >>> def print_building_sources_list(candidate):
-    ...     sources_list = get_sources_list_for_building(candidate,
-    ...         candidate.distroarchseries, candidate.sourcepackagerelease.name)
+    ...     sources_list = get_sources_list_for_building(
+    ...     candidate, candidate.distro_arch_series,
+    ...     candidate.source_package_release.name)
     ...     for line in sources_list:
     ...         print line
 
@@ -219,7 +221,7 @@ no need to request the builder to load its archive indexes.
     ...     PackagePublishingStatus)
 
     >>> cprov.archive.getAllPublishedBinaries(
-    ...      distroarchseries=a_build.distroarchseries,
+    ...      distroarchseries=a_build.distro_arch_series,
     ...      status=PackagePublishingStatus.PUBLISHED).count()
     0
 
@@ -323,9 +325,9 @@ dependencies are returned as normal.
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb http://ftpmaster.internal/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security 
+    deb http://ftpmaster.internal/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates 
+    deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
 
 However, in order to avoid the problem going forward (and to allow the PPA
@@ -363,9 +365,9 @@ dependencies are returned as normal.
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb http://ftpmaster.internal/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security 
+    deb http://ftpmaster.internal/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates 
+    deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
 
 However, in order to avoid the problem going forward (and to allow the PPA
@@ -434,7 +436,7 @@ the primary archive.
     ...     get_primary_current_component)
 
     >>> print get_primary_current_component(a_build.archive,
-    ...     a_build.distroseries, a_build.sourcepackagerelease.name)
+    ...     a_build.distro_series, a_build.source_package_release.name)
     universe
 
     >>> print_building_sources_list(a_build)
@@ -565,4 +567,3 @@ Now builds in Celso's PPA will use the external dependencies.
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
-

@@ -143,7 +143,7 @@ Uploading the same package again will result in a rejection email:
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
-  DEBUG: Package diff for bar from 1.0-1 to 1.0-1 requested
+  DEBUG: bar diff from 1.0-1 to 1.0-1 requested
   DEBUG: Setting it to ACCEPTED
   ...
   DEBUG: Sending rejection email.
@@ -408,7 +408,7 @@ UNAPPROVED source uploads for 'translations' section via insecure:
   >>> lang_pack.logger = mock_logger
   >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
-  DEBUG: Package diff for language-pack-pt from 1.0-2 to 1.0-3 requested
+  DEBUG: language-pack-pt diff from 1.0-2 to 1.0-3 requested
   DEBUG: Setting it to UNAPPROVED
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
@@ -461,7 +461,7 @@ saying they are waiting for approval:
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
-  DEBUG: Package diff for bar from 1.0-1 to 1.0-3 requested
+  DEBUG: bar diff from 1.0-1 to 1.0-3 requested
   DEBUG: Setting it to UNAPPROVED
   ...
 

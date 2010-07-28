@@ -67,7 +67,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
             email='baz.quxx@example.com')
         bmp.source_branch.subscribe(subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL, subscriber)
         bmp.source_branch.owner.name = 'bob'
         bmp.source_branch.name = 'fix-foo-for-bar'
         bmp.target_branch.owner.name = 'mary'
@@ -176,7 +176,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         bmp = request.merge_proposal
         bmp.source_branch.subscribe(
             bmp.registrant, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL, bmp.registrant)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail(bmp.registrant,
                                     bmp.registrant.preferredemail.email)
@@ -259,7 +259,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
             diff_text=diff_text)
         bmp.source_branch.subscribe(subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.STATUS)
+            CodeReviewNotificationLevel.STATUS, subscriber)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertEqual(0, len(ctrl.attachments))

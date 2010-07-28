@@ -21,7 +21,8 @@ from lp.code.enums import (
 from lp.code.interfaces.branch import IBranch
 from canonical.launchpad.fields import ParticipatingPersonChoice
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_read_operation, exported)
 from lazr.restful.fields import Reference
 
 
@@ -73,3 +74,13 @@ class IBranchSubscription(Interface):
                 'Control the kind of review activity that triggers '
                 'notifications.'
                 )))
+
+    subscribed_by = exported(ParticipatingPersonChoice(
+        title=_('Subscribed by'), required=True,
+        vocabulary='ValidPersonOrTeam', readonly=True,
+        description=_("The person who created this subscription.")))
+
+    @call_with(user=REQUEST_USER)
+    @export_read_operation()
+    def canBeUnsubscribedByUser(user):
+        """Can the user unsubscribe the subscriber from the branch?"""

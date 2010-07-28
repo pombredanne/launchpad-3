@@ -11,11 +11,12 @@ First, we need some imports.
     ...     TranslationMessage, DummyTranslationMessage)
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
+    >>> from lp.translations.publisher import TranslationsLayer
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
-    >>> from canonical.launchpad.layers import TranslationsLayer
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
 
 All the tests will be submitted as coming from the No Privilege person.
 
@@ -57,7 +58,8 @@ We know that we want all messages.
 This time, we are going to see what happens if we get an IPOFile without
 the plural form information.
 
-    >>> pofile_tlh = potemplate.getDummyPOFile('tlh')
+    >>> language_tlh = getUtility(ILanguageSet).getLanguageByCode('tlh')
+    >>> pofile_tlh = potemplate.getDummyPOFile(language_tlh)
     >>> form = {'show': 'all' }
     >>> pofile_view = create_view(
     ...     pofile_tlh, '+translate', form=form, layer=TranslationsLayer)

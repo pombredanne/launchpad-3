@@ -364,7 +364,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         branch.subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            subscriber)
         collection = self.all_branches.subscribedBy(subscriber)
         self.assertEqual([branch], list(collection.getBranches()))
 
@@ -377,7 +378,7 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         owned_branch = self.factory.makeAnyBranch(owner=person)
         # Unsubscribe the owner, to demonstrate that we show owned branches
         # even if they aren't subscribed.
-        owned_branch.unsubscribe(person)
+        owned_branch.unsubscribe(person, person)
         # Subscribe two other people to the owned branch to make sure
         # that the BranchSubscription join is doing it right.
         self.factory.makeBranchSubscription(branch=owned_branch)
@@ -389,7 +390,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         subscribed_branch.subscribe(
             person, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            person)
         related_branches = self.all_branches.relatedTo(person)
         self.assertEqual(
             sorted([owned_branch, registered_branch, subscribed_branch]),
@@ -548,7 +550,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         removeSecurityProxy(self.private_branch1).subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            subscriber)
         branches = self.all_branches.visibleByUser(subscriber)
         self.assertEqual(
             sorted([self.public_branch, self.private_branch1]),
@@ -564,7 +567,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         removeSecurityProxy(private_branch).subscribe(
             team, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            team_owner)
         # Members of the team can see the private branch that the team is
         # subscribed to.
         branches = self.all_branches.visibleByUser(team_owner)

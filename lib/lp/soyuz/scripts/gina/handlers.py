@@ -36,6 +36,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.interfaces.sourcepackage import SourcePackageType
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -759,8 +760,8 @@ class BinaryPackageHandler:
         version = binarypackagedata.version
         architecture = binarypackagedata.architecture
 
-        clauseTables = ["BinaryPackageRelease", "DistroSeries", "Build",
-                        "DistroArchSeries"]
+        clauseTables = ["BinaryPackageRelease", "DistroSeries",
+                        "BinaryPackageBuild", "DistroArchSeries"]
         distroseries = distroarchinfo['distroarchseries'].distroseries
 
         # When looking for binaries, we need to remember that they are
@@ -769,8 +770,8 @@ class BinaryPackageHandler:
         # they were built for
         query = ("BinaryPackageRelease.binarypackagename=%s AND "
                  "BinaryPackageRelease.version=%s AND "
-                 "BinaryPackageRelease.build = Build.id AND "
-                 "Build.distroarchseries = DistroArchSeries.id AND "
+                 "BinaryPackageRelease.build = BinaryPackageBuild.id AND "
+                 "BinaryPackageBuild.distro_arch_series = DistroArchSeries.id AND "
                  "DistroArchSeries.distroseries = DistroSeries.id AND "
                  "DistroSeries.distribution = %d" %
                  (binaryname.id, quote(version),
@@ -852,7 +853,7 @@ class BinaryPackageHandler:
 
         distroarchseries = distroarchinfo['distroarchseries']
         distribution = distroarchseries.distroseries.distribution
-        clauseTables = ["Build", "DistroArchSeries", "DistroSeries"]
+        clauseTables = ["BinaryPackageBuild", "DistroArchSeries", "DistroSeries"]
 
         # XXX kiko 2006-02-03:
         # This method doesn't work for real bin-only NMUs that are
@@ -862,8 +863,9 @@ class BinaryPackageHandler:
         # once, and the two checks below will of course blow up when
         # doing it the second time.
 
-        query = ("Build.sourcepackagerelease = %d AND "
-                 "Build.distroarchseries = DistroArchSeries.id AND "
+        query = ("BinaryPackageBuild.source_package_release = %d AND "
+                 "BinaryPackageBuild.distro_arch_series = "
+                 "    DistroArchSeries.id AND "
                  "DistroArchSeries.distroseries = DistroSeries.id AND "
                  "DistroSeries.distribution = %d"
                  % (srcpkg.id, distribution.id))
@@ -896,16 +898,13 @@ class BinaryPackageHandler:
             key = None
 
             processor = distroarchinfo['processor']
-            build = BinaryPackageBuild(processor=processor.id,
-                          distroarchseries=distroarchseries.id,
-                          buildstate=BuildStatus.FULLYBUILT,
-                          sourcepackagerelease=srcpkg.id,
-                          buildduration=None,
-                          buildlog=None,
-                          builder=None,
-                          datebuilt=None,
-                          pocket=self.pocket,
-                          archive=distroarchseries.main_archive)
+            build = getUtility(IBinaryPackageBuildSet).new(
+                        processor=processor.id,
+                        distro_arch_series=distroarchseries.id,
+                        status=BuildStatus.FULLYBUILT,
+                        source_package_release=srcpkg.id,
+                        pocket=self.pocket,
+                        archive=distroarchseries.main_archive)
         return build
 
 

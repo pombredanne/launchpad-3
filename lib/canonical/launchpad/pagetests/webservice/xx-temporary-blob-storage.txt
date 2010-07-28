@@ -13,11 +13,23 @@ If we add a new blob, it will show up in the temporary_blobs entries
 set.
 
     >>> login('foo.bar@canonical.com')
+    >>> import os
     >>> from zope.component import getUtility
+    >>> from canonical.config import config
     >>> from canonical.launchpad.interfaces.temporaryblobstorage import (
     ...     ITemporaryStorageManager)
 
-    >>> blob_token = getUtility(ITemporaryStorageManager).new("some data")
+    >>> testfiles = os.path.join(config.root,
+    ...     'lib/lp/bugs/tests/testfiles')
+    >>> blob_file = open(
+    ...     os.path.join(testfiles, 'extra_filebug_data.msg'))
+    >>> blob_data = blob_file.read()
+    >>> print blob_data[307:373]
+    --boundary
+    Content-disposition: attachment; filename='attachment1'
+
+    >>> blob_token = getUtility(ITemporaryStorageManager).new(blob_data)
+
     >>> logout()
 
     >>> temporary_blobs = webservice.get('/temporary-blobs').jsonBody()
@@ -48,7 +60,6 @@ and passing it a token.
     >>> blob['token'] == blob_token
     True
 
-
 Checking whether a blob has been processed
 ------------------------------------------
 
@@ -65,6 +76,13 @@ hasn't been processed because no job was created to process it.
     ...     blob['self_link'], 'hasBeenProcessed').jsonBody()
     False
 
+However, since the blob has not been processed there will be no
+job processed data at this point.
+
+    >>> print webservice.named_get(
+    ...     blob['self_link'], 'getProcessedData').jsonBody()
+    None
+
 Once the blob has been processed, its hasBeenProcessed() method will
 return True.
 
@@ -74,8 +92,24 @@ return True.
     ...     getUtility(ITemporaryStorageManager).fetch(blob_token))
     >>> job.job.start()
     >>> job.job.complete()
+    >>> job.run()
     >>> logout()
 
     >>> print webservice.named_get(
     ...     blob['self_link'], 'hasBeenProcessed').jsonBody()
     True
+
+And now the blob's parsed-out metadata is now accessible.
+
+    >>> metadata = webservice.named_get(
+    ...     blob['self_link'], 'getProcessedData').jsonBody()
+
+    >>> print metadata['extra_description']
+    This should be added to the description.
+
+    >>> print len(metadata['comments'])
+    2
+
+    >>> attachment = metadata['attachments'][0]
+    >>> print attachment['description']
+    attachment1

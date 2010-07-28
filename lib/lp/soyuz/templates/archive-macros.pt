@@ -219,7 +219,7 @@ div.package-details {
     </p>
 
     <tal:request_list tal:condition="requests">
-      <table id="package-requests" class="listing"
+      <table id="package-requests" class="wide listing"
         tal:attributes="summary
                         string:Package copy requests for ${context/name}">
         <thead>

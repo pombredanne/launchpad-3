@@ -106,17 +106,19 @@ class _BaseNamespace:
                 implicit_subscription,
                 BranchSubscriptionNotificationLevel.NOEMAIL,
                 BranchSubscriptionDiffSize.NODIFF,
-                CodeReviewNotificationLevel.NOEMAIL)
+                CodeReviewNotificationLevel.NOEMAIL,
+                registrant)
 
         # The registrant of the branch should also be automatically subscribed
         # in order for them to get code review notifications.  The implicit
         # registrant subscription does not cause email to be sent about
         # attribute changes, just merge proposals and code review comments.
         branch.subscribe(
-            registrant,
+            self.owner,
             BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL,
+            registrant)
 
         notify(ObjectCreatedEvent(branch))
         return branch

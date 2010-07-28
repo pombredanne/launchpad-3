@@ -19,21 +19,23 @@ __all__ = [
 from zope.interface import Attribute, Interface
 from zope.schema import Choice, Object, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
-
-from canonical.launchpad import _
-from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
-from lp.code.interfaces.hasbranches import (
-    IHasBranches, IHasCodeImports, IHasMergeProposals)
-from lp.soyuz.interfaces.component import IComponent
 from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_read_operation,
     export_write_operation, exported, operation_parameters,
     operation_returns_entry, REQUEST_USER)
 
+from canonical.launchpad import _
+from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
+from lp.code.interfaces.hasbranches import (
+    IHasBranches, IHasCodeImports, IHasMergeProposals)
+from lp.soyuz.interfaces.component import IComponent
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+
 
 class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
-                     IHasOfficialBugTags, IHasCodeImports):
+                     IHasOfficialBugTags, IHasCodeImports,
+                     IHasTranslationTemplates):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less
@@ -55,7 +57,10 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
 
     path = Attribute("A path to this package, <distro>/<series>/<package>")
 
-    title = Attribute("Title")
+    title = Attribute("Title.")
+
+    summary = Attribute(
+        'A description of the binary packages built from this package.')
 
     format = Attribute("Source Package Format. This is the format of the "
                 "current source package release for this name in this "

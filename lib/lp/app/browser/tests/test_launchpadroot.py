@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 
 from BeautifulSoup import BeautifulSoup, SoupStrainer
 
@@ -69,12 +67,10 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
         self.setUpRegistryExpert()
         view = create_initialized_view(
             self.root, 'index.html', principal=self.expert)
+        # Stub out the getRecentBlogPosts which fetches a blog feed using
+        # urlfetch.
+        view.getRecentBlogPosts = lambda: []
         content = BeautifulSoup(view(), parseOnlyThese=SoupStrainer('a'))
         self.failUnless(
             content.find('a', href='+featuredprojects'),
             "Cannot find the +featuredprojects link on the first page")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

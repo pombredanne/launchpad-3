@@ -164,12 +164,12 @@ of this source in the context distribution are listed.
 
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> print backslashreplace(anon_browser.title)
-    Publishing history : 1.0 : \u201ctesting-dspr\u201d package : ubuntutest
+    Publishing history : 1.0 : ...testing-dspr... package : ubuntutest
 
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Publishing history of “testing-dspr” 1.0 source package in ubuntutest
+    Publishing history of ...testing-dspr... 1.0 source package in ubuntutest
     ubuntutest
-    “testing-dspr” package
+    ...testing-dspr... package
     1.0
     Publishing history
     Date  Status     Target     Pocket   Component  Section  Version
@@ -223,7 +223,7 @@ are available.
     File                  Size      MD5 Checksum
     testing-dspr_1.0.dsc  28 bytes  5913c3ad52c14a62e6ae7eef51f9ef42
     Available diffs
-    0.9 to 1.0 (7 bytes)
+    diff from 0.9 to 1.0 (7 bytes)
 
     >>> print anon_browser.getLink('0.9 to 1.0').url
     http://.../101/testing-dspr_0.9_1.0.diff.gz
@@ -287,9 +287,9 @@ The full change log can be viewed as follows:
     celso.providelo@canonical.com
 
     >>> print extract_text(find_main_content(user_browser.contents))
-    Change log for “testing-dspr” package in ubuntutest
+    Change log for ...testing-dspr... package in ubuntutest
     ubuntutest
-    “testing-dspr” package
+    ...testing-dspr... package
     Change log
     0.9
     Pending in breezy-autotest-release
@@ -303,5 +303,5 @@ The full change log can be viewed as follows:
     LP: #1234
     celso.providelo@canonical.com
     Available diffs
-    0.9 to 1.0
+    diff from 0.9 to 1.0
     (7 bytes)

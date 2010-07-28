@@ -419,9 +419,9 @@
         />
 
     <adapter
-        for="lp.buildmaster.interfaces.buildbase.IBuildBase"
+        for="lp.buildmaster.interfaces.packagebuild.IPackageBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BuildBaseFormatterAPI"
+        factory="canonical.launchpad.webapp.tales.PackageBuildFormatterAPI"
         name="fmt"
         />
 
@@ -466,6 +466,12 @@
         for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SourcePackageRecipeFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageRecipeBuildFormatterAPI"
         name="fmt"
         />
     <adapter
@@ -532,6 +538,12 @@
         for="lp.translations.interfaces.pofile.IPOFile"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.POFileFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.soyuz.interfaces.packagediff.IPackageDiff"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PackageDiffFormatterAPI"
         name="fmt"
         />
     <adapter
@@ -619,9 +631,12 @@
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_slave_store"
         />
+    <!-- Universal adapter needed here per Bug #591841.
+         We have no way of specifying that all subclasses of
+         storm.locals.Storm implement an Interface. -->
     <adapter
         provides="canonical.launchpad.interfaces.IMasterObject"
-        for="canonical.launchpad.interfaces.IDBObject"
+        for="zope.interface.Interface"
         trusted="yes"
         factory="canonical.launchpad.webapp.adapter.get_object_from_master_store"
         />
@@ -657,7 +672,7 @@
         permission="zope.Public"
         class="canonical.launchpad.webapp.launchbag.LaunchBagView"
         />
-
+ 
     <!-- Resource unnamed view, allowing Z3 preferred spelling
         /@@/launchpad-icon-small to access the images directory -->
     <browser:page
