@@ -868,12 +868,29 @@ class TestDispatchResult(unittest.TestCase):
         self.assertEqual('does not work!', builder.failnotes)
 
 
-def is_file_growing(filename, poll_interval=1, poll_repeat=10):
-    """Poll the file size to see if it grows."""
+def is_file_growing(filepath, poll_interval=1, poll_repeat=10):
+    """Poll the file size to see if it grows.
+
+    Checks the size of the file in given intervals and returns True as soon as
+    it sees the size increase between two polls. If the size does not
+    increase after a given number of polls, the function returns False.
+    If the file does not exist, the function silently ignores that and waits
+    for it to appear on the next pall. If it has not appeared by the last
+    poll, the exception is propagated.
+    Program execution is blocked during polling.
+
+    :param filepath: The path to the file to be palled.
+    :param poll_interval: The number of seconds in between two polls.
+    :param poll_repeat: The number times to repeat the polling, so the size is
+        polled a total of poll_repeat+1 times. The default values create a
+        total poll time of 11 seconds. The BuilddManager logs
+        "scanning cycles" every 5 seconds so these settings should see an
+        increase if the process is logging to this file. 
+    """
     last_size = None
     for poll in range(poll_repeat+1):
         try:
-            statinfo = os.stat(filename)
+            statinfo = os.stat(filepath)
             if last_size is None:
                 last_size = statinfo.st_size
             elif statinfo.st_size > last_size:
@@ -899,11 +916,12 @@ class TestBuilddManagerScript(unittest.TestCase):
         BuilddManagerTestSetup().tearDown()
 
     def testBuilddManagerLogging(self):
-        # The twistd process loggs as execpected.
+        # The twistd process logs as execpected.
         test_setup = BuilddManagerTestSetup()
         logfilepath = test_setup.logfile
         test_setup.setUp()
-        # The process loggs to its logfile.
+        self.addCleanup(test_setup.tearDown)
+        # The process logs to its logfile.
         self.assertTrue(is_file_growing(logfilepath))
         # After rotating the log, the process keeps using the old file, no
         # new file is created.
@@ -916,7 +934,6 @@ class TestBuilddManagerScript(unittest.TestCase):
         test_setup.sendSignal(signal.SIGUSR1)
         self.assertTrue(is_file_growing(logfilepath))
         self.assertTrue(os.access(rotated_logfilepath, os.F_OK))
-        test_setup.tearDown()
 
     def testBuilddManagerLoggingNoRotation(self):
         # The twistd process does not perform its own rotation.
@@ -929,10 +946,10 @@ class TestBuilddManagerScript(unittest.TestCase):
         test_setup.precreateLogfile(
             "2010-07-27 12:36:54+0200 [-] Starting scanning cycle.\n", 18518)
         test_setup.setUp()
-        # The process loggs to the logfile.
+        self.addCleanup(test_setup.tearDown)
+        # The process logs to the logfile.
         self.assertTrue(is_file_growing(logfilepath))
         # No rotation occured.
         self.assertFalse(
             os.access(rotated_logfilepath, os.F_OK),
             "Twistd's log file was rotated by twistd.")
-        test_setup.tearDown()

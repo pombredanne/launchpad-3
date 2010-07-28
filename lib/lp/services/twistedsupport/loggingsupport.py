@@ -193,17 +193,25 @@ class LoggingProxy(xmlrpc.Proxy):
         return deferred.addBoth(_logResult)
 
 
-class RotatableFileLogObserver(object):
+class RotatableFileLogObserver:
     """A log observer that uses a log file and reopens it on SIGUSR1."""
 
     implements(log.ILogObserver)
 
-    def __init__(self, logfilename):
-        if logfilename is None:
+    def __init__(self, logfilepath):
+        """Set up the logfile and possible signal handler.
+
+        Installs the signal handler for SIGUSR1 to make the process re-open
+        the log file.
+
+        :param logfilepath: The path to the logfile. If None, stdout is used
+            for logging and no signal handler will be installed.
+        """
+        if logfilepath is None:
             logFile = sys.stdout
         else:
             logFile = logfile.LogFile.fromFullPath(
-                logfilename, rotateLength=None)
+                logfilepath, rotateLength=None)
             # Override if signal is set to None or SIG_DFL (0)
             if not signal.getsignal(signal.SIGUSR1):
                 def signalHandler(signal, frame):

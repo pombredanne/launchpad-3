@@ -24,7 +24,12 @@ class BuilddManagerTestSetup(TacTestSetup):
     logfilecontent = None
 
     def precreateLogfile(self, content, repeat=1):
-        """Precreate a logfile in the root."""
+        """Precreate a logfile in the root.
+
+        :param content: A string to use as the content of the file.
+        :param repeat: The number of times to repeat the string in the file.
+            This is meant to be used to easily create larger files. 
+        """
         self.logfilecontent = content*repeat
 
     def setUpRoot(self):
