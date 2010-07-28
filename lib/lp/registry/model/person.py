@@ -2272,9 +2272,11 @@ class Person(
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         builder_recipe = RecipeParser(recipe_text).parse()
-        return SourcePackageRecipe.new(
+        recipe = SourcePackageRecipe.new(
             registrant, self, name, builder_recipe, description, distroseries,
             daily_build_archive, build_daily)
+        Store.of(recipe).flush()
+        return recipe
 
     def getRecipe(self, name):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
@@ -2502,7 +2504,7 @@ class PersonSet:
                     creation_rationale, comment=comment)
                 db_updated = True
 
-        return IPerson(account), db_updated
+            return IPerson(account), db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,

@@ -1,7 +1,7 @@
 PO Export Request Browser Views
 -------------------------------
 
-    >>> from canonical.launchpad.layers import TranslationsLayer
+    >>> from lp.translations.publisher import TranslationsLayer
 
 Check there are no requests in the database to start with.
 
