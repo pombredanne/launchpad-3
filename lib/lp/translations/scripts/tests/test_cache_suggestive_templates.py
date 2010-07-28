@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import transaction
-import unittest
 
 from zope.component import getUtility
 
@@ -40,7 +39,7 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
             "SELECT * FROM SuggestivePOTemplate ORDER BY potemplate")
         return [id for id, in result.get_all()]
 
-    def test_consistent_contents(self):
+    def test_contents_stay_consistent(self):
         # Refreshing the cache will reproduce the same cache if there
         # have been no intervening template changes.
         self._refreshCache()
@@ -48,7 +47,7 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
         self._refreshCache()
         self.assertEqual(contents, self._readCache())
 
-    def test_wipe(self):
+    def test_wipeSuggestivePOTemplatesCache(self):
         # The wipe method clears the cache.
         self._refreshCache()
         self.assertNotEqual([], self._readCache())
@@ -57,7 +56,7 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
 
         self.assertEqual([], self._readCache())
 
-    def test_populate(self):
+    def test_populateSuggestivePOTemplatesCache(self):
         # The populate method fills an empty cache.
         self.utility.wipeSuggestivePOTemplatesCache()
         self.utility.populateSuggestivePOTemplatesCache()
@@ -78,7 +77,7 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
         self.assertNotEqual(cache_before, cache_after)
         self.assertContentEqual(cache_before + [pot.id], cache_after)
 
-    def test_new_template(self):
+    def test_new_template_appears(self):
         # A new template appears in the cache on the next refresh.
         self._refreshCache()
         cache_before = self._readCache()
@@ -88,7 +87,7 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
 
         self.assertContentEqual(cache_before + [pot.id], self._readCache())
 
-    def test_product_official_rosetta(self):
+    def test_product_official_rosetta_affects_caching(self):
         # Templates from projects are included in the cache only where
         # the project uses Launchpad Translations.
         productseries = self.factory.makeProductSeries()
@@ -106,7 +105,7 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
         self.assertContentEqual(
             cache_with_template, cache_without_template + [pot.id])
 
-    def test_distro_official_rosetta(self):
+    def test_distro_official_rosetta_affects_caching(self):
         # Templates from distributions are included in the cache only
         # where the distribution uses Launchpad Translations.
         package = self.factory.makeSourcePackage()
@@ -126,7 +125,7 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
         self.assertContentEqual(
             cache_with_template, cache_without_template + [pot.id])
 
-    def test_disabled_template(self):
+    def test_disabled_template_does_not_appear(self):
         # A template that is not current is excluded from the cache.
         self._refreshCache()
         cache_before = self._readCache()

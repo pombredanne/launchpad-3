@@ -649,7 +649,7 @@ class IPOTemplateSet(Interface):
     def populateSuggestivePOTemplatesCache():
         """Populate suggestive-templates cache.
 
-        :return: Numver of rows inserted.
+        :return: Number of rows inserted.
         """
 
 
