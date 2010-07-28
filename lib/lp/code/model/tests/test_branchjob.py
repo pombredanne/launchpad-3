@@ -20,6 +20,7 @@ from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
+from storm.locals import Store
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -297,6 +298,16 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         self.assertEqual(
             new_branch.repository._format.get_format_string(),
             'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
+
+
+    def test_db_user_can_request_scan(self):
+        # The database user that does the upgrade needs to be able to request
+        # a scan of the branch.
+        branch = self.factory.makeAnyBranch()
+        self.becomeDbUser(config.upgrade_branches.dbuser)
+        # Scan jobs are created by the branchChanged method.
+        branch.branchChanged('', 'new-id', None, None, None)
+        Store.of(branch).flush()
 
 
 class TestRevisionMailJob(TestCaseWithFactory):
