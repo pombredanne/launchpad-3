@@ -33,9 +33,15 @@ def start_request(event):
     If profiling is enabled, start a profiler for this thread. If memory
     profiling is requested, save the VSS and RSS.
     """
-    if config.profiling.profile_requests:
+    if not config.profiling.profiling_allowed:
+        return
+
+    if (request_should_be_profiled(event.request) or
+        config.profiling.profile_all_requests):
         _profilers.profiler = BzrProfiler()
         _profilers.profiler.start()
+    else:
+        _profilers.profiler = None
 
     if config.profiling.memory_profile_log:
         _profilers.memory_profile_start = (memory(), resident())
@@ -43,6 +49,9 @@ def start_request(event):
 
 def end_request(event):
     """If profiling is turned on, save profile data for the request."""
+    if not config.profiling.profiling_allowed:
+        return
+
     request = event.request
     # Create a timestamp including milliseconds.
     now = datetime.fromtimestamp(da.get_request_start_time())
@@ -50,7 +59,8 @@ def end_request(event):
         now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
     pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
     oopsid = getattr(request, 'oopsid', None)
-    if config.profiling.profile_requests:
+
+    if _profilers.profiler is not None:
         profiler = _profilers.profiler
         _profilers.profiler = None
         prof_stats = profiler.stop()
@@ -84,3 +94,8 @@ def end_request(event):
             timestamp, pageid, oopsid, da.get_request_duration(),
             vss_start, rss_start, vss_end, rss_end))
         log.close()
+
+
+def request_should_be_profiled(request):
+    """Should we turn on profiling for the given request object?"""
+    return ('++profile++' in request.get('PATH_INFO'))
