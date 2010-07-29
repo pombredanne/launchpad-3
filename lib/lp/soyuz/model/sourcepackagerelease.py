@@ -521,6 +521,10 @@ class SourcePackageRelease(SQLBase):
         return DecoratedResultSet(results, operator.itemgetter(0)).one()
 
     @property
+    def uploader(self):
+        return None
+
+    @property
     def change_summary(self):
         """See ISourcePackageRelease"""
         # this regex is copied from apt-listchanges.py courtesy of MDZ

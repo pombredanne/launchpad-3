@@ -137,6 +137,8 @@ class ISourcePackageRelease(Interface):
         "The `PackageUpload` record corresponding to original upload of "
         "this source package release. It's 'None' if it is a source "
         "imported by Gina.")
+    uploader = Attribute(
+        "The user who uploaded the package.")
 
     # Really ISourcePackageRecipeBuild -- see _schema_circular_imports.
     source_package_recipe_build = Reference(

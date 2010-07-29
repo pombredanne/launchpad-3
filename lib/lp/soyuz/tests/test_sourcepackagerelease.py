@@ -14,7 +14,6 @@ class TestSourcePackageRelease(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def test_uploader_package(self):
+    def test_uploader_dsc_package(self):
         spr = self.factory.makeSourcePackageRelease()
         self.assertEqual(spr.uploader, None)
-
