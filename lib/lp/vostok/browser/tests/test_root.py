@@ -13,10 +13,11 @@ from zope.component import getMultiAdapter
 from canonical.testing.layers import DatabaseFunctionalLayer, FunctionalLayer
 from canonical.launchpad.testing.pages import extract_text, find_tag_by_id
 
-from lp.testing import TestCase, TestCaseWithFactory, with_anonymous_login
+from lp.testing import TestCase, TestCaseWithFactory
 from lp.vostok.browser.root import VostokRootView
 from lp.vostok.browser.tests.request import VostokTestRequest
 from lp.vostok.publisher import VostokRoot
+
 
 class TestRootRegistrations(TestCase):
 
