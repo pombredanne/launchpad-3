@@ -11,14 +11,16 @@ import logging
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.expr import In
+
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.services.worlddata.model.language import Language
 from lp.translations.model.translationmessage import (
-    TranslationMessage, TranslationMessagesCollection)
+    TranslationMessage)
 
 
 class ReplacerMixin:
@@ -31,13 +33,14 @@ class ReplacerMixin:
 
         self.title = title
         self.language = new_language
-        self.contents = contents
+        self.contents = list(contents)
         self.logger.info(
             "Figuring out %ss that need fixing: "
             "this may take a while..." % title)
         self.total = len(self.contents)
         self.logger.info(
             "Fixing up a total of %d %ss." % (self.total, self.title))
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
     def isDone(self):
         """See `ITunableLoop`."""
@@ -58,24 +61,28 @@ class ReplacerMixin:
         Retrieve a batch of objects in ascending id order, and switch
         all of them to self.language and no variant.
         """
-        contents = self.getNextBatch(chunk_size)
+        object_ids = self.getNextBatch(chunk_size)
+        # Avoid circular imports.
+        from lp.translations.model.pofile import POFile
 
-        done = 0
-        for content in contents:
-            done += 1
-            self.logger.debug(
-                "Processing %d (out of %d)" % (
-                    self.start_at + done, self.total))
-            content.language = self.language
-            content.variant = None
-
-        self.transaction.commit()
-        self.transaction.begin()
-
-        if done == 0:
+        if len(object_ids) == 0:
             self.start_at = None
         else:
-            self.start_at += done
+            if self.title == 'TranslationMessage':
+                results = self.store.find(TranslationMessage,
+                                          In(TranslationMessage.id, object_ids))
+                results.set(TranslationMessage.language==self.language,
+                            variant=None)
+            else:
+                results = self.store.find(POFile,
+                                          In(POFile.id, object_ids))
+                results.set(POFile.language==self.language,
+                            variant=None)
+
+            self.transaction.commit()
+            self.transaction.begin()
+
+            self.start_at += len(object_ids)
             self.logger.info("Processed %d/%d of %s." % (
                 self.start_at, self.total, self.title))
 
@@ -84,25 +91,19 @@ class TranslationMessageVariantReplacer(ReplacerMixin):
     """Replaces language on all `TranslationMessage`s with variants."""
     implements(ITunableLoop)
 
-    def __init__(self, transaction, logger, language, variant, new_language):
-        tm_collection = TranslationMessagesCollection().restrictLanguage(
-            language, variant)
+    def __init__(self, transaction, logger, tm_ids, new_language):
         super(TranslationMessageVariantReplacer, self).__init__(
             transaction, logger, 'TranslationMessage',
-            list(tm_collection.select()), new_language)
+            tm_ids, new_language)
 
 
 class POFileVariantReplacer(ReplacerMixin):
     """Replaces language on all `TranslationMessage`s with variants."""
     implements(ITunableLoop)
 
-    def __init__(self, transaction, logger, language, variant, new_language):
-        from lp.translations.model.pofile import POFilesCollection
-        pofile_collection = POFilesCollection().restrictLanguage(
-            language, variant)
+    def __init__(self, transaction, logger, pofile_ids, new_language):
         super(POFileVariantReplacer, self).__init__(
-            transaction, logger, 'POFile',
-            list(pofile_collection.select()), new_language)
+            transaction, logger, 'POFile', pofile_ids, new_language)
 
 
 class MigrateVariantsProcess:
@@ -113,6 +114,19 @@ class MigrateVariantsProcess:
         self.logger = logger
         if logger is None:
             self.logger = logging.getLogger("migrate-variants")
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+    def getPOFileIDsForLanguage(self, language, variant):
+        # Avoid circular imports.
+        from lp.translations.model.pofile import POFile
+        return self.store.find(POFile.id,
+                               POFile.languageID == language.id,
+                               POFile.variant == variant)
+
+    def getTranslationMessageIDsForLanguage(self, language, variant):
+        return self.store.find(TranslationMessage.id,
+                               TranslationMessage.languageID == language.id,
+                               TranslationMessage.variant == variant)
 
     def getOrCreateLanguage(self, language, variant):
         """Create a language based on `language` and variant.
@@ -135,13 +149,12 @@ class MigrateVariantsProcess:
         return new_language
 
     def fetchAllLanguagesWithVariants(self):
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         from lp.translations.model.pofile import POFile
-        pofile_language_variants = store.find(
+        pofile_language_variants = self.store.find(
             (Language, POFile.variant),
             POFile.languageID==Language.id,
             POFile.variant!=None)
-        translationmessage_language_variants = store.find(
+        translationmessage_language_variants = self.store.find(
             (Language, TranslationMessage.variant),
             TranslationMessage.languageID==Language.id,
             TranslationMessage.variant!=None)
@@ -149,7 +162,7 @@ class MigrateVariantsProcess:
         # XXX DaniloSegan 2010-07-26: ideally, we'd use an Union of
         # these two ResultSets, however, Storm doesn't treat two
         # columns of the same type on different tables as 'compatible'
-        # (bug #...).
+        # (bug #610492).
         language_variants = set([])
         for language_variant in pofile_language_variants:
             language_variants.add(language_variant)
@@ -167,14 +180,18 @@ class MigrateVariantsProcess:
                     language.englishname, language.code, variant))
             new_language = self.getOrCreateLanguage(language, variant)
 
+            tm_ids = self.getTranslationMessageIDsForLanguage(
+                language, variant)
             tm_loop = TranslationMessageVariantReplacer(
                 self.transaction, self.logger,
-                language, variant, new_language)
+                tm_ids, new_language)
             DBLoopTuner(tm_loop, 5, minimum_chunk_size=100).run()
 
+            pofile_ids = self.getPOFileIDsForLanguage(
+                language, variant)
             pofile_loop = POFileVariantReplacer(
                 self.transaction, self.logger,
-                language, variant, new_language)
+                pofile_ids, new_language)
             DBLoopTuner(pofile_loop, 5, minimum_chunk_size=10).run()
 
         self.logger.info("Done.")

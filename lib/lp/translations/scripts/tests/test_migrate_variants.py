@@ -103,3 +103,45 @@ class TestMigrateVariants(TestCaseWithFactory):
         new_language = self.migrate_process.getOrCreateLanguage(
             serbian, u'test')
         self.assertEqual(serbian_test, new_language)
+
+    def test_getPOFileIDsForLanguage_none(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        pofile_ids = self.migrate_process.getPOFileIDsForLanguage(
+            serbian, u'test')
+        self.assertContentEqual([], list(pofile_ids))
+
+    def test_getPOFileIDsForLanguage_variant(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        sr_pofile = self.factory.makePOFile(serbian.code, variant=u'test')
+        pofile_ids = self.migrate_process.getPOFileIDsForLanguage(
+            serbian, u'test')
+        self.assertContentEqual([sr_pofile.id], list(pofile_ids))
+
+    def test_getPOFileIDsForLanguage_nonvariant(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        sr_pofile = self.factory.makePOFile(serbian.code, variant=None)
+        pofile_ids = self.migrate_process.getPOFileIDsForLanguage(
+            serbian, u'test')
+        self.assertContentEqual([], list(pofile_ids))
+
+    def test_getTranslationMessageIDsForLanguage_none(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        tm_ids = self.migrate_process.getTranslationMessageIDsForLanguage(
+            serbian, u'test')
+        self.assertContentEqual([], list(tm_ids))
+
+    def test_getTranslationMessageIDsForLanguage_variant(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        sr_pofile = self.factory.makePOFile(serbian.code, variant=u'test')
+        message = self.factory.makeTranslationMessage(sr_pofile)
+        tm_ids = self.migrate_process.getTranslationMessageIDsForLanguage(
+            serbian, u'test')
+        self.assertContentEqual([message.id], list(tm_ids))
+
+    def test_getTranslationMessageIDsForLanguage_nonvariant(self):
+        serbian = self.language_set.getLanguageByCode('sr')
+        sr_pofile = self.factory.makePOFile(serbian.code, variant=None)
+        message = self.factory.makeTranslationMessage(sr_pofile)
+        tm_ids = self.migrate_process.getTranslationMessageIDsForLanguage(
+            serbian, u'test')
+        self.assertContentEqual([], list(tm_ids))

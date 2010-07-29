@@ -12,7 +12,6 @@ __all__ = [
     'POFileSet',
     'POFileToChangedFromPackagedAdapter',
     'POFileToTranslationFileDataAdapter',
-    'POFilesCollection',
     ]
 
 import datetime
@@ -36,7 +35,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
-from lp.services.database.collection import Collection
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.interfaces.pofile import IPOFile, IPOFileSet
 from lp.translations.interfaces.potmsgset import (
@@ -1818,18 +1816,3 @@ class POFileToChangedFromPackagedAdapter(POFileToTranslationFileDataAdapter):
     def __init__(self, pofile):
         self._pofile = pofile
         self.messages = self._getMessages(True)
-
-
-class POFilesCollection(Collection):
-    """A `Collection` of `TranslationMessage`."""
-    starting_table = POFile
-
-    def __init__(self, *args, **kwargs):
-        super(POFilesCollection, self).__init__(*args, **kwargs)
-
-    def restrictLanguage(self, language, variant):
-        """Restrict collection to a specific language."""
-        new_collection = self.refine(
-            POFile.languageID == language.id,
-            POFile.variant == variant)
-        return new_collection
