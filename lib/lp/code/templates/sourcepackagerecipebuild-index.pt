@@ -116,7 +116,10 @@
       <tal:pending condition="context/buildqueue_record/job/status/enumvalue:WAITING">
         <li tal:define="eta context/buildqueue_record/getEstimatedJobStartTime">
           Start <tal:eta
-            replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
+          replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
+          (<span tal:replace="context/buildqueue_record/lastscore"/>)
+          <a href="https://help.launchpad.net/Packaging/BuildScores"
+             target="_blank">What's this?</a>
         </li>
       </tal:pending>
       </tal:reallypending>
