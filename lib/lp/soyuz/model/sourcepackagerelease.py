@@ -522,7 +522,7 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def uploader(self):
-        return None
+        return self.dscsigningkey.owner
 
     @property
     def change_summary(self):
