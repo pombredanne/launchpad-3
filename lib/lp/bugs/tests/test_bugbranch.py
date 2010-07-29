@@ -8,12 +8,9 @@ from __future__ import with_statement
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.event import notify
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing import DatabaseFunctionalLayer
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 from lp.bugs.model.bugbranch import BugBranch, BugBranchSet
 from lp.bugs.interfaces.bugbranch import IBugBranch, IBugBranchSet
 from lp.testing import (
@@ -205,26 +202,4 @@ class TestBugBranch(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         self.factory.loginAsAnyone()
         bug.linkBranch(branch, self.factory.makePerson())
-        self.assertTrue(bug.date_last_updated > last_updated)
-
-    def test_editing_branch_changes_date_last_updated(self):
-        # Editing a branch linked to a bug changes IBug.date_last_updated.
-        bug = self.factory.makeBug()
-        branch = self.factory.makeBranch()
-        registrant = self.factory.makePerson()
-        self.factory.loginAsAnyone()
-        branch_link = bug.linkBranch(branch, registrant)
-        last_updated = bug.date_last_updated
-        # Rather than modifying the bugbranch link directly, we emit an
-        # ObjectModifiedEvent, which is triggered whenever the object is
-        # edited.
-
-        # XXX: jml has no idea why we do this. Accessing any attribute of the
-        # returned BugBranch appears to be forbidden, and there's no evidence
-        # that the object is even editable at all.
-        before_modification = Snapshot(branch_link, providing=IBugBranch)
-        # XXX: WTF? IBugBranch doesn't even have a status attribute? jml.
-        event = ObjectModifiedEvent(
-            branch_link, before_modification, ['status'])
-        notify(event)
         self.assertTrue(bug.date_last_updated > last_updated)
