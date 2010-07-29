@@ -248,7 +248,7 @@ The +productrelease-data named view uses the same view as +index to display
 the product release data for a milestone.
 
     >>> from canonical.launchpad.testing.pages import (
-    ...     extract_text, find_main_content, find_tag_by_id)
+    ...     extract_text, find_tag_by_id)
 
     >>> view = create_view(
     ...     milestone, '+productrelease-data', principal=person)
@@ -299,55 +299,6 @@ not have edit permission.
     None
 
     >>> login_person(person)
-
-
-Milestone caching
------------------
-
-Active milestones cache bugtasks for 10 minutes.
-
-    >>> from canonical.testing.layers import MemcachedLayer
-
-    >>> MemcachedLayer.purge()
-    >>> cached_milestone = factory.makeMilestone(
-    ...     'cache-test', productseries=series)
-    >>> cached_bugtask = factory.makeBugTask(target=cached_milestone.product)
-    >>> cached_bugtask.milestone = cached_milestone
-    >>> view = create_view(cached_milestone, '+index', principal=person)
-    >>> view.expire_cache_minutes
-    10
-
-    >>> 'Cache hit' in view.render()
-    False
-
-    >>> content = find_main_content(create_view(
-    ...     cached_milestone, '+index', principal=person).render())
-    >>> print find_tag_by_id(content, 'milestone-activities')
-    <div id="milestone-activities" ...<!--
-      Cache hit: memcache expression
-      (private, view/expire_cache_minutes minute) [600 seconds] ...
-    <dt>Assigned to you:</dt> ... No blueprints or bugs assigned to you. ...
-
-    >>> print find_tag_by_id(content, 'milestone-specs-bugs')
-    <div id="milestone-specs-bugs" ...
-    <!-- Cache hit: memcache expression
-      (private, view/expire_cache_minutes minute) [600 seconds] -->
-    <table class="listing sortable" id="milestone_bugtasks">...
-
-Inactive milestones cache bugtasks for 3 hours.
-
-    >>> MemcachedLayer.purge()
-    >>> cached_milestone.active = False
-    >>> view = create_view(cached_milestone, '+index', principal=person)
-    >>> view.expire_cache_minutes
-    360
-    >>> 'Cache hit' in view.render()
-    False
-    >>> print create_view(
-    ...     cached_milestone, '+index', principal=person).render()
-    <...<!-- Cache hit: memcache expression
-      (private, view/expire_cache_minutes minute) [21600 seconds] -->
-    <table class="listing sortable" id="milestone_bugtasks">...
 
 
 ProjectGroup milestones
@@ -628,9 +579,13 @@ Distroseries driver and milestones
 The driver of a series that belongs to an `IDerivativeDistribution` is a
 release manager and can create milestones.
 
+    >>> from lp.testing.factory import (
+    ...     remove_security_proxy_and_shout_at_engineer)
     >>> distroseries = factory.makeDistroRelease(name='pumpkin')
     >>> driver = factory.makePerson(name='a-driver')
-    >>> distroseries.driver = driver
+    >>> naked_distroseries = remove_security_proxy_and_shout_at_engineer(
+    ...     distroseries)
+    >>> naked_distroseries.driver = driver
     >>> login_person(driver)
 
     >>> form = {

@@ -35,102 +35,10 @@ slots. The global search and the applications tabs are present. The
 main and side content are positioned using the "yui-t4", "yui-main",
 "yui-b", and "yui-b side" classes.
 
-Header.
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
     >>> view = MainSideView(user, request)
     >>> html = view.render()
-    >>> print html
-    <!DOCTYPE html ...
-    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-          lang="en" dir="ltr">
-      <head>
-        <title>Test base-layout: main_side</title>
-        <link rel="shortcut icon" href="/@@/launchpad.png" />
-    ...
-
-Standard Javascript functions.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-            sortables_init();
-            initInlineHelp();
-            Y.lp.activate_collapsibles();
-            activateFoldables();
-            activateConstrainBugExpiration();
-    ...
-
-Body preamble.
-
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
-
-    >>> body_tag = find_tag_by_id(html, 'document')
-    >>> body = str(body_tag)
-    >>> print body
-    <body id="document"
-            class="tab-overview
-          main_side
-          public
-          yui-skin-sam">
-             <script type="text/javascript">
-             ...google-analytics.com...
-             </script>
-        <div class="yui-d0">
-    <BLANKLINE>
-          <div id="locationbar">
-    ...
-
-Watermark and breadcrumbs.
-
-    >>> print body
-    <body ...
-    ...
-          <div class="watermark-apps-portlet top-portlet">
-            <img alt="" width="64" height="64" src="/@@/person-logo" />
-            <h2>Waffles</h2>
-    ...
-      <!-- Application Menu -->
-      <ul class="facetmenu">
-    <BLANKLINE>
-          <li class="overview active"
-              title="General information about Waffles"><a
-        href="http://launchpad.dev/~waffles">Overview</a></li>
-    ...
-              <div class="yui-b" dir="ltr">
-                <div>
-                  <h2>Heading</h2>
-                  <ol class="breadcrumbs">
-    ...
-
-Top portlet.
-
-    >>> print body
-    <body ...
-          <div class="top-portlet">
-            <p class="registered">
-              Registered on 2005-09-16
-              by <a class="sprite team" href="#">Illuminati team</a>
-            </p>
-            <p>
-              Main content of the page.
-            </p>
-          </div>
-    ...
-
-Help pane.
-
-    >>> print str(find_tag_by_id(body_tag, 'help-pane'))
-    <div id="help-pane" class="invisible">
-          <div id="help-body">
-            <iframe id="help-pane-content" class="invisible" ...
-            </div>
-          <div id="help-footer">
-            <span id="help-close"></span>
-          </div>
-        </div>
-
-Footer.
-
     >>> print html
     <!DOCTYPE html ...
       <!--
@@ -154,72 +62,6 @@ content to take up all the horizontal space.
 
     >>> view = MainOnlyView(user, request)
     >>> html = view.render()
-
-Heading.
-
-    >>> print html
-    <!DOCTYPE html ...
-    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-          lang="en" dir="ltr">
-      <head>
-        <title>Test base-layout: main_only</title>
-        <link rel="shortcut icon" href="/@@/launchpad.png" />
-    ...
-
-Watermark.
-
-    >>> body_tag = find_tag_by_id(html, 'document')
-    >>> body = str(body_tag)
-    >>> print body
-    <body ...
-          <div class="watermark-apps-portlet top-portlet">
-            <img alt="" width="64" height="64" src="/@@/person-logo" />
-            <h2>Waffles</h2>
-    ...
-
-Main content.
-
-    >>> print str(find_tag_by_id(body_tag, 'maincontent'))
-    <div id="maincontent" class="yui-main">
-              <div class="yui-b" dir="ltr">
-                <div>
-    <BLANKLINE>
-                  <ol class="breadcrumbs">
-    <BLANKLINE>
-    </ol>
-    <BLANKLINE>
-                </div>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-          <div class="top-portlet">
-            <h1>Heading</h1>
-            <p class="registered">
-              Registered on 2005-09-16
-              by <a class="sprite team" href="#">Illuminati team</a>
-            </p>
-            <p>
-              Main content of the page.
-            </p>
-          </div>
-        </div><!-- yui-b -->
-    </div>
-
-Global search.
-
-    >>> print body
-    <body ...
-      <form id="globalsearch" method="get"
-            accept-charset="UTF-8"
-            action="http://launchpad.dev/+search">
-        <input type="search" id="search-text" name="field.text" />
-        <input type="submit" value="" class="icon-only sprite search-icon" />
-      </form>
-    </div>
-    ...
-
-Footer.
-
     >>> print html
     <!DOCTYPE html ...
     ...
@@ -243,86 +85,6 @@ slots are rendered, as are the application tabs.
 
     >>> view = SearchlessView(user, request)
     >>> html = view.render()
-
-Heading.
-
-    >>> print html
-    <!DOCTYPE html ...
-    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-          lang="en" dir="ltr">
-      <head>
-        <title>Test base-layout: searchless</title>
-        <link rel="shortcut icon" href="/@@/launchpad.png" />
-    ...
-
-Body class.
-
-    >>> body_tag = find_tag_by_id(html, 'document')
-    >>> body = str(body_tag)
-    >>> print body
-    <body id="document"
-            class="tab-overview
-          searchless
-          public
-          yui-skin-sam">
-             <script type="text/javascript">
-             ...google-analytics.com...
-             </script>
-        <div class="yui-d0">
-    ...
-
-Watermarks.
-
-    >>> print body
-    <body ...
-          <div class="watermark-apps-portlet top-portlet">
-            <img alt="" width="64" height="64" src="/@@/person-logo" />
-            <h2>Waffles</h2>
-            <div id="registration" class="registering">
-            </div>
-    <BLANKLINE>
-      <!-- Application Menu -->
-      <ul class="facetmenu">
-    <BLANKLINE>
-          <li class="overview active"
-              title="General information about Waffles"><a
-        href="http://launchpad.dev/~waffles">Overview</a></li>
-    ...
-
-Main content.
-
-    >>> print str(find_tag_by_id(body_tag, 'maincontent'))
-    <div id="maincontent" class="yui-main">
-              <div class="yui-b" dir="ltr">
-                <div>
-    <BLANKLINE>
-                  <ol class="breadcrumbs">
-    <BLANKLINE>
-    </ol>
-    ...
-
-Top portlet.
-
-    >>> print body
-    <body ...
-          <div class="top-portlet">
-            <h1>Heading</h1>
-            <p class="registered">
-              Registered on 2005-09-16
-              by <a class="sprite team" href="#">Illuminati team</a>
-            </p>
-            <p>
-              Main content of the page.
-            </p>
-          </div>
-          </div><!-- yui-b -->
-          </div><!-- yui-main -->
-          <!-- yui-b side -->
-          <!-- yui-t4 -->
-    ...
-
-Footer.
-
     >>> print html
     <!DOCTYPE html ...
     ...
@@ -348,54 +110,6 @@ or breadcrumbs; the template must provide its own h1 element.
 
     >>> view = LocationlessView(user, request)
     >>> html = view.render()
-
-Heading.
-
-    >>> print html
-    <!DOCTYPE html ...
-    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-          lang="en" dir="ltr">
-      <head>
-        <title>Test base-layout: locationless</title>
-        <link rel="shortcut icon" href="/@@/launchpad.png" />
-    ...
-
-Body.
-
-    >>> body_tag = find_tag_by_id(html, 'document')
-    >>> body = str(body_tag)
-    >>> print body
-    <body id="document"
-            class="tab-overview
-          locationless
-          public
-          yui-skin-sam">
-             <script type="text/javascript">
-             ...google-analytics.com...
-             </script>
-        <div class="yui-d0">
-    ...
-
-Main content.
-
-    >>> print str(find_tag_by_id(body_tag, 'maincontent'))
-    <div id="maincontent" class="yui-main">
-        <div class="yui-b" dir="ltr">
-          <div class="top-portlet">
-            <h1>Heading</h1>
-            <p class="registered">
-              Registered on 2005-09-16
-              by <a class="sprite team" href="#">Illuminati team</a>
-            </p>
-            <p>
-              Main content of the page.
-            </p>
-          </div>
-        </div><!-- yui-b -->
-    </div>
-
-Footer.
-
     >>> print html
     <!DOCTYPE html ...
     ...
@@ -526,8 +240,6 @@ Notifications are diplayed between the breadcrumbs and the page content.
     >>> body_tag = find_tag_by_id(view.render(), 'maincontent')
     >>> print str(body_tag)
     <div id="maincontent" ...
-      <ol class="breadcrumbs">
-      </ol>
       ...
       <div class="informational message">I cannot do that Dave.</div>
       <div class="top-portlet">

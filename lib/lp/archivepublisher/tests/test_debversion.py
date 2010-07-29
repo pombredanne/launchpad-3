@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for debversion."""
@@ -29,27 +29,27 @@ class VersionTests(unittest.TestCase):
 
     # Known less-than comparisons
     COMPARISONS = (
-        ( "1.0", "1.1" ),
-        ( "1.1", "2.0" ),
-        ( "2.1", "2.10" ),
-        ( "2.2", "2.10" ),
-        ( "1.0", "1:1.0" ),
-        ( "1:9.0", "2:1.0" ),
-        ( "1.0-1", "1.0-2" ),
-        ( "1.0", "1.0-1" ),
-        ( "1a", "1b" ),
-        ( "1a", "2" ),
-        ( "1a", "1." ),
-        ( "1a", "1+" ),
-        ( "1:1a", "1:1:" ),
-        ( "1a-1", "1--1" ) ,
-        ( "1+-1", "1--1" ),
-        ( "1--1", "1.-1" ),
-        ( "1:1.", "1:1:" ),
-        ( "1A", "1a" ),
-        ( "1~", "1" ),
-        ( "1~", "1~a" ),
-        ( "1~a", "1~b" ),
+        ("1.0", "1.1"),
+        ("1.1", "2.0"),
+        ("2.1", "2.10"),
+        ("2.2", "2.10"),
+        ("1.0", "1:1.0"),
+        ("1:9.0", "2:1.0"),
+        ("1.0-1", "1.0-2"),
+        ("1.0", "1.0-1"),
+        ("1a", "1b"),
+        ("1a", "2"),
+        ("1a", "1."),
+        ("1a", "1+"),
+        ("1:1a", "1:1:"),
+        ("1a-1", "1--1"),
+        ("1+-1", "1--1"),
+        ("1--1", "1.-1"),
+        ("1:1.", "1:1:"),
+        ("1A", "1a"),
+        ("1~", "1"),
+        ("1~", "1~a"),
+        ("1~a", "1~b"),
         )
 
     def testAcceptsString(self):
@@ -129,6 +129,6 @@ class VersionTests(unittest.TestCase):
     def notestNullRevisionIsZero(self):
         """Version should treat an omitted revision as being equal to zero.
         """
-        # XXX JRV 20100312: Disabled at the moment because this fails because of
-        # a bug in apt. (http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=573592)
         self.assertEquals(Version("1.0"), Version("1.0-0"))
+        from lp.archivepublisher.debversion import Version
+        self.failUnless(Version("1.0") == Version("1.0-0"))

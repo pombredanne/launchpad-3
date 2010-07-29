@@ -22,7 +22,7 @@ from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
 from openid import oidutil
-from openid.server.server import CheckIDRequest, Server
+from openid.server.server import CheckIDRequest, Server, ENCODE_HTML_FORM
 from openid.store.memstore import MemoryStore
 from openid.extensions.sreg import SRegRequest, SRegResponse
 
@@ -170,6 +170,10 @@ class OpenIDMixin:
         webresponse = self.openid_server.encodeResponse(openid_response)
         response = self.request.response
         response.setStatus(webresponse.code)
+        # encodeResponse doesn't generate a content-type, help it out
+        if (webresponse.code == 200 and webresponse.body
+                and openid_response.whichEncoding() == ENCODE_HTML_FORM):
+            response.setHeader('content-type', 'text/html')
         for header, value in webresponse.headers.items():
             response.setHeader(header, value)
         return webresponse.body
@@ -198,7 +202,10 @@ class OpenIDMixin:
         else:
             response = self.openid_request.answer(True)
 
-        sreg_fields = dict(nickname=IPerson(self.account).name)
+        sreg_fields = dict(
+            nickname=IPerson(self.account).name,
+            email=self.account.preferredemail.email,
+            fullname=self.account.displayname)
         sreg_request = SRegRequest.fromOpenIDRequest(self.openid_request)
         sreg_response = SRegResponse.extractResponse(
             sreg_request, sreg_fields)
@@ -224,7 +231,7 @@ class TestOpenIDView(OpenIDMixin, LaunchpadView):
     This class implements an OpenID endpoint using the python-openid
     library.  In addition to the normal modes of operation, it also
     implements the OpenID 2.0 identifier select mode.
-    
+
     Note that the checkid_immediate mode is not supported.
     """
 

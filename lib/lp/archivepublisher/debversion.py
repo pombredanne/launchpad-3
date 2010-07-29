@@ -10,9 +10,9 @@ special methods to make dealing with them sweet.
 
 __metaclass__ = type
 
-# This code came from sourcerer.
+# This code came from sourcerer but has been heavily modified since.
 
-from debian_bundle import changelog
+from debian import changelog
 
 import re
 
@@ -50,7 +50,10 @@ class Version(changelog.Version):
         if not len(ver):
             raise BadInputError, "Input cannot be empty"
 
-        changelog.Version.__init__(self, ver)
+        try:
+            changelog.Version.__init__(self, ver)
+        except ValueError, e:
+            raise VersionError, e
 
         if self.epoch is not None:
             if not len(self.epoch):
