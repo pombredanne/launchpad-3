@@ -361,7 +361,7 @@ class cmd_land(EC2Command):
     def run(self, merge_proposal=None, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
-            no_qa=False, incr=False, print_commit=False, force=False,
+            no_qa=False, incremental=False, print_commit=False, force=False,
             attached=False):
         try:
             from devscripts.autoland import (
@@ -382,7 +382,7 @@ class cmd_land(EC2Command):
         if print_commit and dry_run:
             raise BzrCommandError(
                 "Cannot specify --print-commit and --dry-run.")
-        if no_qa and incr:
+        if no_qa and incremental:
             raise BzrCommandError(
                 "--no-qa and --incremental cannot be given at the same time.")
         lander = LaunchpadBranchLander.load()
@@ -408,7 +408,7 @@ class cmd_land(EC2Command):
                 "message on the merge proposal.")
         try:
             commit_message = mp.get_commit_message(
-                commit_text, testfix, no_qa, incr)
+                commit_text, testfix, no_qa, incremental)
         except MissingReviewError:
             raise BzrCommandError(
                 "Cannot land branches that haven't got approved code "
