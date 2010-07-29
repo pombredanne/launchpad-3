@@ -429,8 +429,8 @@
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
         <tal:edge condition="is_edge">
-          <a href="https://code.edge.launchpad.net/~launchpad-pqm/launchpad/stable/"
-             >beta site (get the code)</a>
+          beta site (<a href="https://code.edge.launchpad.net/~launchpad-pqm/launchpad/stable/"
+             >get the code</a>)
         </tal:edge>
       </span>
     </div>
