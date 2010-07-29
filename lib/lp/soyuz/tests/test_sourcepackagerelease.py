@@ -36,4 +36,3 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         self.assertEqual(
             recipe_build.requester,
             spr.uploader)
-

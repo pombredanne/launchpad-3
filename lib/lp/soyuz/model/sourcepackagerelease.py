@@ -522,6 +522,8 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def uploader(self):
+        if self.source_package_recipe_build is not None:
+            return self.source_package_recipe_build.requester
         if self.dscsigningkey is None:
             return None
         return self.dscsigningkey.owner
