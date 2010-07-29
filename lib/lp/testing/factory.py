@@ -160,7 +160,6 @@ from lp.testing import (
     ANONYMOUS,
     login,
     login_as,
-    logout,
     run_with_login,
     temp_dir,
     time_counter,
@@ -846,7 +845,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
-                'Unrecognized branch type: %r' % (branch_type,))
+                'Unrecognized branch type: %r' % (branch_type, ))
 
         namespace = get_branch_namespace(
             owner, product=product, distroseries=distroseries,
@@ -1633,6 +1632,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return series
 
     def makeLanguage(self, language_code=None, name=None):
+        """Makes a language given the language_code and name."""
         if language_code is None:
             language_code = self.getUniqueString('lang')
         if name is None:
