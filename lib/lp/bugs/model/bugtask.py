@@ -451,7 +451,7 @@ def validate_status(self, attr, value):
         return value
 
 
-<@block_implicit_flushes
+@block_implicit_flushes
 def validate_sourcepackagename(self, attr, value):
     is_passthrough = isinstance(value, PassthroughValue)
     value = validate_conjoined_attribute(self, attr, value)
