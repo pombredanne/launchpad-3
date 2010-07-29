@@ -27,3 +27,13 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         self.assertEqual(
             spr.dscsigningkey.owner,
             spr.uploader)
+
+    def test_uploader_recipe(self):
+        recipe_build = self.factory.makeSourcePackageRecipeBuild()
+        recipe = recipe_build.recipe
+        spr = self.factory.makeSourcePackageRelease(
+            source_package_recipe_build=recipe_build)
+        self.assertEqual(
+            recipe_build.requester,
+            spr.uploader)
+
