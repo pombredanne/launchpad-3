@@ -979,7 +979,9 @@ class LaunchpadAccessLogger(CommonAccessLogger):
                 userid,
                 pageid,
                 referer,
-                user_agent))
+                user_agent,
+                )
+           )
 
 
 http = wsgi.ServerType(
@@ -1104,6 +1106,16 @@ class WebServicePublication(WebServicePublicationMixin,
     """The publication used for Launchpad web service requests."""
 
     root_object_interface = IWebServiceApplication
+
+    def constructPageID(self, view, context):
+        """Add the web service named operation (if any) to the page ID."""
+        pageid = super(WebServicePublication, self).constructPageID(
+            view, context)
+        op = (view.request.get('ws.op')
+            or view.request.query_string_params.get('ws.op'))
+        if op:
+            pageid += ':' + op
+        return pageid
 
     def getApplication(self, request):
         """See `zope.publisher.interfaces.IPublication`.
