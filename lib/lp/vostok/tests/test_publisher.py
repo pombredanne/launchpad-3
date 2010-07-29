@@ -38,7 +38,6 @@ class TestRegistration(TestCase):
             host=config.vhost.vostok.hostname)
         self.assertProvides(request, VostokLayer)
         # XXX This shouldn't be needed:
-        # XXX Use test traverse instead?
         getUtility(IOpenLaunchBag).clear()
         root = publication.getApplication(request)
         self.assertIsInstance(root, VostokRoot)
