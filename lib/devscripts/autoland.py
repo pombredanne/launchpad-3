@@ -163,23 +163,26 @@ class MergeProposal:
     def get_commit_message(self, commit_text, testfix=False, no_qa=False,
                            incremental=False):
         """Get the Launchpad-style commit message for a merge proposal."""
-        clauses = []
-
         reviews = self.get_reviews()
         bugs = self.get_bugs()
 
-        clauses.append(get_reviewer_clause(reviews))
-        clauses.append(get_bugs_clause(bugs))
-        clauses.append(get_qa_clause(bugs, no_qa, incremental))
-        clauses.append(get_testfix_clause(testfix))
+        tags = ''.join([
+            get_testfix_clause(testfix),
+            get_reviewer_clause(reviews),
+            get_bugs_clause(bugs),
+            get_qa_clause(bugs, no_qa,
+                incremental),
+            ])
 
-        return '%s %s' % (''.join(clauses), commit_text)
+        return '%s %s' % (tags, commit_text)
 
 
 def get_testfix_clause(testfix=False):
     """Get the testfix clause."""
-    testfix_clause = ''
-    if testfix: testfix_clause = '[testfix]'
+    if testfix:
+        testfix_clause = '[testfix]'
+    else:
+        testfix_clause = ''
     return testfix_clause
 
 
@@ -197,8 +200,12 @@ def get_qa_clause(bugs, no_qa=False, incremental=False):
     if incremental and not bugs:
         raise MissingBugsIncrementalError
 
-    if incremental: qa_clause = '[incr]'
-    if no_qa: qa_clause = '[no-qa]'
+    if incremental:
+        qa_clause = '[incr]'
+    elif no_qa:
+        qa_clause = '[no-qa]'
+    else:
+        qa_clause = ''
 
     return qa_clause
 
