@@ -158,7 +158,6 @@ from lp.testing import (
     ANONYMOUS,
     login,
     login_as,
-    logout,
     run_with_login,
     temp_dir,
     time_counter,
@@ -1046,7 +1045,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
     def makeDiff(self, diff_text=DIFF):
-        return ProxyFactory(Diff.fromFile(StringIO(diff_text), len(diff_text)))
+        return ProxyFactory(
+            Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
     def makePreviewDiff(self, conflicts=u''):
         diff = self.makeDiff()
@@ -2748,8 +2748,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 unwrapped_types = (
     DSCFile, InstanceType, Message, datetime, int, str, unicode)
 
+
 def is_security_proxied_or_harmless(obj):
-    """Check that the given object is security wrapped or a harmless object."""
+    """Check that the given object is security wrapped or a harmless object.
+    """
     if obj is None:
         return True
     if builtin_isinstance(obj, Proxy):
@@ -2775,6 +2777,7 @@ class LaunchpadObjectFactory:
 
     Whereever you see such a warning: fix it!
     """
+
     def __init__(self):
         self._factory = BareLaunchpadObjectFactory()
 

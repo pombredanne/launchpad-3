@@ -147,7 +147,6 @@ class SourcePackageRelease(SQLBase):
     package_diffs = SQLMultipleJoin(
         'PackageDiff', joinColumn='to_source', orderBy="-date_requested")
 
-
     @property
     def builds(self):
         """See `ISourcePackageRelease`."""
