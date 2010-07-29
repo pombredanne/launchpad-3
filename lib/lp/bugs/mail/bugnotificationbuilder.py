@@ -93,7 +93,6 @@ class BugNotificationBuilder:
 
     def __init__(self, bug, event_creator=None):
         self.bug = bug
-        self.event_creator = event_creator
 
         # Pre-calculate common headers.
         self.common_headers = [
@@ -138,13 +137,13 @@ class BugNotificationBuilder:
             ('X-Launchpad-Bug-Commenters', ' '.join(sorted(commenters))))
 
         # Add the -Bug-Reporter header to identify the owner of the bug
-        # and the original bug task for filtering
+        # and the original bug task for filtering.
         self.common_headers.append(
             ('X-Launchpad-Bug-Reporter',
              '%s (%s)' % (bug.owner.displayname, bug.owner.name)))
 
         # Add the -Bug-Modifier header to identify the person who
-        # modified the bug report
+        # modified the bug report.
         if event_creator:
             self.common_headers.append(
                 ('X-Launchpad-Bug-Modifier',
