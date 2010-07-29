@@ -642,6 +642,18 @@ class IPOTemplateSet(Interface):
         migration spec.
         """
 
+    def wipeSuggestivePOTemplatesCache():
+        """Erase suggestive-templates cache.
+
+        :return: Number of rows deleted.
+        """
+
+    def populateSuggestivePOTemplatesCache():
+        """Populate suggestive-templates cache.
+
+        :return: Number of rows inserted.
+        """
+
 
 class IPOTemplateSharingSubset(Interface):
     """A subset of sharing PO templates."""
