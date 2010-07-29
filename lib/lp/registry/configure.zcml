@@ -465,7 +465,7 @@
     <class
         class="lp.registry.model.commercialsubscription.CommercialSubscription">
         <require
-            permission="launchpad.View"
+            permission="zope.Public"
             interface="lp.registry.interfaces.commercialsubscription.ICommercialSubscription"/>
         <require
             permission="launchpad.Commercial"

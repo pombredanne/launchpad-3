@@ -781,5 +781,19 @@ class IHasTranslationTemplates(Interface):
         exist for it.
         """
 
+class ITranslationTemplatesCollection(Interface):
+    """A `Collection` of `POTemplate`s."""
+
+    def joinOuterPOFile(language=None):
+        """Outer-join `POFile` into the collection.
+
+        :return: A `TranslationTemplatesCollection` with an added outer
+            join to `POFile`.
+        """
+
+    def select(*args):
+        """Return a ResultSet for this collection with values set to args."""
+
+
 # Monkey patch for circular import avoidance done in
 # _schema_circular_imports.py

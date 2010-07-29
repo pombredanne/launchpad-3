@@ -125,7 +125,7 @@ class TestBranchView(TestCaseWithFactory):
 
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeBranch(branch_type=BranchType.MIRRORED)
         branch.mirrorFailed(
             "on quick brown fox the dog jumps to" *
             BranchMirrorStatusView.MAXIMUM_STATUS_MESSAGE_LENGTH)
@@ -137,7 +137,7 @@ class TestBranchView(TestCaseWithFactory):
 
     def testMirrorStatusMessage(self):
         """mirror_status_message on the view is the same as on the branch."""
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeBranch(branch_type=BranchType.MIRRORED)
         branch.mirrorFailed("This is a short error message.")
         branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertTrue(
