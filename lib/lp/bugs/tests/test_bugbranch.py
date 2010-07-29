@@ -7,6 +7,7 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
+from zope.component import getUtility
 from zope.event import notify
 from zope.security.interfaces import Unauthorized
 
@@ -15,16 +16,61 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lp.bugs.model.bugbranch import BugBranch, BugBranchSet
 from lp.bugs.interfaces.bugbranch import IBugBranch, IBugBranchSet
-from lp.testing import anonymous_logged_in, TestCase, TestCaseWithFactory
+from lp.testing import (
+    anonymous_logged_in,
+    celebrity_logged_in,
+    TestCaseWithFactory,
+    )
 
 
-class TestBugBranchSet(TestCase):
+class TestBugBranchSet(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def test_bugbranchset_provides_IBugBranchSet(self):
         # BugBranchSet objects provide IBugBranchSet.
         self.assertProvides(BugBranchSet(), IBugBranchSet)
+
+    def test_getBugBranchesForBranches_no_branches(self):
+        bug_branches = getUtility(IBugBranchSet)
+        links = bug_branches.getBugBranchesForBranches(
+            [], self.factory.makePerson())
+        self.assertEqual([], list(links))
+
+    def test_getBugBranchesForBranches(self):
+        # IBugBranchSet.getBugBranchesForBranches returns all of the BugBranch
+        # objects associated with the given branches.
+        branch_1 = self.factory.makeBranch()
+        branch_2 = self.factory.makeBranch()
+        bug_a = self.factory.makeBug()
+        bug_b = self.factory.makeBug()
+        self.factory.loginAsAnyone()
+        link_1 = bug_a.linkBranch(branch_1, self.factory.makePerson())
+        link_2 = bug_a.linkBranch(branch_2, self.factory.makePerson())
+        link_3 = bug_b.linkBranch(branch_2, self.factory.makePerson())
+        self.assertEqual(
+            set([link_1, link_2, link_3]),
+            set(getUtility(IBugBranchSet).getBugBranchesForBranches(
+                [branch_1, branch_2], self.factory.makePerson())))
+
+    def test_getBugBranchesForBranches_respects_bug_privacy(self):
+        # IBugBranchSet.getBugBranchesForBranches returns only the BugBranch
+        # objects that are visible by the user who is asking for them.
+        branch = self.factory.makeBranch()
+        user = self.factory.makePerson()
+        public_bug = self.factory.makeBug()
+        private_visible_bug = self.factory.makeBug(private=True)
+        private_invisible_bug = self.factory.makeBug(private=True)
+        with celebrity_logged_in('admin'):
+            public_bug.linkBranch(branch, user)
+            private_visible_bug.subscribe(user, user)
+            private_visible_bug.linkBranch(branch, user)
+            private_invisible_bug.linkBranch(branch, user)
+        bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
+            [branch], user)
+        self.assertEqual(
+            set([public_bug, private_visible_bug]),
+            set([link.bug for link in bug_branches]))
 
 
 class TestBugBranch(TestCaseWithFactory):
