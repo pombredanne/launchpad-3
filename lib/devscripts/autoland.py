@@ -13,11 +13,11 @@ class MissingReviewError(Exception):
 
 
 class MissingBugsError(Exception):
-    """Merge proposal has no linked bugs and no 'no-qa' tag."""
+    """Merge proposal has no linked bugs and no [no-qa] tag."""
 
 
-class MissingBugsIncrError(Exception):
-    """Merge proposal has the 'incr' tag but no linked bugs."""
+class MissingBugsIncrementalError(Exception):
+    """Merge proposal has the [incr] tag but no linked bugs."""
 
 
 class LaunchpadBranchLander:
@@ -161,7 +161,7 @@ class MergeProposal:
         return URI(scheme='bzr+ssh', host=host, path='/' + branch.unique_name)
 
     def get_commit_message(self, commit_text, testfix=False, no_qa=False,
-                           incr=False):
+                           incremental=False):
         """Get the Launchpad-style commit message for a merge proposal."""
         clauses = []
 
@@ -170,7 +170,7 @@ class MergeProposal:
 
         clauses.append(get_reviewer_clause(reviews))
         clauses.append(get_bugs_clause(bugs))
-        clauses.append(get_qa_clause(bugs, no_qa, incr))
+        clauses.append(get_qa_clause(bugs, no_qa, incremental))
         clauses.append(get_testfix_clause(testfix))
 
         return '%s %s' % (''.join(clauses), commit_text)
@@ -183,22 +183,21 @@ def get_testfix_clause(testfix=False):
     return testfix_clause
 
 
-def get_qa_clause(bugs, no_qa=False, incr=False):
-    """Check the no-qa and incr options, getting the qa clause.
+def get_qa_clause(bugs, no_qa=False, incremental=False):
+    """Check the no-qa and incremental options, getting the qa clause.
 
-    The qa clause will always be or no-qa, or incr or no tags, never both at
+    The qa clause will always be or no-qa, or incremental or no tags, never both at
     the same time.
     """
     qa_clause = ""
 
-    if not bugs and not no_qa and not incr:
-        raise MissingBugsError("Need bugs linked or --no-qa option.")
+    if not bugs and not no_qa and not incremental:
+        raise MissingBugsError
 
-    if incr and not bugs:
-        raise MissingBugsIncrError("--incr option requires bugs linked to "
-            "the branch.")
+    if incremental and not bugs:
+        raise MissingBugsIncrementalError
 
-    if incr: qa_clause = '[incr]'
+    if incremental: qa_clause = '[incr]'
     if no_qa: qa_clause = '[no-qa]'
 
     return qa_clause
