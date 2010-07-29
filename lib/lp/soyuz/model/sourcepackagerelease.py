@@ -522,11 +522,12 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def uploader(self):
+        """See `ISourcePackageRelease`"""
         if self.source_package_recipe_build is not None:
             return self.source_package_recipe_build.requester
-        if self.dscsigningkey is None:
-            return None
-        return self.dscsigningkey.owner
+        if self.dscsigningkey is not None:
+            return self.dscsigningkey.owner
+        return None
 
     @property
     def change_summary(self):
