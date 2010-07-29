@@ -314,20 +314,6 @@ Launchpad administrators will see the expiration information.
     ...                      'commercial_subscription'))
     Commercial subscription expires ...
 
-Regular Launchpad users will not see the message.
-
-    >>> user_browser.open('http://launchpad.dev/mega-money-maker')
-    >>> print extract_text(find_tag_by_id(user_browser.contents,
-    ...                      'commercial_subscription'))
-    Commercial subscription expires ...
-
-And anonymous users also see the expiration message.
-
-    >>> anon_browser.open('http://launchpad.dev/mega-money-maker')
-    >>> print extract_text(find_tag_by_id(anon_browser.contents,
-    ...                      'commercial_subscription'))
-    Commercial subscription expires ...
-
 
 Development
 -----------
