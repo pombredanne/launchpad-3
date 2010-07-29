@@ -22,6 +22,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
+from lp.registry.interfaces.person import validate_person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriber)
@@ -44,7 +45,8 @@ class ArchiveSubscriber(Storm):
         name='date_created', allow_none=False, tzinfo=pytz.UTC)
 
     subscriber_id = Int(
-        name='subscriber', allow_none=False)
+        name='subscriber', allow_none=False,
+        validator=validate_person)
     subscriber = Reference(subscriber_id, 'Person.id')
 
     date_expires = DateTime(

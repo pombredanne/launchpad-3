@@ -28,7 +28,8 @@ from lp.registry.interfaces.structuralsubscription import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
     IStructuralSubscription, IStructuralSubscriptionTarget,
     UserCannotSubscribePerson)
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person, validate_public_person)
 
 
 class StructuralSubscription(SQLBase):
@@ -60,7 +61,7 @@ class StructuralSubscription(SQLBase):
         notNull=False, default=None)
     subscriber = ForeignKey(
         dbName='subscriber', foreignKey='Person',
-        notNull=True)
+        storm_validator=validate_person, notNull=True)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)

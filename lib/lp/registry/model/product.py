@@ -57,7 +57,8 @@ from lp.answers.model.faq import FAQ, FAQSearch
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person, validate_public_person)
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.pillar import HasAliasMixin
@@ -186,6 +187,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     _owner = ForeignKey(
         dbName="owner", foreignKey="Person",
+        storm_validator=validate_person,
         notNull=True)
     registrant = ForeignKey(
         dbName="registrant", foreignKey="Person",
@@ -193,6 +195,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
+        storm_validator=validate_person,
         notNull=False,
         default=None)
     security_contact = ForeignKey(
@@ -201,6 +204,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
+        storm_validator=validate_person,
         notNull=False, default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)

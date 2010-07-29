@@ -30,7 +30,8 @@ from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile, IProductReleaseSet,
     UpstreamFileType)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person, validate_public_person)
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
@@ -51,6 +52,7 @@ class ProductRelease(SQLBase):
         dbName='datecreated', notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
+        storm_validator=validate_person,
         notNull=True)
     milestone = ForeignKey(dbName='milestone', foreignKey='Milestone')
 

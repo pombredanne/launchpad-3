@@ -14,6 +14,7 @@ from storm.store import Store
 from lp.bugs.interfaces.bugactivity import IBugActivity, IBugActivitySet
 from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
+from lp.registry.interfaces.person import validate_person
 
 
 class BugActivity(SQLBase):
@@ -26,6 +27,7 @@ class BugActivity(SQLBase):
     datechanged = UtcDateTimeCol(notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
+        storm_validator=validate_person,
         notNull=True)
     whatchanged = StringCol(notNull=True)
     oldvalue = StringCol(default=None)

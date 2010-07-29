@@ -15,6 +15,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.registry.interfaces.person import validate_person
 
 
 class BugSubscription(SQLBase):
@@ -26,12 +27,16 @@ class BugSubscription(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        notNull=True)
+        storm_validator=validate_person,
+        notNull=True
+        )
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',
-        notNull=True)
+        storm_validator=validate_person,
+        notNull=True
+        )
 
     @property
     def display_subscribed_by(self):
