@@ -14,6 +14,12 @@ class TestSourcePackageRelease(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
+    def test_uploader_no_uploader(self):
+        spr = self.factory.makeSourcePackageRelease()
+        self.assertEqual(
+            None,
+            spr.uploader)
+
     def test_uploader_dsc_package(self):
         owner = self.factory.makePerson()
         key = self.factory.makeGPGKey(owner)
