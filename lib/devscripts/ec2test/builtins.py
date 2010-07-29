@@ -321,13 +321,13 @@ class cmd_land(EC2Command):
         Option('print-commit', help="Print the full commit message."),
         Option(
             'testfix',
-            help="Include the [testfix] prefix in the commit message."),
+            help="This is a testfix (tags commit with [testfix])."),
         Option(
             'no-qa',
-            help="Include the [no-qa] prefix in the commit message."),
+            help="Does not require QA (tags commit with [no-qa])."),
         Option(
-            'incr',
-            help="Include the [incr] prefix in the commit message."),
+            'incremental',
+            help="Incremental to other bug fix (tags commit with [incr])."),
         Option(
             'commit-text', short_name='s', type=str,
             help=(
@@ -366,7 +366,7 @@ class cmd_land(EC2Command):
         try:
             from devscripts.autoland import (
                 LaunchpadBranchLander, MissingReviewError, MissingBugsError,
-                MissingBugsIncrError)
+                MissingBugsIncrementalError)
         except ImportError:
             self.outf.write(
                 "***************************************************\n\n"
@@ -384,7 +384,7 @@ class cmd_land(EC2Command):
                 "Cannot specify --print-commit and --dry-run.")
         if no_qa and incr:
             raise BzrCommandError(
-                "--no-qa and --incr cannot be given at the same time.")
+                "--no-qa and --incremental cannot be given at the same time.")
         lander = LaunchpadBranchLander.load()
 
         if merge_proposal is None:
@@ -407,8 +407,8 @@ class cmd_land(EC2Command):
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
         try:
-            commit_message = mp.get_commit_message(commit_text, testfix,
-                no_qa, incr)
+            commit_message = mp.get_commit_message(
+                commit_text, testfix, no_qa, incr)
         except MissingReviewError:
             raise BzrCommandError(
                 "Cannot land branches that haven't got approved code "
@@ -419,10 +419,10 @@ class cmd_land(EC2Command):
                 "Branch doesn't have linked bugs and doesn't have no-qa "
                 "option set. Use --no-qa, or link the related bugs to the "
                 "branch.")
-        except MissingBugsIncrError:
+        except MissingBugsIncrementalError:
             raise BzrCommandError(
-                "--incr option requires bugs to be linked to the branch. "
-                "Link the bugs or remove the --incr option.")
+                "--incremental option requires bugs linked to the branch. "
+                "Link the bugs or remove the --incremental option.")
 
         if print_commit:
             print commit_message
