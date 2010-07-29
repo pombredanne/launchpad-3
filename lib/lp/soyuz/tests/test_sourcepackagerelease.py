@@ -16,23 +16,17 @@ class TestSourcePackageRelease(TestCaseWithFactory):
 
     def test_uploader_no_uploader(self):
         spr = self.factory.makeSourcePackageRelease()
-        self.assertEqual(
-            None,
-            spr.uploader)
+        self.assertIs(None, spr.uploader)
 
     def test_uploader_dsc_package(self):
         owner = self.factory.makePerson()
         key = self.factory.makeGPGKey(owner)
         spr = self.factory.makeSourcePackageRelease(dscsigningkey=key)
-        self.assertEqual(
-            spr.dscsigningkey.owner,
-            spr.uploader)
+        self.assertEqual(owner, spr.uploader)
 
     def test_uploader_recipe(self):
         recipe_build = self.factory.makeSourcePackageRecipeBuild()
         recipe = recipe_build.recipe
         spr = self.factory.makeSourcePackageRelease(
             source_package_recipe_build=recipe_build)
-        self.assertEqual(
-            recipe_build.requester,
-            spr.uploader)
+        self.assertEqual(recipe_build.requester, spr.uploader)
