@@ -329,15 +329,6 @@ class Person(
     account_status_comment = property(
             _get_account_status_comment, _set_account_status_comment)
 
-    city = StringCol(default=None)
-    phone = StringCol(default=None)
-    country = ForeignKey(dbName='country', foreignKey='Country', default=None)
-    province = StringCol(default=None)
-    postcode = StringCol(default=None)
-    addressline1 = StringCol(default=None)
-    addressline2 = StringCol(default=None)
-    organization = StringCol(default=None)
-
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
                            default=None,
                            storm_validator=validate_public_person)

@@ -5,7 +5,7 @@ Say hello to Bugs. :)
     'http://bugs.launchpad.dev/'
 
     >>> print browser.title
-    Bug tracking
+    Launchpad Bugs
 
 There are a few related pages linked in a portlet:
 

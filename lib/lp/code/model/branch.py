@@ -34,7 +34,7 @@ from lazr.uri import URI
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
-    cursor, quote, SQLBase, sqlvalues)
+    SQLBase, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
@@ -81,6 +81,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.codehosting.bzrutils import safe_open
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
+from lp.services.database.prejoin import prejoin
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
@@ -228,11 +229,13 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     @property
     def revision_history(self):
-        return BranchRevision.select('''
-            BranchRevision.branch = %s AND
-            BranchRevision.sequence IS NOT NULL
-            ''' % sqlvalues(self),
-            prejoins=['revision'], orderBy='-sequence')
+        result = Store.of(self).find(
+            (BranchRevision, Revision),
+            BranchRevision.branch_id == self.id,
+            Revision.id == BranchRevision.revision_id,
+            BranchRevision.sequence != None)
+        result = result.order_by(Desc(BranchRevision.sequence))
+        return prejoin(result, return_slice=slice(0, 1))
 
     subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
@@ -511,7 +514,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def latest_revisions(self, quantity=10):
         """See `IBranch`."""
-        return self.revision_history.limit(quantity)
+        return self.revision_history.config(limit=quantity)
 
     def getMainlineBranchRevisions(self, start_date, end_date=None,
                                    oldest_first=False):
@@ -534,14 +537,15 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
-        return BranchRevision.select(
-            'Revision.id=BranchRevision.revision AND '
-            'BranchRevision.branch = %d AND '
-            'BranchRevision.sequence IS NOT NULL AND '
-            'Revision.revision_date > %s' %
-            (self.id, quote(timestamp)),
-            orderBy='-sequence',
-            clauseTables=['Revision'])
+        result = Store.of(self).find(
+            (BranchRevision, Revision),
+            Revision.id == BranchRevision.revision_id,
+            BranchRevision.branch == self,
+            BranchRevision.sequence != None,
+            Revision.revision_date > timestamp)
+        result = result.order_by(Desc(BranchRevision.sequence))
+        # Return BranchRevision but prejoin Revision as well.
+        return prejoin(result, slice(0, 1))
 
     def canBeDeleted(self):
         """See `IBranch`."""
@@ -848,7 +852,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         mirrored.
         """
         new_data_pushed = (
-             self.branch_type in (BranchType.HOSTED, BranchType.IMPORTED)
+             self.branch_type == BranchType.IMPORTED
              and self.next_mirror_time is not None)
         # XXX 2010-04-22, MichaelHudson: This should really look for a branch
         # scan job.
@@ -862,19 +866,17 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getScannerData(self):
         """See `IBranch`."""
-        cur = cursor()
-        cur.execute("""
-            SELECT BranchRevision.id, BranchRevision.sequence,
-                Revision.revision_id
-            FROM Revision, BranchRevision
-            WHERE Revision.id = BranchRevision.revision
-                AND BranchRevision.branch = %s
-            ORDER BY BranchRevision.sequence
-            """ % sqlvalues(self))
+        columns = (
+            BranchRevision.id, BranchRevision.sequence, Revision.revision_id)
+        rows = Store.of(self).using(Revision, BranchRevision).find(
+            columns,
+            Revision.id == BranchRevision.revision_id,
+            BranchRevision.branch_id == self.id)
+        rows = rows.order_by(BranchRevision.sequence)
         ancestry = set()
         history = []
         branch_revision_map = {}
-        for branch_revision_id, sequence, revision_id in cur.fetchall():
+        for branch_revision_id, sequence, revision_id in rows:
             ancestry.add(revision_id)
             branch_revision_map[revision_id] = branch_revision_id
             if sequence is not None:
@@ -896,7 +898,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def requestMirror(self):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
+        if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
             raise BranchTypeError(self.unique_name)
         branch = Store.of(self).find(
             Branch,
@@ -909,7 +911,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def startMirroring(self):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
+        if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
             raise BranchTypeError(self.unique_name)
         self.last_mirror_attempt = UTC_NOW
         self.next_mirror_time = None
@@ -948,7 +950,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
+        if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
             raise BranchTypeError(self.unique_name)
         self.mirror_failures += 1
         self.mirror_status_message = reason
@@ -1018,7 +1020,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         results = Store.of(self).find(
             (DateTrunc('day', Revision.revision_date), Count(Revision.id)),
-            Revision.id == BranchRevision.revisionID,
+            Revision.id == BranchRevision.revision_id,
             Revision.revision_date > since,
             BranchRevision.branch == self)
         results = results.group_by(

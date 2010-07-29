@@ -162,8 +162,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
         self.assertEqual(
             extract_text(find_tags_by_class(browser.contents, 'message')[1]),
-            'You have specified an invalid value for score. '
-            'Please specify an integer')
+            'Invalid integer data')
 
     def test_rescore_build_not_admin(self):
         """No one but admins can rescore a build."""
