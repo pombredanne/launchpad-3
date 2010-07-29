@@ -2246,7 +2246,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  dsc_standards_version='3.6.2',
                                  dsc_format='1.0', dsc_binaries='foo-bin',
                                  date_uploaded=UTC_NOW,
-                                 source_package_recipe_build=None):
+                                 source_package_recipe_build=None,
+                                 dscsigningkey=None):
         """Make a `SourcePackageRelease`."""
         if distroseries is None:
             if source_package_recipe_build is not None:
@@ -2305,7 +2306,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             changelog_entry=None,
             dsc=None,
             copyright=self.getUniqueString(),
-            dscsigningkey=None,
+            dscsigningkey=dscsigningkey,
             dsc_maintainer_rfc822=maintainer_email,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
