@@ -14,7 +14,7 @@ from lp.testing.fakemethod import FakeMethod
 from devscripts.autoland import (
     get_bazaar_host, get_bugs_clause, get_reviewer_clause,
     get_reviewer_handle, get_qa_clause, get_testfix_clause,
-    MissingReviewError, MissingBugsError, MissingBugsIncrError,
+    MissingReviewError, MissingBugsError, MissingBugsIncrementalError,
     MergeProposal)
 
 
@@ -84,6 +84,11 @@ class TestBugsClaused(unittest.TestCase):
 
 class TestGetCommitMessage(unittest.TestCase):
 
+    def setUp(self):
+        self.mp = MergeProposal(FakeLPMergeProposal())
+        self.fake_bug = FakeBug(20)
+        self.fake_person = self.makePerson('foo')
+
     def makePerson(self, name):
         return FakePerson(name, [])
 
@@ -92,25 +97,22 @@ class TestGetCommitMessage(unittest.TestCase):
         no_qa = False
         testfix = False
 
-        bug1 = FakeBug(20)
-        mp = MergeProposal(FakeLPMergeProposal())
-        mp.get_bugs = FakeMethod([bug1])
-        mp.get_reviews = FakeMethod({None : [self.makePerson('foo')]})
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual("[r=foo][ui=none][bug=20] Foobaring the sbrubble.",
-            mp.get_commit_message("Foobaring the sbrubble.", testfix, no_qa,
-                incr))
+            self.mp.get_commit_message("Foobaring the sbrubble.",
+                testfix, no_qa, incr))
 
     def test_commit_no_bugs_no_noqa(self):
         incr = False
         no_qa = False
         testfix = False
 
-        mp = MergeProposal(FakeLPMergeProposal())
-        mp.get_bugs = FakeMethod([])
-        mp.get_reviews = FakeMethod({None : [self.makePerson('foo')]})
+        self.mp.get_bugs = FakeMethod([])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
-        self.assertRaises(MissingBugsError, mp.get_commit_message,
+        self.assertRaises(MissingBugsError, self.mp.get_commit_message,
             testfix, no_qa, incr)
 
     def test_commit_no_bugs_with_noqa(self):
@@ -118,59 +120,51 @@ class TestGetCommitMessage(unittest.TestCase):
         no_qa = True
         testfix = False
 
-        mp = MergeProposal(FakeLPMergeProposal())
-        mp.get_bugs = FakeMethod([])
-        mp.get_reviews = FakeMethod({None : [self.makePerson('foo')]})
+        self.mp.get_bugs = FakeMethod([])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual("[r=foo][ui=none][no-qa] Foobaring the sbrubble.",
-            mp.get_commit_message("Foobaring the sbrubble.", testfix, no_qa,
-                incr))
+            self.mp.get_commit_message("Foobaring the sbrubble.",
+                testfix, no_qa, incr))
 
     def test_commit_bugs_with_noqa(self):
         incr = False
         no_qa = True
         testfix = False
 
-        bug1 = FakeBug(20)
-        mp = MergeProposal(FakeLPMergeProposal())
-        mp.get_bugs = FakeMethod([bug1])
-        mp.get_reviews = FakeMethod({None : [self.makePerson('foo')]})
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual(
             "[r=foo][ui=none][bug=20][no-qa] Foobaring the sbrubble.",
-            mp.get_commit_message("Foobaring the sbrubble.", testfix, no_qa,
-                incr))
+            self.mp.get_commit_message("Foobaring the sbrubble.",
+                testfix, no_qa, incr))
 
     def test_commit_bugs_with_incr(self):
         incr = True
         no_qa = False
         testfix = False
 
-        bug1 = FakeBug(20)
-        mp = MergeProposal(FakeLPMergeProposal())
-        mp.get_bugs = FakeMethod([bug1])
-        mp.get_reviews = FakeMethod({None : [self.makePerson('foo')]})
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual(
             "[r=foo][ui=none][bug=20][incr] Foobaring the sbrubble.",
-            mp.get_commit_message("Foobaring the sbrubble.", testfix, no_qa,
-                incr))
+            self.mp.get_commit_message("Foobaring the sbrubble.",
+                testfix, no_qa, incr))
 
     def test_commit_no_bugs_with_incr(self):
         incr = True
         no_qa = False
         testfix = False
 
-        bug1 = FakeBug(20)
-        mp = MergeProposal(FakeLPMergeProposal())
-        mp.get_bugs = FakeMethod([bug1])
-        mp.get_reviews = FakeMethod({None : [self.makePerson('foo')]})
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual(
             "[r=foo][ui=none][bug=20][incr] Foobaring the sbrubble.",
-            mp.get_commit_message("Foobaring the sbrubble.", testfix, no_qa,
-                incr))
-
+            self.mp.get_commit_message("Foobaring the sbrubble.",
+                testfix, no_qa, incr))
 
 
 class TestGetTestfixClause(unittest.TestCase):
@@ -227,7 +221,7 @@ class TestGetQaClause(unittest.TestCase):
         bugs = None
         no_qa = False
         incr = True
-        self.assertRaises(MissingBugsIncrError,
+        self.assertRaises(MissingBugsIncrementalError,
             get_qa_clause, bugs, no_qa, incr)
 
 
