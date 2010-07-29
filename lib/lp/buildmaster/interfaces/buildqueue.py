@@ -148,3 +148,10 @@ class IBuildQueueSet(Interface):
 
     def getActiveBuildJobs():
         """Return All active Build Jobs."""
+
+    def getByActiveBuilder(builder):
+        """Return a `BuildQueue` instance where there's an active job.
+
+        :param builder: Return the buildqueue instance for this builder
+        :return: A BuildQueue, or None.
+        """

@@ -531,3 +531,16 @@ class BuildQueueSet(object):
             Job._status == JobStatus.RUNNING,
             Job.date_started != None)
         return result_set
+
+    def getByActiveBuilder(self, builder):
+        """See `IBuildQueueSet`."""
+        # Return a single BuildQueue for the builder provided it's
+        # currently running a job.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            BuildQueue,
+            BuildQueue.job == Job.id,
+            BuildQueue.builder == builder.id,
+            Job._status == JobStatus.RUNNING,
+            Job.date_started != None).one()
+
