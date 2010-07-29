@@ -1,11 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ChrootManager facilities tests."""
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestCase
 import os
 import re
 import tempfile
@@ -157,7 +157,3 @@ class TestChrootManager(TestCase):
 
         self.assertRaises(
             ChrootManagerError, chroot_manager.add)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

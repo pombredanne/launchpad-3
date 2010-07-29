@@ -36,6 +36,16 @@
       <div class="portlet">
         <h2>Recipe information</h2>
         <div class="two-column-list">
+          <dl id="build_daily">
+            <dt>Build schedule:</dt>
+            <dd tal:condition="context/build_daily">
+              Built daily
+            </dd>
+            <dd tal:condition="not:context/build_daily">
+              Built on request
+            </dd>
+          </dl>
+
           <dl id="owner">
             <dt>Owner:</dt>
             <dd tal:content="structure context/owner/fmt:link" />
@@ -48,6 +58,14 @@
             <dt>Debian version:</dt>
             <dd tal:content="context/deb_version_template" />
           </dl>
+          <dl id="daily_build_archive">
+            <dt>Daily build archive:</dt>
+            <dd tal:content="structure context/daily_build_archive/fmt:link"
+                tal:condition="context/daily_build_archive">
+            </dd>
+            <dd tal:condition="not: context/daily_build_archive">None</dd>
+          </dl>
+
           <dl id="distros">
             <dt>Distribution series:</dt>
             <dd>

@@ -63,7 +63,7 @@ class IArchiveArchSet(Interface):
         :return: A (potentially empty) result set of `IArchiveArch` instances.
         """
 
-    def getRestrictedfamilies(archive):
+    def getRestrictedFamilies(archive):
         """All restricted processor families, paired with `ArchiveArch`
         instances if associated with `archive`.
 
