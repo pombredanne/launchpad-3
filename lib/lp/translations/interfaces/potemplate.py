@@ -425,7 +425,8 @@ class IPOTemplate(IRosettaStats):
             loops when creating a new IPOTemplate.
         """
 
-    def getDummyPOFile(language_code, variant=None, requester=None):
+    def getDummyPOFile(language, variant=None, requester=None,
+                       check_for_existing=True):
         """Return a DummyPOFile if there isn't already a persistent `IPOFile`
 
         Raise `LanguageNotFound` if the language does not exist in the
@@ -435,7 +436,8 @@ class IPOTemplate(IRosettaStats):
         only create a POFile when you actually need to store data.
 
         We should not have already a POFile for the given language_code and
-        variant.
+        variant: if check_for_existing is set to False, no check will be
+        done for this.
         """
 
     def createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural=None,
