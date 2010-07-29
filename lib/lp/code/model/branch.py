@@ -852,7 +852,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         mirrored.
         """
         new_data_pushed = (
-             self.branch_type in (BranchType.HOSTED, BranchType.IMPORTED)
+             self.branch_type == BranchType.IMPORTED
              and self.next_mirror_time is not None)
         # XXX 2010-04-22, MichaelHudson: This should really look for a branch
         # scan job.
@@ -898,7 +898,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def requestMirror(self):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
+        if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
             raise BranchTypeError(self.unique_name)
         branch = Store.of(self).find(
             Branch,
@@ -911,7 +911,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def startMirroring(self):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
+        if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
             raise BranchTypeError(self.unique_name)
         self.last_mirror_attempt = UTC_NOW
         self.next_mirror_time = None
@@ -950,7 +950,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
+        if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
             raise BranchTypeError(self.unique_name)
         self.mirror_failures += 1
         self.mirror_status_message = reason
