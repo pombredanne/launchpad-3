@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import unittest
+import re
 
 from launchpadlib.launchpad import EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT
 
@@ -58,6 +59,54 @@ class FakeLPMergeProposal:
 
     def __init__(self, root=None):
         self._root = root
+
+
+class TestPQMRegexAcceptance(unittest.TestCase):
+    """Tests if the generated commit message is accepted by PQM regexes."""
+
+    def setUp(self):
+        # PQM regexes; might need update once in a while
+        self.devel_open_re = ("(?is)^\s*(:?\[testfix\])?\[(?:"
+            "release-critical=[^\]]+|rs?=[^\]]+)\]\[ui=(?:.+)\]")
+        self.dbdevel_normal_re = ("(?is)^\s*(:?\[testfix\])?\[(?:"
+            "release-critical|rs?=[^\]]+)\]")
+
+        self.mp = MergeProposal(FakeLPMergeProposal())
+        self.fake_bug = FakeBug(20)
+        self.fake_person = FakePerson('foo', [])
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+    def assertRegexpMatches(self, text, expected_regexp, msg=None):
+        """Fail the test unless the text matches the regular expression.
+
+        Method default in Python 2.7. Can be removed as soon as LP goes 2.7.
+        """
+        if isinstance(expected_regexp, basestring):
+            expected_regexp = re.compile(expected_regexp)
+        if not expected_regexp.search(text):
+            msg = msg or "Regexp didn't match"
+            msg = '%s: %r not found in %r' % (msg, expected_regexp.pattern,
+                text)
+            raise self.failureException(msg)
+
+    def _test_commit_message_match(self, incr, no_qa, testfix):
+        commit_message = self.mp.get_commit_message("Foobaring the sbrubble.",
+            testfix, no_qa, incr)
+        self.assertRegexpMatches(commit_message, self.devel_open_re)
+        self.assertRegexpMatches(commit_message, self.dbdevel_normal_re)
+
+    def test_testfix_match(self):
+        self._test_commit_message_match(incr=False, no_qa=False, testfix=True)
+
+    def test_regular_match(self):
+        self._test_commit_message_match(incr=False, no_qa=False, testfix=False)
+
+    def test_noqa_match(self):
+        self._test_commit_message_match(incr=False, no_qa=True, testfix=False)
+
+    def test_incr_match(self):
+        self._test_commit_message_match(incr=True, no_qa=False, testfix=False)
 
 
 class TestBugsClaused(unittest.TestCase):
