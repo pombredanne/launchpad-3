@@ -17,6 +17,7 @@ import tarfile
 import tempfile
 import time
 from StringIO import StringIO
+
 from zope.component import subscribers
 from zope.interface import implements
 
@@ -79,6 +80,24 @@ class TranslationExporter:
                 return exporter
 
         return None
+
+    def exportTranslationFiles(self, translation_files, target_format=None,
+                               ignore_obsolete=False, force_utf8=False):
+        """See `ITranslationExporter`."""
+        storage = ExportFileStorage()
+        for translation_file in translation_files:
+            if target_format is None:
+                output_format = translation_file.format
+            else:
+                output_format = target_format
+            format_exporter = self.getExporterProducingTargetFileFormat(
+                output_format)
+            file_content = format_exporter.exportTranslationFile(
+                translation_file, storage, ignore_obsolete=ignore_obsolete,
+                force_utf8=force_utf8)
+
+        return storage.export()
+
 
 # A note about tarballs, StringIO and unicode. SQLObject returns unicode
 # values for columns which are declared as StringCol. We have to be careful
@@ -180,7 +199,7 @@ class StorageStrategy:
     multiple files go into a `TarballFileStorageStrategy`.
     """
 
-    def addFile(self, path, extension, content, content_type):
+    def addFile(self, path, extension, content, mime_type):
         """Add a file to be stored."""
         raise NotImplementedError()
 

@@ -562,7 +562,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         jobs = list(getUtility(IBranchUpgradeJobSource).iterReady())
         self.assertEqual(
             jobs,
-            [job,])
+            [job, ])
 
     def test_requestUpgrade_no_upgrade_needed(self):
         # If a branch doesn't need to be upgraded, requestUpgrade raises an
@@ -660,6 +660,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
         branch = self.factory.makeProductBranch(
             product=fooix, owner=eric, name='trunk')
         linked_branch = ICanHasLinkedBranch(future)
+        login_person(fooix.owner)
         linked_branch.setBranch(branch)
         self.assertEqual(
             [linked_branch],
@@ -852,6 +853,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         product = branch.product
         series = self.factory.makeProductSeries(product=product)
         linked_branch = ICanHasLinkedBranch(series)
+        login_person(series.owner)
         linked_branch.setBranch(branch)
         self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
@@ -877,6 +879,7 @@ class TestBzrIdentity(TestCaseWithFactory):
             removeSecurityProxy(branch.product))
         series_link = ICanHasLinkedBranch(series)
         product_link.setBranch(branch)
+        login_person(series.owner)
         series_link.setBranch(branch)
         self.assertBzrIdentity(branch, product_link.bzr_path)
 
@@ -1951,11 +1954,12 @@ class TestPendingWrites(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         self.assertEqual(False, branch.pending_writes)
 
-    def test_requestMirror_for_hosted(self):
-        # If a hosted branch has a requested mirror, then someone has just
-        # pushed something up. Therefore, pending writes.
+    def test_branchChanged_for_hosted(self):
+        # If branchChanged has been called with a new tip revision id, there
+        # are pending writes.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        branch.requestMirror()
+        with person_logged_in(branch.owner):
+            branch.branchChanged('', 'new-tip', None, None, None)
         self.assertEqual(True, branch.pending_writes)
 
     def test_requestMirror_for_imported(self):
@@ -1977,7 +1981,7 @@ class TestPendingWrites(TestCaseWithFactory):
         # If a branch has been pulled (mirrored) but not scanned, then we have
         # yet to load the revisions into the database. This means there are
         # pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
@@ -1987,7 +1991,7 @@ class TestPendingWrites(TestCaseWithFactory):
     def test_pulled_and_scanned(self):
         # If a branch has been pulled and scanned, then there are no pending
         # writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
@@ -2001,14 +2005,14 @@ class TestPendingWrites(TestCaseWithFactory):
     def test_first_mirror_started(self):
         # If we have started mirroring the branch for the first time, then
         # there are probably pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         self.assertEqual(True, branch.pending_writes)
 
     def test_following_mirror_started(self):
         # If we have started mirroring the branch, then there are probably
         # pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(

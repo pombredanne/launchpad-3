@@ -102,8 +102,8 @@ stagingsetup:
 	# Restore the database. We need to restore permissions, despite
 	# later running security.py, to pull in permissions granted on
 	# production to users not maintained by security.py.
-	pg_restore --dbname=lpmain_staging_new \
-	    --no-owner --exit-on-error ${STAGING_DUMP}
+	bunzip2 --stdout ${STAGING_DUMP} | \
+	    pg_restore --dbname=lpmain_staging_new --no-owner --exit-on-error
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py

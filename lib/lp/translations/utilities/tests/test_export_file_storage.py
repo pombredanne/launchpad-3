@@ -69,9 +69,3 @@ class ExportFileStorageTestCase(unittest.TestCase):
         elements = set(tarball.getnames())
         self.assertTrue('/tmp/a/test/file.po' in elements)
         self.assertTrue('/tmp/another/test.po' in elements)
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(ExportFileStorageTestCase))
-    return suite

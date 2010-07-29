@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for process-death-row.py script.
@@ -17,7 +17,7 @@ import shutil
 import subprocess
 import sys
 from tempfile import mkdtemp
-from unittest import TestCase, TestLoader
+from unittest import TestCase
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -204,7 +204,3 @@ class TestProcessDeathRow(TestCase):
         self.probePublishingStatus(
             self.ppa_pubrec_ids, PackagePublishingStatus.SUPERSEDED)
         self.probeRemoved(self.ppa_pubrec_ids)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

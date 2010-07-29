@@ -20,22 +20,19 @@ from zope.interface import providedBy
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
+from storm.locals import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, Interface
 from zope.schema import Choice, List, Text
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import Hierarchy
-from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, NavigationMenu, stepthrough, structured)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.code.errors import ForbiddenInstruction
 from lp.code.errors import BuildAlreadyPending
@@ -44,10 +41,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
-from lp.soyuz.browser.archive import make_archive_vocabulary
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet)
-from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 RECIPE_BETA_MESSAGE = structured(
@@ -148,8 +141,8 @@ class SourcePackageRecipeView(LaunchpadView):
     """Default view of a SourcePackageRecipe."""
 
     def initialize(self):
-        # XXX: rockstar: This should be removed when source package recipes are
-        # put into production. spec=sourcepackagerecipes
+        # XXX: rockstar: This should be removed when source package recipes
+        # are put into production. spec=sourcepackagerecipes
         super(SourcePackageRecipeView, self).initialize()
         self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
 
@@ -175,28 +168,6 @@ class SourcePackageRecipeView(LaunchpadView):
                 break
         builds.reverse()
         return builds
-
-
-def buildable_distroseries_vocabulary(context):
-    """Return a vocabulary of buildable distroseries."""
-    ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
-    supported_distros = [ppa.distribution for ppa in ppas]
-    dsset = getUtility(IDistroSeriesSet).search()
-    terms = sorted_dotted_numbers(
-        [SimpleTerm(distro, distro.id, distro.displayname)
-         for distro in dsset if (
-         distro.active and distro.distribution in supported_distros)],
-        key=lambda term: term.value.version)
-    terms.reverse()
-    return SimpleVocabulary(terms)
-
-
-def target_ppas_vocabulary(context):
-    """Return a vocabulary of ppas that the current user can target."""
-    ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
-    return make_archive_vocabulary(
-        ppa for ppa in ppas
-        if check_permission('launchpad.Append', ppa))
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
@@ -261,7 +232,6 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         self.next_url = self.cancel_url
 
 
-
 class ISourcePackageAddEditSchema(Interface):
     """Schema for adding or editing a recipe."""
 
@@ -279,7 +249,6 @@ class ISourcePackageAddEditSchema(Interface):
     recipe_text = Text(
         title=u'Recipe text', required=True,
         description=u'The text of the recipe.')
-
 
 
 class RecipeTextValidatorMixin:
@@ -310,8 +279,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     custom_widget('distros', LabeledMultiCheckBoxWidget)
 
     def initialize(self):
-        # XXX: rockstar: This should be removed when source package recipes are
-        # put into production. spec=sourcepackagerecipes
+        # XXX: rockstar: This should be removed when source package recipes
+        # are put into production. spec=sourcepackagerecipes
         super(SourcePackageRecipeAddView, self).initialize()
         self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
 
@@ -333,9 +302,10 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         try:
             source_package_recipe = getUtility(
                 ISourcePackageRecipeSource).new(
-                    self.user, self.user, data['name'], recipe,
+                    self.user, data['owner'], data['name'], recipe,
                     data['description'], data['distros'],
                     data['daily_build_archive'], data['build_daily'])
+            Store.of(source_package_recipe).flush()
         except ForbiddenInstruction:
             # XXX: bug=592513 We shouldn't be hardcoding "run" here.
             self.setFieldError(

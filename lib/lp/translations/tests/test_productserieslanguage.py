@@ -89,8 +89,11 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
         self.assertEquals(sr_psl.language, serbian)
         self.assertEquals(sr_psl.pofile, None)
 
-        # Only this POFile is returned by the `pofiles` property.
-        self.assertEquals(list(sr_psl.pofiles), [pofile1])
+        # A POFile is returned where it exists, and a DummyPOFile where
+        # it doesn't.
+        self.assertEquals(2, len(sr_psl.pofiles))
+        self.assertEquals(potemplate2, sr_psl.pofiles[0].potemplate)
+        self.assertEquals(pofile1, sr_psl.pofiles[1])
 
         # If we provide a POFile for the other template, `pofiles`
         # returns both (ordered by decreasing priority).
@@ -143,16 +146,19 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
              psl.last_changed_date),
              stats)
 
-    def test_DummyProductSeriesLanguage(self):
+    def test_dummy_ProductSeriesLanguage(self):
         # With no templates all counts are zero.
-        psl = self.psl_set.getDummy(self.productseries, self.language)
+        psl = self.psl_set.getProductSeriesLanguage(
+            self.productseries, self.language)
         self.failUnless(verifyObject(IProductSeriesLanguage, psl))
         self.assertPSLStatistics(psl, (0, 0, 0, 0, 0, 0, None))
 
         # Adding a single template with 10 messages makes the total
         # count of messages go up to 10.
         potemplate = self.createPOTemplateWithPOTMsgSets(10)
-        psl = self.psl_set.getDummy(self.productseries, self.language)
+        psl = self.psl_set.getProductSeriesLanguage(
+            self.productseries, self.language)
+        psl.recalculateCounts()
         self.assertPSLStatistics(
             psl, (10, 0, 0, 0, 0, 0, None))
 
@@ -168,10 +174,11 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         # Getting PSL through PSLSet gives an uninitialized object.
         psl = self.psl_set.getProductSeriesLanguage(
             self.productseries, self.language)
-        self.assertEquals(psl.messageCount(), None)
+        self.assertEquals(psl.messageCount(), 0)
 
-        # So, we need to get it through productseries.productserieslanguages.
-        psl = self.productseries.productserieslanguages[0]
+        # We explicitely ask for stats to be recalculated.
+        psl.recalculateCounts()
+
         self.assertPSLStatistics(psl,
                                  (pofile.messageCount(),
                                   pofile.translatedCount(),
@@ -196,17 +203,14 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         self.setPOFileStatistics(pofile2, 1, 1, 1, 1, pofile2.date_changed)
 
         psl = self.productseries.productserieslanguages[0]
-
-        # The psl.last_changed_date here is a naive datetime. So, for sake of
-        # the tests, we should make pofile2 naive when checking if it matches
-        # the last calculated changed date, that should be the same as
-        # pofile2, created last.
+        # We explicitely ask for stats to be recalculated.
+        psl.recalculateCounts()
 
         # Total is a sum of totals in both POTemplates (10+20).
         # Translated is a sum of imported and rosetta translations,
         # which adds up as (4+3)+(1+1).
         self.assertPSLStatistics(psl, (30, 9, 5, 4, 3, 6,
-            pofile2.date_changed.replace(tzinfo=None)))
+            pofile2.date_changed))
         self.assertPSLStatistics(psl, (
             pofile1.messageCount() + pofile2.messageCount(),
             pofile1.translatedCount() + pofile2.translatedCount(),
@@ -214,7 +218,7 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
             pofile1.rosettaCount() + pofile2.rosettaCount(),
             pofile1.updatesCount() + pofile2.updatesCount(),
             pofile1.unreviewedCount() + pofile2.unreviewedCount(),
-            pofile2.date_changed.replace(tzinfo=None)))
+            pofile2.date_changed))
 
     def test_recalculateCounts(self):
         # Test that recalculateCounts works correctly.
@@ -233,13 +237,14 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
 
         psl = self.psl_set.getProductSeriesLanguage(self.productseries,
                                                     self.language)
-        # recalculateCounts() doesn't recalculate the last changed date.
+
         psl.recalculateCounts()
         # Total is a sum of totals in both POTemplates (10+20).
         # Translated is a sum of imported and rosetta translations,
         # which adds up as (1+3)+(1+1).
+        # recalculateCounts() recalculates even the last changed date.
         self.assertPSLStatistics(psl, (30, 6, 2, 4, 3, 5,
-            None))
+            pofile2.date_changed))
 
     def test_recalculateCounts_no_pofiles(self):
         # Test that recalculateCounts works correctly even when there
