@@ -517,14 +517,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         :param available_archs: Architectures to consider
         :return: Sequence of `IDistroArch` instances.
         """
-        associated_proc_families = [
-            archivearch.processorfamily for archivearch
-            in getUtility(IArchiveArchSet).getByArchive(self.archive)]
         # Return all distroarches with unrestricted processor families or with
         # processor families the archive is explicitly associated with.
         return [distroarch for distroarch in available_archs
             if not distroarch.processorfamily.restricted or
-               distroarch.processorfamily in associated_proc_families]
+               distroarch.processorfamily in
+                    self.archive.enabled_restricted_families]
 
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):

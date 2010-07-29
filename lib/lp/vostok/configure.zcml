@@ -3,7 +3,6 @@
    xmlns:browser="http://namespaces.zope.org/browser"
    xmlns:i18n="http://namespaces.zope.org/i18n"
    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
-   xmlns:zcml="http://namespaces.zope.org/zcml"
    i18n_domain="launchpad">
 
   <include package=".browser" />
@@ -12,14 +11,11 @@
      name="vostok"
      factory="lp.vostok.publisher.vostok_request_publication_factory"
      methods="*"
-     mimetypes="*"
-     priority="150"
-     site="vostok" />
+     mimetypes="*" />
 
   <securedutility
      class="lp.vostok.publisher.VostokRoot"
      provides="lp.vostok.publisher.IVostokRoot">
     <allow interface="lp.vostok.publisher.IVostokRoot" />
   </securedutility>
-
 </configure>
