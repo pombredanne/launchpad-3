@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -170,6 +170,10 @@ from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
+from lp.translations.interfaces.translationimportqueue import (
+    RosettaImportStatus)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
@@ -2088,18 +2092,26 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         translation.is_imported = is_imported
         translation.is_current = True
 
-    def makeTranslationImportQueueEntry(self, path=None, status=None,
-                                        sourcepackagename=None,
+    def makeTranslationImportQueueEntry(self, path=None, productseries=None,
                                         distroseries=None,
-                                        productseries=None, content=None,
-                                        uploader=None, is_published=False):
+                                        sourcepackagename=None,
+                                        potemplate=None, content=None,
+                                        uploader=None, pofile=None,
+                                        format=None, status=None):
         """Create a `TranslationImportQueueEntry`."""
         if path is None:
             path = self.getUniqueString() + '.pot'
-        if status is None:
-            status = RosettaImportStatus.NEEDS_REVIEW
 
-        if (sourcepackagename is None and distroseries is None):
+        for_distro = not (distroseries is None and sourcepackagename is None)
+        for_project = productseries is not None
+        has_template = (potemplate is not None)
+        if has_template and not for_distro and not for_project:
+            # Copy target from template.
+            distroseries = potemplate.distroseries
+            sourcepackagename = potemplate.sourcepackagename
+            productseries = potemplate.productseries
+
+        if sourcepackagename is None and distroseries is None:
             if productseries is None:
                 productseries = self.makeProductSeries()
         else:
@@ -2113,16 +2125,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if content is None:
             content = self.getUniqueString()
-
         content_reference = getUtility(ILibraryFileAliasSet).create(
             name=os.path.basename(path), size=len(content),
             file=StringIO(content), contentType='text/plain')
 
+        if format is None:
+            format = TranslationFileFormat.PO
+
+        if status is None:
+            status = RosettaImportStatus.NEEDS_REVIEW
+
         return TranslationImportQueueEntry(
-            path=path, status=status, sourcepackagename=sourcepackagename,
-            distroseries=distroseries, productseries=productseries,
-            importer=uploader, content=content_reference,
-            is_published=is_published)
+            path=path, productseries=productseries, distroseries=distroseries,
+            sourcepackagename=sourcepackagename, importer=uploader,
+            content=content_reference, status=status, format=format,
+            is_published=False)
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""
