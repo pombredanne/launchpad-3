@@ -308,7 +308,8 @@ class CopyArchiveJobTests(TestCaseWithFactory):
             actual = []
             for source in sources:
                 actual.append(
-                    (source.source_package_name, source.source_package_version))
+                    (source.source_package_name,
+                     source.source_package_version))
             self.assertEqual(sorted(expected), sorted(actual))
 
     def test_run(self):
@@ -336,7 +337,9 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         job.start()
         job.run()
         job.complete()
-        # Create a new package in the source
+        # Now the two archives are in the same state, so we change the
+        # source archive and request a merge to check that it works.
+        # Create a new version of the apt package in the source
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=self.factory.getOrMakeSourcePackageName(
                 name='apt'),
@@ -350,6 +353,7 @@ class CopyArchiveJobTests(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE, series,
             PackagePublishingPocket.RELEASE, merge=True)
         job.run()
+        # Check that the new apt package is in the target
         self.checkPublishedSources(
             [("bzr", "2.1"), ("apt", "1.2")], target_archive, series)
 
@@ -373,7 +377,8 @@ class CopyArchiveJobTests(TestCaseWithFactory):
         for build in builds:
             naked_build = removeSecurityProxy(build)
             spr = naked_build.source_package_release
-            actual_builds.append((spr.name, spr.version))
+            actual_builds.append(
+                (spr.name, spr.version, naked_build.processor.family.name))
         # One build for the one package, as we specified one processor
         # family.
-        self.assertEqual([("bzr", "2.1")], actual_builds)
+        self.assertEqual([("bzr", "2.1", "x86")], actual_builds)

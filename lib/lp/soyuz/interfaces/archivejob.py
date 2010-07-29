@@ -28,7 +28,7 @@ class IArchiveJob(Interface):
         description=_("The tracking number for this job."))
 
     archive = Object(
-        title=_('The Archive this job is about.'), schema=IArchive,
+        title=_('The archive this job is about.'), schema=IArchive,
         required=True)
 
     job = Object(

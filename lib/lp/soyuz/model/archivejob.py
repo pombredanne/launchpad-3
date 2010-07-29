@@ -48,7 +48,7 @@ class ArchiveJob(Storm):
         return simplejson.loads(self._json_data)
 
     def __init__(self, archive, job_type, metadata):
-        """constructor.
+        """Create an ArchiveJob.
 
         :param archive: the archive this job relates to.
         :param job_type: the bugjobtype of this job.
