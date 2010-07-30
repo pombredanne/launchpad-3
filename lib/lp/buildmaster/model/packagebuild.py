@@ -9,11 +9,11 @@ __all__ = [
     ]
 
 
+import logging
+
 from lazr.delegates import delegates
-
-from storm.locals import Int, Reference, Storm, Unicode
 from storm.expr import Desc
-
+from storm.locals import Int, Reference, Storm, Unicode
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
@@ -24,11 +24,12 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.buildbase import (BUILDD_MANAGER_LOG_NAME,
+    BuildStatus)
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild, IPackageBuildSet, IPackageBuildSource)
-from lp.buildmaster.model.buildbase import handle_status_for_build, BuildBase
+from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob, BuildFarmJobDerived)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -190,7 +191,13 @@ class PackageBuildDerived:
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IPackageBuild`."""
-        return handle_status_for_build(self, status, librarian, slave_status)
+        logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
+        method = getattr(self, '_handleStatus_' + status, None)
+        if method is None:
+            logger.critical("Unknown BuildStatus '%s' for builder '%s'"
+                            % (status, self.buildqueue_record.builder.url))
+            return
+        method(librarian, slave_status, logger)
 
     # The following private handlers currently re-use the BuildBase
     # implementation until it is no longer in use. If we find in the

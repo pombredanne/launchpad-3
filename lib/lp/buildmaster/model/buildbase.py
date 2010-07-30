@@ -17,7 +17,6 @@ __all__ = [
     ]
 
 import datetime
-import logging
 import os
 import pytz
 import subprocess
@@ -35,32 +34,10 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
 from lp.registry.interfaces.pocket import pocketsuffix
 
 
 UPLOAD_LOG_FILENAME = 'uploader.log'
-
-
-def handle_status_for_build(build, status, librarian, slave_status,
-                            build_class=None):
-    """Find and call the correct method for handling the build status.
-
-    This is extracted from build base so that the implementation
-    can be shared by the newer IPackageBuild class.
-    """
-    logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
-
-    if build_class is None:
-        build_class = BuildBase
-    method = getattr(build_class, '_handleStatus_' + status, None)
-
-    if method is None:
-        logger.critical("Unknown BuildStatus '%s' for builder '%s'"
-                        % (status, build.buildqueue_record.builder.url))
-        return
-
-    method(build, librarian, slave_status, logger)
 
 
 class BuildBase:
