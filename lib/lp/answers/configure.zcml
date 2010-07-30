@@ -148,28 +148,28 @@
     />
   <adapter
     provides=".interfaces.faqtarget.IFAQTarget"
-    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
     factory=".adapters.distrosourcepackage_to_faqtarget"
     />
   <adapter
-    for="canonical.launchpad.interfaces.IDistroSeries"
+    for="lp.registry.interfaces.distroseries.IDistroSeries"
     provides=".interfaces.questiontarget.IQuestionTarget"
     factory=".adapters.series_to_questiontarget"
     />
     <adapter
-      for="canonical.launchpad.interfaces.IProductSeries"
+      for="lp.registry.interfaces.productseries.IProductSeries"
       provides=".interfaces.questiontarget.IQuestionTarget"
       factory=".adapters.series_to_questiontarget"
       />
   <adapter
-    for="canonical.launchpad.interfaces.ISourcePackageRelease"
+    for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
     provides=".interfaces.questiontarget.IQuestionTarget"
     factory=".adapters.sourcepackagerelease_to_questiontarget"
     />
 
   <adapter
     provides=".interfaces.faqtarget.IFAQTarget"
-    for="canonical.launchpad.interfaces.ISourcePackage"
+    for="lp.registry.interfaces.sourcepackage.ISourcePackage"
     factory=".adapters.sourcepackage_to_faqtarget"
     />
 
