@@ -110,8 +110,6 @@ from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.model.distributionsourcepackage import (
-    DistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
 from lp.registry.interfaces.mailinglist import (
@@ -169,8 +167,6 @@ from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
@@ -2436,7 +2432,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             dsc_binaries=dsc_binaries,
             date_uploaded=date_uploaded)
 
-        sspph = SourcePackagePublishingHistory(
+        return ProxyFactory(SourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
             component=spr.component,
@@ -2446,11 +2442,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             dateremoved=dateremoved,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            archive=archive)
-
-        # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
-        # of SSPPH and other useful attributes.
-        return SourcePackagePublishingHistory.get(sspph.id)
+            archive=archive))
 
     def makeBinaryPackagePublishingHistory(self, binarypackagerelease=None,
                                            distroarchseries=None,
@@ -2766,7 +2758,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
 unwrapped_types = (
-    DSCFile, InstanceType, MergeDirective2, Message, datetime, int, str, unicode)
+    DSCFile, InstanceType, MergeDirective2, Message, datetime,
+    int, str, unicode)
 
 
 def is_security_proxied_or_harmless(obj):
