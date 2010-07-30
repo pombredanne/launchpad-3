@@ -265,24 +265,36 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
                 ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
 
     def test_requestBuildScore(self):
-        """Normal build requests have a relatively low queue score (900)."""
+        """Normal build requests have a relatively low queue score (2405)."""
         recipe = self.factory.makeSourcePackageRecipe()
         build = recipe.requestBuild(recipe.daily_build_archive,
             recipe.owner, list(recipe.distroseries)[0],
             PackagePublishingPocket.RELEASE)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(900, queue_record.lastscore)
+        self.assertEqual(2405, queue_record.lastscore)
 
     def test_requestBuildManualScore(self):
-        """Normal build requests have a higher queue score (1000)."""
+        """Normal build requests have a score equivalent to binary builds."""
         recipe = self.factory.makeSourcePackageRecipe()
         build = recipe.requestBuild(recipe.daily_build_archive,
             recipe.owner, list(recipe.distroseries)[0],
             PackagePublishingPocket.RELEASE, manual=True)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(1000, queue_record.lastscore)
+        self.assertEqual(2505, queue_record.lastscore)
+
+    def test_requestBuild_relative_build_score(self):
+        """Offsets for archives are respected."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        archive = recipe.daily_build_archive
+        removeSecurityProxy(archive).relative_build_score = 100
+        build = recipe.requestBuild(
+            archive, recipe.owner, list(recipe.distroseries)[0],
+            PackagePublishingPocket.RELEASE, manual=True)
+        queue_record = build.buildqueue_record
+        queue_record.score()
+        self.assertEqual(2605, queue_record.lastscore)
 
     def test_requestBuildHonoursConfig(self):
         recipe = self.factory.makeSourcePackageRecipe()

@@ -625,7 +625,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
         self.assertEqual(
-            set([1000]),
+            set([2505]),
             set(build.buildqueue_record.lastscore for build in builds))
 
     def test_request_builds_archive(self):
@@ -759,7 +759,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             my-recipe
             Build status
             Needs building
-            Start in .*
+            Start in .* \\(9876\\) What's this?.*
             Estimated finish in .*
             Build details
             Recipe:        Recipe my-recipe for Owner
