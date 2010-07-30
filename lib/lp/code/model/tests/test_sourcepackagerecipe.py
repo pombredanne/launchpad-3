@@ -428,10 +428,11 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     def test_view_private(self):
         """Recipes with private branches are restricted."""
         owner = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(owner=owner, private=True)
+        branch = self.factory.makeAnyBranch(owner=owner)
         with person_logged_in(owner):
             recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
             self.assertTrue(check_permission('launchpad.View', recipe))
+        removeSecurityProxy(branch).private=True
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', recipe))
         self.assertFalse(check_permission('launchpad.View', recipe))

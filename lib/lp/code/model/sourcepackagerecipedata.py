@@ -204,6 +204,8 @@ class SourcePackageRecipeData(Storm):
                 raise ForbiddenInstruction(str(instruction))
             db_branch = getUtility(IBranchLookup).getByUrl(
                 instruction.recipe_branch.url)
+            if db_branch is None:
+                raise NoSuchBranch(instruction.recipe_branch.url)
             if db_branch.private:
                 raise PrivateBranchRecipe(db_branch)
             r[instruction.recipe_branch.url] = db_branch
@@ -227,8 +229,6 @@ class SourcePackageRecipeData(Storm):
             line_number += 1
             comment = None
             db_branch = branch_map[instruction.recipe_branch.url]
-            if db_branch is None:
-                raise NoSuchBranch(instruction.recipe_branch.url)
             insn = _SourcePackageRecipeDataInstruction(
                 instruction.recipe_branch.name, type, comment,
                 line_number, db_branch, instruction.recipe_branch.revspec,
@@ -248,10 +248,10 @@ class SourcePackageRecipeData(Storm):
             self.instructions.find().remove()
         branch_lookup = getUtility(IBranchLookup)
         base_branch = branch_lookup.getByUrl(builder_recipe.url)
-        if base_branch.private:
-            raise PrivateBranchRecipe(base_branch)
         if base_branch is None:
             raise NoSuchBranch(builder_recipe.url)
+        if base_branch.private:
+            raise PrivateBranchRecipe(base_branch)
         if builder_recipe.revspec is not None:
             self.revspec = unicode(builder_recipe.revspec)
         self._recordInstructions(
