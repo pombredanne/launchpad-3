@@ -18,9 +18,24 @@ from lp.testing.views import create_initialized_view
 
 
 class TestSearchQuestionsView(TestCaseWithFactory):
-    """Test the behaviour of SearchQuestionsView."""
 
     layer = DatabaseFunctionalLayer
+
+    def linkPackage(self, product, name):
+        # A helper to setup a legitimate Packaging link between a product
+        # and an Ubuntu source package.
+        hoary = getUtility(ILaunchpadCelebrities).ubuntu['hoary']
+        sourcepackagename = self.factory.makeSourcePackageName(name)
+        sourcepackage = self.factory.makeSourcePackage(
+            sourcepackagename=sourcepackagename, distroseries=hoary)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename, distroseries=hoary)
+        product.development_focus.setPackaging(
+            hoary, sourcepackagename, product.owner)
+
+
+class TestSearchQuestionsViewTemplate(TestSearchQuestionsView):
+    """Test the behaviour of SearchQuestionsView."""
 
     def assertViewTemplate(self, context, file_name):
         view = create_initialized_view(context, '+questions')
@@ -72,7 +87,11 @@ class TestSearchQuestionsView(TestCaseWithFactory):
             dsp.distribution.official_answers = True
         self.assertViewTemplate(dsp, 'question-listing.pt')
 
-    def test_nonproduct_ubuntu_packages_unlinked(self):
+
+class TestSearchQuestionsView_ubuntu_packages(TestSearchQuestionsView):
+    """Test the behaviour of SearchQuestionsView.ubuntu_packages."""
+
+    def test_nonproduct_ubuntu_packages(self):
         distribution = self.factory.makeDistribution()
         view = create_initialized_view(distribution, '+questions')
         packages = view.ubuntu_packages
@@ -85,25 +104,16 @@ class TestSearchQuestionsView(TestCaseWithFactory):
         self.assertEqual(None, packages)
 
     def test_product_ubuntu_packages_linked(self):
-        hoary = getUtility(ILaunchpadCelebrities).ubuntu['hoary']
-        sourcepackagename = self.factory.makeSourcePackageName('cow')
-        sourcepackage = self.factory.makeSourcePackage(
-            sourcepackagename=sourcepackagename, distroseries=hoary)
-        self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=sourcepackagename, distroseries=hoary)
         product = self.factory.makeProduct()
-        product.development_focus.setPackaging(
-            hoary, sourcepackagename, product.owner)
+        self.linkPackage(product, 'cow')
         view = create_initialized_view(product, '+questions')
         packages = view.ubuntu_packages
         self.assertEqual(1, len(packages))
         self.assertEqual('cow', packages[0].name)
 
 
-class TestSearchQuestionsViewUnknown(TestCaseWithFactory):
-    """Test the behaviour of SearchQuestionsView."""
-
-    layer = DatabaseFunctionalLayer
+class TestSearchQuestionsViewUnknown(TestSearchQuestionsView):
+    """Test the behaviour of SearchQuestionsView unknown support."""
 
     def setUp(self):
         super(TestSearchQuestionsViewUnknown, self).setUp()
