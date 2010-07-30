@@ -8,7 +8,7 @@ __metaclass__ = type
 import os
 
 from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import person_logged_in, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
 
@@ -17,14 +17,41 @@ class TestSearchQuestionsView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def assertViewTemplate(self, context, file_name):
+        view = create_initialized_view(context, '+questions')
+        self.assertEqual(
+            file_name, os.path.basename(view.template.filename))
+
     def test_template_product_official_answers_unknown(self):
-        target = self.factory.makeProduct()
-        view = create_initialized_view(target, '+questions')
-        file_name = os.path.basename(view.template.filename)
-        self.assertEqual('unknown-support.pt', file_name)
+        product = self.factory.makeProduct()
+        self.assertViewTemplate(product, 'unknown-support.pt')
+
+    def test_template_product_official_answers_launchpad(self):
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner) as owner:
+            product.official_answers = True
+        self.assertViewTemplate(product, 'question-listing.pt')
+
+    def test_template_distribution_official_answers_unknown(self):
+        distribution = self.factory.makeDistribution()
+        self.assertViewTemplate(distribution, 'unknown-support.pt')
+
+    def test_template_distribution_official_answers_launchpad(self):
+        distribution = self.factory.makeDistribution()
+        with person_logged_in(distribution.owner) as owner:
+            distribution.official_answers = True
+        self.assertViewTemplate(distribution, 'question-listing.pt')
+
+    def test_template_DSP_official_answers_unknown(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assertViewTemplate(dsp, 'unknown-support.pt')
+
+    def test_template_DSP_official_answers_launchpad(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        with person_logged_in(dsp.distribution.owner) as owner:
+            dsp.distribution.official_answers = True
+        self.assertViewTemplate(dsp, 'question-listing.pt')
 
     def test_template_person(self):
         person = self.factory.makePerson()
-        view = create_initialized_view(person, '+questions')
-        file_name = os.path.basename(view.template.filename)
-        self.assertEqual('question-listing.pt', file_name)
+        self.assertViewTemplate(person, 'question-listing.pt')
