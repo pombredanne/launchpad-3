@@ -24,7 +24,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.buildmaster.tests.test_buildbase import (
+from lp.buildmaster.tests.test_packagebuild import (
     TestGetUploadMethodsMixin, TestHandleStatusMixin)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
