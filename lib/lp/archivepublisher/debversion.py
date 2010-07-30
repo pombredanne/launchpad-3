@@ -22,15 +22,27 @@ valid_upstream = re.compile(r'^[0-9][A-Za-z0-9+:.~-]*$')
 valid_revision = re.compile(r'^[A-Za-z0-9+.~]+$')
 
 VersionError = changelog.VersionError
-class BadInputError(VersionError): pass
-class BadEpochError(BadInputError): pass
-class BadUpstreamError(BadInputError): pass
-class BadRevisionError(BadInputError): pass
+
+
+class BadInputError(VersionError):
+    pass
+
+
+class BadEpochError(BadInputError):
+    pass
+
+
+class BadUpstreamError(BadInputError):
+    pass
+
+
+class BadRevisionError(BadInputError):
+    pass
 
 
 class Version(changelog.Version):
     """Debian version number.
-    
+
     This class is designed to be reasonably transparent and allow you
     to write code like:
 
@@ -44,22 +56,23 @@ class Version(changelog.Version):
       upstream    Upstream version
       debian_version    Debian/local revision
     """
+
     def __init__(self, ver):
 
         ver = str(ver)
         if not len(ver):
-            raise BadInputError, "Input cannot be empty"
+            raise BadInputError("Input cannot be empty")
 
         try:
             changelog.Version.__init__(self, ver)
         except ValueError, e:
-            raise VersionError, e
+            raise VersionError(e)
 
         if self.epoch is not None:
             if not len(self.epoch):
-                raise BadEpochError, "Epoch cannot be empty"
+                raise BadEpochError("Epoch cannot be empty")
             if not valid_epoch.match(self.epoch):
-                raise BadEpochError, "Bad epoch format"
+                raise BadEpochError("Bad epoch format")
 
         if self.debian_version is not None:
             if self.debian_version == "":
@@ -68,7 +81,7 @@ class Version(changelog.Version):
                 raise BadRevisionError("Bad revision format")
 
         if not len(self.upstream_version):
-            raise BadUpstreamError, "Upstream version cannot be empty"
+            raise BadUpstreamError("Upstream version cannot be empty")
         if not valid_upstream.search(self.upstream_version):
             raise BadUpstreamError(
                 "Bad upstream version format %s" % self.upstream_version)
