@@ -87,7 +87,6 @@
     <apidoc:rootModule module="martian" />
     <apidoc:rootModule module="manuel" />
     <apidoc:rootModule module="chameleon" />
-    <apidoc:rootModule module="bzrlib" />
     <apidoc:rootModule module="storm" />
 
 </configure>
