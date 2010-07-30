@@ -13,10 +13,9 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey
 
-from canonical.launchpad.interfaces import IQuestionSubscription
-
 from canonical.database.sqlbase import SQLBase
 from lp.registry.interfaces.person import validate_public_person
+from lp.answers.interfaces.questionsubscription import IQuestionSubscription
 
 
 class QuestionSubscription(SQLBase):
@@ -32,5 +31,3 @@ class QuestionSubscription(SQLBase):
     person = ForeignKey(
         dbName='person', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-
-
