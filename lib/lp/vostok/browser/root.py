@@ -12,4 +12,4 @@ from canonical.launchpad.webapp import LaunchpadView
 
 
 class VostokRootView(LaunchpadView):
-    pass
+    """The view for the Vostok root object."""

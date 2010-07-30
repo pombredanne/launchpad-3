@@ -8,14 +8,15 @@ __metaclass__ = type
 import unittest
 
 from zope.app.publisher.browser import getDefaultViewName
-from zope.component import getMultiAdapter
 
 from canonical.testing.layers import FunctionalLayer
 
 from lp.testing import TestCase
+from lp.testing.views import create_initialized_view
 from lp.vostok.browser.root import VostokRootView
 from lp.vostok.browser.tests.request import VostokTestRequest
-from lp.vostok.publisher import VostokRoot
+from lp.vostok.publisher import VostokLayer, VostokRoot
+
 
 class TestBrowseRoot(TestCase):
 
@@ -28,9 +29,8 @@ class TestBrowseRoot(TestCase):
 
     def test_root_index_view(self):
         # VostokRootView is registered as the view for the VostokRoot object.
-        view = getMultiAdapter(
-            (VostokRoot(), VostokTestRequest()), name='+index')
-        view.initialize()
+        view = create_initialized_view(
+            VostokRoot(), name='+index', layer=VostokLayer)
         self.assertIsInstance(view, VostokRootView)
 
 

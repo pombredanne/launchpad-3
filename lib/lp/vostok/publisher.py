@@ -28,7 +28,7 @@ class VostokBrowserRequest(LaunchpadBrowserRequest):
     implements(VostokLayer)
 
 
-class IVostokRoot(Interface): # might need to inherit from some IRoot thing
+class IVostokRoot(Interface):
     """Marker interface for the root vostok object."""
 
 
