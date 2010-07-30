@@ -744,7 +744,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
-                          summary=None):
+                          summary=None, date_created=None):
         """Create and return a new ProductSeries."""
         if product is None:
             product = self.makeProduct()
@@ -757,8 +757,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
         naked_product = removeSecurityProxy(product)
-        return ProxyFactory(
-            naked_product.newSeries(owner=owner, name=name, summary=summary))
+        series = naked_product.newSeries(
+            owner=owner, name=name, summary=summary)
+        if date_created is not None:
+            series.datecreated = date_created
+        return ProxyFactory(series)
 
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,

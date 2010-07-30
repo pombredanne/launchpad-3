@@ -23,8 +23,7 @@ from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.testing import TestCase, TestCaseWithFactory
-from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing import person_logged_in, TestCase, TestCaseWithFactory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
@@ -286,12 +285,11 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.linkPackage('hot')
         self.makeSeriesPackage('cold')
         product_series = self.linkPackage('cold')
-        naked_product_series = remove_security_proxy_and_shout_at_engineer(
-            product_series)
-        naked_product_series.product.bugtraker = self.factory.makeBugTracker()
+        with person_logged_in(product_series.product.owner):
+            product_series.product.bugtracker = self.factory.makeBugTracker()
         packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
-        expected = [u'hot', u'cold', u'linked']
+        expected = [u'hot', u'linked', u'cold']
         self.assertEqual(expected, names)
 
     def test_getPrioritizedPackagings_branch(self):
@@ -299,9 +297,8 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.linkPackage('translatable')
         self.makeSeriesPackage('withbranch')
         product_series = self.linkPackage('withbranch')
-        naked_product_series = remove_security_proxy_and_shout_at_engineer(
-            product_series)
-        naked_product_series.branch = self.factory.makeBranch()
+        with person_logged_in(product_series.product.owner):
+            product_series.branch = self.factory.makeBranch()
         packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'withbranch']
@@ -313,11 +310,10 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.linkPackage('translatable')
         self.makeSeriesPackage('importabletranslatable')
         product_series = self.linkPackage('importabletranslatable')
-        naked_product_series = remove_security_proxy_and_shout_at_engineer(
-            product_series)
-        naked_product_series.branch = self.factory.makeBranch()
-        naked_product_series.translations_autoimport_mode = (
-            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        with person_logged_in(product_series.product.owner):
+            product_series.branch = self.factory.makeBranch()
+            product_series.translations_autoimport_mode = (
+                TranslationsBranchImportMode.IMPORT_TEMPLATES)
         packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'importabletranslatable']
@@ -350,9 +346,8 @@ class TestDistroSeriesSet(TestCaseWithFactory):
 
         new_distroseries = (
             self.factory.makeDistroRelease(name=u"sampleseries"))
-        naked_new_distroseries = remove_security_proxy_and_shout_at_engineer(
-            new_distroseries)
-        naked_new_distroseries.hide_all_translations = False
+        with person_logged_in(new_distroseries.distribution.owner):
+            new_distroseries.hide_all_translations = False
         transaction.commit()
         translatables = self._get_translatables()
         self.failUnlessEqual(
@@ -374,7 +369,8 @@ class TestDistroSeriesSet(TestCaseWithFactory):
                 translatables,
                 self._ref_translatables(u"sampleseries")))
 
-        naked_new_distroseries.hide_all_translations = True
+        with person_logged_in(new_distroseries.distribution.owner):
+            new_distroseries.hide_all_translations = True
         transaction.commit()
         translatables = self._get_translatables()
         self.failUnlessEqual(
