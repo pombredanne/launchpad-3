@@ -45,6 +45,7 @@ from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.scripts.base import (
     LaunchpadCronScript, SilentLaunchpadScriptFailure)
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -177,6 +178,7 @@ class CodeImportResultPruner(TunableLoop):
     CodeImport.
     """
     maximum_chunk_size = 1000
+
     def __init__(self, log, abort_time=None):
         super(CodeImportResultPruner, self).__init__(log, abort_time)
         self.store = IMasterStore(CodeImportResult)
@@ -293,6 +295,7 @@ class HWSubmissionEmailLinker(TunableLoop):
     linked to the same.
     """
     maximum_chunk_size = 50000
+
     def __init__(self, log, abort_time=None):
         super(HWSubmissionEmailLinker, self).__init__(log, abort_time)
         self.submission_store = IMasterStore(HWSubmission)
@@ -491,7 +494,7 @@ class BugNotificationPruner(TunableLoop):
 
 
 class BranchJobPruner(TunableLoop):
-    """Prune `BranchJob`s that are in a final state and older than a month old.
+    """Prune `BranchJob`s that are in a final state and more than a month old.
 
     When a BranchJob is completed, it gets set to a final state.  These jobs
     should be pruned from the database after a month.
@@ -661,6 +664,29 @@ class ObsoleteBugAttachmentDeleter(TunableLoop):
         transaction.commit()
 
 
+class SuggestiveTemplatesCacheUpdater(TunableLoop):
+    """Refresh the SuggestivePOTemplate cache.
+
+    This isn't really a TunableLoop.  It just pretends to be one to fit
+    in with the garbo crowd.
+    """
+    maximum_chunk_size = 1
+
+    done = False
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.done
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        utility = getUtility(IPOTemplateSet)
+        utility.wipeSuggestivePOTemplatesCache()
+        utility.populateSuggestivePOTemplatesCache()
+        transaction.commit()
+        self.done = True
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -766,6 +792,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         BranchJobPruner,
         BugWatchActivityPruner,
         ObsoleteBugAttachmentDeleter,
+        SuggestiveTemplatesCacheUpdater,
         ]
     experimental_tunable_loops = [
         PersonPruner,
@@ -775,4 +802,3 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         super(DailyDatabaseGarbageCollector, self).add_my_options()
         # Abort script after 24 hours by default.
         self.parser.set_defaults(abort_script=86400)
-

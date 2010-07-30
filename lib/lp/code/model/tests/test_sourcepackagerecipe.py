@@ -84,6 +84,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=[distroseries],
             name=name, description=description, builder_recipe=builder_recipe)
+        transaction.commit()
         self.assertEquals(
             (registrant, owner, set([distroseries]), name),
             (recipe.registrant, recipe.owner, set(recipe.distroseries),
@@ -112,6 +113,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # SourcePackageRecipe objects implement ISourcePackageRecipe.
         recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             self.factory.makeRecipe())
+        transaction.commit()
         self.assertProvides(recipe, ISourcePackageRecipe)
 
     def test_base_branch(self):
@@ -120,6 +122,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         builder_recipe = self.factory.makeRecipe(branch)
         sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             builder_recipe)
+        transaction.commit()
         self.assertEquals(branch, sp_recipe.base_branch)
 
     def test_branch_links_created(self):
@@ -129,6 +132,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         builder_recipe = self.factory.makeRecipe(branch)
         sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             builder_recipe)
+        transaction.commit()
         self.assertEquals([branch], list(sp_recipe.getReferencedBranches()))
 
     def test_multiple_branch_links_created(self):
@@ -139,6 +143,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         builder_recipe = self.factory.makeRecipe(branch1, branch2)
         sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             builder_recipe)
+        transaction.commit()
         self.assertEquals(
             sorted([branch1, branch2]),
             sorted(sp_recipe.getReferencedBranches()))
@@ -260,24 +265,36 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
                 ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
 
     def test_requestBuildScore(self):
-        """Normal build requests have a relatively low queue score (900)."""
+        """Normal build requests have a relatively low queue score (2405)."""
         recipe = self.factory.makeSourcePackageRecipe()
         build = recipe.requestBuild(recipe.daily_build_archive,
             recipe.owner, list(recipe.distroseries)[0],
             PackagePublishingPocket.RELEASE)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(900, queue_record.lastscore)
+        self.assertEqual(2405, queue_record.lastscore)
 
     def test_requestBuildManualScore(self):
-        """Normal build requests have a higher queue score (1000)."""
+        """Normal build requests have a score equivalent to binary builds."""
         recipe = self.factory.makeSourcePackageRecipe()
         build = recipe.requestBuild(recipe.daily_build_archive,
             recipe.owner, list(recipe.distroseries)[0],
             PackagePublishingPocket.RELEASE, manual=True)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(1000, queue_record.lastscore)
+        self.assertEqual(2505, queue_record.lastscore)
+
+    def test_requestBuild_relative_build_score(self):
+        """Offsets for archives are respected."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        archive = recipe.daily_build_archive
+        removeSecurityProxy(archive).relative_build_score = 100
+        build = recipe.requestBuild(
+            archive, recipe.owner, list(recipe.distroseries)[0],
+            PackagePublishingPocket.RELEASE, manual=True)
+        queue_record = build.buildqueue_record
+        queue_record.score()
+        self.assertEqual(2605, queue_record.lastscore)
 
     def test_requestBuildHonoursConfig(self):
         recipe = self.factory.makeSourcePackageRecipe()
@@ -299,7 +316,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         def request_build():
             build = recipe.requestBuild(archive, requester, series,
                     PackagePublishingPocket.RELEASE)
-            removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
+            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
         [request_build() for num in range(5)]
         e = self.assertRaises(TooManyBuilds, request_build)
         self.assertIn(
@@ -326,7 +343,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.requestBuild(archive, recipe.owner,
             new_distroseries, PackagePublishingPocket.RELEASE)
         # Changing status of old build allows new build.
-        removeSecurityProxy(old_build).buildstate = BuildStatus.FULLYBUILT
+        removeSecurityProxy(old_build).status = BuildStatus.FULLYBUILT
         recipe.requestBuild(archive, recipe.owner, series,
                 PackagePublishingPocket.RELEASE)
 
@@ -420,18 +437,21 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             SourcePackageRecipe.findStaleDailyBuilds())
 
     def test_getMedianBuildDuration(self):
+        def set_duration(build, minutes):
+            duration = timedelta(minutes=minutes)
+            build = removeSecurityProxy(build)
+            build.date_started = self.factory.getUniqueDate()
+            build.date_finished = build.date_started + duration
         recipe = removeSecurityProxy(self.factory.makeSourcePackageRecipe())
         self.assertIs(None, recipe.getMedianBuildDuration())
-        build = removeSecurityProxy(
-            self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
-        build.buildduration = timedelta(minutes=10)
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        set_duration(build, 10)
         self.assertEqual(
             timedelta(minutes=10), recipe.getMedianBuildDuration())
 
         def addBuild(minutes):
-            build = removeSecurityProxy(
-                self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
-            build.buildduration = timedelta(minutes=minutes)
+            build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+            set_duration(build, minutes)
         addBuild(20)
         self.assertEqual(
             timedelta(minutes=10), recipe.getMedianBuildDuration())
@@ -465,6 +485,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=[distroseries],
             name=name, description=description, builder_recipe=builder_recipe)
+        transaction.commit()
         return recipe.builder_recipe
 
     def check_base_recipe_branch(self, branch, url, revspec=None,
@@ -637,14 +658,19 @@ class TestWebservice(TestCaseWithFactory):
         return MINIMAL_RECIPE_TEXT % branch.bzr_identity
 
     def makeRecipe(self, user=None, owner=None, recipe_text=None):
+        # rockstar 21 Jul 2010 - This function does more commits than I'd like,
+        # but it's the result of the fact that the webservice runs in a
+        # separate thread so doesn't get the database updates without those
+        # commits.
         if user is None:
             user = self.factory.makePerson()
         if owner is None:
             owner = user
-        db_distroseries = self.factory.makeDistroSeries()
+        db_distroseries = self.factory.makeSourcePackageRecipeDistroseries()
         if recipe_text is None:
             recipe_text = self.makeRecipeText()
         db_archive = self.factory.makeArchive(owner=owner, name="recipe-ppa")
+        transaction.commit()
         launchpad = launchpadlib_for('test', user,
                 service_root="http://api.launchpad.dev:8085")
         login(ANONYMOUS)

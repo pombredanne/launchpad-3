@@ -9,7 +9,7 @@ from lp.testing import WindmillTestCase
 
 FILEBUG_URL = 'http://bugs.launchpad.dev:8085/firefox/+filebug'
 
-FORM_OVERLAY = u'//div[@id="duplicate-overlay-bug-4"]/table'
+FORM_OVERLAY = u'//div[@id="duplicate-overlay-bug-4"]/div'
 FORM_OVERLAY_CANCEL = (
     u'//div[@id="duplicate-overlay-bug-4"]'
     '//button[@name="field.actions.cancel"]')

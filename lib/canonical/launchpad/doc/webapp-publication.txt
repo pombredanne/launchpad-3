@@ -41,6 +41,10 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://api.launchpad.dev/
     althosts:
     ----
+    apidoc @ apidoc.launchpad.dev
+    rooturl: http://apidoc.launchpad.dev/
+    althosts:
+    ----
     blueprints @ blueprints.launchpad.dev
     rooturl: http://blueprints.launchpad.dev/
     althosts:
@@ -106,6 +110,7 @@ request is headed to one of the officialy-used Launchpad host names:
     ...     print hostname
     answers.launchpad.dev
     api.launchpad.dev
+    apidoc.launchpad.dev
     blueprints.launchpad.dev
     bugs.launchpad.dev
     code.launchpad.dev
@@ -356,33 +361,13 @@ the registered factories.)
     ProtocolErrorPublication: status=405
       Allow: GET HEAD POST
 
-    >>> print_request_and_publication('answers.launchpad.dev')
-    AnswersBrowserRequest
-    AnswersPublication
-
     >>> print_request_and_publication('api.launchpad.dev')
     WebServiceClientRequest
     WebServicePublication
 
-    >>> print_request_and_publication('blueprints.launchpad.dev')
-    BlueprintBrowserRequest
-    BlueprintPublication
-
-    >>> print_request_and_publication('bugs.launchpad.dev')
-    BugsBrowserRequest
-    BugsPublication
-
-    >>> print_request_and_publication('code.launchpad.dev')
-    CodeBrowserRequest
-    CodePublication
-
     >>> print_request_and_publication('feeds.launchpad.dev')
     FeedsBrowserRequest
     FeedsPublication
-
-    >>> print_request_and_publication('translations.launchpad.dev')
-    TranslationsBrowserRequest
-    TranslationsPublication
 
 The web service RequestPublicationFactory responds to the six most
 common HTTP methods, but it will only accept a MIME type of
@@ -408,27 +393,13 @@ application/json.
     WebServiceClientRequest
     WebServicePublication
 
-When a request for '/api' is made to one of the application virtualhost,
-it is also handled by the web service request and publication:
+When a request for '/api' is made to one of the application
+virtualhosts, such as the application root, it is also handled by the
+web service request and publication:
 
     >>> print_request_and_publication(
     ...     'launchpad.dev', method='GET',
     ...     extra_environment={'PATH_INFO': '/api'})
-    WebServiceClientRequest
-    WebServicePublication
-    >>> for subdomain in [
-    ...     'answers', 'blueprints', 'bugs', 'code', 'translations']:
-    ...     print_request_and_publication(
-    ...         '%s.launchpad.dev' % subdomain, method='GET',
-    ...         extra_environment={'PATH_INFO': '/api'})
-    WebServiceClientRequest
-    WebServicePublication
-    WebServiceClientRequest
-    WebServicePublication
-    WebServiceClientRequest
-    WebServicePublication
-    WebServiceClientRequest
-    WebServicePublication
     WebServiceClientRequest
     WebServicePublication
 

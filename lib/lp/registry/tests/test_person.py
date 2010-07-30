@@ -26,7 +26,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.person import (
     IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility)
-from canonical.launchpad.database import Bug, BugTask, BugSubscription
+from canonical.launchpad.database import Bug
 from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
 from lp.registry.model.karma import KarmaCategory
@@ -114,19 +114,6 @@ class TestPerson(TestCaseWithFactory):
             self.assertRaises(
                 PrivatePersonLinkageError,
                 setattr, bug, attr_name, self.myteam)
-
-    def test_BugTask_person_validator(self):
-        bug_task = BugTask.select(limit=1)[0]
-        for attr_name in ['assignee', 'owner']:
-            self.assertRaises(
-                PrivatePersonLinkageError,
-                setattr, bug_task, attr_name, self.myteam)
-
-    def test_BugSubscription_person_validator(self):
-        bug_subscription = BugSubscription.select(limit=1)[0]
-        self.assertRaises(
-            PrivatePersonLinkageError,
-            setattr, bug_subscription, 'person', self.myteam)
 
     def test_Specification_person_validator(self):
         specification = Specification.select(limit=1)[0]

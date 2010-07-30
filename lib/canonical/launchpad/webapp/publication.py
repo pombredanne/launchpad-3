@@ -133,6 +133,7 @@ class LaunchpadBrowserPublication(
     # If this becomes untrue at some point, the code will need to be
     # revisited.
 
+    # pylint: disable-msg=E0301
     def beforeTraversal(self, request):
         notify(StartRequestEvent(request))
         request._traversalticks_start = tickcount.tickcount()
@@ -188,6 +189,7 @@ class LaunchpadBrowserPublication(
 
         # Set the default layer.
         adapters = zapi.getGlobalSiteManager().adapters
+        # pylint: disable-msg=E0231
         layer = adapters.lookup((providedBy(request),), IDefaultSkin, '')
         if layer is not None:
             layers.setAdditionalLayer(request, layer)
@@ -318,7 +320,7 @@ class LaunchpadBrowserPublication(
             return
         if (IOAuthSignedRequest.providedBy(request)
             or not IBrowserRequest.providedBy(request)
-            or request['PATH_INFO']  in (
+            or request['PATH_INFO'] in (
                 '/+storeblob', '/+request-token', '/+access-token',
                 '/+hwdb/+submit')):
             # We only want to check for the referrer header if we are
@@ -370,6 +372,28 @@ class LaunchpadBrowserPublication(
         if hostname not in allvhosts.hostnames:
             raise OffsiteFormPostError(referrer)
 
+    def constructPageID(self, view, context):
+        """Given a view, figure out what its page ID should be.
+
+        This provides a hook point for subclasses to override.
+        """
+        if context is None:
+            pageid = ''
+        else:
+            # ZCML registration will set the name under which the view
+            # is accessible in the instance __name__ attribute. We use
+            # that if it's available, otherwise fall back to the class
+            # name.
+            if getattr(view, '__name__', None) is not None:
+                view_name = view.__name__
+            else:
+                view_name = view.__class__.__name__
+            pageid = '%s:%s' % (context.__class__.__name__, view_name)
+        # The view name used in the pageid usually comes from ZCML and so
+        # it will be a unicode string although it shouldn't.  To avoid
+        # problems we encode it into ASCII.
+        return pageid.encode('US-ASCII')
+
     def callObject(self, request, ob):
         """See `zope.publisher.interfaces.IPublication`.
 
@@ -386,31 +410,13 @@ class LaunchpadBrowserPublication(
         request.setInWSGIEnvironment(
             'launchpad.userid', request.principal.id)
 
-        # launchpad.pageid contains an identifier of the form
-        # ContextName:ViewName. It will end up in the page log.
+        # The view may be security proxied
         view = removeSecurityProxy(ob)
         # It's possible that the view is a bounded method.
         view = getattr(view, 'im_self', view)
         context = removeSecurityProxy(getattr(view, 'context', None))
-        if context is None:
-            pageid = ''
-        else:
-            # ZCML registration will set the name under which the view
-            # is accessible in the instance __name__ attribute. We use
-            # that if it's available, otherwise fall back to the class
-            # name.
-            if getattr(view, '__name__', None) is not None:
-                view_name = view.__name__
-            else:
-                view_name = view.__class__.__name__
-            pageid = '%s:%s' % (context.__class__.__name__, view_name)
-        # The view name used in the pageid usually comes from ZCML and so
-        # it will be a unicode string although it shouldn't.  To avoid
-        # problems we encode it into ASCII.
-        pageid = pageid.encode('US-ASCII')
-
+        pageid = self.constructPageID(view, context)
         request.setInWSGIEnvironment('launchpad.pageid', pageid)
-
         # And spit the pageid out to our tracelog.
         tracelog(request, 'p', pageid)
 
@@ -532,16 +538,16 @@ class LaunchpadBrowserPublication(
         orig_env = request._orig_env
         ticks = tickcount.tickcount()
         if (hasattr(request, '_publicationticks_start') and
-            not orig_env.has_key('launchpad.publicationticks')):
+            ('launchpad.publicationticks' not in orig_env)):
             # The traversal process has been started but hasn't completed.
-            assert orig_env.has_key('launchpad.traversalticks'), (
+            assert 'launchpad.traversalticks' in orig_env, (
                 'We reached the publication process so we must have finished '
                 'the traversal.')
             ticks = tickcount.difference(
                 request._publicationticks_start, ticks)
             request.setInWSGIEnvironment('launchpad.publicationticks', ticks)
         elif (hasattr(request, '_traversalticks_start') and
-              not orig_env.has_key('launchpad.traversalticks')):
+              ('launchpad.traversalticks' not in orig_env)):
             # The traversal process has been started but hasn't completed.
             ticks = tickcount.difference(
                 request._traversalticks_start, ticks)
@@ -719,6 +725,7 @@ _browser_re = re.compile(r"""(?x)^(
     Links |
     w3m
     )""")
+
 
 def is_browser(request):
     """Return True if we believe the request was from a browser.

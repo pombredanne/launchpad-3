@@ -17,7 +17,6 @@ Check that the Bazaar home page works.
     30 branches registered in
     6 projects
     1 imported branches
-    2 branches associated with bug reports
     Launchpad uses Bazaar 0.92.0.
 
 

@@ -39,7 +39,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, flush_database_updates, sqlvalues)
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.services.database.prejoin import prejoin
 from lp.services.database.collection import Collection
@@ -624,14 +624,11 @@ class POTemplate(SQLBase, RosettaStats):
 
     def export(self):
         """See `IPOTemplate`."""
-        translation_exporter = getUtility(ITranslationExporter)
-        translation_format_exporter = (
-            translation_exporter.getExporterProducingTargetFileFormat(
-                self.source_file_format))
 
+        translation_exporter = getUtility(ITranslationExporter)
         template_file = getAdapter(
             self, ITranslationFileData, 'all_messages')
-        exported_file = translation_format_exporter.exportTranslationFiles(
+        exported_file = translation_exporter.exportTranslationFiles(
             [template_file])
 
         try:
@@ -656,12 +653,9 @@ class POTemplate(SQLBase, RosettaStats):
 
     def exportWithTranslations(self):
         """See `IPOTemplate`."""
-        translation_exporter = getUtility(ITranslationExporter)
-        translation_format_exporter = (
-            translation_exporter.getExporterProducingTargetFileFormat(
-                self.source_file_format))
 
-        return translation_format_exporter.exportTranslationFiles(
+        translation_exporter = getUtility(ITranslationExporter)
+        return translation_exporter.exportTranslationFiles(
             self._generateTranslationFileDatas())
 
     def expireAllMessages(self):
@@ -793,14 +787,15 @@ class POTemplate(SQLBase, RosettaStats):
 
         return pofile
 
-    def getDummyPOFile(self, language_code, variant=None, requester=None):
+    def getDummyPOFile(self, language, variant=None, requester=None,
+                       check_for_existing=True):
         """See `IPOTemplate`."""
-        # see if a valid one exists.
-        existingpo = self.getPOFileByLang(language_code, variant)
-        assert existingpo is None, (
-            'There is already a valid IPOFile (%s)' % existingpo.title)
+        if check_for_existing:
+            # see if a valid one exists.
+            existingpo = self.getPOFileByLang(language.code, variant)
+            assert existingpo is None, (
+                'There is already a valid IPOFile (%s)' % existingpo.title)
 
-        language = self._lookupLanguage(language_code)
         return DummyPOFile(self, language, variant=variant, owner=requester)
 
     def createPOTMsgSetFromMsgIDs(self, msgid_singular, msgid_plural=None,
@@ -1323,7 +1318,7 @@ class POTemplateSet:
 
     @staticmethod
     def compareSharingPrecedence(left, right):
-        """See IPOTemplateSet."""
+        """See `IPOTemplateSet`."""
         if left == right:
             return 0
 
@@ -1356,6 +1351,33 @@ class POTemplateSet:
         else:
             assert left.id < right.id, "Got unordered ids."
             return 1
+
+    def wipeSuggestivePOTemplatesCache(self):
+        """See `IPOTemplateSet`."""
+        return IMasterStore(POTemplate).execute(
+            "DELETE FROM SuggestivePOTemplate").rowcount
+
+    def populateSuggestivePOTemplatesCache(self):
+        """See `IPOTemplateSet`."""
+        return IMasterStore(POTemplate).execute("""
+            INSERT INTO SuggestivePOTemplate (
+                SELECT POTemplate.id
+                FROM POTemplate
+                LEFT JOIN DistroSeries ON
+                    DistroSeries.id = POTemplate.distroseries
+                LEFT JOIN Distribution ON
+                    Distribution.id = DistroSeries.distribution
+                LEFT JOIN ProductSeries ON
+                    ProductSeries.id = POTemplate.productseries
+                LEFT JOIN Product ON
+                    Product.id = ProductSeries.product
+                WHERE
+                    POTemplate.iscurrent AND (
+                        Distribution.official_rosetta OR
+                        Product.official_rosetta)
+                ORDER BY POTemplate.id
+            )
+            """).rowcount
 
 
 class POTemplateSharingSubset(object):
@@ -1445,6 +1467,7 @@ class POTemplateToTranslationFileDataAdapter:
     def __init__(self, potemplate):
         self._potemplate = potemplate
         self.messages = self._getMessages()
+        self.format = potemplate.source_file_format
 
     @cachedproperty
     def path(self):
@@ -1564,7 +1587,8 @@ class HasTranslationTemplatesMixin:
     @property
     def has_current_translation_templates(self):
         """See `IHasTranslationTemplates`."""
-        return bool(self.getCurrentTranslationTemplates(just_ids=True).any())
+        return bool(
+            self.getCurrentTranslationTemplates(just_ids=True).any())
 
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
@@ -1659,10 +1683,16 @@ class TranslationTemplatesCollection(Collection):
         """
         return self.joinInner(POFile, POTemplate.id == POFile.potemplateID)
 
-    def joinOuterPOFile(self):
+    def joinOuterPOFile(self, language=None):
         """Outer-join `POFile` into the collection.
 
         :return: A `TranslationTemplatesCollection` with an added outer
             join to `POFile`.
         """
-        return self.joinOuter(POFile, POTemplate.id == POFile.potemplateID)
+        if language is not None:
+            return self.joinOuter(
+                POFile, And(POTemplate.id == POFile.potemplateID,
+                            POFile.languageID == language.id))
+        else:
+            return self.joinOuter(
+                POFile, POTemplate.id == POFile.potemplateID)

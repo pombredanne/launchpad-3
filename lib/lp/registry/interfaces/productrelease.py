@@ -28,7 +28,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.fields import (
-    ContentNameField, ParticipatingPersonChoice)
+    ContentNameField, PersonChoice)
 from canonical.launchpad.validators import LaunchpadValidationError
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
@@ -270,7 +270,7 @@ class IProductReleasePublic(Interface):
         )
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=u"The owner of this release.",
             required=True,
             vocabulary='ValidOwner',
@@ -357,6 +357,7 @@ class IProductReleasePublic(Interface):
         Raises a NotFoundError if no matching ProductReleaseFile exists.
         """
 
+
 class IProductRelease(IProductReleaseEditRestricted,
                       IProductReleasePublic):
     """A specific release (i.e. version) of a product.
@@ -365,6 +366,7 @@ class IProductRelease(IProductReleaseEditRestricted,
     """
 
     export_as_webservice_entry('project_release')
+
 
 # Set the schema for IProductReleaseFile now that IProductRelease is defined.
 IProductReleaseFile['productrelease'].schema = IProductRelease
