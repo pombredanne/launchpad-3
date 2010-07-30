@@ -927,7 +927,7 @@ class TestNewBuilders(TrialTestCase):
             return "new_builders"
 
         def fake_addScanForBuilders(new_builders):
-            self.failUnlessEqual("new_builders", new_builders)
+            self.assertEqual("new_builders", new_builders)
 
         clock = task.Clock()
         builder_scanner = self._getScanner(BuilddManager(), clock=clock)
