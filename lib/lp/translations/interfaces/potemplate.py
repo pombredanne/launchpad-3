@@ -425,7 +425,8 @@ class IPOTemplate(IRosettaStats):
             loops when creating a new IPOTemplate.
         """
 
-    def getDummyPOFile(language_code, variant=None, requester=None):
+    def getDummyPOFile(language, variant=None, requester=None,
+                       check_for_existing=True):
         """Return a DummyPOFile if there isn't already a persistent `IPOFile`
 
         Raise `LanguageNotFound` if the language does not exist in the
@@ -435,7 +436,8 @@ class IPOTemplate(IRosettaStats):
         only create a POFile when you actually need to store data.
 
         We should not have already a POFile for the given language_code and
-        variant.
+        variant: if check_for_existing is set to False, no check will be
+        done for this.
         """
 
     def createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural=None,
@@ -778,6 +780,20 @@ class IHasTranslationTemplates(Interface):
         A template's language count is the number of `POFile`s that
         exist for it.
         """
+
+class ITranslationTemplatesCollection(Interface):
+    """A `Collection` of `POTemplate`s."""
+
+    def joinOuterPOFile(language=None):
+        """Outer-join `POFile` into the collection.
+
+        :return: A `TranslationTemplatesCollection` with an added outer
+            join to `POFile`.
+        """
+
+    def select(*args):
+        """Return a ResultSet for this collection with values set to args."""
+
 
 # Monkey patch for circular import avoidance done in
 # _schema_circular_imports.py

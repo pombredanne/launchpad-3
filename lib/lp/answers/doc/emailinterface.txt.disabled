@@ -47,7 +47,7 @@ AnswerTrackerHandler.
     ...     raw_msg = '\n'.join(lines)
     ...     msg = signed_message_from_string(raw_msg)
     ...     if handler.process(msg, msg['To']):
-    ...         # Ensures that the DB user has the correct permission to 
+    ...         # Ensures that the DB user has the correct permission to \
     ...         # saves the changes.
     ...         flush_database_updates()
     ...         return msgid
@@ -98,8 +98,8 @@ possibilities for the user.
     # be the question owner and Sample Person who will play the role of
     # answer contact. Foo Bar is used to change the status of the
     # question.
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('no-priv@canonical.com')
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByEmail('test@canonical.com')
@@ -121,7 +121,7 @@ possibilities for the user.
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
 
     # We need to refetch the question, since a new transaction was started.
-    >>> from canonical.launchpad.interfaces import IQuestionSet
+    >>> from lp.answers.interfaces.questioncollection import IQuestionSet
     >>> question = getUtility(IQuestionSet).get(question_id)
 
     # Define an helper to change the question status easily.
@@ -161,7 +161,7 @@ For example, from the Open state:
 
 And from the Needs information state:
 
-    >>> from canonical.launchpad.interfaces import QuestionStatus
+    >>> from lp.answers.interfaces.questionenums import QuestionStatus
     >>> setQuestionStatus(question, QuestionStatus.NEEDSINFO)
 
     >>> msgid =  send_question_email(

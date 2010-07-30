@@ -1,4 +1,4 @@
-launchpad-buildd (67) hardy-cat; urgency=low
+launchpad-buildd (68) hardy-cat; urgency=low
 
   * Explicitly use source format 1.0.
   * Add LSB information to init script.
@@ -8,6 +8,12 @@ launchpad-buildd (67) hardy-cat; urgency=low
   * Install example buildd configuration.
 
  -- Jelmer Vernooij <jelmer@canonical.com>  Thu, 22 Jul 2010 19:40:31 +0200
+
+launchpad-buildd (67) hardy-cat; urgency=low
+
+  * Force aptitude installation for recipe builds on maverick
+
+ -- LaMont Jones <lamont@canonical.com>  Fri, 23 Jul 2010 14:22:23 -0600
 
 launchpad-buildd (66) hardy-cat; urgency=low
 
