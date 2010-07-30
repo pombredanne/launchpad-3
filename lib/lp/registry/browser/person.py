@@ -4833,9 +4833,10 @@ class PersonSearchQuestionsView(SearchQuestionsView):
     display_target_column = True
 
     @property
-    def template(self):
-        return ViewPageTemplateFile(
-            '../../answers/templates/question-listing.pt')
+    def selected_template(self):
+        # Persons always show the default template; Don't call super because
+        # SearchQuestionsView does not need to know about IPerson.
+        return self.template
 
     @property
     def pageheading(self):

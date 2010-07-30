@@ -7,8 +7,10 @@ __metaclass__ = type
 
 import os
 
+from BeautifulSoup import BeautifulSoup
+
 from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import person_logged_in, TestCaseWithFactory
+from lp.testing import login_person, person_logged_in, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
 
@@ -20,7 +22,7 @@ class TestSearchQuestionsView(TestCaseWithFactory):
     def assertViewTemplate(self, context, file_name):
         view = create_initialized_view(context, '+questions')
         self.assertEqual(
-            file_name, os.path.basename(view.template.filename))
+            file_name, os.path.basename(view.selected_template.filename))
 
     def test_template_product_official_answers_unknown(self):
         product = self.factory.makeProduct()
