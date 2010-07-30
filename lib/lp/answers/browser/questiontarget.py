@@ -167,8 +167,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         involvement = getMultiAdapter(
             (self.context, self.request), name='+get-involved')
         if involvement.official_answers:
-            # Persons, teams and primary contexts that officially use answers
-            # have a search and listing presentation.
+            # Primary contexts that officially use answers have a
+            # search and listing presentation.
             return ViewPageTemplateFile('../templates/question-listing.pt')
         else:
             # Primary context that do not officially use answers have an

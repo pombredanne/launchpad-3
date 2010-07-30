@@ -66,7 +66,3 @@ class TestSearchQuestionsView(TestCaseWithFactory):
         with person_logged_in(dsp.distribution.owner) as owner:
             dsp.distribution.official_answers = True
         self.assertViewTemplate(dsp, 'question-listing.pt')
-
-    def test_template_person(self):
-        person = self.factory.makePerson()
-        self.assertViewTemplate(person, 'question-listing.pt')
