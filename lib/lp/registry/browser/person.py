@@ -3326,8 +3326,6 @@ class TeamIndexView(PersonIndexView):
     def visibility_info(self):
         if self.context.visibility == PersonVisibility.PRIVATE:
             return 'Private team'
-        elif self.context.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
-            return 'Team membership is viewable by team members'
         else:
             return 'Public team'
 
@@ -3599,8 +3597,8 @@ class PersonEditSSHKeysView(LaunchpadView):
 
     def add_ssh(self):
         sshkey = self.request.form.get('sshkey')
-	try:
-      	    getUtility(ISSHKeySet).new(self.user, sshkey)
+        try:
+            getUtility(ISSHKeySet).new(self.user, sshkey)
         except SSHKeyAdditionError:
             self.error_message = structured('Invalid public key')
         except SSHKeyCompromisedError:
@@ -4004,12 +4002,11 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
         and this team's visibility is either None or PUBLIC.
         """
         # Joining a moderated team will put you on the proposed_members
-        # list. If it is a private membership team, you are not allowed
-        # to view the proposed_members attribute until you are an
-        # active member; therefore, it would look like the join button
-        # is broken. Either private membership teams should always have a
-        # restricted subscription policy, or we need a more complicated
-        # permission model.
+        # list. If it is a private team, you are not allowed to view the
+        # proposed_members attribute until you are an active member;
+        # therefore, it would look like the join button is broken. Either
+        # private teams should always have a restricted subscription policy,
+        # or we need a more complicated permission model.
         if not (self.context.visibility is None
                 or self.context.visibility == PersonVisibility.PUBLIC):
             return False

@@ -80,7 +80,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.codehosting.bzrutils import safe_open
 from lp.registry.interfaces.person import (
-    validate_person_not_private_membership, validate_public_person)
+    validate_person, validate_public_person)
 from lp.services.database.prejoin import prejoin
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.mail.notificationrecipientset import (
@@ -127,7 +127,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         storm_validator=validate_public_person, notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person, notNull=True)
 
     def setOwner(self, new_owner, user):
         """See `IBranch`."""
