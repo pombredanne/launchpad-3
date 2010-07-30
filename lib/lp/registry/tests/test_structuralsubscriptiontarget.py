@@ -12,9 +12,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-
-
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
@@ -23,8 +20,9 @@ from lp.bugs.tests.test_bugtarget import (
     bugtarget_filebug)
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.testing import (
     ANONYMOUS, login, login_person, TestCaseWithFactory)
 from lp.testing._login import login_celebrity
