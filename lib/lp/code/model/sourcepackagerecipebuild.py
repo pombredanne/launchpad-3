@@ -33,7 +33,6 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuild, PackageBuildDerived)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
-from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.code.errors import BuildAlreadyPending
@@ -46,7 +45,7 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
-    default_component_dependency_name,)
+    default_component_dependency_name)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
@@ -291,7 +290,8 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     @staticmethod
     def _handleStatus_OK(build, librarian, slave_status, logger):
         """See `IPackageBuild`."""
-        BuildBase._handleStatus_OK(build, librarian, slave_status, logger)
+        super(SourcePackageRecipeBuild, self)._handleStatus_OK(
+            librarian, slave_status, logger)
         # base implementation doesn't notify on success.
         if build.status == BuildStatus.FULLYBUILT:
             build.notify()
