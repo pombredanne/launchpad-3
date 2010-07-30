@@ -37,8 +37,9 @@ class TestRegistration(TestCase):
         request, publication = get_request_and_publication(
             host=config.vhost.vostok.hostname)
         self.assertProvides(request, VostokLayer)
-        # XXX getApplication caches the root object in the LaunchBag, so we
-        # need to set it up, or it crashes.
+        # XXX 2010-07-30 MichaelHudson, bug=611542: getApplication caches the
+        # root object in the LaunchBag, so we need to set it up, or it
+        # crashes.
         getUtility(IOpenLaunchBag).clear()
         root = publication.getApplication(request)
         self.assertIsInstance(root, VostokRoot)
