@@ -21,6 +21,7 @@ from lp.vostok.publisher import VostokLayer, VostokRoot
 
 
 class TestRootRegistrations(TestCase):
+    """Test the registration of views for `VostokRoot`."""
 
     layer = FunctionalLayer
 
@@ -37,6 +38,7 @@ class TestRootRegistrations(TestCase):
 
 
 class TestRootView(TestCaseWithFactory):
+    """Tests for `VostokRootView`."""
 
     layer = DatabaseFunctionalLayer
 
@@ -53,6 +55,7 @@ class TestRootView(TestCaseWithFactory):
 
 
 class TestRootTemplate(TestCaseWithFactory):
+    """Tests for the templates used by views of `VostokRoot`."""
 
     layer = DatabaseFunctionalLayer
 

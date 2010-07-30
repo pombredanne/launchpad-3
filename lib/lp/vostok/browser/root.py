@@ -20,4 +20,5 @@ class VostokRootView(LaunchpadView):
 
     @property
     def distributions(self):
+        """An iterable of all registered distributions."""
         return getUtility(IDistributionSet)

@@ -26,6 +26,7 @@ class VostokLayer(IBrowserRequest, IDefaultBrowserLayer):
 
 
 class VostokRequestMixin:
+    """This mixin defines behaviour for the real and test Vostok requests."""
 
     implements(VostokLayer)
 
@@ -35,7 +36,7 @@ class VostokRequestMixin:
 
 
 class VostokBrowserRequest(VostokRequestMixin, LaunchpadBrowserRequest):
-    pass
+    """Request class for Vostok layer."""
 
 
 class IVostokRoot(Interface):
@@ -43,6 +44,12 @@ class IVostokRoot(Interface):
 
 
 class VostokRoot:
+    """The root object for the Vostok site.
+
+    No behaviour here, it just exists so it can have view and navigation
+    registrations attached to it.
+    """
+
     implements(IVostokRoot)
 
 
