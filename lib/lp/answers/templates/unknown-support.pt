@@ -14,8 +14,21 @@
   <body>
     <div metal:fill-slot="main">
       <div class="top-portlet">
-        <p>
-          message
+        <p id="support-unknown">
+          <strong>Launchpad does not know where
+          <tal:project replace="context/displayname" />
+          tracks support requests.</strong>
+        </p>
+
+        <p id="ubuntu-support">
+          <tal:project replace="context/displayname" /> questions are also
+          tracked in Ubuntu "something".
+        </p>
+
+        <p id="configure-support">
+          Launchpad allows your project to track questions and create FAQs.
+          _Getting started with support tracking in Launchpad_.
+          (/) Configure support tracking.
         </p>
       </div>
     </div>

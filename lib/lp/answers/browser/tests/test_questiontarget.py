@@ -9,8 +9,11 @@ import os
 
 from BeautifulSoup import BeautifulSoup
 
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import login_person, person_logged_in, TestCaseWithFactory
+from lp.testing import person_logged_in, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
 
@@ -69,17 +72,47 @@ class TestSearchQuestionsView(TestCaseWithFactory):
             dsp.distribution.official_answers = True
         self.assertViewTemplate(dsp, 'question-listing.pt')
 
+    def test_product_ubuntu_packages(self):
+        hoary = getUtility(ILaunchpadCelebrities).ubuntu['hoary']
+        sourcepackagename = self.factory.makeSourcePackageName('cow')
+        sourcepackage = self.factory.makeSourcePackage(
+            sourcepackagename=sourcepackagename, distroseries=hoary)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename, distroseries=hoary)
+        product = self.factory.makeProduct()
+        product.development_focus.setPackaging(
+            hoary, sourcepackagename, product.owner)
+        view = create_initialized_view(product, '+questions')
+        packages = view.ubuntu_packages
+        self.assertEqual(1, len(packages))
+        self.assertEqual('cow', packages[0].name)
+
 
 class TestSearchQuestionsViewUnknown(TestCaseWithFactory):
     """Test the behaviour of SearchQuestionsView."""
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestSearchQuestionsViewUnknown, self).setUp()
+        self.product = self.factory.makeProduct()
+        self.view = create_initialized_view(self.product, '+questions')
+
     def test_common_page_elements(self):
-        product = self.factory.makeProduct()
-        login_person(product.owner)
-        view = create_initialized_view(
-            product, '+questions', principal=product.owner)
-        content = BeautifulSoup(view())
+        content = BeautifulSoup(self.view())
         robots = content.find('meta', attrs={'name': 'robots'})
         self.assertEqual('noindex,nofollow', robots['content'])
+        self.assertTrue(content.find(True, id='support-unknown') is not None)
+
+    def test_product_with_packaging_elements(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        hoary = ubuntu.getSeries('hoary')
+        sourcepackagename = self.factory.makeSourcePackageName('cow')
+        sourcepackage = self.factory.makeSourcePackage(
+            sourcepackagename=sourcepackagename, distroseries=hoary)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename, distroseries=hoary)
+        self.product.development_focus.setPackaging(
+            hoary, sourcepackagename, self.product.owner)
+        content = BeautifulSoup(self.view())
+        self.assertTrue(content.find(True, id='ubuntu-support') is not None)

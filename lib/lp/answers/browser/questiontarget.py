@@ -474,6 +474,20 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
                 canonical_url(sourcepackage, rootsite='answers'),
                 question.sourcepackagename.name)
 
+    @property
+    def ubuntu_packages(self):
+        """The Ubuntu `IDistributionSourcePackage`s linked to the context.
+
+        If the context is an `IProduct` and it has `IPackaging` links to
+        Ubuntu, a list is returned. Otherwise None is returned
+        """
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        packages = [package for package in self.context.distrosourcepackages
+                    if package.distribution == ubuntu]
+        if len(packages) > 0:
+            return packages
+        return None
+
 
 class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     """SearchQuestionsView specialization for the 'My questions' report.
