@@ -17,7 +17,7 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 # well as landing target when it is added to the UI
 
 class BranchDelta:
-    """See canonical.launchpad.interfaces.IBranchDelta."""
+    """See IBranchDelta."""
 
     implements(IBranchDelta)
 

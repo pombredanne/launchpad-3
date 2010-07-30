@@ -31,7 +31,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.code.enums import (

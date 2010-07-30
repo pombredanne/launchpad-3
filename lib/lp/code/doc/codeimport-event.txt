@@ -88,7 +88,8 @@ CodeImportEvent, we need to use the CodeImport constructor directly.
     >>> from lp.code.enums import BranchType, CodeImportEventDataType
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> from lp.code.model.codeimport import CodeImport
     >>> from lp.code.interfaces.branchnamespace import (
     ...     get_branch_namespace)

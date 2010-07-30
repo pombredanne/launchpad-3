@@ -22,7 +22,7 @@ from lazr.restful.interface import copy_field
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import ILibraryFileAlias
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
     LaunchpadView, Link)

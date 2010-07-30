@@ -19,7 +19,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from storm.locals import Int, Reference, Storm, TimeDelta, Unicode
 from storm.store import Store
@@ -43,7 +43,7 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
-    default_component_dependency_name,)
+    default_component_dependency_name)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob

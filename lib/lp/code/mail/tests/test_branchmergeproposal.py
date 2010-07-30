@@ -11,7 +11,7 @@ from unittest import TestLoader
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 

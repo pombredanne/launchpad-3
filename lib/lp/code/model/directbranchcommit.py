@@ -16,8 +16,7 @@ from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transform import TransformPreview, ROOT_PARENT
 
-from canonical.launchpad.interfaces import IMasterObject
-
+from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from lp.codehosting.bzrutils import get_stacked_on_url
 
 class ConcurrentUpdateError(Exception):

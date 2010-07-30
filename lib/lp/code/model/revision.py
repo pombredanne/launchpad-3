@@ -31,8 +31,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IMasterStore)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING

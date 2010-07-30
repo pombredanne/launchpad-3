@@ -130,7 +130,7 @@ class SourcePackageRecipeContextMenu(ContextMenu):
 
     facet = 'branches'
 
-    links = ('request_builds',)
+    links = ('request_builds', )
 
     def request_builds(self):
         """Provide a link for requesting builds of a recipe."""
@@ -239,7 +239,7 @@ class ISourcePackageAddEditSchema(Interface):
         'name',
         'description',
         'owner',
-        'build_daily'
+        'build_daily',
         ])
     daily_build_archive = Choice(vocabulary='TargetPPAs',
         title=u'Daily build archive')
@@ -348,7 +348,8 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
     def initial_values(self):
         return {
             'distros': self.context.distroseries,
-            'recipe_text': str(self.context.builder_recipe),}
+            'recipe_text': str(self.context.builder_recipe),
+            }
 
     @property
     def cancel_url(self):
@@ -371,8 +372,8 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
                 # XXX: bug=592513 We shouldn't be hardcoding "run" here.
                 self.setFieldError(
                     'recipe_text',
-                    'The bzr-builder instruction "run" is not permitted here.'
-                    )
+                    'The bzr-builder instruction "run" is not '
+                    'permitted here.')
                 return
 
 

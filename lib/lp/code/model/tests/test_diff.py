@@ -17,8 +17,8 @@ import transaction
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import NotFoundError
-from canonical.launchpad.webapp import canonical_url, errorlog
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 from lp.code.model.diff import Diff, PreviewDiff, StaticDiff

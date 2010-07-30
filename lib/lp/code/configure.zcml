@@ -178,19 +178,19 @@
   </securedutility>
   <securedutility
       class="canonical.launchpad.systemhomes.BazaarApplication"
-      provides="canonical.launchpad.interfaces.IBazaarApplication">
-    <allow interface="canonical.launchpad.interfaces.IBazaarApplication"/>
+      provides="canonical.launchpad.interfaces.launchpad.IBazaarApplication">
+    <allow interface="canonical.launchpad.interfaces.launchpad.IBazaarApplication"/>
   </securedutility>
 
   <!-- pages for the bazaar application -->
 
   <xmlrpc:view
-      for="canonical.launchpad.interfaces.IBazaarApplication"
+      for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
       interface="canonical.launchpad.xmlrpc.IBranchSetAPI"
       class="canonical.launchpad.xmlrpc.BranchSetAPI"
       permission="launchpad.AnyPerson"/>
   <xmlrpc:view
-      for="canonical.launchpad.interfaces.IBazaarApplication"
+      for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
       interface="canonical.launchpad.xmlrpc.IPublicCodehostingAPI"
       class="canonical.launchpad.xmlrpc.PublicCodehostingAPI"
       permission="zope.Public"/>
@@ -273,7 +273,7 @@
   <!-- Branch Merge Proposal Jobs -->
 
   <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">
-    <allow interface="canonical.launchpad.interfaces.IMessageJob"/>
+    <allow interface="canonical.launchpad.interfaces.message.IMessageJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJob"/>
   </class>
   <securedutility

@@ -88,7 +88,7 @@ The owners of the branch always have visibility of their own branches.
 
 Check the configuration of the AccessBranch authorization.
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> print getUtility(ILaunchBag).user.displayname
     Sample Person
     >>> getUtility(ILaunchBag).user == no_priv_person
@@ -104,7 +104,8 @@ special.  Launchpad administrators often have a need to see private
 Launchpad things in order to fix up fubars by users.
 
     >>> mark = person_set.getByName('mark')
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> lp_admins = getUtility(ILaunchpadCelebrities).admin
     >>> mark.inTeam(lp_admins)
     True

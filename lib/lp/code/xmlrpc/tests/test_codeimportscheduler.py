@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.launchpad.testing.codeimporthelpers import make_running_import
