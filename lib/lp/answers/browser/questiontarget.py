@@ -26,7 +26,7 @@ from operator import attrgetter
 from urllib import urlencode
 
 from zope.app.form.browser import DropdownWidget
-from zope.component import getUtility, queryMultiAdapter
+from zope.component import getUtility, getMultiAdapter, queryMultiAdapter
 from zope.formlib import form
 from zope.schema import Bool, Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
@@ -156,7 +156,18 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
 
-    template = ViewPageTemplateFile('../templates/question-listing.pt')
+    @property
+    def template(self):
+        involvement = getMultiAdapter(
+            (self.context, self.request), name='+get-involved')
+        if involvement.official_answers:
+            # Persons, teams and primary contexts that officially use answers
+            # have a search and listing presentation.
+            return ViewPageTemplateFile('../templates/question-listing.pt')
+        else:
+            # Primary context that do not officially use answers have an
+            # an explanation about about the current state.
+            return ViewPageTemplateFile('../templates/unknown-support.pt')
 
     @property
     def page_title(self):
