@@ -1200,7 +1200,8 @@
                 addSubscription
                 addBugSubscription
                 removeBugSubscription
-                userCanAlterSubscription"/>
+                userCanAlterSubscription
+                userCanAlterBugSubscription"/>
 
         <!-- IHasBugSupervisor -->
 
@@ -1472,7 +1473,8 @@
                 addSubscription
                 addBugSubscription
                 removeBugSubscription
-                userCanAlterSubscription"/>
+                userCanAlterSubscription
+                userCanAlterBugSubscription"/>
 
         <!-- IHasBugSupervisor -->
 
