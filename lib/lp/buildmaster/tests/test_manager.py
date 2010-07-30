@@ -841,11 +841,6 @@ class TestBuilddManager(TrialTestCase):
         # stub out the code that adds a callLater, so that later tests
         # don't get surprises.
         self.patch(SlaveScanner, 'scheduleNextScanCycle', FakeMethod())
-        #self._saved_schedule = SlaveScanner.scheduleNextScanCycle
-        #def cleanup():
-        #    SlaveScanner.scheduleNextScanCycle = self._saved_schedule
-        #self.addCleanup(cleanup)
-        #SlaveScanner.scheduleNextScanCycle = FakeMethod
 
     def test_addScanForBuilders(self):
         # Test that addScanForBuilders generates NewBuildersScanner objects.
