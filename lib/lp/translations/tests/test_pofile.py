@@ -13,7 +13,6 @@ from zope.component import getAdapter, getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.translatablemessage import (
     ITranslatableMessage)
