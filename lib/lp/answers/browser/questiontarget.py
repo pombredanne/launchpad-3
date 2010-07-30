@@ -38,12 +38,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.helpers import (
     browserLanguages, is_english_variant, preferred_or_request_languages)
-from lp.answers.browser.faqcollection import FAQCollectionMenu
-from canonical.launchpad.interfaces import (
-    IDistribution, IFAQCollection, ILanguageSet, ILaunchpadCelebrities,
-    IProjectGroup, IQuestionCollection, IQuestionSet, IQuestionTarget,
-    ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError,
-    QuestionStatus)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, Link,
     safe_action, stepto, stepthrough, urlappend)
@@ -51,6 +47,16 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.distribution import IDistribution
+from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.interfaces.faqcollection import IFAQCollection
+from lp.answers.interfaces.questioncollection import (
+    IQuestionCollection, IQuestionSet, ISearchableByQuestionOwner)
+from lp.answers.interfaces.questiontarget import (
+    IQuestionTarget, ISearchQuestionsForm)
+from lp.answers.browser.faqcollection import FAQCollectionMenu
 
 
 class AskAQuestionButtonView:
@@ -666,7 +672,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             answer_contacts).intersection(self.administrated_teams)
         return {
             'want_to_be_answer_contact': user in answer_contacts,
-            'answer_contact_teams': list(answer_contact_teams)
+            'answer_contact_teams': list(answer_contact_teams),
             }
 
     @action(_('Continue'), name='update')
@@ -728,8 +734,8 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         english = getUtility(ILaunchpadCelebrities).english
         if person_or_team.isTeam():
             person_or_team.addLanguage(english)
-            team_mapping = {'name' : person_or_team.name,
-                            'displayname' : person_or_team.displayname}
+            team_mapping = {'name': person_or_team.name,
+                            'displayname': person_or_team.displayname}
             msgid = _("English was added to ${displayname}'s "
                       '<a href="/~${name}/+editlanguages">preferred '
                       'languages</a>.',
@@ -746,7 +752,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             msgid = _('<a href="/people/+me/+editlanguages">Your preferred '
                       'languages</a> were updated to include your browser '
                       'languages: $languages.',
-                      mapping={'languages' : language_str})
+                      mapping={'languages': language_str})
             response.addNotification(structured(msgid))
 
 
@@ -782,7 +788,6 @@ class QuestionTargetTraversalMixin:
             raise NotFoundError(name)
         return self.redirectSubTree(canonical_url(question))
 
-
     @stepto('+ticket')
     def redirect_ticket(self):
         """Use RedirectionNavigation to redirect to +question.
@@ -794,15 +799,13 @@ class QuestionTargetTraversalMixin:
         return self.redirectSubTree(target)
 
 
-
-# XXX flacoste 2007-07-08 bug=125851:
-# This menu shouldn't "extend" FAQCollectionMenu.
-# But this is needed because of limitations in the current menu architecture.
-# Menu should be built by merging all menus applying to the context object
-# (-based on the interfaces it provides).
 class QuestionCollectionAnswersMenu(FAQCollectionMenu):
     """Base menu definition for QuestionCollection searchable by owner."""
-
+    # XXX flacoste 2007-07-08 bug=125851:
+    # This menu shouldn't "extend" FAQCollectionMenu.
+    # architecture. But this is needed because of limitations in the current
+    # menu  Menu should be built by merging all menus applying to the context
+    # object (-based on the interfaces it provides).
     usedfor = ISearchableByQuestionOwner
     facet = 'answers'
     links = FAQCollectionMenu.links + [
