@@ -13,6 +13,8 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+
+
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
@@ -25,7 +27,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.webapp.testing import verifyObject
 from lp.testing import (
     ANONYMOUS, login, login_person, TestCaseWithFactory)
-from lp.registry.interfaces.person import IPersonSet
+from lp.testing._login import login_celebrity
 from lp.registry.interfaces.structuralsubscription import (
     DeleteSubscriptionError, IStructuralSubscriptionTarget,
     UserCannotSubscribePerson)
@@ -68,11 +70,9 @@ class StructuralSubscriptionTestBase:
     def test_admin_can_subscribe_anyone(self):
         # a launchpad admin can create a structural subscription for
         # anyone
-        login('foo.bar@canonical.com')
-        foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-        #with celebrity_logged_in('admin'):
+        admin = login_celebrity('admin')
         self.assertIsInstance(
-            self.target.addBugSubscription(self.ordinary_subscriber, foobar),
+            self.target.addBugSubscription(self.ordinary_subscriber, admin),
             StructuralSubscription)
 
     def test_secondary_structural_subscription(self):
