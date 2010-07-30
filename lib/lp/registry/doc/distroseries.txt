@@ -4,9 +4,10 @@ DistroSeries
 From the DerivationOverview spec
 <https://launchpad.canonical.com/DerivationOverview>:
 
-    A distribution of GNU/Linux comprises a set of packages, an installer,
-    possibly a live-CD, some amount of metadata associated with the arrangement
-    of those elements and also a lot of information on managing it.
+    A distribution of GNU/Linux comprises a set of packages, an
+    installer, possibly a live-CD, some amount of metadata associated
+    with the arrangement of those elements and also a lot of information
+    on managing it.
 
 A distro series is a given version of a distribution. So, for Ubuntu, there
 are releases (or planned releases) like "warty", "hoary" and "bendy".
@@ -191,15 +192,15 @@ not, according the distroseries status and the upload target pocket.
 The FROZEN status is special.  Uploads are allowed for all pockets as
 the upload will have to wait for manual approval anyway:
 
-   >>> from zope.security.proxy import removeSecurityProxy
-   >>> removeSecurityProxy(hoary).status = SeriesStatus.FROZEN
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(hoary).status = SeriesStatus.FROZEN
 
-   >>> hoary.status.name
-   'FROZEN'
-   >>> hoary.canUploadToPocket(PackagePublishingPocket.RELEASE)
-   True
-   >>> hoary.canUploadToPocket(PackagePublishingPocket.SECURITY)
-   True
+    >>> hoary.status.name
+    'FROZEN'
+    >>> hoary.canUploadToPocket(PackagePublishingPocket.RELEASE)
+    True
+    >>> hoary.canUploadToPocket(PackagePublishingPocket.SECURITY)
+    True
 
 
 Package searching
@@ -247,8 +248,13 @@ other things) the uploader for validating incoming uploads.
     devel
     translations
 
+<<<<<<< TREE
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from lp.soyuz.interfaces.section import ISectionSet
+=======
+    >>> from canonical.launchpad.interfaces import (
+    ...    IComponentSet, ISectionSet)
+>>>>>>> MERGE-SOURCE
     >>> python = getUtility(ISectionSet).ensure('python')
 
     >>> hoary.addSection(python)
@@ -270,7 +276,8 @@ other things) the uploader for validating incoming uploads.
 
 Breezy-autotest has got a partner component, which is not reported:
 
-    >>> breezyautotest = distroseriesset.queryByName(ubuntu, "breezy-autotest")
+    >>> breezyautotest = distroseriesset.queryByName(
+    ...     ubuntu, "breezy-autotest")
     >>> for c in breezyautotest.components:
     ...     print c.name
     main
@@ -308,22 +315,22 @@ initialisation. In particular the initialiser won't overwrite
 publishing records etc. Essentially this is a "Do not push this button
 again" type set of assertions.
 
-   >>> login("foo.bar@canonical.com")
-   >>> humpy = ubuntu.newSeries('humpy', 'Humpy Hippo',
-   ...                          'The Humpy Hippo', 'Fat', 'Yo Momma',
-   ...                          '99.2',hoary, hoary.owner)
-   >>> humpy_i386 = humpy.newArch('i386', hoary['i386'].processorfamily,
-   ...                            True, humpy.owner)
-   >>> humpy.nominatedarchindep = humpy_i386
-   >>> humpy.initialiseFromParent()
-   >>> len(hoary.getPublishedReleases('pmount'))
-   1
-   >>> len(humpy.getPublishedReleases('pmount'))
-   1
-   >>> len(hoary['i386'].getReleasedPackages('pmount'))
-   1
-   >>> len(humpy_i386.getReleasedPackages('pmount'))
-   1
+    >>> login("foo.bar@canonical.com")
+    >>> humpy = ubuntu.newSeries('humpy', 'Humpy Hippo',
+    ...                          'The Humpy Hippo', 'Fat', 'Yo Momma',
+    ...                          '99.2',hoary, hoary.owner)
+    >>> humpy_i386 = humpy.newArch('i386', hoary['i386'].processorfamily,
+    ...                            True, humpy.owner)
+    >>> humpy.nominatedarchindep = humpy_i386
+    >>> humpy.initialiseFromParent()
+    >>> len(hoary.getPublishedReleases('pmount'))
+    1
+    >>> len(humpy.getPublishedReleases('pmount'))
+    1
+    >>> len(hoary['i386'].getReleasedPackages('pmount'))
+    1
+    >>> len(humpy_i386.getReleasedPackages('pmount'))
+    1
 
 Check if the attributes of an DRSPR instance for the just initialised
 distroseries are sane. A DRSPR instance should filter attributes of
@@ -345,42 +352,42 @@ resulted of the sourcepackagerelease in question, but built anywhere.
 Initialise a new distroseries based on warty (since it has, at least
 one coherent published source + binary, mozilla-firefox)
 
-   >>> bumpy = ubuntu.newSeries('bumpy', 'Bumpy',
-   ...                          'The Bumpy', 'Fat', 'Boom',
-   ...                          '99.3', warty, warty.owner)
+    >>> bumpy = ubuntu.newSeries('bumpy', 'Bumpy',
+    ...                          'The Bumpy', 'Fat', 'Boom',
+    ...                          '99.3', warty, warty.owner)
 
-   >>> bumpy_i386 = bumpy.newArch('i386', warty['i386'].processorfamily,
-   ...                            True, bumpy.owner)
-   >>> bumpy.nominatedarchindep = bumpy_i386
-   >>> bumpy.initialiseFromParent()
+    >>> bumpy_i386 = bumpy.newArch('i386', warty['i386'].processorfamily,
+    ...                            True, bumpy.owner)
+    >>> bumpy.nominatedarchindep = bumpy_i386
+    >>> bumpy.initialiseFromParent()
 
 Build a new ISourcePackage based in the new distroseries:
 
-   >>> bumpy_firefox_sp = bumpy.getSourcePackage('mozilla-firefox')
+    >>> bumpy_firefox_sp = bumpy.getSourcePackage('mozilla-firefox')
 
 Check the content IDRSPR binaries & builds attributes:
 
 'binaries' should be inherited from parent release.
 
-   >>> bumpy_firefox_sp.currentrelease.binaries.count()
-   2
+    >>> bumpy_firefox_sp.currentrelease.binaries.count()
+    2
 
-   >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
-   ...     print bin.id, bin.title, bin.build.distro_arch_series.title
-   27 mozilla-firefox-data-0.9 The Warty Warthog Release for i386 (x86)
-   12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
+    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
+    ...     print bin.id, bin.title, bin.build.distro_arch_series.title
+    27 mozilla-firefox-data-0.9 The Warty Warthog Release for i386 (x86)
+    12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
 
 
 'builds' should be empty since it was built in parent (warty), not in this
 distroseries (bumby.
 
-   >>> len(bumpy_firefox_sp.currentrelease.builds)
-   0
+    >>> len(bumpy_firefox_sp.currentrelease.builds)
+    0
 
 the SPR returns all build records for it.
 
-   >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
-   4
+    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
+    4
 
 The new series also has the same packaging links as its parent series.
 
@@ -407,22 +414,22 @@ Translatable Packages and Packaging
 You can easily find out what packages are translatable in a
 distribution release:
 
-   >>> translatables = hoary.getTranslatableSourcePackages()
-   >>> for translatable in translatables:
-   ...    print translatable.name
-   evolution
-   mozilla
-   pmount
+    >>> translatables = hoary.getTranslatableSourcePackages()
+    >>> for translatable in translatables:
+    ...    print translatable.name
+    evolution
+    mozilla
+    pmount
 
 Packages can be linked to upstream productseries in specific
 distribution releases. IDistroSeries offers a way to query translatable
 packages that are linked to upstream productseries.
 
-   >>> unlinked_translatables = hoary.getUnlinkedTranslatableSourcePackages()
-   >>> for translatable in unlinked_translatables:
-   ...    print translatable.name
-   pmount
-   mozilla
+    >>> unlinked_translatables = hoary.getUnlinkedTranslatableSourcePackages()
+    >>> for translatable in unlinked_translatables:
+    ...    print translatable.name
+    pmount
+    mozilla
 
 The links to upstream product series can be verified using the
 packagings property:
@@ -458,11 +465,11 @@ total_bugs, and total_messages (translatable messages).
     linux-source-2.6.15  0  0
 
 
-The distroseries getPrioritizedlPackagings() method that returns a prioritized
+The distroseries getPrioritizedPackagings() method that returns a prioritized
 list of `IPackaging` that need more information about the upstream project to
 share bugs, translations, and code.
 
-    >>> for packaging in hoary.getPrioritizedlPackagings():
+    >>> for packaging in hoary.getPrioritizedPackagings():
     ...     print packaging.sourcepackagename.name
     netapplet
     evolution
@@ -503,10 +510,16 @@ upstream.
 DistroSeries can build meta objects for packages
 ------------------------------------------------
 
+<<<<<<< TREE
     >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
     >>> from lp.soyuz.interfaces.distroseriesbinarypackage import (
     ...     IDistroSeriesBinaryPackage)
     >>> from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
+=======
+    >>> from canonical.launchpad.interfaces import (
+    ...     ISourcePackage,
+    ...     IDistroSeriesBinaryPackage,
+>>>>>>> MERGE-SOURCE
     ...     IDistroSeriesSourcePackageRelease)
 
     >>> pmount_src_name = SourcePackageName.byName('pmount')
@@ -538,75 +551,75 @@ Check some properties of DRSPR meta class
 
 Entire publishing history:
 
-   >>> pmount_srcrel.publishing_history.count()
-   1
+    >>> pmount_srcrel.publishing_history.count()
+    1
 
 Most recent published history row:
 
-   >>> pmount_srcrel.current_published is None
-   True
+    >>> pmount_srcrel.current_published is None
+    True
 
-   >>> netapplet_srcrel =  hoary.getSourcePackage('netapplet').currentrelease
-   >>> spph = netapplet_srcrel.current_published
+    >>> netapplet_srcrel =  hoary.getSourcePackage('netapplet').currentrelease
+    >>> spph = netapplet_srcrel.current_published
 
-   >>> spph.section.name
-   u'web'
+    >>> spph.section.name
+    u'web'
 
 The changesfile attribute contains the package changelog. It is provided as
 an ILibraryFileAlias:
 
-   >>> firefox_srcrel =  warty.getSourcePackage(
-   ...    'mozilla-firefox').currentrelease
-   >>> print firefox_srcrel.title
-   "mozilla-firefox" 0.9 source package in The Warty Warthog Release
+    >>> firefox_srcrel =  warty.getSourcePackage(
+    ...    'mozilla-firefox').currentrelease
+    >>> print firefox_srcrel.title
+    "mozilla-firefox" 0.9 source package in The Warty Warthog Release
 
-   >>> firefox_srcrel.changesfile
-   <LibraryFileAlias at ...>
+    >>> firefox_srcrel.changesfile
+    <LibraryFileAlias at ...>
 
 If the package changelog is not available, that attribute is None:
 
-   >>> netapplet_srcrel.changesfile is None
-   True
+    >>> netapplet_srcrel.changesfile is None
+    True
 
 Perform `post publication` override:
 
-   >>> new_section = getUtility(ISectionSet)['base']
+    >>> new_section = getUtility(ISectionSet)['base']
 
-   >>> override = netapplet_srcrel.current_published.changeOverride(
-   ...     new_section=new_section)
+    >>> override = netapplet_srcrel.current_published.changeOverride(
+    ...     new_section=new_section)
 
-   >>> override.section == new_section
-   True
+    >>> override.section == new_section
+    True
 
-   >>> print override.status.name
-   PENDING
+    >>> print override.status.name
+    PENDING
 
-   >>> netapplet_srcrel.publishing_history.count()
-   2
+    >>> netapplet_srcrel.publishing_history.count()
+    2
 
 Override information about 'pmount' is pending publication:
 
-   >>> print netapplet_srcrel.current_published.status.name
-   PENDING
+    >>> print netapplet_srcrel.current_published.status.name
+    PENDING
 
-   >>> print netapplet_srcrel.current_published.section.name
-   base
+    >>> print netapplet_srcrel.current_published.section.name
+    base
 
 Supersede previous netapplet publication:
 
-   >>> last_published = netapplet_srcrel.publishing_history[1]
-   >>> last_published.supersede()
-   >>> flush_database_updates()
+    >>> last_published = netapplet_srcrel.publishing_history[1]
+    >>> last_published.supersede()
+    >>> flush_database_updates()
 
-   >>> netapplet_srcrel.publishing_history.count()
-   2
+    >>> netapplet_srcrel.publishing_history.count()
+    2
 
-   >>> print last_published.status.name
-   SUPERSEDED
+    >>> print last_published.status.name
+    SUPERSEDED
 
-   >>> from canonical.database.sqlbase import get_transaction_timestamp
-   >>> last_published.datesuperseded == get_transaction_timestamp()
-   True
+    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> last_published.datesuperseded == get_transaction_timestamp()
+    True
 
 
 SourcePackagePublishingHistory
@@ -621,7 +634,12 @@ the future.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> hoary = ubuntu['hoary']
 
+<<<<<<< TREE
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+=======
+    >>> from canonical.launchpad.interfaces import (
+    ...    PackagePublishingStatus)
+>>>>>>> MERGE-SOURCE
 
     >>> hoary_pub_sources = hoary.getSourcePackagePublishing(
     ...     PackagePublishingStatus.PUBLISHED,
@@ -661,33 +679,33 @@ the future.
 This method also allow us to restrict the results to a given
 component:
 
-   >>> component_main = getUtility(IComponentSet)['main']
-   >>> hoary.getSourcePackagePublishing(
-   ...     PackagePublishingStatus.PUBLISHED,
-   ...     PackagePublishingPocket.RELEASE,
-   ...     component=component_main).count()
-   5
+    >>> component_main = getUtility(IComponentSet)['main']
+    >>> hoary.getSourcePackagePublishing(
+    ...     PackagePublishingStatus.PUBLISHED,
+    ...     PackagePublishingPocket.RELEASE,
+    ...     component=component_main).count()
+    5
 
-   >>> component_multiverse = getUtility(IComponentSet)['multiverse']
-   >>> hoary.getSourcePackagePublishing(
-   ...     PackagePublishingStatus.PUBLISHED,
-   ...     PackagePublishingPocket.RELEASE,
-   ...     component=component_multiverse).count()
-   0
+    >>> component_multiverse = getUtility(IComponentSet)['multiverse']
+    >>> hoary.getSourcePackagePublishing(
+    ...     PackagePublishingStatus.PUBLISHED,
+    ...     PackagePublishingPocket.RELEASE,
+    ...     component=component_multiverse).count()
+    0
 
 By default the IDistribution 'main_archive' is considered, but It also
 allows the callsite to specify one and then the result will be
 restricted to it.
 
-   >>> debian_archive = getUtility(IDistributionSet)['debian'].main_archive
-   >>> print debian_archive.purpose.title
-   Primary Archive
+    >>> debian_archive = getUtility(IDistributionSet)['debian'].main_archive
+    >>> print debian_archive.purpose.title
+    Primary Archive
 
-   >>> hoary.getSourcePackagePublishing(
-   ...     PackagePublishingStatus.PUBLISHED,
-   ...     PackagePublishingPocket.RELEASE,
-   ...     component=component_main, archive=debian_archive).count()
-   0
+    >>> hoary.getSourcePackagePublishing(
+    ...     PackagePublishingStatus.PUBLISHED,
+    ...     PackagePublishingPocket.RELEASE,
+    ...     component=component_main, archive=debian_archive).count()
+    0
 
 ISPP.getPublishedBinaries returns all the binaries generated by the
 publication in question:
@@ -712,7 +730,11 @@ publication in question:
     4
     >>> warty_mozilla_pub_bin = warty_mozilla_pub_binaries[0]
 
+<<<<<<< TREE
     >>> from lp.soyuz.interfaces.publishing  import (
+=======
+    >>> from canonical.launchpad.interfaces import (
+>>>>>>> MERGE-SOURCE
     ...    IBinaryPackagePublishingHistory)
     >>> verifyObject(IBinaryPackagePublishingHistory, warty_mozilla_pub_bin)
     True

@@ -179,7 +179,6 @@ class DistroSeriesOverviewMenu(
 
     # A search link isn't needed because the distro series overview
     # has a search form.
-
     def answers(self):
         text = 'Ask a question'
         url = canonical_url(self.context.distribution) + '/+addquestion'
@@ -331,10 +330,8 @@ class DistroSeriesView(MilestoneOverlayMixin):
 
     @cachedproperty
     def needs_linking(self):
-        """Return a list of 10 packages most in need of upstream linking.""" 
-        # XXX sinzui 2010-02-26 bug=528648: This method causes a timeout.
-        # return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
-        return None
+        """Return a list of 10 packages most in need of upstream linking."""
+        return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
 
     milestone_can_release = False
 
@@ -480,7 +477,7 @@ class DistroSeriesPackagesView(LaunchpadView):
     @cachedproperty
     def cached_packagings(self):
         """The batched upstream packaging links."""
-        packagings = self.context.getPrioritizedlPackagings()
+        packagings = self.context.getPrioritizedPackagings()
         navigator = BatchNavigator(packagings, self.request, size=20)
         navigator.setHeadings('packaging', 'packagings')
         return navigator

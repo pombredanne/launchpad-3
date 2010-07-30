@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -43,6 +43,8 @@ from twisted.python.util import mergeFunctionMetadata
 from zope.component import ComponentLookupError, getUtility
 from zope.security.proxy import (
     builtin_isinstance, Proxy, ProxyFactory, removeSecurityProxy)
+
+from bzrlib.merge_directive import MergeDirective2
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
@@ -158,7 +160,6 @@ from lp.testing import (
     ANONYMOUS,
     login,
     login_as,
-    logout,
     run_with_login,
     temp_dir,
     time_counter,
@@ -168,6 +169,8 @@ from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
@@ -840,7 +843,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
-                'Unrecognized branch type: %r' % (branch_type,))
+                'Unrecognized branch type: %r' % (branch_type, ))
 
         namespace = get_branch_namespace(
             owner, product=product, distroseries=distroseries,
@@ -1046,7 +1049,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
     def makeDiff(self, diff_text=DIFF):
-        return ProxyFactory(Diff.fromFile(StringIO(diff_text), len(diff_text)))
+        return ProxyFactory(
+            Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
     def makePreviewDiff(self, conflicts=u''):
         diff = self.makeDiff()
@@ -1121,7 +1125,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             branch.createBranchRevision(sequence, revision)
             parent = revision
             parent_ids = [parent.revision_id]
-        branch.startMirroring()
+        if branch.branch_type not in (BranchType.REMOTE, BranchType.HOSTED):
+            branch.startMirroring()
         removeSecurityProxy(branch).branchChanged(
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
@@ -1626,6 +1631,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return series
 
     def makeLanguage(self, language_code=None, name=None):
+        """Makes a language given the language_code and name."""
         if language_code is None:
             language_code = self.getUniqueString('lang')
         if name is None:
@@ -2082,18 +2088,26 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         translation.is_imported = is_imported
         translation.is_current = True
 
-    def makeTranslationImportQueueEntry(self, path=None, status=None,
-                                        sourcepackagename=None,
+    def makeTranslationImportQueueEntry(self, path=None, productseries=None,
                                         distroseries=None,
-                                        productseries=None, content=None,
-                                        uploader=None, is_published=False):
+                                        sourcepackagename=None,
+                                        potemplate=None, content=None,
+                                        uploader=None, pofile=None,
+                                        format=None, status=None):
         """Create a `TranslationImportQueueEntry`."""
         if path is None:
             path = self.getUniqueString() + '.pot'
-        if status is None:
-            status = RosettaImportStatus.NEEDS_REVIEW
 
-        if (sourcepackagename is None and distroseries is None):
+        for_distro = not (distroseries is None and sourcepackagename is None)
+        for_project = productseries is not None
+        has_template = (potemplate is not None)
+        if has_template and not for_distro and not for_project:
+            # Copy target from template.
+            distroseries = potemplate.distroseries
+            sourcepackagename = potemplate.sourcepackagename
+            productseries = potemplate.productseries
+
+        if sourcepackagename is None and distroseries is None:
             if productseries is None:
                 productseries = self.makeProductSeries()
         else:
@@ -2107,16 +2121,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if content is None:
             content = self.getUniqueString()
-
         content_reference = getUtility(ILibraryFileAliasSet).create(
             name=os.path.basename(path), size=len(content),
             file=StringIO(content), contentType='text/plain')
 
+        if format is None:
+            format = TranslationFileFormat.PO
+
+        if status is None:
+            status = RosettaImportStatus.NEEDS_REVIEW
+
         return TranslationImportQueueEntry(
-            path=path, status=status, sourcepackagename=sourcepackagename,
-            distroseries=distroseries, productseries=productseries,
-            importer=uploader, content=content_reference,
-            is_published=is_published)
+            path=path, productseries=productseries, distroseries=distroseries,
+            sourcepackagename=sourcepackagename, importer=uploader,
+            content=content_reference, status=status, format=format,
+            is_published=False)
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""
@@ -2246,7 +2265,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  dsc_standards_version='3.6.2',
                                  dsc_format='1.0', dsc_binaries='foo-bin',
                                  date_uploaded=UTC_NOW,
-                                 source_package_recipe_build=None):
+                                 source_package_recipe_build=None,
+                                 dscsigningkey=None):
         """Make a `SourcePackageRelease`."""
         if distroseries is None:
             if source_package_recipe_build is not None:
@@ -2305,7 +2325,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             changelog_entry=None,
             dsc=None,
             copyright=self.getUniqueString(),
-            dscsigningkey=None,
+            dscsigningkey=dscsigningkey,
             dsc_maintainer_rfc822=maintainer_email,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
@@ -2614,7 +2634,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             context also contains the password and gpg signing mode.
         :param sender: The `Person` that is sending the email.
         """
-        from bzrlib.merge_directive import MergeDirective2
         md = MergeDirective2.from_objects(
             source_branch.repository, source_branch.last_revision(),
             public_branch=source_branch.get_public_branch(),
@@ -2745,10 +2764,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
 unwrapped_types = (
-    DSCFile, InstanceType, Message, datetime, int, str, unicode)
+    DSCFile, InstanceType, MergeDirective2, Message, datetime, int, str, unicode)
+
 
 def is_security_proxied_or_harmless(obj):
-    """Check that the given object is security wrapped or a harmless object."""
+    """Check that the given object is security wrapped or a harmless object.
+    """
     if obj is None:
         return True
     if builtin_isinstance(obj, Proxy):
@@ -2774,6 +2795,7 @@ class LaunchpadObjectFactory:
 
     Whereever you see such a warning: fix it!
     """
+
     def __init__(self):
         self._factory = BareLaunchpadObjectFactory()
 

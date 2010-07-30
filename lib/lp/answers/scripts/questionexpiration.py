@@ -80,7 +80,6 @@ class QuestionJanitor:
             self._logout()
         self.log.info('Finished expiration run.')
 
-
     def _login(self):
         """Setup an interaction as the Launchpad Janitor."""
         auth_utility = getUtility(IPlacelessAuthUtility)

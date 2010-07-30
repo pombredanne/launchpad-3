@@ -89,7 +89,7 @@ def _send_bug_details_to_new_bug_subscribers(
     references = [bug.initial_message.rfc822msgid]
     recipients = bug.getBugNotificationRecipients()
 
-    bug_notification_builder = BugNotificationBuilder(bug)
+    bug_notification_builder = BugNotificationBuilder(bug, event_creator)
     for to_addr in sorted(to_addrs):
         reason, rationale = recipients.getReason(to_addr)
         subject, contents = generate_bug_add_email(

@@ -1,11 +1,14 @@
-= Answer Tracker FAQ Documents =
+Answer Tracker FAQ Documents
+============================
 
-== IFAQTarget ==
+
+IFAQTarget
+----------
 
 The Answer Tracker offers features to manage answers to frequently asked
 questions (also called FAQ). Like the regular questions, FAQ documents
-are associated to distributions or products. The IFAQTarget interface
-is provided by objects that can host FAQs.
+are associated to distributions or products. The IFAQTarget interface is
+provided by objects that can host FAQs.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.security.proxy import removeSecurityProxy
@@ -18,6 +21,7 @@ is provided by objects that can host FAQs.
 
     # removeSecurityProxy() is needed because not all interface
     # attributes are available to everybody.
+
     >>> verifyObject(IFAQTarget, removeSecurityProxy(firefox))
     True
 
@@ -44,7 +48,8 @@ contacts.)
 lib/canonical/launchpad/interfaces/ftests/faqtarget.txt)
 
 
-=== IFAQTarget adapters ===
+IFAQTarget adapters
+...................
 
 Convenient adapters are available so that is possible to easily retrieve
 a suitable IFAQTarget from objects that do not provide it directly.
@@ -55,6 +60,7 @@ It is possible to adapt an IDistributionSourcePackage to IFAQTarget,
     >>> mozilla_firefox = ubuntu.getSourcePackage('mozilla-firefox')
     >>> IFAQTarget.providedBy(mozilla_firefox)
     False
+
     >>> mozilla_firefox_faq_target = IFAQTarget(mozilla_firefox)
     >>> verifyObject(
     ...     IFAQTarget, removeSecurityProxy(mozilla_firefox_faq_target))
@@ -66,6 +72,7 @@ Likewise, it is possible to adapt an ISourcePackage to IFAQTarget.
     >>> hoary_mozilla_firefox = hoary.getSourcePackage('mozilla-firefox')
     >>> IFAQTarget.providedBy(hoary_mozilla_firefox)
     False
+
     >>> hoary_firefox_faq_target = IFAQTarget(hoary_mozilla_firefox)
     >>> verifyObject(
     ...     IFAQTarget, removeSecurityProxy(hoary_firefox_faq_target))
@@ -77,6 +84,7 @@ adaptation returns the IFAQTarget that should be use for the question.
     >>> firefox_question = firefox.getQuestion(1)
     >>> IFAQTarget.providedBy(firefox_question)
     False
+
     >>> question_faq_target = IFAQTarget(firefox_question)
     >>> verifyObject(IFAQTarget, removeSecurityProxy(question_faq_target))
     True
@@ -88,7 +96,8 @@ that was used to create the IFAQ:
     True
 
 
-== IFAQCollection ==
+IFAQCollection
+--------------
 
 The IFAQCollection interface is provided by objects that represents a
 collection of FAQs. This interface can be used to retrieve and search
@@ -99,8 +108,10 @@ for FAQs. It is provided by product, distribution, and projects.
     >>> gnome = getUtility(IProjectGroupSet).getByName('gnome')
     >>> verifyObject(IFAQCollection, gnome)
     True
+
     >>> verifyObject(IFAQCollection, ubuntu)
     True
+
     >>> verifyObject(IFAQCollection, firefox)
     True
 
@@ -108,7 +119,8 @@ for FAQs. It is provided by product, distribution, and projects.
 lib/canonical/launchpad/interfaces/ftests/faqcollection.txt)
 
 
-== IFAQ ==
+IFAQ
+----
 
 FAQ document provides the IFAQ interface.
 
@@ -120,6 +132,7 @@ The FAQ document information is available in the object attributes.
 
     >>> print firefox_faq.title
     How can I see the Fnords?
+
     >>> print firefox_faq.content
     Install the Fnords highlighter extension and see the Fnords!
 
@@ -137,6 +150,7 @@ Initially, the last_updated_by and date_last_updated are not set.
 
     >>> print firefox_faq.last_updated_by
     None
+
     >>> print firefox_faq.date_last_updated
     None
 
@@ -153,11 +167,13 @@ When the FAQ is modified, the attributes are automatically updated.
 
     >>> print firefox_faq.last_updated_by.displayname
     Sample Person
+
     >>> firefox_faq.date_last_updated is not None
     True
 
 
-=== IFAQ permissions ===
+IFAQ permissions
+................
 
 Only the project owners or answer contacts can edit an IFAQ.
 
@@ -172,6 +188,7 @@ So Sample Person (the project owner) has edit permission:
     >>> login('test@canonical.com')
     >>> print firefox.owner.displayname
     Sample Person
+
     >>> check_permission('launchpad.Edit', firefox_faq)
     True
 
@@ -184,18 +201,21 @@ But No Privileges Person doesn't:
 But if we make him an answer contact, he will:
 
     # An answer contact needs a preferred language.
+
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> no_priv = getUtility(ILaunchBag).user
     >>> no_priv.addLanguage(getUtility(ILanguageSet)['en'])
     >>> firefox.addAnswerContact(no_priv)
     True
+
     >>> from canonical.launchpad.webapp.authorization import clear_cache
     >>> clear_cache()
     >>> check_permission('launchpad.Edit', firefox_faq)
     True
 
 
-== IFAQSet ==
+IFAQSet
+-------
 
 There is a global utility registered under the IFAQSet interface that
 can be used to retrieve all FAQs posted on Launchpad.
@@ -226,11 +246,12 @@ The searchFAQs() method can be used to find FAQs by keywords or owner.
     How can I play MP3/Divx/DVDs/Quicktime/Realmedia files
         or view Flash/Java web pages (Ubuntu)
 
-(See lib/canonical/launchpad/interfaces/ftests/faqcollection.txt for
-the full interface description.)
+(See lib/canonical/launchpad/interfaces/ftests/faqcollection.txt for the
+full interface description.)
 
 
-== Linking a FAQ to a question ==
+Linking a FAQ to a question
+---------------------------
 
 An IFAQ can be used to answer a question. The linkFAQ() method on
 IQuestion is used for that purpose. It takes as parameters the user
@@ -252,6 +273,7 @@ Once the FAQ is linked, the question is considered 'answered':
 
     >>> print message.action.title
     Answer
+
     >>> print fnord_question.status.title
     Answered
 
@@ -264,6 +286,7 @@ The FAQ's 'related_questions' attribute contains the questions that are
 answered by the FAQ:
 
     # Flush the faq attribute change.
+
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(fnord_question)
 
@@ -280,6 +303,7 @@ A FAQ can be linked to multiple question:
 
     >>> print other_question.faq.title
     How can I see the Fnords?
+
     >>> print other_question.status.title
     Answered
 
@@ -308,6 +332,7 @@ That change is also considered an answer:
 
     >>> print message.action.title
     Answer
+
     >>> print other_question.status.title
     Answered
 
@@ -326,8 +351,8 @@ And it is not allowed to call linkFAQ() when the FAQ is already linked:
       ...
     AssertionError: cannot call linkFAQ() with already linked FAQ
 
-A FAQ can be linked to a 'solved' question, in which case, the
-status is not changed.
+A FAQ can be linked to a 'solved' question, in which case, the status is
+not changed.
 
     >>> login('foo.bar@canonical.com')
     >>> confirm_message = other_question.confirmAnswer(
@@ -341,5 +366,8 @@ status is not changed.
     ...     'If you look carefully, you will find the fnords!')
     >>> print message.action.title
     Comment
+
     >>> print other_question.status.title
     Solved
+
+

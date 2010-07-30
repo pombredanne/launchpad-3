@@ -410,17 +410,11 @@ class CodehostingTest(TestCaseWithFactory):
         message = "No such source package: 'ningnangnong'."
         self.assertEqual(faults.NotFound(message), fault)
 
-    def test_initialMirrorRequest(self):
-        # The default 'next_mirror_time' for a newly created hosted branch
-        # should be None.
-        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        self.assertIs(None, branch.next_mirror_time)
-
     def test_requestMirror(self):
         # requestMirror should set the next_mirror_time field to be the
         # current time.
         requester = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         self.codehosting_api.requestMirror(requester.id, branch.id)
         self.assertSqlAttributeEqualsDate(
             branch, 'next_mirror_time', UTC_NOW)
@@ -428,7 +422,8 @@ class CodehostingTest(TestCaseWithFactory):
     def test_requestMirror_private(self):
         # requestMirror can be used to request the mirror of a private branch.
         requester = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(owner=requester, private=True)
+        branch = self.factory.makeAnyBranch(
+            owner=requester, private=True, branch_type=BranchType.MIRRORED)
         branch = removeSecurityProxy(branch)
         self.codehosting_api.requestMirror(requester.id, branch.id)
         self.assertSqlAttributeEqualsDate(

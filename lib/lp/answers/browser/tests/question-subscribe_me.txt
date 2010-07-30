@@ -1,4 +1,5 @@
-= QuestionWorkflowView: Handling of the subscribe_me option =
+QuestionWorkflowView: Handling of the subscribe_me option
+=========================================================
 
 This test makes sure that it is possible to subscribe to the question
 whatever the action used.
@@ -7,7 +8,6 @@ whatever the action used.
     >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login('test@canonical.com')

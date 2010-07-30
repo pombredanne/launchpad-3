@@ -1,14 +1,16 @@
-= IQuestionTarget for SourcePackage =
+IQuestionTarget for SourcePackage
+=================================
 
 The implementation of IQuestionTarget by SourcePackage and
-DistributionSourcePackage contain some small differences with
-the other ones. (See questiontarget.txt for the generic interface
-description.)
+DistributionSourcePackage contain some small differences with the other
+ones. (See questiontarget.txt for the generic interface description.)
 
-=== ISourcePackage.target ===
 
-The target attribute of questions created on SourcePackage will be
-that of the DistributionSourcePackage (and not the SourcePackage):
+ISourcePackage.target
+.....................
+
+The target attribute of questions created on SourcePackage will be that
+of the DistributionSourcePackage (and not the SourcePackage):
 
     >>> login('no-priv@canonical.com')
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -19,10 +21,13 @@ that of the DistributionSourcePackage (and not the SourcePackage):
     >>> question = firefox.getQuestion(3)
     >>> question.target == firefox
     False
+
     >>> question.target == ubuntu.getSourcePackage('mozilla-firefox')
     True
 
-=== get() ===
+
+get()
+.....
 
 The question created on a SourcePackage or DistributionSourcePackage can
 also be retrieved via the distribution.
@@ -31,6 +36,7 @@ also be retrieved via the distribution.
     True
 
     # Create a new question on the evolution source package.
+
     >>> sample_person = getUtility(IPersonSet).getByName('name16')
     >>> evolution = ubuntu.getSourcePackage('evolution')
     >>> evolution_question = evolution.newQuestion(
@@ -41,18 +47,22 @@ also be retrieved via the distribution.
     >>> ubuntu.getQuestion(evolution_question.id) == evolution_question
         True
 
-=== Support Contacts ===
+
+Support Contacts
+................
 
 The support contacts of a SourcePackage contain all the support contacts
 from its containing distribution.
 
     >>> list(ubuntu.answer_contacts)
     []
+
     >>> list(evolution.answer_contacts)
     []
 
     >>> ubuntu.addAnswerContact(sample_person)
     True
+
     >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
 
@@ -68,6 +78,7 @@ even if he's already a support contact for the distribution.
 
     >>> evolution.addAnswerContact(sample_person)
     True
+
     >>> [person.name for person in evolution.direct_answer_contacts]
     [u'name16']
 
@@ -82,12 +93,16 @@ distribution list:
 
     >>> evolution.removeAnswerContact(sample_person)
     True
+
     >>> [person.name for person in evolution.direct_answer_contacts]
     []
+
     >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
+
     >>> evolution.removeAnswerContact(sample_person)
     False
+
     >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
 
@@ -95,21 +110,32 @@ The same principle applies to DistributionSourcePackage:
 
     >>> [person.name for person in evolution.direct_answer_contacts]
     []
+
     >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
+
     >>> evolution.addAnswerContact(sample_person)
     True
+
     >>> [person.name for person in evolution.direct_answer_contacts]
     [u'name16']
+
     >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
+
     >>> evolution.removeAnswerContact(sample_person)
     True
+
     >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
+
     >>> evolution.removeAnswerContact(sample_person)
     False
+
     >>> [person.name for person in evolution.direct_answer_contacts]
     []
+
     >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
+
+

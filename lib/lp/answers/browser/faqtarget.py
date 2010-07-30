@@ -50,4 +50,3 @@ class FAQCreateView(LaunchpadFormView):
             self.user, data['title'], data['content'],
             keywords=data['keywords'])
         self.next_url = canonical_url(faq)
-

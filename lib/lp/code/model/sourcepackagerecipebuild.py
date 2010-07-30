@@ -367,4 +367,4 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
         return "%s-%s" % (self.id, self.build_id)
 
     def score(self):
-        return 900
+        return 2405 + self.build.archive.relative_build_score

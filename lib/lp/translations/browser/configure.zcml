@@ -269,7 +269,7 @@
     <browser:url
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
         path_expression="string:+lang/${language/code}"
-        attribute_to_parent="productseries"
+        attribute_to_parent="parent"
         rootsite="translations"/>
     <browser:navigation
         module="lp.translations.browser.serieslanguage"

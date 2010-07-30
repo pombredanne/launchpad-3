@@ -18,7 +18,6 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugbranch import IBugBranch, IBugBranchSet

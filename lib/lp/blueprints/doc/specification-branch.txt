@@ -1,4 +1,5 @@
-= Specification Branch Links =
+Specification Branch Links
+==========================
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.blueprints.interfaces.specificationbranch import (

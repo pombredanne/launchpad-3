@@ -97,6 +97,7 @@ class notify_question_modified:
 
     def __call__(self, func):
         """Return the ObjectModifiedEvent decorator."""
+
         def notify_question_modified(self, *args, **kwargs):
             """Create the ObjectModifiedEvent decorator."""
             old_question = Snapshot(self, providing=providedBy(self))
@@ -523,7 +524,8 @@ class Question(SQLBase, BugLinkTargetMixin):
         When update_question_dates is True, the question's datelastquery or
         datelastresponse attribute is updated to the message creation date.
         The datelastquery attribute is updated when the message owner is the
-        same than the question owner, otherwise the datelastresponse is updated.
+        same than the question owner, otherwise the datelastresponse is
+        updated.
 
         :owner: An IPerson.
         :content: A string or an IMessage. When it's an IMessage, the owner
@@ -921,7 +923,7 @@ class QuestionSearch:
         elif sort is QuestionSort.RECENT_OWNER_ACTIVITY:
             return ['-Question.datelastquery']
         else:
-            raise AssertionError, "Unknown QuestionSort value: %s" % sort
+            raise AssertionError("Unknown QuestionSort value: %s" % sort)
 
     def getResults(self):
         """Return the questions that match this query."""

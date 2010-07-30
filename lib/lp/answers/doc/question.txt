@@ -51,7 +51,8 @@ IQuestionTarget.
 SourcePackages are also QuestionTargets.
 XXX sinzui 2007-04-24. #108240 SourcePackages should not be QuestionTargets
 
-    >>> evolution_in_hoary = ubuntu.currentseries.getSourcePackage('evolution')
+    >>> evolution_in_hoary = ubuntu.currentseries.getSourcePackage(
+    ...     'evolution')
     >>> questiontarget = IQuestionTarget(evolution_in_hoary)
     >>> verifyObject(IQuestionTarget, questiontarget)
     True
@@ -59,7 +60,8 @@ XXX sinzui 2007-04-24. #108240 SourcePackages should not be QuestionTargets
 You create a new question by calling the newQuestion() method of an
 IQuestionTarget attribute.
 
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
     >>> firefox_question = firefox.newQuestion(
     ...     sample_person, "Firefox question", "Unable to use Firefox")
 

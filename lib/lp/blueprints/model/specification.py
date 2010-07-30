@@ -229,7 +229,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
             # and make sure there is no leftover distroseries goal
             self.productseries = None
         else:
-            raise AssertionError, 'Inappropriate goal.'
+            raise AssertionError('Inappropriate goal.')
         # record who made the proposal, and when
         self.goal_proposer = proposer
         self.date_goal_proposed = UTC_NOW
@@ -333,7 +333,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     # NB NB NB if you change this definition PLEASE update the db constraint
     # Specification.specification_completion_recorded_chk !!!
-    completeness_clause =  ("""
+    completeness_clause = ("""
         Specification.implementation_status = %s OR
         Specification.definition_status IN ( %s, %s ) OR
         (Specification.implementation_status = %s AND
@@ -372,7 +372,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     # than a threshold" and to comment the dbschema that "anything not
     # started should be less than the threshold". We'll see how maintainable
     # this is.
-    started_clause =  """
+    started_clause = """
         Specification.implementation_status NOT IN (%s, %s, %s, %s) OR
         (Specification.implementation_status = %s AND
          Specification.definition_status = %s)
@@ -678,7 +678,7 @@ class HasSpecificationsMixin:
     def latest_completed_specifications(self):
         """See IHasSpecifications."""
         return self.specifications(sort=SpecificationSort.DATE, quantity=5,
-            filter=[SpecificationFilter.COMPLETE,])
+            filter=[SpecificationFilter.COMPLETE, ])
 
     @property
     def specification_count(self):
@@ -790,7 +790,7 @@ class SpecificationSet(HasSpecificationsMixin):
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -859,7 +859,8 @@ class SpecificationSet(HasSpecificationsMixin):
             FROM SpecificationDependency, Specification
             WHERE SpecificationDependency.specification IN %s
             AND SpecificationDependency.dependency = Specification.id
-            ORDER BY Specification.priority DESC, Specification.name, Specification.id
+            ORDER BY Specification.priority DESC, Specification.name,
+                     Specification.id
         """ % sqlvalues(specification_ids)).get_all()
 
         dependencies = {}

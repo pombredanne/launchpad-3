@@ -12,6 +12,13 @@
     <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileAlias" />
   </class>
 
+  <class class="canonical.launchpad.database.LibraryFileAliasWithParent">
+    <allow interface="canonical.launchpad.interfaces.ILibraryFileAliasWithParent" />
+    <require
+      permission="launchpad.Edit"
+      set_attributes="restricted" />
+  </class>
+
   <class class="canonical.launchpad.database.LibraryFileContent">
     <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileContent" />
   </class>
@@ -48,4 +55,8 @@
     <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
   </class>
 
+  <adapter
+    factory="canonical.launchpad.database.librarian.LibraryFileAliasWithParent"
+    provides="canonical.launchpad.interfaces.librarian.ILibraryFileAliasWithParent"
+    trusted="true" />
 </configure>
