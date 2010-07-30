@@ -82,7 +82,6 @@ class ProductSettingsView(TranslationsMixin, ProductEditView):
 
 class ProductView(LaunchpadView):
 
-    __used_for__ = IProduct
 
     label = "Translation overview"
 

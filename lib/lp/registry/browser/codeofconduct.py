@@ -183,7 +183,6 @@ class SignedCodeOfConductAddView(LaunchpadFormView):
 class SignedCodeOfConductAckView(AddView):
     """Acknowledge a Paper Submitted CoC."""
 
-    __used_for__ = ICodeOfConduct
 
     def __init__(self, context, request):
         self.context = context
@@ -261,7 +260,6 @@ class SignedCodeOfConductActiveView(EditView):
      * set active.
     """
 
-    __used_for__ = ISignedCodeOfConduct
 
     def __init__(self, context, request):
         self.context = context
@@ -304,7 +302,6 @@ class SignedCodeOfConductDeactiveView(EditView):
      * clear active.
     """
 
-    __used_for__ = ISignedCodeOfConduct
 
     def __init__(self, context, request):
         self.context = context

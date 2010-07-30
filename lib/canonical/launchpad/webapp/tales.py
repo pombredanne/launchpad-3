@@ -290,7 +290,6 @@ class HTMLFormAPI:
 
     """
     implements(ITraversable)
-    __used_for__ = IBrowserApplicationRequest
 
     def __init__(self, request):
         self.form = request.form
@@ -340,7 +339,6 @@ class RequestAPI:
     """Adapter from IApplicationRequest to IRequestAPI."""
     implements(IRequestAPI)
 
-    __used_for__ = IApplicationRequest
 
     def __init__(self, request):
         self.request = request

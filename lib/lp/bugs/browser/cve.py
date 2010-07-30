@@ -116,7 +116,6 @@ class CveUnlinkView(CveLinkView):
 
 class CveSetView:
 
-    __used_for__ = ICveSet
 
     def __init__(self, context, request):
         self.context = context

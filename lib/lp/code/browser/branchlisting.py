@@ -1037,13 +1037,11 @@ class PersonProductTeamBranchesView(PersonTeamBranchesView):
 class PersonCodeSummaryView(LaunchpadView):
     """A view to render the code page summary for a person."""
 
-    __used_for__ = IPerson
 
 
 class PersonProductCodeSummaryView(PersonCodeSummaryView):
     """A view to render the code page summary for a `PersonProduct`."""
 
-    __used_for__ = IPersonProduct
 
     @property
     def person(self):

@@ -95,7 +95,6 @@ class BugBranchDeleteView(LaunchpadEditFormView):
 class BugBranchView(LaunchpadView):
     """Simple view to cache related branch information."""
 
-    __used_for__ = IBugBranch
 
     @cachedproperty
     def merge_proposals(self):

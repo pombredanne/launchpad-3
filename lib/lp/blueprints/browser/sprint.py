@@ -140,7 +140,6 @@ class SprintSetFacets(StandardLaunchpadFacets):
 
 class SprintView(HasSpecificationsView, LaunchpadView):
 
-    __used_for__ = ISprint
 
     implements(IMajorHeadingView)
 

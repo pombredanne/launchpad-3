@@ -56,7 +56,6 @@ class CodeImportMachineSetBreadcrumb(Breadcrumb):
 class CodeImportMachineSetView(LaunchpadView):
     """The view for the page that shows all the import machines."""
 
-    __used_for__ = ICodeImportMachineSet
 
     label = "Import machines for Launchpad"
 

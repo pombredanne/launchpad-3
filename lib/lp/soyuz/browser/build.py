@@ -143,7 +143,6 @@ class BuildBreadcrumb(Breadcrumb):
 
 class BuildView(LaunchpadView):
     """Auxiliary view class for IBinaryPackageBuild"""
-    __used_for__ = IBinaryPackageBuild
 
     @property
     def label(self):
@@ -234,7 +233,6 @@ class BuildView(LaunchpadView):
 class BuildRetryView(BuildView):
     """View class for retrying `IBinaryPackageBuild`s"""
 
-    __used_for__ = IBinaryPackageBuild
 
     @property
     def label(self):
@@ -348,7 +346,6 @@ class BuildRecordsView(LaunchpadView):
     template/builds-list.pt and callsite details in Builder, Distribution,
     DistroSeries, DistroArchSeries and SourcePackage view classes.
     """
-    __used_for__ = IHasBuildRecords
 
     page_title = 'Builds'
 

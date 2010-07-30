@@ -118,7 +118,6 @@ class BuilderOverviewMenu(ApplicationMenu):
 
 class BuilderSetView(LaunchpadView):
     """Default BuilderSet view class."""
-    __used_for__ = IBuilderSet
 
     @property
     def label(self):
@@ -235,7 +234,6 @@ class BuilderView(LaunchpadView):
 
     Implements useful actions for the page template.
     """
-    __used_for__ = IBuilder
 
     @property
     def current_build_duration(self):
@@ -262,7 +260,6 @@ class BuilderView(LaunchpadView):
 class BuilderHistoryView(BuildRecordsView):
     """This class exists only to override the page_title."""
 
-    __used_for__ = IBuilder
 
     page_title = 'Build history'
     binary_only = False

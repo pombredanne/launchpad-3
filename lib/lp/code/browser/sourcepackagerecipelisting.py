@@ -50,18 +50,15 @@ class RecipeListingView(LaunchpadView, FeedsMixin):
 
 class BranchRecipeListingView(RecipeListingView):
 
-    __used_for__ = IBranch
 
     branch_enabled = False
 
 
 class PersonRecipeListingView(RecipeListingView):
 
-    __used_for__ = IPerson
 
     owner_enabled = False
 
 
 class ProductRecipeListingView(RecipeListingView):
 
-    __used_for__ = IProduct
