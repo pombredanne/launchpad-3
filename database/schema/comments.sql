@@ -2252,6 +2252,13 @@ COMMENT ON COLUMN HWDMIValue.key IS 'The key.';
 COMMENT ON COLUMN HWDMIValue.value IS 'The value';
 COMMENT ON COLUMN HWDMIValue.handle IS 'The handle to which this key/value pair belongs.';
 
+-- InitialiseDistroSeriesJob
+
+COMMENT ON TABLE InitialiseDistroSeriesJob IS 'Contains references to job to be run to initialise distro series.';
+COMMENT ON COLUMN InitialiseDistroSeriesJob.distroseries IS 'The distroseries to be initialised.';
+COMMENT ON COLUMN InitialiseDistroSeriesJob.job_type IS 'The type of job';
+COMMENT ON COLUMN InitialiseDistroSeriesJob.json_data IS 'A JSON struct containing data for the job.';
+
 -- Job
 
 COMMENT ON TABLE Job IS 'Common info about a job.';
