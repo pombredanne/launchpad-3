@@ -89,7 +89,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def distribution(self):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         return self.distroseries.distribution
 
     is_virtualized = True
@@ -121,7 +121,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def buildqueue_record(self):
-        """See `IBuildBase`."""
+        """See `IBuildFarmJob`."""
         store = Store.of(self)
         results = store.find(
             BuildQueue,
@@ -239,7 +239,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         return specific_job
 
     def estimateDuration(self):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         median = self.recipe.getMedianBuildDuration()
         if median is not None:
             return median
@@ -249,7 +249,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         return self.source_package_release is not None
 
     def notify(self, extra_info=None):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         mailer = SourcePackageRecipeBuildMailer.forStatus(self)
         mailer.sendAll()
 
@@ -290,7 +290,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @staticmethod
     def _handleStatus_OK(build, librarian, slave_status, logger):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         BuildBase._handleStatus_OK(build, librarian, slave_status, logger)
         # base implementation doesn't notify on success.
         if build.status == BuildStatus.FULLYBUILT:

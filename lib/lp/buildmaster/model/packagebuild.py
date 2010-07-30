@@ -101,7 +101,7 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
     @property
     def upload_log_url(self):
-        """See `IBuildBase`."""
+        """See `IPackageBuild`."""
         if self.upload_log is None:
             return None
         return ProxiedLibraryFileAlias(self.upload_log, self).http_url
@@ -115,7 +115,7 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
     @property
     def is_private(self):
-        """See `IBuildBase`"""
+        """See `IBuildFarmJob`"""
         return self.archive.private
 
     def getUploadDirLeaf(self, build_cookie, now=None):
