@@ -8,15 +8,16 @@ __metaclass__ = type
 import unittest
 
 from zope.app.publisher.browser import getDefaultViewName
-from zope.component import getMultiAdapter
 
 from canonical.testing.layers import DatabaseFunctionalLayer, FunctionalLayer
 from canonical.launchpad.testing.pages import extract_text, find_tag_by_id
 
 from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing.views import create_initialized_view
 from lp.vostok.browser.root import VostokRootView
 from lp.vostok.browser.tests.request import VostokTestRequest
-from lp.vostok.publisher import VostokRoot
+from lp.vostok.publisher import VostokLayer, VostokRoot
+
 
 
 class TestRootRegistrations(TestCase):
@@ -30,9 +31,8 @@ class TestRootRegistrations(TestCase):
 
     def test_root_index_view(self):
         # VostokRootView is registered as the view for the VostokRoot object.
-        view = getMultiAdapter(
-            (VostokRoot(), VostokTestRequest()), name='+index')
-        view.initialize()
+        view = create_initialized_view(
+            VostokRoot(), name='+index', layer=VostokLayer)
         self.assertIsInstance(view, VostokRootView)
 
 
@@ -41,8 +41,8 @@ class TestRootView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def view(self):
-        return getMultiAdapter(
-            (VostokRoot(), VostokTestRequest()), name='+index')
+        return create_initialized_view(
+            VostokRoot(), name='+index', layer=VostokLayer)
 
     def test_distributions(self):
         # VostokRootView.distributions is an iterable of all registered
@@ -59,9 +59,8 @@ class TestRootTemplate(TestCaseWithFactory):
     def test_distribution_list(self):
         # The element with id 'distro-list' on the root page contains a list
         # of links to all registered distributions.
-        v = getMultiAdapter(
-            (VostokRoot(), VostokTestRequest()), name='+index')
-        v.initialize()
+        v = create_initialized_view(
+            VostokRoot(), name='+index', layer=VostokLayer)
         contents = v.render()
         link_list = find_tag_by_id(contents, 'distro-list')('a')
         distro_list = list(v.distributions)

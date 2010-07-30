@@ -16,6 +16,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 
 
 class VostokRootView(LaunchpadView):
+    """The view for the Vostok root object."""
 
     @property
     def distributions(self):
