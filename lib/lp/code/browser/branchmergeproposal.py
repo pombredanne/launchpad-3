@@ -781,7 +781,6 @@ class DecoratedCodeReviewVoteReference:
 class BranchMergeProposalVoteView(LaunchpadView):
     """The view used for the tables of votes and requested reviews."""
 
-
     @property
     def show_table(self):
         """Should the reviewer table be shown at all?
@@ -1236,7 +1235,6 @@ class BranchMergeProposalJumpQueueView(LaunchpadEditFormView):
 class BranchMergeProposalSubscribersView(LaunchpadView):
     """Used to show the pagelet subscribers on the main proposal page."""
 
-
     def initialize(self):
         """See `LaunchpadView`."""
         # Get the subscribers and dump them into two sets.
@@ -1447,7 +1445,6 @@ def text_xhtml_representation(context, field, request):
 
 class FormatPreviewDiffView(LaunchpadView, DiffRenderingMixin):
     """A simple view to render a diff formatted nicely."""
-
 
     @property
     def preview_diff(self):

@@ -82,7 +82,6 @@ class ProductSettingsView(TranslationsMixin, ProductEditView):
 
 class ProductView(LaunchpadView):
 
-
     label = "Translation overview"
 
     @cachedproperty

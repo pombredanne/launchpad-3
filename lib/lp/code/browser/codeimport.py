@@ -594,7 +594,6 @@ class CodeImportEditView(CodeImportBaseView):
 class CodeImportMachineView(LaunchpadView):
     """The view for the page that shows all the import machines."""
 
-
     label = "Import machines for Launchpad"
 
     @property

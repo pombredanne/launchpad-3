@@ -50,15 +50,13 @@ class RecipeListingView(LaunchpadView, FeedsMixin):
 
 class BranchRecipeListingView(RecipeListingView):
 
-
     branch_enabled = False
 
 
 class PersonRecipeListingView(RecipeListingView):
 
-
     owner_enabled = False
 
 
 class ProductRecipeListingView(RecipeListingView):
-
+    pass

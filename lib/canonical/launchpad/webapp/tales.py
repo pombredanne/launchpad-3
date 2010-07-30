@@ -339,7 +339,6 @@ class RequestAPI:
     """Adapter from IApplicationRequest to IRequestAPI."""
     implements(IRequestAPI)
 
-
     def __init__(self, request):
         self.request = request
 

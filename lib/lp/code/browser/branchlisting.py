@@ -1038,10 +1038,8 @@ class PersonCodeSummaryView(LaunchpadView):
     """A view to render the code page summary for a person."""
 
 
-
 class PersonProductCodeSummaryView(PersonCodeSummaryView):
     """A view to render the code page summary for a `PersonProduct`."""
-
 
     @property
     def person(self):

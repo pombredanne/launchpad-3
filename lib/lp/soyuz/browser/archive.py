@@ -1818,7 +1818,6 @@ class ArchiveActivateView(LaunchpadFormView):
 class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
     """Build Records View for IArchive."""
 
-
     # The archive builds view presents all package builds (binary
     # or source package recipe builds).
     binary_only = False

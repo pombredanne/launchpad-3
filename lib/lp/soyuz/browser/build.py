@@ -233,7 +233,6 @@ class BuildView(LaunchpadView):
 class BuildRetryView(BuildView):
     """View class for retrying `IBinaryPackageBuild`s"""
 
-
     @property
     def label(self):
         return 'Retry %s' % self.context.title

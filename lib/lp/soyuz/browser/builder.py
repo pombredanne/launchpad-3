@@ -260,7 +260,6 @@ class BuilderView(LaunchpadView):
 class BuilderHistoryView(BuildRecordsView):
     """This class exists only to override the page_title."""
 
-
     page_title = 'Build history'
     binary_only = False
 
