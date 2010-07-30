@@ -254,6 +254,8 @@ class SlaveScanner:
 
         The whole method is wrapped in a transaction, but we do partial
         commits to avoid holding locks on tables.
+
+        :return: A `RecordingSlave` if we dispatched a job to it, or None.
         """
         # We need to re-fetch the builder object on each cycle as the
         # Storm store is invalidated over transaction boundaries.
