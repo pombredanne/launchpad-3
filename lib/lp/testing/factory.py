@@ -1051,7 +1051,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
     def makeDiff(self, diff_text=DIFF):
-        return ProxyFactory(Diff.fromFile(StringIO(diff_text), len(diff_text)))
+        return ProxyFactory(
+            Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
     def makePreviewDiff(self, conflicts=u''):
         diff = self.makeDiff()
@@ -2266,7 +2267,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  dsc_standards_version='3.6.2',
                                  dsc_format='1.0', dsc_binaries='foo-bin',
                                  date_uploaded=UTC_NOW,
-                                 source_package_recipe_build=None):
+                                 source_package_recipe_build=None,
+                                 dscsigningkey=None):
         """Make a `SourcePackageRelease`."""
         if distroseries is None:
             if source_package_recipe_build is not None:
@@ -2325,7 +2327,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             changelog_entry=None,
             dsc=None,
             copyright=self.getUniqueString(),
-            dscsigningkey=None,
+            dscsigningkey=dscsigningkey,
             dsc_maintainer_rfc822=maintainer_email,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
@@ -2766,8 +2768,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 unwrapped_types = (
     DSCFile, InstanceType, MergeDirective2, Message, datetime, int, str, unicode)
 
+
 def is_security_proxied_or_harmless(obj):
-    """Check that the given object is security wrapped or a harmless object."""
+    """Check that the given object is security wrapped or a harmless object.
+    """
     if obj is None:
         return True
     if builtin_isinstance(obj, Proxy):
@@ -2793,6 +2797,7 @@ class LaunchpadObjectFactory:
 
     Whereever you see such a warning: fix it!
     """
+
     def __init__(self):
         self._factory = BareLaunchpadObjectFactory()
 
