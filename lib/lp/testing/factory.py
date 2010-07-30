@@ -2587,7 +2587,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distribution is None:
             distribution = self.makeDistribution()
 
-        return DistributionSourcePackage(distribution, sourcepackagename)
+        return distribution.getSourcePackage(sourcepackagename)
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None, encode_attachments=False):
