@@ -13,7 +13,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import person_logged_in, TestCaseWithFactory
+from lp.testing import login_person, person_logged_in, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
 
@@ -120,21 +120,26 @@ class TestSearchQuestionsViewUnknown(TestSearchQuestionsView):
         self.product = self.factory.makeProduct()
         self.view = create_initialized_view(self.product, '+questions')
 
-    def test_common_page_elements(self):
-        content = BeautifulSoup(self.view())
+    def assertCommonPageElements(self, content):
         robots = content.find('meta', attrs={'name': 'robots'})
         self.assertEqual('noindex,nofollow', robots['content'])
         self.assertTrue(content.find(True, id='support-unknown') is not None)
 
-    def test_product_with_packaging_elements(self):
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        hoary = ubuntu.getSeries('hoary')
-        sourcepackagename = self.factory.makeSourcePackageName('cow')
-        sourcepackage = self.factory.makeSourcePackage(
-            sourcepackagename=sourcepackagename, distroseries=hoary)
-        self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=sourcepackagename, distroseries=hoary)
-        self.product.development_focus.setPackaging(
-            hoary, sourcepackagename, self.product.owner)
+    def test_any_question_target_any_user(self):
         content = BeautifulSoup(self.view())
+        self.assertCommonPageElements(content)
+
+    def test_product_with_packaging_elements(self):
+        self.linkPackage(self.product, 'cow')
+        content = BeautifulSoup(self.view())
+        self.assertCommonPageElements(content)
         self.assertTrue(content.find(True, id='ubuntu-support') is not None)
+
+    def test_product_with_edit_permission(self):
+        login_person(self.product.owner)
+        self.view = create_initialized_view(
+            self.product, '+questions', principal=self.product.owner)
+        content = BeautifulSoup(self.view())
+        self.assertCommonPageElements(content)
+        self.assertTrue(
+            content.find(True, id='configure-support') is not None)
