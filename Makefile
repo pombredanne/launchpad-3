@@ -200,6 +200,7 @@ $(BUILDOUT_BIN): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
 compile: $(PY) $(BZR_VERSION_INFO)
+	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
