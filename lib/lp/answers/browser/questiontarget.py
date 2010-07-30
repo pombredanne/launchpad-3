@@ -183,7 +183,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             # an explanation about about the current state.
             return self.unknown_template
 
-    def __call__(self):
+    def render(self):
         """See `LaunchpadView`."""
         return self.selected_template()
 

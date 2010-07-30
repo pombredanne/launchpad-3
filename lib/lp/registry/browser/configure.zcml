@@ -470,6 +470,12 @@
             DistributionSourcePackageFacets
             DistributionSourcePackageOverviewMenu"
         module="lp.registry.browser.distributionsourcepackage"/>
+    <adapter
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageFormatterAPI"
+        name="fmt"
+        />
     <browser:url
         for="lp.registry.interfaces.commercialsubscription.ICommercialSubscription"
         path_expression="string:+commercialsubscription/${id}"

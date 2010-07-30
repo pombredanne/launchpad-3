@@ -36,6 +36,7 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu, enabled_with_permission, Link, NavigationMenu)
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+from canonical.launchpad.webapp.tales import CustomizableFormatter
 
 from lp.answers.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
@@ -53,6 +54,16 @@ from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin)
+
+
+class DistributionSourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapt IDistributionSourcePackage objects to a formatted string."""
+
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
 
 
 class DistributionSourcePackageBreadcrumb(Breadcrumb):

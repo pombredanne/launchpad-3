@@ -20,9 +20,13 @@
           tracks support requests.</strong>
         </p>
 
-        <p id="ubuntu-support">
+        <p id="ubuntu-support"
+          tal:define="packages view/ubuntu_packages"
+          tal:condition="packages">
           <tal:project replace="context/displayname" /> questions are also
-          tracked in Ubuntu "something".
+          tracked in: <tal:packages repeat="package packages">
+            <tal:package replace="structure package/fmt:link" /><tal:comma
+            condition="not:repeat/package/end">, </tal:comma></tal:packages>.
         </p>
 
         <p id="configure-support">
