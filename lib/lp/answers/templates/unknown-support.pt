@@ -5,6 +5,12 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
+  <head>
+    <tal:head_epilogue metal:fill-slot="head_epilogue">
+      <meta name="robots" content="noindex,nofollow" />
+    </tal:head_epilogue>
+  </head>
+
   <body>
     <div metal:fill-slot="main">
       <div class="top-portlet">

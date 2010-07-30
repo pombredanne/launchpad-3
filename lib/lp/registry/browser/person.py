@@ -4826,16 +4826,13 @@ class PersonLatestQuestionsView(LaunchpadFormView):
 
 
 class PersonSearchQuestionsView(SearchQuestionsView):
-    """View used to search and display questions in which an IPerson is
-    involved.
-    """
+    """View to search and display questions that involve an `IPerson`."""
 
     display_target_column = True
 
     @property
     def selected_template(self):
-        # Persons always show the default template; Don't call super because
-        # SearchQuestionsView does not need to know about IPerson.
+        # Persons always show the default template.
         return self.template
 
     @property

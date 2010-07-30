@@ -68,3 +68,18 @@ class TestSearchQuestionsView(TestCaseWithFactory):
         with person_logged_in(dsp.distribution.owner) as owner:
             dsp.distribution.official_answers = True
         self.assertViewTemplate(dsp, 'question-listing.pt')
+
+
+class TestSearchQuestionsViewUnknown(TestCaseWithFactory):
+    """Test the behaviour of SearchQuestionsView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_common_page_elements(self):
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        view = create_initialized_view(
+            product, '+questions', principal=product.owner)
+        content = BeautifulSoup(view())
+        robots = content.find('meta', attrs={'name': 'robots'})
+        self.assertEqual('noindex,nofollow', robots['content'])
