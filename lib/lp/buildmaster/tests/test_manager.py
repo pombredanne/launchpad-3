@@ -888,7 +888,7 @@ class TestNewBuilders(TrialTestCase):
         # Test that scheduleScan calls the "scan" method.
         clock = task.Clock()
         builder_scanner = self._getScanner(clock=clock)
-        builder_scanner.scan = FakeMethod
+        builder_scanner.scan = FakeMethod()
         builder_scanner.scheduleScan()
 
         advance = NewBuildersScanner.SCAN_INTERVAL + 1
@@ -928,7 +928,7 @@ class TestNewBuilders(TrialTestCase):
         builder_scanner = self._getScanner(BuilddManager(), clock=clock)
         builder_scanner.checkForNewBuilders = fake_checkForNewBuilders
         builder_scanner.manager.addScanForBuilders = fake_addScanForBuilders
-        builder_scanner.scheduleScan = FakeMethod
+        builder_scanner.scheduleScan = FakeMethod()
 
         builder_scanner.scan()
         advance = NewBuildersScanner.SCAN_INTERVAL + 1
