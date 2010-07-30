@@ -2319,7 +2319,9 @@ class BugTaskSearchListingMenu(NavigationMenu):
             '+securitycontact', 'Change security contact', icon='edit')
 
     def subscribe(self):
-        return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
+        user = getUtility(ILaunchBag).user
+        if self.context.userCanAlterBugSubscription(user):
+            return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
 
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
