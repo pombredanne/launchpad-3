@@ -160,7 +160,11 @@ warnings.filterwarnings(
     re.escape('clear_request_started() called outside of a request'),
     UserWarning
     )
+# Unicode warnings are always fatal
+warnings.filterwarnings('error', category=UnicodeWarning)
 
+# shortlist() raises an error when it is misused.
+warnings.filterwarnings('error', r'shortlist\(\)')
 
 from canonical.ftests import pgsql
 # If this is removed, make sure canonical.ftests.pgsql is updated
