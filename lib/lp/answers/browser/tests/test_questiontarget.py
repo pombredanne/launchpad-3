@@ -72,7 +72,19 @@ class TestSearchQuestionsView(TestCaseWithFactory):
             dsp.distribution.official_answers = True
         self.assertViewTemplate(dsp, 'question-listing.pt')
 
-    def test_product_ubuntu_packages(self):
+    def test_nonproduct_ubuntu_packages_unlinked(self):
+        distribution = self.factory.makeDistribution()
+        view = create_initialized_view(distribution, '+questions')
+        packages = view.ubuntu_packages
+        self.assertEqual(None, packages)
+
+    def test_product_ubuntu_packages_unlinked(self):
+        product = self.factory.makeProduct()
+        view = create_initialized_view(product, '+questions')
+        packages = view.ubuntu_packages
+        self.assertEqual(None, packages)
+
+    def test_product_ubuntu_packages_linked(self):
         hoary = getUtility(ILaunchpadCelebrities).ubuntu['hoary']
         sourcepackagename = self.factory.makeSourcePackageName('cow')
         sourcepackage = self.factory.makeSourcePackage(

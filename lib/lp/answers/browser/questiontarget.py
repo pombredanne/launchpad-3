@@ -48,6 +48,7 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.distribution import IDistribution
 from lp.answers.interfaces.questionenums import QuestionStatus
@@ -481,11 +482,13 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         If the context is an `IProduct` and it has `IPackaging` links to
         Ubuntu, a list is returned. Otherwise None is returned
         """
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        packages = [package for package in self.context.distrosourcepackages
-                    if package.distribution == ubuntu]
-        if len(packages) > 0:
-            return packages
+        if IProduct.providedBy(self.context):
+            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+            packages = [
+                package for package in self.context.distrosourcepackages
+                if package.distribution == ubuntu]
+            if len(packages) > 0:
+                return packages
         return None
 
 
