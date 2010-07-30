@@ -631,9 +631,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             product = productseries.product
         if name is None:
             name = self.getUniqueString()
-        return Milestone(product=product, distribution=distribution,
-                         productseries=productseries,
-                         name=name)
+        return ProxyFactory(
+            Milestone(product=product, distribution=distribution,
+                      productseries=productseries, name=name))
 
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
