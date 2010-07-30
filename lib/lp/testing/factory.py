@@ -165,8 +165,6 @@ from lp.testing import (
     time_counter,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (
@@ -1051,7 +1049,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
     def makeDiff(self, diff_text=DIFF):
-        return ProxyFactory(Diff.fromFile(StringIO(diff_text), len(diff_text)))
+        return ProxyFactory(
+            Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
     def makePreviewDiff(self, conflicts=u''):
         diff = self.makeDiff()
@@ -2766,10 +2765,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
 unwrapped_types = (
-    DSCFile, InstanceType, MergeDirective2, Message, datetime, int, str, unicode)
+    DSCFile, InstanceType, MergeDirective2, Message, datetime, int, str,
+    unicode)
+
 
 def is_security_proxied_or_harmless(obj):
-    """Check that the given object is security wrapped or a harmless object."""
+    """Check that the object is security wrapped or a harmless object."""
     if obj is None:
         return True
     if builtin_isinstance(obj, Proxy):
@@ -2795,6 +2796,7 @@ class LaunchpadObjectFactory:
 
     Whereever you see such a warning: fix it!
     """
+
     def __init__(self):
         self._factory = BareLaunchpadObjectFactory()
 
