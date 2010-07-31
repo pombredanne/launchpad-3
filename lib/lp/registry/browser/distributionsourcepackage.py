@@ -59,6 +59,7 @@ from lp.translations.browser.customlanguagecode import (
 class DistributionSourcePackageFormatterAPI(CustomizableFormatter):
     """Adapt IDistributionSourcePackage objects to a formatted string."""
 
+    _link_permission = 'zope.Public'
     _link_summary_template = '%(displayname)s'
 
     def _link_summary_values(self):
