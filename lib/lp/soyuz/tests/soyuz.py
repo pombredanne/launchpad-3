@@ -199,4 +199,3 @@ class TestPackageDiffsBase(unittest.TestCase):
     def getPendingDiffs(self):
         """Pending `PackageDiff` available."""
         return getUtility(IPackageDiffSet).getPendingDiffs()
-

@@ -624,7 +624,6 @@ class TestArchiveCanUpload(TestCaseWithFactory):
                                 self.factory.makeComponent(),
                                 PackagePublishingPocket.PROPOSED),
                                 InvalidPocketForPPA)
-
     # XXX: JRV 20100511: IArchive.canUploadSuiteSourcePackage needs tests
 
 

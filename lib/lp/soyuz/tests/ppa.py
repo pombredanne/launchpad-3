@@ -53,6 +53,7 @@ def publishToTeamPPA(team_name=None, distroseries_name=None,
         sourcepackage_name, sourcepackage_version, distribution_name,
         binarypackage_version, publishing_status, arch)
 
+
 def publishToPPA(person_name, distroseries_name=None, sourcepackage_name=None,
                  sourcepackage_version=None, distribution_name=None,
                  binarypackage_version=None, publishing_status=None,
@@ -62,6 +63,7 @@ def publishToPPA(person_name, distroseries_name=None, sourcepackage_name=None,
                   sourcepackage_name, sourcepackage_version,
                   distribution_name, binarypackage_version, publishing_status,
                   arch)
+
 
 def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
                   sourcepackage_version, distribution_name,

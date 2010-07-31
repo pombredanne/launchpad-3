@@ -31,7 +31,6 @@ from operator import isSequenceType
 import os.path
 from random import randint
 from StringIO import StringIO
-import sys
 from textwrap import dedent
 from threading import local
 from types import InstanceType
@@ -169,8 +168,6 @@ from lp.testing import (
     time_counter,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (

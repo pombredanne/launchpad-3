@@ -160,7 +160,7 @@ class BuildingSlave(OkSlave):
     def getFile(self, sum):
         if sum == "buildlog":
             s = StringIO("This is a build log")
-            s.headers = {'content-length':19}
+            s.headers = {'content-length': 19}
             return s
 
 
@@ -186,7 +186,7 @@ class WaitingSlave(OkSlave):
         if hash in self.valid_file_hashes:
             content = "This is a %s" % hash
             s = StringIO(content)
-            s.headers = {'content-length':len(content)}
+            s.headers = {'content-length': len(content)}
             return s
 
 
