@@ -3,10 +3,8 @@
 
 """Test Archive features."""
 
-from datetime import date, datetime, timedelta
-import unittest
+from datetime import date, timedelta
 
-import pytz
 import transaction
 
 from zope.component import getUtility
@@ -29,7 +27,8 @@ from lp.soyuz.interfaces.archive import (IArchiveSet, ArchivePurpose,
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
+from lp.soyuz.interfaces.binarypackagerelease import (
+    BinaryPackageFileType, BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -44,116 +43,108 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        """Use `SoyuzTestPublisher` to publish some sources in archives."""
-        super(TestGetPublicationsInArchive, self).setUp()
+    def makeThreeArchivesOneDistribution(self):
+        distribution = self.factory.makeDistribution()
+        archives = []
+        for i in range(3):
+            archives.append(
+                self.factory.makeArchive(distribution=distribution))
+        return archives
 
-        self.distribution = getUtility(IDistributionSet)['ubuntutest']
+    def makeThreeArchivesWithPublications(self):
+        archives = self.makeThreeArchivesOneDistribution()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        for archive in archives:
+            self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagename=sourcepackagename, archive=archive,
+                status=PackagePublishingStatus.PUBLISHED,
+                )
+        return archives, sourcepackagename
 
-        # Create two PPAs for gedit.
-        self.archives = {}
-        self.archives['ubuntu-main'] = self.distribution.main_archive
-        self.archives['gedit-nightly'] = self.factory.makeArchive(
-            name="gedit-nightly", distribution=self.distribution)
-        self.archives['gedit-beta'] = self.factory.makeArchive(
-            name="gedit-beta", distribution=self.distribution)
-
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        # Publish gedit in all three archives, but with different
-        # upload dates.
-        self.gedit_nightly_src_hist = self.publisher.getPubSource(
-            sourcename="gedit", archive=self.archives['gedit-nightly'],
-            date_uploaded=datetime(2010, 12, 1, tzinfo=pytz.UTC),
-            status=PackagePublishingStatus.PUBLISHED)
-        self.gedit_beta_src_hist = self.publisher.getPubSource(
-            sourcename="gedit", archive=self.archives['gedit-beta'],
-            date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
-            status=PackagePublishingStatus.PUBLISHED)
-        self.gedit_main_src_hist = self.publisher.getPubSource(
-            sourcename="gedit", archive=self.archives['ubuntu-main'],
-            date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
-            status=PackagePublishingStatus.PUBLISHED)
-
-        # Save the archive utility for easy access, as well as the gedit
-        # source package name.
-        self.archive_set = getUtility(IArchiveSet)
-        spr = self.gedit_main_src_hist.sourcepackagerelease
-        self.gedit_name = spr.sourcepackagename
+    def getPublications(self, sourcepackagename, archives, distribution):
+        return getUtility(IArchiveSet).getPublicationsInArchives(
+            sourcepackagename, archives, distribution=distribution)
 
     def testReturnsAllPublishedPublications(self):
         # Returns all currently published publications for archives
-        results = self.archive_set.getPublicationsInArchives(
-            self.gedit_name, self.archives.values(),
-            distribution=self.distribution)
+        archives, sourcepackagename = self.makeThreeArchivesWithPublications()
+        results = self.getPublications(
+            sourcepackagename, archives, archives[0].distribution)
         num_results = results.count()
-        self.assertEquals(3, num_results, "Expected 3 publications but "
-                                          "got %s" % num_results)
+        self.assertEquals(
+            3, num_results,
+            "Expected 3 publications but got %s" % num_results)
 
     def testEmptyListOfArchives(self):
         # Passing an empty list of archives will result in an empty
         # resultset.
-        results = self.archive_set.getPublicationsInArchives(
-            self.gedit_name, [], distribution=self.distribution)
+        archives, sourcepackagename = self.makeThreeArchivesWithPublications()
+        results = self.getPublications(
+            sourcepackagename, [], archives[0].distribution)
         self.assertEquals(0, results.count())
 
     def testReturnsOnlyPublicationsForGivenArchives(self):
         # Returns only publications for the specified archives
-        results = self.archive_set.getPublicationsInArchives(
-            self.gedit_name, [self.archives['gedit-beta']],
-            distribution=self.distribution)
+        archives, sourcepackagename = self.makeThreeArchivesWithPublications()
+        results = self.getPublications(
+            sourcepackagename, [archives[0]], archives[0].distribution)
         num_results = results.count()
-        self.assertEquals(1, num_results, "Expected 1 publication but "
-                                          "got %s" % num_results)
-        self.assertEquals(self.archives['gedit-beta'],
-                          results[0].archive,
-                          "Expected publication from %s but was instead "
-                          "from %s." % (
-                              self.archives['gedit-beta'].displayname,
-                              results[0].archive.displayname))
+        self.assertEquals(
+            1, num_results,
+            "Expected 1 publication but got %s" % num_results)
+        self.assertEquals(
+            archives[0], results[0].archive,
+            "Expected publication from %s but was instead from %s." % (
+                archives[0].displayname, results[0].archive.displayname))
 
     def testReturnsOnlyPublishedPublications(self):
         # Publications that are not published will not be returned.
-        secure_src_hist = self.gedit_beta_src_hist
-        secure_src_hist.status = PackagePublishingStatus.PENDING
-
-        results = self.archive_set.getPublicationsInArchives(
-            self.gedit_name, [self.archives['gedit-beta']],
-            distribution=self.distribution)
+        archive = self.factory.makeArchive()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, sourcepackagename=sourcepackagename,
+            status=PackagePublishingStatus.PENDING)
+        results = self.getPublications(
+            sourcepackagename, [archive], archive.distribution)
         num_results = results.count()
         self.assertEquals(0, num_results, "Expected 0 publication but "
                                           "got %s" % num_results)
 
     def testPubsForSpecificDistro(self):
         # Results can be filtered for specific distributions.
+        sourcepackagename = self.factory.makeSourcePackageName()
 
-        # Add a publication in the ubuntu distribution
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
-        warty = ubuntu['warty']
-        gedit_main_src_hist = self.publisher.getPubSource(
-            sourcename="gedit",
-            archive=self.archives['ubuntu-main'],
-            distroseries=warty,
-            date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
+        distribution = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distribution)
+        archive = self.factory.makeArchive(distribution=distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, sourcepackagename=sourcepackagename,
+            distroseries=distroseries,
             status=PackagePublishingStatus.PUBLISHED)
 
-        # Only the 3 results for ubuntutest are returned when requested:
-        results = self.archive_set.getPublicationsInArchives(
-            self.gedit_name, self.archives.values(),
-            distribution=self.distribution)
-        num_results = results.count()
-        self.assertEquals(3, num_results, "Expected 3 publications but "
-                                          "got %s" % num_results)
+        other_distribution = self.factory.makeDistribution()
+        other_distroseries = self.factory.makeDistroSeries(
+            distribution=other_distribution)
+        other_archive = self.factory.makeArchive(
+            distribution=other_distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=other_archive, sourcepackagename=sourcepackagename,
+            distroseries=other_distroseries,
+            status=PackagePublishingStatus.PUBLISHED)
 
-        # Similarly, requesting the ubuntu publications only returns the
-        # one we created:
-        results = self.archive_set.getPublicationsInArchives(
-            self.gedit_name, self.archives.values(),
-            distribution=ubuntu)
+        # We don't get the results for other_distribution
+        results = self.getPublications(
+            sourcepackagename, [archive, other_archive],
+            distribution=distribution)
         num_results = results.count()
-        self.assertEquals(1, num_results, "Expected 1 publication but "
-                                          "got %s" % num_results)
+        self.assertEquals(
+            1, num_results,
+            "Expected 1 publication but got %s" % num_results)
+        self.assertEquals(
+            archive, results[0].archive,
+            "Expected publication from %s but was instead from %s." % (
+                archive.displayname, results[0].archive.displayname))
 
 
 class TestArchiveRepositorySize(TestCaseWithFactory):
@@ -167,60 +158,59 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
         self.ppa = self.factory.makeArchive(
             name="testing", distribution=self.publisher.ubuntutest)
 
+    def publish_ddeb_in_archive(self, archive):
+        binarypackagerelease = self.factory.makeBinaryPackageRelease(
+            binpackageformat=BinaryPackageFormat.DDEB)
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=archive, binarypackagerelease=binarypackagerelease,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.factory.makeBinaryPackageFile(
+            binarypackagerelease=binarypackagerelease,
+            filetype=BinaryPackageFileType.DDEB)
+
     def test_binaries_size_does_not_include_ddebs_for_ppas(self):
         # DDEBs are not computed in the PPA binaries size because
         # they are not being published. See bug #399444.
-        self.assertEquals(0, self.ppa.binaries_size)
-        self.publisher.getPubBinaries(
-            filecontent='X', format=BinaryPackageFormat.DDEB,
-            archive=self.ppa)
-        self.assertEquals(0, self.ppa.binaries_size)
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEquals(0, ppa.binaries_size)
+        self.publish_ddeb_in_archive(ppa)
+        self.assertEquals(0, ppa.binaries_size)
 
     def test_binaries_size_includes_ddebs_for_other_archives(self):
         # DDEBs size are computed for all archive purposes, except PPAs.
-        previous_size = self.publisher.ubuntutest.main_archive.binaries_size
-        self.publisher.getPubBinaries(
-            filecontent='X', format=BinaryPackageFormat.DDEB)
-        self.assertEquals(
-            previous_size + 1,
-            self.publisher.ubuntutest.main_archive.binaries_size)
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertEquals(0, archive.binaries_size)
+        self.publish_ddeb_in_archive(archive)
+        self.assertNotEquals(0, archive.binaries_size)
 
     def test_sources_size_on_empty_archive(self):
         # Zero is returned for an archive without sources.
+        archive = self.factory.makeArchive()
         self.assertEquals(
-            0, self.ppa.sources_size,
+            0, archive.sources_size,
             'Zero should be returned for an archive without sources.')
+
+    def publish_source_file(self, archive, libraryfile):
+        sourcepackagerelease = self.factory.makeSourcePackageRelease()
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, sourcepackagerelease=sourcepackagerelease,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.factory.makeSourcePackageReleaseFile(
+            sourcepackagerelease=sourcepackagerelease,
+            libraryfile=libraryfile)
 
     def test_sources_size_does_not_count_duplicated_files(self):
         # If there are multiple copies of the same file name/size
         # only one will be counted.
-        pub_1 = self.publisher.getPubSource(
-            filecontent='22', version='0.5.11~ppa1', archive=self.ppa)
-
-        pub_2 = self.publisher.getPubSource(
-            filecontent='333', version='0.5.11~ppa2', archive=self.ppa)
-
-        self.assertEquals(5, self.ppa.sources_size)
-
-        shared_tarball = self.publisher.addMockFile(
-            filename='foo_0.5.11.tar.gz', filecontent='1')
-
-        # After adding a the shared tarball to the ppa1 version,
-        # the sources_size updates to reflect the change.
-        pub_1.sourcepackagerelease.addFile(shared_tarball)
+        archive = self.factory.makeArchive()
+        libraryfile = self.factory.makeLibraryFileAlias()
+        self.publish_source_file(archive, libraryfile)
         self.assertEquals(
-            6, self.ppa.sources_size,
-            'The sources_size should update after a file is added.')
+            libraryfile.content.filesize, archive.sources_size)
 
-        # But after adding a copy of the shared tarball to the ppa2 version,
-        # the sources_size is unchanged.
-        shared_tarball_copy = self.publisher.addMockFile(
-            filename='foo_0.5.11.tar.gz', filecontent='1')
-
-        pub_2.sourcepackagerelease.addFile(shared_tarball_copy)
+        self.publish_source_file(archive, libraryfile)
         self.assertEquals(
-            6, self.ppa.sources_size,
-            'The sources_size should change after adding a duplicate file.')
+            libraryfile.content.filesize, archive.sources_size)
 
 
 class TestSeriesWithSources(TestCaseWithFactory):

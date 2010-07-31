@@ -26,6 +26,7 @@ from lp.buildmaster.model.builder import (rescueBuilderIfLost,
     updateBuilderStatus)
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior)
+from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
 
 class MockBuilder:
@@ -85,7 +86,7 @@ class OkSlave:
 
     The architecture tag can be customised during initialisation."""
 
-    def __init__(self, arch_tag='i386'):
+    def __init__(self, arch_tag=I386_ARCHITECTURE_NAME):
         self.arch_tag = arch_tag
 
     def status(self):

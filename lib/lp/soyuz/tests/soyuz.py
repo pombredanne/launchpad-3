@@ -27,14 +27,19 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory,
     BinaryPackagePublishingHistory)
+from lp.testing.sampledata import (
+    CHROOT_LFA, CPROV_NAME, I386_ARCHITECTURE_NAME, LAUNCHPAD_DBUSER_NAME,
+    UBUNTU_DISTRIBUTION_NAME, WARTY_DISTROSERIES_NAME,
+    WARTY_UPDATES_SUITE_NAME)
 
 
 class SoyuzTestHelper:
     """Helper class to support easier tests in Soyuz component."""
 
     def __init__(self):
-        self.ubuntu = getUtility(IDistributionSet)['ubuntu']
-        self.cprov_archive = getUtility(IPersonSet).getByName('cprov').archive
+        self.ubuntu = getUtility(IDistributionSet)[UBUNTU_DISTRIBUTION_NAME]
+        self.cprov_archive = getUtility(
+            IPersonSet).getByName(CPROV_NAME).archive
 
     @property
     def sample_publishing_data(self):
@@ -142,12 +147,13 @@ class TestPackageDiffsBase(unittest.TestCase):
         Store the `FakePackager` object used in the test uploads as `packager`
         so the tests can reuse it if necessary.
         """
-        self.layer.alterConnection(dbuser='launchpad')
+        self.layer.alterConnection(dbuser=LAUNCHPAD_DBUSER_NAME)
 
-        fake_chroot = LibraryFileAlias.get(1)
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        warty = ubuntu.getSeries('warty')
-        warty['i386'].addOrUpdateChroot(fake_chroot)
+        fake_chroot = LibraryFileAlias.get(CHROOT_LFA)
+        ubuntu = getUtility(IDistributionSet).getByName(
+            UBUNTU_DISTRIBUTION_NAME)
+        warty = ubuntu.getSeries(WARTY_DISTROSERIES_NAME)
+        warty[I386_ARCHITECTURE_NAME].addOrUpdateChroot(fake_chroot)
 
         self.layer.txn.commit()
 
@@ -176,13 +182,13 @@ class TestPackageDiffsBase(unittest.TestCase):
             'zeca', '1.0', 'foo.bar@canonical.com-passwordless.sec')
         packager.buildUpstream()
         packager.buildSource()
-        packager.uploadSourceVersion('1.0-1', suite="warty-updates")
+        packager.uploadSourceVersion('1.0-1', suite=WARTY_UPDATES_SUITE_NAME)
 
         # Upload a new version of the source, so a PackageDiff can
         # be created.
         packager.buildVersion('1.0-2', changelog_text="cookies")
         packager.buildSource(include_orig=False)
-        packager.uploadSourceVersion('1.0-2', suite="warty-updates")
+        packager.uploadSourceVersion('1.0-2', suite=WARTY_UPDATES_SUITE_NAME)
 
         # Check if there is exactly one pending PackageDiff record and
         # It's the one we have just created.
