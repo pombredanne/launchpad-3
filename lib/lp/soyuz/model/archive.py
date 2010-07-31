@@ -77,7 +77,6 @@ from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import (
     IHasBuildRecords, IncompatibleArguments)
@@ -336,9 +335,9 @@ class Archive(SQLBase):
     def archive_url(self):
         """See `IArchive`."""
         archive_postfixes = {
-            ArchivePurpose.PRIMARY : '',
-            ArchivePurpose.PARTNER : '-partner',
-            ArchivePurpose.DEBUG : '-debug',
+            ArchivePurpose.PRIMARY: '',
+            ArchivePurpose.PARTNER: '-partner',
+            ArchivePurpose.DEBUG: '-debug',
         }
 
         if self.is_ppa:
@@ -431,7 +430,7 @@ class Archive(SQLBase):
             try:
                 status = tuple(status)
             except TypeError:
-                status = (status,)
+                status = (status, )
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -501,7 +500,7 @@ class Archive(SQLBase):
             try:
                 status = tuple(status)
             except TypeError:
-                status = (status,)
+                status = (status, )
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -543,7 +542,7 @@ class Archive(SQLBase):
         result = store.find((
             LibraryFileAlias.filename,
             LibraryFileContent.sha1,
-            LibraryFileContent.filesize,),
+            LibraryFileContent.filesize),
             SourcePackagePublishingHistory.archive == self.id,
             SourcePackagePublishingHistory.dateremoved == None,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
@@ -568,7 +567,7 @@ class Archive(SQLBase):
         # the result is empty, so instead:
         return sum(result.values(LibraryFileContent.filesize))
 
-    def _getBinaryPublishingBaseClauses (
+    def _getBinaryPublishingBaseClauses(
         self, name=None, version=None, status=None, distroarchseries=None,
         pocket=None, exact_match=False):
         """Base clauses and clauseTables for binary publishing queries.
@@ -615,7 +614,7 @@ class Archive(SQLBase):
             try:
                 status = tuple(status)
             except TypeError:
-                status = (status,)
+                status = (status, )
             clauses.append("""
                 BinaryPackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -624,7 +623,7 @@ class Archive(SQLBase):
             try:
                 distroarchseries = tuple(distroarchseries)
             except TypeError:
-                distroarchseries = (distroarchseries,)
+                distroarchseries = (distroarchseries, )
             # XXX cprov 20071016: there is no sqlrepr for DistroArchSeries
             # uhmm, how so ?
             das_ids = "(%s)" % ", ".join(str(d.id) for d in distroarchseries)
@@ -648,7 +647,7 @@ class Archive(SQLBase):
             distroarchseries=distroarchseries, exact_match=exact_match)
 
         all_binaries = BinaryPackagePublishingHistory.select(
-            ' AND '.join(clauses) , clauseTables=clauseTables,
+            ' AND '.join(clauses), clauseTables=clauseTables,
             orderBy=orderBy)
 
         return all_binaries
@@ -720,7 +719,7 @@ class Archive(SQLBase):
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
                 BinaryPackageFile.binarypackagereleaseID,
             BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
-            LibraryFileAlias.contentID == LibraryFileContent.id
+            LibraryFileAlias.contentID == LibraryFileContent.id,
             ]
         result = store.find(LibraryFileContent, *clauses)
 
@@ -743,10 +742,10 @@ class Archive(SQLBase):
     def allowUpdatesToReleasePocket(self):
         """See `IArchive`."""
         purposeToPermissionMap = {
-            ArchivePurpose.COPY : True,
-            ArchivePurpose.PARTNER : True,
-            ArchivePurpose.PPA : True,
-            ArchivePurpose.PRIMARY : False,
+            ArchivePurpose.COPY: True,
+            ArchivePurpose.PARTNER: True,
+            ArchivePurpose.PPA: True,
+            ArchivePurpose.PRIMARY: False,
         }
 
         try:
@@ -907,7 +906,7 @@ class Archive(SQLBase):
 
         find_spec = (
             BuildFarmJob.status,
-            Count(BinaryPackageBuild.id)
+            Count(BinaryPackageBuild.id),
             )
         result = store.using(
             BinaryPackageBuild, PackageBuild, BuildFarmJob).find(
@@ -948,7 +947,7 @@ class Archive(SQLBase):
                 BuildStatus.BUILDING,
                 BuildStatus.FULLYBUILT,
                 BuildStatus.SUPERSEDED,
-                ]
+                ],
             }
 
         # If we were asked to include builds with the state NEEDSBUILD,
@@ -1661,7 +1660,6 @@ class ArchiveSet:
 
         return default_name_by_purpose[purpose]
 
-
     def getByDistroPurpose(self, distribution, purpose, name=None):
         """See `IArchiveSet`."""
         if purpose == ArchivePurpose.PPA:
@@ -1770,7 +1768,6 @@ class ArchiveSet:
 
         return new_archive
 
-
     def __iter__(self):
         """See `IArchiveSet`."""
         return iter(Archive.select())
@@ -1845,7 +1842,8 @@ class ArchiveSet:
         origin = (
             Archive,
             Join(SourcePackagePublishingHistory,
-                 SourcePackagePublishingHistory.archive == Archive.id),)
+                 SourcePackagePublishingHistory.archive == Archive.id),
+            )
         results = store.using(*origin).find(
             Archive,
             Archive.signing_key == None,
@@ -1970,7 +1968,7 @@ class ArchiveSet:
         # If a single purpose is passed in, convert it into a tuple,
         # otherwise assume a list was passed in.
         if purposes in ArchivePurpose:
-            purposes = (purposes,)
+            purposes = (purposes, )
 
         if purposes:
             extra_exprs.append(Archive.purpose.is_in(purposes))
