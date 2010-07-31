@@ -174,7 +174,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                          "(%s, %s)" % (
                             self._builder.url, file_name, url, sha1))
             self._builder.slave.sendFileToSlave(
-                sha1, url,  "buildd", archive.buildd_secret)
+                sha1, url, "buildd", archive.buildd_secret)
 
     def _extraBuildArgs(self, build):
         """

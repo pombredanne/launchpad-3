@@ -4,7 +4,6 @@
 """Test Archive features."""
 
 from datetime import date, datetime, timedelta
-import unittest
 
 import pytz
 import transaction

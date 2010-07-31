@@ -523,7 +523,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
         """
 
     def checkUploadToPocket(distroseries, pocket):
-        """Check if uploading to a particular pocket in an archive is possible.
+        """Check if an upload to a particular archive and pocket is possible.
 
         :param distroseries: A `IDistroSeries`
         :param pocket: A `PackagePublishingPocket`
@@ -547,7 +547,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
             vocabulary=DBEnumeratedType,
             required=True),
         strict_component=Bool(
-            title=_("Strict component"), required=False)
+            title=_("Strict component"), required=False),
         )
     @export_operation_as("checkUpload")
     @export_read_operation()
@@ -1141,6 +1141,7 @@ class IArchiveView(IHasBuildRecords):
         :return: A new IArchiveAuthToken
         """
 
+
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
 
@@ -1437,7 +1438,6 @@ class IArchiveSet(Interface):
         Only public and published sources are considered.
         """
 
-
     def new(purpose, owner, name=None, displayname=None, distribution=None,
             description=None, enabled=True, require_virtualized=True):
         """Create a new archive.
@@ -1451,8 +1451,9 @@ class IArchiveSet(Interface):
             given it uses the names defined in
             `IArchiveSet._getDefaultArchiveNameForPurpose`;
         :param displayname: optional text that will be used as a reference
-            to this archive in the UI. If not provided a default text (
-            including the archive name and the owner displayname will be used.)
+            to this archive in the UI. If not provided a default text
+            (including the archive name and the owner displayname)  will be
+            used.
         :param distribution: optional `IDistribution` to which the archive
             will be attached;
         :param description: optional text to be set as the archive
@@ -1664,7 +1665,6 @@ class ArchiveStatus(DBEnumeratedType):
 
         This archive has been deleted and removed from disk.
         """)
-
 
 
 default_name_by_purpose = {
