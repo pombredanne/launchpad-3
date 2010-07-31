@@ -110,10 +110,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         self.assertEquals(0, num_results, "Expected 0 publication but "
                                           "got %s" % num_results)
 
-    def testPubsForSpecificDistro(self):
-        # Results can be filtered for specific distributions.
-        sourcepackagename = self.factory.makeSourcePackageName()
-
+    def publishSourceInNewArchive(self, sourcepackagename):
         distribution = self.factory.makeDistribution()
         distroseries = self.factory.makeDistroSeries(
             distribution=distribution)
@@ -122,21 +119,17 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
             archive=archive, sourcepackagename=sourcepackagename,
             distroseries=distroseries,
             status=PackagePublishingStatus.PUBLISHED)
+        return archive
 
-        other_distribution = self.factory.makeDistribution()
-        other_distroseries = self.factory.makeDistroSeries(
-            distribution=other_distribution)
-        other_archive = self.factory.makeArchive(
-            distribution=other_distribution)
-        self.factory.makeSourcePackagePublishingHistory(
-            archive=other_archive, sourcepackagename=sourcepackagename,
-            distroseries=other_distroseries,
-            status=PackagePublishingStatus.PUBLISHED)
-
+    def testPubsForSpecificDistro(self):
+        # Results can be filtered for specific distributions.
+        sourcepackagename = self.factory.makeSourcePackageName()
+        archive = self.publishSourceInNewArchive(sourcepackagename)
+        other_archive = self.publishSourceInNewArchive(sourcepackagename)
         # We don't get the results for other_distribution
         results = self.getPublications(
             sourcepackagename, [archive, other_archive],
-            distribution=distribution)
+            distribution=archive.distribution)
         num_results = results.count()
         self.assertEquals(
             1, num_results,
