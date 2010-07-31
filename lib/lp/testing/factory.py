@@ -37,6 +37,7 @@ from threading import local
 from types import InstanceType
 import warnings
 
+from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 import pytz
 
 from twisted.python.util import mergeFunctionMetadata
@@ -2767,7 +2768,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
 unwrapped_types = (
-    DSCFile, InstanceType, MergeDirective2, Message, datetime, int, str, unicode)
+    BaseRecipeBranch, DSCFile, InstanceType, MergeDirective2, Message,
+    datetime, int, str, unicode,)
 
 
 def is_security_proxied_or_harmless(obj):
