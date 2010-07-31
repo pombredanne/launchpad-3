@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # Quick hack makefile to (re)create the Launchpad database.
@@ -42,7 +42,7 @@ DROPDB=${PYTHON} ../../utilities/pgmassacre.py
 # The command we use to drop (if exists) and recreate a database.
 CREATEDB=${PYTHON} ../../utilities/pgmassacre.py -t
 
-HEADER="-- Copyright 2009 Canonical Ltd.  This software is licensed under \
+HEADER="-- Copyright 2010 Canonical Ltd.  This software is licensed under \
 	the\n-- GNU Affero General Public License version 3 (see the file \
 	LICENSE)."
 
@@ -50,6 +50,8 @@ HEADER="-- Copyright 2009 Canonical Ltd.  This software is licensed under \
 # given database ($1) into an SQL file ($2).
 build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
 	echo $(HEADER) > $(2); \
+    echo -n "-- Created using " >> $(2); \
+    pg_dump --version >> $(2); \
     pg_dump --schema=public --disable-triggers -a --column-inserts -O ${1} \
     | grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
     | $(PYTHON) sort_sql.py >> $(2); \

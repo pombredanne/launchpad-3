@@ -12,7 +12,10 @@ __all__ = [
     ]
 
 
+import shutil
+import tempfile
 import transaction
+import zope.testing.cleanup
 from zope.component import getUtility
 from launchpadlib.credentials import AccessToken, Credentials
 from launchpadlib.launchpad import Launchpad
@@ -101,6 +104,11 @@ def launchpadlib_credentials_for(
                        access_token=launchpadlib_token)
 
 
+def _clean_up_cache(cache):
+    """"Clean up a temporary launchpadlib cache directory."""
+    shutil.rmtree(cache, ignore_errors=True)
+
+
 def launchpadlib_for(
     consumer_name, person, permission=OAuthPermission.WRITE_PRIVATE,
     context=None, version=None, service_root="http://api.launchpad.dev/"):
@@ -121,4 +129,6 @@ def launchpadlib_for(
         consumer_name, person, permission, context)
     transaction.commit()
     version = version or Launchpad.DEFAULT_VERSION
-    return Launchpad(credentials, service_root, version=version)
+    cache = tempfile.mkdtemp(prefix='launchpadlib-cache-')
+    zope.testing.cleanup.addCleanUp(_clean_up_cache, (cache,))
+    return Launchpad(credentials, service_root, version=version, cache=cache)

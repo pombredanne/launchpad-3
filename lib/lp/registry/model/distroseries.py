@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -19,7 +19,7 @@ from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
 
-from storm.locals import And, Desc, Join, SQL
+from storm.locals import Desc, Join, SQL
 from storm.store import Store
 
 from zope.component import getUtility
@@ -71,7 +71,8 @@ from lp.registry.model.person import Person
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
-    POTemplate)
+    POTemplate,
+    TranslationTemplatesCollection)
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from lp.soyuz.model.queue import PackageUpload, PackageUploadQueue
@@ -334,14 +335,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         condition = SQL(conditions + "AND packaging.id IS NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC', SourcePackageName.name)
-        return [{
-                 'package': SourcePackage(
-                    sourcepackagename=spn, distroseries=self),
-                 'bug_count': bug_count,
-                 'total_messages': total_messages}
-                for (spn, score, bug_count, total_messages) in results]
+        results = results.config(distinct=True)
 
-    def getPrioritizedlPackagings(self):
+        def decorator(result):
+            spn, score, bug_count, total_messages = result
+            return {
+                'package': SourcePackage(
+                    sourcepackagename=spn, distroseries=self),
+                'bug_count': bug_count,
+                'total_messages': total_messages,
+                }
+        return DecoratedResultSet(results, decorator)
+
+    def getPrioritizedPackagings(self):
         """See `IDistroSeries`.
 
         The prioritization is a heuristic rule using the branch, bug heat,
@@ -351,18 +357,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # the objects that are implcitly needed to work with a
         # Packaging object.
         # Avoid circular import failures.
-        from lp.registry.model.product import Product
-        from lp.registry.model.productseries import ProductSeries
-        find_spec = (
-            Packaging, SourcePackageName, ProductSeries, Product,
-            SQL("""
-                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END +
-                    CASE WHEN Product.bugtracker IS NULL
-                        THEN coalesce(total_bug_heat, 10) ELSE 0 END +
-                    CASE WHEN ProductSeries.translations_autoimport_mode = 1
-                        THEN coalesce(po_messages, 10) ELSE 0 END +
-                    CASE WHEN ProductSeries.branch IS NULL THEN 500
-                        ELSE 0 END AS score"""))
         joins, conditions = self._current_sourcepackage_joins_and_conditions
         origin = SQL(joins + """
             JOIN ProductSeries
@@ -371,10 +365,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 ON ProductSeries.product = Product.id
             """)
         condition = SQL(conditions + "AND packaging.id IS NOT NULL")
-        results = IStore(self).using(origin).find(find_spec, condition)
-        results = results.order_by('score DESC, SourcePackageName.name ASC')
-        return [packaging
-                for (packaging, spn, series, product, score) in results]
+        results = IStore(self).using(origin).find(Packaging, condition)
+        return results.order_by("""
+            (
+                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END
+                + CASE WHEN Product.bugtracker IS NULL
+                    THEN coalesce(total_bug_heat, 10) ELSE 0 END
+                + CASE WHEN ProductSeries.translations_autoimport_mode = 1
+                    THEN coalesce(po_messages, 10) ELSE 0 END
+                + CASE WHEN ProductSeries.branch IS NULL THEN 500
+                    ELSE 0 END
+            ) DESC,
+            SourcePackageName.name ASC
+            """)
 
     @property
     def _current_sourcepackage_joins_and_conditions(self):
@@ -1871,40 +1874,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def main_archive(self):
         return self.distribution.main_archive
 
-    def getTranslationTemplates(self):
+    def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(distroseries=self,
-                                     orderBy=['-priority', 'name'])
-        return result
-
-    def getCurrentTranslationTemplates(self, just_ids=False):
-        """See `IHasTranslationTemplates`."""
-        store = Store.of(self)
-        if just_ids:
-            looking_for = POTemplate.id
-        else:
-            looking_for = POTemplate
-
-        # Select all current templates for this series, if the Product
-        # actually uses Launchpad Translations.  Otherwise, return an
-        # empty result.
-        result = store.find(looking_for, And(
-            self.distribution.official_rosetta == True,
-            POTemplate.iscurrent == True,
-            POTemplate.distroseries == self))
-        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
-
-    def getObsoleteTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            distroseries = %s AND
-            distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
-            ''' % sqlvalues(self),
-            clauseTables = ['DistroSeries', 'Distribution'],
-            orderBy=['-priority', 'name'])
-        return shortlist(result, 300)
+        return TranslationTemplatesCollection().restrictDistroSeries(self)
 
     def getSuite(self, pocket):
         """See `IDistroSeries`."""

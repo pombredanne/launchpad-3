@@ -1,11 +1,13 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
 
 from datetime import date, datetime, timedelta
-import pytz
 import unittest
+
+import pytz
+import transaction
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -63,7 +65,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         # upload dates.
         self.gedit_nightly_src_hist = self.publisher.getPubSource(
             sourcename="gedit", archive=self.archives['gedit-nightly'],
-            date_uploaded=datetime(2010, 12 ,1, tzinfo=pytz.UTC),
+            date_uploaded=datetime(2010, 12, 1, tzinfo=pytz.UTC),
             status=PackagePublishingStatus.PUBLISHED)
         self.gedit_beta_src_hist = self.publisher.getPubSource(
             sourcename="gedit", archive=self.archives['gedit-beta'],
@@ -109,8 +111,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
                           "Expected publication from %s but was instead "
                           "from %s." % (
                               self.archives['gedit-beta'].displayname,
-                              results[0].archive.displayname
-                              ))
+                              results[0].archive.displayname))
 
     def testReturnsOnlyPublishedPublications(self):
         # Publications that are not published will not be returned.
@@ -135,14 +136,12 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
             archive=self.archives['ubuntu-main'],
             distroseries=warty,
             date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
-            status=PackagePublishingStatus.PUBLISHED,
-            )
+            status=PackagePublishingStatus.PUBLISHED)
 
         # Only the 3 results for ubuntutest are returned when requested:
         results = self.archive_set.getPublicationsInArchives(
             self.gedit_name, self.archives.values(),
-            distribution=self.distribution
-            )
+            distribution=self.distribution)
         num_results = results.count()
         self.assertEquals(3, num_results, "Expected 3 publications but "
                                           "got %s" % num_results)
@@ -151,8 +150,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         # one we created:
         results = self.archive_set.getPublicationsInArchives(
             self.gedit_name, self.archives.values(),
-            distribution=ubuntu
-            )
+            distribution=ubuntu)
         num_results = results.count()
         self.assertEquals(1, num_results, "Expected 1 publication but "
                                           "got %s" % num_results)
@@ -577,13 +575,13 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
 
 
 class TestArchiveCanUpload(TestCaseWithFactory):
-    """Test the various methods that verify whether uploads are allowed to 
+    """Test the various methods that verify whether uploads are allowed to
     happen."""
 
     layer = LaunchpadZopelessLayer
 
     def test_checkArchivePermission_by_PPA_owner(self):
-        # Uploading to a PPA should be allowed for a user that is the owner 
+        # Uploading to a PPA should be allowed for a user that is the owner
         owner = self.factory.makePerson(name="somebody")
         archive = self.factory.makeArchive(owner=owner)
         self.assertEquals(True, archive.checkArchivePermission(owner))
@@ -594,12 +592,12 @@ class TestArchiveCanUpload(TestCaseWithFactory):
     def test_checkArchivePermission_distro_archive(self):
         # Regular users can not upload to ubuntu
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY, 
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY,
                                            distribution=ubuntu)
         main = getUtility(IComponentSet)["main"]
         # A regular user doesn't have access
         somebody = self.factory.makePerson(name="somebody")
-        self.assertEquals(False, 
+        self.assertEquals(False,
             archive.checkArchivePermission(somebody, main))
         # An ubuntu core developer does have access
         kamion = getUtility(IPersonSet).getByName('kamion')
@@ -608,7 +606,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
     def test_checkArchivePermission_ppa(self):
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         owner = self.factory.makePerson(name="eigenaar")
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA, 
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA,
                                            distribution=ubuntu,
                                            owner=owner)
         somebody = self.factory.makePerson(name="somebody")
@@ -620,17 +618,17 @@ class TestArchiveCanUpload(TestCaseWithFactory):
     def test_checkUpload_partner_invalid_pocket(self):
         # Partner archives only have release and proposed pockets
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
-        self.assertIsInstance(archive.checkUpload(self.factory.makePerson(), 
+        self.assertIsInstance(archive.checkUpload(self.factory.makePerson(),
                                 self.factory.makeDistroSeries(),
                                 self.factory.makeSourcePackageName(),
                                 self.factory.makeComponent(),
                                 PackagePublishingPocket.UPDATES),
                                 InvalidPocketForPartnerArchive)
- 
+
     def test_checkUpload_ppa_invalid_pocket(self):
         # PPA archives only have release pockets
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertIsInstance(archive.checkUpload(self.factory.makePerson(), 
+        self.assertIsInstance(archive.checkUpload(self.factory.makePerson(),
                                 self.factory.makeDistroSeries(),
                                 self.factory.makeSourcePackageName(),
                                 self.factory.makeComponent(),
@@ -755,7 +753,7 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.arm = getUtility(IProcessorFamilySet).getByName('arm')
 
     def test_main_archive_can_use_restricted(self):
-        # Main archives for distributions can always use restricted 
+        # Main archives for distributions can always use restricted
         # architectures.
         distro = self.factory.makeDistribution()
         self.assertContentEqual([self.arm],
@@ -766,8 +764,10 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         distro = self.factory.makeDistribution()
         # Restricting to all restricted architectures is fine
         distro.main_archive.enabled_restricted_families = [self.arm]
+
         def restrict():
             distro.main_archive.enabled_restricted_families = []
+
         self.assertRaises(CannotRestrictArchitectures, restrict)
 
     def test_default(self):
@@ -802,7 +802,8 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.assertEquals(1, allowed_restricted_families.count())
         self.assertEquals(self.arm,
             allowed_restricted_families[0].processorfamily)
-        self.assertEquals([self.arm], self.archive.enabled_restricted_families)
+        self.assertEquals(
+            [self.arm], self.archive.enabled_restricted_families)
         self.archive.enabled_restricted_families = []
         self.assertEquals(0,
             self.archive_arch_set.getByArchive(
@@ -830,10 +831,11 @@ class TestArchiveTokens(TestCaseWithFactory):
         token = self.private_ppa.newAuthToken(self.joe)
         self.assertEqual(self.private_ppa.getAuthToken(self.joe), token)
 
-    def test_getPrivateSourcesList(self):
-        url = self.private_ppa.getPrivateSourcesList(self.joe)
+    def test_getArchiveSubscriptionURL(self):
+        url = self.joe.getArchiveSubscriptionURL(self.joe, self.private_ppa)
         token = self.private_ppa.getAuthToken(self.joe)
         self.assertEqual(token.archive_url, url)
+
 
 class TestArchivePrivacySwitching(TestCaseWithFactory):
 
@@ -1130,5 +1132,136 @@ class TestBuildDebugSymbols(TestCaseWithFactory):
         self.assertTrue(self.archive.build_debug_symbols)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestFindDepCandidates(TestCaseWithFactory):
+    """Tests for Archive.findDepCandidates."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestFindDepCandidates, self).setUp()
+        self.archive = self.factory.makeArchive()
+        self.publisher = SoyuzTestPublisher()
+        login('admin@canonical.com')
+        self.publisher.prepareBreezyAutotest()
+
+    def assertDep(self, arch_tag, name, expected, archive=None,
+                  pocket=PackagePublishingPocket.RELEASE, component=None,
+                  source_package_name='something-new'):
+        """Helper to check that findDepCandidates works.
+
+        Searches for the given dependency name in the given architecture and
+        archive, and compares it to the given expected value.
+        The archive defaults to self.archive.
+
+        Also commits, since findDepCandidates uses the slave store.
+        """
+        transaction.commit()
+
+        if component is None:
+            component = getUtility(IComponentSet)['main']
+        if archive is None:
+            archive = self.archive
+
+        self.assertEquals(
+            list(
+                archive.findDepCandidates(
+                    self.publisher.distroseries[arch_tag], pocket, component,
+                    source_package_name, name)),
+            expected)
+
+    def test_finds_candidate_in_same_archive(self):
+        # A published candidate in the same archive should be found.
+        bins = self.publisher.getPubBinaries(
+            binaryname='foo', archive=self.archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertDep('i386', 'foo', [bins[0]])
+        self.assertDep('hppa', 'foo', [bins[1]])
+
+    def test_does_not_find_pending_publication(self):
+        # A pending candidate in the same archive should not be found.
+        bins = self.publisher.getPubBinaries(
+            binaryname='foo', archive=self.archive)
+        self.assertDep('i386', 'foo', [])
+
+    def test_ppa_searches_primary_archive(self):
+        # PPA searches implicitly look in the primary archive too.
+        self.assertEquals(self.archive.purpose, ArchivePurpose.PPA)
+        self.assertDep('i386', 'foo', [])
+
+        bins = self.publisher.getPubBinaries(
+            binaryname='foo', archive=self.archive.distribution.main_archive,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.assertDep('i386', 'foo', [bins[0]])
+
+    def test_searches_dependencies(self):
+        # Candidates from archives on which the target explicitly depends
+        # should be found.
+        bins = self.publisher.getPubBinaries(
+            binaryname='foo', archive=self.archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        other_archive = self.factory.makeArchive()
+        self.assertDep('i386', 'foo', [], archive=other_archive)
+
+        other_archive.addArchiveDependency(
+            self.archive, PackagePublishingPocket.RELEASE)
+        self.assertDep('i386', 'foo', [bins[0]], archive=other_archive)
+
+    def test_obeys_dependency_pockets(self):
+        # Only packages published in a pocket matching the dependency should
+        # be found.
+        release_bins = self.publisher.getPubBinaries(
+            binaryname='foo-release', archive=self.archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        updates_bins = self.publisher.getPubBinaries(
+            binaryname='foo-updates', archive=self.archive,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.UPDATES)
+        proposed_bins = self.publisher.getPubBinaries(
+            binaryname='foo-proposed', archive=self.archive,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.PROPOSED)
+
+        # Temporarily turn our test PPA into a copy archive, so we can
+        # add non-RELEASE dependencies on it.
+        removeSecurityProxy(self.archive).purpose = ArchivePurpose.COPY
+
+        other_archive = self.factory.makeArchive()
+        other_archive.addArchiveDependency(
+            self.archive, PackagePublishingPocket.UPDATES)
+        self.assertDep(
+            'i386', 'foo-release', [release_bins[0]], archive=other_archive)
+        self.assertDep(
+            'i386', 'foo-updates', [updates_bins[0]], archive=other_archive)
+        self.assertDep('i386', 'foo-proposed', [], archive=other_archive)
+
+        other_archive.removeArchiveDependency(self.archive)
+        other_archive.addArchiveDependency(
+            self.archive, PackagePublishingPocket.PROPOSED)
+        self.assertDep(
+            'i386', 'foo-proposed', [proposed_bins[0]], archive=other_archive)
+
+    def test_obeys_dependency_components(self):
+        # Only packages published in a component matching the dependency
+        # should be found.
+        primary = self.archive.distribution.main_archive
+        main_bins = self.publisher.getPubBinaries(
+            binaryname='foo-main', archive=primary, component='main',
+            status=PackagePublishingStatus.PUBLISHED)
+        universe_bins = self.publisher.getPubBinaries(
+            binaryname='foo-universe', archive=primary,
+            component='universe',
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.archive.addArchiveDependency(
+            primary, PackagePublishingPocket.RELEASE,
+            component=getUtility(IComponentSet)['main'])
+        self.assertDep('i386', 'foo-main', [main_bins[0]])
+        self.assertDep('i386', 'foo-universe', [])
+
+        self.archive.removeArchiveDependency(primary)
+        self.archive.addArchiveDependency(
+            primary, PackagePublishingPocket.RELEASE,
+            component=getUtility(IComponentSet)['universe'])
+        self.assertDep('i386', 'foo-main', [main_bins[0]])
+        self.assertDep('i386', 'foo-universe', [universe_bins[0]])

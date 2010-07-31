@@ -61,8 +61,8 @@ class DistributionSourcePackageMaxHeatByTargetTest(
     def setUp(self):
         self.target = self.factory.makeDistributionSourcePackage()
 
-class DistributionSourcePackageNullBugHeatCacheTest(
-    TestCaseWithFactory):
+
+class DistributionSourcePackageNullBugHeatCacheTest(TestCaseWithFactory):
     """Ensure distro source package cache values start at None."""
 
     layer = LaunchpadZopelessLayer
@@ -174,6 +174,3 @@ class ProjectGroupMaxHeatByTargetTest(
 
     def setUp(self):
         self.target = self.factory.makeProject()
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -8,7 +8,6 @@ __all__ = []
 
 from datetime import datetime, timedelta
 import time
-import unittest
 
 from pytz import UTC
 from storm.expr import Min, SQL
@@ -19,6 +18,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import THIRTY_DAYS_AGO, UTC_NOW
+from canonical.database.sqlbase import quote
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
@@ -175,11 +175,18 @@ class TestGarbo(TestCaseWithFactory):
         results_to_keep_count = (
             config.codeimport.consecutive_failure_limit - 1)
 
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        code_import_id = self.factory.makeCodeImport().id
+        machine_id = self.factory.makeCodeImportMachine().id
+        requester_id = self.factory.makePerson().id
+        transaction.commit()
+
         def new_code_import_result(timestamp):
             LaunchpadZopelessLayer.switchDbUser('testadmin')
             CodeImportResult(
                 date_created=timestamp,
-                code_importID=1, machineID=1, requesting_userID=1,
+                code_importID=code_import_id, machineID=machine_id,
+                requesting_userID=requester_id,
                 status=CodeImportResultStatus.FAILURE,
                 date_job_started=timestamp)
             transaction.commit()
@@ -523,7 +530,16 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(bug.attachments.count(), 0)
 
+    def test_CacheSuggestivePOTemplates(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        template = self.factory.makePOTemplate()
+        self.runDaily()
 
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        count, = store.execute("""
+            SELECT count(*)
+            FROM SuggestivePOTemplate
+            WHERE potemplate = %s
+            """ % quote(template.id)).get_one()
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        self.assertEqual(1, count)

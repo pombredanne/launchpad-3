@@ -31,15 +31,17 @@ from operator import attrgetter
 import pytz
 import random
 import re
+import subprocess
 import time
 import weakref
 
-from bzrlib.plugins.builder import RecipeParser
+from bzrlib.plugins.builder.recipe import RecipeParser
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import alsoProvides, implementer, implements
 from zope.component import adapter, getUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
+from zope.publisher.interfaces import Unauthorized
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
@@ -125,7 +127,9 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.registry.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
+from lp.registry.interfaces.ssh import (
+    ISSHKey, ISSHKeySet, SSHKeyAdditionError, SSHKeyCompromisedError,
+    SSHKeyType)
 from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
@@ -182,14 +186,12 @@ class ValidPersonCache(SQLBase):
 
     This is readonly, as this is a view in the database.
     """
-    # Look Ma, no columns! (apart from id)
 
 
 def validate_person_visibility(person, attr, value):
     """Validate changes in visibility.
 
-    * Prevent teams with inconsistent connections from being made private
-    * Prevent private membership teams with mailing lists from going public.
+    * Prevent teams with inconsistent connections from being made private.
     * Prevent private teams from any transition.
     """
 
@@ -198,15 +200,6 @@ def validate_person_visibility(person, attr, value):
     if person.visibility == PersonVisibility.PRIVATE:
         raise ImmutableVisibilityError(
             'A private team cannot change visibility.')
-
-    mailing_list = getUtility(IMailingListSet).get(person.name)
-
-    if (value == PersonVisibility.PUBLIC and
-        person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
-        mailing_list is not None and
-        mailing_list.status != MailingListStatus.PURGED):
-        raise ImmutableVisibilityError(
-            'This team cannot be made public since it has a mailing list')
 
     # If transitioning to a non-public visibility, check for existing
     # relationships that could leak data.
@@ -328,15 +321,6 @@ class Person(
     # We provide this shim for backwards compatibility.
     account_status_comment = property(
             _get_account_status_comment, _set_account_status_comment)
-
-    city = StringCol(default=None)
-    phone = StringCol(default=None)
-    country = ForeignKey(dbName='country', foreignKey='Country', default=None)
-    province = StringCol(default=None)
-    postcode = StringCol(default=None)
-    addressline1 = StringCol(default=None)
-    addressline2 = StringCol(default=None)
-    organization = StringCol(default=None)
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
                            default=None,
@@ -721,7 +705,7 @@ class Person(
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -897,40 +881,33 @@ class Person(
 
     def getOwnedOrDrivenPillars(self):
         """See `IPerson`."""
-        query = """
-            SELECT name
-            FROM product, teamparticipation
-            WHERE teamparticipation.person = %(person)s
-                AND (driver = teamparticipation.team
-                     OR owner = teamparticipation.team)
-
-            UNION
-
-            SELECT name
-            FROM project, teamparticipation
-            WHERE teamparticipation.person = %(person)s
-                AND (driver = teamparticipation.team
-                     OR owner = teamparticipation.team)
-
-            UNION
-
-            SELECT name
-            FROM distribution, teamparticipation
-            WHERE teamparticipation.person = %(person)s
-                AND (driver = teamparticipation.team
-                     OR owner = teamparticipation.team)
-            """ % sqlvalues(person=self)
-        cur = cursor()
-        cur.execute(query)
-        names = [sqlvalues(str(name)) for [name] in cur.fetchall()]
-        if not names:
-            return PillarName.select("1=2")
-        quoted_names = ','.join([name for [name] in names])
-        return PillarName.select(
-            "PillarName.name IN (%s) AND PillarName.active IS TRUE" %
-            quoted_names, prejoins=['distribution', 'project', 'product'],
-            orderBy=['PillarName.distribution', 'PillarName.project',
-                     'PillarName.product'])
+        find_spec = (PillarName, SQL('kind'), SQL('displayname'))
+        origin = SQL("""
+            PillarName
+            JOIN (
+                SELECT name, 3 as kind, displayname
+                FROM product
+                WHERE
+                    driver = %(person)s
+                    OR owner = %(person)s
+                UNION
+                SELECT name, 2 as kind, displayname
+                FROM project
+                WHERE
+                    driver = %(person)s
+                    OR owner = %(person)s
+                UNION
+                SELECT name, 1 as kind, displayname
+                FROM distribution
+                WHERE
+                    driver = %(person)s
+                    OR owner = %(person)s
+                ) _pillar
+                ON PillarName.name = _pillar.name
+            """ % sqlvalues(person=self))
+        results = IStore(self).using(origin).find(find_spec)
+        results = results.order_by('kind', 'displayname')
+        return [pillar_name for pillar_name, kind, displayname in results]
 
     def getOwnedProjects(self, match_name=None):
         """See `IPerson`."""
@@ -1443,7 +1420,7 @@ class Person(
     @property
     def wiki_names(self):
         """See `IPerson`."""
-        result =  Store.of(self).find(WikiName, WikiName.person == self.id)
+        result = Store.of(self).find(WikiName, WikiName.person == self.id)
         return result.order_by(WikiName.wiki, WikiName.wikiname)
 
     @property
@@ -1607,7 +1584,7 @@ class Person(
             Person.teamowner IS NULL
             """ % sqlvalues(self.id),
             clauseTables=['TeamParticipation', 'Person'],
-            prejoins=['person',], limit=limit)
+            prejoins=['person', ], limit=limit)
 
     def getMappedParticipants(self, limit=None):
         """See `IPersonViewRestricted`."""
@@ -1640,7 +1617,7 @@ class Person(
         min_lng = 180.0
         locations = self._getMappedParticipantsLocations(limit)
         if self.mapped_participants_count == 0:
-            raise AssertionError, (
+            raise AssertionError(
                 'This method cannot be called when '
                 'mapped_participants_count == 0.')
         latitudes = sorted(location.latitude for location in locations)
@@ -1820,7 +1797,7 @@ class Person(
             ('teamparticipation', 'team'),
             # Skip mailing lists because if the mailing list is purged, it's
             # not a problem.  Do this check separately below.
-            ('mailinglist', 'team')
+            ('mailinglist', 'team'),
             ])
 
         # Private teams may participate in more areas of Launchpad than
@@ -2033,7 +2010,7 @@ class Person(
         email = IMasterObject(email)
         assert not self.is_team, "This method must not be used for teams."
         if not IEmailAddress.providedBy(email):
-            raise TypeError, (
+            raise TypeError(
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
         # XXX Steve Alexander 2005-07-05:
@@ -2081,7 +2058,7 @@ class Person(
             mailing_list_email = None
         all_addresses = IMasterStore(self).find(
             EmailAddress, EmailAddress.personID == self.id)
-        for address in all_addresses :
+        for address in all_addresses:
             if address not in (email, mailing_list_email):
                 address.destroySelf()
 
@@ -2113,7 +2090,7 @@ class Person(
         this person.
         """
         if not IEmailAddress.providedBy(email):
-            raise TypeError, (
+            raise TypeError(
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
         assert email.personID == self.id
@@ -2219,12 +2196,12 @@ class Person(
             by this person.
 
         :param ppa_only: controls if we are interested only in source
-            package releases targeted to any PPAs or, if False, sources targeted
-            to primary archives.
+            package releases targeted to any PPAs or, if False, sources
+            targeted to primary archives.
 
-        Active 'ppa_only' flag is usually associated with active 'uploader_only'
-        because there shouldn't be any sense of maintainership for packages
-        uploaded to PPAs by someone else than the user himself.
+        Active 'ppa_only' flag is usually associated with active
+        'uploader_only' because there shouldn't be any sense of maintainership
+        for packages uploaded to PPAs by someone else than the user himself.
         """
         clauses = ['sourcepackagerelease.upload_archive = archive.id']
 
@@ -2279,9 +2256,11 @@ class Person(
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         builder_recipe = RecipeParser(recipe_text).parse()
-        return SourcePackageRecipe.new(
+        recipe = SourcePackageRecipe.new(
             registrant, self, name, builder_recipe, description, distroseries,
             daily_build_archive, build_daily)
+        Store.of(recipe).flush()
+        return recipe
 
     def getRecipe(self, name):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
@@ -2324,13 +2303,32 @@ class Person(
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
 
-    def getArchiveSubscriptionURLs(self):
+    def getArchiveSubscriptionURLs(self, requester):
         """See `IPerson`."""
+        agent = getUtility(ILaunchpadCelebrities).software_center_agent
+        # If the requester isn't asking about themselves, and they aren't the
+        # software center agent, deny them
+        if requester.id != agent.id:
+            if self.id != requester.id:
+                raise Unauthorized
         subscriptions = getUtility(
             IArchiveSubscriberSet).getBySubscriberWithActiveToken(
                 subscriber=self)
         return [token.archive_url for (subscription, token) in subscriptions
                 if token is not None]
+
+    def getArchiveSubscriptionURL(self, requester, archive):
+        """See `IPerson`."""
+        agent = getUtility(ILaunchpadCelebrities).software_center_agent
+        # If the requester isn't asking about themselves, and they aren't the
+        # software center agent, deny them
+        if requester.id != agent.id:
+            if self.id != requester.id:
+                raise Unauthorized
+        token = archive.getAuthToken(self)
+        if token is None:
+            token = archive.newAuthToken(self)
+        return token.archive_url
 
     @property
     def ppas(self):
@@ -2490,7 +2488,7 @@ class PersonSet:
                     creation_rationale, comment=comment)
                 db_updated = True
 
-        return IPerson(account), db_updated
+            return IPerson(account), db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -2689,7 +2687,7 @@ class PersonSet:
             private_query = None
 
         base_query = SQL("Person.visibility = ?",
-                         (PersonVisibility.PUBLIC.value,),
+                         (PersonVisibility.PUBLIC.value, ),
                          tables=['Person'])
 
         if private_query is None:
@@ -2710,8 +2708,7 @@ class PersonSet:
             Not(Person.teamowner == None),
             Person.merged == None,
             EmailAddress.person == Person.id,
-            StartsWith(Lower(EmailAddress.email), text)
-            )
+            StartsWith(Lower(EmailAddress.email), text))
         return team_email_query
 
     def _teamNameQuery(self, text):
@@ -2724,8 +2721,7 @@ class PersonSet:
             TeamParticipation.team == Person.id,
             Not(Person.teamowner == None),
             Person.merged == None,
-            SQL("Person.fti @@ ftq(?)", (text,))
-            )
+            SQL("Person.fti @@ ftq(?)", (text, )))
         return team_name_query
 
     def find(self, text=""):
@@ -2747,8 +2743,7 @@ class PersonSet:
             EmailAddress.person == Person.id,
             Person.account == Account.id,
             Not(In(Account.status, inactive_statuses)),
-            StartsWith(Lower(EmailAddress.email), text)
-            )
+            StartsWith(Lower(EmailAddress.email), text))
 
         store = IStore(Person)
 
@@ -2791,8 +2786,7 @@ class PersonSet:
             status.value for status in INACTIVE_ACCOUNT_STATUSES)
         base_query = And(
             Person.teamowner == None,
-            Person.merged == None
-            )
+            Person.merged == None)
 
         clause_tables = []
 
@@ -2801,25 +2795,21 @@ class PersonSet:
             base_query = And(
                 base_query,
                 Person.account == Account.id,
-                Not(In(Account.status, inactive_statuses))
-                )
+                Not(In(Account.status, inactive_statuses)))
         email_clause_tables = clause_tables + ['EmailAddress']
         if must_have_email:
             clause_tables = email_clause_tables
             base_query = And(
                 base_query,
-                EmailAddress.person == Person.id
-                )
+                EmailAddress.person == Person.id)
         if created_after is not None:
             base_query = And(
                 base_query,
-                Person.datecreated > created_after
-                )
+                Person.datecreated > created_after)
         if created_before is not None:
             base_query = And(
                 base_query,
-                Person.datecreated < created_before
-                )
+                Person.datecreated < created_before)
 
         # Short circuit for returning all users in order
         if not text:
@@ -2832,13 +2822,11 @@ class PersonSet:
         email_query = And(
             base_query,
             EmailAddress.person == Person.id,
-            StartsWith(Lower(EmailAddress.email), text)
-            )
+            StartsWith(Lower(EmailAddress.email), text))
 
         name_query = And(
             base_query,
-            SQL("Person.fti @@ ftq(?)", (text,))
-            )
+            SQL("Person.fti @@ ftq(?)", (text, )))
         email_results = store.find(Person, email_query).order_by()
         name_results = store.find(Person, name_query).order_by()
         combined_results = email_results.union(name_results)
@@ -3433,8 +3421,7 @@ class PersonSet:
                 if updact != 'c':
                     raise RuntimeError(
                         '%s.%s reference to %s.%s must be ON UPDATE CASCADE'
-                        % (src_tab, src_col, ref_tab, ref_col)
-                        )
+                        % (src_tab, src_col, ref_tab, ref_col))
 
         # These rows are in a UNIQUE index, and we can only move them
         # to the new Person if there is not already an entry. eg. if
@@ -3455,16 +3442,16 @@ class PersonSet:
         cur.execute(
             'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
             % vars())
-        skip.append(('gpgkey','owner'))
+        skip.append(('gpgkey', 'owner'))
 
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict.
         self._mergeBranches(cur, from_id, to_id)
-        skip.append(('branch','owner'))
+        skip.append(('branch', 'owner'))
 
         # XXX MichaelHudson 2010-01-13: Write _mergeSourcePackageRecipes!
         #self._mergeSourcePackageRecipes(cur, from_id, to_id))
-        skip.append(('sourcepackagerecipe','owner'))
+        skip.append(('sourcepackagerecipe', 'owner'))
 
         self._mergeMailingListSubscriptions(cur, from_id, to_id)
         skip.append(('mailinglistsubscription', 'person'))
@@ -3545,17 +3532,14 @@ class PersonSet:
                 raise NotImplementedError(
                         '%s.%s reference to %s.%s is in a UNIQUE index '
                         'but has not been handled' % (
-                            src_tab, src_col, ref_tab, ref_col
-                            )
-                        )
+                            src_tab, src_col, ref_tab, ref_col))
 
         # Handle all simple cases
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
             if (src_tab, src_col) in skip:
                 continue
             cur.execute('UPDATE %s SET %s=%d WHERE %s=%d' % (
-                src_tab, src_col, to_person.id, src_col, from_person.id
-                ))
+                src_tab, src_col, to_person.id, src_col, from_person.id))
 
         self._mergeTeamMembership(cur, from_id, to_id)
 
@@ -3746,7 +3730,29 @@ class SSHKey(SQLBase):
 class SSHKeySet:
     implements(ISSHKeySet)
 
-    def new(self, person, keytype, keytext, comment):
+    def new(self, person, sshkey):
+        try:
+            kind, keytext, comment = sshkey.split(' ', 2)
+        except ValueError:
+            raise SSHKeyAdditionError
+
+        if not (kind and keytext and comment):
+            raise SSHKeyAdditionError
+
+        process = subprocess.Popen(
+            '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (out, err) = process.communicate(sshkey.encode('utf-8'))
+        if 'compromised' in out.lower():
+            raise SSHKeyCompromisedError
+
+        if kind == 'ssh-rsa':
+            keytype = SSHKeyType.RSA
+        elif kind == 'ssh-dss':
+            keytype = SSHKeyType.DSA
+        else:
+            raise SSHKeyAdditionError
+
         return SSHKey(person=person, keytype=keytype, keytext=keytext,
                       comment=comment)
 
@@ -3879,6 +3885,7 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
     domain_parts = domain.split(".")
 
     person_set = PersonSet()
+
     def _valid_nick(nick):
         if not valid_name(nick):
             return False
@@ -3939,8 +3946,7 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
         raise NicknameGenerationError(
             "No nickname could be generated. "
             "This should be impossible to trigger unless some twonk has "
-            "registered a match everything regexp in the black list."
-            )
+            "registered a match everything regexp in the black list.")
 
     finally:
         random.setstate(random_state)

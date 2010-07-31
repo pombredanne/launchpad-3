@@ -35,12 +35,12 @@ from lp.services.worlddata.model.language import Language
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from lp.registry.model.packaging import Packaging
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership)
+from lp.registry.interfaces.person import validate_person
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
-    POTemplate)
+    POTemplate,
+    TranslationTemplatesCollection)
 from lp.registry.model.productrelease import ProductRelease
 from lp.translations.model.productserieslanguage import (
     ProductSeriesLanguage)
@@ -50,7 +50,6 @@ from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.packaging import PackagingType
 from lp.blueprints.interfaces.specification import (
@@ -95,12 +94,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=True)
 
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
@@ -428,45 +427,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             name=name, dateexpected=dateexpected, summary=summary,
             product=self.product, productseries=self, code_name=code_name)
 
-    def getTranslationTemplates(self):
+    def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(
-            productseries=self, orderBy=['-priority', 'name'])
-        return result
-
-    def getCurrentTranslationTemplates(self, just_ids=False):
-        """See `IHasTranslationTemplates`."""
-        store = Store.of(self)
-        if just_ids:
-            looking_for = POTemplate.id
-        else:
-            looking_for = POTemplate
-
-        # Select all current templates for this series, if the Product
-        # actually uses Launchpad Translations.  Otherwise, return an
-        # empty result.
-        result = store.find(looking_for, And(
-            self.product.official_rosetta == True,
-            POTemplate.iscurrent == True,
-            POTemplate.productseries == self))
-        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
+        return TranslationTemplatesCollection().restrictProductSeries(self)
 
     @property
     def potemplate_count(self):
         """See `IProductSeries`."""
         return self.getCurrentTranslationTemplates().count()
-
-    def getObsoleteTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            productseries = %s AND
-            productseries = ProductSeries.id AND
-            ProductSeries.product = Product.id AND
-            (iscurrent IS FALSE OR Product.official_rosetta IS FALSE)
-            ''' % sqlvalues(self),
-            orderBy=['-priority', 'name'],
-            clauseTables = ['ProductSeries', 'Product'])
-        return shortlist(result, 300)
 
     @property
     def productserieslanguages(self):
@@ -496,12 +464,15 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
             for language, pofile in ordered_results:
                 psl = ProductSeriesLanguage(self, language, pofile=pofile)
-                psl.setCounts(pofile.potemplate.messageCount(),
-                              pofile.currentCount(),
-                              pofile.updatesCount(),
-                              pofile.rosettaCount(),
-                              pofile.unreviewedCount(),
-                              pofile.date_changed)
+                total = pofile.potemplate.messageCount()
+                imported = pofile.currentCount()
+                changed = pofile.updatesCount()
+                rosetta = pofile.rosettaCount()
+                unreviewed = pofile.unreviewedCount()
+                translated = imported + rosetta
+                new = rosetta - changed
+                psl.setCounts(total, translated, new, changed, unreviewed)
+                psl.last_changed_date = pofile.date_changed
                 results.append(psl)
         else:
             # If there is more than one template, do a single
@@ -529,22 +500,15 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                 POTemplate.iscurrent==True,
                 Language.id!=english.id).group_by(Language)
 
-            # XXX: Ursinha 2009-11-02: The Max(POFile.date_changed) result
-            # here is a naive datetime. My guess is that it happens
-            # because UTC awareness is attibuted to the field in the POFile
-            # model class, and in this case the Max function deals directly
-            # with the value returned from the database without
-            # instantiating it.
-            # This seems to be irrelevant to what we're trying to achieve
-            # here, but making a note either way.
-
             ordered_results = query.order_by(['Language.englishname'])
 
-            for (language, imported, changed, new, unreviewed,
-                last_changed) in ordered_results:
+            for (language, imported, changed, rosetta, unreviewed,
+                 last_changed) in ordered_results:
                 psl = ProductSeriesLanguage(self, language)
-                psl.setCounts(
-                    total, imported, changed, new, unreviewed, last_changed)
+                translated = imported + rosetta
+                new = rosetta - changed
+                psl.setCounts(total, translated, new, changed, unreviewed)
+                psl.last_changed_date = last_changed
                 results.append(psl)
 
         return results

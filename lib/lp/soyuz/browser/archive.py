@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -46,6 +46,7 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.lazr.utils import smartquote
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -201,12 +202,8 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
         # The ID is not enough on its own to identify the publication,
         # we need to make sure it matches the context archive as well.
-        results = getUtility(IPublishingSet).getByIdAndArchive(
+        return getUtility(IPublishingSet).getByIdAndArchive(
             pub_id, self.context, source)
-        if results.count() == 1:
-            return results[0]
-
-        return None
 
     @stepthrough('+binaryhits')
     def traverse_binaryhits(self, name_str):
@@ -295,6 +292,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         user.item
         where item is a component or a source package name,
         """
+
         def get_url_param(param_name):
             """Return the URL parameter with the given name or None."""
             param_seq = self.request.query_string_params.get(param_name)
@@ -374,6 +372,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
 
 class ArchiveMenuMixin:
+
     def ppa(self):
         text = 'View PPA'
         return Link(canonical_url(self.context), text, icon='info')
@@ -525,6 +524,7 @@ class ArchiveViewBase(LaunchpadView):
     @cachedproperty
     def repository_usage(self):
         """Return a dictionary with usage details of this repository."""
+
         def package_plural(control):
             if control == 1:
                 return 'package'
@@ -631,7 +631,6 @@ class ArchiveViewBase(LaunchpadView):
         copy_requests = getUtility(
             IPackageCopyRequestSet).getByTargetArchive(self.context)
         return list(copy_requests)
-
 
     @property
     def disabled_warning_message(self):
@@ -740,7 +739,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         # If the request included a filter, try to use it - if it's
         # invalid we use the default instead.
         vocab = self.widgets[filter_name].vocabulary
-        if vocab.by_token.has_key(requested_filter[0]):
+        if requested_filter[0] in vocab.by_token:
             return vocab.getTermByToken(requested_filter[0]).value
         else:
             return getattr(self, default_filter_attr)
@@ -1162,6 +1161,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
             structured(notification, comment=comment))
 
         self.setNextURL()
+
 
 class DestinationArchiveDropdownWidget(LaunchpadDropdownWidget):
     """Redefining default display value as 'This PPA'."""
@@ -1812,8 +1812,7 @@ class ArchiveActivateView(LaunchpadFormView):
     def is_private_team(self):
         """Is the person a private team?
 
-        :return: True only if visibility is PRIVATE.  False is returned when
-        the visibility is PUBLIC and PRIVATE_MEMBERSHIP.
+        :return: True only if visibility is PRIVATE.
         :rtype: bool
         """
         return self.context.visibility == PersonVisibility.PRIVATE
@@ -1864,6 +1863,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
         """Default save validation does nothing."""
         pass
 
+
 class ArchiveEditView(BaseArchiveEditView):
 
     field_names = ['displayname', 'description', 'enabled', 'publish']
@@ -1881,11 +1881,24 @@ class ArchiveAdminView(BaseArchiveEditView):
 
     custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
 
+    def updateContextFromData(self, data):
+        """Update context from form data.
+
+        If the user did not specify a buildd secret but marked the
+        archive as private, generate a secret for them.
+        """
+        if data['private'] and data['buildd_secret'] is None:
+            # buildd secrets are only used by builders, autogenerate one.
+            self.context.buildd_secret = create_token(16)
+            del(data['buildd_secret'])
+        super(ArchiveAdminView, self).updateContextFromData(data)
+
     def validate_save(self, action, data):
         """Validate the save action on ArchiveAdminView.
 
-        buildd_secret can only be set, and must be set, when
-        this is a private archive.
+        buildd_secret can only, and must, be set for private archives.
+        If the archive is private and the buildd secret is not set it will be
+        generated.
         """
         form.getWidgetsData(self.widgets, 'field', data)
 
@@ -1896,11 +1909,6 @@ class ArchiveAdminView(BaseArchiveEditView):
                     'private',
                     'This archive already has published sources. It is '
                     'not possible to switch the privacy.')
-
-        if data.get('buildd_secret') is None and data['private']:
-            self.setFieldError(
-                'buildd_secret',
-                'Required for private archives.')
 
         if self.owner_is_private_team and not data['private']:
             self.setFieldError(
@@ -1953,8 +1961,7 @@ class ArchiveAdminView(BaseArchiveEditView):
     def owner_is_private_team(self):
         """Is the owner a private team?
 
-        :return: True only if visibility is PRIVATE.  False is returned when
-        the visibility is PUBLIC and PRIVATE_MEMBERSHIP.
+        :return: True only if visibility is PRIVATE.
         :rtype: bool
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
@@ -2023,4 +2030,3 @@ class ArchiveDeleteView(LaunchpadFormView):
         self.request.response.addInfoNotification(
             "Deletion of '%s' has been requested and the repository will be "
             "removed shortly." % self.context.title)
-

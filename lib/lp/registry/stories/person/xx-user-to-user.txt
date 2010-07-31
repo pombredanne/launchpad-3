@@ -12,7 +12,7 @@ wants to contact Salgado.
     >>> user_browser.open('http://launchpad.dev/~salgado')
     >>> user_browser.getLink('Contact this user').click()
     >>> print user_browser.title
-    Contact Guilherme Salgado...
+    Contact user : Guilherme Salgado
 
     >>> user_browser.getControl('Subject').value = 'Hi Salgado'
     >>> user_browser.getControl('Message').value = 'Just saying hello'
@@ -163,81 +163,3 @@ pages, when he tries to submit the fourth one, the submission fails.
     >>> print_errors(browser_4.contents)
     Your message was not sent because you have exceeded your daily quota of 3
     messages to contact users. Try again in ... hours.
-
-
-Your own profile page
-=====================
-
-For consistency and testing purposes, the "contact" page is available even
-when someone is looking at their own profile page.  The wording on the profile
-page is different though.
-
-    >>> user_browser.open('http://launchpad.dev/~no-priv')
-    >>> user_browser.getLink('Contact this user').click()
-    >>> print user_browser.title
-    Contact No Privileges Person...
-
-This holds true even for Sample Person, who is hiding her email addresses.
-
-    >>> user_browser.open('http://launchpad.dev/~name12')
-    >>> user_browser.getLink('Contact this user').click()
-    >>> print user_browser.title
-    Contact Sample Person...
-
-    >>> name12_browser = setupBrowser('Basic test@canonical.com:test')
-    >>> name12_browser.open('http://launchpad.dev/~name12')
-    >>> name12_browser.getLink('Contact this user').click()
-    >>> print name12_browser.title
-    Contact Sample Person...
-
-
-Teams
-=====
-
-Teams can also be contacted directly by team members, regardless of whether
-the team has set a contact address or uses a Launchpad mailing list.
-
-Guadamen have no contact address, so contacting them contacts all users
-directly.
-
-    >>> admin_browser.open('http://launchpad.dev/~guadamen')
-    >>> admin_browser.getLink('Contact this team').click()
-    >>> admin_browser.title
-    'Contact GuadaMen...
-
-Foo Bar registers an explicit contact address for Guadamen...
-
-    >>> admin_browser.open('http://launchpad.dev/~guadamen/+contactaddress')
-    >>> admin_browser.getControl('Another e-mail address').selected = True
-    >>> admin_browser.getControl(
-    ...     name='field.contact_address').value = 'foo@example.com'
-    >>> admin_browser.getControl('Change').click()
-
-    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-
-    # Extract the link (from the email we just sent) the user will have to
-    # use to finish the registration process.
-    >>> from canonical.launchpad.ftests.logintoken import (
-    ...     get_token_url_from_email)
-    >>> token_url = get_token_url_from_email(raw_msg)
-    >>> admin_browser.open(token_url)
-    >>> admin_browser.getControl('Continue').click()
-
-...which can also be contacted directly.
-
-    >>> admin_browser.open('http://launchpad.dev/~guadamen')
-    >>> admin_browser.getLink('Contact this team').click()
-    >>> admin_browser.title
-    'Contact GuadaMen...
-
-Foo Bar later registers a Launchpad mailing list for Guadamen...
-
-    >>> admin_browser.open('http://launchpad.dev/~guadamen/+mailinglist')
-    >>> admin_browser.getControl('Apply for Mailing List').click()
-
-...which too can be contacted directly.
-
-    >>> admin_browser.open('http://launchpad.dev/~guadamen')
-    >>> admin_browser.getLink('Contact this team').click()
-    >>> admin_browser.title
-    'Contact GuadaMen...

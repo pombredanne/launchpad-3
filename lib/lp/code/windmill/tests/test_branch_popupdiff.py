@@ -24,15 +24,15 @@ POPUP_DIFF = (
     u'//dd[contains(@class, "popup-diff")]'
     '/a[contains(@class, "js-action")]')
 VISIBLE_DIFF = (
-    u'//table[contains(@class, "yui-diff-overlay") and '
+    u'//div[contains(@class, "yui-diff-overlay ") and '
      'not(contains(@class, "yui-diff-overlay-hidden"))]')
 CLOSE_VISIBLE_DIFF = (
-    u'//table[contains(@class, "yui-diff-overlay")]'
+    u'//div[contains(@class, "yui-diff-overlay ")]'
      '//a[@class="close-button"]')
 JS_ONLOAD_EXECUTE_DELAY = 2000
 ADD_BRANCH_MENU = u'//a[contains(@class, "menu-link-addbranch")]'
 VISIBLE_PICKER_OVERLAY = (
-    u'//table[contains(@class, "yui-picker") and '
+    u'//div[contains(@class, "yui-picker ") and '
      'not(contains(@class, "yui-picker-hidden"))]')
 BRANCH_SEARCH_FIELD = VISIBLE_PICKER_OVERLAY + u'//input[@name="search"]'
 BRANCH_SEARCH_BUTTON = (

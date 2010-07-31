@@ -12,6 +12,7 @@ import logging
 import operator
 
 from storm.locals import Int, Reference
+from storm.store import EmptyResultSet
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -50,7 +51,6 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild, PackageBuildDerived)
 from lp.services.job.model.job import Job
-from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus, CannotBeRescored, IBinaryPackageBuild,
@@ -387,33 +387,25 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def _isDependencySatisfied(self, token):
         """Check if the given dependency token is satisfied.
 
-        Check if the dependency exists, if its version constraint is
-        satisfied and if it is reachable in the build context.
+        Check if the dependency exists and that its version constraint is
+        satisfied.
         """
         name, version, relation = self._parseDependencyToken(token)
 
-        dep_candidate = self.archive.findDepCandidateByName(
-            self.distro_arch_series, name)
+        # There may be several published versions in the available
+        # archives and pockets. If any one of them satisifies our
+        # constraints, the dependency is satisfied.
+        dep_candidates = self.archive.findDepCandidates(
+            self.distro_arch_series, self.pocket, self.current_component,
+            self.source_package_release.sourcepackagename.name, name)
 
-        if not dep_candidate:
-            return False
+        for dep_candidate in dep_candidates:
+            if self._checkDependencyVersion(
+                dep_candidate.binarypackagerelease.version, version,
+                relation):
+                return True
 
-        if not self._checkDependencyVersion(
-            dep_candidate.binarypackagerelease.version, version, relation):
-            return False
-
-        # Only PRIMARY archive build dependencies should be restricted
-        # to the ogre_components. Both PARTNER and PPA can reach
-        # dependencies from all components in the PRIMARY archive.
-        # Moreover, PARTNER and PPA component domain is single, i.e,
-        # PARTNER only contains packages in 'partner' component and PPAs
-        # only contains packages in 'main' component.
-        ogre_components = get_components_for_building(self)
-        if (self.archive.purpose == ArchivePurpose.PRIMARY and
-            dep_candidate.component.name not in ogre_components):
-            return False
-
-        return True
+        return False
 
     def _toAptFormat(self, token):
         """Rebuild dependencies line in apt format."""
@@ -459,7 +451,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         binpackageformat, component,section, priority, shlibdeps,
         depends, recommends, suggests, conflicts, replaces, provides,
         pre_depends, enhances, breaks, essential, installedsize,
-        architecturespecific):
+        architecturespecific, debug_package):
         """See IBuild."""
         return BinaryPackageRelease(
             build=self, binarypackagename=binarypackagename, version=version,
@@ -470,7 +462,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             suggests=suggests, conflicts=conflicts, replaces=replaces,
             provides=provides, pre_depends=pre_depends, enhances=enhances,
             breaks=breaks, essential=essential, installedsize=installedsize,
-            architecturespecific=architecturespecific)
+            architecturespecific=architecturespecific,
+            debug_package=debug_package)
 
     def estimateDuration(self):
         """See `IBuildBase`."""
@@ -686,14 +679,11 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
 
     def _getDebByFileName(self, filename):
         """Helper function to get a .deb LFA in the context of this build."""
-        store = Store.of(self)
-        return store.find(
-            LibraryFileAlias,
-            BinaryPackageRelease.build == self.id,
-            BinaryPackageFile.binarypackagerelease == BinaryPackageRelease.id,
-            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
-            LibraryFileAlias.filename == filename
-            ).one()
+        bpf = self.getBinaryPackageFileByName(filename)
+        if bpf is not None:
+            return bpf.libraryfile
+        else:
+            return None
 
     def getFileByName(self, filename):
         """See `IBuild`."""
@@ -712,6 +702,15 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             return file_object
 
         raise NotFoundError(filename)
+
+    def getBinaryPackageFileByName(self, filename):
+        """See `IBuild`."""
+        return Store.of(self).find(
+            BinaryPackageFile,
+            BinaryPackageRelease.build == self.id,
+            BinaryPackageFile.binarypackagerelease == BinaryPackageRelease.id,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            LibraryFileAlias.filename == filename).one()
 
     def getSpecificJob(self):
         """See `IBuildFarmJob`."""
@@ -891,10 +890,7 @@ class BinaryPackageBuildSet:
         """See `IBinaryPackageBuildSet`."""
         # If not distroarchseries was found return empty list
         if not arch_ids:
-            # XXX cprov 2006-09-08: returning and empty SelectResult to make
-            # the callsites happy as bjorn suggested. However it would be
-            # much clearer if we have something like SQLBase.empty() for this
-            return BinaryPackageBuild.select("2=1")
+            return EmptyResultSet()
 
         clauseTables = []
 

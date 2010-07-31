@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -37,7 +37,7 @@ __all__ = [
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
-    'validate_person_not_private_membership',
+    'validate_person',
     'validate_public_person',
     ]
 
@@ -67,7 +67,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
-    StrippedTextLine, is_private_membership_person, is_public_person)
+    StrippedTextLine, is_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.launchpad import (
@@ -110,7 +110,7 @@ class PrivatePersonLinkageError(ValueError):
 
 
 @block_implicit_flushes
-def validate_person(obj, attr, value, validate_func):
+def validate_person_common(obj, attr, value, validate_func):
     """Validate the person using the supplied function."""
     if value is None:
         return None
@@ -121,7 +121,7 @@ def validate_person(obj, attr, value, validate_func):
     # DB. This needs cleaning up.
     from lp.registry.model.person import Person
     person = Person.get(value)
-    if validate_func(person):
+    if not validate_func(person):
         raise PrivatePersonLinkageError(
             "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
             % (person.name, person.visibility.name,
@@ -129,18 +129,20 @@ def validate_person(obj, attr, value, validate_func):
     return value
 
 
+def validate_person(obj, attr, value):
+    """Validate the person is a real person with no other restrictions."""
+    def validate(person):
+        return IPerson.providedBy(person)
+    return validate_person_common(obj, attr, value, validate)
+
+
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
 
     def validate(person):
-        return not is_public_person(person)
+        return is_public_person(person)
 
-    return validate_person(obj, attr, value, validate)
-
-
-def validate_person_not_private_membership(obj, attr, value):
-    """Validate that the person (value) is not a private membership team."""
-    return validate_person(obj, attr, value, is_private_membership_person)
+    return validate_person_common(obj, attr, value, validate)
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -378,14 +380,6 @@ class PersonVisibility(DBEnumeratedType):
         Everyone can view all the attributes of this person.
         """)
 
-    PRIVATE_MEMBERSHIP = DBItem(20, """
-        Private Membership
-
-        Only Launchpad admins and team members can view the
-        membership list for this team. The team is severely restricted in the
-        roles it can assume.
-        """)
-
     PRIVATE = DBItem(30, """
         Private
 
@@ -520,33 +514,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             "should be no bigger than 100kb in size. ")))
     mugshotID = Int(title=_('Mugshot ID'), required=True, readonly=True)
 
-    addressline1 = TextLine(
-            title=_('Address'), required=True, readonly=False,
-            description=_('Your address (Line 1)'))
-    addressline2 = TextLine(
-            title=_('Address'), required=False, readonly=False,
-            description=_('Your address (Line 2)'))
-    city = TextLine(
-            title=_('City'), required=True, readonly=False,
-            description=_('The City/Town/Village/etc to where the CDs should '
-                          'be shipped.'))
-    province = TextLine(
-            title=_('Province'), required=True, readonly=False,
-            description=_('The State/Province/etc to where the CDs should '
-                          'be shipped.'))
-    country = Choice(
-            title=_('Country'), required=True, readonly=False,
-            vocabulary='CountryName',
-            description=_('The Country to where the CDs should be shipped.'))
-    postcode = TextLine(
-            title=_('Postcode'), required=True, readonly=False,
-            description=_('The Postcode to where the CDs should be shipped.'))
-    phone = TextLine(
-            title=_('Phone'), required=True, readonly=False,
-            description=_('[(+CountryCode) number] e.g. (+55) 16 33619445'))
-    organization = TextLine(
-            title=_('Organization'), required=False, readonly=False,
-            description=_('The Organization requesting the CDs'))
     languages = exported(
         CollectionField(
             title=_('List of languages known by this person'),
@@ -884,6 +851,27 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     def getRecipe(name):
         """Return the person's recipe with the given name."""
 
+    @call_with(requester=REQUEST_USER)
+    @export_read_operation()
+    def getArchiveSubscriptionURLs(requester):
+        """Return private archive URLs that this person can see.
+
+        For each of the private archives (PPAs) that this person can see,
+        return a URL that includes the HTTP basic auth data.  The URL
+        returned is suitable for including in a sources.list file.
+        """
+
+    @call_with(requester=REQUEST_USER)
+    @operation_parameters(
+        archive=Reference(schema=Interface)) # Really IArchive
+    @export_write_operation()
+    def getArchiveSubscriptionURL(requester, archive):
+        """Get a text line that is suitable to be used for a sources.list
+        entry.
+
+        It will create a new IArchiveAuthToken if one doesn't already exist.
+        """
+
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
 
@@ -904,6 +892,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         The results are ordered using Person.sortingColumns.
         """
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getBugSubscriberPackages():
         """Return the packages for which this person is a bug subscriber.
 
@@ -976,9 +966,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         """
 
     def getOwnedOrDrivenPillars():
-        """Return Distribution, Project Groups and Projects that this person
-        owns or drives.
-        """
+        """Return the pillars that this person directly owns or drives."""
 
     def getOwnedProjects(match_name=None):
         """Projects owned by this person or teams to which she belongs.
@@ -1500,15 +1488,6 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
-    @export_read_operation()
-    def getArchiveSubscriptionURLs():
-        """Return private archive URLs that this person can see.
-
-        For each of the private archives (PPAs) that this person can see,
-        return a URL that includes the HTTP basic auth data.  The URL
-        returned is suitable for including in a sources.list file.
-        """
-
 
 class IPersonModerate(Interface):
     """IPerson attributes that require launchpad.Moderate."""
@@ -1523,10 +1502,9 @@ class IPersonCommAdminWriteRestricted(Interface):
     visibility = exported(
         Choice(title=_("Visibility"),
                description=_(
-                   "Public visibility is standard.  Private Membership "
-                   "means that a team's members are hidden.  "
+                   "Public visibility is standard.  "
                    "Private means the team is completely "
-                   "hidden [experimental]."),
+                   "hidden."),
                required=True, vocabulary=PersonVisibility,
                default=PersonVisibility.PUBLIC))
 
@@ -2115,6 +2093,7 @@ class ISoftwareCenterAgentAPI(Interface):
         the software center to create subscriptions to private PPAs without
         requiring a Launchpad account.
         """
+
 
 class ISoftwareCenterAgentApplication(ILaunchpadApplication):
     """XMLRPC application root for ISoftwareCenterAgentAPI."""
