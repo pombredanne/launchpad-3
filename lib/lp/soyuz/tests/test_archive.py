@@ -29,7 +29,6 @@ from lp.soyuz.interfaces.archive import (IArchiveSet, ArchivePurpose,
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -166,24 +165,6 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
         self.publisher.prepareBreezyAutotest()
         self.ppa = self.factory.makeArchive(
             name="testing", distribution=self.publisher.ubuntutest)
-
-    def test_binaries_size_does_not_include_ddebs_for_ppas(self):
-        # DDEBs are not computed in the PPA binaries size because
-        # they are not being published. See bug #399444.
-        self.assertEquals(0, self.ppa.binaries_size)
-        self.publisher.getPubBinaries(
-            filecontent='X', format=BinaryPackageFormat.DDEB,
-            archive=self.ppa)
-        self.assertEquals(0, self.ppa.binaries_size)
-
-    def test_binaries_size_includes_ddebs_for_other_archives(self):
-        # DDEBs size are computed for all archive purposes, except PPAs.
-        previous_size = self.publisher.ubuntutest.main_archive.binaries_size
-        self.publisher.getPubBinaries(
-            filecontent='X', format=BinaryPackageFormat.DDEB)
-        self.assertEquals(
-            previous_size + 1,
-            self.publisher.ubuntutest.main_archive.binaries_size)
 
     def test_sources_size_on_empty_archive(self):
         # Zero is returned for an archive without sources.

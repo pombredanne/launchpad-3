@@ -722,13 +722,6 @@ class Archive(SQLBase):
             BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
             LibraryFileAlias.contentID == LibraryFileContent.id
             ]
-
-        # Exclude DDEBs from the repository size, they are not published
-        # on disk for PPAs. See bug #399444 for more information.
-        if self.is_ppa:
-            clauses.append(
-                BinaryPackageFile.filetype != BinaryPackageFileType.DDEB)
-
         result = store.find(LibraryFileContent, *clauses)
 
         # See `IArchive.sources_size`.
