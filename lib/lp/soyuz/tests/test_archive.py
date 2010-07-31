@@ -107,8 +107,9 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         results = self.getPublications(
             sourcepackagename, [archive], archive.distribution)
         num_results = results.count()
-        self.assertEquals(0, num_results, "Expected 0 publication but "
-                                          "got %s" % num_results)
+        self.assertEquals(
+            0, num_results,
+            "Expected 0 publication but got %s" % num_results)
 
     def publishSourceInNewArchive(self, sourcepackagename):
         distribution = self.factory.makeDistribution()
