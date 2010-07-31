@@ -145,13 +145,6 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        super(TestArchiveRepositorySize, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-        self.ppa = self.factory.makeArchive(
-            name="testing", distribution=self.publisher.ubuntutest)
-
     def publish_ddeb_in_archive(self, archive):
         binarypackagerelease = self.factory.makeBinaryPackageRelease(
             binpackageformat=BinaryPackageFormat.DDEB)
