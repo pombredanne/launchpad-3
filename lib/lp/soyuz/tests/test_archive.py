@@ -41,7 +41,7 @@ from lp.testing import login, login_person, TestCaseWithFactory
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
     def makeThreeArchivesOneDistribution(self):
         distribution = self.factory.makeDistribution()
