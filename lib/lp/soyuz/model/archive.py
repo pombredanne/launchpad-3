@@ -336,9 +336,9 @@ class Archive(SQLBase):
     def archive_url(self):
         """See `IArchive`."""
         archive_postfixes = {
-            ArchivePurpose.PRIMARY : '',
-            ArchivePurpose.PARTNER : '-partner',
-            ArchivePurpose.DEBUG : '-debug',
+            ArchivePurpose.PRIMARY: '',
+            ArchivePurpose.PARTNER: '-partner',
+            ArchivePurpose.DEBUG: '-debug',
         }
 
         if self.is_ppa:
@@ -568,7 +568,7 @@ class Archive(SQLBase):
         # the result is empty, so instead:
         return sum(result.values(LibraryFileContent.filesize))
 
-    def _getBinaryPublishingBaseClauses (
+    def _getBinaryPublishingBaseClauses(
         self, name=None, version=None, status=None, distroarchseries=None,
         pocket=None, exact_match=False):
         """Base clauses and clauseTables for binary publishing queries.
@@ -648,7 +648,7 @@ class Archive(SQLBase):
             distroarchseries=distroarchseries, exact_match=exact_match)
 
         all_binaries = BinaryPackagePublishingHistory.select(
-            ' AND '.join(clauses) , clauseTables=clauseTables,
+            ' AND '.join(clauses), clauseTables=clauseTables,
             orderBy=orderBy)
 
         return all_binaries
@@ -720,7 +720,7 @@ class Archive(SQLBase):
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
                 BinaryPackageFile.binarypackagereleaseID,
             BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
-            LibraryFileAlias.contentID == LibraryFileContent.id
+            LibraryFileAlias.contentID == LibraryFileContent.id,
             ]
 
         # Exclude DDEBs from the repository size, they are not published
@@ -750,10 +750,10 @@ class Archive(SQLBase):
     def allowUpdatesToReleasePocket(self):
         """See `IArchive`."""
         purposeToPermissionMap = {
-            ArchivePurpose.COPY : True,
-            ArchivePurpose.PARTNER : True,
-            ArchivePurpose.PPA : True,
-            ArchivePurpose.PRIMARY : False,
+            ArchivePurpose.COPY: True,
+            ArchivePurpose.PARTNER: True,
+            ArchivePurpose.PPA: True,
+            ArchivePurpose.PRIMARY: False,
         }
 
         try:
@@ -775,6 +775,7 @@ class Archive(SQLBase):
         # gets fixed we should probably change it to a normal list and
         # benefit of the FTI rank for ordering.
         cache_contents = set()
+
         def add_cache_content(content):
             """Sanitise and add contents to the cache."""
             content = clean_text.sub(' ', content)
@@ -914,7 +915,7 @@ class Archive(SQLBase):
 
         find_spec = (
             BuildFarmJob.status,
-            Count(BinaryPackageBuild.id)
+            Count(BinaryPackageBuild.id),
             )
         result = store.using(
             BinaryPackageBuild, PackageBuild, BuildFarmJob).find(
@@ -922,8 +923,7 @@ class Archive(SQLBase):
             BinaryPackageBuild.package_build == PackageBuild.id,
             PackageBuild.archive == self,
             PackageBuild.build_farm_job == BuildFarmJob.id,
-            *extra_exprs
-            ).group_by(BuildFarmJob.status).order_by(
+            *extra_exprs).group_by(BuildFarmJob.status).order_by(
                 BuildFarmJob.status)
 
         # Create a map for each count summary to a number of buildstates:
@@ -955,7 +955,7 @@ class Archive(SQLBase):
                 BuildStatus.BUILDING,
                 BuildStatus.FULLYBUILT,
                 BuildStatus.SUPERSEDED,
-                ]
+                ],
             }
 
         # If we were asked to include builds with the state NEEDSBUILD,
@@ -1672,7 +1672,6 @@ class ArchiveSet:
 
         return default_name_by_purpose[purpose]
 
-
     def getByDistroPurpose(self, distribution, purpose, name=None):
         """See `IArchiveSet`."""
         if purpose == ArchivePurpose.PPA:
@@ -1780,7 +1779,6 @@ class ArchiveSet:
             new_archive.private = True
 
         return new_archive
-
 
     def __iter__(self):
         """See `IArchiveSet`."""

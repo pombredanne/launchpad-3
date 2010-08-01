@@ -157,8 +157,6 @@ from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.files import BinaryPackageFile, SourcePackageReleaseFile
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
 from lp.testing import (
     ANONYMOUS,
     login,
