@@ -2604,7 +2604,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             isinstance(sourcepackagename, basestring)):
             sourcepackagename = self.getOrMakeSourcePackageName(
                 sourcepackagename)
-        return SuiteSourcePackage(distroseries, pocket, sourcepackagename)
+        return ProxyFactory(
+            SuiteSourcePackage(distroseries, pocket, sourcepackagename))
 
     def makeDistributionSourcePackage(self, sourcepackagename=None,
                                       distribution=None):

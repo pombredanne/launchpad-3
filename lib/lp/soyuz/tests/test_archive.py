@@ -20,6 +20,7 @@ from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import (IArchiveSet, ArchivePurpose,
     ArchiveStatus, CannotRestrictArchitectures, CannotSwitchPrivacy,
@@ -493,7 +494,88 @@ class TestArchiveCanUpload(TestCaseWithFactory):
                                 self.factory.makeComponent(),
                                 PackagePublishingPocket.PROPOSED),
                                 InvalidPocketForPPA)
-    # XXX: JRV 20100511: IArchive.canUploadSuiteSourcePackage needs tests
+
+    def test_canUploadSuiteSourcePackage_invalid_pocket(self):
+        # Test that canUploadSuiteSourcePackage calls checkUpload for
+        # the pocket checks.
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, owner=person)
+        suitesourcepackage = self.factory.makeSuiteSourcePackage(
+            pocket=PackagePublishingPocket.PROPOSED)
+        self.assertEqual(
+            False,
+            archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
+
+    def test_canUploadSuiteSourcePackage_no_permission(self):
+        # Test that canUploadSuiteSourcePackage calls verifyUpload for
+        # the permission checks.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        suitesourcepackage = self.factory.makeSuiteSourcePackage(
+            pocket=PackagePublishingPocket.RELEASE)
+        person = self.factory.makePerson()
+        self.assertEqual(
+            False,
+            archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
+
+    def make_archive_and_active_distroseries(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution,
+            status=SeriesStatus.DEVELOPMENT)
+        return archive, distroseries
+
+    def make_package_to_upload(self, distroseries):
+        sourcepackagename = self.factory.makeSourcePackageName()
+        suitesourcepackage = self.factory.makeSuiteSourcePackage(
+            pocket=PackagePublishingPocket.RELEASE,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries)
+        return suitesourcepackage
+
+    def test_canUploadSuiteSourcePackage_package_permission(self):
+        # Test that a package permission is enough to upload a new
+        # package.
+        archive, distroseries = self.make_archive_and_active_distroseries()
+        suitesourcepackage = self.make_package_to_upload(distroseries)
+        person = self.factory.makePerson()
+        removeSecurityProxy(archive).newPackageUploader(
+            person, suitesourcepackage.sourcepackagename)
+        self.assertEqual(
+            True,
+            archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
+
+    def test_canUploadSuiteSourcePackage_component_permission(self):
+        # Test that component upload permission is enough to be
+        # allowed to upload a new package.
+        archive, distroseries = self.make_archive_and_active_distroseries()
+        suitesourcepackage = self.make_package_to_upload(distroseries)
+        person = self.factory.makePerson()
+        removeSecurityProxy(archive).newComponentUploader(person, "universe")
+        self.assertEqual(
+            True,
+            archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
+
+    def test_canUploadSuiteSourcePackage_strict_component(self):
+        # Test that canUploadSuiteSourcePackage uses strict component
+        # checking.
+        archive, distroseries = self.make_archive_and_active_distroseries()
+        suitesourcepackage = self.make_package_to_upload(distroseries)
+        main_component = self.factory.makeComponent(name="main")
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, distroseries=distroseries,
+            sourcepackagename=suitesourcepackage.sourcepackagename,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE,
+            component=main_component)
+        person = self.factory.makePerson()
+        removeSecurityProxy(archive).newComponentUploader(person, "universe")
+        # This time the user can't upload as there has been a
+        # publication and they don't have permission for the component
+        # the package is published in.
+        self.assertEqual(
+            False,
+            archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
 
 
 class TestUpdatePackageDownloadCount(TestCaseWithFactory):
