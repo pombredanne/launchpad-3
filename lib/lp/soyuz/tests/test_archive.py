@@ -1,6 +1,8 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """Test Archive features."""
 
 from datetime import date, timedelta
@@ -17,8 +19,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import (IArchiveSet, ArchivePurpose,
@@ -32,11 +32,11 @@ from lp.soyuz.interfaces.binarypackagerelease import (
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing import (
+    login, login_person, person_logged_in, TestCaseWithFactory)
 
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
@@ -439,7 +439,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
     """Test the various methods that verify whether uploads are allowed to
     happen."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
     def test_checkArchivePermission_by_PPA_owner(self):
         # Uploading to a PPA should be allowed for a user that is the owner
@@ -452,25 +452,23 @@ class TestArchiveCanUpload(TestCaseWithFactory):
 
     def test_checkArchivePermission_distro_archive(self):
         # Regular users can not upload to ubuntu
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY,
-                                           distribution=ubuntu)
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         main = getUtility(IComponentSet)["main"]
         # A regular user doesn't have access
-        somebody = self.factory.makePerson(name="somebody")
+        somebody = self.factory.makePerson()
         self.assertEquals(False,
             archive.checkArchivePermission(somebody, main))
         # An ubuntu core developer does have access
-        kamion = getUtility(IPersonSet).getByName('kamion')
-        self.assertEquals(True, archive.checkArchivePermission(kamion, main))
+        coredev = self.factory.makePerson()
+        with person_logged_in(archive.owner):
+            archive.newComponentUploader(coredev, main.name)
+        self.assertEquals(True, archive.checkArchivePermission(coredev, main))
 
     def test_checkArchivePermission_ppa(self):
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        owner = self.factory.makePerson(name="eigenaar")
+        owner = self.factory.makePerson()
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA,
-                                           distribution=ubuntu,
                                            owner=owner)
-        somebody = self.factory.makePerson(name="somebody")
+        somebody = self.factory.makePerson()
         # The owner has access
         self.assertEquals(True, archive.checkArchivePermission(owner))
         # Somebody unrelated does not
