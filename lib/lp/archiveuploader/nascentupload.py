@@ -153,41 +153,13 @@ class NascentUpload:
             self._check_sourceful_consistency()
         if self.binaryful:
             self._check_binaryful_consistency()
+            self.run_and_collect_errors(self._matchDDEBs)
 
         self.run_and_collect_errors(self.changes.verify)
 
         self.logger.debug("Verifying files in upload.")
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
-
-        unmatched_ddebs = {}
-        for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, DdebBinaryUploadFile):
-                ddeb_key = (uploaded_file.package, uploaded_file.version,
-                            uploaded_file.architecture)
-                if ddeb_key in unmatched_ddebs:
-                    self.reject("Duplicated debug packages: %s %s (%s)" %
-                        ddeb_key)
-                else:
-                    unmatched_ddebs[ddeb_key] = uploaded_file
-
-        for uploaded_file in self.changes.files:
-            # We need exactly a DEB, not a DDEB.
-            if (isinstance(uploaded_file, DebBinaryUploadFile) and
-                not isinstance(uploaded_file, DdebBinaryUploadFile)):
-                try:
-                    matching_ddeb = unmatched_ddebs.pop(
-                        (uploaded_file.package + '-dbgsym',
-                         uploaded_file.version,
-                         uploaded_file.architecture))
-                except KeyError:
-                    continue
-                uploaded_file.ddeb_file = matching_ddeb
-                matching_ddeb.deb_file = uploaded_file
-
-        if len(unmatched_ddebs) > 0:
-            self.reject("Orphaned debug packages: %s" % ', '.join('%s %s (%s)' % d
-                for d in unmatched_ddebs))
 
         if (len(self.changes.files) == 1 and
             isinstance(self.changes.files[0], CustomUploadFile)):
@@ -334,7 +306,8 @@ class NascentUpload:
         """Heuristic checks on a sourceful upload.
 
         Raises AssertionError when called for a non-sourceful upload.
-        Ensures a sourceful upload has exactly one DSC.
+        Ensures a sourceful upload has exactly one DSC. All further source
+        checks are performed later by the DSC.
         """
         assert self.sourceful, (
             "Source consistency check called for a non-source upload")
@@ -373,6 +346,37 @@ class NascentUpload:
             max += 1
         if len(considered_archs) > max:
             self.reject("Upload has more architetures than it is supported.")
+
+    def _matchDDEBs(self):
+        unmatched_ddebs = {}
+        for uploaded_file in self.changes.files:
+            if isinstance(uploaded_file, DdebBinaryUploadFile):
+                ddeb_key = (uploaded_file.package, uploaded_file.version,
+                            uploaded_file.architecture)
+                if ddeb_key in unmatched_ddebs:
+                    yield UploadError(
+                        "Duplicated debug packages: %s %s (%s)" % ddeb_key)
+                else:
+                    unmatched_ddebs[ddeb_key] = uploaded_file
+
+        for uploaded_file in self.changes.files:
+            # We need exactly a DEB, not a DDEB.
+            if (isinstance(uploaded_file, DebBinaryUploadFile) and
+                not isinstance(uploaded_file, DdebBinaryUploadFile)):
+                try:
+                    matching_ddeb = unmatched_ddebs.pop(
+                        (uploaded_file.package + '-dbgsym',
+                         uploaded_file.version,
+                         uploaded_file.architecture))
+                except KeyError:
+                    continue
+                uploaded_file.ddeb_file = matching_ddeb
+                matching_ddeb.deb_file = uploaded_file
+
+        if len(unmatched_ddebs) > 0:
+            yield UploadError(
+                "Orphaned debug packages: %s" % ', '.join(
+                    '%s %s (%s)' % d for d in unmatched_ddebs))
 
     #
     # Helpers for warnings and rejections
