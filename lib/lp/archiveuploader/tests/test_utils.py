@@ -5,23 +5,19 @@
 
 # arch-tag: 90e6eb79-83a2-47e8-9f8b-3c687079c923
 
-import unittest
-import sys
+from testtools import TestCase
 
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.archiveuploader.tests import datadir
+from lp.archiveuploader.utils import (determine_binary_file_type,
+    determine_source_file_type, re_isadeb, re_issource)
 
 
-class TestUtilities(unittest.TestCase):
-
-    def testImport(self):
-        """lp.archiveuploader.utils should be importable"""
-        import lp.archiveuploader.utils
+class TestUtilities(TestCase):
 
     def test_determine_source_file_type(self):
         """lp.archiveuploader.utils.determine_source_file_type should work."""
-        from lp.archiveuploader.utils import determine_source_file_type
 
         # .dsc -> DSC
         self.assertEquals(
@@ -74,8 +70,6 @@ class TestUtilities(unittest.TestCase):
 
     def test_determine_binary_file_type(self):
         """lp.archiveuploader.utils.determine_binary_file_type should work."""
-        from lp.archiveuploader.utils import determine_binary_file_type
-
         # .deb -> DEB
         self.assertEquals(
             determine_binary_file_type('foo_1.0-1_all.deb'),
@@ -222,20 +216,43 @@ class TestUtilities(unittest.TestCase):
                 pass
 
 
-def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(TestUtilities))
-    return suite
+class TestFilenameRegularExpressions(TestCase):
 
+    def test_re_isadeb(self):
+        # Verify that the three binary extensions match the regexp.
+        for extension in ('deb', 'ddeb', 'udeb'):
+            self.assertEquals(
+                ('foo-bar', '1.0', 'i386', extension),
+                re_isadeb.match('foo-bar_1.0_i386.%s' % extension).groups())
 
-def main(argv):
-    suite = test_suite()
-    runner = unittest.TextTestRunner(verbosity = 2)
-    if not runner.run(suite).wasSuccessful():
-        return 1
-    return 0
+        # Some other extension doesn't match.
+        self.assertIs(None, re_isadeb.match('foo-bar_1.0_i386.notdeb'))
 
+        # A missing architecture also doesn't match.
+        self.assertIs(None, re_isadeb.match('foo-bar_1.0.deb'))
 
-if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    def test_re_issource(self):
+        # Verify that various source extensions match the regexp.
+        extensions = (
+            'dsc', 'tar.gz', 'tar.bz2', 'diff.gz', 'orig.tar.gz',
+            'orig.tar.bz2', 'orig-bar.tar.gz', 'orig-bar.tar.bz2',
+            'debian.tar.gz', 'debian.tar.bz2')
+        for extension in extensions:
+            self.assertEquals(
+                ('foo-bar', '1.0', extension),
+                re_issource.match('foo-bar_1.0.%s' % extension).groups())
+
+        # While orig-*.tar.gz is all interpreted as extension, *orig-*.tar.gz
+        # is taken to have an extension of just 'tar.gz'.
+        self.assertEquals(
+            ('foo-bar', '1.0.porig-bar', 'tar.gz'),
+            re_issource.match('foo-bar_1.0.porig-bar.tar.gz').groups())
+
+        # Some other extension doesn't match.
+        self.assertIs(None, re_issource.match('foo-bar_1.0.notdsc'))
+
+        # A badly formatted name also doesn't match.
+        self.assertIs(None, re_issource.match('foo-bar.dsc'))
+
+        # bzip2 compression for files which must be gzipped is invalid.
+        self.assertIs(None, re_issource.match('foo-bar_1.0.diff.bz2'))
