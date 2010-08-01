@@ -2456,18 +2456,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 dsc_binaries=dsc_binaries,
                 date_uploaded=date_uploaded)
 
-        return ProxyFactory(
-            SourcePackagePublishingHistory(
-                distroseries=distroseries,
-                sourcepackagerelease=sourcepackagerelease,
-                component=sourcepackagerelease.component,
-                section=sourcepackagerelease.section,
-                status=status,
-                datecreated=date_uploaded,
-                dateremoved=dateremoved,
-                scheduleddeletiondate=scheduleddeletiondate,
-                pocket=pocket,
-                archive=archive))
+        spph = getUtility(IPublishingSet).newSourcePublication(
+            archive, sourcepackagerelease, distroseries,
+            sourcepackagerelease.component, sourcepackagerelease.section,
+            pocket)
+
+        naked_spph = removeSecurityProxy(spph)
+        naked_spph.status = status
+        naked_spph.datecreated = date_uploaded
+        naked_spph.dateremoved = dateremoved
+        naked_spph.scheduleddeletiondate = scheduleddeletiondate
+        return spph
 
     def makeBinaryPackagePublishingHistory(self, binarypackagerelease=None,
                                            distroarchseries=None,
