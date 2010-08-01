@@ -3,7 +3,7 @@
 
 import unittest
 
-from zope.testing.doctest import DocTestSuite
+from doctest import DocTestSuite
 
 from canonical.launchpad import datetimeutils
 

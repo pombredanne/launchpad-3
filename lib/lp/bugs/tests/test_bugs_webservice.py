@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bugs."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import re
-import unittest
 
 from BeautifulSoup import BeautifulSoup
 from simplejson import dumps
@@ -201,7 +200,3 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
             self.failUnlessEqual(200, response.status)
         finally:
             snapshot.HARD_LIMIT_FOR_SNAPSHOT = real_hard_limit_for_snapshot
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

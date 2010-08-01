@@ -82,10 +82,6 @@ class NascentUpload:
     archindep = False
     archdep = False
 
-    # Defined in check_sourceful_consistency()
-    native = False
-    hasorig = False
-
     # Defined if we successfully do_accept() and storeObjectsInDatabase()
     queue_root = None
 
@@ -308,30 +304,16 @@ class NascentUpload:
         assert self.sourceful, (
             "Source consistency check called for a non-source upload")
 
-        dsc = 0
-        native_tarball = 0
-        orig_tarball = 0
-
-        for uploaded_file in self.changes.files:
-            filetype = determine_source_file_type(uploaded_file.filename)
-            if filetype == SourcePackageFileType.DSC:
-                dsc += 1
-            elif (filetype == SourcePackageFileType.NATIVE_TARBALL
-                  and not isinstance(uploaded_file, CustomUploadFile)):
-                native_tarball += 1
-            elif filetype == SourcePackageFileType.ORIG_TARBALL:
-                orig_tarball += 1
-
+        dsc = len([
+            file for file in self.changes.files
+            if determine_source_file_type(file.filename) ==
+                SourcePackageFileType.DSC])
 
         # It is never sane to upload more than one source at a time.
         if dsc > 1:
             self.reject("Changes file lists more than one .dsc")
-
         if dsc == 0:
             self.reject("Sourceful upload without a .dsc")
-
-        self.native = bool(native_tarball)
-        self.hasorig = bool(orig_tarball)
 
     def _check_binaryful_consistency(self):
         """Heuristic checks on a binaryful upload.
@@ -839,6 +821,12 @@ class NascentUpload:
                 'Exception while accepting:\n %s' % e, exc_info=True)
             self.do_reject(notify)
             return False
+        else:
+            self.cleanUp()
+
+    def cleanUp(self):
+        if self.changes.dsc is not None:
+            self.changes.dsc.cleanUp()
 
     def do_reject(self, notify=True):
         """Reject the current upload given the reason provided."""
@@ -869,6 +857,7 @@ class NascentUpload:
         self.queue_root.notify(summary_text=self.rejection_message,
             changes_file_object=changes_file_object, logger=self.logger)
         changes_file_object.close()
+        self.cleanUp()
 
     def _createQueueEntry(self):
         """Return a PackageUpload object."""

@@ -65,6 +65,10 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
     """
 
 
+class IAPIDocRoot(IContainmentRoot):
+    """Marker interface for the root object of the apidoc vhost."""
+
+
 class ILaunchpadContainer(Interface):
     """Marker interface for objects used as the context of something."""
 
@@ -300,7 +304,6 @@ class NoCanonicalUrl(TypeError):
 # is very Launchpad-specific. I suggest we split the interface and
 # implementation into two parts, having a different name for the webapp/ bits.
 class ILaunchBag(Interface):
-    site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
     project = Attribute('IProjectGroup, or None')
     product = Attribute('IProduct, or None')
@@ -876,3 +879,30 @@ class IWebBrowserOriginatingRequest(Interface):
     It's used in the webservice domain for calculating webapp URLs, for
     instance, `ProxiedLibraryFileAlias`.
     """
+
+
+# XXX mars 2010-07-14 bug=598816
+#
+# We need a conditional import of the request events until the real events
+# land in the Zope mainline.
+#
+# See bug 598816 for the details.
+
+try:
+    from zope.publisher.interfaces import StartRequestEvent
+except:
+    class IStartRequestEvent(Interface):
+        """An event that gets sent before the start of a request."""
+
+        request = Attribute("The request the event is about")
+
+
+    class StartRequestEvent:
+        """An event fired once at the start of requests.
+
+        :ivar request: The request the event is for.
+        """
+        implements(IStartRequestEvent)
+
+        def __init__(self, request):
+            self.request = request

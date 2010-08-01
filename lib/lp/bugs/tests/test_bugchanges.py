@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for recording changes done to a bug."""
@@ -746,7 +746,7 @@ class TestBugChanges(unittest.TestCase):
                 '   Importance: %s\n'
                 '       Status: %s' % (
                     target.bugtargetname, added_task.importance.title,
-                    added_task.status.title))
+                    added_task.status.title)),
             }
 
         self.assertRecordedChange(
@@ -776,7 +776,7 @@ class TestBugChanges(unittest.TestCase):
                 '       Status: %s' % (
                     target.bugtargetname, added_task.importance.title,
                     added_task.assignee.displayname, added_task.assignee.name,
-                    added_task.status.title))
+                    added_task.status.title)),
             }
 
         self.assertRecordedChange(
@@ -807,7 +807,7 @@ class TestBugChanges(unittest.TestCase):
                 '   Importance: %s\n'
                 '       Status: %s' % (
                     target.bugtargetname, bug_watch.url,
-                    added_task.importance.title, added_task.status.title))
+                    added_task.importance.title, added_task.status.title)),
             }
 
         self.assertRecordedChange(
@@ -1498,7 +1498,7 @@ class TestBugChanges(unittest.TestCase):
             'person': self.user,
             'text': (
                 '** Converted to question:\n'
-                '   %s' % canonical_url(converted_question))
+                '   %s' % canonical_url(converted_question)),
             }
         status_notification = {
             'text': (
@@ -1537,7 +1537,3 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=expected_activity,
             expected_notification=expected_notification,
             bug=new_bug)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

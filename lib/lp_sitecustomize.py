@@ -6,11 +6,17 @@
 
 import os
 import warnings
+import logging
 
 from bzrlib.branch import Branch
+from lp.services.log.nullhandler import NullHandler
 from lp.services.mime import customizeMimetypes
 from zope.security import checker
 
+
+def silence_bzr_logger():
+    """Install the NullHandler on the bzr logger to silence logs."""
+    logging.getLogger('bzr').addHandler(NullHandler())
 
 def dont_wrap_class_and_subclasses(cls):
     checker.BasicTypes.update({cls: checker.NoProxy})
@@ -40,5 +46,6 @@ def main():
     customizeMimetypes()
     dont_wrap_class_and_subclasses(Branch)
     silence_warnings()
+    silence_bzr_logger()
 
 main()
