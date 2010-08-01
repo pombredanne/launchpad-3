@@ -203,126 +203,89 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
 class TestSeriesWithSources(TestCaseWithFactory):
     """Create some sources in different series."""
 
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestSeriesWithSources, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        # Create three sources for the two different distroseries.
-        breezy_autotest = self.publisher.distroseries
-        ubuntu_test = breezy_autotest.distribution
-        self.series = [breezy_autotest]
-        self.series.append(self.factory.makeDistroRelease(
-            distribution=ubuntu_test, name="foo-series", version='1.0'))
-
-        self.sources = []
-        gedit_src_hist = self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
-        self.sources.append(gedit_src_hist)
-
-        firefox_src_hist = self.publisher.getPubSource(
-            sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
-            distroseries=self.series[1])
-        self.sources.append(firefox_src_hist)
-
-        gtg_src_hist = self.publisher.getPubSource(
-            sourcename="getting-things-gnome",
-            status=PackagePublishingStatus.PUBLISHED,
-            distroseries=self.series[1])
-        self.sources.append(gtg_src_hist)
-
-        # Shortcuts for test readability.
-        self.archive = self.series[0].main_archive
+    layer = DatabaseFunctionalLayer
 
     def test_series_with_sources_returns_all_series(self):
         # Calling series_with_sources returns all series with publishings.
-        series = self.archive.series_with_sources
-        series_names = [s.displayname for s in series]
-
-        self.assertContentEqual(
-            [u'Breezy Badger Autotest', u'Foo-series'],
-            series_names)
+        distribution = self.factory.makeDistribution()
+        archive = self.factory.makeArchive(distribution=distribution)
+        series_with_no_sources = self.factory.makeDistroSeries(
+            distribution=distribution)
+        series_with_sources1 = self.factory.makeDistroSeries(
+            distribution=distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series_with_sources1, archive=archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        series_with_sources2 = self.factory.makeDistroSeries(
+            distribution=distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series_with_sources2, archive=archive,
+            status=PackagePublishingStatus.PENDING)
+        self.assertEqual(
+            [series_with_sources1, series_with_sources2],
+            sorted(archive.series_with_sources))
 
     def test_series_with_sources_ignore_non_published_records(self):
         # If all publishings in a series are deleted or superseded
         # the series will not be returned.
-        self.sources[0].status = (
-            PackagePublishingStatus.DELETED)
-
-        series = self.archive.series_with_sources
-        series_names = [s.displayname for s in series]
-
-        self.assertContentEqual([u'Foo-series'], series_names)
+        series = self.factory.makeDistroSeries()
+        archive = self.factory.makeArchive(distribution=series.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series, archive=archive,
+            status=PackagePublishingStatus.DELETED)
+        self.assertEqual([], archive.series_with_sources)
 
     def test_series_with_sources_ordered_by_version(self):
         # The returned series are ordered by the distroseries version.
-        series = self.archive.series_with_sources
-        versions = [s.version for s in series]
-
-        # Latest version should be first
-        self.assertEqual(
-            [u'6.6.6', u'1.0'], versions,
-            "The latest version was not first.")
-
-        # Update the version of breezyautotest and ensure that the
-        # latest version is still first.
-        self.series[0].version = u'0.5'
-        series = self.archive.series_with_sources
-        versions = [s.version for s in series]
-        self.assertEqual(
-            [u'1.0', u'0.5'], versions,
-            "The latest version was not first.")
+        distribution = self.factory.makeDistribution()
+        archive = self.factory.makeArchive(distribution=distribution)
+        series1 = self.factory.makeDistroSeries(
+            version="1", distribution=distribution)
+        series2 = self.factory.makeDistroSeries(
+            version="2", distribution=distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series1, archive=archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series2, archive=archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertEqual([series2, series1], archive.series_with_sources)
+        # Change the version such that they should order differently
+        removeSecurityProxy(series2).version = "0.5"
+        # ... and check that they do
+        self.assertEqual([series1, series2], archive.series_with_sources)
 
 
 class TestGetSourcePackageReleases(TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestGetSourcePackageReleases, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        # Create an archive with some published binaries.
-        self.archive = self.factory.makeArchive()
-        binaries_foo = self.publisher.getPubBinaries(
-            archive=self.archive, binaryname="foo-bin")
-        binaries_bar = self.publisher.getPubBinaries(
-            archive=self.archive, binaryname="bar-bin")
-
-        # Collect the builds for reference.
-        self.builds_foo = [
-            binary.binarypackagerelease.build for binary in binaries_foo]
-        self.builds_bar = [
-            binary.binarypackagerelease.build for binary in binaries_bar]
-
-        # Collect the source package releases for reference.
-        self.sourcepackagereleases = [
-            self.builds_foo[0].source_package_release,
-            self.builds_bar[0].source_package_release,
-            ]
+    def create_archive_with_builds(self, statuses):
+        archive = self.factory.makeArchive()
+        sprs = []
+        for status in statuses:
+            sourcepackagerelease = self.factory.makeSourcePackageRelease()
+            self.factory.makeBinaryPackageBuild(
+                source_package_release=sourcepackagerelease,
+                archive=archive, status=status)
+            sprs.append(sourcepackagerelease)
+        unlinked_spr = self.factory.makeSourcePackageRelease()
+        return archive, sprs
 
     def test_getSourcePackageReleases_with_no_params(self):
         # With no params all source package releases are returned.
-        sprs = self.archive.getSourcePackageReleases()
-
-        self.assertContentEqual(self.sourcepackagereleases, sprs)
+        archive, sprs = self.create_archive_with_builds(
+            [BuildStatus.NEEDSBUILD, BuildStatus.FULLYBUILT])
+        self.assertContentEqual(
+            sprs, archive.getSourcePackageReleases())
 
     def test_getSourcePackageReleases_with_buildstatus(self):
         # Results are filtered by the specified buildstatus.
-
-        # Set the builds for one of the sprs to needs build.
-        for build in self.builds_foo:
-            removeSecurityProxy(build).status = BuildStatus.NEEDSBUILD
-
-        result = self.archive.getSourcePackageReleases(
-            build_status=BuildStatus.NEEDSBUILD)
-
-        self.failUnlessEqual(1, result.count())
-        self.failUnlessEqual(
-            self.sourcepackagereleases[0], result[0])
+        archive, sprs = self.create_archive_with_builds(
+            [BuildStatus.NEEDSBUILD, BuildStatus.FULLYBUILT])
+        self.assertContentEqual(
+            [sprs[0]], archive.getSourcePackageReleases(
+                build_status=BuildStatus.NEEDSBUILD))
 
 
 class TestCorrespondingDebugArchive(TestCaseWithFactory):

@@ -2351,7 +2351,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 libraryfile=libraryfile, filetype=filetype))
 
     def makeBinaryPackageBuild(self, source_package_release=None,
-            distroarchseries=None, archive=None, builder=None):
+            distroarchseries=None, archive=None, builder=None,
+            status=None):
         """Create a BinaryPackageBuild.
 
         If archive is not supplied, the source_package_release is used
@@ -2361,6 +2362,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param distroarchseries: The DistroArchSeries to use.
         :param archive: The Archive to use.
         :param builder: An optional builder to assign.
+        :param status: The BuildStatus for the build.
         """
         if archive is None:
             if source_package_release is None:
@@ -2376,11 +2378,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=source_package_release.upload_distroseries,
                 processorfamily=processor.family)
+        if status is None:
+            status = BuildStatus.NEEDSBUILD
         binary_package_build = getUtility(IBinaryPackageBuildSet).new(
             source_package_release=source_package_release,
             processor=processor,
             distro_arch_series=distroarchseries,
-            status=BuildStatus.NEEDSBUILD,
+            status=status,
             archive=archive,
             pocket=PackagePublishingPocket.RELEASE,
             date_created=self.getUniqueDate())
