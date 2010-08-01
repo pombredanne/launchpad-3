@@ -215,20 +215,20 @@ class TestSeriesWithSources(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         archive = self.factory.makeArchive(distribution=distribution)
         series_with_no_sources = self.factory.makeDistroSeries(
-            distribution=distribution)
+            distribution=distribution, version="0.5")
         series_with_sources1 = self.factory.makeDistroSeries(
-            distribution=distribution)
+            distribution=distribution, version="1")
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=series_with_sources1, archive=archive,
             status=PackagePublishingStatus.PUBLISHED)
         series_with_sources2 = self.factory.makeDistroSeries(
-            distribution=distribution)
+            distribution=distribution, version="2")
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=series_with_sources2, archive=archive,
             status=PackagePublishingStatus.PENDING)
         self.assertEqual(
-            [series_with_sources1, series_with_sources2],
-            sorted(archive.series_with_sources))
+            [series_with_sources2, series_with_sources1],
+            archive.series_with_sources)
 
     def test_series_with_sources_ignore_non_published_records(self):
         # If all publishings in a series are deleted or superseded
