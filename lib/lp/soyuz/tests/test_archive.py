@@ -324,71 +324,7 @@ class TestCorrespondingDebugArchive(TestCaseWithFactory):
 class TestArchiveEnableDisable(TestCaseWithFactory):
     """Test the enable and disable methods of Archive."""
 
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        #XXX: rockstar - 12 Jan 2010 - Bug #506255 - Tidy up these tests!
-        super(TestArchiveEnableDisable, self).setUp()
-
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-        self.archive = getUtility(IArchiveSet).getByDistroPurpose(
-            self.ubuntutest, ArchivePurpose.PRIMARY)
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(BinaryPackageBuild)
-        for build in sample_data:
-            build.buildstate = BuildStatus.FULLYBUILT
-        store.flush()
-
-        # We test builds that target a primary archive.
-        self.builds = []
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="firefox",
-                status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="apg", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="vim", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="gcc", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="bison", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="flex", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="postgres",
-                status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        # Set up the builds for test.
-        score = 1000
-        duration = 0
-        for build in self.builds:
-            score += 1
-            duration += 60
-            bq = build.buildqueue_record
-            bq.lastscore = score
-            removeSecurityProxy(bq).estimated_duration = timedelta(
-                seconds=duration)
+    layer = DatabaseFunctionalLayer
 
     def _getBuildJobsByStatus(self, archive, status):
         # Return the count for archive build jobs with the given status.
@@ -415,39 +351,46 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         # status.
         self.assertEqual(self._getBuildJobsByStatus(archive, status), 0)
 
-    def assertHasBuildJobsWithStatus(self, archive, status):
+    def assertHasBuildJobsWithStatus(self, archive, status, count):
         # Check that that there are jobs attached to this archive that have
         # the specified status.
-        self.assertEqual(self._getBuildJobsByStatus(archive, status), 8)
+        self.assertEqual(self._getBuildJobsByStatus(archive, status), count)
 
     def test_enableArchive(self):
         # Enabling an archive should set all the Archive's suspended builds to
         # WAITING.
-
-        # Disable the archive, because it's currently enabled.
-        self.archive.disable()
-        self.assertHasBuildJobsWithStatus(self.archive, JobStatus.SUSPENDED)
-        self.archive.enable()
-        self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.SUSPENDED)
-        self.assertTrue(self.archive.enabled)
+        archive = self.factory.makeArchive(enabled=True)
+        self.factory.makeBinaryPackageBuild(
+            archive=archive, status=BuildStatus.NEEDSBUILD)
+        # disable the archive, as it is currently enabled
+        removeSecurityProxy(archive).disable()
+        self.assertHasBuildJobsWithStatus(archive, JobStatus.SUSPENDED, 1)
+        removeSecurityProxy(archive).enable()
+        self.assertNoBuildJobsHaveStatus(archive, JobStatus.SUSPENDED)
+        self.assertTrue(archive.enabled)
 
     def test_enableArchiveAlreadyEnabled(self):
         # Enabling an already enabled Archive should raise an AssertionError.
-        self.assertRaises(AssertionError, self.archive.enable)
+        archive = self.factory.makeArchive(enabled=True)
+        self.assertRaises(AssertionError, removeSecurityProxy(archive).enable)
 
     def test_disableArchive(self):
         # Disabling an archive should set all the Archive's pending bulds to
         # SUSPENDED.
-        self.assertHasBuildJobsWithStatus(self.archive, JobStatus.WAITING)
-        self.archive.disable()
-        self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.WAITING)
-        self.assertFalse(self.archive.enabled)
+        archive = self.factory.makeArchive(enabled=True)
+        self.factory.makeBinaryPackageBuild(
+            archive=archive, status=BuildStatus.NEEDSBUILD)
+        self.assertHasBuildJobsWithStatus(archive, JobStatus.WAITING, 1)
+        removeSecurityProxy(archive).disable()
+        self.assertNoBuildJobsHaveStatus(archive, JobStatus.WAITING)
+        self.assertFalse(archive.enabled)
 
     def test_disableArchiveAlreadyDisabled(self):
         # Disabling an already disabled Archive should raise an
         # AssertionError.
-        self.archive.disable()
-        self.assertRaises(AssertionError, self.archive.disable)
+        archive = self.factory.makeArchive(enabled=False)
+        self.assertRaises(
+            AssertionError, removeSecurityProxy(archive).disable)
 
 
 class TestCollectLatestPublishedSources(TestCaseWithFactory):
