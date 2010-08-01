@@ -205,3 +205,22 @@ class TestSomething(TestCaseWithFactory):
             ]
         self.assertContentEqual(
             expected_outcome, joined.select(POTemplate, POFile))
+
+    def test_joinOuterPOFile_language(self):
+        trunk = self.factory.makeProduct().getSeries('trunk')
+        translated_template = self.factory.makePOTemplate(productseries=trunk)
+        untranslated_template = self.factory.makePOTemplate(
+            productseries=trunk)
+        nl = translated_template.newPOFile('nl')
+        de = translated_template.newPOFile('de')
+
+        collection = TranslationTemplatesCollection()
+        by_series = collection.restrictProductSeries(trunk)
+        joined = by_series.joinOuterPOFile(language=nl.language)
+
+        expected_outcome = [
+            (translated_template, nl),
+            (untranslated_template, None),
+            ]
+        self.assertContentEqual(
+            expected_outcome, joined.select(POTemplate, POFile))

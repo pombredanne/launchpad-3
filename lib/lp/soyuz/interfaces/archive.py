@@ -53,7 +53,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ParticipatingPersonChoice, PublicPersonChoice, StrippedTextLine)
+    PersonChoice, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -166,6 +166,7 @@ class InvalidPocketForPartnerArchive(CannotUploadToArchive):
 
 class CannotUploadToPocket(Exception):
     """Returned when a pocket is closed for uploads."""
+    webservice_error(403) # Forbidden.
 
     def __init__(self, distroseries, pocket):
         Exception.__init__(self,
@@ -226,7 +227,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
     id = Attribute("The archive ID.")
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
             description=_("""The archive owner.""")))
 
@@ -566,17 +567,18 @@ class IArchivePublic(IHasOwner, IPrivacy):
                       distroseries, strict_component=True):
         """Can 'person' upload 'sourcepackagename' to this archive ?
 
-        :param person: The `IPerson` trying to upload to the package. Referred to
-            as 'the signer' in upload code.
-        :param sourcepackagename: The source package being uploaded. None if the
-            package is new.
+        :param person: The `IPerson` trying to upload to the package. Referred
+            to as 'the signer' in upload code.
+        :param sourcepackagename: The source package being uploaded. None if
+            the package is new.
         :param archive: The `IArchive` being uploaded to.
         :param component: The `IComponent` that the source package belongs to.
         :param distroseries: The upload's target distro series.
-        :param strict_component: True if access to the specific component for the
-            package is needed to upload to it. If False, then access to any
-            package will do.
-        :return: CannotUploadToArchive if 'person' cannot upload to the archive,
+        :param strict_component: True if access to the specific component for
+            the package is needed to upload to it. If False, then access to
+            any package will do.
+        :return: CannotUploadToArchive if 'person' cannot upload to the
+            archive,
             None otherwise.
         """
 

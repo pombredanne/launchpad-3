@@ -191,16 +191,9 @@ class ValidPersonCache(SQLBase):
 def validate_person_visibility(person, attr, value):
     """Validate changes in visibility.
 
-    * Prevent teams with inconsistent connections from being made private
-    * Prevent private membership teams with mailing lists from going public.
+    * Prevent teams with inconsistent connections from being made private.
     * Prevent private teams from any transition.
     """
-
-    # XXX: BradCrittenden 2010-07-12 bug=602773: Private membership teams are
-    # deprecated and new ones may not be created.
-    if value == PersonVisibility.PRIVATE_MEMBERSHIP:
-        raise AssertionError(
-            "Private membership teams are deprecated.")
 
     # Prohibit any visibility changes for private teams.  This rule is
     # recognized to be Draconian and may be relaxed in the future.
@@ -328,15 +321,6 @@ class Person(
     # We provide this shim for backwards compatibility.
     account_status_comment = property(
             _get_account_status_comment, _set_account_status_comment)
-
-    city = StringCol(default=None)
-    phone = StringCol(default=None)
-    country = ForeignKey(dbName='country', foreignKey='Country', default=None)
-    province = StringCol(default=None)
-    postcode = StringCol(default=None)
-    addressline1 = StringCol(default=None)
-    addressline2 = StringCol(default=None)
-    organization = StringCol(default=None)
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
                            default=None,
@@ -2504,7 +2488,7 @@ class PersonSet:
                     creation_rationale, comment=comment)
                 db_updated = True
 
-        return IPerson(account), db_updated
+            return IPerson(account), db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
