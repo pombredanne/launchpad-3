@@ -10,7 +10,9 @@ files uploaded.
 __metaclass__ = type
 
 __all__ = [
-    'ChangesFile'
+    'CannotDetermineFileTypeError',
+    'ChangesFile',
+    'determine_file_class_and_name',
     ]
 
 import os
@@ -28,6 +30,10 @@ from lp.archiveuploader.tagfiles import (
 from lp.registry.interfaces.sourcepackage import (SourcePackageFileType,
     SourcePackageUrgency)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
+
+
+class CannotDetermineFileTypeError(Exception):
+    """The type of the given file could not be determined."""
 
 
 class ChangesFile(SignableTagFile):
@@ -174,9 +180,9 @@ class ChangesFile(SignableTagFile):
                         filepath, digest, size, component_and_section,
                         priority_name, self.policy, self.logger)
                 else:
-                    package, cls = determine_file_class_and_name(filename)
-
-                    if cls is None:
+                    try:
+                        package, cls = determine_file_class_and_name(filename)
+                    except CannotDetermineFileTypeError:
                         yield UploadError(
                             "Unable to identify file %s (%s) in changes."
                             % (filename, component_and_section))
@@ -362,6 +368,7 @@ def determine_file_class_and_name(filename):
             BinaryPackageFileType.UDEB: UdebBinaryUploadFile,
             }[determine_binary_file_type(filename)]
     else:
-        return None, None
+        raise CannotDetermineFileTypeError(
+            "Could not determine the type of %r" % filename)
 
     return package, cls

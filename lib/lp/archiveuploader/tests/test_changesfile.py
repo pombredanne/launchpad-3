@@ -7,7 +7,8 @@ __metaclass__ = type
 
 from testtools import TestCase
 
-from lp.archiveuploader.changesfile import determine_file_class_and_name
+from lp.archiveuploader.changesfile import (CannotDetermineFileTypeError,
+    determine_file_class_and_name)
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     DebBinaryUploadFile, DdebBinaryUploadFile, SourceUploadFile,
@@ -43,10 +44,12 @@ class TestDetermineFileClassAndName(TestCase):
     def testUnmatchingFile(self):
         # Files with unknown extensions or none at all are not
         # identified.
-        self.assertEquals(
-            (None, None),
-            determine_file_class_and_name('foo_1.0.notdsc'))
-        self.assertEquals(
-            (None, None),
-            determine_file_class_and_name('foo'))
+        self.assertRaises(
+            CannotDetermineFileTypeError,
+            determine_file_class_and_name,
+            'foo_1.0.notdsc')
+        self.assertRaises(
+            CannotDetermineFileTypeError,
+            determine_file_class_and_name,
+            'foo')
 
