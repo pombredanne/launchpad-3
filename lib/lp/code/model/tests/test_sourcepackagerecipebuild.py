@@ -29,6 +29,8 @@ from lp.buildmaster.tests.test_buildbase import (
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
+from lp.code.mail.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuildMailer)
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail.sendmail import format_address
@@ -310,14 +312,15 @@ class TestAsBuildmaster(TestCaseWithFactory):
         requester = build.requester
         requester_address = format_address(
             requester.displayname, requester.preferredemail.email)
+        mailer = SourcePackageRecipeBuildMailer.forStatus(build)
+        expected = mailer.generateEmail(
+            requester.preferredemail.email, requester)
         self.assertEqual(
             requester_address, re.sub(r'\n\t+', ' ', message['To']))
-        self.assertEqual('Successfully built: recipe for distroseries',
-            message['Subject'])
-        body, footer = message.get_payload(decode=True).split('\n-- \n')
+        self.assertEqual(expected.subject, message['Subject'].replace(
+            '\n\t', ' '))
         self.assertEqual(
-            'Build person/recipe into ppa for distroseries: Successfully'
-            ' built.\n', body)
+            expected.body, message.get_payload(decode=True))
 
     def test_handleStatusNotifies(self):
         """"handleStatus causes notification, even if OK."""
@@ -355,7 +358,8 @@ class MakeSPRecipeBuildMixin:
         distroseries.nominatedarchindep = distroseries_i386
         build = self.factory.makeSourcePackageRecipeBuild(
             distroseries=distroseries,
-            status=BuildStatus.FULLYBUILT)
+            status=BuildStatus.FULLYBUILT,
+            duration=datetime.timedelta(minutes=5))
         build.queueBuild(build)
         return build
 
