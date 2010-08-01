@@ -290,53 +290,35 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
 
 class TestCorrespondingDebugArchive(TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestCorrespondingDebugArchive, self).setUp()
-
-        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-
-        # Create a debug archive, as there isn't one in the sample data.
-        self.debug_archive = getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG,
-            distribution=self.ubuntutest,
-            owner=self.ubuntutest.owner)
-
-        # Retrieve sample data archives of each type.
-        self.primary_archive = getUtility(IArchiveSet).getByDistroPurpose(
-            self.ubuntutest, ArchivePurpose.PRIMARY)
-        self.partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
-            self.ubuntutest, ArchivePurpose.PARTNER)
-        self.copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
-            self.ubuntutest, ArchivePurpose.PARTNER)
-        self.ppa = getUtility(IPersonSet).getByName('cprov').archive
+    layer = DatabaseFunctionalLayer
 
     def testPrimaryDebugArchiveIsDebug(self):
-        self.assertEquals(
-            self.primary_archive.debug_archive, self.debug_archive)
+        distribution = self.factory.makeDistribution()
+        primary = self.factory.makeArchive(
+            distribution=distribution, purpose=ArchivePurpose.PRIMARY)
+        debug = self.factory.makeArchive(
+            distribution=distribution, purpose=ArchivePurpose.DEBUG)
+        self.assertEquals(primary.debug_archive, debug)
 
     def testPartnerDebugArchiveIsSelf(self):
-        self.assertEquals(
-            self.partner_archive.debug_archive, self.partner_archive)
+        partner = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertEquals(partner.debug_archive, partner)
 
     def testCopyDebugArchiveIsSelf(self):
-        self.assertEquals(
-            self.copy_archive.debug_archive, self.copy_archive)
+        copy = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
+        self.assertEquals(copy.debug_archive, copy)
 
     def testDebugDebugArchiveIsSelf(self):
-        self.assertEquals(
-            self.debug_archive.debug_archive, self.debug_archive)
+        debug = self.factory.makeArchive(purpose=ArchivePurpose.DEBUG)
+        self.assertEquals(debug.debug_archive, debug)
 
     def testPPADebugArchiveIsSelf(self):
-        self.assertEquals(self.ppa.debug_archive, self.ppa)
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEquals(ppa.debug_archive, ppa)
 
     def testMissingPrimaryDebugArchiveIsNone(self):
-        # Turn the DEBUG archive into a COPY archive to hide it.
-        removeSecurityProxy(self.debug_archive).purpose = ArchivePurpose.COPY
-
-        self.assertIs(
-            self.primary_archive.debug_archive, None)
+        primary = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertIs(primary.debug_archive, None)
 
 
 class TestArchiveEnableDisable(TestCaseWithFactory):
