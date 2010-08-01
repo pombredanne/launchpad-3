@@ -19,7 +19,7 @@ import os
 
 from lp.archiveuploader.dscfile import DSCFile, SignableTagFile
 from lp.archiveuploader.nascentuploadfile import (
-    BaseBinaryUploadFile,  CustomUploadFile, DdebBinaryUploadFile,
+    BaseBinaryUploadFile, CustomUploadFile, DdebBinaryUploadFile,
     DebBinaryUploadFile, SourceUploadFile, UdebBinaryUploadFile,
     UploadError, UploadWarning, splitComponentAndSection)
 from lp.archiveuploader.utils import (
@@ -51,7 +51,7 @@ class ChangesFile(SignableTagFile):
         "medium": SourcePackageUrgency.MEDIUM,
         "high": SourcePackageUrgency.HIGH,
         "critical": SourcePackageUrgency.EMERGENCY,
-        "emergency": SourcePackageUrgency.EMERGENCY
+        "emergency": SourcePackageUrgency.EMERGENCY,
         }
 
     dsc = None
@@ -112,7 +112,7 @@ class ChangesFile(SignableTagFile):
 
     def checkFileName(self):
         """Make sure the changes file name is well-formed.
-        
+
         Please note: for well-formed changes file names the `filename_archtag`
         property will be set appropriately.
         """
@@ -161,8 +161,9 @@ class ChangesFile(SignableTagFile):
     def processFiles(self):
         """Build objects for each file mentioned in this changesfile.
 
-        This method is an error generator, i.e, it returns an iterator over all
-        exceptions that are generated while processing all mentioned files.
+        This method is an error generator, i.e, it returns an iterator over
+        all exceptions that are generated while processing all mentioned
+        files.
         """
         files = []
         for fileline in self._dict['files'].strip().split("\n"):
@@ -205,8 +206,8 @@ class ChangesFile(SignableTagFile):
     def verify(self):
         """Run all the verification checks on the changes data.
 
-        This method is an error generator, i.e, it returns an iterator over all
-        exceptions that are generated while verifying the changesfile
+        This method is an error generator, i.e, it returns an iterator over
+        all exceptions that are generated while verifying the changesfile
         consistency.
         """
         self.logger.debug("Verifying the changes file.")
@@ -215,7 +216,7 @@ class ChangesFile(SignableTagFile):
             yield UploadError("No files found in the changes")
 
         raw_urgency = self._dict['urgency'].lower()
-        if not self.urgency_map.has_key(raw_urgency):
+        if raw_urgency not in self.urgency_map:
             yield UploadWarning(
                 "Unable to grok urgency %s, overriding with 'low'"
                 % (raw_urgency))

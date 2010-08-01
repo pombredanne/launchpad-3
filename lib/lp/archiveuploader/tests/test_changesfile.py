@@ -52,4 +52,3 @@ class TestDetermineFileClassAndName(TestCase):
             CannotDetermineFileTypeError,
             determine_file_class_and_name,
             'foo')
-
