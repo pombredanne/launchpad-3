@@ -89,14 +89,13 @@ class NascentUpload:
     # Defined if we successfully do_accept() and storeObjectsInDatabase()
     queue_root = None
 
-    def __init__(self, changesfile_path, policy, logger):
-        """Setup a ChangesFile based on given changesfile path.
+    def __init__(self, changesfile, policy, logger):
+        """Setup a ChangesFile based on given changesfile or path.
 
         May raise FatalUploadError due to unrecoverable problems building
         the ChangesFile object.
         Also store given and initialized Upload Policy, as 'policy'
         """
-        self.changesfile_path = changesfile_path
         self.policy = policy
         self.logger = logger
 
@@ -104,17 +103,24 @@ class NascentUpload:
         self.warnings = []
 
         self.librarian = getUtility(ILibraryFileAliasSet)
-        try:
-            self.changes = ChangesFile(
-                changesfile_path, self.policy, self.logger)
-        except UploadError, e:
-            # We can't run reject() because unfortunately we don't have
-            # the address of the uploader to notify -- we broke in that
-            # exact step.
-            # XXX cprov 2007-03-26: we should really be emailing this
-            # rejection to the archive admins. For now, this will end
-            # up in the script log.
-            raise FatalUploadError(str(e))
+
+        # If a path is given, a new ChangesFile object will be
+        # constructed. Otherwise we use the given object.
+        if isinstance(changesfile, str):
+            self.changesfile_path = changesfile
+            try:
+                self.changes = ChangesFile(
+                    changesfile, self.policy, self.logger)
+            except UploadError, e:
+                # We can't run reject() because unfortunately we don't have
+                # the address of the uploader to notify -- we broke in that
+                # exact step.
+                # XXX cprov 2007-03-26: we should really be emailing this
+                # rejection to the archive admins. For now, this will end
+                # up in the script log.
+                raise FatalUploadError(str(e))
+        else:
+            self.changes = changesfile
 
     def process(self):
         """Process this upload, checking it against policy, loading it into
