@@ -1889,6 +1889,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket=pocket,
             date_created=date_created)
         removeSecurityProxy(spr_build).status = status
+        if duration is not None:
+            naked_sprb = removeSecurityProxy(spr_build)
+            if naked_sprb.date_started is None:
+                naked_sprb.date_started = spr_build.date_created
+            naked_sprb.date_finished = naked_sprb.date_started + duration
         return spr_build
 
     def makeSourcePackageRecipeBuildJob(
@@ -1908,7 +1913,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             estimated_duration = timedelta(seconds=estimated_duration),
             virtualized=virtualized)
         store.add(bq)
-        return bq
+        return ProxyFactory(bq)
 
     def makeDscFile(self, tempdir_path=None):
         """Make a DscFile.

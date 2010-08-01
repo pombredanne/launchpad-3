@@ -67,11 +67,11 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
         })
         if self.build.builder is not None:
             params['builder_url'] = canonical_url(self.build.builder)
-        if self.build.buildduration is not None:
-            duration_formatter = DurationFormatterAPI(self.build.buildduration)
+        if self.build.duration is not None:
+            duration_formatter = DurationFormatterAPI(self.build.duration)
             params['duration'] = duration_formatter.approximateduration()
-        if self.build.build_log_url is not None:
-            params['log_url'] = self.build.build_log_url
+        if self.build.log is not None:
+            params['log_url'] = self.build.log.getURL()
         return params
 
     def _getFooter(self, params):
