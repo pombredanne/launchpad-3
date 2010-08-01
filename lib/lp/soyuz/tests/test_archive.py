@@ -396,47 +396,43 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
 class TestCollectLatestPublishedSources(TestCaseWithFactory):
     """Ensure that the private helper method works as expected."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        """Setup an archive with relevant publications."""
-        super(TestCollectLatestPublishedSources, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        # Create an archive with some published sources. We'll store
-        # a reference to the naked archive so that we can call
-        # the private method which is not defined on the interface.
-        self.archive = self.factory.makeArchive()
-        self.naked_archive = removeSecurityProxy(self.archive)
-
-        self.pub_1 = self.publisher.getPubSource(
-            version='0.5.11~ppa1', archive=self.archive, sourcename="foo",
-            status=PackagePublishingStatus.PUBLISHED)
-
-        self.pub_2 = self.publisher.getPubSource(
-            version='0.5.11~ppa2', archive=self.archive, sourcename="foo",
-            status=PackagePublishingStatus.PUBLISHED)
-
-        self.pub_3 = self.publisher.getPubSource(
-            version='0.9', archive=self.archive, sourcename="bar",
-            status=PackagePublishingStatus.PUBLISHED)
+    def make_published_sources(self, archive, statuses, versions, names):
+        for status, version, name in zip(statuses, versions, names):
+            self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagename=name, archive=archive,
+                version=version, status=status)
 
     def test_collectLatestPublishedSources_returns_latest(self):
-        pubs = self.naked_archive._collectLatestPublishedSources(
-            self.archive, ["foo"])
+        sourcepackagename = self.factory.makeSourcePackageName(name="foo")
+        other_spn = self.factory.makeSourcePackageName(name="bar")
+        archive = self.factory.makeArchive()
+        self.make_published_sources(archive,
+            [PackagePublishingStatus.PUBLISHED]*3,
+            ["1.0", "1.1", "2.0"],
+            [sourcepackagename, sourcepackagename, other_spn])
+        pubs = removeSecurityProxy(archive)._collectLatestPublishedSources(
+            archive, ["foo"])
         self.assertEqual(1, len(pubs))
-        self.assertEqual('0.5.11~ppa2', pubs[0].source_package_version)
+        self.assertEqual('1.1', pubs[0].source_package_version)
 
     def test_collectLatestPublishedSources_returns_published_only(self):
         # Set the status of the latest pub to DELETED and ensure that it
         # is not returned.
-        self.pub_2.status = PackagePublishingStatus.DELETED
-
-        pubs = self.naked_archive._collectLatestPublishedSources(
-            self.archive, ["foo"])
+        sourcepackagename = self.factory.makeSourcePackageName(name="foo")
+        other_spn = self.factory.makeSourcePackageName(name="bar")
+        archive = self.factory.makeArchive()
+        self.make_published_sources(archive,
+            [PackagePublishingStatus.PUBLISHED,
+                PackagePublishingStatus.DELETED,
+                PackagePublishingStatus.PUBLISHED],
+            ["1.0", "1.1", "2.0"],
+            [sourcepackagename, sourcepackagename, other_spn])
+        pubs = removeSecurityProxy(archive)._collectLatestPublishedSources(
+            archive, ["foo"])
         self.assertEqual(1, len(pubs))
-        self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
+        self.assertEqual('1.0', pubs[0].source_package_version)
 
 
 class TestArchiveCanUpload(TestCaseWithFactory):
