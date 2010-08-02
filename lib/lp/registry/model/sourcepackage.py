@@ -304,7 +304,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         if len(releases) == 0:
             return None
         current = releases[0]
-	name_summaries = [
+        name_summaries = [
             '%s: %s' % (binary.name, binary.summary)
             for binary in current.sample_binary_packages]
         if name_summaries == []:
