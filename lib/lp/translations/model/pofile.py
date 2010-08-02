@@ -43,6 +43,8 @@ from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from lp.translations.interfaces.translationimporter import (
@@ -1171,17 +1173,12 @@ class POFile(SQLBase, POFileMixIn):
 
     def export(self, ignore_obsolete=False, force_utf8=False):
         """See `IPOFile`."""
-        # Get the exporter for this translation.
         translation_exporter = getUtility(ITranslationExporter)
-        translation_format_exporter = (
-            translation_exporter.getExporterProducingTargetFileFormat(
-                self.potemplate.source_file_format))
-
-        # Get the export file.
         translation_file_data = getAdapter(
             self, ITranslationFileData, 'all_messages')
-        exported_file = translation_format_exporter.exportTranslationFiles(
-            [translation_file_data], ignore_obsolete, force_utf8)
+        exported_file = translation_exporter.exportTranslationFiles(
+            [translation_file_data], ignore_obsolete=ignore_obsolete,
+            force_utf8=force_utf8)
 
         try:
             file_content = exported_file.read()
@@ -1652,6 +1649,7 @@ class POFileToTranslationFileDataAdapter:
     def __init__(self, pofile):
         self._pofile = pofile
         self.messages = self._getMessages()
+        self.format = pofile.potemplate.source_file_format
 
     @cachedproperty
     def path(self):
@@ -1805,8 +1803,7 @@ class POFileToTranslationFileDataAdapter:
                 msgset.flags = set([
                     flag.strip()
                     for flag in row.flags_comment.split(',')
-                    if flag
-                    ])
+                    if flag])
 
             messages.append(msgset)
 

@@ -147,7 +147,6 @@ class SourcePackageRelease(SQLBase):
     package_diffs = SQLMultipleJoin(
         'PackageDiff', joinColumn='to_source', orderBy="-date_requested")
 
-
     @property
     def builds(self):
         """See `ISourcePackageRelease`."""
@@ -519,6 +518,15 @@ class SourcePackageRelease(SQLBase):
         # and the `LibraryFileContent` in cache because it's most likely
         # they will be needed.
         return DecoratedResultSet(results, operator.itemgetter(0)).one()
+
+    @property
+    def uploader(self):
+        """See `ISourcePackageRelease`"""
+        if self.source_package_recipe_build is not None:
+            return self.source_package_recipe_build.requester
+        if self.dscsigningkey is not None:
+            return self.dscsigningkey.owner
+        return None
 
     @property
     def change_summary(self):

@@ -288,7 +288,7 @@
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
-  <script type="text/javascript">
+  <script id="base-layout-load-scripts" type="text/javascript">
     LPS.use('node', 'lp', function(Y) {
         Y.on('load', function(e) {
             sortables_init();

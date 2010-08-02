@@ -56,7 +56,7 @@ from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ParticipatingPersonChoice, PublicPersonChoice, URIField, Whiteboard)
+    PersonChoice, PublicPersonChoice, URIField, Whiteboard)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
@@ -361,7 +361,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             vocabulary='ValidPersonOrTeam'))
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Owner'),
             required=True, readonly=True,
             vocabulary='UserTeamsParticipationPlusSelf',
@@ -1184,12 +1184,6 @@ class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
     export_as_webservice_collection(IBranch)
-
-    def countBranchesWithAssociatedBugs():
-        """Return the number of branches that have bugs associated.
-
-        Only counts public branches.
-        """
 
     def getRecentlyChangedBranches(
         branch_count=None,
