@@ -216,7 +216,8 @@ class ProductSeriesInvolvementView(PillarView):
         series_menu = MenuAPI(self.context).overview
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure series branch'
-        return [set_branch]
+        return [dict(link=set_branch,
+                     configured=self.official_codehosting)]
 
 
 class ProductSeriesOverviewMenu(
