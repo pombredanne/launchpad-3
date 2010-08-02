@@ -8,7 +8,7 @@ import signal
 import transaction
 import unittest
 
-from twisted.internet import defer, reactor
+from twisted.internet import defer, reactor, task
 from twisted.internet.error import ConnectionClosed
 from twisted.internet.task import Clock, deferLater
 from twisted.python.failure import Failure
@@ -249,10 +249,10 @@ class TestSlaveScanner(TrialTestCase):
         self.manager.scan = testScan
 
         # Stop automatic collection of dispatching results.
-        def testwaitOnDeferredList():
+        def testslaveConversationEnded():
             pass
-        self._realwaitOnDeferredList = self.manager.waitOnDeferredList
-        self.manager.waitOnDeferredList = testwaitOnDeferredList
+        self._realslaveConversationEnded = self.manager.slaveConversationEnded
+        self.manager.slaveConversationEnded = testslaveConversationEnded
 
     def assertIsDispatchReset(self, result):
         self.assertTrue(
@@ -321,14 +321,14 @@ class TestSlaveScanner(TrialTestCase):
         # deferreds in case setUp did something unexpected.
         self.manager._deferred_list = []
 
-        # Here, we're patching the waitOnDeferredList method so we can
+        # Here, we're patching the slaveConversationEnded method so we can
         # get an extra callback at the end of it, so we can
         # verify that the reset_result was really called.
-        def _waitOnDeferredList():
-            d = self._realwaitOnDeferredList()
+        def _slaveConversationEnded():
+            d = self._realslaveConversationEnded()
             return d.addCallback(
                 lambda ignored: self.assertEqual([slave], reset_result_calls))
-        self.manager.waitOnDeferredList = _waitOnDeferredList
+        self.manager.slaveConversationEnded = _slaveConversationEnded
 
         self.manager.resumeAndDispatch(slave)
 
@@ -344,9 +344,9 @@ class TestSlaveScanner(TrialTestCase):
         # We only care about this one slave. Reset the list of manager
         # deferreds in case setUp did something unexpected.
         self.manager._deferred_list = []
-        # Restore the waitOnDeferredList method. It's very relevant to
+        # Restore the slaveConversationEnded method. It's very relevant to
         # this test.
-        self.manager.waitOnDeferredList = self._realwaitOnDeferredList
+        self.manager.slaveConversationEnded = self._realslaveConversationEnded
         self.manager.resumeAndDispatch(slave)
         [d] = self.manager._deferred_list
 
@@ -499,11 +499,11 @@ class TestSlaveScanner(TrialTestCase):
             self.assertTrue(error.processed)
 
         def _wait_on_deferreds_then_check_no_events():
-            dl = self._realwaitOnDeferredList()
+            dl = self._realslaveConversationEnded()
             dl.addCallback(check_no_events)
 
         def _wait_on_deferreds_then_check_events():
-            dl = self._realwaitOnDeferredList()
+            dl = self._realslaveConversationEnded()
             dl.addCallback(check_events)
 
         # A functional slave charged with some interactions.
@@ -530,11 +530,11 @@ class TestSlaveScanner(TrialTestCase):
             self.test_proxy.calls)
         self.assertEqual(2, len(self.manager._deferred_list))
 
-        # Monkey patch the waitOnDeferredList method so we can chain a
+        # Monkey patch the slaveConversationEnded method so we can chain a
         # callback to check the end of the result chain.
-        self.manager.waitOnDeferredList = \
+        self.manager.slaveConversationEnded = \
             _wait_on_deferreds_then_check_no_events
-        events = self.manager.waitOnDeferredList()
+        events = self.manager.slaveConversationEnded()
 
         # Create a broken slave and insert interaction that will
         # cause the builder to be marked as fail.
@@ -550,11 +550,11 @@ class TestSlaveScanner(TrialTestCase):
             [('ensurepresent', 'arg1', 'arg2', 'arg3')],
             self.test_proxy.calls)
 
-        # Monkey patch the waitOnDeferredList method so we can chain a
+        # Monkey patch the slaveConversationEnded method so we can chain a
         # callback to check the end of the result chain.
-        self.manager.waitOnDeferredList = \
+        self.manager.slaveConversationEnded = \
             _wait_on_deferreds_then_check_events
-        events = self.manager.waitOnDeferredList()
+        events = self.manager.slaveConversationEnded()
 
         return events
 
@@ -938,39 +938,33 @@ class TestBuilddManager(TrialTestCase):
     def _stub_out_scheduleNextScanCycle(self):
         # stub out the code that adds a callLater, so that later tests
         # don't get surprises.
-        self._saved_schedule = SlaveScanner.scheduleNextScanCycle
-        def cleanup():
-            SlaveScanner.scheduleNextScanCycle = self._saved_schedule
-        self.addCleanup(cleanup)
-        SlaveScanner.scheduleNextScanCycle = FakeMethod
+        self.patch(SlaveScanner, 'scheduleNextScanCycle', FakeMethod())
 
     def test_addScanForBuilders(self):
         # Test that addScanForBuilders generates NewBuildersScanner objects.
-
         self._stub_out_scheduleNextScanCycle()
 
         manager = BuilddManager()
-        builder_names = [builder.name for builder in getUtility(IBuilderSet)]
+        builder_names = set(
+            builder.name for builder in getUtility(IBuilderSet))
         scanners = manager.addScanForBuilders(builder_names)
-        scanner_names = [scanner.builder_name for scanner in scanners]
-        for builder in builder_names:
-            self.assertTrue(builder in scanner_names)
+        scanner_names = set(scanner.builder_name for scanner in scanners)
+        self.assertEqual(builder_names, scanner_names)
 
     def test_startService_adds_NewBuildersScanner(self):
         # When startService is called, the manager will start up a
         # NewBuildersScanner object.
         self._stub_out_scheduleNextScanCycle()
-        NewBuildersScanner.SCAN_INTERVAL = 0
-        manager = BuilddManager()
+        clock = task.Clock()
+        manager = BuilddManager(clock=clock)
 
         # Replace scan() with FakeMethod so we can see if it was called.
-        manager.new_builders_scanner.scan = FakeMethod
-
-        def assertCalled():
-            self.failIf(manager.new_builders_scanner.scan.call_count == 0)
+        manager.new_builders_scanner.scan = FakeMethod()
 
         manager.startService()
-        reactor.callLater(0, assertCalled)
+        advance = NewBuildersScanner.SCAN_INTERVAL + 1
+        clock.advance(advance)
+        self.assertNotEqual(0, manager.new_builders_scanner.scan.call_count)
 
 
 class TestNewBuilders(TrialTestCase):
@@ -978,8 +972,8 @@ class TestNewBuilders(TrialTestCase):
 
     layer = LaunchpadZopelessLayer
 
-    def _getScanner(self, manager=None):
-        return NewBuildersScanner(manager=manager)
+    def _getScanner(self, manager=None, clock=None):
+        return NewBuildersScanner(manager=manager, clock=clock)
 
     def test_init_stores_existing_builders(self):
         # Make sure that NewBuildersScanner initialises itself properly
@@ -990,32 +984,30 @@ class TestNewBuilders(TrialTestCase):
 
     def test_scheduleScan(self):
         # Test that scheduleScan calls the "scan" method.
-        builder_scanner = self._getScanner()
-        builder_scanner.SCAN_INTERVAL = 0
-
-        builder_scanner.scan = FakeMethod
+        clock = task.Clock()
+        builder_scanner = self._getScanner(clock=clock)
+        builder_scanner.scan = FakeMethod()
         builder_scanner.scheduleScan()
 
-        def assertCalled():
-            self.failIf(
-                builder_scanner.scan.call_count == 0,
-                "scheduleScan did not schedule anything")
-
-        reactor.callLater(0, assertCalled)
+        advance = NewBuildersScanner.SCAN_INTERVAL + 1
+        clock.advance(advance)
+        self.assertNotEqual(
+            0, builder_scanner.scan.call_count,
+            "scheduleScan did not schedule anything")
 
     def test_checkForNewBuilders(self):
         # Test that checkForNewBuilders() detects a new builder
 
         # The basic case, where no builders are added.
         builder_scanner = self._getScanner()
-        self.failUnlessIdentical(None, builder_scanner.checkForNewBuilders())
+        self.assertEqual([], builder_scanner.checkForNewBuilders())
 
         # Add two builders and ensure they're returned.
         new_builders = ["scooby", "lassie"]
         factory = LaunchpadObjectFactory()
         for builder_name in new_builders:
             factory.makeBuilder(name=builder_name)
-        self.failUnlessEqual(
+        self.assertEqual(
             new_builders, builder_scanner.checkForNewBuilders())
 
     def test_scan(self):
@@ -1028,20 +1020,20 @@ class TestNewBuilders(TrialTestCase):
             return "new_builders"
 
         def fake_addScanForBuilders(new_builders):
-            self.failUnlessEqual("new_builders", new_builders)
+            self.assertEqual("new_builders", new_builders)
 
-        def assertCalled():
-            self.failIf(
-                builder_scanner.scheduleScan.call_count == 0,
-                "scheduleScan did not get called")
-
-        builder_scanner = self._getScanner(BuilddManager())
+        clock = task.Clock()
+        builder_scanner = self._getScanner(BuilddManager(), clock=clock)
         builder_scanner.checkForNewBuilders = fake_checkForNewBuilders
         builder_scanner.manager.addScanForBuilders = fake_addScanForBuilders
-        builder_scanner.scheduleScan = FakeMethod
+        builder_scanner.scheduleScan = FakeMethod()
 
-        reactor.callLater(0, builder_scanner.scan)
-        reactor.callLater(0, assertCalled)
+        builder_scanner.scan()
+        advance = NewBuildersScanner.SCAN_INTERVAL + 1
+        clock.advance(advance)
+        self.assertNotEqual(
+            0, builder_scanner.scheduleScan.call_count,
+            "scheduleScan did not get called")
 
 
 class TestBuilddManagerScript(unittest.TestCase):
