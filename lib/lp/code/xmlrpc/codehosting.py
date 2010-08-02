@@ -143,9 +143,25 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             date_completed=date_completed, hostname=hostname)
         return True
 
+    def _getBranchNamespaceExtras(self, path, requester):
+        """Get the branch namespace, branch name and callback for the path.
+
+        If the path defines a full branch path including the owner and branch
+        name, then the namespace that is returned is the namespace for the
+        owner and the branch target specified.
+
+        If the path uses an lp short name, then we only allow the requester to
+        create a branch if they have permission to link the newly created
+        branch to the short name target.  If there is an existing branch
+        already linked, then BranchExists is raised.  The branch name that is
+        used for the linked branch is 'trunk'.  If that name is taken, then we
+        try the name of the link target.
+        """
+
     def createBranch(self, login_id, branch_path):
         """See `ICodehostingAPI`."""
         def create_branch(requester):
+            import pdb; pdb.set_trace()
             if not branch_path.startswith('/'):
                 return faults.InvalidPath(branch_path)
             escaped_path = unescape(branch_path.strip('/'))
