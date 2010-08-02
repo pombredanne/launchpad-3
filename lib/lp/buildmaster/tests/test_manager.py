@@ -249,10 +249,10 @@ class TestSlaveScanner(TrialTestCase):
         self.manager.scan = testScan
 
         # Stop automatic collection of dispatching results.
-        def testslaveDialogueEnded():
+        def testslaveConversationEnded():
             pass
-        self._realslaveDialogueEnded = self.manager.slaveDialogueEnded
-        self.manager.slaveDialogueEnded = testslaveDialogueEnded
+        self._realslaveConversationEnded = self.manager.slaveConversationEnded
+        self.manager.slaveConversationEnded = testslaveConversationEnded
 
     def assertIsDispatchReset(self, result):
         self.assertTrue(
@@ -321,14 +321,14 @@ class TestSlaveScanner(TrialTestCase):
         # deferreds in case setUp did something unexpected.
         self.manager._deferred_list = []
 
-        # Here, we're patching the slaveDialogueEnded method so we can
+        # Here, we're patching the slaveConversationEnded method so we can
         # get an extra callback at the end of it, so we can
         # verify that the reset_result was really called.
-        def _slaveDialogueEnded():
-            d = self._realslaveDialogueEnded()
+        def _slaveConversationEnded():
+            d = self._realslaveConversationEnded()
             return d.addCallback(
                 lambda ignored: self.assertEqual([slave], reset_result_calls))
-        self.manager.slaveDialogueEnded = _slaveDialogueEnded
+        self.manager.slaveConversationEnded = _slaveConversationEnded
 
         self.manager.resumeAndDispatch(slave)
 
@@ -344,9 +344,9 @@ class TestSlaveScanner(TrialTestCase):
         # We only care about this one slave. Reset the list of manager
         # deferreds in case setUp did something unexpected.
         self.manager._deferred_list = []
-        # Restore the slaveDialogueEnded method. It's very relevant to
+        # Restore the slaveConversationEnded method. It's very relevant to
         # this test.
-        self.manager.slaveDialogueEnded = self._realslaveDialogueEnded
+        self.manager.slaveConversationEnded = self._realslaveConversationEnded
         self.manager.resumeAndDispatch(slave)
         [d] = self.manager._deferred_list
 
@@ -453,11 +453,11 @@ class TestSlaveScanner(TrialTestCase):
             self.assertTrue(error.processed)
 
         def _wait_on_deferreds_then_check_no_events():
-            dl = self._realslaveDialogueEnded()
+            dl = self._realslaveConversationEnded()
             dl.addCallback(check_no_events)
 
         def _wait_on_deferreds_then_check_events():
-            dl = self._realslaveDialogueEnded()
+            dl = self._realslaveConversationEnded()
             dl.addCallback(check_events)
 
         # A functional slave charged with some interactions.
@@ -484,11 +484,11 @@ class TestSlaveScanner(TrialTestCase):
             self.test_proxy.calls)
         self.assertEqual(2, len(self.manager._deferred_list))
 
-        # Monkey patch the slaveDialogueEnded method so we can chain a
+        # Monkey patch the slaveConversationEnded method so we can chain a
         # callback to check the end of the result chain.
-        self.manager.slaveDialogueEnded = \
+        self.manager.slaveConversationEnded = \
             _wait_on_deferreds_then_check_no_events
-        events = self.manager.slaveDialogueEnded()
+        events = self.manager.slaveConversationEnded()
 
         # Create a broken slave and insert interaction that will
         # cause the builder to be marked as fail.
@@ -504,11 +504,11 @@ class TestSlaveScanner(TrialTestCase):
             [('ensurepresent', 'arg1', 'arg2', 'arg3')],
             self.test_proxy.calls)
 
-        # Monkey patch the slaveDialogueEnded method so we can chain a
+        # Monkey patch the slaveConversationEnded method so we can chain a
         # callback to check the end of the result chain.
-        self.manager.slaveDialogueEnded = \
+        self.manager.slaveConversationEnded = \
             _wait_on_deferreds_then_check_events
-        events = self.manager.slaveDialogueEnded()
+        events = self.manager.slaveConversationEnded()
 
         return events
 

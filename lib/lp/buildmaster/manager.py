@@ -352,7 +352,7 @@ class SlaveScanner:
         an error occurs.
         """
         if resume_result is not None:
-            self.slaveDialogueEnded()
+            self.slaveConversationEnded()
             return resume_result
 
         self.logger.info('Dispatching: %s' % slave)
@@ -371,7 +371,7 @@ class SlaveScanner:
         """Dispatch the next XMLRPC for the given slave."""
         if len(slave.calls) == 0:
             # That's the end of the dialogue with the slave.
-            self.slaveDialogueEnded()
+            self.slaveConversationEnded()
             return
 
         # Get an XMLRPC proxy for the buildd slave.
@@ -382,7 +382,7 @@ class SlaveScanner:
         self._deferred_list.append(d)
         self.logger.debug('%s -> %s(%s)' % (slave, method, args))
 
-    def slaveDialogueEnded(self):
+    def slaveConversationEnded(self):
         """After all the Deferreds are set up, chain a callback on them."""
         dl = defer.DeferredList(self._deferred_list, consumeErrors=True)
         dl.addBoth(self.evaluateDispatchResult)
@@ -458,7 +458,7 @@ class SlaveScanner:
             self.logger.warn(
                 '%s communication failed (%s)' %
                 (slave, response.getErrorMessage()))
-            self.slaveDialogueEnded()
+            self.slaveConversationEnded()
             return self.reset_result(slave)
 
         if isinstance(response, list) and len(response) == 2:
@@ -476,11 +476,11 @@ class SlaveScanner:
         self.logger.error(
             '%s failed to dispatch (%s)' % (slave, info))
 
-        self.slaveDialogueEnded()
+        self.slaveConversationEnded()
         return self.fail_result(slave, info)
 
 
-class NewBuildersScanner(TimeoutMixin):
+class NewBuildersScanner:
     """If new builders appear, create a scanner for them."""
 
     # How often to check for new builders, in seconds.
@@ -488,6 +488,10 @@ class NewBuildersScanner(TimeoutMixin):
 
     def __init__(self, manager, clock=None):
         self.manager = manager
+        # Use the clock if provided, it's so that tests can
+        # advance it.  Use the reactor by default.
+        if clock is None:
+            clock = reactor
         self._clock = clock
         # Avoid circular import.
         from lp.buildmaster.interfaces.builder import IBuilderSet
@@ -496,11 +500,6 @@ class NewBuildersScanner(TimeoutMixin):
 
     def scheduleScan(self):
         """Schedule a callback SCAN_INTERVAL seconds later."""
-        # Use the local _clock if provided, it's so that tests can
-        # advance it.
-        if self._clock is None:
-            return TimeoutMixin.callLater(self, self.SCAN_INTERVAL, self.scan)
-        
         return self._clock.callLater(self.SCAN_INTERVAL, self.scan)
 
     def scan(self):
