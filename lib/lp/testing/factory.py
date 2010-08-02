@@ -2086,7 +2086,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                                         sourcepackagename=None,
                                         distroseries=None,
                                         productseries=None, content=None,
-                                        uploader=None, is_published=False):
+                                        uploader=None, from_upstream=False):
         """Create a `TranslationImportQueueEntry`."""
         if path is None:
             path = self.getUniqueString() + '.pot'
@@ -2116,7 +2116,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             path=path, status=status, sourcepackagename=sourcepackagename,
             distroseries=distroseries, productseries=productseries,
             importer=uploader, content=content_reference,
-            is_published=is_published)
+            from_upstream=from_upstream)
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""
