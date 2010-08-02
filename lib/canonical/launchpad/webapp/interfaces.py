@@ -7,6 +7,10 @@ __metaclass__ = type
 
 import logging
 
+# Import only added to allow change to land.  Needs to be removed when shipit
+# is updated.
+from lp.app.errors import UnexpectedFormData
+
 import zope.app.publication.interfaces
 from zope.component.interfaces import IObjectEvent
 from zope.interface import Interface, Attribute, implements
