@@ -37,7 +37,7 @@ __all__ = [
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
-    'validate_person_not_private_membership',
+    'validate_person',
     'validate_public_person',
     ]
 
@@ -67,7 +67,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
-    StrippedTextLine, is_private_membership_person, is_public_person)
+    StrippedTextLine, is_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.launchpad import (
@@ -110,7 +110,7 @@ class PrivatePersonLinkageError(ValueError):
 
 
 @block_implicit_flushes
-def validate_person(obj, attr, value, validate_func):
+def validate_person_common(obj, attr, value, validate_func):
     """Validate the person using the supplied function."""
     if value is None:
         return None
@@ -121,7 +121,7 @@ def validate_person(obj, attr, value, validate_func):
     # DB. This needs cleaning up.
     from lp.registry.model.person import Person
     person = Person.get(value)
-    if validate_func(person):
+    if not validate_func(person):
         raise PrivatePersonLinkageError(
             "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
             % (person.name, person.visibility.name,
@@ -129,18 +129,20 @@ def validate_person(obj, attr, value, validate_func):
     return value
 
 
+def validate_person(obj, attr, value):
+    """Validate the person is a real person with no other restrictions."""
+    def validate(person):
+        return IPerson.providedBy(person)
+    return validate_person_common(obj, attr, value, validate)
+
+
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
 
     def validate(person):
-        return not is_public_person(person)
+        return is_public_person(person)
 
-    return validate_person(obj, attr, value, validate)
-
-
-def validate_person_not_private_membership(obj, attr, value):
-    """Validate that the person (value) is not a private membership team."""
-    return validate_person(obj, attr, value, is_private_membership_person)
+    return validate_person_common(obj, attr, value, validate)
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -376,14 +378,6 @@ class PersonVisibility(DBEnumeratedType):
         Public
 
         Everyone can view all the attributes of this person.
-        """)
-
-    PRIVATE_MEMBERSHIP = DBItem(20, """
-        Private Membership
-
-        Only Launchpad admins and team members can view the
-        membership list for this team. The team is severely restricted in the
-        roles it can assume.
         """)
 
     PRIVATE = DBItem(30, """

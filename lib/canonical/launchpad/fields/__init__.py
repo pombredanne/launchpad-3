@@ -34,7 +34,6 @@ __all__ = [
     'MugshotImageUpload',
     'NoneableDescription',
     'NoneableTextLine',
-    'ParticipatingPersonChoice',
     'PasswordField',
     'PersonChoice',
     'PillarAliases',
@@ -53,7 +52,6 @@ __all__ = [
     'URIField',
     'UniqueField',
     'Whiteboard',
-    'is_private_membership_person',
     'is_public_person',
     ]
 
@@ -173,7 +171,8 @@ class IURIField(ITextLine):
 
          * whitespace is stripped from the input value
          * if the field requires (or forbids) a trailing slash on the URI,
-           ensures that the widget ends in a slash (or doesn't end in a slash).
+           ensures that the widget ends in a slash (or doesn't end in a
+           slash).
          * the URI is canonicalized.
          """
 
@@ -766,14 +765,6 @@ def is_public_person(person):
     return person.visibility == PersonVisibility.PUBLIC
 
 
-def is_private_membership_person(person):
-    """True if the person/team has private membership visibility."""
-    from canonical.launchpad.interfaces import IPerson, PersonVisibility
-    if not IPerson.providedBy(person):
-        return False
-    return person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP
-
-
 class PrivateTeamNotAllowed(ConstraintNotSatisfied):
     __doc__ = _("A private team is not allowed.")
 
@@ -801,20 +792,3 @@ class PublicPersonChoice(PersonChoice):
         else:
             # The vocabulary prevents the revealing of private team names.
             raise PrivateTeamNotAllowed(value)
-
-
-class ParticipatingPersonChoice(PersonChoice):
-    """A person or team who is not a private membership team.
-
-    A person can participate in all contexts.  A PRIVATE team can participate
-    in many contexts, depending up on the permissions of the logged in
-    user.  A PRIVATE MEMBERSHIP team is severely limited in the roles in which
-    it can participate.
-    """
-
-    def constraint(self, value):
-        if not is_private_membership_person(value):
-            return True
-        else:
-            # The vocabulary prevents the revealing of private team names.
-            raise PrivateMembershipTeamNotAllowed(value)
