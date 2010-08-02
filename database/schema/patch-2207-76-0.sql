@@ -8,4 +8,4 @@ SET client_min_messages=ERROR;
 ALTER TABLE BugSubscription
     ADD COLUMN bug_notification_level INTEGER NOT NULL DEFAULT 40;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 76, 0);
