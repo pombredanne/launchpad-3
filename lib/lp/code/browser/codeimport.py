@@ -34,13 +34,14 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeImportReviewStatus, CodeReviewNotificationLevel,
     RevisionControlSystems)
+from lp.code.errors import BranchExists
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespacePolicy)
 from lp.code.interfaces.codeimport import (
     ICodeImport, ICodeImportSet)
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.branch import (
-    BranchExists, IBranch, user_has_special_branch_access)
+    IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
