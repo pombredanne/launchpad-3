@@ -4,6 +4,8 @@
 
 """Tests for the source package recipe view classes and templates."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 
