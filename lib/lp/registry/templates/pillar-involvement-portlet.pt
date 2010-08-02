@@ -52,19 +52,19 @@
       </div>
     </tal:show_configuration>
 
-    <ul tal:condition="view/configuration_links" style="padding-top: 1em">
-      <table style="width: 100%">
-        <tal:item repeat="link_status view/configuration_links">
-          <tr>
-            <td>
-              <a tal:replace="structure link_status/link/fmt:link" />
-            </td>
-            <td style="text-align: right;" tal:condition="registration">
-              <tal:yes-no replace="structure link_status/configured/image:boolean" />
-            </td>
-          </tr>
-        </tal:item>
-      </table>
-    </ul>
+    <table style="width: 100%; padding-top: 1em"
+           tal:condition="view/configuration_links">
+      <tal:item repeat="link_status view/configuration_links">
+        <tr>
+          <td>
+            <a tal:replace="structure link_status/link/fmt:link" />
+          </td>
+          <td style="text-align: right;" tal:condition="registration">
+            <tal:yes-no replace="structure link_status/configured/image:boolean" />
+          </td>
+        </tr>
+      </tal:item>
+    </table>
+
   </tal:editor>
 </div>
