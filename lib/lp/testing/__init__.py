@@ -115,6 +115,7 @@ from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
 from lp.testing.fixture import ZopeEventHandlerFixture
+from lp.testing.karma import KarmaRecorder
 
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
