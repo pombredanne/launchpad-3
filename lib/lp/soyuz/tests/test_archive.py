@@ -31,6 +31,7 @@ from lp.soyuz.interfaces.archive import (
     NoRightsForComponent)
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFileType, BinaryPackageFormat)
@@ -495,94 +496,128 @@ class TestArchiveCanUpload(TestCaseWithFactory):
             person, component)
         return person, component
 
-    def checkUpload(self, archive, person=None, distroseries=None,
-                    sourcepackagename=None, component=None,
+    def checkUpload(self, archive, person, sourcepackagename,
+                    distroseries=None, component=None,
                     pocket=None, strict_component=False):
-        if person is None:
-            person = self.factory.makePerson()
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
-        if sourcepackagename is None:
-            sourcepackagename = self.factory.makeSourcePackageName()
         if component is None:
             component = self.factory.makeComponent()
         if pocket is None:
-            pocket = PackagePublishingPocket.PROPOSED
+            pocket = PackagePublishingPocket.RELEASE
         return archive.checkUpload(
             person, distroseries, sourcepackagename, component, pocket,
             strict_component=strict_component)
+
+    def assertCanUpload(self, archive, person, sourcepackagename,
+                        distroseries=None, component=None,
+                        pocket=None, strict_component=False):
+        """Assert an upload to 'archive' will be accepted."""
+        self.assertIs(
+            None,
+            self.checkUpload(
+                archive, person, sourcepackagename,
+                distroseries=distroseries, component=component,
+                pocket=pocket, strict_component=strict_component))
+
+    def assertCannotUpload(self, reason, archive, person, sourcepackagename,
+                           distroseries=None, component=None, pocket=None,
+                           strict_component=False):
+        """Assert that upload to 'archive' will be rejected.
+
+        :param reason: The expected reason for not being able to upload. A
+            class.
+        """
+        self.assertIsInstance(
+            self.checkUpload(
+                archive, person, sourcepackagename,
+                distroseries=distroseries, component=component,
+                pocket=pocket, strict_component=strict_component),
+            reason
+            )
 
     def test_checkUpload_partner_invalid_pocket(self):
         # Partner archives only have release and proposed pockets
         archive, distroseries = self.make_archive_and_active_distroseries(
             purpose=ArchivePurpose.PARTNER)
-        self.assertIsInstance(
-            self.checkUpload(
-                archive, distroseries=distroseries,
-                pocket=PackagePublishingPocket.UPDATES),
-            InvalidPocketForPartnerArchive)
+        self.assertCannotUpload(
+            InvalidPocketForPartnerArchive, archive,
+            self.factory.makePerson(), self.factory.makeSourcePackageName(),
+            pocket=PackagePublishingPocket.UPDATES,
+            distroseries=distroseries)
 
     def test_checkUpload_ppa_invalid_pocket(self):
         # PPA archives only have release pockets
         archive, distroseries = self.make_archive_and_active_distroseries(
             purpose=ArchivePurpose.PPA)
-        self.assertIsInstance(
-            self.checkUpload(
-                archive, distroseries=distroseries,
-                pocket=PackagePublishingPocket.PROPOSED),
-            InvalidPocketForPPA)
+        self.assertCannotUpload(
+            InvalidPocketForPPA, archive,
+            self.factory.makePerson(), self.factory.makeSourcePackageName(),
+            pocket=PackagePublishingPocket.PROPOSED,
+            distroseries=distroseries)
 
     def test_checkUpload_invalid_pocket_for_series_state(self):
         archive, distroseries = self.make_archive_and_active_distroseries(
             purpose=ArchivePurpose.PRIMARY)
-        self.assertIsInstance(
-            self.checkUpload(
-                archive, distroseries=distroseries,
-                pocket=PackagePublishingPocket.PROPOSED),
-            CannotUploadToPocket)
+        self.assertCannotUpload(
+            CannotUploadToPocket, archive,
+            self.factory.makePerson(), self.factory.makeSourcePackageName(),
+            pocket=PackagePublishingPocket.PROPOSED,
+            distroseries=distroseries)
 
     def test_checkUpload_disabled_archive(self):
         archive, distroseries = self.make_archive_and_active_distroseries(
             purpose=ArchivePurpose.PRIMARY)
         removeSecurityProxy(archive).disable()
-        self.assertIsInstance(
-            self.checkUpload(
-                archive, distroseries=distroseries,
-                pocket=PackagePublishingPocket.RELEASE),
-            ArchiveDisabled)
+        self.assertCannotUpload(
+            ArchiveDisabled, archive, self.factory.makePerson(),
+            self.factory.makeSourcePackageName(),
+            distroseries=distroseries)
 
     def test_checkUpload_ppa_owner(self):
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(
             purpose=ArchivePurpose.PPA, owner=person)
-        self.assertEqual(
-            None,
-            self.checkUpload(
-                archive, person=person,
-                pocket=PackagePublishingPocket.RELEASE))
+        self.assertCanUpload(
+            archive, person, self.factory.makeSourcePackageName())
 
     def test_checkUpload_ppa_with_permission(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         person = self.factory.makePerson()
         removeSecurityProxy(archive).newComponentUploader(person, "main")
         # component is ignored
-        self.assertEqual(
-            None,
-            self.checkUpload(
-                archive, person=person,
-                component=self.factory.makeComponent(name="universe"),
-                pocket=PackagePublishingPocket.RELEASE))
+        self.assertCanUpload(
+            archive, person, self.factory.makeSourcePackageName(),
+            component=self.factory.makeComponent(name="universe"))
 
     def test_checkUpload_ppa_with_no_permission(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         person = self.factory.makePerson()
-        self.assertIsInstance(
-            archive.checkUpload(
-                person, self.factory.makeDistroSeries(),
-                self.factory.makeSourcePackageName(),
-                self.factory.makeComponent(),
-                PackagePublishingPocket.RELEASE),
-            CannotUploadToPPA)
+        self.assertCannotUpload(
+            CannotUploadToPPA, archive, person,
+            self.factory.makeSourcePackageName())
+
+    def test_owner_can_upload_to_ppa_no_sourcepackage(self):
+        # The owner can upload to PPAs even if the source package doesn't
+        # exist yet.
+        team = self.factory.makeTeam()
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, owner=team)
+        person = self.factory.makePerson()
+        removeSecurityProxy(team).addMember(person, team.teamowner)
+        self.assertCanUpload(archive, person, None)
+
+    def test_can_upload_to_ppa_for_old_series(self):
+        # You can upload whatever you want to a PPA, regardless of the upload
+        # policy.
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, owner=person)
+        spn = self.factory.makeSourcePackageName()
+        distroseries = self.factory.makeDistroSeries(
+            status=SeriesStatus.CURRENT)
+        self.assertCanUpload(
+            archive, person, spn, distroseries=distroseries)
 
     def test_checkUpload_copy_archive_no_permission(self):
         archive, distroseries = self.make_archive_and_active_distroseries(
@@ -591,12 +626,9 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         person = self.factory.makePerson()
         removeSecurityProxy(archive).newPackageUploader(
             person, sourcepackagename)
-        self.assertIsInstance(
-            self.checkUpload(
-                archive, person=person, distroseries=distroseries,
-                sourcepackagename=sourcepackagename,
-                pocket=PackagePublishingPocket.RELEASE),
-            NoRightsForArchive)
+        self.assertCannotUpload(
+            NoRightsForArchive, archive, person, sourcepackagename,
+            distroseries=distroseries)
 
     def test_checkUpload_package_permission(self):
         archive, distroseries = self.make_archive_and_active_distroseries(
@@ -605,12 +637,8 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         person = self.factory.makePerson()
         removeSecurityProxy(archive).newPackageUploader(
             person, sourcepackagename)
-        self.assertEquals(
-            None,
-            self.checkUpload(
-                archive, person=person, distroseries=distroseries,
-                sourcepackagename=sourcepackagename,
-                pocket=PackagePublishingPocket.RELEASE))
+        self.assertCanUpload(
+            archive, person, sourcepackagename, distroseries=distroseries)
 
     def make_person_with_packageset_permission(self, archive, distroseries,
                                                packages=()):
@@ -628,12 +656,22 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         sourcepackagename = self.factory.makeSourcePackageName()
         person, packageset = self.make_person_with_packageset_permission(
             archive, distroseries, packages=[sourcepackagename])
-        self.assertEquals(
-            None,
-            self.checkUpload(
-                archive, person=person, distroseries=distroseries,
-                sourcepackagename=sourcepackagename,
-                pocket=PackagePublishingPocket.RELEASE))
+        self.assertCanUpload(
+            archive, person, sourcepackagename, distroseries=distroseries)
+
+    def test_checkUpload_packageset_wrong_distroseries(self):
+        # A person with rights to upload to the package set in distro
+        # series K may not upload with these same rights to a different
+        # distro series L.
+        archive, distroseries = self.make_archive_and_active_distroseries(
+            purpose=ArchivePurpose.PRIMARY)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        person, packageset = self.make_person_with_packageset_permission(
+            archive, distroseries, packages=[sourcepackagename])
+        other_distroseries = self.factory.makeDistroSeries()
+        self.assertCannotUpload(
+            InsufficientUploadRights, archive, person, sourcepackagename,
+            distroseries=other_distroseries)
 
     def test_checkUpload_component_permission(self):
         archive, distroseries = self.make_archive_and_active_distroseries(
@@ -641,24 +679,18 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         sourcepackagename = self.factory.makeSourcePackageName()
         person, component = self.make_person_with_component_permission(
             archive)
-        self.assertEquals(
-            None,
-            self.checkUpload(
-                archive, person=person, distroseries=distroseries,
-                sourcepackagename=sourcepackagename, component=component,
-                pocket=PackagePublishingPocket.RELEASE))
+        self.assertCanUpload(
+            archive, person, sourcepackagename, distroseries=distroseries,
+            component=component)
 
     def test_checkUpload_no_permissions(self):
         archive, distroseries = self.make_archive_and_active_distroseries(
             purpose=ArchivePurpose.PRIMARY)
         sourcepackagename = self.factory.makeSourcePackageName()
         person = self.factory.makePerson()
-        self.assertIsInstance(
-            self.checkUpload(
-                archive, person=person, distroseries=distroseries,
-                sourcepackagename=sourcepackagename,
-                pocket=PackagePublishingPocket.RELEASE),
-            NoRightsForArchive)
+        self.assertCannotUpload(
+            NoRightsForArchive, archive, person, sourcepackagename,
+            distroseries=distroseries)
 
     def test_checkUpload_insufficient_permissions(self):
         archive, distroseries = self.make_archive_and_active_distroseries(
@@ -666,12 +698,9 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         sourcepackagename = self.factory.makeSourcePackageName()
         person, packageset = self.make_person_with_packageset_permission(
             archive, distroseries)
-        self.assertIsInstance(
-            self.checkUpload(
-                archive, person=person, distroseries=distroseries,
-                sourcepackagename=sourcepackagename,
-                pocket=PackagePublishingPocket.RELEASE),
-            InsufficientUploadRights)
+        self.assertCannotUpload(
+            InsufficientUploadRights, archive, person, sourcepackagename,
+            distroseries=distroseries)
 
     def test_checkUpload_without_strict_component(self):
         archive, distroseries = self.make_archive_and_active_distroseries(
@@ -680,14 +709,9 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         person, component = self.make_person_with_component_permission(
             archive)
         other_component = self.factory.makeComponent()
-        self.assertEquals(
-            None,
-            self.checkUpload(
-                archive, person=person, distroseries=distroseries,
-                sourcepackagename=sourcepackagename,
-                component=other_component,
-                pocket=PackagePublishingPocket.RELEASE,
-                strict_component=False))
+        self.assertCanUpload(
+            archive, person, sourcepackagename, distroseries=distroseries,
+            component=other_component, strict_component=False)
 
     def test_checkUpload_with_strict_component(self):
         archive, distroseries = self.make_archive_and_active_distroseries(
@@ -696,14 +720,19 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         person, component = self.make_person_with_component_permission(
             archive)
         other_component = self.factory.makeComponent()
-        self.assertIsInstance(
-            self.checkUpload(
-                archive, person=person, distroseries=distroseries,
-                sourcepackagename=sourcepackagename,
-                component=other_component,
-                pocket=PackagePublishingPocket.RELEASE,
-                strict_component=True),
-            NoRightsForComponent)
+        self.assertCannotUpload(
+            NoRightsForComponent, archive, person, sourcepackagename,
+            distroseries=distroseries, component=other_component,
+            strict_component=True)
+
+    def test_checkUpload_component_rights_no_package(self):
+        # A person allowed to upload to a particular component of an archive
+        # can upload basically whatever they want to that component, even if
+        # the package doesn't exist yet.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        person, component = self.make_person_with_component_permission(
+            archive)
+        self.assertCanUpload(archive, person, None, component=component)
 
     def make_package_to_upload(self, distroseries):
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -1379,3 +1408,29 @@ class TestFindDepCandidates(TestCaseWithFactory):
             component=getUtility(IComponentSet)['universe'])
         self.assertDep('i386', 'foo-main', [main_bins[0]])
         self.assertDep('i386', 'foo-universe', [universe_bins[0]])
+
+
+class TestComponents(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_components_for_arbitrary_person(self):
+        # By default, a person cannot upload to any component of an archive.
+        archive = self.factory.makeArchive()
+        person = self.factory.makePerson()
+        self.assertEqual(set(),
+            set(archive.getComponentsForUploader(person)))
+
+    def test_components_for_person_with_permissions(self):
+        # If a person has been explicitly granted upload permissions to a
+        # particular component, then those components are included in
+        # IArchive.getComponentsForUploader.
+        archive = self.factory.makeArchive()
+        component = self.factory.makeComponent()
+        person = self.factory.makePerson()
+        # Only admins or techboard members can add permissions normally. That
+        # restriction isn't relevant to this test.
+        ap_set = removeSecurityProxy(getUtility(IArchivePermissionSet))
+        ap = ap_set.newComponentUploader(archive, person, component)
+        self.assertEqual(set([ap]),
+            set(archive.getComponentsForUploader(person)))
