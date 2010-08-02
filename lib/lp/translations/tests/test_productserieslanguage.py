@@ -29,14 +29,14 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
 
     def test_no_templates_no_translation(self):
         # There are no templates and no translations.
-        self.assertEquals(self.productseries.productserieslanguages,
-                          [])
+        self.assertEquals([],
+                          self.productseries.productserieslanguages)
 
     def test_one_template_no_translation(self):
         # There is a template and no translations.
         self.factory.makePOTemplate(productseries=self.productseries)
-        self.assertEquals(self.productseries.productserieslanguages,
-                          [])
+        self.assertEquals([],
+                          self.productseries.productserieslanguages)
 
     def test_one_template_with_pofile(self):
         # There is a template and one translation.
@@ -49,7 +49,7 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
         sr_pofile = self.factory.makePOFile('sr', potemplate)
 
         psls = list(self.productseries.productserieslanguages)
-        self.assertEquals(len(psls), 1)
+        self.assertEquals(1, len(psls))
 
         # ProductSeriesLanguage object correctly keeps values
         # for a language, productseries itself and POFile.
@@ -72,9 +72,9 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
         albanian = getUtility(ILanguageSet).getLanguageByCode('sq')
         sq_pofile = self.factory.makePOFile(albanian.code, potemplate)
 
-        psls = list(self.productseries.productserieslanguages)
-        self.assertEquals(psls[0].language, albanian)
-        self.assertEquals(psls[1].language, serbian)
+        languages = [psl.language for psl in
+                     self.productseries.productserieslanguages]
+        self.assertEquals([albanian, serbian], languages)
 
     def test_two_templates_pofile_not_set(self):
         # With two templates, pofile attribute doesn't get set.
@@ -92,7 +92,7 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
 
         # `pofile` is not set when there's more than one template.
         sr_psl = psls[0]
-        self.assertEquals(sr_psl.pofile, None)
+        self.assertEquals(None, sr_psl.pofile)
 
 
 class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
