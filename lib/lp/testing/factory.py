@@ -1913,7 +1913,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             estimated_duration = timedelta(seconds=estimated_duration),
             virtualized=virtualized)
         store.add(bq)
-        return ProxyFactory(bq)
+        return bq
 
     def makeDscFile(self, tempdir_path=None):
         """Make a DscFile.
