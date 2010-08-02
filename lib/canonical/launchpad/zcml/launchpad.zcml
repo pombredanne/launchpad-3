@@ -39,7 +39,7 @@
 
   <!-- Gone -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.GoneError"
+      for="lp.app.errors.GoneError"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-gone.pt"
