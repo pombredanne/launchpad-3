@@ -69,6 +69,8 @@ Import public keyring into current LPDB.
 Having set up that infrastructure we need to prepare a breezy distroseries
 for the ubuntutest distribution.
 
+XXX StevenK Use of initialiseFromParent
+
   >>> from lp.registry.model.distribution import Distribution
   >>> from canonical.launchpad.database import LibraryFileAlias
   >>> ubuntu = Distribution.byName('ubuntu')

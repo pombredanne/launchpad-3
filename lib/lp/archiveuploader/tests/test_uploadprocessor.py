@@ -192,6 +192,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         breezy_i386.addOrUpdateChroot(fake_chroot)
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
+        # XXX StevenK Use of initialiseFromParent
         self.breezy.initialiseFromParent()
 
         if permitted_formats is None:

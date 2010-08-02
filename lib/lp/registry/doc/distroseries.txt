@@ -309,6 +309,8 @@ initialisation. In particular the initialiser won't overwrite
 publishing records etc. Essentially this is a "Do not push this button
 again" type set of assertions.
 
+XXX StevenK Use of initialiseFromParent
+
     >>> login("foo.bar@canonical.com")
     >>> humpy = ubuntu.newSeries('humpy', 'Humpy Hippo',
     ...                          'The Humpy Hippo', 'Fat', 'Yo Momma',
