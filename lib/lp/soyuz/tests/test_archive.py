@@ -43,16 +43,16 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def makeThreeArchivesOneDistribution(self):
+    def makeArchivesForOneDistribution(self, count=3):
         distribution = self.factory.makeDistribution()
         archives = []
-        for i in range(3):
+        for i in range(count):
             archives.append(
                 self.factory.makeArchive(distribution=distribution))
         return archives
 
-    def makeThreeArchivesWithPublications(self):
-        archives = self.makeThreeArchivesOneDistribution()
+    def makeArchivesWithPublications(self, count=3):
+        archives = self.makeArchivesForOneDistribution(count=count)
         sourcepackagename = self.factory.makeSourcePackageName()
         for archive in archives:
             self.factory.makeSourcePackagePublishingHistory(
@@ -65,39 +65,35 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         return getUtility(IArchiveSet).getPublicationsInArchives(
             sourcepackagename, archives, distribution=distribution)
 
-    def testReturnsAllPublishedPublications(self):
+    def test_getPublications_returns_all_published_publications(self):
         # Returns all currently published publications for archives
         archives, sourcepackagename = self.makeThreeArchivesWithPublications()
         results = self.getPublications(
             sourcepackagename, archives, archives[0].distribution)
         num_results = results.count()
-        self.assertEquals(
-            3, num_results,
-            "Expected 3 publications but got %s" % num_results)
+        self.assertEquals(3, num_results)
 
-    def testEmptyListOfArchives(self):
+    def test_getPublications_empty_list_of_archives(self):
         # Passing an empty list of archives will result in an empty
         # resultset.
         archives, sourcepackagename = self.makeThreeArchivesWithPublications()
         results = self.getPublications(
             sourcepackagename, [], archives[0].distribution)
-        self.assertEquals(0, results.count())
+        self.assertEquals([], results)
 
-    def testReturnsOnlyPublicationsForGivenArchives(self):
+    def assertPublicationsFromArchives(self, publications, archives):
+        self.assertEquals(len(archives), publications.count())
+        for publication, archive in zip(publications, archives):
+            self.assertEquals(archive, publication.archive)
+
+    def test_getPublications_returns_only_for_given_archives(self):
         # Returns only publications for the specified archives
         archives, sourcepackagename = self.makeThreeArchivesWithPublications()
         results = self.getPublications(
             sourcepackagename, [archives[0]], archives[0].distribution)
-        num_results = results.count()
-        self.assertEquals(
-            1, num_results,
-            "Expected 1 publication but got %s" % num_results)
-        self.assertEquals(
-            archives[0], results[0].archive,
-            "Expected publication from %s but was instead from %s." % (
-                archives[0].displayname, results[0].archive.displayname))
+        self.assertPublicationsFromArchives(results, [archives[0]])
 
-    def testReturnsOnlyPublishedPublications(self):
+    def test_getPublications_returns_only_published_publications(self):
         # Publications that are not published will not be returned.
         archive = self.factory.makeArchive()
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -106,10 +102,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING)
         results = self.getPublications(
             sourcepackagename, [archive], archive.distribution)
-        num_results = results.count()
-        self.assertEquals(
-            0, num_results,
-            "Expected 0 publication but got %s" % num_results)
+        self.assertEquals([], results)
 
     def publishSourceInNewArchive(self, sourcepackagename):
         distribution = self.factory.makeDistribution()
@@ -122,7 +115,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
         return archive
 
-    def testPubsForSpecificDistro(self):
+    def test_getPublications_for_specific_distro(self):
         # Results can be filtered for specific distributions.
         sourcepackagename = self.factory.makeSourcePackageName()
         archive = self.publishSourceInNewArchive(sourcepackagename)
@@ -131,14 +124,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         results = self.getPublications(
             sourcepackagename, [archive, other_archive],
             distribution=archive.distribution)
-        num_results = results.count()
-        self.assertEquals(
-            1, num_results,
-            "Expected 1 publication but got %s" % num_results)
-        self.assertEquals(
-            archive, results[0].archive,
-            "Expected publication from %s but was instead from %s." % (
-                archive.displayname, results[0].archive.displayname))
+        self.assertPublicationsFromArchives(results, [archive])
 
 
 class TestArchiveRepositorySize(TestCaseWithFactory):
