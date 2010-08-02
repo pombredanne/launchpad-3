@@ -238,10 +238,6 @@ class ILink(ILinkData):
     icon_url = Attribute(
         "The full URL for this link's associated icon, if it has one.")
 
-    configured = Attribute(
-        "Whether the item has been configured yet.  If None, no indicator is"
-        "used.  Otherwise it is a boolean.")
-
     def render():
         """Return a HTML representation of the link."""
 

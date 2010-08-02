@@ -379,7 +379,12 @@ class ProductInvolvementView(PillarView):
 
     @property
     def configuration_links(self):
-        """The enabled involvement links."""
+        """The enabled involvement links.
+
+        Returns a list of dicts keyed by:
+        'link' -- the menu link, and
+        'configured' -- a boolean representing the configuration status.
+        """
         overview_menu = MenuAPI(self.context).overview
         series_menu = MenuAPI(self.context.development_focus).overview
         configuration_names = [
@@ -388,20 +393,21 @@ class ProductInvolvementView(PillarView):
             'configure_translations',
             #'configure_blueprints',
             ]
+        config_list = []
         config_statuses = self.configuration_states
         for key in configuration_names:
-            overview_menu[key].configured = (
-            config_statuses[key])
-        configuration_links = [
-            overview_menu[name] for name in configuration_names]
+            config_list.append(dict(link=overview_menu[key],
+                                    configured=config_statuses[key]))
+
         # Add the branch configuration in separately.
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure project branch'
         set_branch.configured = (
-            config_statuses['configure_codehosting'])
-        configuration_links.append(set_branch)
-        return [
-            link for link in configuration_links if link.enabled]
+            )
+        config_list.append(
+            dict(link=set_branch,
+                 configured=config_statuses['configure_codehosting']))
+        return config_list
 
     @property
     def registration_completeness(self):
