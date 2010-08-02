@@ -28,8 +28,8 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory,
     BinaryPackagePublishingHistory)
 from lp.testing.sampledata import (
-    CHROOT_LFA, CPROV_NAME, I386_ARCHITECTURE_NAME, LAUNCHPAD_DBUSER_NAME,
-    UBUNTU_DISTRIBUTION_NAME, WARTY_DISTROSERIES_NAME,
+    BUILDD_ADMIN_USERNAME, CHROOT_LIBRARYFILEALIAS, I386_ARCHITECTURE_NAME,
+    LAUNCHPAD_DBUSER_NAME, UBUNTU_DISTRIBUTION_NAME, WARTY_DISTROSERIES_NAME,
     WARTY_UPDATES_SUITE_NAME)
 
 
@@ -39,7 +39,7 @@ class SoyuzTestHelper:
     def __init__(self):
         self.ubuntu = getUtility(IDistributionSet)[UBUNTU_DISTRIBUTION_NAME]
         self.cprov_archive = getUtility(
-            IPersonSet).getByName(CPROV_NAME).archive
+            IPersonSet).getByName(BUILDD_ADMIN_USERNAME).archive
 
     @property
     def sample_publishing_data(self):
@@ -149,7 +149,7 @@ class TestPackageDiffsBase(unittest.TestCase):
         """
         self.layer.alterConnection(dbuser=LAUNCHPAD_DBUSER_NAME)
 
-        fake_chroot = LibraryFileAlias.get(CHROOT_LFA)
+        fake_chroot = LibraryFileAlias.get(CHROOT_LIBRARYFILEALIAS)
         ubuntu = getUtility(IDistributionSet).getByName(
             UBUNTU_DISTRIBUTION_NAME)
         warty = ubuntu.getSeries(WARTY_DISTROSERIES_NAME)
