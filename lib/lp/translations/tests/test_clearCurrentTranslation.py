@@ -26,6 +26,11 @@ class ScenarioMixin:
 
     def getCurrentUpstreamMessage(self, potmsgset, pofile):
         """Find the message that is current for upstream."""
+        # XXX JeroenVermeulen 2010-07-30 bug=546310: Once
+        # getCurrentTranslationMessage and getImportedTranslationMessage
+        # become side-aware, we can get rid of
+        # getCurrentUpstreamMessage, getCurrentUbuntuMessage, and
+        # getCurrentMessage in the concrete test classes.
         return potmsgset.getImportedTranslationMessage(
             pofile.potemplate, pofile.language)
     
@@ -64,6 +69,14 @@ class ScenarioMixin:
         return self.factory.makeTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, suggestion=True,
             translations=translations, force_diverged=diverged)
+
+    def test_does_nothing_if_not_translated(self):
+        pofile = self._makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        
+        potmsgset.clearCurrentTranslation(pofile)
+
+        self.assertIs(None, self.getCurrent(potmsgset, pofile))
 
     def test_deactivates_shared_message(self):
         pofile = self._makePOFile()
@@ -156,7 +169,7 @@ class ScenarioMixin:
         self.assertEqual(1, len(remaining_tms))
         self.assertIn(remaining_tms[0], [tm, suggestion])
 
-    def test_converges_with_hidden_shared_message(self):
+    def test_converges_with_empty_shared_message(self):
         pofile = self._makePOFile()
         potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
         diverged_tm = self._makeTranslationMessage(
