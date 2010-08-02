@@ -30,7 +30,6 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 
@@ -270,8 +269,7 @@ class SlaveScanner:
             transaction.commit()
 
         # See if we think there's an active build on the builder.
-        buildqueue = getUtility(
-            IBuildQueueSet).getByActiveBuilder(self.builder)
+        buildqueue = self.builder.getBuildQueue()
 
         # XXX Julian 2010-07-29 bug=611258
         # We're not using the RecordingSlave until dispatching, which

@@ -219,18 +219,6 @@ class TestBuildQueueSet(TestCaseWithFactory):
             self.buildqueueset.getActiveBuildJobs().is_empty(),
             "An active build job must have a builder.")
 
-    def test_getByActiveBuilder(self):
-        active_jobs = self.buildqueueset.getActiveBuildJobs()
-        [active_job] = active_jobs
-        builder = active_job.builder
-
-        bq = self.buildqueueset.getByActiveBuilder(builder)
-        self.assertEqual(active_job, bq)
-
-        active_job.builder = None
-        bq = self.buildqueueset.getByActiveBuilder(builder)
-        self.assertIs(None, bq)
-
 
 class TestBuildQueueBase(TestCaseWithFactory):
     """Setup the test publisher and some builders."""
