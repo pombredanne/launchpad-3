@@ -37,6 +37,7 @@ from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
@@ -1097,7 +1098,7 @@ class TestCommercialArchive(TestCaseWithFactory):
             Unauthorized, self.setCommercial, self.archive, True)
 
         # Commercial admins can change it.
-        login("commercial-member@canonical.com")
+        login(COMMERCIAL_ADMIN_EMAIL)
         self.setCommercial(self.archive, True)
         self.assertTrue(self.archive.commercial)
 
@@ -1126,7 +1127,7 @@ class TestBuildDebugSymbols(TestCaseWithFactory):
             Unauthorized, self.setBuildDebugSymbols, self.archive, True)
 
         # Commercial admins can change it.
-        login("commercial-member@canonical.com")
+        login(COMMERCIAL_ADMIN_EMAIL)
         self.setBuildDebugSymbols(self.archive, True)
         self.assertTrue(self.archive.build_debug_symbols)
 

@@ -9,8 +9,10 @@ just a small number, then you should define it as a constant here.
 
 __metaclass__ = type
 __all__ = [
+    'COMMERCIAL_ADMIN_EMAIL',
     'NO_PRIVILEGE_EMAIL',
     ]
 
 
 NO_PRIVILEGE_EMAIL = 'no-priv@canonical.com'
+COMMERCIAL_ADMIN_EMAIL = 'commercial-member@canonical.com'
