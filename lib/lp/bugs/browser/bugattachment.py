@@ -1,5 +1,4 @@
-
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug attachment views."""
@@ -7,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BugAttachmentContentCheck',
+    'BugAttachmentFileNavigation',
     'BugAttachmentSetNavigation',
     'BugAttachmentEditView',
     'BugAttachmentURL',
@@ -18,8 +18,9 @@ from zope.interface import implements
 from zope.component import getUtility
 from zope.contenttype import guess_content_type
 
+from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.webapp import (
-    canonical_url, custom_widget, GetitemNavigation)
+    canonical_url, custom_widget, GetitemNavigation, Navigation)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bugattachment import (
@@ -33,6 +34,8 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
 
 from canonical.widgets.itemswidgets import LaunchpadBooleanRadioWidget
+
+from lp.bugs.interfaces.bugattachment import IBugAttachment
 
 
 class BugAttachmentContentCheck:
@@ -222,3 +225,9 @@ class BugAttachmentPatchConfirmationView(LaunchpadFormView):
     def is_patch(self):
         """True if this attachment contains a patch, else False."""
         return self.context.type == BugAttachmentType.PATCH
+
+
+class BugAttachmentFileNavigation(Navigation, FileNavigationMixin):
+    """Traversal to +files/${filename}."""
+
+    usedfor = IBugAttachment

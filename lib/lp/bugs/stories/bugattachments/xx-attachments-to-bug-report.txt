@@ -50,7 +50,7 @@ displayed as the bug report).
     text/plain)
     >>> link = browser.getLink('sample data')
     >>> print link.url
-    http://localhost:58000/.../test.txt
+    http://bugs.launchpad.dev/jokosher/+bug/11/+attachment/1/+files/test.txt
 
 == Patch attachments are shown before non-patch attachments ==
 

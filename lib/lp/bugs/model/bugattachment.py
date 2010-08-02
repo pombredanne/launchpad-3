@@ -59,6 +59,12 @@ class BugAttachment(SQLBase):
         self.libraryfile.content = None
         super(BugAttachment, self).destroySelf()
 
+    def getFileByName(self, filename):
+        """See IBugAttachment."""
+        if filename == self.libraryfile.filename:
+            return self.libraryfile
+        raise NotFoundError(filename)
+
 
 class BugAttachmentSet:
     """A set for bug attachments."""

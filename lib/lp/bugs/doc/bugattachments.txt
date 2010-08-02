@@ -211,7 +211,8 @@ must have at least one.
 
 If the request contains no attachment description the filename should be used.
 
-    >>> filecontent = StringIO("No, sir. That's one bonehead name, but that ain't me any more.")
+    >>> filecontent = StringIO(
+    ...     "No, sir. That's one bonehead name, but that ain't me any more.")
     >>> filecontent.filename = 'RA.txt'
     >>> add_request = LaunchpadTestRequest(
     ...     method="POST",
@@ -596,3 +597,22 @@ returned by Bug.attachments.
     >>> removeSecurityProxy(attachment.libraryfile).content = None
     >>> [attachment.title for attachment in bug.attachments]
     [u'foobar']
+
+
+Miscellaneous
+-------------
+
+The method IBugAttachment.getFileByName() returns the Librarian file.
+
+    >>> attachment.libraryfile.filename
+    u'foobar'
+    >>> attachment.getFileByName('foobar')
+    <LibraryFileAlias at...
+
+A NotFoundError is raised if the file name passed to getFileByName()
+does not match the file name of the Librarian file.
+
+    >>> attachment.getFileByName('nonsense')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'nonsense'
