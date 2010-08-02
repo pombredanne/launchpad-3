@@ -7,8 +7,12 @@ first finding out if you're bug has already been reported.
 
 Submitting a bug title...
 
+The example here are a little short - in reality we have a comprehensive
+database to find candidates from, our sample data has no real near-fits,
+see bug 612384 for the overall effort to provide a sensible search facility.
+
     >>> user_browser.getControl("Summary").value = (
-    ...     "Thunderbird crashes when opening large e-mails")
+    ...     "Thunderbird crashes opening")
     >>> user_browser.getControl("Continue").click()
 
 ...yields one similar bug.
