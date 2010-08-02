@@ -12,6 +12,14 @@ class MissingReviewError(Exception):
     """Raised when we try to get a review message without enough reviewers."""
 
 
+class MissingBugsError(Exception):
+    """Merge proposal has no linked bugs and no [no-qa] tag."""
+
+
+class MissingBugsIncrementalError(Exception):
+    """Merge proposal has the [incr] tag but no linked bugs."""
+
+
 class LaunchpadBranchLander:
 
     name = 'launchpad-branch-lander'
@@ -152,19 +160,54 @@ class MergeProposal:
         # URL. Do it ourselves.
         return URI(scheme='bzr+ssh', host=host, path='/' + branch.unique_name)
 
-    def get_commit_message(self, commit_text, testfix=False):
+    def get_commit_message(self, commit_text, testfix=False, no_qa=False,
+                           incremental=False):
         """Get the Launchpad-style commit message for a merge proposal."""
         reviews = self.get_reviews()
         bugs = self.get_bugs()
-        if testfix:
-            testfix = '[testfix]'
-        else:
-            testfix = ''
-        return '%s%s%s %s' % (
-            testfix,
+
+        tags = ''.join([
+            get_testfix_clause(testfix),
             get_reviewer_clause(reviews),
             get_bugs_clause(bugs),
-            commit_text)
+            get_qa_clause(bugs, no_qa,
+                incremental),
+            ])
+
+        return '%s %s' % (tags, commit_text)
+
+
+def get_testfix_clause(testfix=False):
+    """Get the testfix clause."""
+    if testfix:
+        testfix_clause = '[testfix]'
+    else:
+        testfix_clause = ''
+    return testfix_clause
+
+
+def get_qa_clause(bugs, no_qa=False, incremental=False):
+    """Check the no-qa and incremental options, getting the qa clause.
+
+    The qa clause will always be or no-qa, or incremental or no tags, never both at
+    the same time.
+    """
+    qa_clause = ""
+
+    if not bugs and not no_qa and not incremental:
+        raise MissingBugsError
+
+    if incremental and not bugs:
+        raise MissingBugsIncrementalError
+
+    if incremental:
+        qa_clause = '[incr]'
+    elif no_qa:
+        qa_clause = '[no-qa]'
+    else:
+        qa_clause = ''
+
+    return qa_clause
 
 
 def get_email(person):

@@ -20,51 +20,6 @@ from lazr.enum import DBEnumeratedType, DBItem, use_template
 from canonical.launchpad import _
 
 
-class TranslationUnavailable(Exception):
-    """Translation objects are unavailable."""
-
-
-class NotFoundError(KeyError):
-    """Launchpad object not found."""
-
-
-class GoneError(KeyError):
-    """Launchpad object is gone."""
-
-
-class NameLookupFailed(NotFoundError):
-    """Raised when a lookup by name fails.
-
-    Subclasses should define the `_message_prefix` class variable, which will
-    be prefixed to the quoted name of the name that could not be found.
-
-    :ivar name: The name that could not be found.
-    """
-
-    _message_prefix = "Not found"
-
-    def __init__(self, name, message=None):
-        if message is None:
-            message = self._message_prefix
-        self.message = "%s: '%s'." % (message, name)
-        self.name = name
-        NotFoundError.__init__(self, self.message)
-
-    def __str__(self):
-        return self.message
-
-
-class UnexpectedFormData(AssertionError):
-    """Got form data that is not what is expected by a form handler."""
-
-
-class POSTToNonCanonicalURL(UnexpectedFormData):
-    """Got a POST to an incorrect URL.
-
-    One example would be a URL containing uppercase letters.
-    """
-
-
 class IAPIDocRoot(IContainmentRoot):
     """Marker interface for the root object of the apidoc vhost."""
 
@@ -304,7 +259,6 @@ class NoCanonicalUrl(TypeError):
 # is very Launchpad-specific. I suggest we split the interface and
 # implementation into two parts, having a different name for the webapp/ bits.
 class ILaunchBag(Interface):
-    site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
     project = Attribute('IProjectGroup, or None')
     product = Attribute('IProduct, or None')

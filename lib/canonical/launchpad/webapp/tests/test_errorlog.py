@@ -35,9 +35,9 @@ from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
     ErrorReport, ErrorReportingUtility, OopsLoggingHandler, ScriptRequest,
     _is_sensitive)
-from canonical.launchpad.webapp.interfaces import (
-    NoReferrerError, TranslationUnavailable)
+from canonical.launchpad.webapp.interfaces import NoReferrerError
 from lazr.restful.declarations import webservice_error
+from lp.app.errors import TranslationUnavailable
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.osutils import remove_tree
 from lp.testing import TestCase

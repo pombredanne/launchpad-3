@@ -24,7 +24,7 @@ from storm.store import EmptyResultSet
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.vocabulary import (
     NamedSQLObjectHugeVocabulary, BatchedCountableIterator)
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName, IBinaryPackageNameSet)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus

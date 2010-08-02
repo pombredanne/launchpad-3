@@ -26,10 +26,10 @@ from lp.code.interfaces.codehosting import (
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 
+from lp.app.errors import NotFoundError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType
 from lp.code.errors import UnknownBranchTypeError
@@ -445,7 +445,7 @@ class CodehostingTest(TestCaseWithFactory):
         # requestMirror should set the next_mirror_time field to be the
         # current time.
         requester = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         self.codehosting_api.requestMirror(requester.id, branch.id)
         self.assertSqlAttributeEqualsDate(
             branch, 'next_mirror_time', UTC_NOW)
@@ -453,7 +453,8 @@ class CodehostingTest(TestCaseWithFactory):
     def test_requestMirror_private(self):
         # requestMirror can be used to request the mirror of a private branch.
         requester = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(owner=requester, private=True)
+        branch = self.factory.makeAnyBranch(
+            owner=requester, private=True, branch_type=BranchType.MIRRORED)
         branch = removeSecurityProxy(branch)
         self.codehosting_api.requestMirror(requester.id, branch.id)
         self.assertSqlAttributeEqualsDate(

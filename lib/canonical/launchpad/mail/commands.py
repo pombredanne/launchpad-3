@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import (
         IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
         IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError,
-        NotFoundError, CreateBugParams, IPillarNameSet,
+        CreateBugParams, IPillarNameSet,
         BugTargetNotFound, IProjectGroup, ISourcePackage, IProductSeries,
         BugTaskStatus)
 from lazr.lifecycle.event import (
@@ -34,7 +34,7 @@ from canonical.launchpad.mail.helpers import (
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
 
-from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.errors import NotFoundError, UserCannotUnsubscribePerson
 
 
 def normalize_arguments(string_args):

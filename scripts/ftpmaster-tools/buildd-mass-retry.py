@@ -19,7 +19,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.lp import initZopeless
