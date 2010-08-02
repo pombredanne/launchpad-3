@@ -35,7 +35,9 @@ import sys
 from textwrap import dedent
 from threading import local
 from types import InstanceType
+import warnings
 
+from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 import pytz
 
 from twisted.python.util import mergeFunctionMetadata
@@ -165,8 +167,6 @@ from lp.testing import (
     time_counter,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (
@@ -845,7 +845,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
-                'Unrecognized branch type: %r' % (branch_type,))
+                'Unrecognized branch type: %r' % (branch_type, ))
 
         namespace = get_branch_namespace(
             owner, product=product, distroseries=distroseries,
@@ -1051,7 +1051,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
     def makeDiff(self, diff_text=DIFF):
-        return ProxyFactory(Diff.fromFile(StringIO(diff_text), len(diff_text)))
+        return ProxyFactory(
+            Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
     def makePreviewDiff(self, conflicts=u''):
         diff = self.makeDiff()
@@ -1632,6 +1633,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return series
 
     def makeLanguage(self, language_code=None, name=None):
+        """Makes a language given the language_code and name."""
         if language_code is None:
             language_code = self.getUniqueString('lang')
         if name is None:
@@ -1867,7 +1869,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                      requester=None, archive=None,
                                      sourcename=None, distroseries=None,
                                      pocket=None, date_created=None,
-                                     status=BuildStatus.NEEDSBUILD):
+                                     status=BuildStatus.NEEDSBUILD,
+                                     duration=None):
         """Make a new SourcePackageRecipeBuild."""
         if recipe is None:
             recipe = self.makeSourcePackageRecipe(name=sourcename)
@@ -1886,6 +1889,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket=pocket,
             date_created=date_created)
         removeSecurityProxy(spr_build).status = status
+        if duration is not None:
+            naked_sprb = removeSecurityProxy(spr_build)
+            if naked_sprb.date_started is None:
+                naked_sprb.date_started = spr_build.date_created
+            naked_sprb.date_finished = naked_sprb.date_started + duration
         return spr_build
 
     def makeSourcePackageRecipeBuildJob(
@@ -2265,7 +2273,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  dsc_standards_version='3.6.2',
                                  dsc_format='1.0', dsc_binaries='foo-bin',
                                  date_uploaded=UTC_NOW,
-                                 source_package_recipe_build=None):
+                                 source_package_recipe_build=None,
+                                 dscsigningkey=None):
         """Make a `SourcePackageRelease`."""
         if distroseries is None:
             if source_package_recipe_build is not None:
@@ -2324,7 +2333,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             changelog_entry=None,
             dsc=None,
             copyright=self.getUniqueString(),
-            dscsigningkey=None,
+            dscsigningkey=dscsigningkey,
             dsc_maintainer_rfc822=maintainer_email,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
@@ -2763,10 +2772,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
 unwrapped_types = (
-    DSCFile, InstanceType, MergeDirective2, Message, datetime, int, str, unicode)
+    BaseRecipeBranch, DSCFile, InstanceType, MergeDirective2, Message,
+    datetime, int, str, unicode,)
+
 
 def is_security_proxied_or_harmless(obj):
-    """Check that the given object is security wrapped or a harmless object."""
+    """Check that the object is security wrapped or a harmless object."""
     if obj is None:
         return True
     if builtin_isinstance(obj, Proxy):
@@ -2781,6 +2792,28 @@ def is_security_proxied_or_harmless(obj):
     return False
 
 
+class UnproxiedFactoryMethodWarning(UserWarning):
+    """Raised when someone calls an unproxied factory method."""
+
+    def __init__(self, method_name):
+        super(UnproxiedFactoryMethodWarning, self).__init__(
+            "PLEASE FIX: LaunchpadObjectFactory.%s returns an "
+            "unproxied object." % (method_name,))
+
+
+class UnreasonableRemoveSecurityProxyWarning(UserWarning):
+    """Raised when there is an unreasonable call to removeSecurityProxy."""
+
+    # XXX: JonathanLange 2010-07-25: I have no idea what "unreasonable" means
+    # in this context.
+
+    def __init__(self, obj):
+        message = (
+            "Called removeSecurityProxy(%r) without a check if this is "
+            "reasonable." % obj)
+        super(UnreasonableRemoveSecurityProxyWarning, self).__init__(message)
+
+
 class LaunchpadObjectFactory:
     """A wrapper around `BareLaunchpadObjectFactory`.
 
@@ -2792,6 +2825,7 @@ class LaunchpadObjectFactory:
 
     Whereever you see such a warning: fix it!
     """
+
     def __init__(self):
         self._factory = BareLaunchpadObjectFactory()
 
@@ -2802,10 +2836,8 @@ class LaunchpadObjectFactory:
             def guarded_method(*args, **kw):
                 result = attr(*args, **kw)
                 if not is_security_proxied_or_harmless(result):
-                    message = (
-                        "PLEASE FIX: LaunchpadObjectFactory.%s returns an "
-                        "unproxied object." % name)
-                    print >>sys.stderr, message
+                    warnings.warn(
+                        UnproxiedFactoryMethodWarning(name), stacklevel=1)
                 return result
             return guarded_method
         else:
@@ -2822,8 +2854,5 @@ def remove_security_proxy_and_shout_at_engineer(obj):
     This function should only be used in legacy tests which fail because
     they expect unproxied objects.
     """
-    print >>sys.stderr, (
-        "\nWarning: called removeSecurityProxy() for %r without a check if "
-        "this reasonable. Look for a call of "
-        "remove_security_proxy_and_shout_at_engineer(some_object)." % obj)
+    warnings.warn(UnreasonableRemoveSecurityProxyWarning(obj), stacklevel=2)
     return removeSecurityProxy(obj)

@@ -11,7 +11,7 @@ __all__ = [
     'ArchiveSubscribersView',
     'PersonArchiveSubscriptionView',
     'PersonArchiveSubscriptionsView',
-    'traverse_archive_subscription_for_subscriber'
+    'traverse_archive_subscription_for_subscriber',
     ]
 
 import datetime
@@ -27,7 +27,7 @@ from zope.schema import Date, Text
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from canonical.launchpad.fields import PersonChoice
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -93,7 +93,7 @@ class IArchiveSubscriberUI(Interface):
     we simply want to use a date field when users create or edit new
     subscriptions.
     """
-    subscriber = ParticipatingPersonChoice(
+    subscriber = PersonChoice(
         title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
         description=_("The person or team to grant access."))
 
@@ -383,6 +383,3 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         token_set = getUtility(IArchiveAuthTokenSet)
         return token_set.getActiveTokenForArchiveAndPerson(
             self.context.archive, self.context.subscriber)
-
-
-

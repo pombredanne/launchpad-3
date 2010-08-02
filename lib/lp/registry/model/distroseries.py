@@ -356,28 +356,36 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # We join to SourcePackageName, ProductSeries, and Product to cache
         # the objects that are implcitly needed to work with a
         # Packaging object.
-        # Avoid circular import failures.
         joins, conditions = self._current_sourcepackage_joins_and_conditions
-        origin = SQL(joins + """
+        # XXX: EdwinGrubbs 2010-07-29 bug=374777
+        # Storm doesn't support DISTINCT ON.
+        origin = SQL('''
+            (
+            SELECT DISTINCT ON (Packaging.id)
+                Packaging.*,
+                spr.component AS spr_component,
+                SourcePackageName.name AS spn_name,
+                total_bug_heat,
+                po_messages
+            FROM %(joins)s
+            WHERE %(conditions)s
+                AND packaging.id IS NOT NULL
+            ) AS Packaging
             JOIN ProductSeries
                 ON Packaging.productseries = ProductSeries.id
             JOIN Product
                 ON ProductSeries.product = Product.id
-            """)
-        condition = SQL(conditions + "AND packaging.id IS NOT NULL")
-        results = IStore(self).using(origin).find(Packaging, condition)
-        return results.order_by("""
-            (
-                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END
+            ''' % dict(joins=joins, conditions=conditions))
+        return IStore(self).using(origin).find(Packaging).order_by('''
+                (CASE WHEN spr_component = 1 THEN 1000 ELSE 0 END
                 + CASE WHEN Product.bugtracker IS NULL
                     THEN coalesce(total_bug_heat, 10) ELSE 0 END
                 + CASE WHEN ProductSeries.translations_autoimport_mode = 1
                     THEN coalesce(po_messages, 10) ELSE 0 END
-                + CASE WHEN ProductSeries.branch IS NULL THEN 500
-                    ELSE 0 END
-            ) DESC,
-            SourcePackageName.name ASC
-            """)
+                + CASE WHEN ProductSeries.branch IS NULL THEN 500 ELSE 0 END
+                ) DESC,
+                spn_name ASC
+                ''')
 
     @property
     def _current_sourcepackage_joins_and_conditions(self):

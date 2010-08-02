@@ -9,7 +9,8 @@ CREATE TEMPORARY TABLE NewBuildFarmJob AS SELECT
 INSERT INTO BuildFarmJob SELECT id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, build_state, build_log, job_type FROM NewBuildFarmJob;
 
 CREATE TEMPORARY TABLE NewPackageBuild AS SELECT
-  nextval('packagebuild_id_seq') AS id, NewBuildFarmJob.id AS build_farm_job, archive, pocket, upload_log, dependencies, SourcePackageRecipeBuild.id AS sprb_id FROM SourcePackageRecipeBuild, NewBuildFarmJob;
+  nextval('packagebuild_id_seq') AS id, NewBuildFarmJob.id AS build_farm_job, archive, pocket, upload_log, dependencies, SourcePackageRecipeBuild.id AS sprb_id FROM SourcePackageRecipeBuild, NewBuildFarmJob
+WHERE SourcePackageRecipeBuild.id = NewBuildFarmJob.sprb_id;
 
 INSERT INTO PackageBuild SELECT id, build_farm_job, archive, pocket, upload_log, dependencies FROM NewPackageBuild;
 

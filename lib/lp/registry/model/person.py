@@ -191,16 +191,9 @@ class ValidPersonCache(SQLBase):
 def validate_person_visibility(person, attr, value):
     """Validate changes in visibility.
 
-    * Prevent teams with inconsistent connections from being made private
-    * Prevent private membership teams with mailing lists from going public.
+    * Prevent teams with inconsistent connections from being made private.
     * Prevent private teams from any transition.
     """
-
-    # XXX: BradCrittenden 2010-07-12 bug=602773: Private membership teams are
-    # deprecated and new ones may not be created.
-    if value == PersonVisibility.PRIVATE_MEMBERSHIP:
-        raise AssertionError(
-            "Private membership teams are deprecated.")
 
     # Prohibit any visibility changes for private teams.  This rule is
     # recognized to be Draconian and may be relaxed in the future.

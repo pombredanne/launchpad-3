@@ -919,7 +919,7 @@ Searching only for Teams based on their names or email addresses:
     Warty Gnome Team (warty-gnome): []
     Warty Security Team (name20): []
 
-The Owner user is a member of the private membership team 'myteam' so
+The Owner user is a member of the private team 'myteam' so
 the previous search will include myteam in the results.
 
     >>> login('owner@canonical.com')

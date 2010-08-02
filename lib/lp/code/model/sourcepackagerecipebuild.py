@@ -149,7 +149,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @classmethod
     def new(cls, distroseries, recipe, requester, archive, pocket=None,
-            date_created=None):
+            date_created=None, duration=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         if pocket is None:
@@ -344,4 +344,4 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
         return "%s-%s" % (self.id, self.build_id)
 
     def score(self):
-        return 900
+        return 2405 + self.build.archive.relative_build_score

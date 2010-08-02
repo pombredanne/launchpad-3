@@ -40,7 +40,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
-    IPerson, validate_person_not_private_membership)
+    IPerson, validate_person)
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -115,7 +115,7 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False)
     importer = ForeignKey(
         dbName='importer', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=True)
     dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)
