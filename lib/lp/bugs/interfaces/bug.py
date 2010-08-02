@@ -135,6 +135,7 @@ class BugNameField(ContentNameField):
         except NotFoundError:
             return None
 
+
 class IBugBecameQuestionEvent(Interface):
     """A bug became a question."""
 
@@ -522,18 +523,6 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         :is_patch: A boolean.
         """
 
-    def linkAttachment(owner, file_alias, comment, is_patch=False,
-                       description=None):
-        """Link an `ILibraryFileAlias` to this bug.
-
-        :owner: An IPerson.
-        :file_alias: The `ILibraryFileAlias` to link to this bug.
-        :description: A brief description of the attachment.
-        :comment: An IMessage or string.
-        :filename: A string.
-        :is_patch: A boolean.
-        """
-
     def linkCVE(cve, user):
         """Ensure that this CVE is linked to this bug."""
 
@@ -716,7 +705,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
         This may also cause the security contact to be subscribed
         if one is registered and if the bug is not private.
-        
+
         Return True if a change is made, False otherwise.
         """
 
@@ -824,6 +813,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
         Returns True or False.
         """
+
 
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""

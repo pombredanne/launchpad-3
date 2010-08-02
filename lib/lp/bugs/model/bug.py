@@ -694,7 +694,8 @@ class Bug(SQLBase):
 
         if recipients is not None:
             for subscriber in dupe_subscribers:
-                recipients.addDupeSubscriber(subscriber, dupe_details[subscriber])
+                recipients.addDupeSubscriber(
+                    subscriber, dupe_details[subscriber])
 
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
@@ -959,13 +960,26 @@ class Bug(SQLBase):
 
         filealias = getUtility(ILibraryFileAliasSet).create(
             name=filename, size=len(filecontent),
-            file=StringIO(filecontent), contentType=content_type)
+            file=StringIO(filecontent), contentType=content_type,
+            restricted=self.private)
 
         return self.linkAttachment(
             owner, filealias, comment, is_patch, description)
 
     def linkAttachment(self, owner, file_alias, comment, is_patch=False,
                        description=None):
+        """Link an `ILibraryFileAlias` to this bug.
+
+        :owner: An IPerson.
+        :file_alias: The `ILibraryFileAlias` to link to this bug.
+        :description: A brief description of the attachment.
+        :comment: An IMessage or string.
+        :is_patch: A boolean.
+
+        This method should only be called by addAttachment(), otherwise
+        we may get inconsistent settings of bug.private and
+        file_alias.restricted.
+        """
         if is_patch:
             attach_type = BugAttachmentType.PATCH
         else:
@@ -1387,6 +1401,9 @@ class Bug(SQLBase):
             else:
                 self.who_made_private = None
                 self.date_made_private = None
+
+            for attachment in self.attachments:
+                attachment.libraryfile.restricted = private
 
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
@@ -1941,4 +1958,3 @@ class FileBugData:
     def asDict(self):
         """Return the FileBugData instance as a dict."""
         return self.__dict__.copy()
-
