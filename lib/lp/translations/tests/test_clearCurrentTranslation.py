@@ -76,7 +76,7 @@ class ScenarioMixin:
         
         potmsgset.clearCurrentTranslation(pofile)
 
-        self.assertIs(None, self.getCurrent(potmsgset, pofile))
+        self.assertIs(None, self.getCurrentMessage(potmsgset, pofile))
 
     def test_deactivates_shared_message(self):
         pofile = self._makePOFile()
