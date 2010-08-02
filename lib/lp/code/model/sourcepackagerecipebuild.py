@@ -202,7 +202,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     @classmethod
     def new(cls, distroseries, recipe, requester, archive, pocket=None,
-            date_created=None):
+            date_created=None, duration=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         if pocket is None:
@@ -215,7 +215,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
             requester,
             archive,
             pocket,
-            date_created=date_created)
+            date_created=date_created,
+            build_duration=duration)
         store.add(spbuild)
         return spbuild
 

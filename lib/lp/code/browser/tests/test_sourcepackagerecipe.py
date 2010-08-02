@@ -4,6 +4,8 @@
 
 """Tests for the source package recipe view classes and templates."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 
@@ -28,7 +30,8 @@ from lp.code.browser.sourcepackagerecipebuild import (
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.testing import ANONYMOUS, BrowserTestCase, login, logout
+from lp.testing import (
+    ANONYMOUS, BrowserTestCase, login, logout, person_logged_in)
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 
 
@@ -303,6 +306,18 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             get_message_text(browser, 2),
             'There is already a recipe owned by Master Chef with this name.')
 
+    def test_create_recipe_private_branch(self):
+        # If a user tries to create source package recipe with a private
+        # base branch, they should get an error.
+        branch = self.factory.makeAnyBranch(private=True, owner=self.user)
+        with person_logged_in(self.user):
+            bzr_identity = branch.bzr_identity
+        recipe_text = MINIMAL_RECIPE_TEXT % bzr_identity
+        browser = self.createRecipe(recipe_text)
+        self.assertEqual(
+            get_message_text(browser, 2),
+            'Recipe may not refer to private branch: %s' % bzr_identity)
+
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):
     """Test the editing behaviour of a source package recipe."""
@@ -474,6 +489,21 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
+
+    def test_edit_recipe_private_branch(self):
+        # If a user tries to set source package recipe to use a private
+        # branch, they should get an error.
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.user)
+        branch = self.factory.makeAnyBranch(private=True, owner=self.user)
+        with person_logged_in(self.user):
+            bzr_identity = branch.bzr_identity
+        recipe_text = MINIMAL_RECIPE_TEXT % bzr_identity
+        browser = self.getViewBrowser(recipe, '+edit')
+        browser.getControl('Recipe text').value = recipe_text
+        browser.getControl('Update Recipe').click()
+        self.assertEqual(
+            get_message_text(browser, 1),
+            'Recipe may not refer to private branch: %s' % bzr_identity)
 
 
 class TestSourcePackageRecipeView(TestCaseForRecipe):

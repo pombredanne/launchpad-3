@@ -37,6 +37,7 @@ from threading import local
 from types import InstanceType
 import warnings
 
+from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 import pytz
 
 from twisted.python.util import mergeFunctionMetadata
@@ -166,8 +167,6 @@ from lp.testing import (
     time_counter,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (
@@ -1870,7 +1869,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                      requester=None, archive=None,
                                      sourcename=None, distroseries=None,
                                      pocket=None, date_created=None,
-                                     status=BuildStatus.NEEDSBUILD):
+                                     status=BuildStatus.NEEDSBUILD,
+                                     duration=None):
         """Make a new SourcePackageRecipeBuild."""
         if recipe is None:
             recipe = self.makeSourcePackageRecipe(name=sourcename)
@@ -1887,7 +1887,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             archive=archive,
             requester=requester,
             pocket=pocket,
-            date_created=date_created)
+            date_created=date_created,
+            duration=duration)
         removeSecurityProxy(spr_build).buildstate = status
         return spr_build
 
@@ -2767,12 +2768,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
 unwrapped_types = (
-    DSCFile, InstanceType, MergeDirective2, Message, datetime, int, str, unicode)
+    BaseRecipeBranch, DSCFile, InstanceType, MergeDirective2, Message,
+    datetime, int, str, unicode,)
 
 
 def is_security_proxied_or_harmless(obj):
-    """Check that the given object is security wrapped or a harmless object.
-    """
+    """Check that the object is security wrapped or a harmless object."""
     if obj is None:
         return True
     if builtin_isinstance(obj, Proxy):
