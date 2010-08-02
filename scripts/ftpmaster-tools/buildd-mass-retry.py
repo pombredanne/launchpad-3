@@ -18,6 +18,9 @@ import sys
 
 from zope.component import getUtility
 
+# Still needed fake import to stop circular imports.
+import canonical.launchpad.interfaces
+
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from lp.app.errors import NotFoundError
 from canonical.launchpad.scripts import (
