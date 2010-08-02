@@ -22,9 +22,9 @@ from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.code.enums import BranchType
-from lp.code.errors import NoSuchBranch
-from lp.code.interfaces.branch import (
-    BranchCreationException, BranchCreationForbidden, IBranch)
+from lp.code.errors import (
+    BranchCreationException, BranchCreationForbidden, NoSuchBranch)
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branchlookup import IBranchLookup

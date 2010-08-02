@@ -55,8 +55,8 @@ from canonical.launchpad.helpers import browserLanguages
 from lp.code.browser.branch import BranchNameValidationMixin
 from lp.code.browser.branchref import BranchRef
 from lp.code.enums import BranchType, RevisionControlSystems
-from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch)
+from lp.code.errors import BranchCreationForbidden, BranchExists
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import (
