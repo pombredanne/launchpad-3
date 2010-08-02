@@ -1,4 +1,15 @@
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 __metaclass__ = type
+__all__ = [
+    'DoesNotProvide',
+    'DoesNotCorrectlyProvide',
+    'IsNotProxied',
+    'IsProxied',
+    'Provides',
+    'ProvidesAndIsProxied',
+    ]
 
 from zope.interface.verify import verifyObject
 from zope.interface.exceptions import (
