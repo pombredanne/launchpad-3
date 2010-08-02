@@ -963,10 +963,10 @@ class Bug(SQLBase):
             file=StringIO(filecontent), contentType=content_type,
             restricted=self.private)
 
-        return self.linkAttachment(
+        return self._linkAttachment(
             owner, filealias, comment, is_patch, description)
 
-    def linkAttachment(self, owner, file_alias, comment, is_patch=False,
+    def _linkAttachment(self, owner, file_alias, comment, is_patch=False,
                        description=None):
         """Link an `ILibraryFileAlias` to this bug.
 

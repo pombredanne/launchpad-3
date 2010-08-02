@@ -567,7 +567,7 @@ its Librarian file is set.
     >>> private_attachment.libraryfile.restricted
     True
 
-But the "restricted" flag of Librarian files elonging to bug attachments
+But the "restricted" flag of Librarian files belonging to bug attachments
 of public bugs is not set.
 
     >>> attachment.libraryfile.restricted
