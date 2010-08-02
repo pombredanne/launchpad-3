@@ -31,6 +31,8 @@ We are going to use 'warty/powerpc' distroarchseries and its
 respective processorfamily and processor. Let's create them
 on-the-fly:
 
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> from canonical.launchpad.database import (
   ...    Processor, ProcessorFamily)
@@ -45,6 +47,7 @@ on-the-fly:
 
   >>> import transaction
   >>> transaction.commit()
+  >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
 
 == Mixed Security Upload ==

@@ -31,11 +31,12 @@ from operator import isSequenceType
 import os.path
 from random import randint
 from StringIO import StringIO
-import sys
 from textwrap import dedent
 from threading import local
 from types import InstanceType
+import warnings
 
+from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 import pytz
 
 from twisted.python.util import mergeFunctionMetadata
@@ -165,10 +166,9 @@ from lp.testing import (
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroupSet)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
@@ -1868,7 +1868,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                      requester=None, archive=None,
                                      sourcename=None, distroseries=None,
                                      pocket=None, date_created=None,
-                                     status=BuildStatus.NEEDSBUILD):
+                                     status=BuildStatus.NEEDSBUILD,
+                                     duration=None):
         """Make a new SourcePackageRecipeBuild."""
         if recipe is None:
             recipe = self.makeSourcePackageRecipe(name=sourcename)
@@ -1885,7 +1886,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             archive=archive,
             requester=requester,
             pocket=pocket,
-            date_created=date_created)
+            date_created=date_created,
+            duration=duration)
         removeSecurityProxy(spr_build).buildstate = status
         return spr_build
 
@@ -2761,13 +2763,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
 unwrapped_types = (
-    DSCFile, InstanceType, MergeDirective2, Message, datetime,
-    int, str, unicode)
+    BaseRecipeBranch, DSCFile, InstanceType, MergeDirective2, Message,
+    datetime, int, str, unicode)
 
 
 def is_security_proxied_or_harmless(obj):
-    """Check that the given object is security wrapped or a harmless object.
-    """
+    """Check that the object is security wrapped or a harmless object."""
     if obj is None:
         return True
     if builtin_isinstance(obj, Proxy):
@@ -2780,6 +2781,27 @@ def is_security_proxied_or_harmless(obj):
                 return False
         return True
     return False
+
+
+class UnproxiedFactoryMethodWarning(UserWarning):
+    """Raised when someone calls an unproxied factory method."""
+
+    def __init__(self, method_name):
+        super(UnproxiedFactoryMethodWarning, self).__init__(
+            "PLEASE FIX: LaunchpadObjectFactory.%s returns an "
+            "unproxied object." % (method_name, ))
+
+
+class UnreasonableRemoveSecurityProxyWarning(UserWarning):
+    """Raised when there is an unreasonable call to removeSecurityProxy."""
+
+    # XXX: JonathanLange 2010-07-25: I have no idea what "unreasonable" means
+    # in this context.
+    def __init__(self, obj):
+        message = (
+            "Called removeSecurityProxy(%r) without a check if this is "
+            "reasonable." % obj)
+        super(UnreasonableRemoveSecurityProxyWarning, self).__init__(message)
 
 
 class LaunchpadObjectFactory:
@@ -2804,10 +2826,8 @@ class LaunchpadObjectFactory:
             def guarded_method(*args, **kw):
                 result = attr(*args, **kw)
                 if not is_security_proxied_or_harmless(result):
-                    message = (
-                        "PLEASE FIX: LaunchpadObjectFactory.%s returns an "
-                        "unproxied object." % name)
-                    print >>sys.stderr, message
+                    warnings.warn(
+                        UnproxiedFactoryMethodWarning(name), stacklevel=1)
                 return result
             return guarded_method
         else:
@@ -2824,8 +2844,5 @@ def remove_security_proxy_and_shout_at_engineer(obj):
     This function should only be used in legacy tests which fail because
     they expect unproxied objects.
     """
-    print >>sys.stderr, (
-        "\nWarning: called removeSecurityProxy() for %r without a check if "
-        "this reasonable. Look for a call of "
-        "remove_security_proxy_and_shout_at_engineer(some_object)." % obj)
+    warnings.warn(UnreasonableRemoveSecurityProxyWarning(obj), stacklevel=2)
     return removeSecurityProxy(obj)
