@@ -31,10 +31,9 @@
     </tal:disabled>
   </ul>
 
-  <tal:editor tal:condition="context/required:launchpad.Edit">
-    <tal:show_configuration
-       tal:condition="registration"
-       tal:define="registration view/registration_completeness">
+  <tal:editor condition="context/required:launchpad.Edit"
+              define="registration view/registration_completeness">
+    <tal:show_configuration condition="registration">
       <h2>Configuration Progress</h2>
       <div class="centered">
           <table width="80%" border="1">
@@ -51,21 +50,21 @@
             </tr>
           </table>
       </div>
+    </tal:show_configuration>
 
-      <ul tal:condition="view/configuration_links" style="padding-top: 1em">
-        <table style="width: 100%">
-          <tal:item repeat="link_status view/configuration_links">
-            <tr>
-              <td>
-                <a tal:replace="structure link_status/link/fmt:link" />
-              </td>
-              <td style="text-align: right;" tal:condition="registration">
-                <tal:yes-no replace="structure link_status/configured/image:boolean" />
-              </td>
-            </tr>
-          </tal:item>
-        </table>
-      </ul>
-      </tal:show_configuration>
+    <ul tal:condition="view/configuration_links" style="padding-top: 1em">
+      <table style="width: 100%">
+        <tal:item repeat="link_status view/configuration_links">
+          <tr>
+            <td>
+              <a tal:replace="structure link_status/link/fmt:link" />
+            </td>
+            <td style="text-align: right;" tal:condition="registration">
+              <tal:yes-no replace="structure link_status/configured/image:boolean" />
+            </td>
+          </tr>
+        </tal:item>
+      </table>
+    </ul>
   </tal:editor>
 </div>
