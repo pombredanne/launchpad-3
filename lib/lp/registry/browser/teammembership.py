@@ -23,10 +23,10 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import LaunchpadView, canonical_url
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, UnexpectedFormData)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets import DateWidget
 
+from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 
 
