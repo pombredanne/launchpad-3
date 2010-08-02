@@ -549,10 +549,12 @@ Implementing something similar with tsearch2 is straightforward:
 tsearch2 to_tsquery() already removes stop-words (it also stems the
 words). Relevance can be computed using the rank() or rank_cd()
 functions. These are not TD-IDF scoring functions, but they take into
-accounts where the words appeared (in the case of rank()) or proximity
+account where the words appeared (in the case of rank()) or proximity
 of the words (in the case of rank_cd()). Both scoring functions can
 normalize based on document length. So the only part left to implement
-is the >50% filtering part.
+is the >50% filtering part. Howevert the > 50% filtering is very expensive,
+and so is processing every single returned item (> 200000 for common queries
+on Ubuntu) - so we are disabling this and reworking from the ground up.
 
 
 === nl_term_candidates() ===
@@ -629,10 +631,10 @@ all the terms combined with an & query for each ordinal-1 subset of the terms:
     ...     Question)
     u'(firefox&run&slow&system&ubuntu)|(run&slow&system&ubuntu)|(firefox&slow&system&ubuntu)|(firefox&run&system&ubuntu)|(firefox&run&slow&ubuntu)|(firefox&run&slow&system)'
 
-Short queries are not expanded like this:
+Short queries are expanded more simply:
 
     >>> nl_phrase_search('system is slow', Question)
-    u'slow&system'
+    u'slow|system'
 
 
 ==== Using other constraints ====
@@ -711,4 +713,4 @@ questions:
     ...     'firefox is slow', Question,
     ...     'distribution = %s AND sourcepackagename = %s' % sqlvalues(
     ...     ubuntu, firefox_package.sourcepackagename))
-    u'firefox&slow'
+    u'firefox|slow'

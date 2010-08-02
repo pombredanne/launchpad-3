@@ -75,17 +75,15 @@ def _nl_phrase_search(terms, table, constraints, extra_constraints_tables):
 
     This function groups the terms with & clause, and creates an additional
     & grouping for each subset of terms created by discarding one term.
-    
-    When there are less than 3 terms, additional groupings are not created.
 
     See nl_phrase_search for the contract of this function.
     """
     terms = set(terms)
-    # As a special case, we don't expand a 2-term search : its very slow and
-    # too noisy at the moment.
+    # Special cased because in the two-term case there is no benefit by having
+    # a more complex rank & search function.
     # sorted for doctesting convenience - should have no impact on tsearch2.
     if len(terms) < 3:
-        return '&'.join(sorted(terms))
+        return '|'.join(sorted(terms))
     # Expand
     and_groups = [None] * (len(terms) + 1)
     for pos in range(len(terms) + 1):
