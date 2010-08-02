@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,7 +17,6 @@ from canonical.launchpad.testing.pages import (
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.testing.pages import find_tags_by_class
 
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import License
@@ -83,10 +82,8 @@ class TestProductFiles(unittest.TestCase):
             get_feedback_messages(firefox_owner.contents),
             [u"Your file 'foo\xa5.txt' has been uploaded."])
         firefox_owner.open('http://launchpad.dev/firefox/+download')
-
         content = find_main_content(firefox_owner.contents)
-        tables = find_tags_by_class(str(content), 'listing')
-        rows = tables[1].findAll('tr')
+        rows = content.findAll('tr')
 
         a_list = rows[-1].findAll('a')
         # 1st row
