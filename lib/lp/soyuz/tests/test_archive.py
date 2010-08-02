@@ -131,7 +131,13 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def publish_ddeb_in_archive(self, archive):
+    def publishDDEBInArchive(self, archive):
+        """Publish an arbitrary DDEB with content in to the archive.
+
+        Publishes a DDEB that will take up some space in to `archive`.
+
+        :param archive: the IArchive to publish to.
+        """
         binarypackagerelease = self.factory.makeBinaryPackageRelease(
             binpackageformat=BinaryPackageFormat.DDEB)
         self.factory.makeBinaryPackagePublishingHistory(
@@ -141,49 +147,61 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
             binarypackagerelease=binarypackagerelease,
             filetype=BinaryPackageFileType.DDEB)
 
+    def test_empty_ppa_has_zero_binaries_size(self):
+        # An empty PPA has no binaries so has zero binaries_size.
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEquals(0, ppa.binaries_size)
+
     def test_binaries_size_does_not_include_ddebs_for_ppas(self):
         # DDEBs are not computed in the PPA binaries size because
         # they are not being published. See bug #399444.
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertEquals(0, ppa.binaries_size)
         self.publish_ddeb_in_archive(ppa)
         self.assertEquals(0, ppa.binaries_size)
+
+    def test_empty_primary_archive_has_zero_binaries_size(self):
+        # PRIMARY archives have zero binaries_size when created.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertEquals(0, archive.binaries_size)
 
     def test_binaries_size_includes_ddebs_for_other_archives(self):
         # DDEBs size are computed for all archive purposes, except PPAs.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        self.assertEquals(0, archive.binaries_size)
         self.publish_ddeb_in_archive(archive)
         self.assertNotEquals(0, archive.binaries_size)
 
     def test_sources_size_on_empty_archive(self):
         # Zero is returned for an archive without sources.
         archive = self.factory.makeArchive()
-        self.assertEquals(
-            0, archive.sources_size,
-            'Zero should be returned for an archive without sources.')
+        self.assertEquals(0, archive.sources_size)
 
-    def publish_source_file(self, archive, libraryfile):
+    def publishSourceFile(self, archive, library_file):
+        """Publish a source package with the given content to the archive.
+
+        :param archive: the IArchive to publish to.
+        :param library_file: a LibraryFileAlias for the content of the
+            source file.
+        """
         sourcepackagerelease = self.factory.makeSourcePackageRelease()
         self.factory.makeSourcePackagePublishingHistory(
             archive=archive, sourcepackagerelease=sourcepackagerelease,
             status=PackagePublishingStatus.PUBLISHED)
         self.factory.makeSourcePackageReleaseFile(
             sourcepackagerelease=sourcepackagerelease,
-            libraryfile=libraryfile)
+            library_file=library_file)
 
     def test_sources_size_does_not_count_duplicated_files(self):
         # If there are multiple copies of the same file name/size
         # only one will be counted.
         archive = self.factory.makeArchive()
-        libraryfile = self.factory.makeLibraryFileAlias()
-        self.publish_source_file(archive, libraryfile)
+        library_file = self.factory.makeLibraryFileAlias()
+        self.publish_source_file(archive, library_file)
         self.assertEquals(
-            libraryfile.content.filesize, archive.sources_size)
+            library_file.content.filesize, archive.sources_size)
 
-        self.publish_source_file(archive, libraryfile)
+        self.publish_source_file(archive, library_file)
         self.assertEquals(
-            libraryfile.content.filesize, archive.sources_size)
+            library_file.content.filesize, archive.sources_size)
 
 
 class TestSeriesWithSources(TestCaseWithFactory):
