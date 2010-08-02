@@ -210,12 +210,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
         args['archives'] = get_sources_list_for_building(build,
             build.distro_arch_series, build.source_package_release.name)
-
-        # Let the build slave know whether this is a build in a private
-        # archive.
         args['archive_private'] = build.archive.private
-
-        # Tell the slave if we want dbgsyms to be built.
         args['build_debug_symbols'] = build.archive.build_debug_symbols
 
         return args
