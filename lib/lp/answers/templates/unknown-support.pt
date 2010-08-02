@@ -29,10 +29,14 @@
             condition="not:repeat/package/end">, </tal:comma></tal:packages>.
         </p>
 
-        <p id="configure-support">
+        <p id="configure-support"
+          tal:define="link context/menu:overview/configure_answers"
+          tal:condition="link/enabled">
           Launchpad allows your project to track questions and create FAQs.
-          _Getting started with support tracking in Launchpad_.
-          (/) Configure support tracking.
+          <br /><a class="sprite maybe"
+            href="https://help.launchpad.net/Answers">Getting started
+          with support tracking in Launchpad</a>.
+          <br /><a tal:replace="structure link/fmt:link" />
         </p>
       </div>
     </div>
