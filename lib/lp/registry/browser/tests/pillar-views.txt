@@ -53,11 +53,9 @@ The view provides a list of enabled links that is rendered by the template.
       <h2>Get Involved</h2>
       <ul class="involvement">
         <li>
-          <table...
           <a href=... class="...bugs">Report a bug</a>...
         </li>
         <li>
-          <table...
           <a href=... class="...answers">Ask a question</a>...
         </li>
       </ul>
@@ -88,9 +86,9 @@ to configure each service.
     submit_code
 
     >>> for link in view.configuration_links:
-    ...     print link.name
-    configure_answers
+    ...     print link['link'].name
     configure_bugtracker
+    configure_answers
     configure_translations
     set_branch
 
