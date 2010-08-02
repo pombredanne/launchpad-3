@@ -183,8 +183,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
         Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
-    duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
-    readonly_duplicateof = exported(
+    duplicateof = exported(
         DuplicateBug(title=_('Duplicate Of'), required=False, readonly=True),
         exported_as='duplicate_of')
     # This is redefined from IPrivacy.private because the attribute is
@@ -754,8 +753,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     def markUserAffected(user, affected=True):
         """Mark :user: as affected by this bug."""
 
-    @mutator_for(readonly_duplicateof)
-    @operation_parameters(duplicate_of=copy_field(readonly_duplicateof))
+    @mutator_for(duplicateof)
+    @operation_parameters(duplicate_of=copy_field(duplicateof))
     @export_write_operation()
     def markAsDuplicate(duplicate_of):
         """Mark this bug as a duplicate of another."""
