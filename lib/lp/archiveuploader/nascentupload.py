@@ -27,7 +27,7 @@ from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
-    BaseBinaryUploadFile)
+    BaseBinaryUploadFile, DdebBinaryUploadFile, DebBinaryUploadFile)
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
@@ -81,10 +81,6 @@ class NascentUpload:
     binaryful = False
     archindep = False
     archdep = False
-
-    # Defined in check_sourceful_consistency()
-    native = False
-    hasorig = False
 
     # Defined if we successfully do_accept() and storeObjectsInDatabase()
     queue_root = None
@@ -157,6 +153,35 @@ class NascentUpload:
         self.logger.debug("Verifying files in upload.")
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
+
+        unmatched_ddebs = {}
+        for uploaded_file in self.changes.files:
+            if isinstance(uploaded_file, DdebBinaryUploadFile):
+                ddeb_key = (uploaded_file.package, uploaded_file.version,
+                            uploaded_file.architecture)
+                if ddeb_key in unmatched_ddebs:
+                    self.reject("Duplicated debug packages: %s %s (%s)" %
+                        ddeb_key)
+                else:
+                    unmatched_ddebs[ddeb_key] = uploaded_file
+
+        for uploaded_file in self.changes.files:
+            # We need exactly a DEB, not a DDEB.
+            if (isinstance(uploaded_file, DebBinaryUploadFile) and
+                not isinstance(uploaded_file, DdebBinaryUploadFile)):
+                try:
+                    matching_ddeb = unmatched_ddebs.pop(
+                        (uploaded_file.package + '-dbgsym',
+                         uploaded_file.version,
+                         uploaded_file.architecture))
+                except KeyError:
+                    continue
+                uploaded_file.ddeb_file = matching_ddeb
+                matching_ddeb.deb_file = uploaded_file
+
+        if len(unmatched_ddebs) > 0:
+            self.reject("Orphaned debug packages: %s" % ', '.join('%s %s (%s)' % d
+                for d in unmatched_ddebs))
 
         if (len(self.changes.files) == 1 and
             isinstance(self.changes.files[0], CustomUploadFile)):
@@ -308,30 +333,16 @@ class NascentUpload:
         assert self.sourceful, (
             "Source consistency check called for a non-source upload")
 
-        dsc = 0
-        native_tarball = 0
-        orig_tarball = 0
-
-        for uploaded_file in self.changes.files:
-            filetype = determine_source_file_type(uploaded_file.filename)
-            if filetype == SourcePackageFileType.DSC:
-                dsc += 1
-            elif (filetype == SourcePackageFileType.NATIVE_TARBALL
-                  and not isinstance(uploaded_file, CustomUploadFile)):
-                native_tarball += 1
-            elif filetype == SourcePackageFileType.ORIG_TARBALL:
-                orig_tarball += 1
-
+        dsc = len([
+            file for file in self.changes.files
+            if determine_source_file_type(file.filename) ==
+                SourcePackageFileType.DSC])
 
         # It is never sane to upload more than one source at a time.
         if dsc > 1:
             self.reject("Changes file lists more than one .dsc")
-
         if dsc == 0:
             self.reject("Sourceful upload without a .dsc")
-
-        self.native = bool(native_tarball)
-        self.hasorig = bool(orig_tarball)
 
     def _check_binaryful_consistency(self):
         """Heuristic checks on a binaryful upload.
@@ -561,8 +572,17 @@ class NascentUpload:
         uploaded file targeted to an architecture not present in the
         distroseries in context. So callsites needs to be aware.
         """
+        # If we are dealing with a DDEB, use the DEB's overrides.
+        # If there's no deb_file set, don't worry about it. Rejection is
+        # already guaranteed.
+        if (isinstance(uploaded_file, DdebBinaryUploadFile)
+            and uploaded_file.deb_file):
+            ancestry_name = uploaded_file.deb_file.package
+        else:
+            ancestry_name = uploaded_file.package
+
         binary_name = getUtility(
-            IBinaryPackageNameSet).queryByName(uploaded_file.package)
+            IBinaryPackageNameSet).queryByName(ancestry_name)
 
         if binary_name is None:
             return None
@@ -939,7 +959,12 @@ class NascentUpload:
             # Container for the build that will be processed.
             processed_builds = []
 
-            for binary_package_file in self.changes.binary_package_files:
+            # Create the BPFs referencing DDEBs last. This lets
+            # storeInDatabase find and link DDEBs when creating DEBs.
+            bpfs_to_create = sorted(
+                self.changes.binary_package_files,
+                key=lambda file: file.ddeb_file is not None)
+            for binary_package_file in bpfs_to_create:
                 if self.sourceful:
                     # The reason we need to do this verification
                     # so late in the game is that in the

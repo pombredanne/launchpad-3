@@ -1436,7 +1436,16 @@ CREATE OR REPLACE FUNCTION lp_mirror_person_ins() RETURNS trigger
 SECURITY DEFINER LANGUAGE plpgsql AS
 $$
 BEGIN
-    INSERT INTO lp_Person SELECT NEW.*;
+    INSERT INTO lp_Person (
+        id, displayname, teamowner, teamdescription, name, language, fti,
+        defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy,
+        merged, datecreated, homepage_content, icon, mugshot,
+        hide_email_addresses, creation_rationale, creation_comment,
+        registrant, logo, renewal_policy, personal_standing,
+        personal_standing_reason, mail_resumption_date,
+        mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates,
+        visibility, verbose_bugnotifications, account) 
+        SELECT NEW.*;
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
 $$;
@@ -1502,14 +1511,6 @@ BEGIN
         subscriptionpolicy = NEW.subscriptionpolicy,
         merged = NEW.merged,
         datecreated = NEW.datecreated,
-        addressline1 = NEW.addressline1,
-        addressline2 = NEW.addressline2,
-        organization = NEW.organization,
-        city = NEW.city,
-        province = NEW.province,
-        country = NEW.country,
-        postcode = NEW.postcode,
-        phone = NEW.phone,
         homepage_content = NEW.homepage_content,
         icon = NEW.icon,
         mugshot = NEW.mugshot,

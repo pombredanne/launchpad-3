@@ -238,13 +238,10 @@ Let's define a helper function for the exports.
     ...         ITranslationFileData)
     ...
     ...     translation_exporter = getUtility(ITranslationExporter)
-    ...     translation_format_exporter = (
-    ...         translation_exporter.getExporterProducingTargetFileFormat(
-    ...             format))
     ...     requested_file = getAdapter(
     ...         translation_file, ITranslationFileData, 'all_messages')
-    ...     exported_file = translation_format_exporter.exportTranslationFiles(
-    ...         [requested_file])
+    ...     exported_file = translation_exporter.exportTranslationFiles(
+    ...         [requested_file], target_format=format)
     ...     return exported_file.read()
 
 Make sure all the date constants are replaced with real values in database:
@@ -253,8 +250,8 @@ Make sure all the date constants are replaced with real values in database:
 
 Template export turns it back into a KDE-style PO file:
 
-    >>> print export_with_format(firefox_potemplate,
-    ...                          TranslationFileFormat.KDEPO)
+    >>> print export_with_format(
+    ...     firefox_potemplate, TranslationFileFormat.KDEPO)
     #, fuzzy
     msgid ""
     msgstr ""

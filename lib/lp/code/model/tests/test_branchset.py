@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
+from lp.code.interfaces.branch import IBranchSet
 from lp.code.model.branch import BranchSet
 from lp.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
@@ -19,6 +20,10 @@ class TestBranchSet(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.branch_set = BranchSet()
+
+    def test_provides_IBranchSet(self):
+        # BranchSet instances provide IBranchSet.
+        self.assertProvides(self.branch_set, IBranchSet)
 
     def test_getByUrls(self):
         # getByUrls returns a list of branches matching the list of URLs that

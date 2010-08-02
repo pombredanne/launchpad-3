@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Text
+from zope.schema import Int
 
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.webapp import (
@@ -26,6 +26,12 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild)
 from lp.services.job.interfaces.job import JobStatus
 
+
+UNEDITABLE_BUILD_STATES = (
+    BuildStatus.FULLYBUILT,
+    BuildStatus.FAILEDTOBUILD,
+    BuildStatus.SUPERSEDED,
+    BuildStatus.FAILEDTOUPLOAD,)
 
 class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
 
@@ -43,7 +49,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def cancel(self):
-        if self.context.buildqueue_record is None:
+        if self.context.status in UNEDITABLE_BUILD_STATES:
             enabled = False
         else:
             enabled = True
@@ -51,7 +57,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def rescore(self):
-        if self.context.buildqueue_record is None:
+        if self.context.status in UNEDITABLE_BUILD_STATES:
             enabled = False
         else:
             enabled = True
@@ -64,7 +70,7 @@ class SourcePackageRecipeBuildView(LaunchpadView):
     @property
     def status(self):
         """A human-friendly status string."""
-        if (self.context.buildstate == BuildStatus.NEEDSBUILD
+        if (self.context.status == BuildStatus.NEEDSBUILD
             and self.eta is None):
             return 'No suitable builders'
         return {
@@ -77,7 +83,7 @@ class SourcePackageRecipeBuildView(LaunchpadView):
             BuildStatus.SUPERSEDED: (
                 'Could not build because source package was superseded'),
             BuildStatus.FAILEDTOUPLOAD: 'Could not be uploaded correctly',
-            }.get(self.context.buildstate, self.context.buildstate.title)
+            }.get(self.context.status, self.context.status.title)
 
     @property
     def eta(self):
@@ -103,12 +109,12 @@ class SourcePackageRecipeBuildView(LaunchpadView):
         """The date when the build completed or is estimated to complete."""
         if self.estimate:
             return self.eta
-        return self.context.datebuilt
+        return self.context.date_finished
 
     @property
     def estimate(self):
         """If true, the date value is an estimate."""
-        if self.context.datebuilt is not None:
+        if self.context.date_finished is not None:
             return False
         return self.eta is not None
 
@@ -140,7 +146,7 @@ class SourcePackageRecipeBuildRescoreView(LaunchpadFormView):
 
     class schema(Interface):
         """Schema for deleting a build."""
-        score = Text(
+        score = Int(
             title=u'Score', required=True,
             description=u'The score of the recipe.')
 
@@ -150,15 +156,6 @@ class SourcePackageRecipeBuildRescoreView(LaunchpadFormView):
     def cancel_url(self):
         return canonical_url(self.context)
     next_url = cancel_url
-
-    def validate(self, data):
-        try:
-            score = int(data['score'])
-        except ValueError:
-            self.setFieldError(
-                'score',
-                'You have specified an invalid value for score. '
-                'Please specify an integer')
 
     @action('Rescore build', name='rescore')
     def request_action(self, action, data):

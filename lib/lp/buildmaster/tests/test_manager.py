@@ -5,6 +5,7 @@
 
 import os
 import signal
+import time
 import transaction
 import unittest
 
@@ -37,6 +38,7 @@ from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing import TestCase as LaunchpadTestCase
 
 
 class TestRecordingSlaves(TrialTestCase):
@@ -938,11 +940,88 @@ class TestNewBuilders(TrialTestCase):
             "scheduleScan did not get called")
 
 
-class TestBuilddManagerScript(unittest.TestCase):
+def is_file_growing(filepath, poll_interval=1, poll_repeat=10):
+    """Poll the file size to see if it grows.
+
+    Checks the size of the file in given intervals and returns True as soon as
+    it sees the size increase between two polls. If the size does not
+    increase after a given number of polls, the function returns False.
+    If the file does not exist, the function silently ignores that and waits
+    for it to appear on the next pall. If it has not appeared by the last
+    poll, the exception is propagated.
+    Program execution is blocked during polling.
+
+    :param filepath: The path to the file to be palled.
+    :param poll_interval: The number of seconds in between two polls.
+    :param poll_repeat: The number times to repeat the polling, so the size is
+        polled a total of poll_repeat+1 times. The default values create a
+        total poll time of 11 seconds. The BuilddManager logs
+        "scanning cycles" every 5 seconds so these settings should see an
+        increase if the process is logging to this file. 
+    """
+    last_size = None
+    for poll in range(poll_repeat+1):
+        try:
+            statinfo = os.stat(filepath)
+            if last_size is None:
+                last_size = statinfo.st_size
+            elif statinfo.st_size > last_size:
+                return True
+            else:
+                # The file should not be shrinking.
+                assert statinfo.st_size == last_size
+        except OSError:
+            if poll == poll_repeat:
+                # Propagate only on the last loop, i.e. give up.
+                raise
+        time.sleep(poll_interval)
+    return False
+
+
+class TestBuilddManagerScript(LaunchpadTestCase):
 
     layer = LaunchpadScriptLayer
 
     def testBuilddManagerRuns(self):
-        # Ensure `buildd-manager.tac` starts and stops correctly.
+        # The `buildd-manager.tac` starts and stops correctly.
         BuilddManagerTestSetup().setUp()
         BuilddManagerTestSetup().tearDown()
+
+    def testBuilddManagerLogging(self):
+        # The twistd process logs as execpected.
+        test_setup = BuilddManagerTestSetup()
+        logfilepath = test_setup.logfile
+        test_setup.setUp()
+        self.addCleanup(test_setup.tearDown)
+        # The process logs to its logfile.
+        self.assertTrue(is_file_growing(logfilepath))
+        # After rotating the log, the process keeps using the old file, no
+        # new file is created.
+        rotated_logfilepath = logfilepath+'.1'
+        os.rename(logfilepath, rotated_logfilepath)
+        self.assertTrue(is_file_growing(rotated_logfilepath))
+        self.assertFalse(os.access(logfilepath, os.F_OK))
+        # Upon receiving the USR1 signal, the process will re-open its log
+        # file at the old location.
+        test_setup.sendSignal(signal.SIGUSR1)
+        self.assertTrue(is_file_growing(logfilepath))
+        self.assertTrue(os.access(rotated_logfilepath, os.F_OK))
+
+    def testBuilddManagerLoggingNoRotation(self):
+        # The twistd process does not perform its own rotation.
+        # By default twistd will rotate log files that grow beyond
+        # 1000000 bytes but this is deactivated for the buildd manager.
+        test_setup = BuilddManagerTestSetup()
+        logfilepath = test_setup.logfile
+        rotated_logfilepath = logfilepath+'.1'
+        # Prefill the log file to just under 1000000 bytes.
+        test_setup.precreateLogfile(
+            "2010-07-27 12:36:54+0200 [-] Starting scanning cycle.\n", 18518)
+        test_setup.setUp()
+        self.addCleanup(test_setup.tearDown)
+        # The process logs to the logfile.
+        self.assertTrue(is_file_growing(logfilepath))
+        # No rotation occured.
+        self.assertFalse(
+            os.access(rotated_logfilepath, os.F_OK),
+            "Twistd's log file was rotated by twistd.")

@@ -12,7 +12,7 @@ from lazr.restful.declarations import (
     exported, export_as_webservice_entry, export_read_operation,
     operation_returns_collection_of)
 
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from canonical.launchpad.fields import PersonChoice
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.registry.interfaces.distribution import IDistribution
@@ -124,7 +124,7 @@ class IPOTemplate(IRosettaStats):
         required=True,
         default=True), exported_as='active')
 
-    owner = exported(ParticipatingPersonChoice(
+    owner = exported(PersonChoice(
         title=_("Owner"),
         required=True,
         description=_(
@@ -642,6 +642,18 @@ class IPOTemplateSet(Interface):
         migration spec.
         """
 
+    def wipeSuggestivePOTemplatesCache():
+        """Erase suggestive-templates cache.
+
+        :return: Number of rows deleted.
+        """
+
+    def populateSuggestivePOTemplatesCache():
+        """Populate suggestive-templates cache.
+
+        :return: Number of rows inserted.
+        """
+
 
 class IPOTemplateSharingSubset(Interface):
     """A subset of sharing PO templates."""
@@ -780,6 +792,20 @@ class IHasTranslationTemplates(Interface):
         A template's language count is the number of `POFile`s that
         exist for it.
         """
+
+class ITranslationTemplatesCollection(Interface):
+    """A `Collection` of `POTemplate`s."""
+
+    def joinOuterPOFile(language=None):
+        """Outer-join `POFile` into the collection.
+
+        :return: A `TranslationTemplatesCollection` with an added outer
+            join to `POFile`.
+        """
+
+    def select(*args):
+        """Return a ResultSet for this collection with values set to args."""
+
 
 # Monkey patch for circular import avoidance done in
 # _schema_circular_imports.py

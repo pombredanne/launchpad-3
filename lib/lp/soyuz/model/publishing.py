@@ -50,6 +50,7 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.worlddata.model.country import Country
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (BinaryPackageRelease,
     BinaryPackageReleaseDownloadCount)
@@ -517,14 +518,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         :param available_archs: Architectures to consider
         :return: Sequence of `IDistroArch` instances.
         """
-        associated_proc_families = [
-            archivearch.processorfamily for archivearch
-            in getUtility(IArchiveArchSet).getByArchive(self.archive)]
         # Return all distroarches with unrestricted processor families or with
         # processor families the archive is explicitly associated with.
         return [distroarch for distroarch in available_archs
             if not distroarch.processorfamily.restricted or
-               distroarch.processorfamily in associated_proc_families]
+               distroarch.processorfamily in
+                    self.archive.enabled_restricted_families]
 
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
@@ -975,6 +974,26 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 section=self.section,
                 priority=self.priority)
 
+    def _getCorrespondingDDEBPublications(self):
+        """Return remaining publications of the corresponding DDEB.
+
+        Only considers binary publications in the corresponding debug
+        archive with the same distroarchseries, pocket, component, section
+        and priority.
+        """
+        return IMasterStore(BinaryPackagePublishingHistory).find(
+                BinaryPackagePublishingHistory,
+                BinaryPackagePublishingHistory.status.is_in(
+                    [PUBLISHED, PENDING]),
+                BinaryPackagePublishingHistory.distroarchseries ==
+                    self.distroarchseries,
+                binarypackagerelease=self.binarypackagerelease.debug_package,
+                archive=self.archive.debug_archive,
+                pocket=self.pocket,
+                component=self.component,
+                section=self.section,
+                priority=self.priority)
+
     def supersede(self, dominant=None, logger=None):
         """See `IBinaryPackagePublishingHistory`."""
         # At this point only PUBLISHED (ancient versions) or PENDING (
@@ -993,6 +1012,16 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         super(BinaryPackagePublishingHistory, self).supersede()
 
         if dominant is not None:
+            # DDEBs cannot themselves be dominant; they are always dominated
+            # by their corresponding DEB. Any attempt to dominate with a
+            # dominant DDEB is a bug.
+            assert (
+                dominant.binarypackagerelease.binpackageformat !=
+                    BinaryPackageFormat.DDEB), (
+                "Should not dominate with %s (%s); DDEBs cannot dominate" % (
+                    dominant.binarypackagerelease.title,
+                    dominant.distroarchseries.architecturetag))
+
             dominant_build = dominant.binarypackagerelease.build
             distroarchseries = dominant_build.distro_arch_series
             if logger is not None:
@@ -1010,7 +1039,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             # between releases.
             self.supersededby = dominant_build
 
-        # If this is architecture-independet, all publications with the same
+        for dominated in self._getCorrespondingDDEBPublications():
+            dominated.supersede(dominant, logger)
+
+        # If this is architecture-independent, all publications with the same
         # context and overrides should be dominated simultaneously.
         if not self.binarypackagerelease.architecturespecific:
             for dominated in self._getOtherPublications():
