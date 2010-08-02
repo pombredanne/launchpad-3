@@ -78,7 +78,6 @@ class PillarView(LaunchpadView):
 
     configuration_links = []
     visible_disabled_link_names = []
-    show_progress = False
 
     def __init__(self, context, request):
         super(PillarView, self).__init__(context, request)

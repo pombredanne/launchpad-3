@@ -349,7 +349,6 @@ class ProductInvolvementView(PillarView):
     """Encourage configuration of involvement links for projects."""
 
     has_involvement = True
-    show_progress = True
 
     @property
     def visible_disabled_link_names(self):
