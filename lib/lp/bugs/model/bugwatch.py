@@ -43,8 +43,8 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import urlappend, urlsplit
-from canonical.launchpad.webapp.interfaces import NotFoundError
 
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
     BUG_WATCH_ACTIVITY_SUCCESS_STATUSES, BugWatchActivityStatus,

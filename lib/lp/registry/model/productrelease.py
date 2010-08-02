@@ -25,7 +25,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile, IProductReleaseSet,
     UpstreamFileType)

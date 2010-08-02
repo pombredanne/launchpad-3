@@ -19,7 +19,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from canonical.lp import initZopeless
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket

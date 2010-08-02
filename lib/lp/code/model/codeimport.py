@@ -33,7 +33,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IStore
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.code.enums import (
     BranchType, CodeImportJobState, CodeImportResultStatus,
     CodeImportReviewStatus, RevisionControlSystems)

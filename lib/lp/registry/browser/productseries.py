@@ -80,8 +80,7 @@ from canonical.launchpad.webapp import (
     stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, UnexpectedFormData)
+from lp.app.errors import NotFoundError, UnexpectedFormData
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
     ReturnToReferrerMixin)

@@ -7,14 +7,11 @@ __metaclass__ = type
 __all__ = ["FileBugAPI", "ExternalBugTrackerTokenAPI"]
 
 from zope.component import getUtility
-from zope.event import notify
 from zope.interface import implements
-
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.externalbugtracker import IExternalBugTrackerTokenAPI
 from lp.registry.interfaces.distribution import IDistributionSet
