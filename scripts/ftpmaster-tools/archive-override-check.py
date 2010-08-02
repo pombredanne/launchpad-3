@@ -15,6 +15,8 @@ from optparse import OptionParser
 import sys
 
 from zope.component import getUtility
+# Still needed fake import to stop circular imports.
+import canonical.launchpad.interfaces
 
 from canonical.config import config
 from canonical.launchpad.scripts import (
