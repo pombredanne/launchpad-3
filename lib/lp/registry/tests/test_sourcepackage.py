@@ -225,6 +225,21 @@ class TestSourcePackage(TestCaseWithFactory):
         self.assertRaises(
             NoPartnerArchive, sourcepackage.get_default_archive)
 
+    def test_source_package_summary_no_releases_returns_None(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        self.assertEqual(sourcepackage.summary, None)
+
+    def test_source_package_summary_with_releases_returns_None(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        self.factory.makeSourcePackageRelease(sourcepackagename=sourcepackage.sourcepackagename)
+        self.assertEqual(sourcepackage.summary, None)
+
+    def test_source_package_summary_with_binaries_returns_list(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        self.factory.makeSourcePackageRelease(sourcepackagename=sourcepackage.sourcepackagename)
+      	bpn = self.factory.makeBinaryPackageName(name=sourcepackage.sourcepackagenam)
+        self.factory.makeBinaryPackageRelease(binarypackagename=bpn, summary="test summary") 
+        self.assertEqual(sourcepackage.summary, "test summary")
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
     """Tests for source package branch linking security."""
