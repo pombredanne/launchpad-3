@@ -320,6 +320,12 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertIsInstance(target, ProductBranchTarget)
 
+    def test_productseries_adapter(self):
+        series = self.factory.makeProductSeries(product=self.original)
+        target = IBranchTarget(series)
+        self.assertIsInstance(target, ProductBranchTarget)
+        self.assertEqual(self.original, target.context)
+
     def test_components(self):
         target = IBranchTarget(self.original)
         self.assertEqual([self.original], list(target.components))

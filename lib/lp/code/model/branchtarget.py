@@ -340,3 +340,8 @@ class ProductBranchTarget(_BaseBranchTarget):
 def get_canonical_url_data_for_target(branch_target):
     """Return the `ICanonicalUrlData` for an `IBranchTarget`."""
     return ICanonicalUrlData(branch_target.context)
+
+
+def product_series_to_branch_target(product_series):
+    """The Product itself is the branch target given a ProductSeries."""
+    return ProductBranchTarget(product_series.product)
