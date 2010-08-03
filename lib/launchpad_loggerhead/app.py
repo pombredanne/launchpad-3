@@ -297,7 +297,7 @@ class WrappedStartResponse(object):
         self._write_callable = self._real_start_response(*self.response_start)
 
     def write_wrapper(self, data):
-        if self._write_callable is None:
+        if not self.body_started:
             self.really_start()
         self._write_callable(data)
 
