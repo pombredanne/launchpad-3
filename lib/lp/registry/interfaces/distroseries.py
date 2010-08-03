@@ -36,8 +36,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.version import sane_version
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
+from lp.app.errors import NameLookupFailed
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
 from lp.bugs.interfaces.bugtarget import (

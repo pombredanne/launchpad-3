@@ -66,8 +66,17 @@ an error message will be displayed.
 The user enters his problem summary and a list of similar FAQs and
 questions are displayed.
 
+XXX: Original search, disabled due to performance issues RBC 20100725. This
+will be reinstated when cheap relevance filtering is available / when search
+is overhauled.
+
     >>> user_browser.getControl('Summary').value = (
     ...     'Visiting a web page requiring java crashes firefox')
+
+For now, use a closer search:
+
+    >>> user_browser.getControl('Summary').value = (
+    ...     'java web pages')
     >>> user_browser.getControl('Continue').click()
     >>> contents = find_main_content(user_browser.contents)
     >>> similar_faqs = contents.find(id='similar-faqs')
@@ -122,7 +131,7 @@ by filling in the 'Description' field. He may also edit the
 summary he provided.
 
     >>> user_browser.getControl('Summary').value
-    'Visiting a web page requiring java crashes firefox'
+    'java web pages'
 
 If the user doesn't provide details, he'll get an error message:
 
