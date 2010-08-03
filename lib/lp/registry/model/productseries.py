@@ -26,6 +26,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bug import (
@@ -57,7 +58,6 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
@@ -465,12 +465,15 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
             for language, pofile in ordered_results:
                 psl = ProductSeriesLanguage(self, language, pofile=pofile)
-                psl.setCounts(pofile.potemplate.messageCount(),
-                              pofile.currentCount(),
-                              pofile.updatesCount(),
-                              pofile.rosettaCount(),
-                              pofile.unreviewedCount(),
-                              pofile.date_changed)
+                total = pofile.potemplate.messageCount()
+                imported = pofile.currentCount()
+                changed = pofile.updatesCount()
+                rosetta = pofile.rosettaCount()
+                unreviewed = pofile.unreviewedCount()
+                translated = imported + rosetta
+                new = rosetta - changed
+                psl.setCounts(total, translated, new, changed, unreviewed)
+                psl.last_changed_date = pofile.date_changed
                 results.append(psl)
         else:
             # If there is more than one template, do a single
@@ -498,22 +501,15 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                 POTemplate.iscurrent==True,
                 Language.id!=english.id).group_by(Language)
 
-            # XXX: Ursinha 2009-11-02: The Max(POFile.date_changed) result
-            # here is a naive datetime. My guess is that it happens
-            # because UTC awareness is attibuted to the field in the POFile
-            # model class, and in this case the Max function deals directly
-            # with the value returned from the database without
-            # instantiating it.
-            # This seems to be irrelevant to what we're trying to achieve
-            # here, but making a note either way.
-
             ordered_results = query.order_by(['Language.englishname'])
 
-            for (language, imported, changed, new, unreviewed,
-                last_changed) in ordered_results:
+            for (language, imported, changed, rosetta, unreviewed,
+                 last_changed) in ordered_results:
                 psl = ProductSeriesLanguage(self, language)
-                psl.setCounts(
-                    total, imported, changed, new, unreviewed, last_changed)
+                translated = imported + rosetta
+                new = rosetta - changed
+                psl.setCounts(total, translated, new, changed, unreviewed)
+                psl.last_changed_date = last_changed
                 results.append(psl)
 
         return results

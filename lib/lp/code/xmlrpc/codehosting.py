@@ -26,15 +26,14 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interaction import setupInteractionForPerson
-from canonical.launchpad.webapp.interfaces import (
-    NameLookupFailed, NotFoundError)
 from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.helpers import return_fault
 
+from lp.app.errors import NameLookupFailed, NotFoundError
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
-from lp.code.enums import BranchType, match_enum_title
-from lp.code.interfaces.branch import BranchCreationException
+from lp.code.enums import BranchType
+from lp.code.errors import BranchCreationException
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
@@ -206,13 +205,9 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             if branch is None:
                 return faults.NoBranchWithID(branch_id)
 
-            control_format = match_enum_title(
-                ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
-            branch_format = match_enum_title(
-                BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
-            repository_format = match_enum_title(
-                RepositoryFormat, repository_string,
-                RepositoryFormat.UNRECOGNIZED)
+            control_format = ControlFormat.get_enum(control_string)
+            branch_format = BranchFormat.get_enum(branch_string)
+            repository_format = RepositoryFormat.get_enum(repository_string)
 
             if requester == LAUNCHPAD_SERVICES:
                 branch = removeSecurityProxy(branch)

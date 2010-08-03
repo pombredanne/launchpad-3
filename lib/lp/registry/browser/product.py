@@ -69,6 +69,7 @@ from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
@@ -78,7 +79,7 @@ from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
+    ILaunchBag, UnsafeFormGetSubmissionError)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductReviewSearch, License
 from lp.registry.interfaces.series import SeriesStatus

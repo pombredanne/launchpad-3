@@ -107,7 +107,6 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         development_package = self.original.development_version
         default_branch = self.factory.makePackageBranch(
             sourcepackage=development_package)
-        default_branch.startMirroring()
         removeSecurityProxy(default_branch).branchChanged(
             '', self.factory.getUniqueString(), None, None, None)
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
@@ -347,7 +346,6 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # default stacked-on branch.
         branch = self.factory.makeProductBranch(product=self.original)
         self._setDevelopmentFocus(self.original, branch)
-        branch.startMirroring()
         removeSecurityProxy(branch).branchChanged(
             '', 'rev1', None, None, None)
         target = IBranchTarget(self.original)
@@ -468,17 +466,13 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
         # the current user, even if those branches have already been mirrored.
         branch = self.factory.makeAnyBranch(private=True)
         naked_branch = removeSecurityProxy(branch)
-        naked_branch.startMirroring()
         naked_branch.branchChanged(
             '', self.factory.getUniqueString(), None, None, None)
         self.assertIs(None, check_default_stacked_on(branch))
 
     def test_been_mirrored(self):
-        # `check_default_stacked_on` returns None if passed a remote branch.
-        # We have no Bazaar data for remote branches, so stacking on one is
-        # futile.
+        # `check_default_stacked_on` returns the branch if it has revisions.
         branch = self.factory.makeAnyBranch()
-        branch.startMirroring()
         removeSecurityProxy(branch).branchChanged(
             '', self.factory.getUniqueString(), None, None, None)
         self.assertEqual(branch, check_default_stacked_on(branch))

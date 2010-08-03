@@ -211,7 +211,13 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.universe_component = component_set['universe']
         self.makeSeriesPackage('normal')
         self.makeSeriesPackage('translatable', messages=800)
-        self.makeSeriesPackage('hot', heat=500)
+        hot_package = self.makeSeriesPackage('hot', heat=500)
+        # Create a second SPPH for 'hot', to verify that duplicates are
+        # eliminated in the queries.
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=hot_package.sourcepackagename,
+            distroseries=self.series,
+            component=self.universe_component, section_name='web')
         self.makeSeriesPackage('hot-translatable', heat=250, messages=1000)
         self.makeSeriesPackage('main', is_main=True)
         self.makeSeriesPackage('linked')
@@ -247,6 +253,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
                 owner=self.user)
             removeSecurityProxy(template).messagecount = messages
         self.packages[name] = source_package
+        return source_package
 
     def linkPackage(self, name):
         product_series = self.factory.makeProductSeries()
@@ -271,17 +278,17 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             u'main', u'hot-translatable', u'hot', u'translatable', u'normal']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings(self):
+    def test_getPrioritizedPackagings(self):
         # Verify the ordering of packagings that need more upstream info.
         for name in ['main', 'hot-translatable', 'hot', 'translatable']:
             self.linkPackage(name)
-        packagings = self.series.getPrioritizedlPackagings()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [
             u'main', u'hot-translatable', u'hot', u'translatable', u'linked']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings_bug_tracker(self):
+    def test_getPrioritizedPackagings_bug_tracker(self):
         # Verify the ordering of packagings with and without a bug tracker.
         self.linkPackage('hot')
         self.makeSeriesPackage('cold')
@@ -289,12 +296,12 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         naked_product_series = remove_security_proxy_and_shout_at_engineer(
             product_series)
         naked_product_series.product.bugtraker = self.factory.makeBugTracker()
-        packagings = self.series.getPrioritizedlPackagings()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'hot', u'cold', u'linked']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings_branch(self):
+    def test_getPrioritizedPackagings_branch(self):
         # Verify the ordering of packagings with and without a branch.
         self.linkPackage('translatable')
         self.makeSeriesPackage('withbranch')
@@ -302,12 +309,12 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         naked_product_series = remove_security_proxy_and_shout_at_engineer(
             product_series)
         naked_product_series.branch = self.factory.makeBranch()
-        packagings = self.series.getPrioritizedlPackagings()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'withbranch']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings_translation(self):
+    def test_getPrioritizedPackagings_translation(self):
         # Verify the ordering of translatable packagings that are and are not
         # configured to import.
         self.linkPackage('translatable')
@@ -318,7 +325,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         naked_product_series.branch = self.factory.makeBranch()
         naked_product_series.translations_autoimport_mode = (
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        packagings = self.series.getPrioritizedlPackagings()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'importabletranslatable']
         self.assertEqual(expected, names)
