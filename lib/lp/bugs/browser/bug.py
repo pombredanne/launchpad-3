@@ -556,6 +556,11 @@ class BugView(LaunchpadView, BugViewMixin):
 
         return dupes
 
+    def proxiedUrlForLibraryFile(self, attachment):
+        """Return the proxied download URL for a Librarian file."""
+        return ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
+
 
 class BugWithoutContextView:
     """View that redirects to the new bug page.
