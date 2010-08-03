@@ -7,15 +7,26 @@ __metaclass__ = type
 __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
+    'BranchCannotBePrivate',
+    'BranchCannotBePublic',
+    'BranchCreationException',
+    'BranchCreationForbidden',
+    'BranchCreatorNotMemberOfOwnerTeam',
+    'BranchCreatorNotOwner',
+    'BranchExists',
+    'BranchTargetError',
+    'BranchTypeError',
     'BuildAlreadyPending',
     'BuildNotAllowedForDistro',
     'BranchMergeProposalExists',
+    'CannotDeleteBranch',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
     'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
     'ForbiddenInstruction',
     'InvalidBranchMergeProposal',
+    'NoSuchBranch',
     'PrivateBranchRecipe',
     'ReviewNotPending',
     'TooManyBuilds',
@@ -28,6 +39,8 @@ __all__ = [
 
 from lazr.restful.declarations import webservice_error
 
+from lp.app.errors import NameLookupFailed
+
 
 class BadBranchMergeProposalSearchContext(Exception):
     """The context is not valid for a branch merge proposal search."""
@@ -35,6 +48,93 @@ class BadBranchMergeProposalSearchContext(Exception):
 
 class BadStateTransition(Exception):
     """The user requested a state transition that is not possible."""
+
+
+class BranchCreationException(Exception):
+    """Base class for branch creation exceptions."""
+
+
+class BranchExists(BranchCreationException):
+    """Raised when creating a branch that already exists."""
+
+    webservice_error(400)
+
+    def __init__(self, existing_branch):
+        # XXX: TimPenhey 2009-07-12 bug=405214: This error
+        # message logic is incorrect, but the exact text is being tested
+        # in branch-xmlrpc.txt.
+        params = {'name': existing_branch.name}
+        if existing_branch.product is None:
+            params['maybe_junk'] = 'junk '
+            params['context'] = existing_branch.owner.name
+        else:
+            params['maybe_junk'] = ''
+            params['context'] = '%s in %s' % (
+                existing_branch.owner.name, existing_branch.product.name)
+        message = (
+            'A %(maybe_junk)sbranch with the name "%(name)s" already exists '
+            'for %(context)s.' % params)
+        self.existing_branch = existing_branch
+        BranchCreationException.__init__(self, message)
+
+
+class BranchTargetError(Exception):
+    """Raised when there is an error determining a branch target."""
+
+
+class CannotDeleteBranch(Exception):
+    """The branch cannot be deleted at this time."""
+
+
+class BranchCreationForbidden(BranchCreationException):
+    """A Branch visibility policy forbids branch creation.
+
+    The exception is raised if the policy for the product does not allow
+    the creator of the branch to create a branch for that product.
+    """
+
+
+class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
+    """Branch creator is not a member of the owner team.
+
+    Raised when a user is attempting to create a branch and set the owner of
+    the branch to a team that they are not a member of.
+    """
+
+    webservice_error(400)
+
+
+class BranchCreatorNotOwner(BranchCreationException):
+    """A user cannot create a branch belonging to another user.
+
+    Raised when a user is attempting to create a branch and set the owner of
+    the branch to another user.
+    """
+
+    webservice_error(400)
+
+
+class BranchTypeError(Exception):
+    """An operation cannot be performed for a particular branch type.
+
+    Some branch operations are only valid for certain types of branches.  The
+    BranchTypeError exception is raised if one of these operations is called
+    with a branch of the wrong type.
+    """
+
+
+class BranchCannotBePublic(Exception):
+    """The branch cannot be made public."""
+
+
+class BranchCannotBePrivate(Exception):
+    """The branch cannot be made private."""
+
+
+class NoSuchBranch(NameLookupFailed):
+    """Raised when we try to load a branch that does not exist."""
+
+    _message_prefix = "No such branch"
 
 
 class ClaimReviewFailed(Exception):
