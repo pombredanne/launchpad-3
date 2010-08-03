@@ -34,7 +34,7 @@ ALTER TABLE SourcePackageRecipeBuild
 
 
 ALTER TABLE BuildFarmJob
-  ADD CONSTRAINT end_if_start CHECK (
+  ADD CONSTRAINT started_if_finished CHECK (
     date_finished IS NULL OR date_started IS NOT NULL);
 
 
