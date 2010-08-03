@@ -69,6 +69,13 @@
       handler="canonical.launchpad.webapp.metazcml.authorizations"
       />
 
+  <directive
+      namespace="http://namespaces.zope.org/zope"
+      name="publisher"
+      schema="zope.app.publication.metadirectives.IRequestPublicationDirective"
+      handler="canonical.launchpad.webapp.metazcml.launchpadPublisher"
+      />
+
   <groupingDirective
      namespace="http://namespaces.zope.org/zope"
      name="facet"

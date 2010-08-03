@@ -29,6 +29,14 @@ COMMENT ON COLUMN ApportJob.blob IS 'The TemporaryBlobStorage entry on which the
 COMMENT ON COLUMN ApportJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of ApportJobs.';
 COMMENT ON COLUMN ApportJob.json_data IS 'A JSON struct containing data for the job.';
 
+-- ArchiveJob
+
+COMMENT ON TABLE ArchiveJob is 'Contains references to jobs to be run against Archives.';
+COMMENT ON COLUMN ArchiveJob.archive IS 'The archive on which the job is to be run.';
+COMMENT ON COLUMN ArchiveJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of ArchiveJobs.';
+COMMENT ON COLUMN ArchiveJob.json_data IS 'A JSON struct containing data for the job.';
+
+
 -- Branch
 COMMENT ON TABLE Branch IS 'Bzr branch';
 COMMENT ON COLUMN Branch.registrant IS 'The user that registered the branch.';
@@ -1384,19 +1392,10 @@ COMMENT ON COLUMN SourcePackageRecipeDistroSeries.sourcepackagerecipe IS 'The pr
 
 COMMENT ON TABLE SourcePackageRecipeBuild IS 'The build record for the process of building a source package as described by a recipe.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.distroseries IS 'The distroseries the build was for.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.build_state IS 'The state of the build.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.date_built IS 'When the build record was processed.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.build_duration IS 'How long this build took to be processed.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.build_log IS 'Points to the build_log file stored in librarian.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.builder IS 'Points to the builder which has once processed it.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.package_build IS 'The package_build with the base information about this build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS 'Who requested the build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.manifest IS 'The evaluated recipe that was built.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.archive IS 'The archive the source package will be built in and uploaded to.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.pocket IS 'The pocket the source package will be built in and uploaded to.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.dependencies IS 'The missing build dependencies, if any.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.upload_log IS 'The output from uploading the source package to the archive.';
 
 -- SourcePackageRecipeBuildJob
 
@@ -1483,6 +1482,7 @@ COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indic
 COMMENT ON COLUMN BinaryPackageRelease.pre_depends IS 'The list of packages this binary requires to be installed beforehand in apt/dpkg format, as it is in control file "Pre-Depends:" field.';
 COMMENT ON COLUMN BinaryPackageRelease.enhances IS 'The list of packages pointed as "enhanced" after the installation of this package, as it is in control file "Enhances:" field.';
 COMMENT ON COLUMN BinaryPackageRelease.breaks IS 'The list of packages which will be broken by the installtion of this package, as it is in the control file "Breaks:" field.';
+COMMENT ON COLUMN BinaryPackageRelease.debug_package IS 'The corresponding binary package release containing debug symbols for this binary, if any.';
 
 
 -- BinaryPackageFile

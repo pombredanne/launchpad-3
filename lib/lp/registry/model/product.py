@@ -58,7 +58,7 @@ from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from lp.registry.interfaces.person import (
-    validate_person_not_private_membership, validate_public_person)
+    validate_person, validate_public_person)
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.pillar import HasAliasMixin
@@ -78,10 +78,8 @@ from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
-from canonical.launchpad.helpers import shortlist
 
-from lp.code.interfaces.branch import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchSet)
+from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
@@ -189,7 +187,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     _owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=True)
     registrant = ForeignKey(
         dbName="registrant", foreignKey="Person",
@@ -197,7 +195,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=False,
         default=None)
     security_contact = ForeignKey(
@@ -206,7 +204,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=False, default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)

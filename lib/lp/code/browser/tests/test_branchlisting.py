@@ -32,11 +32,13 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
     BrowserTestCase, TestCase, TestCaseWithFactory, login_person,
     person_logged_in, time_counter)
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.testing.views import create_initialized_view
 from canonical.launchpad.testing.pages import extract_text, find_tag_by_id
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
+
 
 class TestListingToSortOrder(TestCase):
     """Tests for the BranchSet._listingSortToOrderBy static method.
@@ -60,6 +62,7 @@ class TestListingToSortOrder(TestCase):
 
     def assertSortsEqual(self, sort_one, sort_two):
         """Assert that one list of sort specs is equal to another."""
+
         def sort_data(sort):
             return sort.suffix, sort.expr
         self.assertEqual(map(sort_data, sort_one), map(sort_data, sort_two))
@@ -352,7 +355,7 @@ class TestProductSeriesTemplate(TestCaseWithFactory):
         # series on the main site, not the code site.
         branch = self.factory.makeProductBranch()
         series = self.factory.makeProductSeries(product=branch.product)
-        series.branch = branch
+        remove_security_proxy_and_shout_at_engineer(series).branch = branch
         browser = self.getUserBrowser(
             canonical_url(branch.product, rootsite='code'))
         link = browser.getLink(re.compile('^' + series.name + '$'))
@@ -402,4 +405,3 @@ class TestPersonBranchesPage(BrowserTestCase):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

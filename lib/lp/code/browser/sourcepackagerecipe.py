@@ -20,6 +20,7 @@ from zope.interface import providedBy
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
+from storm.locals import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, Interface
@@ -33,8 +34,8 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, NavigationMenu, stepthrough, structured)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.code.errors import ForbiddenInstruction
-from lp.code.errors import BuildAlreadyPending
+from lp.code.errors import (
+    BuildAlreadyPending, ForbiddenInstruction, PrivateBranchRecipe)
 from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
@@ -301,9 +302,10 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         try:
             source_package_recipe = getUtility(
                 ISourcePackageRecipeSource).new(
-                    self.user, self.user, data['name'], recipe,
+                    self.user, data['owner'], data['name'], recipe,
                     data['description'], data['distros'],
                     data['daily_build_archive'], data['build_daily'])
+            Store.of(source_package_recipe).flush()
         except ForbiddenInstruction:
             # XXX: bug=592513 We shouldn't be hardcoding "run" here.
             self.setFieldError(
@@ -313,6 +315,9 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         except NoSuchBranch, e:
             self.setFieldError(
                 'recipe_text', '%s is not a branch on Launchpad.' % e.name)
+            return
+        except PrivateBranchRecipe, e:
+            self.setFieldError('recipe_text', str(e))
             return
 
         self.next_url = canonical_url(source_package_recipe)
@@ -369,9 +374,13 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
                 # XXX: bug=592513 We shouldn't be hardcoding "run" here.
                 self.setFieldError(
                     'recipe_text',
-                    'The bzr-builder instruction "run" is not permitted here.'
-                    )
+                    'The bzr-builder instruction "run" is not permitted'
+                    ' here.')
                 return
+            except PrivateBranchRecipe, e:
+                self.setFieldError('recipe_text', str(e))
+                return
+
 
 
         distros = data.pop('distros')

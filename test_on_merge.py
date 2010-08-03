@@ -138,8 +138,8 @@ def main():
     os.chdir(here)
     cmd = [
         'xvfb-run',
-        '-s',
-        "'-screen 0 1024x768x24'",
+        "--error-file=/var/tmp/xvfb-errors.log",
+        "--server-args='-screen 0 1024x768x24'",
         os.path.join(here, 'bin', 'test')] + sys.argv[1:]
     command_line = ' '.join(cmd)
     print command_line

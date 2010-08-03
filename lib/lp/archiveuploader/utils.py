@@ -98,6 +98,8 @@ def determine_binary_file_type(filename):
         return BinaryPackageFileType.DEB
     elif filename.endswith(".udeb"):
         return BinaryPackageFileType.UDEB
+    elif filename.endswith(".ddeb"):
+        return BinaryPackageFileType.DDEB
     else:
         return None
 
@@ -128,7 +130,7 @@ def extract_component_from_section(section, default_component="main"):
     return (section, component)
 
 
-def build_file_list(tagfile, is_dsc = False, default_component="main" ):
+def build_file_list(tagfile, is_dsc = False, default_component="main"):
     files = {}
 
     if "files" not in tagfile:
@@ -170,7 +172,7 @@ def build_file_list(tagfile, is_dsc = False, default_component="main" ):
             "size": size,
             "section": section,
             "priority": priority,
-            "component": component
+            "component": component,
             }
 
     return files
@@ -185,7 +187,7 @@ def force_to_utf8(s):
         unicode(s, 'utf-8')
         return s
     except UnicodeError:
-        latin1_s = unicode(s,'iso8859-1')
+        latin1_s = unicode(s, 'iso8859-1')
         return latin1_s.encode('utf-8')
 
 
@@ -221,11 +223,11 @@ class ParseMaintError(Exception):
 
     def __init__(self, message):
         Exception.__init__(self)
-        self.args = (message,)
+        self.args = (message, )
         self.message = message
 
 
-def fix_maintainer (maintainer, field_name="Maintainer"):
+def fix_maintainer(maintainer, field_name="Maintainer"):
     """Parses a Maintainer or Changed-By field and returns:
 
     (1) an RFC822 compatible version,
@@ -290,4 +292,3 @@ def safe_fix_maintainer(content, fieldname):
     content = ascii_smash(content)
 
     return fix_maintainer(content, fieldname)
-

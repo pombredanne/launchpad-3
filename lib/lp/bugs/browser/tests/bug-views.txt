@@ -249,8 +249,7 @@ Bug 2 is not reported in Firefox. Let's mark bug 2 as a dupe of bug 5,
 and see how the returned link changes.
 
     >>> bug_two = bugset.get(2)
-    >>> bug_five = bugset.get(5)
-    >>> bug_two.markAsDuplicate(bug_five)
+    >>> bug_two.duplicateof = 5
 
     >>> bug_page_view = getMultiAdapter(
     ...     (bug_five_in_firefox.bug, request), name="+portlet-duplicates")
@@ -264,8 +263,11 @@ and see how the returned link changes.
 == Bug Attachments ==
 
 We show bug attachments in two lists: patches and non-patch attachments.
-Sequences of patch and non-patch attachments are provided by the
-properties `patches` and `regular_attachments` of the class BugView.
+Sequences with data about patch and non-patch attachments are provided
+by the properties `patches` and `regular_attachments` of the class
+BugView. The elements of the sequences are dictionaries containing
+the the attachment itself and a ProxiedLibraryFileAlias for the
+librarian file of the attachment.
 
     >>> from lp.bugs.browser.bug import BugView
     >>> login('foo.bar@canonical.com')
@@ -280,10 +282,18 @@ properties `patches` and `regular_attachments` of the class BugView.
     >>> patch_2 = factory.makeBugAttachment(
     ...     bug=bug_seven, description='patch 2', is_patch=True)
     >>> view = BugView(bug_seven, request)
-    >>> [attachment.title for attachment in view.regular_attachments]
+    >>> [attachment['attachment'].title
+    ...  for attachment in view.regular_attachments]
     [u'attachment 1', u'attachment 2']
-    >>> [patch.title for patch in view.patches]
+    >>> [patch['attachment'].title for patch in view.patches]
     [u'patch 1', u'patch 2']
+    >>> [attachment['file'].http_url
+    ...  for attachment in view.regular_attachments]
+    [u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/1/+files/...',
+     u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/2/+files/...']
+    >>> [patch['file'].http_url for patch in view.patches]
+    [u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/3/+files/...',
+     u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/4/+files/...']
 
 
 == Bug Navigation ==
@@ -381,7 +391,7 @@ can't know if the user is subscribed or not.
 
     >>> from canonical.launchpad.ftests import syncUpdate
 
-    >>> bug_two.markAsDuplicate(bug_three)
+    >>> bug_two.duplicateof = bug_three
     >>> syncUpdate(bug_two)
 
     >>> bug_menu.subscription().text
@@ -392,7 +402,7 @@ can't know if the user is subscribed or not.
     the current user is a member. So, for Foo Bar, bug #3 has a simple
     Subscribe link initially.
 
-    >>> bug_two.markAsDuplicate(None)
+    >>> bug_two.duplicateof = None
     >>> syncUpdate(bug_two)
 
     >>> login("foo.bar@canonical.com")
@@ -407,7 +417,7 @@ can't know if the user is subscribed or not.
     >>> bug_two.subscribe(ubuntu_team, ubuntu_team)
         <BugSubscription...>
 
-    >>> bug_two.markAsDuplicate(bug_three)
+    >>> bug_two.duplicateof = bug_three
     >>> syncUpdate(bug_two)
 
     >>> bug_menu.subscription().text

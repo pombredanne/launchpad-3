@@ -36,7 +36,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
-    ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
+    PersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
@@ -373,7 +373,7 @@ class IProductPublic(
         exported_as='project_group')
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
@@ -390,7 +390,7 @@ class IProductPublic(
                           "Launchpad.")))
 
     driver = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_("Driver"),
             description=_(
                 "This person or team will be able to set feature goals for "
