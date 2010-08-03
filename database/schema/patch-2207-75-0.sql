@@ -3,6 +3,9 @@
 
 SET client_min_messages=ERROR;
 
+-- Fix broken production data
+UPDATE SourcePackageRecipeBuild SET build_duration = date_built - date_first_dispatched WHERE build_duration is NULL;
+
 CREATE TEMPORARY TABLE NewBuildFarmJob AS SELECT
   nextval('buildfarmjob_id_seq') AS id, 1 AS processor, True AS virtualized, date_created, date_built - build_duration AS date_started, date_built AS date_finished, date_first_dispatched, builder, build_state, build_log, 3 AS job_type, id AS sprb_id FROM SourcePackageRecipeBuild;
 
@@ -28,5 +31,11 @@ ALTER TABLE SourcePackageRecipeBuild
   DROP COLUMN date_first_dispatched, DROP COLUMN builder,
   DROP COLUMN build_state, DROP COLUMN build_log, DROP COLUMN archive,
   DROP COLUMN pocket, DROP COLUMN upload_log, DROP COLUMN dependencies;
+
+
+ALTER TABLE BuildFarmJob
+  ADD CONSTRAINT end_if_start CHECK (
+    date_finished IS NULL OR date_started IS NOT NULL);
+
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 75, 0);
