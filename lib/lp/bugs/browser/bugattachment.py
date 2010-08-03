@@ -10,6 +10,7 @@ __all__ = [
     'BugAttachmentSetNavigation',
     'BugAttachmentEditView',
     'BugAttachmentURL',
+    'SafeStreamOrRedirectLibraryFileAliasView',
     ]
 
 from cStringIO import StringIO
@@ -18,7 +19,8 @@ from zope.interface import implements
 from zope.component import getUtility
 from zope.contenttype import guess_content_type
 
-from canonical.launchpad.browser.librarian import FileNavigationMixin
+from canonical.launchpad.browser.librarian import (
+    FileNavigationMixin, StreamOrRedirectLibraryFileAliasView)
 from canonical.launchpad.webapp import (
     canonical_url, custom_widget, GetitemNavigation, Navigation)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -227,7 +229,24 @@ class BugAttachmentPatchConfirmationView(LaunchpadFormView):
         return self.context.type == BugAttachmentType.PATCH
 
 
+class SafeStreamOrRedirectLibraryFileAliasView(
+    StreamOrRedirectLibraryFileAliasView):
+    """A view for Librarian files that sets the content disposion header."""
+
+    def __call__(self):
+        """Stream the content of the context `ILibraryFileAlias`.
+
+        Set the content disposition header to the safe value "attachment".
+        """
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment')
+        return super(
+            SafeStreamOrRedirectLibraryFileAliasView, self).__call__()
+
+
 class BugAttachmentFileNavigation(Navigation, FileNavigationMixin):
     """Traversal to +files/${filename}."""
 
     usedfor = IBugAttachment
+
+    view_class = SafeStreamOrRedirectLibraryFileAliasView
