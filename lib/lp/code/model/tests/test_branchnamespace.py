@@ -19,7 +19,7 @@ from lp.code.model.branchnamespace import (
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.code.enums import (
     BranchLifecycleStatus, BranchType, BranchVisibilityRule)
-from lp.code.interfaces.branch import (
+from lp.code.errors import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner, BranchExists, NoSuchBranch)
 from lp.code.interfaces.branchnamespace import (

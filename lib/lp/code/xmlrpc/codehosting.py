@@ -33,7 +33,7 @@ from lp.app.errors import NameLookupFailed, NotFoundError
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType
-from lp.code.interfaces.branch import BranchCreationException
+from lp.code.errors import BranchCreationException
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
