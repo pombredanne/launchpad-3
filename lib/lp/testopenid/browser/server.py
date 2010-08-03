@@ -32,11 +32,12 @@ from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, IPlacelessLoginSource, UnexpectedFormData)
+    ICanonicalUrlData, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import (
     allowUnauthenticatedSession, logInPrincipal, logoutPerson)
 from canonical.launchpad.webapp.publisher import Navigation, stepthrough
 
+from lp.app.errors import UnexpectedFormData
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
 from lp.testopenid.interfaces.server import (

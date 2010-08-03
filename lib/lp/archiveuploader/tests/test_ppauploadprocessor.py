@@ -17,6 +17,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
@@ -34,7 +35,7 @@ from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet, SourcePackageFormat)
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, ILibraryFileAliasSet, NotFoundError)
+    ILaunchpadCelebrities, ILibraryFileAliasSet)
 from canonical.launchpad.testing.fakepackager import FakePackager
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.services.mail import stub

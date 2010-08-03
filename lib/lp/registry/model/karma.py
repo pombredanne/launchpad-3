@@ -27,8 +27,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
-from canonical.launchpad.webapp.interfaces import NotFoundError
 
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.karma import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCacheManager,
