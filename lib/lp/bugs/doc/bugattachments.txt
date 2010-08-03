@@ -521,25 +521,77 @@ property returning True.
     True
 
 
+Linking existing LibraryFileAliases as attachments
+--------------------------------------------------
+
+It's possible to link an existing LibraryFileAliases to a bug as an
+attachment by calling the bug's linkAttachment() method. Please note
+that this method must not be used to reference the same LibraryFileAlias
+record more than once. Doing this could cause inconsistencies between
+LibraryFileAlias.restricted and Bug.private. See also the section
+"Adding bug attachments to private bugs" below.
+
+
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
+
+    >>> file_content = "Hello, world"
+    >>> content_type = "text/plain"
+    >>> file_alias = getUtility(ILibraryFileAliasSet).create(
+    ...     name='foobar', size=len(file_content),
+    ...     file=StringIO(file_content), contentType=content_type)
+    >>> transaction.commit()
+
+    >>> bug = factory.makeBug()
+    >>> bug.linkAttachment(
+    ...     owner=bug.owner, file_alias=file_alias,
+    ...     comment="Some attachment")
+    <BugAttachment ...>
+
+    >>> bug.attachments.count()
+    1
+    >>> attachment = bug.attachments[0]
+    >>> print attachment.title
+    foobar
+
+The attachment will have a type of BugAttachmentType.UNSPECIFIED, since
+we didn't specify that it was a patch.
+
+    >>> print attachment.type.title
+    Unspecified
+
+We can specify that the attachment is a patch and give it a more
+meaningful description.
+
+    >>> file_alias = getUtility(ILibraryFileAliasSet).create(
+    ...     name='anotherfoobar', size=len(file_content),
+    ...     file=StringIO(file_content), contentType=content_type)
+    >>> transaction.commit()
+
+    >>> bug.linkAttachment(
+    ...     owner=bug.owner, file_alias=file_alias,
+    ...     comment="Some attachment", is_patch=True,
+    ...     description="An attachment of some sort")
+    <BugAttachment ...>
+
+    >>> bug.attachments.count()
+    2
+    >>> attachment = bug.attachments[1]
+    >>> print attachment.title
+    An attachment of some sort
+
+    >>> print attachment.type.title
+    Patch
+
+
 Attachments without library files
 ---------------------------------
 
 It can happen that the LibraryFileContent record of a bug attachment is
 deleted, for example. because an admin deleted a privacy sensitive file.
 These attachments are not included in Bug.attachments. Our test bug has
-two attachments.
+at present two attachments.
 
-    >>> bug = factory.makeBug()
-    >>> file_content = "Hello, world"
-    >>> bug.addAttachment(
-    ...     owner=bug.owner, data="Hello, world", filename="foobar",
-    ...     comment="Some attachment")
-    <BugAttachment ...>
-    >>> bug.addAttachment(
-    ...     owner=bug.owner, data="whatever", filename='anotherfoobar',
-    ...     comment="Some attachment",
-    ...     description="An attachment of some sort")
-    <BugAttachment ...>
     >>> [attachment.title for attachment in bug.attachments]
     [u'foobar', u'An attachment of some sort']
 

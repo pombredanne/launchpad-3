@@ -963,20 +963,15 @@ class Bug(SQLBase):
             file=StringIO(filecontent), contentType=content_type,
             restricted=self.private)
 
-        return self._linkAttachment(
+        return self.linkAttachment(
             owner, filealias, comment, is_patch, description)
 
-    def _linkAttachment(self, owner, file_alias, comment, is_patch=False,
+    def linkAttachment(self, owner, file_alias, comment, is_patch=False,
                        description=None):
-        """Link an `ILibraryFileAlias` to this bug.
+        """See `IBug`.
 
-        :owner: An IPerson.
-        :file_alias: The `ILibraryFileAlias` to link to this bug.
-        :description: A brief description of the attachment.
-        :comment: An IMessage or string.
-        :is_patch: A boolean.
-
-        This method should only be called by addAttachment(), otherwise
+        This method should only be called by addAttachment() and
+        FileBugViewBase.submit_bug_action, otherwise
         we may get inconsistent settings of bug.private and
         file_alias.restricted.
         """
