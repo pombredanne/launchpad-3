@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser file for LibraryFileAlias."""
@@ -32,6 +32,7 @@ from canonical.launchpad.webapp.interfaces import (
     IWebBrowserOriginatingRequest)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lazr.utils import get_current_browser_request
+from canonical.librarian.client import quote
 from canonical.librarian.interfaces import LibrarianServerError
 from canonical.librarian.utils import filechunks, guess_librarian_encoding
 
@@ -219,5 +220,6 @@ class ProxiedLibraryFileAlias:
 
         parent_url = canonical_url(self.parent, request=request)
         traversal_url = urlappend(parent_url, '+files')
-        url = urlappend(traversal_url, self.context.filename)
+        url = urlappend(
+            traversal_url, quote(self.context.filename.encode('utf-8')))
         return url

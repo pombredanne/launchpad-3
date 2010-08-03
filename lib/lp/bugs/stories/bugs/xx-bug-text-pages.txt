@@ -70,8 +70,9 @@ all tasks related to that bug, presented in an easy-to-digest format:
     duplicate-of: 
     duplicates: 
     attachments:
-        http://.../file_a.txt text/html
-        http://.../file%20with%20space.txt text/plain; name="file with space.txt"
+       http://bugs.launchpad.dev/.../+files/file_a.txt text/html
+       http://bugs.launchpad.dev/.../+files/file%20with%20space.txt
+         text/plain; name="file with space.txt"
     patches:
         http://.../bug-patch.diff text/plain
     tags: 
@@ -149,7 +150,7 @@ are replaced by a single space.
     >>> attachments_text = text_bug[text_bug.find('attachments:'):]
     >>> attachment_2 = attachments_text.split('\n')[2]
     >>> attachment_2
-    ' http://localhost:58000/.../file%20with%20space.txt text/plain;
+    ' http://bugs.launchpad.dev/.../file%20with%20space.txt text/plain;
     name="file with space.txt"'
 
 
