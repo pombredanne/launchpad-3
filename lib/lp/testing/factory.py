@@ -687,8 +687,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if milestone is None:
             milestone = self.makeMilestone(product=product,
                                            productseries=productseries)
-        return milestone.createProductRelease(
-            milestone.product.owner, datetime.now(pytz.UTC))
+        with person_logged_in(milestone.productseries.product.owner):
+            release = milestone.createProductRelease(
+                milestone.product.owner, datetime.now(pytz.UTC))
+        return release
 
     def makeProductReleaseFile(self, signed=True,
                                product=None, productseries=None,
