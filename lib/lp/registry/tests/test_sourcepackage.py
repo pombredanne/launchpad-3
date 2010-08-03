@@ -3,6 +3,8 @@
 
 """Unit tests for ISourcePackage implementations."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 import unittest

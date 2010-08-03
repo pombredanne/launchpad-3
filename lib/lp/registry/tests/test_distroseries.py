@@ -3,9 +3,9 @@
 
 """Tests for distroseries."""
 
-__metaclass__ = type
+from __future__ import with_statement
 
-import unittest
+__metaclass__ = type
 
 import transaction
 
@@ -405,7 +405,3 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             NoSuchDistroSeries,
             getUtility(IDistroSeriesSet).fromSuite,
             distribution, 'doesntexist')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
