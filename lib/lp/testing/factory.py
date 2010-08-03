@@ -159,6 +159,7 @@ from lp.testing import (
     ANONYMOUS,
     login,
     login_as,
+    person_logged_in,
     run_with_login,
     temp_dir,
     time_counter,
@@ -627,13 +628,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, product=None, distribution=None, productseries=None, name=None):
         if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
-        if productseries is not None:
-            product = productseries.product
+        if distribution is None:
+            if productseries is not None:
+                product = productseries.product
+            else:
+                productseries = self.makeProductSeries(product=product)
+            distroseries = None
+        else:
+            distroseries = self.makeDistroRelease(distribution=distribution)
         if name is None:
             name = self.getUniqueString()
         return ProxyFactory(
             Milestone(product=product, distribution=distribution,
-                      productseries=productseries, name=name))
+                      productseries=productseries, distroseries=distroseries,
+                      name=name))
 
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
@@ -696,12 +704,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             release = self.makeProductRelease(product=product,
                                               productseries=productseries,
                                               milestone=milestone)
-        return release.addReleaseFile(
-            'test.txt', 'test', 'text/plain',
-            uploader=release.milestone.product.owner,
-            signature_filename=signature_filename,
-            signature_content=signature_content,
-            description=description)
+        with person_logged_in(release.milestone.product.owner):
+            release_file = release.addReleaseFile(
+                'test.txt', 'test', 'text/plain',
+                uploader=release.milestone.product.owner,
+                signature_filename=signature_filename,
+                signature_content=signature_content,
+                description=description)
+        return release_file
 
     def makeProduct(
         self, name=None, project=None, displayname=None,
