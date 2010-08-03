@@ -11,15 +11,18 @@ __all__ = ['AuthorizationBase']
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
+from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAliasWithParent)
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
 from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriber, IPersonalArchiveSubscription)
+    IArchiveSubscriber, IArchiveSubscriberSet, IPersonalArchiveSubscription)
 from lp.code.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import (
@@ -735,6 +738,19 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             if (invitee.is_team and
                 invitee in user.person.getAdministratedTeams()):
                 return True
+
+        if (self.obj.is_team
+            and self.obj.visibility == PersonVisibility.PRIVATE):
+            # Grant visibility to people with subscriptions on a private
+            # team's private PPA.
+            subscriptions = getUtility(
+                IArchiveSubscriberSet).getBySubscriber(user.person)
+            subscriber_archive_ids = set(
+                sub.archive.id for sub in subscriptions)
+            team_ppa_ids = set(
+                ppa.id for ppa in self.obj.ppas if ppa.private)
+            if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
+                return True
         return False
 
 
@@ -1067,11 +1083,37 @@ class EditAnnouncement(AuthorizationBase):
 
 
 class UseApiDoc(AuthorizationBase):
+    """This is just to please apidoc.launchpad.dev."""
     permission = 'zope.app.apidoc.UseAPIDoc'
     usedfor = Interface
 
+    def checkUnauthenticated(self):
+        # We only want this permission to work at all for devmode.
+        return config.devmode
+
     def checkAuthenticated(self, user):
-        return True
+        # We only want this permission to work at all for devmode.
+        return config.devmode
+
+
+class ManageApplicationForEverybody(UseApiDoc):
+    """This is just to please apidoc.launchpad.dev.
+
+    We do this because zope.app.apidoc uses that permission, but nothing else
+    should be using it.
+    """
+    permission = 'zope.ManageApplication'
+    usedfor = Interface
+
+
+class ZopeViewForEverybody(UseApiDoc):
+    """This is just to please apidoc.launchpad.dev.
+
+    We do this because zope.app.apidoc uses that permission, but nothing else
+    should be using it.
+    """
+    permission = 'zope.View'
+    usedfor = Interface
 
 
 class OnlyBazaarExpertsAndAdmins(AuthorizationBase):
@@ -1129,6 +1171,15 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     usedfor = ICodeImportMachine
 
 
+class DeleteSourcePackageRecipeBuilds(OnlyBazaarExpertsAndAdmins):
+    """Control who can delete SourcePackageRecipeBuilds.
+
+    Access is restricted to members of ~bazaar-experts and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ISourcePackageRecipeBuild
+
+
 class AdminDistributionTranslations(AuthorizationBase):
     """Class for deciding who can administer distribution translations.
 
@@ -1179,15 +1230,12 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
         template = self.obj
         if template.distroseries is not None:
             # Template is on a distribution.
-            distribution = template.distroseries.distribution
-            return (
-                AdminDistributionTranslations(
-                    distribution).checkAuthenticated(user))
-
+            return AdminDistroSeriesTranslations(
+                template.distroseries).checkAuthenticated(user)
         else:
             # Template is on a product.
-            return OnlyRosettaExpertsAndAdmins.checkAuthenticated(
-                self, user)
+            return AdminProductSeriesTranslations(
+                template.productseries).checkAuthenticated(user)
 
 
 class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
@@ -1461,6 +1509,7 @@ class EditPackageBuild(EditBuildFarmJob):
         # If it's a PPA or a copy archive only allow its owner.
         return (self.obj.archive.owner and
                 user.inTeam(self.obj.archive.owner))
+
 
 class EditBinaryPackageBuild(EditPackageBuild):
     permission = 'launchpad.Edit'
@@ -1756,6 +1805,16 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
             self.obj.distribution).checkAuthenticated(user))
 
 
+class AdminProductSeriesTranslations(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IProductSeries
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IProductSeries` translations."""
+
+        return OnlyRosettaExpertsAndAdmins(self.obj).checkAuthenticated(user)
+
+
 class BranchMergeProposalView(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBranchMergeProposal
@@ -2040,6 +2099,17 @@ class ViewArchive(AuthorizationBase):
         if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
 
+        # Subscribers can view private PPAs.
+        if self.obj.is_ppa and self.obj.private:
+            archive_subs = getUtility(IArchiveSubscriberSet).getBySubscriber(
+                user.person, self.obj).any()
+            if archive_subs:
+                return True
+
+        # The software center agent can view commercial archives
+        if self.obj.commercial:
+            return user.in_software_center_agent
+
         return False
 
     def checkUnauthenticated(self):
@@ -2077,6 +2147,10 @@ class AppendArchive(AuthorizationBase):
             self.obj.distribution == celebrities.ubuntu and
             user.in_ubuntu_security):
             return True
+
+        # The software center agent can change commercial archives
+        if self.obj.commercial:
+            return user.in_software_center_agent
 
         return False
 
@@ -2422,3 +2496,23 @@ class EditPackagesetSet(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         return user.in_admin or user.in_ubuntu_techboard
+
+
+class EditLibraryFileAliasWithParent(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ILibraryFileAliasWithParent
+
+    def checkAuthenticated(self, user):
+        """Only persons which can edit an LFA's parent can edit an LFA.
+
+        By default, a LibraryFileAlias does not know about its parent.
+        Such aliases are never editable. Use an adapter to provide a
+        parent object.
+
+        If a parent is known, users which can edit the parent can also
+        edit properties of the LibraryFileAlias.
+        """
+        parent = getattr(self.obj, '__parent__', None)
+        if parent is None:
+            return False
+        return check_permission(self.permission, parent)

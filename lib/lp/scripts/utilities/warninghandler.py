@@ -150,10 +150,13 @@ no_order_by = []
 other_warnings = []
 
 old_show_warning = warnings.showwarning
-def launchpad_showwarning(message, category, filename, lineno, file=None):
+def launchpad_showwarning(message, category, filename, lineno, file=None,
+                          line=None):
     if file is None:
         file = sys.stderr
     stream = StringIO.StringIO()
+    # XXX: JonathanLange 2010-07-27: When Launchpad ceases supporting Python
+    # 2.5, pass on the optional 'line' parameter.
     old_show_warning(message, category, filename, lineno, stream)
     warning_message = stream.getvalue()
     important_info = find_important_info()
@@ -201,7 +204,6 @@ def report_other_warnings():
         print "General warnings."
         for warninginfo in other_warnings:
             print
-            print warninginfo.message,
             print warninginfo
 
 def report_warnings():

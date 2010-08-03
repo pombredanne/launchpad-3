@@ -69,7 +69,8 @@
       ${view/macro:pagetype}
       ${view/context/fmt:public-private-css}
       yui-skin-sam">
-        <script type="text/javascript">
+        <script type="text/javascript"
+          tal:condition="python: is_edge or is_lpnet">
           var _gaq = _gaq || [];
           _gaq.push(['_setAccount', 'UA-12833497-1']);
           _gaq.push(['_setDomainName', '.launchpad.net']);
@@ -82,21 +83,22 @@
           })();
         </script>
     <div class="yui-d0">
-      <div id="locationbar">
+      <div id="locationbar" class="login-logout">
         <tal:login replace="structure context/@@login_status" />
       </div><!--id="locationbar"-->
 
-      <div class="watermark-apps-portlet top-portlet"
+      <div id="watermark" class="watermark-apps-portlet"
            tal:condition="view/macro:pagehas/applicationtabs">
-        <span tal:replace="structure view/watermark:logo"></span>
-        <h2 tal:replace="structure view/watermark:heading">
-          Celso Providelo
-        </h2>
-        <div id="registration" class="registering">
-          <metal:registering define-slot="registering" />
+        <div class="flowed-block">
+          <span tal:replace="structure view/watermark:logo"></span>
         </div>
-        <metal:heading_nav
-          use-macro="context/@@+base-layout-macros/application-buttons"/>
+        <div class="flowed-block wide">
+          <h2 tal:replace="structure view/watermark:heading">
+            Celso Providelo
+          </h2>
+          <metal:heading_nav
+            use-macro="context/@@+base-layout-macros/application-buttons"/>
+        </div>
       </div>
 
       <div class="yui-t4"
@@ -107,13 +109,17 @@
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
-            <div tal:condition="view/macro:pagehas/applicationtabs">
+            <div class="context-publication"
+              tal:condition="view/macro:pagehas/applicationtabs">
               <h1
                 tal:condition="view/label|nothing"
                 tal:content="view/label"
                 metal:define-slot="heading"
                 >Page Label
               </h1>
+              <div id="registration" class="registering">
+                <metal:registering define-slot="registering" />
+              </div>
               <tal:breadcrumbs replace="structure context/@@+hierarchy">
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
@@ -131,7 +137,7 @@
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
-        <div class="yui-b side"
+        <div id="side-portlets" class="yui-b side"
           tal:condition="view/macro:pagehas/portlets">
           <metal:portlets define-slot="side" />
         </div><!-- yui-b side -->

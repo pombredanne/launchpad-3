@@ -128,37 +128,22 @@
                </div>
             </div>
 
-            <div id="homepage-blogposts" class="homepage-portlet">
+            <div id="homepage-blogposts" class="homepage-portlet"
+              tal:content="cache:public, 1 hour">
               <h2>Recent Launchpad blog posts</h2>
-              <ul>
-                <li class="news">
-                  <a href="http://blog.launchpad.net?p=1513">
-                  2GiB PPAs for everyone!</a><span class="registered"> &ndash; 04 May 2010</span><br />
-                  We've doubled the standard Personal Package Archive size to 2 GiB.
+              <ul tal:define="posts view/getRecentBlogPosts">
+                <li class="news"
+                    tal:repeat="post posts">
+                    <a href="" tal:attributes="href post/link"
+                      tal:content="post/title">
+                      Take the Launchpad survey</a><span class="registered">
+                      &ndash; <tal:date content="post/date">01 July 2010</tal:date></span><br />
+                <tal:description content="structure post/description">
+                  Tell us a little about how you use Launchpad by answering
+                  our short survey.
+                </tal:description>
                 </li>
                 <li class="news">
-                  <a href="http://blog.launchpad.net?p=1491">
-                  Automatic translation template generation</a><span class="registered"> &ndash; 04 May 2010</span><br />
-                  Opening a project for translation is now easier with automatic template generation direct from the
-                  project's Bazaar branch.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net?p=1503">
-                  Link projects to Ubuntu packages</a><span class="registered"> &ndash; 04 May 2010</span><br />
-                  Launchpad now helps you specify which Ubuntu package is associated with any project in Launchpad.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net?p=1501">
-                  Easier project configuration</a><span class="registered"> &ndash; 04 May 2010</span><br />
-                  There are new links to configure your project's use of Launchpad right on its project overview page.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net/?p=1356">
-                  Finding and managing patches</a><span class="registered"> &ndash; 03 Mar 2010</span><br />
-                  Pick the low-hanging fruit. Launchpad now makes it easy to find and work with all bug
-                  patches associated with a project or package.
-                </li>
-                    <li class="news">
                   <a href="http://blog.launchpad.net/general/launchpad-is-now-open-source">
                     Launchpad now open source</a><span class="registered"> &ndash; 21 Jul 2009</span><br />
                     Get the code to Launchpad and join our development community.

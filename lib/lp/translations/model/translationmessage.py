@@ -7,7 +7,7 @@ __all__ = [
     'make_plurals_sql_fragment',
     'make_plurals_fragment',
     'TranslationMessage',
-    'TranslationMessageSet'
+    'TranslationMessageSet',
     ]
 
 from datetime import datetime
@@ -167,22 +167,22 @@ def validate_is_current(self, attr, value):
     assert value is not None, 'is_current field cannot be None.'
 
     if value and not self.is_current:
-        # We are setting this message as the current one. We need to
-        # change current one to non current before.
+        # We are setting this message as the current one.
         current_translation_message = (
             self.potmsgset.getCurrentTranslationMessage(
                 self.potemplate,
                 self.language, self.variant))
         if (current_translation_message is not None and
+            current_translation_message != self and
             current_translation_message.potemplate == self.potemplate):
+            # Clear flag on the previous current message.
             current_translation_message.is_current = False
-            # We need to flush the old current message before the
-            # new one because the database constraints prevent two
-            # current messages.
-            Store.of(self).add_flush_order(current_translation_message,
-                                           self)
+            # Flush changes in the right order so we don't get two
+            # current messages in the same place.
+            Store.of(self).add_flush_order(current_translation_message, self)
 
     return value
+
 
 def validate_is_imported(self, attr, value):
     """Unset current imported message before setting this as imported.
@@ -195,20 +195,19 @@ def validate_is_imported(self, attr, value):
     assert value is not None, 'is_imported field cannot be None.'
 
     if value and not self.is_imported:
-        # We are setting this message as the current one. We need to
-        # change current one to non current before.
+        # We are setting this message as the imported one.
         imported_translation_message = (
             self.potmsgset.getImportedTranslationMessage(
                 self.potemplate,
                 self.language, self.variant))
         if (imported_translation_message is not None and
+            imported_translation_message != self and
             imported_translation_message.potemplate == self.potemplate):
+            # Clear flag on the previous imported message.
             imported_translation_message.is_imported = False
-            # We need to flush the old imported message before the
-            # new one because the database constraints prevent two
-            # imported messages.
-            Store.of(self).add_flush_order(imported_translation_message,
-                                           self)
+            # Flush changes in the right order so we don't get two
+            # current messages in the same place.
+            Store.of(self).add_flush_order(imported_translation_message, self)
 
     return value
 
@@ -232,7 +231,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         dbName='date_created', notNull=True, default=UTC_NOW)
     submitter = ForeignKey(
         foreignKey='Person', storm_validator=validate_public_person,
-        dbName='submitter',notNull=True)
+        dbName='submitter', notNull=True)
     date_reviewed = UtcDateTimeCol(
         dbName='date_reviewed', notNull=False, default=None)
     reviewer = ForeignKey(

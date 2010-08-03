@@ -57,7 +57,10 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
 
     path = Attribute("A path to this package, <distro>/<series>/<package>")
 
-    title = Attribute("Title")
+    title = Attribute("Title.")
+
+    summary = Attribute(
+        'A description of the binary packages built from this package.')
 
     format = Attribute("Source Package Format. This is the format of the "
                 "current source package release for this name in this "

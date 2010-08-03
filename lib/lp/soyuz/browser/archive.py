@@ -35,6 +35,7 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements, Interface
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.schema import Choice, List, TextLine
 from zope.schema.interfaces import IContextSourceBinder
@@ -45,8 +46,10 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.lazr.utils import smartquote
+from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.services.browser_helpers import get_user_agent_distroseries
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -70,13 +73,13 @@ from lp.soyuz.interfaces.binarypackagebuild import (
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.series import SeriesStatus
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.person import IPersonSet, PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, inactive_publishing_status, IPublishingSet,
     PackagePublishingStatus)
@@ -199,12 +202,8 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
         # The ID is not enough on its own to identify the publication,
         # we need to make sure it matches the context archive as well.
-        results = getUtility(IPublishingSet).getByIdAndArchive(
+        return getUtility(IPublishingSet).getByIdAndArchive(
             pub_id, self.context, source)
-        if results.count() == 1:
-            return results[0]
-
-        return None
 
     @stepthrough('+binaryhits')
     def traverse_binaryhits(self, name_str):
@@ -426,7 +425,12 @@ class ArchiveMenuMixin:
 
     def packages(self):
         text = 'View package details'
-        return Link('+packages', text, icon='info')
+        link = Link('+packages', text, icon='info')
+        # Disable the link for P3As if they don't have upload rights.
+        if self.context.private:
+            if not check_permission('launchpad.Append', self.context):
+                link.enabled = False
+        return link
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
@@ -498,6 +502,10 @@ class ArchivePackagesActionMenu(NavigationMenu, ArchiveMenuMixin):
 
 class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
+
+    @cachedproperty
+    def private(self):
+        return self.context.private
 
     @cachedproperty
     def has_sources(self):
@@ -959,6 +967,12 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     """Detailed packages view for an archive."""
     implements(IArchivePackagesActionMenu)
+
+    def initialize(self):
+        super(ArchivePackagesView, self).initialize()
+        if self.context.private:
+            if not check_permission('launchpad.Append', self.context):
+                raise Unauthorized
 
     @property
     def page_title(self):
@@ -1856,17 +1870,32 @@ class ArchiveEditView(BaseArchiveEditView):
 
 class ArchiveAdminView(BaseArchiveEditView):
 
-    field_names = ['enabled', 'private', 'require_virtualized',
+    field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
                    'buildd_secret', 'authorized_size', 'relative_build_score',
-                   'external_dependencies', 'arm_builds_allowed']
+                   'external_dependencies']
 
     custom_widget('external_dependencies', TextAreaWidget, height=3)
+
+    custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
+
+    def updateContextFromData(self, data):
+        """Update context from form data.
+
+        If the user did not specify a buildd secret but marked the 
+        archive as private, generate a secret for them.
+        """
+        if data['private'] and data['buildd_secret'] is None:
+            # buildd secrets are only used by builders, autogenerate one.
+            self.context.buildd_secret = create_token(16)
+            del(data['buildd_secret'])
+        super(ArchiveAdminView, self).updateContextFromData(data)
 
     def validate_save(self, action, data):
         """Validate the save action on ArchiveAdminView.
 
-        buildd_secret can only be set, and must be set, when
-        this is a private archive.
+        buildd_secret can only, and must, be set for private archives.
+        If the archive is private and the buildd secret is not set it will be
+        generated.
         """
         form.getWidgetsData(self.widgets, 'field', data)
 
@@ -1877,11 +1906,6 @@ class ArchiveAdminView(BaseArchiveEditView):
                     'private',
                     'This archive already has published sources. It is '
                     'not possible to switch the privacy.')
-
-        if data.get('buildd_secret') is None and data['private']:
-            self.setFieldError(
-                'buildd_secret',
-                'Required for private archives.')
 
         if self.owner_is_private_team and not data['private']:
             self.setFieldError(
@@ -1899,6 +1923,11 @@ class ArchiveAdminView(BaseArchiveEditView):
             if len(errors) != 0:
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
+
+        if data.get('commercial') is True and not data['private']:
+            self.setFieldError(
+                'commercial',
+                'Can only set commericial for private archives.')
 
     def validate_external_dependencies(self, ext_deps):
         """Validate the external_dependencies field.
@@ -1934,6 +1963,31 @@ class ArchiveAdminView(BaseArchiveEditView):
         :rtype: bool
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
+
+    def setUpFields(self):
+        """Override `LaunchpadEditFormView`.
+
+        See `createEnabledRestrictedFamilies` method.
+        """
+        super(ArchiveAdminView, self).setUpFields()
+        self.form_fields += self.createEnabledRestrictedFamilies()
+
+    def createEnabledRestrictedFamilies(self):
+        """Creates the 'enabled_restricted_families' field.
+
+        """
+        terms = []
+        for family in getUtility(IProcessorFamilySet).getRestricted():
+            terms.append(SimpleTerm(
+                family, token=family.name, title=family.title))
+        return form.Fields(
+            List(__name__='enabled_restricted_families',
+                 title=_('Enabled restricted families'),
+                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                 required=False,
+                 description=_('Select the restricted architecture families '
+                               'on which this archive is allowed to build.')),
+                 render_context=self.render_context)
 
 
 class ArchiveDeleteView(LaunchpadFormView):

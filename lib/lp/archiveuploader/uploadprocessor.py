@@ -56,6 +56,7 @@ from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
 
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from lp.archiveuploader.uploadpolicy import (
@@ -65,7 +66,6 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
-from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from contrib.glock import GlobalLock
 
@@ -221,7 +221,7 @@ class UploadProcessor:
             # the upload to be failed in this case.
             destination = "failed"
 
-        self.moveUpload(upload_path, destination)
+        self.moveProcessedUpload(upload_path, destination)
 
     def locateDirectories(self, fsroot):
         """Return a list of upload directories in a given queue.
@@ -310,7 +310,7 @@ class UploadProcessor:
             (distribution, suite_name,
              archive) = parse_upload_path(relative_path)
         except UploadPathError, e:
-            # pick some defaults to create the NascentUploap() object.
+            # pick some defaults to create the NascentUpload() object.
             # We will be rejecting the upload so it doesn matter much.
             distribution = getUtility(IDistributionSet)['ubuntu']
             suite_name = None
@@ -442,6 +442,34 @@ class UploadProcessor:
             raise
 
         return result
+
+    def removeUpload(self, upload):
+        """Remove an upload that has succesfully been processed.
+
+        This includes moving the given upload directory and moving the
+        matching .distro file, if it exists.
+        """
+        if self.options.keep or self.options.dryrun:
+            self.log.debug("Keeping contents untouched")
+            return
+
+        pathname = os.path.basename(upload)
+
+        self.log.debug("Removing upload directory %s", upload)
+        shutil.rmtree(upload)
+
+        distro_filename = upload + ".distro"
+        if os.path.isfile(distro_filename):
+            self.log.debug("Removing distro file %s", distro_filename)
+            os.remove(distro_filename)
+
+    def moveProcessedUpload(self, upload_path, destination):
+        """Move or remove the upload depending on the status of the upload.
+        """
+        if destination == "accepted":
+            self.removeUpload(upload_path)
+        else:
+            self.moveUpload(upload_path, destination)
 
     def moveUpload(self, upload, subdir_name):
         """Move the upload to the named subdir of the root, eg 'accepted'.

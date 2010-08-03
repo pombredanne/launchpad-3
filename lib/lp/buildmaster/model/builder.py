@@ -35,12 +35,11 @@ from canonical.buildd.slave import BuilderStatus
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, SLAVE_FLAVOR)
 from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
     CannotResumeHost, CorruptBuildCookie, IBuilder, IBuilderSet,
@@ -49,20 +48,19 @@ from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue, specific_job_classes
-from lp.buildmaster.model.packagebuild import PackageBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import (
     IHasBuildRecords, IncompatibleArguments)
-from lp.soyuz.model.buildpackagejob import BuildPackageJob
+from lp.soyuz.model.processor import Processor
 
 
 class TimeoutHTTPConnection(httplib.HTTPConnection):
@@ -701,32 +699,16 @@ class BuilderSet(object):
 
     def getBuildQueueSizes(self):
         """See `IBuilderSet`."""
-        # Avoiding circular imports.
-        from lp.soyuz.model.archive import Archive
-        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-        from lp.soyuz.model.distroarchseries import (
-            DistroArchSeries)
-        from lp.soyuz.model.processor import Processor
-
-        find_spec = (
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        results = store.find((
             Count(),
             Sum(BuildQueue.estimated_duration),
             Processor,
-            Archive.require_virtualized,
-            )
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-        results = store.find(
-            find_spec,
-            BuildPackageJob.job == BuildQueue.jobID,
-            BuildPackageJob.build == BinaryPackageBuild.id,
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            PackageBuild.archive == Archive.id,
-            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
-            DistroArchSeries.processorfamilyID == Processor.familyID,
-            BuildFarmJob.status == BuildStatus.NEEDSBUILD,
-            Archive._enabled == True).group_by(
-                Processor, Archive.require_virtualized)
+            BuildQueue.virtualized),
+            Processor.id == BuildQueue.processorID,
+            Job.id == BuildQueue.jobID,
+            Job._status == JobStatus.WAITING).group_by(
+                Processor, BuildQueue.virtualized)
 
         result_dict = {'virt': {}, 'nonvirt': {}}
         for size, duration, processor, virtualized in results:

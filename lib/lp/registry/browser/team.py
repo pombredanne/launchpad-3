@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -38,6 +38,7 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from canonical.widgets import HiddenUserWidget, LaunchpadRadioWidget
 
 from canonical.launchpad import _
+from lp.app.errors import UnexpectedFormData
 from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -48,8 +49,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, UnexpectedFormData)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
@@ -166,6 +166,28 @@ class TeamFormMixin:
         """Remove the visibility field if not authorized."""
         if not check_permission('launchpad.Commercial', self.context):
             self.form_fields = self.form_fields.omit('visibility')
+        else:
+            # XXX: BradCrittenden 2010-07-12 bug=602773:  This code can be
+            # removed when PRIVATE_MEMBERSHIP disappears fully.
+
+            # Remove the visibility selector and replace with one with a more
+            # limited vocabulary.
+            terms = [SimpleTerm(PersonVisibility.PUBLIC,
+                                PersonVisibility.PUBLIC.name,
+                                PersonVisibility.PUBLIC.title),
+                     SimpleTerm(PersonVisibility.PRIVATE,
+                                PersonVisibility.PRIVATE.name,
+                                PersonVisibility.PRIVATE.title),
+                     ]
+            visibility = self.form_fields['visibility'].field
+            field = Choice(
+                __name__=visibility.getName(),
+                title=visibility.title,
+                source=SimpleVocabulary(terms))
+            self.form_fields = (
+                self.form_fields.omit('visibility') +
+                form.Fields(field))
+            self.form_fields = self.form_fields.select(*self.field_names)
 
 
 class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
@@ -1070,9 +1092,9 @@ class TeamMapView(LaunchpadView):
         """HTML which shows the map with location of the team's members."""
         return """
             <script type="text/javascript">
-                YUI().use('node', 'lp.mapping', function(Y) {
+                YUI().use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
-                        Y.lp.mapping.renderTeamMap(
+                        Y.lp.app.mapping.renderTeamMap(
                             %(min_lat)s, %(max_lat)s, %(min_lng)s,
                             %(max_lng)s, %(center_lat)s, %(center_lng)s);
                      }
@@ -1085,9 +1107,9 @@ class TeamMapView(LaunchpadView):
         """The HTML which shows a small version of the team's map."""
         return """
             <script type="text/javascript">
-                YUI().use('node', 'lp.mapping', function(Y) {
+                YUI().use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
-                        Y.lp.mapping.renderTeamMapSmall(
+                        Y.lp.app.mapping.renderTeamMapSmall(
                             %(center_lat)s, %(center_lng)s);
                      }
                      Y.on("domready", renderMap);

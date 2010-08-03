@@ -80,14 +80,14 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, GetitemNavigation,
     LaunchpadFormView, LaunchpadView, Link, Navigation, redirection,
     StandardLaunchpadFacets, stepthrough, stepto)
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, NotFoundError)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import NavigationMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.image import ImageChangeWidget
 
+from lp.app.errors import NotFoundError
 from lp.registry.browser import RegistryEditFormView
 
 
@@ -606,7 +606,8 @@ class DistributionArchivesView(LaunchpadView):
         The context may be an IDistroSeries or a users archives.
         """
         results = getUtility(IArchiveSet).getArchivesForDistribution(
-            self.context, purposes=[ArchivePurpose.COPY], user=self.user)
+            self.context, purposes=[ArchivePurpose.COPY], user=self.user,
+            exclude_disabled=False)
         return results.order_by('date_created DESC')
 
 

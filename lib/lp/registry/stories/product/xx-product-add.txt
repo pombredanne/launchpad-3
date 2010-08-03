@@ -136,6 +136,54 @@ Let's ensure the summary and description are presented.
     >>> print extract_text(desc)
     The desktop aardvark is an ornery thing.
 
+Let's ensure the registrant and maintainer are listed correctly.
+
+    >>> registrant = find_tag_by_id(user_browser.contents,
+    ...                             'registration')
+    >>> print extract_text(registrant)
+    Registered...by...No Privileges Person...
+
+    >>> maintainer = find_tag_by_id(user_browser.contents,
+    ...                             'owner')
+    >>> print extract_text(maintainer)
+    Maintainer: No Privileges Person...
+
+
+Turning over maintainership
+---------------------------
+
+Sample Person wants to create a project in Launchpad for a project
+that exists elsewhere as an upstream.  She wants it to exist in
+Launchpad so she can file a bug, for instance, but she is not
+interested in being the project maintainer for the long run.
+
+    >>> user_browser.open('http://launchpad.dev')
+    >>> user_browser.getLink('Register a project').click()
+
+    >>> user_browser.getControl('Name').value = 'kittyhawk'
+    >>> user_browser.getControl('URL').value = 'kittyhawk'
+    >>> user_browser.getControl('Title').value = 'Kitty Hawk ATC'
+    >>> user_browser.getControl('Summary').value = (
+    ...     'Kitty Hawk Air Traffic Simulator')
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.getControl('Python License').click()
+    >>> disclaim = user_browser.getControl(name='field.disclaim_maintainer')
+    >>> disclaim.value = ['checked']
+    >>> user_browser.getControl('Complete Registration').click()
+
+Sample person is shown as the registrant but the maintainer is now
+Registry Admins.
+
+    >>> registrant = find_tag_by_id(user_browser.contents,
+    ...                             'registration')
+    >>> print extract_text(registrant)
+    Registered...by...No Privileges Person...
+
+    >>> maintainer = find_tag_by_id(user_browser.contents,
+    ...                             'owner')
+    >>> print extract_text(maintainer)
+    Maintainer: Registry Administrators...
+
 
 Search results
 --------------

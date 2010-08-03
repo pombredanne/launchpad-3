@@ -162,7 +162,6 @@ known_canonical_lp_devs = \
                               u'Maris Fogels',
                               u'Mark Shuttleworth',
                               u'Martin Albisetti',
-                              u'Martin Pool',
                               u'Matt Zimmerman',
                               u'Matthew Paul Thomas',
                               u'Matthew Thomas',
@@ -178,6 +177,7 @@ known_canonical_lp_devs = \
                               u'Robert Collins',
                               u'Stuart Bishop',
                               u'Steve Alexander',
+                              u'Steve Kowalik',
                               u'Steve McInerney',
                               u'<steve {_AT_} stedee.id.au>',
                               u'test {_AT_} canonical.com',
@@ -200,13 +200,16 @@ known_canonical_non_lp_devs = \
                               u'Cody Somerville',
                               u'Cody A.W. Somerville',
                               u'David Murphy',
+                              u'Didier Roche',
                               u'Elliot Murphy',
                               u'Gabriel Neuman gneuman {_AT_} async.com',
                               u'Gustavo Niemeyer',
                               u'James Henstridge',
+                              u'James Westby',
                               u'John Lenton',
                               u'Kees Cook',
                               u'LaMont Jones',
+                              u'Martin Pitt',
                               u'Martin Pool',
                               u'Matt Zimmerman',
                               u'Michael Casadevall',
@@ -216,7 +219,7 @@ known_canonical_non_lp_devs = \
                               u'Dustin Kirkland',
                               )]
 
-# Some people have made commits using various names and/or email 
+# Some people have made commits using various names and/or email
 # addresses, so this map will be used to merge them accordingly.
 # The map is initialized from this list of pairs, where each pair is
 # of the form (CONTRIBUTOR_AS_SEEN, UNIFYING_IDENTITY_FOR_CONTRIBUTOR).
@@ -245,6 +248,18 @@ merge_names_pairs = (
      u'Adam Conrad <adconrad {_AT_} 0c3.net>'),
     (u'Adam Conrad <adconrad {_AT_} cthulhu>',
      u'Adam Conrad <adconrad {_AT_} 0c3.net>'),
+    (u'James Westby <james.westby@linaro.org>',
+     u'James Westby <james.westby@canonical.com'),
+    (u'Bryce Harrington <bryce@canonical.com>',
+     u'Bryce Harrington <bryce.harrington@canonical.com>'),
+    (u'Dustin Kirkland <kirkland@x200>',
+     u'Dustin Kirkland <kirkland@canonical.com>'),
+    (u'Anthony Lenton <antoniolenton@gmail.com>',
+     u'Anthony Lenton <anthony.lenton@canonical.com>'),
+    (u'Steve Kowalik <steven@quelled>',
+     u'Steve Kowalik <steve.kowalik@canonical.com>'),
+    (u'Steve Kowalik <stevenk@ubuntu.com>',
+     u'Steve Kowalik <steve.kowalik@canonical.com>'),
     )
 # Then put it in dictionary form with the correct encodings.
 merge_names_map = dict((wiki_encode(a), wiki_encode(b))
@@ -274,7 +289,6 @@ class ContainerRevision():
         timezone = self.top_rev.rev.timezone
         message = self.top_rev.rev.message or "(NO LOG MESSAGE)"
         rev_id = self.top_rev.rev.revision_id or "(NO REVISION ID)"
-        inventory_sha1 = self.top_rev.rev.inventory_sha1
         if timestamp:
             date_str = format_date(timestamp, timezone or 0, 'original')
         else:
@@ -325,8 +339,8 @@ class ContainerRevision():
             "\n",
             ]
         return ''.join(text)
-  
-  
+
+
 # "ExternalContributor" is too much to type, so I guess we'll just use this.
 class ExCon():
     """A contributor to Launchpad from outside Canonical's Launchpad team."""

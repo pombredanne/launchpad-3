@@ -14,9 +14,6 @@ __metaclass__ = type
 
 from datetime import datetime
 import os
-import shutil
-import tempfile
-import unittest
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -160,7 +157,7 @@ class TestHandleStatusMixin:
         # The call to handleStatus will attempt to get the file from
         # the slave resulting in a URL error in this test case.
         self.build.handleStatus('OK', None, {
-                'filemap': { 'myfile.py': 'test_file_hash'},
+                'filemap': {'myfile.py': 'test_file_hash'},
                 })
 
         self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
@@ -170,7 +167,7 @@ class TestHandleStatusMixin:
         # A filemap that tries to write to files outside of
         # the upload directory will result in a failed upload.
         self.build.handleStatus('OK', None, {
-            'filemap': { '/tmp/myfile.py': 'test_file_hash'},
+            'filemap': {'/tmp/myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
         self.assertEqual(0, self.build.processUpload.call_count)
@@ -179,7 +176,7 @@ class TestHandleStatusMixin:
         # A filemap that tries to write to files outside of
         # the upload directory will result in a failed upload.
         self.build.handleStatus('OK', None, {
-            'filemap': { '../myfile.py': 'test_file_hash'},
+            'filemap': {'../myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
         self.assertEqual(0, self.build.processUpload.call_count)
@@ -189,7 +186,7 @@ class TestHandleStatusMixin:
         removeSecurityProxy(self.build).log = None
         self.assertEqual(None, self.build.log)
         self.build.handleStatus('OK', None, {
-                'filemap': { 'myfile.py': 'test_file_hash'},
+                'filemap': {'myfile.py': 'test_file_hash'},
                 })
         self.assertNotEqual(None, self.build.log)
 
@@ -198,10 +195,6 @@ class TestHandleStatusMixin:
         removeSecurityProxy(self.build).date_finished = None
         self.assertEqual(None, self.build.date_finished)
         self.build.handleStatus('OK', None, {
-                'filemap': { 'myfile.py': 'test_file_hash'},
+                'filemap': {'myfile.py': 'test_file_hash'},
                 })
         self.assertNotEqual(None, self.build.date_finished)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

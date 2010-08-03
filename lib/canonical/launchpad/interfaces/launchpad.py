@@ -23,7 +23,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 # entire codebase and fix where the import should come from.
 from canonical.launchpad.webapp.interfaces import (
     IBasicLaunchpadRequest, ILaunchBag, ILaunchpadRoot, IOpenLaunchBag,
-    NotFoundError, UnexpectedFormData, UnsafeFormGetSubmissionError)
+    UnsafeFormGetSubmissionError)
 
 
 __all__ = [
@@ -61,14 +61,10 @@ __all__ = [
     'IPrivacy',
     'IReadZODBAnnotation',
     'IRosettaApplication',
-    'IStructuralHeaderPresentation',
-    'IStructuralObjectPresentation',
     'IWebServiceApplication',
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
     'NameNotAvailable',
-    'NotFoundError',
-    'UnexpectedFormData',
     'UnknownRecipientError',
     'UnsafeFormGetSubmissionError',
     ]
@@ -100,6 +96,7 @@ class ILaunchpadCelebrities(Interface):
     """
     admin = Attribute("The 'admins' team.")
     bazaar_experts = Attribute("The Bazaar Experts team.")
+    software_center_agent = Attribute("The Software Center Agent.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
     buildd_admin = Attribute("The Build Daemon administrator.")
@@ -155,6 +152,9 @@ class IPersonRoles(Interface):
         required=True, readonly=True)
     in_bazaar_experts = Bool(
         title=_("True if this person is a Bazaar expert."),
+        required=True, readonly=True)
+    in_software_center_agent = Bool(
+        title=_("True if this person is the Software Center Agent."),
         required=True, readonly=True)
     in_bug_importer = Bool(
         title=_("True if this person is a bug importer."),
@@ -295,6 +295,9 @@ class IPrivateApplication(ILaunchpadApplication):
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
     bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")
+
+    softwarecenteragent = Attribute(
+        """Software center agent XML-RPC end point.""")
 
 
 class IAuthServerApplication(ILaunchpadApplication):
@@ -482,38 +485,6 @@ class IHasDateCreated(Interface):
     datecreated = Attribute("The date on which I was created.")
 
 
-class IStructuralHeaderPresentation(Interface):
-    """Adapter for common aspects of a structural object's presentation."""
-
-    def getIntroHeading():
-        """Any heading introduction needed (e.g. "Ubuntu source package:")."""
-
-    def getMainHeading():
-        """can be None"""
-
-
-class IStructuralObjectPresentation(IStructuralHeaderPresentation):
-    """Adapter for less common parts of a structural object's presentation."""
-
-    def listChildren(num):
-        """List up to num children.  Return empty string for none of these"""
-
-    def countChildren():
-        """Return the total number of children."""
-
-    def listAltChildren(num):
-        """List up to num alternative children.
-
-        Return None if alt children are not supported.
-        """
-
-    def countAltChildren():
-        """Return the total number of alt children.
-
-        Will be called only if listAltChildren returns something.
-        """
-
-
 class IAppFrontPageSearchForm(Interface):
     """Schema for the app-specific front page search question forms."""
 
@@ -594,7 +565,7 @@ class INotificationRecipientSet(Interface):
         """
 
     def add(person, reason, header):
-        """Add a person or sequence of person to the recipients list.
+        """Add a person or a sequence of persons to the recipients list.
 
         When the added person is a team without an email address, all its
         members emails will be added. If the person is already in the
@@ -606,6 +577,13 @@ class INotificationRecipientSet(Interface):
             notification footer.
         :param header: The code that will appear in the
             X-Launchpad-Message-Rationale header.
+        """
+
+    def remove(person):
+        """Remove a person or a list of persons from the recipients list.
+
+        :param person: The `IPerson` or a sequence of `IPerson`
+            that will removed from the recipients list.
         """
 
     def update(recipient_set):

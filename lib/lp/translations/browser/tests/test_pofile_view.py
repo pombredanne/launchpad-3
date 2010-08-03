@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 import pytz
 from unittest import TestLoader
 
-from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadZopelessLayer
+from lp.app.errors import UnexpectedFormData
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.pofile import POFileBaseView, POFileTranslateView
 

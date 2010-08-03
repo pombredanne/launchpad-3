@@ -37,6 +37,7 @@ from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
+from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
@@ -58,7 +59,6 @@ from lp.blueprints.interfaces.specificationtarget import (
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.translations.interfaces.translationgroup import (
     ITranslationPolicy)
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
@@ -515,6 +515,18 @@ class IDistributionPublic(
 
     def getAllPPAs():
         """Return all PPAs for this distribution."""
+
+    # Really returns IArchive, see
+    # _schema_circular_imports.py.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getCommercialPPAs():
+        """Return all commercial PPAs.
+
+        Commercial PPAs are private, but explicitly flagged up as commercial
+        so that they are discoverable by people who wish to buy items
+        from them.
+        """
 
     def searchPPAs(text=None, show_inactive=False):
         """Return all PPAs matching the given text in this distribution.
