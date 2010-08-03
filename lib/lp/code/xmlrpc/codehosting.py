@@ -30,10 +30,10 @@ from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.helpers import return_fault
 
 from lp.app.errors import NameLookupFailed, NotFoundError
-from lp.code.errors import UnknownBranchTypeError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
-from lp.code.enums import BranchType, InvalidNamespace
-from lp.code.errors import BranchCreationException
+from lp.code.enums import BranchType
+from lp.code.errors import (
+    BranchCreationException, InvalidNamespace, UnknownBranchTypeError)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     lookup_branch_namespace, split_unique_name)
