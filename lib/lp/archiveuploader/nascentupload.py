@@ -348,6 +348,15 @@ class NascentUpload:
             self.reject("Upload has more architetures than it is supported.")
 
     def _matchDDEBs(self):
+        """Check and link DEBs and DDEBs in the upload.
+
+        Matches each DDEB to its corresponding DEB, adding links in both
+        directions. Unmatched or duplicated DDEBs result in upload errors.
+
+        This method is an error generator, i.e, it returns an iterator over
+        all exceptions that are generated while processing all mentioned
+        files.
+        """
         unmatched_ddebs = {}
         for uploaded_file in self.changes.files:
             if isinstance(uploaded_file, DdebBinaryUploadFile):

@@ -44,12 +44,12 @@ class TestMatchDDEBs(TestCase):
             self.changes, None, self.upload.logger)
         self.changes.files.append(file)
 
-    def testNoBinaries(self):
+    def testNoLinksWithNoBinaries(self):
         # No links will be made if there are no binaries whatsoever.
         self.addFile('something_1.0.diff.gz')
         self.assertEquals([], list(self.upload._matchDDEBs()))
 
-    def testJustDEBs(self):
+    def testNoLinksWithJustDEBs(self):
         # No links will be made if there are no DDEBs.
         self.addFile('blah_1.0_all.deb')
         self.addFile('libblah_1.0_i386.deb')
@@ -57,7 +57,7 @@ class TestMatchDDEBs(TestCase):
         for file in self.changes.files:
             self.assertIs(None, file.ddeb_file)
 
-    def testMatchingDDEB(self):
+    def testLinksMatchingDDEBs(self):
         # DDEBs will be linked to their matching DEBs.
         self.addFile('blah_1.0_all.deb')
         self.addFile('libblah_1.0_i386.deb')
@@ -68,7 +68,7 @@ class TestMatchDDEBs(TestCase):
         self.assertIs(self.changes.files[1], self.changes.files[2].deb_file)
         self.assertIs(None, self.changes.files[2].ddeb_file)
 
-    def testDuplicateDDEB(self):
+    def testDuplicateDDEBsCauseErrors(self):
         # An error will be raised if a DEB has more than one matching
         # DDEB.
         self.addFile('libblah_1.0_i386.deb')
@@ -78,7 +78,7 @@ class TestMatchDDEBs(TestCase):
             ['Duplicated debug packages: libblah-dbgsym 666 (i386)'],
             get_error_text(self.upload._matchDDEBs()))
 
-    def testMismatchedDDEB(self):
+    def testMismatchedDDEBsCauseErrors(self):
         # An error will be raised if a DDEB has no matching DEB.
         self.addFile('libblah_1.0_i386.deb')
         self.addFile('libblah-dbgsym_1.0_amd64.ddeb')
