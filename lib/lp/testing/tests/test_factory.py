@@ -18,6 +18,7 @@ from canonical.testing.layers import (
 from lp.code.enums import CodeImportReviewStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.worlddata.interfaces.language import ILanguage
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFileType, IBinaryPackageRelease)
 from lp.soyuz.interfaces.files import (
@@ -41,6 +42,24 @@ class TestFactory(TestCaseWithFactory):
         current_person = getUtility(ILaunchBag).user
         self.assertIsNot(None, person)
         self.assertEqual(person, current_person)
+
+    # makeBinaryPackageBuild
+    def test_makeBinaryPackageBuild_returns_IBinaryPackageBuild(self):
+        bpb = self.factory.makeBinaryPackageBuild()
+        self.assertThat(
+            removeSecurityProxy(bpb), Provides(IBinaryPackageBuild))
+
+    def test_makeBinaryPackageBuild_returns_proxy(self):
+        bpb = self.factory.makeBinaryPackageBuild()
+        self.assertThat(bpb, IsProxied())
+
+    def test_makeBinaryPackageBuild_created_SPR_is_published(self):
+        # It is expected that every build references an SPR that is
+        # published in the target archive. Check that a created
+        # SPR is also published.
+        bpb = self.factory.makeBinaryPackageBuild()
+        self.assertIn(
+            bpb.archive, bpb.source_package_release.published_archives)
 
     # makeBinaryPackagePublishingHistory
     def test_makeBinaryPackagePublishingHistory_returns_IBPPH(self):
