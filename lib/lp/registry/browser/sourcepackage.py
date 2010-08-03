@@ -19,6 +19,8 @@ __all__ = [
 
 from apt_pkg import ParseSrcDepends
 from cgi import escape
+import string
+import urllib
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import IInputWidget
@@ -35,12 +37,14 @@ from canonical.widgets import LaunchpadRadioWidget
 
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
+
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from lp.services.worlddata.interfaces.country import ICountry
+from lp.registry.browser.product import ProjectAddStepOne
 from lp.registry.interfaces.packaging import IPackaging, IPackagingUtil
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProductSet
@@ -60,6 +64,24 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 
 from canonical.lazr.utils import smartquote
+
+
+def get_register_upstream_url(source_package):
+    displayname = string.capwords(source_package.name.replace('-', ' '))
+    params = {
+        'field.name': source_package.name,
+        'field.displayname': displayname,
+        'field.title': displayname,
+        'field.__visited_steps__': ProjectAddStepOne.step_name,
+        'field.actions.continue': 'Continue',
+        }
+    if source_package.summary is None:
+        params['field.summary'] = ''
+    else:
+        params['field.summary'] = source_package.summary
+    query_string = urllib.urlencode(
+        sorted(params.items()), doseq=True)
+    return '/projects/+new?%s' % query_string
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -189,6 +211,10 @@ class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
         """See `MultiStepView`."""
         self.next_step = SourcePackageChangeUpstreamStepTwo
         self.request.form['product'] = data['product']
+
+    @property
+    def register_upstream_url(self):
+        return get_register_upstream_url(self.context)
 
 
 class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
@@ -445,6 +471,7 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
     initial_focus_widget = None
     max_suggestions = 9
     other_upstream = object()
+    register_upstream = object()
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -467,9 +494,12 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
             vocab_terms.append(SimpleTerm(product, product.name, description))
         # Add an option to represent the user's decision to choose a
         # different project. Note that project names cannot be uppercase.
-        description = 'Choose another upstream project'
         vocab_terms.append(
-            SimpleTerm(self.other_upstream, 'OTHER_UPSTREAM', description))
+            SimpleTerm(self.other_upstream, 'OTHER_UPSTREAM',
+                       'Choose another upstream project'))
+        vocab_terms.append(
+            SimpleTerm(self.register_upstream, 'REGISTER_UPSTREAM',
+                       'Register the upstream project'))
         upstream_vocabulary = SimpleVocabulary(vocab_terms)
 
         self.form_fields = Fields(
@@ -486,6 +516,11 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
             # The user wants to link to an alternate upstream project.
             self.next_url = canonical_url(
                 self.context, view_name="+edit-packaging")
+            return
+        elif upstream is self.register_upstream:
+            # The user wants to create a new project.
+            self.request.response.redirect(
+                get_register_upstream_url(self.context))
             return
         self.context.setPackaging(upstream.development_focus, self.user)
         self.request.response.addInfoNotification(

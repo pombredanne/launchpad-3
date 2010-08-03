@@ -119,7 +119,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
-    ReturnToReferrerMixin)
+    ReturnToReferrerMixin, safe_action)
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.tales import MenuAPI
 from canonical.widgets.popup import PersonPickerWidget
@@ -1815,6 +1815,10 @@ class ProjectAddStepOne(StepView):
         self.request.form['displayname'] = data['displayname']
         self.request.form['name'] = data['name'].lower()
         self.request.form['summary'] = data['summary']
+
+    # Make this a safe_action, so that the sourcepackage page can skip
+    # the first step with a GET request providing form values.
+    continue_action = safe_action(StepView.continue_action)
 
 
 class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
