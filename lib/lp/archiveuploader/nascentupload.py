@@ -103,7 +103,6 @@ class NascentUpload:
         # If a path is given, a new ChangesFile object will be
         # constructed. Otherwise we use the given object.
         if isinstance(changesfile, str):
-            self.changesfile_path = changesfile
             try:
                 self.changes = ChangesFile(
                     changesfile, self.policy, self.logger)
@@ -218,7 +217,7 @@ class NascentUpload:
     @property
     def filename(self):
         """Return the changesfile name."""
-        return os.path.basename(self.changesfile_path)
+        return os.path.basename(self.changesfile.filepath)
 
     @property
     def is_new(self):
