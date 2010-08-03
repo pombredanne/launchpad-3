@@ -22,8 +22,7 @@ from canonical.lp import initZopeless
 from lp.app.errors import NotFoundError
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.scripts.initialise_distroseries import (
-    InitialiseDistroSeries, ParentSeriesRequired, PendingBuilds, 
-    QueueNotEmpty, SeriesAlreadyInUse)
+    InitialisationError, InitialiseDistroSeries)
 
 def main():
     # Parse command-line arguments
@@ -74,17 +73,8 @@ def main():
         ids = InitialiseDistroSeries(distroseries)
         log.debug('initialising from parent, copying publishing records.')
         ids.initialise()
-    except ParentSeriesRequired:
-        log.error("Parent series required.")
-        return 1
-    except PendingBuilds:
-        log.error("Parent series has pending builds.")
-        return 1
-    except QueueNotEmpty:
-        log.error("Parent series queues are not empty.")
-        return 1
-    except SeriesAlreadyInUse:
-        log.error("Series is already in use.")
+    except InitialisationError, e:
+        log.error(e)
         return 1
 
     if options.dryrun:

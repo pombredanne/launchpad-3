@@ -6,11 +6,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'InitialisationError',
     'InitialiseDistroSeries',
-    'ParentSeriesRequired',
-    'PendingBuilds',
-    'QueueNotEmpty',
-    'SeriesAlreadyInUse',
     ]
 
 from zope.component import getUtility
@@ -22,22 +19,11 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.model.packagecloner import clone_packages
 
 
-class PendingBuilds(Exception):
-    """Raised when the parent distroseries has pending builds."""
-
-
-class QueueNotEmpty(Exception):
-    """Raised when the parent distroseries has items in its queues."""
-
-
-class ParentSeriesRequired(Exception):
-    """Raised when the distroseries does not have a parent series set."""
-
-
-class SeriesAlreadyInUse(Exception):
-    """Raised when the distroseries already contains things."""
+class InitialisationError(Exception):
+    """Raised when there is an exception during the initialisation process."""
 
 
 class InitialiseDistroSeries:
@@ -49,7 +35,7 @@ class InitialiseDistroSeries:
 
     def _check(self):
         if self.distroseries.parent_series is None:
-            raise ParentSeriesRequired
+            raise InitialisationError, "Parent series required."
         self._checkBuilds()
         self._checkQueue()
         self._checkSeries()
@@ -68,7 +54,7 @@ class InitialiseDistroSeries:
             BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
 
         if pending_builds.count():
-            raise PendingBuilds
+            raise InitialisationError, "Parent series has pending builds."
 
     def _checkQueue(self):
         """Assert upload queue is empty on parent series.
@@ -86,21 +72,26 @@ class InitialiseDistroSeries:
             items = parentseries.getQueueItems(
                 queue, pocket=PackagePublishingPocket.RELEASE)
             if items:
-                raise QueueNotEmpty
+                raise (
+                    InitialisationError,
+                    "Parent series queues are not empty.")
 
     def _checkSeries(self):
         sources = self.distroseries.getAllPublishedSources()
+        error = (
+            "Can not copy distroarchseries from parent, there are "
+            "already distroarchseries(s) initialised for this series.")
         if sources.count():
-            raise SeriesAlreadyInUse
+            raise InitialisationError, error
         binaries = self.distroseries.getAllPublishedBinaries()
         if binaries.count():
-            raise SeriesAlreadyInUse
+            raise InitialisationError, error
         if self.distroseries.architectures.count():
-            raise SeriesAlreadyInUse
+            raise InitialisationError, error
         if self.distroseries.components.count():
-            raise SeriesAlreadyInUse
+            raise InitialisationError, error
         if self.distroseries.sections.count():
-            raise SeriesAlreadyInUse
+            raise InitialisationError, error
 
     def initialise(self):
         self._copy_architectures()
@@ -160,18 +151,9 @@ class InitialiseDistroSeries:
                 ArchivePurpose.PRIMARY, ArchivePurpose.DEBUG):
                 continue
 
-            # XXX cprov 20080612: Implicitly creating a PARTNER archive for
-            # the destination distroseries is bad. Why are we copying
-            # partner to a series in another distribution anyway ?
-            # See bug #239807 for further information.
             target_archive = archive_set.getByDistroPurpose(
                 self.distroseries.distribution, archive.purpose)
-            if target_archive is None:
-                target_archive = archive_set.new(
-                    distribution=self.distroseries.distribution,
-                    purpose=archive.purpose,
-                    owner=self.distroseries.distribution.owner)
-
+            assert target_archive is not None, "Target archive doesn't exist?"
             origin = PackageLocation(
                 archive, parent.distribution, parent,
                 PackagePublishingPocket.RELEASE)

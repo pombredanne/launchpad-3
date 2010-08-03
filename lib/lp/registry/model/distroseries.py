@@ -66,7 +66,6 @@ from lp.services.worlddata.model.language import Language
 from lp.translations.model.languagepack import LanguagePack
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
-from lp.soyuz.model.packagecloner import clone_packages
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.person import Person
 from canonical.launchpad.database.librarian import LibraryFileAlias
