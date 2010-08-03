@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from lp.code.interfaces.branch import NoSuchBranch
+from lp.code.errors import NoSuchBranch
 from lp.code.interfaces.branchlookup import (
     IBranchLookup, ILinkedBranchTraverser)
 from lp.code.interfaces.branchnamespace import (

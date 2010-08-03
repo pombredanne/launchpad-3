@@ -6,8 +6,8 @@ software. It can be part of a ProjectGroup or it can be standalone.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, IProduct, IPersonSet,
-    ...     NotFoundError)
+    ...     IProductSet, IProduct, IPersonSet)
+    >>> from lp.app.errors import NotFoundError
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     IHasTranslationImports)
     >>> from canonical.launchpad.ftests import login

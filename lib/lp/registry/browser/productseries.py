@@ -55,8 +55,8 @@ from canonical.launchpad.helpers import browserLanguages
 from lp.code.browser.branch import BranchNameValidationMixin
 from lp.code.browser.branchref import BranchRef
 from lp.code.enums import BranchType, RevisionControlSystems
-from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch)
+from lp.code.errors import BranchCreationForbidden, BranchExists
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import (
@@ -80,8 +80,7 @@ from canonical.launchpad.webapp import (
     stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, UnexpectedFormData)
+from lp.app.errors import NotFoundError, UnexpectedFormData
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
     ReturnToReferrerMixin)

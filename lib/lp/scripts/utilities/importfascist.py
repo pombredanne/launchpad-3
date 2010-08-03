@@ -171,7 +171,7 @@ class NotFoundPolicyViolation(JackbootError):
 
     def format_message(self):
         return ('%s\nDo not import zope.exceptions.NotFoundError.\n'
-                'Use canonical.launchpad.interfaces.NotFoundError instead.'
+                'Use lp.app.errors.NotFoundError instead.'
                 % self.import_into)
 
 

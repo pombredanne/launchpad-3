@@ -28,9 +28,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
 
 from lp.code.errors import (
-    ForbiddenInstruction, PrivateBranchRecipe, TooNewRecipeFormat)
+    ForbiddenInstruction, NoSuchBranch, PrivateBranchRecipe,
+    TooNewRecipeFormat)
 from lp.code.model.branch import Branch
-from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
 
 
