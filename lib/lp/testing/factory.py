@@ -2804,16 +2804,14 @@ class UnproxiedFactoryMethodWarning(UserWarning):
             "unproxied object." % (method_name, ))
 
 
-class UnreasonableRemoveSecurityProxyWarning(UserWarning):
-    """Raised when there is an unreasonable call to removeSecurityProxy."""
+class ShouldThisBeUsingRemoveSecurityProxy(UserWarning):
+    """Raised when there is a potentially bad call to removeSecurityProxy."""
 
-    # XXX: JonathanLange 2010-07-25: I have no idea what "unreasonable" means
-    # in this context.
     def __init__(self, obj):
         message = (
-            "Called removeSecurityProxy(%r) without a check if this is "
-            "reasonable." % obj)
-        super(UnreasonableRemoveSecurityProxyWarning, self).__init__(message)
+            "removeSecurityProxy(%r) called. Is this correct? "
+            "Either call it directly or fix the test." % obj)
+        super(ShouldThisBeUsingRemoveSecurityProxy, self).__init__(message)
 
 
 class LaunchpadObjectFactory:
@@ -2856,5 +2854,5 @@ def remove_security_proxy_and_shout_at_engineer(obj):
     This function should only be used in legacy tests which fail because
     they expect unproxied objects.
     """
-    warnings.warn(UnreasonableRemoveSecurityProxyWarning(obj), stacklevel=2)
+    warnings.warn(ShouldThisBeUsingRemoveSecurityProxy(obj), stacklevel=2)
     return removeSecurityProxy(obj)
