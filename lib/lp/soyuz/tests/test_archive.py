@@ -199,7 +199,7 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
         self.assertEquals(
             library_file.content.filesize, archive.sources_size)
 
-        self.publish_source_file(archive, library_file)
+        self.publishSourceFile(archive, library_file)
         self.assertEquals(
             library_file.content.filesize, archive.sources_size)
 
