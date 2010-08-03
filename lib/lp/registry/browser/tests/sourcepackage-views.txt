@@ -199,6 +199,7 @@ the portlet showing the suggested project.
     Registered upstream project:
     Lernid
     Choose another upstream project
+    Register the upstream project
 
 The form does not steal focus because it is not the primary purpose of the
 page.
@@ -229,6 +230,7 @@ item is reserved for the "Choose another upstream project" option.
     Lernid...
     Lernid Dev...
     Choose another upstream project
+    Register the upstream project
 
 Choosing the "Choose another upstream project" option redirects the user
 to the +edit-packaging page where the user can search for a project.
@@ -360,3 +362,4 @@ to the project series.
     match for this source package. Can you help us find one?
     Registered upstream project:
     Choose another upstream project
+    Register the upstream project
