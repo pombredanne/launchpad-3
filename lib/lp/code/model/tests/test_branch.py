@@ -46,12 +46,12 @@ from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import (
     BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
     BranchVisibilityRule, CodeReviewNotificationLevel)
-from lp.code.errors import InvalidBranchMergeProposal
-from lp.code.interfaces.branch import (
+from lp.code.errors import (
     BranchCannotBePrivate, BranchCannotBePublic,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchTargetError, CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING,
-    IBranch)
+    BranchTargetError, CannotDeleteBranch, InvalidBranchMergeProposal)
+from lp.code.interfaces.branch import (
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
 from lp.code.interfaces.branchjob import (
     IBranchUpgradeJobSource, IBranchScanJobSource)
 from lp.code.interfaces.branchlookup import IBranchLookup

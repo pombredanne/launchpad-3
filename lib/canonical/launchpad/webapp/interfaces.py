@@ -7,6 +7,10 @@ __metaclass__ = type
 
 import logging
 
+# Import only added to allow change to land.  Needs to be removed when shipit
+# is updated.
+from lp.app.errors import UnexpectedFormData
+
 import zope.app.publication.interfaces
 from zope.component.interfaces import IObjectEvent
 from zope.interface import Interface, Attribute, implements
@@ -18,51 +22,6 @@ from lazr.batchnavigator.interfaces import IBatchNavigator
 from lazr.enum import DBEnumeratedType, DBItem, use_template
 
 from canonical.launchpad import _
-
-
-class TranslationUnavailable(Exception):
-    """Translation objects are unavailable."""
-
-
-class NotFoundError(KeyError):
-    """Launchpad object not found."""
-
-
-class GoneError(KeyError):
-    """Launchpad object is gone."""
-
-
-class NameLookupFailed(NotFoundError):
-    """Raised when a lookup by name fails.
-
-    Subclasses should define the `_message_prefix` class variable, which will
-    be prefixed to the quoted name of the name that could not be found.
-
-    :ivar name: The name that could not be found.
-    """
-
-    _message_prefix = "Not found"
-
-    def __init__(self, name, message=None):
-        if message is None:
-            message = self._message_prefix
-        self.message = "%s: '%s'." % (message, name)
-        self.name = name
-        NotFoundError.__init__(self, self.message)
-
-    def __str__(self):
-        return self.message
-
-
-class UnexpectedFormData(AssertionError):
-    """Got form data that is not what is expected by a form handler."""
-
-
-class POSTToNonCanonicalURL(UnexpectedFormData):
-    """Got a POST to an incorrect URL.
-
-    One example would be a URL containing uppercase letters.
-    """
 
 
 class IAPIDocRoot(IContainmentRoot):

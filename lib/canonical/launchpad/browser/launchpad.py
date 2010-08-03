@@ -62,8 +62,7 @@ from canonical.launchpad.webapp import (
     stepto)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    GoneError, IBreadcrumb, ILaunchBag, ILaunchpadRoot,
-    INavigationMenu, NotFoundError, POSTToNonCanonicalURL)
+    IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import PageTemplateContextsAPI
@@ -73,6 +72,7 @@ from canonical.widgets.project import ProjectScopeWidget
 
 from lazr.uri import URI
 
+from lp.app.errors import GoneError, NotFoundError, POSTToNonCanonicalURL
 from lp.app.interfaces.headings import IMajorHeadingView
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.soyuz.interfaces.binarypackagename import (

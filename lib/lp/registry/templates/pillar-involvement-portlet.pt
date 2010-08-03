@@ -31,9 +31,40 @@
     </tal:disabled>
   </ul>
 
-  <ul tal:condition="view/configuration_links" style="padding-top: 1em">
-    <li tal:repeat="link view/configuration_links">
-      <a tal:replace="structure link/fmt:link" />
-    </li>
-  </ul>
+  <tal:editor condition="context/required:launchpad.Edit"
+              define="registration view/registration_completeness">
+    <tal:show_configuration condition="registration">
+      <h2>Configuration Progress</h2>
+      <div class="centered">
+          <table width="80%" border="1">
+            <tr>
+              <td>
+              <img
+                 tal:attributes="alt string:${registration/done}% registration complete;
+                                 title string:${registration/done}% registration complete;
+                                 width registration/done;
+                                 style string:width: ${registration/done}%;"
+                 src="/@@/green-bar"
+                 height="10"/>
+              </td>
+            </tr>
+          </table>
+      </div>
+    </tal:show_configuration>
+
+    <table style="width: 100%; padding-top: 1em"
+           tal:condition="view/configuration_links">
+      <tal:item repeat="link_status view/configuration_links">
+        <tr>
+          <td>
+            <a tal:replace="structure link_status/link/fmt:link" />
+          </td>
+          <td style="text-align: right;" tal:condition="registration">
+            <tal:yes-no replace="structure link_status/configured/image:boolean" />
+          </td>
+        </tr>
+      </tal:item>
+    </table>
+
+  </tal:editor>
 </div>

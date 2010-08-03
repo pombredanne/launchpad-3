@@ -17,7 +17,7 @@ from sqlobject import StringCol, SQLMultipleJoin
 
 from canonical.database.sqlbase import SQLBase, quote_like, cursor, sqlvalues
 
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet, NoSuchSourcePackageName)
 
