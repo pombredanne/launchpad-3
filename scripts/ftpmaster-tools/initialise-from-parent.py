@@ -3,16 +3,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Initialise a new distroseries from its parent
-
-It performs two additional tasks before call initialiseFromParent:
-
-* check_queue (ensure parent's mutable queues are empty)
-* copy_architectures (copy parent's architectures and set
-                      nominatedarchindep properly)
-
-which eventually may be integrated in its workflow.
-"""
+"""Initialise a new distroseries from its parent"""
 
 import _pythonpath
 
@@ -23,14 +14,14 @@ from zope.component import getUtility
 from contrib.glock import GlobalLock
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.launchpad.interfaces import IDistributionSet, NotFoundError
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 
+from lp.soyuz.scripts.initialise_distroseries import (
+    InitialiseDistroSeries, ParentSeriesRequired, PendingBuilds, 
+    QueueNotEmpty, SeriesAlreadyInUse)
 
 def main():
     # Parse command-line arguments
@@ -73,20 +64,26 @@ def main():
         log.error(info)
         return 1
 
-    # XXX cprov 2006-05-26: these two extra functions must be
-    # integrated in IDistroSeries.initialiseFromParent workflow.
-    log.debug('Check empty mutable queues in parentseries')
-    check_queue(distroseries)
-
-    log.debug('Check for no pending builds in parentseries')
-    check_builds(distroseries)
-
-    log.debug('Copying distroarchseries from parent '
-              'and setting nominatedarchindep.')
-    copy_architectures(distroseries)
-
-    log.debug('initialising from parent, copying publishing records.')
-    distroseries.initialiseFromParent()
+    try:
+        log.debug('Check empty mutable queues in parentseries')
+        log.debug('Check for no pending builds in parentseries')
+        log.debug('Copying distroarchseries from parent '
+                      'and setting nominatedarchindep.')
+        ids = InitialiseDistroSeries(distroseries)
+        log.debug('initialising from parent, copying publishing records.')
+        ids.initialise()
+    except ParentSeriesRequired:
+        log.error("Parent series required.")
+        return 1
+    except PendingBuilds:
+        log.error("Parent series has pending builds.")
+        return 1
+    except QueueNotEmpty:
+        log.error("Parent series queues are not empty.")
+        return 1
+    except SeriesAlreadyInUse:
+        log.error("Series is already in use.")
+        return 1
 
     if options.dryrun:
         log.debug('Dry-Run mode, transaction aborted.')

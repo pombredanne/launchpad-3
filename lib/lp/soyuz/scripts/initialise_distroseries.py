@@ -13,15 +13,15 @@ __all__ = [
     'SeriesAlreadyInUse',
     ]
 
-from canonical.database.sqlbase import (
-    cursor, flush_database_caches, flush_database_updates, quote_like,
-    quote, SQLBase, sqlvalues)
+from zope.component import getUtility
+from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 
 
 class PendingBuilds(Exception):
@@ -43,6 +43,8 @@ class SeriesAlreadyInUse(Exception):
 class InitialiseDistroSeries:
     def __init__(self, distroseries):
         self.distroseries = distroseries
+        self._store = getUtility(
+            IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         self._check()
 
     def _check(self):
@@ -101,45 +103,45 @@ class InitialiseDistroSeries:
             raise SeriesAlreadyInUse
 
     def initialise(self):
-        """See `IDistroSeries`."""
-        # MAINTAINER: dsilvers: 20051031
-        # Here we go underneath the SQLObject caching layers in order to
-        # generate what will potentially be tens of thousands of rows
-        # in various tables. Thus we flush pending updates from the SQLObject
-        # layer, perform our work directly in the transaction and then throw
-        # the rest of the SQLObject cache away to make sure it hasn't cached
-        # anything that is no longer true.
+        self._copy_architectures()
+        self._copy_packages()
 
-        # Prepare for everything by flushing updates to the database.
-        flush_database_updates()
-        cur = cursor()
+    def _copy_architectures(self):
+        self._store.execute("""
+            INSERT INTO DistroArchSeries
+            (distroseries, processorfamily, architecturetag, owner, official)
+            SELECT %s, processorfamily, architecturetag, %s, official
+            FROM DistroArchSeries WHERE distroseries = %s
+            """ % sqlvalues(self.distroseries, self.distroseries.owner,
+            self.distroseries.parent_series))
 
+        self.distroseries.nominatedarchindep = self.distroseries[
+            self.distroseries.parent_series.nominatedarchindep.architecturetag]
+
+    def _copy_packages(self):
         # Perform the copies
-        self._copy_component_section_and_format_selections(cur)
+        self._copy_component_section_and_format_selections()
 
         # Prepare the list of distroarchseries for which binary packages
         # shall be copied.
         distroarchseries_list = []
-        for arch in self.architectures:
-            parent_arch = self.parent_series[arch.architecturetag]
+        for arch in self.distroseries.architectures:
+            parent_arch = self.distroseries.parent_series[arch.architecturetag]
             distroarchseries_list.append((parent_arch, arch))
         # Now copy source and binary packages.
         self._copy_publishing_records(distroarchseries_list)
-        self._copy_lucille_config(cur)
-        self._copy_packaging_links(cur)
+        self._copy_lucille_config()
+        self._copy_packaging_links()
 
-        # Finally, flush the caches because we've altered stuff behind the
-        # back of sqlobject.
-        flush_database_caches()
-
-    def _copy_lucille_config(self, cur):
+    def _copy_lucille_config(self):
         """Copy all lucille related configuration from our parent series."""
-        cur.execute('''
+        self._store.execute('''
             UPDATE DistroSeries SET lucilleconfig=(
                 SELECT pdr.lucilleconfig FROM DistroSeries AS pdr
                 WHERE pdr.id = %s)
             WHERE id = %s
-            ''' % sqlvalues(self.parent_series.id, self.id))
+            ''' % sqlvalues(self.distroseries.parent_series.id,
+            self.distroseries.id))
 
     def _copy_publishing_records(self, distroarchseries_list):
         """Copy the publishing records from the parent arch series
@@ -152,10 +154,10 @@ class InitialiseDistroSeries:
         archives.
         """
         archive_set = getUtility(IArchiveSet)
+        parent = self.distroseries.parent_series
 
-        for archive in self.parent_series.distribution.all_distro_archives:
-            # We only want to copy PRIMARY and PARTNER archives.
-            if archive.purpose not in MAIN_ARCHIVE_PURPOSES:
+        for archive in parent.distribution.all_distro_archives:
+            if archive.purpose is not ArchivePurpose.PRIMARY:
                 continue
 
             # XXX cprov 20080612: Implicitly creating a PARTNER archive for
@@ -163,47 +165,51 @@ class InitialiseDistroSeries:
             # partner to a series in another distribution anyway ?
             # See bug #239807 for further information.
             target_archive = archive_set.getByDistroPurpose(
-                self.distribution, archive.purpose)
+                self.distroseries.distribution, archive.purpose)
             if target_archive is None:
                 target_archive = archive_set.new(
-                    distribution=self.distribution, purpose=archive.purpose,
-                    owner=self.distribution.owner)
+                    distribution=self.distroseries.distribution,
+                    purpose=archive.purpose,
+                    owner=self.distroseries.distribution.owner)
 
             origin = PackageLocation(
-                archive, self.parent_series.distribution, self.parent_series,
+                archive, parent.distribution, parent,
                 PackagePublishingPocket.RELEASE)
             destination = PackageLocation(
-                target_archive, self.distribution, self,
-                PackagePublishingPocket.RELEASE)
+                target_archive, self.distroseries.distribution,
+                self.distroseries, PackagePublishingPocket.RELEASE)
             clone_packages(origin, destination, distroarchseries_list)
 
-    def _copy_component_section_and_format_selections(self, cur):
+    def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parent
         distro series into this one.
         """
         # Copy the component selections
-        cur.execute('''
+        self._store.execute('''
             INSERT INTO ComponentSelection (distroseries, component)
             SELECT %s AS distroseries, cs.component AS component
             FROM ComponentSelection AS cs WHERE cs.distroseries = %s
-            ''' % sqlvalues(self.id, self.parent_series.id))
+            ''' % sqlvalues(self.distroseries.id,
+            self.distroseries.parent_series.id))
         # Copy the section selections
-        cur.execute('''
+        self._store.execute('''
             INSERT INTO SectionSelection (distroseries, section)
             SELECT %s as distroseries, ss.section AS section
             FROM SectionSelection AS ss WHERE ss.distroseries = %s
-            ''' % sqlvalues(self.id, self.parent_series.id))
+            ''' % sqlvalues(self.distroseries.id,
+            self.distroseries.parent_series.id))
         # Copy the source format selections
-        cur.execute('''
+        self._store.execute('''
             INSERT INTO SourcePackageFormatSelection (distroseries, format)
             SELECT %s as distroseries, spfs.format AS format
             FROM SourcePackageFormatSelection AS spfs
             WHERE spfs.distroseries = %s
-            ''' % sqlvalues(self.id, self.parent_series.id))
+            ''' % sqlvalues(self.distroseries.id,
+            self.distroseries.parent_series.id))
 
-    def _copy_packaging_links(self, cur):
+    def _copy_packaging_links(self):
         """Copy the packaging links from the parent series to this one."""
-        cur.execute("""
+        self._store.execute("""
             INSERT INTO
                 Packaging(
                     distroseries, sourcepackagename, productseries,
@@ -242,28 +248,5 @@ class InitialiseDistroSeries:
                         WHERE id = ChildSeries.id
                         )
                     )
-            """ % self.id)
-
-def copy_architectures(distroseries):
-    """Overlap SQLObject and copy architecture from the parent.
-
-    Also set the nominatedarchindep properly in target.
-    """
-    assert distroseries.architectures.count() is 0, (
-        "Can not copy distroarchseries from parent, there are already "
-        "distroarchseries(s) initialised for this series.")
-    flush_database_updates()
-    cur = cursor()
-    cur.execute("""
-    INSERT INTO DistroArchSeries
-          (distroseries, processorfamily, architecturetag, owner, official)
-    SELECT %s, processorfamily, architecturetag, %s, official
-    FROM DistroArchSeries WHERE distroseries = %s
-    """ % sqlvalues(distroseries, distroseries.owner,
-                    distroseries.parent_series))
-    flush_database_caches()
-
-    distroseries.nominatedarchindep = distroseries[
-        distroseries.parent_series.nominatedarchindep.architecturetag]
-
+            """ % self.distroseries.id)
 

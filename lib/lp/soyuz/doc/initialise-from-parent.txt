@@ -63,9 +63,7 @@ Check if it fails for an already released distroseries:
   DEBUG   Check empty mutable queues in parentseries
   DEBUG   Check for no pending builds in parentseries
   DEBUG   Copying distroarchseries from parent and setting nominatedarchindep.
-  Traceback (most recent call last):
-  ...
-  AssertionError: Can not copy distroarchseries from parent, there are already distroarchseries(s) initialised for this series.
+  ERROR   Series is already in use.
   <BLANKLINE>
 
 
@@ -95,6 +93,8 @@ against its parent, ubuntu/hoary:
 
   >>> hoary_pmount_pubs = hoary.getPublishedReleases('pmount')
   >>> foobuntu_pmount_pubs = foobuntu.getPublishedReleases('pmount')
+  >>> print foobuntu_pmount_pubs
+  ...
   >>> len(foobuntu_pmount_pubs) == len(hoary_pmount_pubs)
   True
 
