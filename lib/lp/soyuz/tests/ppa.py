@@ -27,8 +27,8 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority, PackagePublishingStatus)
 from lp.testing.sampledata import (
     HOARY_DISTROSERIES_NAME, I386_ARCHITECTURE_NAME, MAIN_COMPONENT_NAME,
-    MOZILLA_FIREFOX_SOURCEPACKAGENAME, MOZILLA_FIREFOX_SOURCEPACKAGEVERSION,
-    NAME16_PERSON_NAME, UBUNTU_TEAM_NAME)
+    UBUNTU_DEVELOPER_ADMIN_NAME, UBUNTU_UPLOAD_TEAM_NAME,
+    WARTY_ONLY_SOURCEPACKAGENAME, WARTY_ONLY_SOURCEPACKAGEVERSION)
 
 
 def publishToTeamPPA(team_name=None, distroseries_name=None,
@@ -44,9 +44,9 @@ def publishToTeamPPA(team_name=None, distroseries_name=None,
     The team PPA must already be created.
     """
     if team_name is None:
-        team_name = UBUNTU_TEAM_NAME
+        team_name = UBUNTU_UPLOAD_TEAM_NAME
     if team_member_name is None:
-        team_member_name = NAME16_PERSON_NAME
+        team_member_name = UBUNTU_DEVELOPER_ADMIN_NAME
     team = getUtility(IPersonSet).getByName(team_name)
     _publishToPPA(
         team.archive, team_member_name, distroseries_name,
@@ -75,9 +75,9 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
     if distroseries_name is None:
         distroseries_name = HOARY_DISTROSERIES_NAME
     if sourcepackage_name is None:
-        sourcepackage_name = MOZILLA_FIREFOX_SOURCEPACKAGENAME
+        sourcepackage_name = WARTY_ONLY_SOURCEPACKAGENAME
     if sourcepackage_version is None:
-        sourcepackage_version = MOZILLA_FIREFOX_SOURCEPACKAGEVERSION
+        sourcepackage_version = WARTY_ONLY_SOURCEPACKAGEVERSION
     if publishing_status is None:
         publishing_status = PackagePublishingStatus.PENDING
     if arch is None:

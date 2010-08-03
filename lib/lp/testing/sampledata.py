@@ -9,35 +9,46 @@ just a small number, then you should define it as a constant here.
 
 __metaclass__ = type
 __all__ = [
-    'CHROOT_LFA',
-    'CPROV_NAME',
+    'BUILDD_ADMIN_USERNAME',
+    'CHROOT_LIBRARYFILEALIAS',
     'HOARY_DISTROSERIES_NAME',
     'I386_ARCHITECTURE_NAME',
     'LAUNCHPAD_DBUSER_NAME',
     'MAIN_COMPONENT_NAME',
-    'MOZILLA_FIREFOX_SOURCEPACKAGENAME',
-    'MOZILLA_FIREFOX_SOURCEPACKAGEVERSION',
-    'NAME16_PERSON_NAME',
     'NO_PRIVILEGE_EMAIL',
+    'UBUNTU_DEVELOPER_ADMIN_NAME',
     'UBUNTU_DISTRIBUTION_NAME',
-    'UBUNTU_TEAM_NAME',
+    'UBUNTU_UPLOAD_TEAM_NAME',
     'UBUNTUTEST_DISTRIBUTION_NAME',
     'WARTY_DISTROSERIES_NAME',
+    'WARTY_ONLY_SOURCEPACKAGENAME',
+    'WARTY_ONLY_SOURCEPACKAGEVERSION',
     'WARTY_UPDATES_SUITE_NAME',
     ]
 
+# Please use names that reveal intent, rather than being purely
+# descriptive, i.e. USER16_NAME isn't as good as
+# UBUNTU_DEVELOPER_NAME. Where intent is tricky to convey in the
+# name, please leave a comment as well.
 
-CHROOT_LFA = 1
-CPROV_NAME = 'cprov'
+# A user with buildd admin rights and upload rights to Ubuntu.
+BUILDD_ADMIN_USERNAME = 'cprov'
+# The LibraryFileAlias of a chroot for attaching to a DistroArchSeries
+CHROOT_LIBRARYFILEALIAS = 1
 HOARY_DISTROSERIES_NAME = 'hoary'
 I386_ARCHITECTURE_NAME = 'i386'
 LAUNCHPAD_DBUSER_NAME = 'launchpad'
 MAIN_COMPONENT_NAME = 'main'
-MOZILLA_FIREFOX_SOURCEPACKAGENAME = 'mozilla-firefox'
-MOZILLA_FIREFOX_SOURCEPACKAGEVERSION = '0.9'
-NAME16_PERSON_NAME = 'name16'
 NO_PRIVILEGE_EMAIL = 'no-priv@canonical.com'
+# A user that is an admin of ubuntu-team, which has upload rights
+# to Ubuntu.
+UBUNTU_DEVELOPER_ADMIN_NAME = 'name16'
 UBUNTU_DISTRIBUTION_NAME = 'ubuntu'
-UBUNTU_TEAM_NAME = 'ubuntu-team'
+# A team that has upload rights to Ubuntu
+UBUNTU_UPLOAD_TEAM_NAME = 'ubuntu-team'
 WARTY_DISTROSERIES_NAME = 'warty'
+# A source package name and version for a package only published in
+# warty
+WARTY_ONLY_SOURCEPACKAGENAME = 'mozilla-firefox'
+WARTY_ONLY_SOURCEPACKAGEVERSION = '0.9'
 WARTY_UPDATES_SUITE_NAME = WARTY_DISTROSERIES_NAME + '-updates'

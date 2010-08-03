@@ -49,16 +49,16 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def makeThreeArchivesOneDistribution(self):
+    def makeArchivesForOneDistribution(self, count=3):
         distribution = self.factory.makeDistribution()
         archives = []
-        for i in range(3):
+        for i in range(count):
             archives.append(
                 self.factory.makeArchive(distribution=distribution))
         return archives
 
-    def makeThreeArchivesWithPublications(self):
-        archives = self.makeThreeArchivesOneDistribution()
+    def makeArchivesWithPublications(self, count=3):
+        archives = self.makeArchivesForOneDistribution(count=count)
         sourcepackagename = self.factory.makeSourcePackageName()
         for archive in archives:
             self.factory.makeSourcePackagePublishingHistory(
@@ -71,39 +71,35 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         return getUtility(IArchiveSet).getPublicationsInArchives(
             sourcepackagename, archives, distribution=distribution)
 
-    def testReturnsAllPublishedPublications(self):
+    def test_getPublications_returns_all_published_publications(self):
         # Returns all currently published publications for archives
-        archives, sourcepackagename = self.makeThreeArchivesWithPublications()
+        archives, sourcepackagename = self.makeArchivesWithPublications()
         results = self.getPublications(
             sourcepackagename, archives, archives[0].distribution)
         num_results = results.count()
-        self.assertEquals(
-            3, num_results,
-            "Expected 3 publications but got %s" % num_results)
+        self.assertEquals(3, num_results)
 
-    def testEmptyListOfArchives(self):
+    def test_getPublications_empty_list_of_archives(self):
         # Passing an empty list of archives will result in an empty
         # resultset.
-        archives, sourcepackagename = self.makeThreeArchivesWithPublications()
+        archives, sourcepackagename = self.makeArchivesWithPublications()
         results = self.getPublications(
             sourcepackagename, [], archives[0].distribution)
-        self.assertEquals(0, results.count())
+        self.assertEquals([], list(results))
 
-    def testReturnsOnlyPublicationsForGivenArchives(self):
+    def assertPublicationsFromArchives(self, publications, archives):
+        self.assertEquals(len(archives), publications.count())
+        for publication, archive in zip(publications, archives):
+            self.assertEquals(archive, publication.archive)
+
+    def test_getPublications_returns_only_for_given_archives(self):
         # Returns only publications for the specified archives
-        archives, sourcepackagename = self.makeThreeArchivesWithPublications()
+        archives, sourcepackagename = self.makeArchivesWithPublications()
         results = self.getPublications(
             sourcepackagename, [archives[0]], archives[0].distribution)
-        num_results = results.count()
-        self.assertEquals(
-            1, num_results,
-            "Expected 1 publication but got %s" % num_results)
-        self.assertEquals(
-            archives[0], results[0].archive,
-            "Expected publication from %s but was instead from %s." % (
-                archives[0].displayname, results[0].archive.displayname))
+        self.assertPublicationsFromArchives(results, [archives[0]])
 
-    def testReturnsOnlyPublishedPublications(self):
+    def test_getPublications_returns_only_published_publications(self):
         # Publications that are not published will not be returned.
         archive = self.factory.makeArchive()
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -112,10 +108,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING)
         results = self.getPublications(
             sourcepackagename, [archive], archive.distribution)
-        num_results = results.count()
-        self.assertEquals(
-            0, num_results,
-            "Expected 0 publication but got %s" % num_results)
+        self.assertEquals([], list(results))
 
     def publishSourceInNewArchive(self, sourcepackagename):
         distribution = self.factory.makeDistribution()
@@ -128,7 +121,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
         return archive
 
-    def testPubsForSpecificDistro(self):
+    def test_getPublications_for_specific_distro(self):
         # Results can be filtered for specific distributions.
         sourcepackagename = self.factory.makeSourcePackageName()
         archive = self.publishSourceInNewArchive(sourcepackagename)
@@ -137,21 +130,20 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         results = self.getPublications(
             sourcepackagename, [archive, other_archive],
             distribution=archive.distribution)
-        num_results = results.count()
-        self.assertEquals(
-            1, num_results,
-            "Expected 1 publication but got %s" % num_results)
-        self.assertEquals(
-            archive, results[0].archive,
-            "Expected publication from %s but was instead from %s." % (
-                archive.displayname, results[0].archive.displayname))
+        self.assertPublicationsFromArchives(results, [archive])
 
 
 class TestArchiveRepositorySize(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def publish_ddeb_in_archive(self, archive):
+    def publishDDEBInArchive(self, archive):
+        """Publish an arbitrary DDEB with content in to the archive.
+
+        Publishes a DDEB that will take up some space in to `archive`.
+
+        :param archive: the IArchive to publish to.
+        """
         binarypackagerelease = self.factory.makeBinaryPackageRelease(
             binpackageformat=BinaryPackageFormat.DDEB)
         self.factory.makeBinaryPackagePublishingHistory(
@@ -161,49 +153,61 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
             binarypackagerelease=binarypackagerelease,
             filetype=BinaryPackageFileType.DDEB)
 
+    def test_empty_ppa_has_zero_binaries_size(self):
+        # An empty PPA has no binaries so has zero binaries_size.
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEquals(0, ppa.binaries_size)
+
     def test_binaries_size_does_not_include_ddebs_for_ppas(self):
         # DDEBs are not computed in the PPA binaries size because
         # they are not being published. See bug #399444.
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.publishDDEBInArchive(ppa)
         self.assertEquals(0, ppa.binaries_size)
-        self.publish_ddeb_in_archive(ppa)
-        self.assertEquals(0, ppa.binaries_size)
+
+    def test_empty_primary_archive_has_zero_binaries_size(self):
+        # PRIMARY archives have zero binaries_size when created.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertEquals(0, archive.binaries_size)
 
     def test_binaries_size_includes_ddebs_for_other_archives(self):
         # DDEBs size are computed for all archive purposes, except PPAs.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        self.assertEquals(0, archive.binaries_size)
-        self.publish_ddeb_in_archive(archive)
+        self.publishDDEBInArchive(archive)
         self.assertNotEquals(0, archive.binaries_size)
 
     def test_sources_size_on_empty_archive(self):
         # Zero is returned for an archive without sources.
         archive = self.factory.makeArchive()
-        self.assertEquals(
-            0, archive.sources_size,
-            'Zero should be returned for an archive without sources.')
+        self.assertEquals(0, archive.sources_size)
 
-    def publish_source_file(self, archive, libraryfile):
+    def publishSourceFile(self, archive, library_file):
+        """Publish a source package with the given content to the archive.
+
+        :param archive: the IArchive to publish to.
+        :param library_file: a LibraryFileAlias for the content of the
+            source file.
+        """
         sourcepackagerelease = self.factory.makeSourcePackageRelease()
         self.factory.makeSourcePackagePublishingHistory(
             archive=archive, sourcepackagerelease=sourcepackagerelease,
             status=PackagePublishingStatus.PUBLISHED)
         self.factory.makeSourcePackageReleaseFile(
             sourcepackagerelease=sourcepackagerelease,
-            libraryfile=libraryfile)
+            library_file=library_file)
 
     def test_sources_size_does_not_count_duplicated_files(self):
         # If there are multiple copies of the same file name/size
         # only one will be counted.
         archive = self.factory.makeArchive()
-        libraryfile = self.factory.makeLibraryFileAlias()
-        self.publish_source_file(archive, libraryfile)
+        library_file = self.factory.makeLibraryFileAlias()
+        self.publishSourceFile(archive, library_file)
         self.assertEquals(
-            libraryfile.content.filesize, archive.sources_size)
+            library_file.content.filesize, archive.sources_size)
 
-        self.publish_source_file(archive, libraryfile)
+        self.publish_source_file(archive, library_file)
         self.assertEquals(
-            libraryfile.content.filesize, archive.sources_size)
+            library_file.content.filesize, archive.sources_size)
 
 
 class TestSeriesWithSources(TestCaseWithFactory):

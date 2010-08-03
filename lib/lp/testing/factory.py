@@ -2338,17 +2338,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_package_recipe_build=source_package_recipe_build)
 
     def makeSourcePackageReleaseFile(self, sourcepackagerelease=None,
-                                     libraryfile=None, filetype=None):
+                                     library_file=None, filetype=None):
         if sourcepackagerelease is None:
             sourcepackagerelease = self.makeSourcePackageRelease()
-        if libraryfile is None:
-            libraryfile = self.makeLibraryFileAlias()
+        if library_file is None:
+            library_file = self.makeLibraryFileAlias()
         if filetype is None:
             filetype = SourcePackageFileType.DSC
         return ProxyFactory(
             SourcePackageReleaseFile(
                 sourcepackagerelease=sourcepackagerelease,
-                libraryfile=libraryfile, filetype=filetype))
+                libraryfile=library_file, filetype=filetype))
 
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,
@@ -2522,16 +2522,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return BinaryPackageName(name=name)
 
     def makeBinaryPackageFile(self, binarypackagerelease=None,
-                              libraryfile=None, filetype=None):
+                              library_file=None, filetype=None):
         if binarypackagerelease is None:
             binarypackagerelease = self.makeBinaryPackageRelease()
-        if libraryfile is None:
-            libraryfile = self.makeLibraryFileAlias()
+        if library_file is None:
+            library_file = self.makeLibraryFileAlias()
         if filetype is None:
             filetype = BinaryPackageFileType.DEB
         return ProxyFactory(BinaryPackageFile(
             binarypackagerelease=binarypackagerelease,
-            libraryfile=libraryfile, filetype=filetype))
+            libraryfile=library_file, filetype=filetype))
 
     def makeBinaryPackageRelease(self, binarypackagename=None,
                                  version=None, build=None,
