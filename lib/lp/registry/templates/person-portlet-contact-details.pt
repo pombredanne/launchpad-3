@@ -188,18 +188,13 @@
     </dl>
 
     <dl id="karma">
-      <dt>Karma:</dt>
+      <dt>earma:</dt>
       <dd><a id="karma-total"
              tal:attributes="href overview_menu/karma/url"
              tal:content="context/karma">342</a>
       </dd>
     </dl>
   </div>
-  <div tal:define="link context/menu:overview/view_recipes"
-       tal:condition="link/enabled">
-    <a tal:replace="structure link/fmt:link" />
-  </div>
-
 
 </div>
 
