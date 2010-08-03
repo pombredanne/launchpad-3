@@ -30,10 +30,9 @@ from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.helpers import return_fault
 
 from lp.app.errors import NameLookupFailed, NotFoundError
-from lp.code.errors import UnknownBranchTypeError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.code.errors import BranchCreationException, UnknownBranchTypeError
 from lp.code.enums import BranchType
-from lp.code.errors import BranchCreationException
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
@@ -156,6 +155,17 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         used for the linked branch is 'trunk'.  If that name is taken, then we
         try the name of the link target.
         """
+        if path.startswith(BRANCH_ALIAS_PREFIX + '/'):
+            path = path[len(BRANCH_ALIAS_PREFIX) + 1:]
+            if not path.startswith('~'):
+
+                xxx
+
+                return namespace, branch_name, link_func
+        namespace_name, branch_name = split_unique_name(path)
+        namespace = lookup_branch_namespace(namespace_name)
+        return namespace, branch_name, None
+
 
     def createBranch(self, login_id, branch_path):
         """See `ICodehostingAPI`."""
