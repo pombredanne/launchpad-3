@@ -34,7 +34,8 @@ from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType
 from lp.code.errors import (
     BranchCreationException, InvalidNamespace, UnknownBranchTypeError)
-from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchlookup import (
+    IBranchLookup, ILinkedBranchTraverser)
 from lp.code.interfaces.branchnamespace import (
     lookup_branch_namespace, split_unique_name)
 from lp.code.interfaces import branchpuller
@@ -160,6 +161,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             path = path[len(BRANCH_ALIAS_PREFIX) + 1:]
             if not path.startswith('~'):
 
+                link = getUtility(ILinkedBranchTraverser).traverse(path)
                 xxx
 
                 return namespace, branch_name, link_func
