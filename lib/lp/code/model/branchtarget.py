@@ -345,3 +345,12 @@ def get_canonical_url_data_for_target(branch_target):
 def product_series_to_branch_target(product_series):
     """The Product itself is the branch target given a ProductSeries."""
     return ProductBranchTarget(product_series.product)
+
+def distribution_sourcepackage_to_branch_target(distro_sourcepackage):
+    """The development version of the distro sourcepackage is the target."""
+    dev_version = distro_sourcepackage.development_version
+    # It is possible for distributions to not have any series, and if that is
+    # the case, the dev_version is None.
+    if dev_version is None:
+        return None
+    return PackageBranchTarget(dev_version)

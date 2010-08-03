@@ -606,6 +606,11 @@
       for="lp.registry.interfaces.sourcepackage.ISourcePackage"
       provides="lp.code.interfaces.branchtarget.IBranchTarget"
       factory="lp.code.model.branchtarget.PackageBranchTarget"/>
+  <adapter
+      for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+      provides="lp.code.interfaces.branchtarget.IBranchTarget"
+      factory="lp.code.model.branchtarget.distribution_sourcepackage_to_branch_target"/>
+
   <class class="lp.code.model.branchtarget.PersonBranchTarget">
     <allow interface="lp.code.interfaces.branchtarget.IBranchTarget"/>
   </class>
@@ -613,6 +618,7 @@
       for="lp.registry.interfaces.person.IPerson"
       provides="lp.code.interfaces.branchtarget.IBranchTarget"
       factory="lp.code.model.branchtarget.PersonBranchTarget"/>
+
   <class class="lp.code.model.branchtarget.ProductBranchTarget">
     <allow interface="lp.code.interfaces.branchtarget.IBranchTarget"/>
   </class>
