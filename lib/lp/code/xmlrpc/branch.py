@@ -18,8 +18,9 @@ from zope.component import getUtility
 from zope.interface import Interface, implements
 
 from canonical.config import config
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import (
     BranchCreationException, BranchCreationForbidden, IBranch)

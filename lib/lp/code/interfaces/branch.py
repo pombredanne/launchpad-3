@@ -59,9 +59,9 @@ from canonical.launchpad.fields import (
     ParticipatingPersonChoice, PublicPersonChoice, URIField, Whiteboard)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.webapp.interfaces import (
-    ITableBatchNavigator, NameLookupFailed)
+from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
+from lp.app.errors import NameLookupFailed
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import (
     BranchLifecycleStatus,
