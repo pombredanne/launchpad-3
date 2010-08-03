@@ -19,7 +19,8 @@ from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-from lp.bugs.browser.bugattachment import BugAttachmentFileNavigation
+from lp.bugs.browser.bugattachment import (
+    BugAttachmentFileNavigation, SafeStreamOrRedirectLibraryFileAliasView)
 from lp.testing import login_person, TestCaseWithFactory
 
 
@@ -106,8 +107,10 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
             Unauthorized, navigation.publishTraverse, request, '+files')
 
     def test_content_disposition_of_restricted_file(self):
-        # The content disposition header of the HTTP response for
-        # restricted Librarian files is always set to "attachment".
+        # The content of restricted Librarian files for bug attachments
+        # is served by instances of SafeStreamOrRedirectLibraryFileAliasView
+        # which set the content disposition header of the HTTP response for
+        # to "attachment".
         lfa_with_parent = getMultiAdapter(
             (self.bugattachment.libraryfile, self.bugattachment),
             ILibraryFileAliasWithParent)
@@ -119,6 +122,8 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         navigation = BugAttachmentFileNavigation(self.bugattachment, request)
         view = navigation.publishTraverse(request, '+files')
         next_view, traversal_path = view.browserDefault(request)
+        self.assertIsInstance(
+            next_view, SafeStreamOrRedirectLibraryFileAliasView)
         next_view()
         self.assertEqual(
             'attachment', request.response.getHeader('Content-Disposition'))
