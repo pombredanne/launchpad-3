@@ -350,26 +350,77 @@ class ProductInvolvementView(PillarView):
     """Encourage configuration of involvement links for projects."""
 
     has_involvement = True
-    visible_disabled_link_names = ['submit_code']
+
+    @property
+    def visible_disabled_link_names(self):
+        """Show all disabled links...except blueprints"""
+        involved_menu = MenuAPI(self).navigation
+        all_links = involved_menu.keys()
+        # The register blueprints link should not be shown since its use is
+        # not encouraged.
+        all_links.remove('register_blueprint')
+        return all_links
+
+    @cachedproperty
+    def configuration_states(self):
+        """Create a dictionary indicating the configuration statuses.
+
+        Each app area will be represented in the return dictionary, except
+        blueprints which we are not currently promoting.
+        """
+        states = {}
+        states['configure_bugtracker'] = (
+            self.official_malone or self.context.bugtracker is not None)
+        states['configure_answers'] = self.official_answers
+        states['configure_translations'] = self.official_rosetta
+        states['configure_codehosting'] = (
+            self.context.development_focus.branch is not None)
+        return states
 
     @property
     def configuration_links(self):
-        """The enabled involvement links."""
+        """The enabled involvement links.
+
+        Returns a list of dicts keyed by:
+        'link' -- the menu link, and
+        'configured' -- a boolean representing the configuration status.
+        """
         overview_menu = MenuAPI(self.context).overview
         series_menu = MenuAPI(self.context.development_focus).overview
         configuration_names = [
-            'configure_answers',
             'configure_bugtracker',
+            'configure_answers',
             'configure_translations',
+            #'configure_blueprints',
             ]
-        configuration_links = [
-            overview_menu[name] for name in configuration_names]
+        config_list = []
+        config_statuses = self.configuration_states
+        for key in configuration_names:
+            config_list.append(dict(link=overview_menu[key],
+                                    configured=config_statuses[key]))
+
+        # Add the branch configuration in separately.
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure project branch'
-        configuration_links.append(set_branch)
-        return sorted([
-            link for link in configuration_links if link.enabled],
-            key=attrgetter('sort_key'))
+        set_branch.configured = (
+            )
+        config_list.append(
+            dict(link=set_branch,
+                 configured=config_statuses['configure_codehosting']))
+        return config_list
+
+    @property
+    def registration_completeness(self):
+        """The percent complete for registration."""
+        configured = 0
+        config_statuses = self.configuration_states
+        for key, value in config_statuses.items():
+            if value:
+                configured += 1
+        scale = 100
+        done = int(float(configured) / len(config_statuses) * scale)
+        undone = scale - done
+        return dict(done=done, undone=undone)
 
 
 class ProductNavigationMenu(NavigationMenu):
