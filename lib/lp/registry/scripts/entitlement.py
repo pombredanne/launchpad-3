@@ -25,7 +25,7 @@ import time
 import pytz
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.entitlement import (
     EntitlementState, EntitlementType, IEntitlementSet)
 from lp.registry.interfaces.person import IPersonSet
