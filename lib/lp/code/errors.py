@@ -27,6 +27,7 @@ __all__ = [
     'ClaimReviewFailed',
     'ForbiddenInstruction',
     'InvalidBranchMergeProposal',
+    'InvalidNamespace',
     'NoLinkedBranch',
     'NoSuchBranch',
     'PrivateBranchRecipe',
@@ -157,6 +158,19 @@ class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
 
     webservice_error(400) #Bad request.
+
+
+class InvalidNamespace(Exception):
+    """Raised when someone tries to lookup a namespace with a bad name.
+
+    By 'bad', we mean that the name is unparseable. It might be too short, too
+    long or malformed in some other way.
+    """
+
+    def __init__(self, name):
+        self.name = name
+        Exception.__init__(
+            self, "Cannot understand namespace name: '%s'" % (name,))
 
 
 class NoLinkedBranch(Exception):
