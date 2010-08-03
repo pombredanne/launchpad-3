@@ -12,14 +12,14 @@ backports branch for a source package or something else.
 
 __metaclass__ = type
 __all__ = [
-    'CannotHaveLinkedBranch',
     'get_linked_to_branch',
     'ICanHasLinkedBranch',
-    'NoLinkedBranch',
     ]
 
 from zope.interface import Attribute, Interface
 from zope.security.proxy import isinstance as zope_isinstance
+
+from lp.code.errors import CannotHaveLinkedBranch, NoLinkedBranch
 
 
 class ICanHasLinkedBranch(Interface):
@@ -39,23 +39,6 @@ class ICanHasLinkedBranch(Interface):
         :param registrant: The `IPerson` linking the branch. Not used by all
             implementations.
         """
-
-
-class CannotHaveLinkedBranch(Exception):
-    """Raised when we try to get the linked branch for a thing that can't."""
-
-    def __init__(self, component):
-        self.component = component
-        Exception.__init__(
-            self, "%r cannot have linked branches." % (component,))
-
-
-class NoLinkedBranch(Exception):
-    """Raised when there's no linked branch for a thing."""
-
-    def __init__(self, component):
-        self.component = component
-        Exception.__init__(self, "%r has no linked branch." % (component,))
 
 
 def get_linked_to_branch(provided):

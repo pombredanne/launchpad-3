@@ -21,13 +21,12 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.code.errors import NoSuchBranch
+from lp.code.errors import (
+    CannotHaveLinkedBranch, InvalidNamespace, NoLinkedBranch, NoSuchBranch)
 from lp.code.interfaces.branchlookup import (
     IBranchLookup, ILinkedBranchTraversable, ILinkedBranchTraverser)
-from lp.code.interfaces.branchnamespace import (
-    IBranchNamespaceSet, InvalidNamespace)
-from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, get_linked_to_branch, NoLinkedBranch)
+from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet, NoSuchDistroSeries)
