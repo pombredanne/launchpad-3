@@ -326,7 +326,9 @@ class TestAsBuildmaster(TestCaseWithFactory):
         def prepare_build():
             queue_record = self.factory.makeSourcePackageRecipeBuildJob()
             build = queue_record.specific_job.build
-            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+            naked_build = removeSecurityProxy(build)
+            naked_build.status = BuildStatus.FULLYBUILT
+            naked_build.date_started = self.factory.getUniqueDate()
             queue_record.builder = self.factory.makeBuilder()
             slave = WaitingSlave('BuildStatus.OK')
             queue_record.builder.setSlaveForTesting(slave)
