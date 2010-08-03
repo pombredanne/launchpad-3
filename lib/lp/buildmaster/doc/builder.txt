@@ -1,3 +1,8 @@
+XXX Julian 2010-08-03 bug=613096
+Most of this doctest is really a unit test in disguise.  It should get
+re-written and unit tests moved to buildmaster/tests/test_builder.py
+
+
 =============
 Builder Class
 =============
