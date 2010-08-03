@@ -15,8 +15,10 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, LaunchpadZopelessLayer)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.enums import CodeImportReviewStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.binarypackagerelease import (
@@ -60,6 +62,14 @@ class TestFactory(TestCaseWithFactory):
         bpb = self.factory.makeBinaryPackageBuild()
         self.assertIn(
             bpb.archive, bpb.source_package_release.published_archives)
+
+    def test_makeBinaryPackageBuild_uses_status(self):
+        bpb = self.factory.makeBinaryPackageBuild(
+            status=BuildStatus.NEEDSBUILD)
+        self.assertEqual(BuildStatus.NEEDSBUILD, bpb.status)
+        bpb = self.factory.makeBinaryPackageBuild(
+            status=BuildStatus.FULLYBUILT)
+        self.assertEqual(BuildStatus.FULLYBUILT, bpb.status)
 
     # makeBinaryPackagePublishingHistory
     def test_makeBinaryPackagePublishingHistory_returns_IBPPH(self):
@@ -188,6 +198,11 @@ class TestFactory(TestCaseWithFactory):
         spph = self.factory.makeSourcePackagePublishingHistory(
             scheduleddeletiondate=scheduleddeletiondate)
         self.assertEquals(scheduleddeletiondate, spph.scheduleddeletiondate)
+
+    # makeSuiteSourcePackage
+    def test_makeSuiteSourcePackage_returns_ISuiteSourcePackage(self):
+        ssp = self.factory.makeSuiteSourcePackage()
+        self.assertThat(ssp, ProvidesAndIsProxied(ISuiteSourcePackage))
 
 
 class TestFactoryWithLibrarian(TestCaseWithFactory):
