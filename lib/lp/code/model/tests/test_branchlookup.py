@@ -13,13 +13,13 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from lp.code.errors import NoSuchBranch
+from lp.code.errors import (
+    CannotHaveLinkedBranch, NoLinkedBranch, NoSuchBranch)
 from lp.code.interfaces.branchlookup import (
     IBranchLookup, ILinkedBranchTraverser)
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
-from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, ICanHasLinkedBranch, NoLinkedBranch)
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import NoSuchPerson
