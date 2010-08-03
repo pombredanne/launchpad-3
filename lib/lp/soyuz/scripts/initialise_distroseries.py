@@ -150,14 +150,14 @@ class InitialiseDistroSeries:
         We copy all PENDING and PUBLISHED records as PENDING into our own
         publishing records.
 
-        We copy only the RELEASE pocket in the PRIMARY and PARTNER
-        archives.
+        We copy only the RELEASE pocket in the PRIMARY and DEBUG archives.
         """
         archive_set = getUtility(IArchiveSet)
         parent = self.distroseries.parent_series
 
         for archive in parent.distribution.all_distro_archives:
-            if archive.purpose is not ArchivePurpose.PRIMARY:
+            if archive.purpose is not (
+                ArchivePurpose.PRIMARY, ArchivePurpose.DEBUG):
                 continue
 
             # XXX cprov 20080612: Implicitly creating a PARTNER archive for
