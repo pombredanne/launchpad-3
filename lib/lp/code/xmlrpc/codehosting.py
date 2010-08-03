@@ -162,7 +162,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             if not path.startswith('~'):
 
                 link = getUtility(ILinkedBranchTraverser).traverse(path)
-                xxx
+                
 
                 return namespace, branch_name, link_func
         namespace_name, branch_name = split_unique_name(path)
