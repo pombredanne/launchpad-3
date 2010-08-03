@@ -173,7 +173,7 @@ class NascentUpload:
                     "Upload rejected because it contains binary packages.",
                     "Ensure you are using `debuild -S`, or an equivalent",
                     "command, to generate only the source package before",
-                    "re-uploading."
+                    "re-uploading.",
                     ]
                 if self.is_ppa:
                     messages.append(
@@ -230,7 +230,6 @@ class NascentUpload:
     #
     # Overall consistency checks
     #
-
     def _check_overall_consistency(self):
         """Heuristics checks on upload contents and declared architecture.
 
@@ -389,7 +388,6 @@ class NascentUpload:
     #
     # Helpers for warnings and rejections
     #
-
     def run_and_check_error(self, callable):
         """Run the given callable and process errors and warnings.
 
@@ -488,7 +486,6 @@ class NascentUpload:
     #
     # Signature and ACL stuff
     #
-
     def verify_acl(self):
         """Check the signer's upload rights.
 
@@ -518,7 +515,7 @@ class NascentUpload:
             ISourcePackageNameSet).queryByName(self.changes.dsc.package)
 
         rejection_reason = archive.checkUpload(
-            uploader, self.policy.distroseries, source_name, 
+            uploader, self.policy.distroseries, source_name,
             self.changes.dsc.component, self.policy.pocket, not self.is_new)
 
         if rejection_reason is not None:
@@ -527,7 +524,6 @@ class NascentUpload:
     #
     # Handling checking of versions and overrides
     #
-
     def getSourceAncestry(self, uploaded_file):
         """Return the last published source (ancestry) for a given file.
 
@@ -756,8 +752,8 @@ class NascentUpload:
             return
 
         component_override_map = {
-            'contrib' : 'multiverse',
-            'non-free' : 'multiverse',
+            'contrib': 'multiverse',
+            'non-free': 'multiverse',
             }
 
         # Apply the component override and default to universe.
@@ -831,7 +827,6 @@ class NascentUpload:
     #
     # Actually processing accepted or rejected uploads -- and mailing people
     #
-
     def do_accept(self, notify=True):
         """Accept the upload into the queue.
 
@@ -938,7 +933,6 @@ class NascentUpload:
     #
     # Inserting stuff in the database
     #
-
     def storeObjectsInDatabase(self):
         """Insert this nascent upload into the database."""
 
@@ -1061,8 +1055,7 @@ class NascentUpload:
             # See if there is an archive to override with.
             distribution = self.policy.distroseries.distribution
             archive = distribution.getArchiveByComponent(
-                PARTNER_COMPONENT_NAME
-                )
+                PARTNER_COMPONENT_NAME)
 
             # Check for data problems:
             if not archive:
