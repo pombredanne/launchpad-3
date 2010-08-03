@@ -27,9 +27,10 @@ from zope.component import getUtility
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
 
-from lp.code.errors import ForbiddenInstruction, TooNewRecipeFormat
+from lp.code.errors import (
+    ForbiddenInstruction, NoSuchBranch, PrivateBranchRecipe,
+    TooNewRecipeFormat)
 from lp.code.model.branch import Branch
-from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
 
 
@@ -147,7 +148,7 @@ class SourcePackageRecipeData(Storm):
                     SourcePackageRecipeData.base_branch == branch),
                 Select(
                     SourcePackageRecipeData.sourcepackage_recipe_id,
-                    And (
+                    And(
                         _SourcePackageRecipeDataInstruction.recipe_data_id ==
                         SourcePackageRecipeData.id,
                         _SourcePackageRecipeDataInstruction.branch == branch)
@@ -203,6 +204,10 @@ class SourcePackageRecipeData(Storm):
                 raise ForbiddenInstruction(str(instruction))
             db_branch = getUtility(IBranchLookup).getByUrl(
                 instruction.recipe_branch.url)
+            if db_branch is None:
+                raise NoSuchBranch(instruction.recipe_branch.url)
+            if db_branch.private:
+                raise PrivateBranchRecipe(db_branch)
             r[instruction.recipe_branch.url] = db_branch
             r.update(self._scanInstructions(instruction.recipe_branch))
         return r
@@ -224,8 +229,6 @@ class SourcePackageRecipeData(Storm):
             line_number += 1
             comment = None
             db_branch = branch_map[instruction.recipe_branch.url]
-            if db_branch is None:
-                raise NoSuchBranch(instruction.recipe_branch.url)
             insn = _SourcePackageRecipeDataInstruction(
                 instruction.recipe_branch.name, type, comment,
                 line_number, db_branch, instruction.recipe_branch.revspec,
@@ -247,6 +250,8 @@ class SourcePackageRecipeData(Storm):
         base_branch = branch_lookup.getByUrl(builder_recipe.url)
         if base_branch is None:
             raise NoSuchBranch(builder_recipe.url)
+        if base_branch.private:
+            raise PrivateBranchRecipe(base_branch)
         if builder_recipe.revspec is not None:
             self.revspec = unicode(builder_recipe.revspec)
         self._recordInstructions(

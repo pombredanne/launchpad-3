@@ -93,8 +93,6 @@ against its parent, ubuntu/hoary:
 
   >>> hoary_pmount_pubs = hoary.getPublishedReleases('pmount')
   >>> foobuntu_pmount_pubs = foobuntu.getPublishedReleases('pmount')
-  >>> print foobuntu_pmount_pubs
-  ...
   >>> len(foobuntu_pmount_pubs) == len(hoary_pmount_pubs)
   True
 

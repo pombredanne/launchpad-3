@@ -91,7 +91,8 @@ from lp.registry.interfaces.person import (
     IPerson, validate_person_not_private_membership,
     validate_public_person)
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, SLAVE_FLAVOR, NotFoundError)
+    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, SLAVE_FLAVOR)
+from lp.app.errors import NotFoundError
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,

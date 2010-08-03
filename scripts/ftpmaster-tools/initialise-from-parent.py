@@ -14,11 +14,13 @@ from zope.component import getUtility
 from contrib.glock import GlobalLock
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet, NotFoundError
+from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
 
+from lp.app.errors import NotFoundError
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.scripts.initialise_distroseries import (
     InitialiseDistroSeries, ParentSeriesRequired, PendingBuilds, 
     QueueNotEmpty, SeriesAlreadyInUse)
