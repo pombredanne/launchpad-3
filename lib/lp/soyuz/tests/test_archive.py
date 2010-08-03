@@ -67,7 +67,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
 
     def test_getPublications_returns_all_published_publications(self):
         # Returns all currently published publications for archives
-        archives, sourcepackagename = self.makeThreeArchivesWithPublications()
+        archives, sourcepackagename = self.makeArchivesWithPublications()
         results = self.getPublications(
             sourcepackagename, archives, archives[0].distribution)
         num_results = results.count()
@@ -76,10 +76,10 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
     def test_getPublications_empty_list_of_archives(self):
         # Passing an empty list of archives will result in an empty
         # resultset.
-        archives, sourcepackagename = self.makeThreeArchivesWithPublications()
+        archives, sourcepackagename = self.makeArchivesWithPublications()
         results = self.getPublications(
             sourcepackagename, [], archives[0].distribution)
-        self.assertEquals([], results)
+        self.assertEquals([], list(results))
 
     def assertPublicationsFromArchives(self, publications, archives):
         self.assertEquals(len(archives), publications.count())
@@ -88,7 +88,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
 
     def test_getPublications_returns_only_for_given_archives(self):
         # Returns only publications for the specified archives
-        archives, sourcepackagename = self.makeThreeArchivesWithPublications()
+        archives, sourcepackagename = self.makeArchivesWithPublications()
         results = self.getPublications(
             sourcepackagename, [archives[0]], archives[0].distribution)
         self.assertPublicationsFromArchives(results, [archives[0]])
@@ -102,7 +102,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING)
         results = self.getPublications(
             sourcepackagename, [archive], archive.distribution)
-        self.assertEquals([], results)
+        self.assertEquals([], list(results))
 
     def publishSourceInNewArchive(self, sourcepackagename):
         distribution = self.factory.makeDistribution()
@@ -156,7 +156,7 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
         # DDEBs are not computed in the PPA binaries size because
         # they are not being published. See bug #399444.
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.publish_ddeb_in_archive(ppa)
+        self.publishDDEBInArchive(ppa)
         self.assertEquals(0, ppa.binaries_size)
 
     def test_empty_primary_archive_has_zero_binaries_size(self):
@@ -167,7 +167,7 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
     def test_binaries_size_includes_ddebs_for_other_archives(self):
         # DDEBs size are computed for all archive purposes, except PPAs.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        self.publish_ddeb_in_archive(archive)
+        self.publishDDEBInArchive(archive)
         self.assertNotEquals(0, archive.binaries_size)
 
     def test_sources_size_on_empty_archive(self):
@@ -195,7 +195,7 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
         # only one will be counted.
         archive = self.factory.makeArchive()
         library_file = self.factory.makeLibraryFileAlias()
-        self.publish_source_file(archive, library_file)
+        self.publishSourceFile(archive, library_file)
         self.assertEquals(
             library_file.content.filesize, archive.sources_size)
 
