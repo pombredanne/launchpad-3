@@ -66,6 +66,17 @@ Check if it fails for an already released distroseries:
   ERROR   Can not copy distroarchseries from parent, there are already distroarchseries(s) initialised for this series.
   <BLANKLINE>
 
+Let's create a debug archive for ubuntutest:
+
+  >>> from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+  >>> from lp.soyuz.model.archive import Archive
+  >>> ubuntutest_archive = getUtility(IArchiveSet).new(
+  ...     ArchivePurpose.DEBUG, ubuntutest.owner, name='debug',
+  ...     distribution=ubuntutest)
+  >>> print Archive.selectOneBy(distribution=ubuntutest, purpose=ArchivePurpose.DEBUG, name='debug')
+  ...
+  >>> print getUtility(IArchiveSet).getByDistroPurpose(ubuntutest, ArchivePurpose.DEBUG)
+  ...
 
 Let's initialise the just created distroseries:
 
@@ -76,6 +87,8 @@ Let's initialise the just created distroseries:
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
+  >>> print stdout
+  ...
   >>> print stderr
   DEBUG   Acquiring lock
   DEBUG   Initialising connection.

@@ -20,7 +20,6 @@ from canonical.launchpad.scripts import (
 from canonical.lp import initZopeless
 
 from lp.app.errors import NotFoundError
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.scripts.initialise_distroseries import (
     InitialisationError, InitialiseDistroSeries)
 
@@ -62,7 +61,7 @@ def main():
         distribution = getUtility(IDistributionSet)[options.distribution]
         distroseries = distribution[distroseries_name]
     except NotFoundError, info:
-        log.error(info)
+        log.error('%s not found' % info)
         return 1
 
     try:

@@ -17,6 +17,7 @@ from canonical.launchpad.webapp.interfaces import (
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.packagecloner import clone_packages
@@ -147,12 +148,18 @@ class InitialiseDistroSeries:
         parent = self.distroseries.parent_series
 
         for archive in parent.distribution.all_distro_archives:
-            if archive.purpose is not (
+            print archive.name
+            if archive.purpose not in (
                 ArchivePurpose.PRIMARY, ArchivePurpose.DEBUG):
                 continue
 
+            purpose = 'primary'
+            if archive.purpose == ArchivePurpose.DEBUG:
+                purpose = 'debug'
+            print "Getting target archive, for %s/%s" % (self.distroseries.distribution.name, purpose)
             target_archive = archive_set.getByDistroPurpose(
                 self.distroseries.distribution, archive.purpose)
+            print "Which is %s" % target_archive
             assert target_archive is not None, "Target archive doesn't exist?"
             origin = PackageLocation(
                 archive, parent.distribution, parent,
