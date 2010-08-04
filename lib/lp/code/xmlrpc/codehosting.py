@@ -169,10 +169,10 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                 def link_func(new_branch):
                     link = ICanHasLinkedBranch(context)
                     link.setBranch(new_branch, requester)
-                return namespace, branch_name, link_func
+                return namespace, branch_name, link_func, path
         namespace_name, branch_name = split_unique_name(path)
         namespace = lookup_branch_namespace(namespace_name)
-        return namespace, branch_name, None
+        return namespace, branch_name, None, path
 
     def createBranch(self, login_id, branch_path):
         """See `ICodehostingAPI`."""
@@ -182,7 +182,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             escaped_path = unescape(branch_path.strip('/'))
 
             try:
-                namespace, branch_name, link_func = (
+                namespace, branch_name, link_func, path = (
                     self._getBranchNamespaceExtras(escaped_path, requester))
             except ValueError:
                 return faults.PermissionDenied(
@@ -215,7 +215,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                     link_func(branch)
                 except Unauthorized:
                     return faults.PermissionDenied(
-                        "Cannot create branch at '%s'" % branch_path)
+                        "Cannot create linked branch at '%s'." % path)
 
             return branch.id
         return run_with_login(login_id, create_branch)

@@ -439,6 +439,60 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual(product, branch.product)
         self.assertEqual(ICanHasLinkedBranch(product).branch, branch)
 
+    def test_createBranch_using_branch_alias_product_not_auth(self):
+        # If the person creating the branch does not have permission to link
+        # the new branch to the alias, then can't create the branch.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct('wibble')
+        path = u'/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
+        fault = self.codehosting_api.createBranch(owner.id, escape(path))
+        message = "Cannot create linked branch at 'wibble'."
+        self.assertEqual(faults.PermissionDenied(message), fault)
+
+    def test_createBranch_using_branch_alias_product_not_exist(self):
+        # If the product doesn't exist, we don't (yet) create one.
+        owner = self.factory.makePerson()
+        path = u'/%s/foible' % (BRANCH_ALIAS_PREFIX,)
+        fault = self.codehosting_api.createBranch(owner.id, escape(path))
+        message = "Project 'foible' does not exist."
+        self.assertEqual(faults.NotFound(message), fault)
+
+    def test_createBranch_using_branch_alias_productseries(self):
+        # If the person creating the branch has permission to link the new
+        # branch to the alias, then they are able to create a branch and link
+        # it.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        series = self.factory.makeProductSeries(product=product)
+        path = u'/%s/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name, series.name)
+        branch_id = self.codehosting_api.createBranch(owner.id, escape(path))
+        login(ANONYMOUS)
+        branch = self.branch_lookup.get(branch_id)
+        self.assertEqual(owner, branch.owner)
+        self.assertEqual('trunk', branch.name)
+        self.assertEqual(product, branch.product)
+        self.assertEqual(ICanHasLinkedBranch(series).branch, branch)
+
+    def test_createBranch_using_branch_alias_productseries_not_auth(self):
+        # If the person creating the branch does not have permission to link
+        # the new branch to the alias, then can't create the branch.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(name='wibble')
+        self.factory.makeProductSeries(product=product, name='nip')
+        path = u'/%s/wibble/nip' % (BRANCH_ALIAS_PREFIX,)
+        fault = self.codehosting_api.createBranch(owner.id, escape(path))
+        message = "Cannot create linked branch at 'wibble/nip'."
+        self.assertEqual(faults.PermissionDenied(message), fault)
+
+    def test_createBranch_using_branch_alias_productseries_not_exist(self):
+        # If the product series doesn't exist, we don't (yet) create it.
+        owner = self.factory.makePerson()
+        self.factory.makeProduct(name='wibble')
+        path = u'/%s/wibble/nip' % (BRANCH_ALIAS_PREFIX,)
+        fault = self.codehosting_api.createBranch(owner.id, escape(path))
+        message = "No such product series: 'nip'."
+        self.assertEqual(faults.NotFound(message), fault)
+
     def test_initialMirrorRequest(self):
         # The default 'next_mirror_time' for a newly created hosted branch
         # should be None.
