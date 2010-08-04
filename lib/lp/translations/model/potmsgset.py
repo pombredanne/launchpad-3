@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'make_translation_side_message_traits',
+    'make_message_side_helpers',
     'POTMsgSet',
     ]
 
@@ -38,6 +38,8 @@ from lp.translations.interfaces.potmsgset import (
     IPOTMsgSet,
     POTMsgSetInIncompatibleTemplatesError,
     TranslationCreditsType)
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet, TranslationSide)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.interfaces.translationimporter import (
@@ -46,8 +48,7 @@ from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     TranslationConflict,
     TranslationValidationStatus)
-from lp.translations.interfaces.translations import (
-    TranslationConstants, TranslationSide)
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import (
@@ -85,99 +86,67 @@ credits_message_str = (u'This is a dummy translation so that the '
                        u'credits are counted as translated.')
 
 
-class TranslationSideMessageTraits:
-    """Dealing with a `POTMsgSet` on either `TranslationSide`.
+# Marker for "no incumbent message found yet."
+incumbent_unknown = object()
 
-    Encapsulates primitives that depend on translation side: finding the
-    message that is current on the given side, checking the flag that
-    says whether a message is current on this side, setting or clearing
-    the flag, and providing the same capabilities for the other side.
 
-    For an introduction to the Traits pattern, see
-    http://www.cantrip.org/traits.html
-    """
-    # The TranslationSide that these Traits are for.
-    side = None
+class MessageSideHelper:
+    """Helper for manipulating messages on one `TranslationSide`."""
 
-    # TranslationSideMessageTraits for this message on the "other side."
+    # The TranslationSideTraits that this helper is for.
+    traits = None
+
+    # MessageSideHelper for this message on the "other side."
     other_side = None
 
-    # Name of this side's flag.
-    flag_name = None
+    _incumbent = incumbent_unknown
 
-    def __init__(self, potmsgset, potemplate=None, language=None,
-                 variant=None):
+    def __init__(self, side, potmsgset, potemplate=None, language=None):
+        self.traits = getUtility(ITranslationSideTraitsSet).getTraits(side)
         self.potmsgset = potmsgset
         self.potemplate = potemplate
         self.language = language
-        self.variant = variant
-
-        self._found_incumbent = False
 
     @property
     def incumbent_message(self):
         """Message that currently has the flag."""
-        if not self._found_incumbent:
-            self._incumbent = self._getIncumbentMessage()
-            self._found_incumbent = True
+        if self._incumbent == incumbent_unknown:
+            self._incumbent = self.traits.getCurrentMessage(
+                self.potmsgset, self.potemplate, self.language)
         return self._incumbent
 
     def getFlag(self, translationmessage):
         """Is this message the current one on this side?"""
-        return getattr(translationmessage, self.flag_name)
+        return self.traits.getFlag(translationmessage)
 
     def setFlag(self, translationmessage, value):
         """Set or clear a message's "current" flag for this side."""
         if value == self.getFlag(translationmessage):
             return
 
-        if value and self.incumbent_message is not None:
-            Store.of(self.incumbent_message).add_flush_order(
-                self.incumbent_message, translationmessage)
-            self.setFlag(self.incumbent_message, False)
+        if value:
+            if self.incumbent_message is not None:
+                Store.of(self.incumbent_message).add_flush_order(
+                    self.incumbent_message, translationmessage)
+                self.setFlag(self.incumbent_message, False)
+            self._incumbent = translationmessage
+        else:
+            self._incumbent = incumbent_unknown
 
-        setattr(translationmessage, self.flag_name, value)
-        self._found_incumbent = False
-
-    def _getIncumbentMessage(self):
-        """Get the message that is current on this side, if any."""
-        raise NotImplementedError('_getIncumbentMessage')
-
-
-class UpstreamSideTraits(TranslationSideMessageTraits):
-    """Traits for upstream translations."""
-
-    side = TranslationSide.UPSTREAM
-
-    flag_name = 'is_current_upstream'
-
-    def _getIncumbentMessage(self):
-        """See `TranslationSideMessageTraits`."""
-        return self.potmsgset.getImportedTranslationMessage(
-            self.potemplate, self.language, variant=self.variant)
+        self.traits.setFlag(translationmessage, value)
 
 
-class UbuntuSideTraits(TranslationSideMessageTraits):
-    """Traits for Ubuntu translations."""
-
-    side = TranslationSide.UBUNTU
-
-    flag_name = 'is_current_ubuntu'
-
-    def _getIncumbentMessage(self):
-        """See `TranslationSideMessageTraits`."""
-        return self.potmsgset.getCurrentTranslationMessage(
-            self.potemplate, self.language, variant=self.variant)
-
-
-def make_translation_side_message_traits(side, potmsgset, potemplate,
-                                         language, variant=None):
-    """Create `TranslationSideTraits` object of the appropriate subtype."""
-    ubuntu = UbuntuSideTraits(potmsgset, potemplate, language, variant)
-    upstream = UpstreamSideTraits(potmsgset, potemplate, language, variant)
+def make_message_side_helpers(side, potmsgset, potemplate, language):
+    """Create `MessageSideHelper` object of the appropriate subtype."""
+    upstream = MessageSideHelper(
+        TranslationSide.UPSTREAM, potmsgset, potemplate, language)
+    ubuntu = MessageSideHelper(
+        TranslationSide.UBUNTU, potmsgset, potemplate, language)
     upstream.other_side = ubuntu
     ubuntu.other_side = upstream
-    mapping = dict((traits.side, traits) for traits in (ubuntu, upstream))
+    mapping = dict(
+        (helper.traits.side, helper)
+        for helper in (ubuntu, upstream))
     return mapping[side]
 
 
@@ -1117,9 +1086,8 @@ class POTMsgSet(SQLBase):
     def setCurrentTranslation(self, pofile, submitter, translations, origin,
                               translation_side, share_with_other_side=False):
         """See `IPOTMsgSet`."""
-        traits = make_translation_side_message_traits(
-            translation_side, self, pofile.potemplate, pofile.language,
-            variant=pofile.variant)
+        traits = make_message_side_helpers(
+            translation_side, self, pofile.potemplate, pofile.language)
 
         translations = self._findPOTranslations(translations)
 
