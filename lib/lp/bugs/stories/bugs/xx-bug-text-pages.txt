@@ -197,11 +197,29 @@ random separator string for each report:
     >>> separator_bug = separator_regex.findall(text_bug)[0]
     >>> separator_bug_task = separator_regex.findall(text_bug_task)[0]
 
-Now we can show that the individual sections are identical for each report:
+Now we can show that the individual sections are identical for each report.
+The only differences are the download URLs of bug attachments:
 
-    >>> text_bug.split(separator_bug) == text_bug_task.split(separator_bug_task)
+    >>> text_bug_chunks = text_bug.split(separator_bug)
+    >>> text_bug_task_chunks = text_bug_task.split(separator_bug_task)
+    >>> len(text_bug_chunks) == len(text_bug_task_chunks)
     True
 
+    >>> for chunk_no in range(len(text_bug_task_chunks)):
+    ...     if text_bug_task_chunks[chunk_no] != text_bug_chunks[chunk_no]:
+    ...         bug_task_lines = text_bug_task_chunks[chunk_no].split('\n')
+    ...         bug_lines = text_bug_chunks[chunk_no].split('\n')
+    ...         assert(len(bug_task_lines) == len(bug_lines))
+    ...         for line_no in range(len(bug_task_lines)):
+    ...             if bug_lines[line_no] != bug_task_lines[line_no]:
+    ...                 print bug_lines[line_no]
+    ...                 print bug_task_lines[line_no]
+    http://bugs.launchpad.dev/bugs/1/+attachment/1/+files/file_a.txt text/html
+    http://bugs.launchpad.dev/firefox/+bug/.../+files/file_a.txt text/html
+    http://bugs.launchpad.dev/bugs/1/.../+files/file%20with%20space.txt...
+    http://bugs.launchpad.dev/firefox/+bug/.../+files/file%20with%20space.txt...
+    http://bugs.launchpad.dev/bugs/1/.../+files/bug-patch.diff text/plain
+    http://bugs.launchpad.dev/firefox/+bug/.../+files/bug-patch.diff text/plain
 
 == Duplicate Bugs ==
 
