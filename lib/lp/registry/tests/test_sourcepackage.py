@@ -3,6 +3,8 @@
 
 """Unit tests for ISourcePackage implementations."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 import unittest
@@ -21,8 +23,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
-from lp.testing import TestCaseWithFactory
-from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing import person_logged_in, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -253,17 +254,13 @@ class TestSourcePackageViews(TestCaseWithFactory):
 
         self.obsolete_productseries = self.factory.makeProductSeries(
             name='obsolete', product=self.product)
-        naked_obsolete_productseries = (
-            remove_security_proxy_and_shout_at_engineer(
-                self.obsolete_productseries))
-        naked_obsolete_productseries.status = SeriesStatus.OBSOLETE
+        with person_logged_in(self.product.owner):
+            self.obsolete_productseries.status = SeriesStatus.OBSOLETE
 
         self.dev_productseries = self.factory.makeProductSeries(
             name='current', product=self.product)
-        naked_dev_productseries = (
-            remove_security_proxy_and_shout_at_engineer(
-                self.dev_productseries))
-        naked_dev_productseries.status = SeriesStatus.DEVELOPMENT
+        with person_logged_in(self.product.owner):
+            self.dev_productseries.status = SeriesStatus.DEVELOPMENT
 
         self.distribution = self.factory.makeDistribution(
             name='youbuntu', displayname='Youbuntu', owner=self.owner)

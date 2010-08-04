@@ -595,8 +595,6 @@ class CodeImportEditView(CodeImportBaseView):
 class CodeImportMachineView(LaunchpadView):
     """The view for the page that shows all the import machines."""
 
-    __used_for__ = ICodeImportSet
-
     label = "Import machines for Launchpad"
 
     @property
