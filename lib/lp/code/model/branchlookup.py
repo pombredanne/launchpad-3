@@ -21,7 +21,7 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.code.interfaces.branch import NoSuchBranch
+from lp.code.errors import NoSuchBranch
 from lp.code.interfaces.branchlookup import (
     IBranchLookup, ILinkedBranchTraversable, ILinkedBranchTraverser)
 from lp.code.interfaces.branchnamespace import (

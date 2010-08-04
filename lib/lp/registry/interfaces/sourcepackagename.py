@@ -18,7 +18,7 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
+from lp.app.errors import NameLookupFailed
 from lazr.restful.declarations import webservice_error
 
 

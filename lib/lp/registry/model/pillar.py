@@ -23,9 +23,9 @@ from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from lp.app.errors import NotFoundError
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.registry.model.productlicense import ProductLicense
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
 from lp.registry.interfaces.pillar import IPillarName, IPillarNameSet
