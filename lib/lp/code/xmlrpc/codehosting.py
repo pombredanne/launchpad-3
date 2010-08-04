@@ -33,16 +33,18 @@ from lp.app.errors import NameLookupFailed, NotFoundError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType
 from lp.code.errors import (
-    BranchCreationException, InvalidNamespace, UnknownBranchTypeError)
+    BranchCreationException, InvalidNamespace, NoLinkedBranch,
+    UnknownBranchTypeError)
+from lp.code.interfaces import branchpuller
 from lp.code.interfaces.branchlookup import (
     IBranchLookup, ILinkedBranchTraverser)
 from lp.code.interfaces.branchnamespace import (
     lookup_branch_namespace, split_unique_name)
-from lp.code.interfaces import branchpuller
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX, BRANCH_TRANSPORT, CONTROL_TRANSPORT, ICodehostingAPI,
     LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
-from lp.code.interfaces.linkedbranch import NoLinkedBranch
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
@@ -154,38 +156,37 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         create a branch if they have permission to link the newly created
         branch to the short name target.  If there is an existing branch
         already linked, then BranchExists is raised.  The branch name that is
-        used for the linked branch is 'trunk'.  If that name is taken, then we
-        try the name of the link target.
+        used is determined by the namespace as the first unused name starting
+        with 'trunk'.
         """
         if path.startswith(BRANCH_ALIAS_PREFIX + '/'):
             path = path[len(BRANCH_ALIAS_PREFIX) + 1:]
             if not path.startswith('~'):
-
-                link = getUtility(ILinkedBranchTraverser).traverse(path)
-                
-
+                context = getUtility(ILinkedBranchTraverser).traverse(path)
+                target = IBranchTarget(context)
+                namespace = target.getNamespace(requester)
+                branch_name = namespace.findUnusedName('trunk')
+                def link_func(new_branch):
+                    link = ICanHasLinkedBranch(context)
+                    link.setBranch(new_branch, requester)
                 return namespace, branch_name, link_func
         namespace_name, branch_name = split_unique_name(path)
         namespace = lookup_branch_namespace(namespace_name)
         return namespace, branch_name, None
 
-
     def createBranch(self, login_id, branch_path):
         """See `ICodehostingAPI`."""
         def create_branch(requester):
-            import pdb; pdb.set_trace()
             if not branch_path.startswith('/'):
                 return faults.InvalidPath(branch_path)
             escaped_path = unescape(branch_path.strip('/'))
-            if escaped_path.startswith(BRANCH_ALIAS_PREFIX + '/'):
-                escaped_path = escaped_path[len(BRANCH_ALIAS_PREFIX) + 1:]
+
             try:
-                namespace_name, branch_name = split_unique_name(escaped_path)
+                namespace, branch_name, link_func = (
+                    self._getBranchNamespaceExtras(escaped_path, requester))
             except ValueError:
                 return faults.PermissionDenied(
                     "Cannot create branch at '%s'" % branch_path)
-            try:
-                namespace = lookup_branch_namespace(namespace_name)
             except InvalidNamespace:
                 return faults.PermissionDenied(
                     "Cannot create branch at '%s'" % branch_path)
@@ -197,6 +198,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                     "Project '%s' does not exist." % e.name)
             except NameLookupFailed, e:
                 return faults.NotFound(str(e))
+
             try:
                 branch = namespace.createBranch(
                     BranchType.HOSTED, branch_name, requester)
@@ -207,8 +209,15 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                 return faults.PermissionDenied(msg)
             except BranchCreationException, e:
                 return faults.PermissionDenied(str(e))
-            else:
-                return branch.id
+
+            if link_func:
+                try:
+                    link_func(branch)
+                except Unauthorized:
+                    return faults.PermissionDenied(
+                        "Cannot create branch at '%s'" % branch_path)
+
+            return branch.id
         return run_with_login(login_id, create_branch)
 
     def _canWriteToBranch(self, requester, branch):
