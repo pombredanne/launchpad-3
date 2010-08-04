@@ -24,14 +24,15 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces import (
     IBugWatchSet, IDistributionSet, ILaunchBag, NoBugTrackerFound,
-    NotFoundError, UnrecognizedBugTrackerURL)
+    UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import UnexpectedFormData
 from canonical.launchpad.webapp.tales import TeamFormatterAPI
 from canonical.widgets.helpers import get_widget_template
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import VocabularyPickerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
+from lp.app.errors import NotFoundError, UnexpectedFormData
+
 
 class BugTaskAssigneeWidget(Widget):
     """A widget for setting the assignee on an IBugTask."""

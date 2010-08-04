@@ -15,13 +15,13 @@ import sys
 
 from zope.component import getUtility
 
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.tagfiles import parse_tagfile_lines
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket

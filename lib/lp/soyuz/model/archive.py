@@ -22,6 +22,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import alsoProvides, implements
 
+from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
@@ -84,8 +85,7 @@ from lp.soyuz.interfaces.buildrecords import (
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import PersonVisibility
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.queue import PackageUploadStatus
