@@ -28,11 +28,11 @@ from lp.code.enums import (
     BranchVisibilityRule, CodeReviewNotificationLevel)
 from lp.code.errors import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchCreatorNotOwner, BranchExists, NoSuchBranch)
+    BranchCreatorNotOwner, BranchExists, InvalidNamespace, NoSuchBranch)
 from lp.code.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchnamespace import (
-    IBranchNamespace, IBranchNamespacePolicy, InvalidNamespace)
+    IBranchNamespace, IBranchNamespacePolicy)
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
 from lp.registry.interfaces.distribution import (
