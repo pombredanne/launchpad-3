@@ -15,15 +15,17 @@ from cStringIO import StringIO
 # Z3 doesn't make this available as a utility.
 from zope.app import zapi
 from zope.app.publication.requestpublicationregistry import factoryRegistry
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.publisher.interfaces.browser import IDefaultSkin
-from zope.security.management import (
-    endInteraction, newInteraction, restoreInteraction)
+from zope.security.management import restoreInteraction
 
 from canonical.launchpad.interfaces.launchpad import IOpenLaunchBag
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp import urlsplit
+from canonical.launchpad.webapp.interaction import setupInteraction
+from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.servers import ProtocolErrorPublication
 
 
@@ -105,11 +107,13 @@ def test_traverse(url):
     if layer is not None:
         layers.setAdditionalLayer(request, layer)
 
-    principal = publication.getPrincipal(request)
-    request.setPrincipal(principal)
+    principal = get_current_browser_request().principal
 
-    endInteraction()
-    newInteraction(request)
+    if IUnauthenticatedPrincipal.providedBy(principal):
+        login = None
+    else:
+        login = principal.person
+    setupInteraction(principal, login, request)
 
     getUtility(IOpenLaunchBag).clear()
     app = publication.getApplication(request)

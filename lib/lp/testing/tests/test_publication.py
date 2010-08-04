@@ -6,16 +6,19 @@
 __metaclass__ = type
 
 from zope.app.pagetemplate.simpleviewclass import simple
-from zope.component import getSiteManager
+from zope.component import getSiteManager, getUtility
 from zope.interface import Interface
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.security.checker import CheckerPublic, Checker, defineChecker
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import ANONYMOUS, login, TestCaseWithFactory
+from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
 from lp.testing.publication import test_traverse
+
 
 class TestTestTraverse(TestCaseWithFactory):
     # Tests for `test_traverse`
@@ -64,3 +67,26 @@ class TestTestTraverse(TestCaseWithFactory):
             self.registerViewCallable(record_current_request))
         self.assertEqual(1, len(requests))
         self.assertIs(request, requests[0])
+
+    def test_participation_restored(self):
+        # test_traverse restores the interaction (and hence
+        # participation) that was present before it was called.
+        request = LaunchpadTestRequest()
+        login(ANONYMOUS, request)
+        product = self.factory.makeProduct()
+        test_traverse('https://launchpad.dev/' + product.name)
+        self.assertIs(request, get_current_browser_request())
+
+    def test_uses_current_user(self):
+        # test_traverse performs the traversal as the currently logged
+        # in user.
+        person = self.factory.makePerson()
+        login_person(person)
+        users = []
+        def record_user():
+            users.append(getUtility(ILaunchBag).user)
+        context, view, request = test_traverse(
+            self.registerViewCallable(record_user))
+        self.assertEqual(1, len(users))
+        self.assertEqual(person, users[0])
+
