@@ -194,7 +194,6 @@ class BasePublishingRecordView(LaunchpadView):
 
 class SourcePublishingRecordView(BasePublishingRecordView):
     """View class for `ISourcePackagePublishingHistory`."""
-    __used_for__ = ISourcePackagePublishingHistory
 
     @cachedproperty
     def build_status_summary(self):
@@ -354,7 +353,6 @@ class SourcePublishingRecordSelectableView(SourcePublishingRecordView):
 
 class BinaryPublishingRecordView(BasePublishingRecordView):
     """View class for `IBinaryPackagePublishingHistory`."""
-    __used_for__ = IBinaryPackagePublishingHistory
 
     def wasCopied(self):
         """Whether or not a binary is published in its original location.

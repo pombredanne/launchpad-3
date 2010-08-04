@@ -105,26 +105,21 @@ content object's menu.
 
     >>> class RecipeIndexView(LaunchpadView):
     ...     """View for summary of a recipe on the cookery facet."""
-    ...     __used_for__ = IRecipe
 
     >>> class RecipeEditInstructionsView(LaunchpadView):
     ...     """View for editing recipe instructions on the cookery facet."""
-    ...     __used_for__ = IRecipe
     ...     implements(IRecipeEditMenuMarker)
 
     >>> class RecipeEditIngredientsView(LaunchpadView):
     ...     """View for editing recipe ingedients on the cookery facet."""
-    ...     __used_for__ = IRecipe
     ...     implements(IRecipeEditMenuMarker)
 
     >>> class RecipeReadJournalView(LaunchpadView):
     ...     """View for reading a recipe's journal on the cookery facet."""
-    ...     __used_for__ = IRecipe
     ...     implements(IRecipeJournalMenuMarker)
 
     >>> class RecipeQuestionsAllView(LaunchpadView):
     ...     """View for all questions of a recipe on the questions facet."""
-    ...     __used_for__ = IRecipe
 
     # Monkey patch the interfaces and views into the cookingexample module.
     >>> cookingexample.IRecipeEditMenuMarker = IRecipeEditMenuMarker

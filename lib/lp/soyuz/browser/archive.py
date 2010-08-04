@@ -809,7 +809,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     Implements useful actions and collects useful sets for the page template.
     """
 
-    __used_for__ = IArchive
     implements(IArchiveIndexActionsMenu)
 
     def initialize(self):
@@ -1820,8 +1819,6 @@ class ArchiveActivateView(LaunchpadFormView):
 
 class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
     """Build Records View for IArchive."""
-
-    __used_for__ = IHasBuildRecords
 
     # The archive builds view presents all package builds (binary
     # or source package recipe builds).
