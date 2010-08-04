@@ -125,7 +125,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import (
-    ISourcePackage, SourcePackageUrgency)
+    ISourcePackage, SourcePackageFileType, SourcePackageUrgency)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet
@@ -143,18 +143,18 @@ from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import (
     default_name_by_purpose, IArchiveSet, ArchivePurpose)
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
+from lp.soyuz.interfaces.binarypackagerelease import (
+    BinaryPackageFileType, BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority, PackagePublishingStatus)
+    IPublishingSet, PackagePublishingPriority, PackagePublishingStatus)
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.files import BinaryPackageFile, SourcePackageReleaseFile
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -2349,6 +2349,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             dateuploaded=date_uploaded,
             source_package_recipe_build=source_package_recipe_build)
 
+    def makeSourcePackageReleaseFile(self, sourcepackagerelease=None,
+                                     library_file=None, filetype=None):
+        if sourcepackagerelease is None:
+            sourcepackagerelease = self.makeSourcePackageRelease()
+        if library_file is None:
+            library_file = self.makeLibraryFileAlias()
+        if filetype is None:
+            filetype = SourcePackageFileType.DSC
+        return ProxyFactory(
+            SourcePackageReleaseFile(
+                sourcepackagerelease=sourcepackagerelease,
+                libraryfile=library_file, filetype=filetype))
+
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None):
         """Create a BinaryPackageBuild.
@@ -2410,6 +2423,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            dsc_standards_version='3.6.2',
                                            dsc_format='1.0',
                                            dsc_binaries='foo-bin',
+                                           sourcepackagerelease=None,
                                            ):
         """Make a `SourcePackagePublishingHistory`."""
         if distroseries is None:
@@ -2430,36 +2444,37 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if status is None:
             status = PackagePublishingStatus.PENDING
 
-        spr = self.makeSourcePackageRelease(
-            archive=archive,
-            sourcepackagename=sourcepackagename,
-            distroseries=distroseries,
-            maintainer=maintainer,
-            creator=creator, component=component,
-            section_name=section_name,
-            urgency=urgency,
-            version=version,
-            builddepends=builddepends,
-            builddependsindep=builddependsindep,
-            build_conflicts=build_conflicts,
-            build_conflicts_indep=build_conflicts_indep,
-            architecturehintlist=architecturehintlist,
-            dsc_standards_version=dsc_standards_version,
-            dsc_format=dsc_format,
-            dsc_binaries=dsc_binaries,
-            date_uploaded=date_uploaded)
+        if sourcepackagerelease is None:
+            sourcepackagerelease = self.makeSourcePackageRelease(
+                archive=archive,
+                sourcepackagename=sourcepackagename,
+                distroseries=distroseries,
+                maintainer=maintainer,
+                creator=creator, component=component,
+                section_name=section_name,
+                urgency=urgency,
+                version=version,
+                builddepends=builddepends,
+                builddependsindep=builddependsindep,
+                build_conflicts=build_conflicts,
+                build_conflicts_indep=build_conflicts_indep,
+                architecturehintlist=architecturehintlist,
+                dsc_standards_version=dsc_standards_version,
+                dsc_format=dsc_format,
+                dsc_binaries=dsc_binaries,
+                date_uploaded=date_uploaded)
 
-        return ProxyFactory(SourcePackagePublishingHistory(
-            distroseries=distroseries,
-            sourcepackagerelease=spr,
-            component=spr.component,
-            section=spr.section,
-            status=status,
-            datecreated=date_uploaded,
-            dateremoved=dateremoved,
-            scheduleddeletiondate=scheduleddeletiondate,
-            pocket=pocket,
-            archive=archive))
+        spph = getUtility(IPublishingSet).newSourcePublication(
+            archive, sourcepackagerelease, distroseries,
+            sourcepackagerelease.component, sourcepackagerelease.section,
+            pocket)
+
+        naked_spph = removeSecurityProxy(spph)
+        naked_spph.status = status
+        naked_spph.datecreated = date_uploaded
+        naked_spph.dateremoved = dateremoved
+        naked_spph.scheduleddeletiondate = scheduleddeletiondate
+        return spph
 
     def makeBinaryPackagePublishingHistory(self, binarypackagerelease=None,
                                            distroarchseries=None,
@@ -2492,27 +2507,39 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if priority is None:
             priority = PackagePublishingPriority.OPTIONAL
 
-        bpr = self.makeBinaryPackageRelease(
-            component=component,
-            section_name=section_name,
-            priority=priority)
+        if binarypackagerelease is None:
+            binarypackagerelease = self.makeBinaryPackageRelease(
+                component=component,
+                section_name=section_name,
+                priority=priority)
 
-        return BinaryPackagePublishingHistory(
-            distroarchseries=distroarchseries,
-            binarypackagerelease=bpr,
-            component=bpr.component,
-            section=bpr.section,
-            status=status,
-            dateremoved=dateremoved,
-            scheduleddeletiondate=scheduleddeletiondate,
-            pocket=pocket,
-            priority=priority,
-            archive=archive)
+        bpph = getUtility(IPublishingSet).newBinaryPublication(
+            archive, binarypackagerelease, distroarchseries,
+            binarypackagerelease.component, binarypackagerelease.section,
+            priority, pocket)
+        naked_bpph = removeSecurityProxy(bpph)
+        naked_bpph.status = status
+        naked_bpph.dateremoved = dateremoved
+        naked_bpph.scheduleddeletiondate = scheduleddeletiondate
+        naked_bpph.priority = priority
+        return bpph
 
     def makeBinaryPackageName(self, name=None):
         if name is None:
             name = self.getUniqueString("binarypackage")
         return BinaryPackageName(name=name)
+
+    def makeBinaryPackageFile(self, binarypackagerelease=None,
+                              library_file=None, filetype=None):
+        if binarypackagerelease is None:
+            binarypackagerelease = self.makeBinaryPackageRelease()
+        if library_file is None:
+            library_file = self.makeLibraryFileAlias()
+        if filetype is None:
+            filetype = BinaryPackageFileType.DEB
+        return ProxyFactory(BinaryPackageFile(
+            binarypackagerelease=binarypackagerelease,
+            libraryfile=library_file, filetype=filetype))
 
     def makeBinaryPackageRelease(self, binarypackagename=None,
                                  version=None, build=None,
@@ -2538,13 +2565,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             summary = self.getUniqueString("summary")
         if description is None:
             description = self.getUniqueString("description")
-        return BinaryPackageRelease(binarypackagename=binarypackagename,
-                                    version=version, build=build,
-                                    binpackageformat=binpackageformat,
-                                    component=component, section=section,
-                                    priority=priority, summary=summary,
-                                    description=description,
-                                    architecturespecific=architecturespecific)
+        return ProxyFactory(
+            BinaryPackageRelease(
+                binarypackagename=binarypackagename, version=version,
+                build=build, binpackageformat=binpackageformat,
+                component=component, section=section, priority=priority,
+                summary=summary, description=description,
+                architecturespecific=architecturespecific))
 
     def makeSection(self, name=None):
         """Make a `Section`."""
