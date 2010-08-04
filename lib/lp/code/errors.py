@@ -20,12 +20,15 @@ __all__ = [
     'BuildNotAllowedForDistro',
     'BranchMergeProposalExists',
     'CannotDeleteBranch',
+    'CannotHaveLinkedBranch',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
     'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
     'ForbiddenInstruction',
     'InvalidBranchMergeProposal',
+    'InvalidNamespace',
+    'NoLinkedBranch',
     'NoSuchBranch',
     'PrivateBranchRecipe',
     'ReviewNotPending',
@@ -131,10 +134,13 @@ class BranchCannotBePrivate(Exception):
     """The branch cannot be made private."""
 
 
-class NoSuchBranch(NameLookupFailed):
-    """Raised when we try to load a branch that does not exist."""
+class CannotHaveLinkedBranch(Exception):
+    """Raised when we try to get the linked branch for a thing that can't."""
 
-    _message_prefix = "No such branch"
+    def __init__(self, component):
+        self.component = component
+        Exception.__init__(
+            self, "%r cannot have linked branches." % (component,))
 
 
 class ClaimReviewFailed(Exception):
@@ -152,6 +158,33 @@ class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
 
     webservice_error(400) #Bad request.
+
+
+class InvalidNamespace(Exception):
+    """Raised when someone tries to lookup a namespace with a bad name.
+
+    By 'bad', we mean that the name is unparseable. It might be too short, too
+    long or malformed in some other way.
+    """
+
+    def __init__(self, name):
+        self.name = name
+        Exception.__init__(
+            self, "Cannot understand namespace name: '%s'" % (name,))
+
+
+class NoLinkedBranch(Exception):
+    """Raised when there's no linked branch for a thing."""
+
+    def __init__(self, component):
+        self.component = component
+        Exception.__init__(self, "%r has no linked branch." % (component,))
+
+
+class NoSuchBranch(NameLookupFailed):
+    """Raised when we try to load a branch that does not exist."""
+
+    _message_prefix = "No such branch"
 
 
 class PrivateBranchRecipe(Exception):

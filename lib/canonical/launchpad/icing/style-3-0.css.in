@@ -686,6 +686,13 @@ table.summary ul, table.summary ul li {
     margin: 0;
     padding: 0;
     }
+div.centered {
+    text-align: center;
+    }
+div.centered table {
+    margin: 0 auto;
+    text-align: left;
+    }
 .batch-navigation-links .next {
     /* Next links have icons: */
     background: center right no-repeat;
