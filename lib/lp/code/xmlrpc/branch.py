@@ -23,15 +23,13 @@ from lp.bugs.interfaces.bug import IBugSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.code.enums import BranchType
 from lp.code.errors import (
-    BranchCreationException, BranchCreationForbidden, NoSuchBranch)
+    BranchCreationException, BranchCreationForbidden, CannotHaveLinkedBranch,
+    InvalidNamespace, NoLinkedBranch, NoSuchBranch)
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, InvalidNamespace)
-from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, NoLinkedBranch)
+from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import (

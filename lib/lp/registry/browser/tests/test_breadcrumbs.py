@@ -10,6 +10,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
 
+from lp.testing import login_person
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
@@ -90,6 +91,7 @@ class TestMilestoneBreadcrumb(BaseBreadcrumbTestCase):
         self.assertEqual(self.milestone.name, last_crumb.text)
 
     def test_milestone_with_code_name(self):
+        login_person(self.milestone.productseries.product.owner)
         self.milestone.code_name = "duck"
         crumbs = self.getBreadcrumbsForObject(self.milestone)
         last_crumb = crumbs[-1]

@@ -197,6 +197,10 @@ COMMENT ON COLUMN BugNomination.date_decided IS 'The date the nomination was app
 COMMENT ON COLUMN BugNomination.owner IS 'The person that submitted the nomination';
 COMMENT ON COLUMN BugNomination.decider IS 'The person who approved or declined the nomination';
 
+--- BugSubscription
+COMMENT ON TABLE BugSubscription IS 'A subscription by a Person to a bug.';
+COMMENT ON COLUMN BugSubscription.bug_notification_level IS 'The level of notifications which the Person will receive from this subscription.';
+
 -- BugTag
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
 COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';
