@@ -30,7 +30,6 @@ from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.librarian.utils import copy_and_close
 from lp.archiveuploader.uploadpolicy import findPolicyByOptions
 from lp.archiveuploader.uploadprocessor import UploadProcessor
@@ -207,62 +206,33 @@ class BuildBase:
             slave_file = slave.getFile(filemap[filename])
             copy_and_close(slave_file, out_file)
 
+        # Release the builder for another job.
+        build.buildqueue_record.builder.cleanSlave()
+
         # We only attempt the upload if we successfully copied all the
         # files from the slave.
         if successful_copy_from_slave:
-            logger.info("Invoking uploader on %s for %s" % (root, upload_leaf))
-            upload_logger = BufferLogger()
-            upload_log = process_upload(upload_leaf, root, build.id, upload_logger,
-                build.distribution, build.distro_series, build.pocket,
-                build.policy_name)
-            uploader_log_content = upload_logger.buffer.getvalue()
+            logger.info(
+                "Gathered %s %d completely. Moving %s to uploader queue." % (
+                build.__class__.__name__, build.id, upload_leaf))
+            uploader_queue_dir = os.path.join(root, "uploader-queue")
+            if not os.path.exists(uploader_queue_dir):
+                os.mkdir(uploader_queue_dir)
+            os.rename(upload_dir, os.path.join(uploader_queue_dir, upload_leaf))
+            #upload_log = process_upload(upload_leaf, root, build.id, logger,
+            #    build.distribution, build.distro_series, build.pocket,
+            #    build.policy_name)
         else:
-            uploader_log_content = 'Copy from slave was unsuccessful.'
+            logger.warning("Copy from slave for build %s was unsuccessful." % build.id)
+            build.notify(extra_info='Copy from slave was unsuccessful.')
+            build.status = BuildStatus.FAILEDTOUPLOAD
 
-        # Quick and dirty hack to carry on on process-upload failures
-        if os.path.exists(upload_dir):
-            logger.warning("The upload directory did not get moved.")
-            failed_dir = os.path.join(root, "failed-to-move")
-            if not os.path.exists(failed_dir):
-                os.mkdir(failed_dir)
-            os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
+        # Remove BuildQueue record.
+        build.buildqueue_record.destroySelf()
 
         # Store build information, build record was already updated during
         # the binary upload.
         build.storeBuildInfo(build, librarian, slave_status)
-
-        # Retrive the up-to-date build record and perform consistency
-        # checks. The build record should be updated during the binary
-        # upload processing, if it wasn't something is broken and needs
-        # admins attention. Even when we have a FULLYBUILT build record,
-        # if it is not related with at least one binary, there is also
-        # a problem.
-        # For both situations we will mark the builder as FAILEDTOUPLOAD
-        # and the and update the build details (datebuilt, duration,
-        # buildlog, builder) in LP. A build-failure-notification will be
-        # sent to the lp-build-admin celebrity and to the sourcepackagerelease
-        # uploader about this occurrence. The failure notification will
-        # also contain the information required to manually reprocess the
-        # binary upload when it was the case.
-        if (build.status != BuildStatus.FULLYBUILT or
-            not successful_copy_from_slave or
-            not build.verifySuccessfulUpload()):
-            logger.warning("Build %s upload failed." % build.id)
-            build.status = BuildStatus.FAILEDTOUPLOAD
-            # Store the upload_log_contents in librarian so it can be
-            # accessed by anyone with permission to see the build.
-            build.storeUploadLog(uploader_log_content)
-            # Notify the build failure.
-            build.notify(extra_info=uploader_log_content)
-        else:
-            logger.info(
-                "Gathered %s %d completely" % (
-                build.__class__.__name__, build.id))
-
-        # Release the builder for another job.
-        build.buildqueue_record.builder.cleanSlave()
-        # Remove BuildQueue record.
-        build.buildqueue_record.destroySelf()
 
     @staticmethod
     def _handleStatus_PACKAGEFAIL(build, librarian, slave_status, logger):

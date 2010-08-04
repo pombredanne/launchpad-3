@@ -123,6 +123,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         self.options = MockOptions()
         self.options.base_fsroot = self.queue_folder
+        self.options.builds = True
         self.options.leafname = None
         self.options.distro = "ubuntu"
         self.options.distroseries = None
@@ -146,7 +147,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             return findPolicyByOptions(self.options)
         return UploadProcessor(
             self.options.base_fsroot, self.options.dryrun,
-            self.options.nomails, self.options.keep, getPolicy, txn, self.log)
+            self.options.nomails, self.options.builds,
+            self.options.keep, getPolicy, txn, self.log)
 
     def assertLogContains(self, line):
         """Assert if a given line is present in the log messages."""
@@ -427,7 +429,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             # Move it
             self.options.base_fsroot = testdir
             up = self.getUploadProcessor(None)
-            up.moveUpload(upload, target_name)
+            up.moveUpload(upload, target_name, self.log)
 
             # Check it moved
             self.assertTrue(os.path.exists(os.path.join(target, upload_name)))
@@ -447,8 +449,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
             # Remove it
             self.options.base_fsroot = testdir
-            up = UploadProcessor(self.options, None, self.log)
-            up.moveProcessedUpload(upload, "accepted")
+            up = self.getUploadProcessor(None)
+            up.moveProcessedUpload(upload, "accepted", self.log)
 
             # Check it was removed, not moved
             self.assertFalse(os.path.exists(os.path.join(
@@ -470,8 +472,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
             # Move it
             self.options.base_fsroot = testdir
-            up = UploadProcessor(self.options, None, self.log)
-            up.moveProcessedUpload(upload, "rejected")
+            up = self.getUploadProcessor(None)
+            up.moveProcessedUpload(upload, "rejected", self.log)
 
             # Check it moved
             self.assertTrue(os.path.exists(os.path.join(testdir,
@@ -493,8 +495,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
             # Remove it
             self.options.base_fsroot = testdir
-            up = UploadProcessor(self.options, None, self.log)
-            up.removeUpload(upload)
+            up = self.getUploadProcessor(None)
+            up.removeUpload(upload, self.log)
 
             # Check it was removed, not moved
             self.assertFalse(os.path.exists(os.path.join(
@@ -1306,6 +1308,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         used.
         That exception will then initiate the creation of an OOPS report.
         """
+        self.options.builds = False
         processor = self.getUploadProcessor(self.layer.txn)
 
         upload_dir = self.queueUpload("foocomm_1.0-1_proposed")
