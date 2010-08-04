@@ -375,7 +375,7 @@ The distroseries version must be a valid debversion.
     >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
     >>> for error in view.errors:
     ...     print error[2]
-    'Hardy-6.06-LTS': Could not parse version...
+    'Hardy-6.06-LTS': Bad upstream version format
 
 The distroseries version is unique to a distribution. Version '2009.06'
 cannot be reused by another Ubuntu series.

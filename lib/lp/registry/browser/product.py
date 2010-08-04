@@ -909,7 +909,6 @@ class ProductDownloadFileMixin:
 class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                   ProductDownloadFileMixin, UsesLaunchpadMixin):
 
-    __used_for__ = IProduct
     implements(IProductActionMenu, IEditableContextTitle)
 
     def __init__(self, context, request):
@@ -1239,7 +1238,6 @@ class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
                                ProductDownloadFileMixin):
     """View class for the product's file downloads page."""
-    __used_for__ = IProduct
 
     batch_size = config.launchpad.download_batch_size
 

@@ -111,8 +111,6 @@ from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.model.distributionsourcepackage import (
-    DistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
 from lp.registry.interfaces.mailinglist import (
@@ -161,17 +159,17 @@ from lp.testing import (
     ANONYMOUS,
     login,
     login_as,
+    person_logged_in,
     run_with_login,
     temp_dir,
     time_counter,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
@@ -630,13 +628,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, product=None, distribution=None, productseries=None, name=None):
         if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
-        if productseries is not None:
-            product = productseries.product
+        if distribution is None:
+            if productseries is not None:
+                product = productseries.product
+            else:
+                productseries = self.makeProductSeries(product=product)
+            distroseries = None
+        else:
+            distroseries = self.makeDistroRelease(distribution=distribution)
         if name is None:
             name = self.getUniqueString()
-        return Milestone(product=product, distribution=distribution,
-                         productseries=productseries,
-                         name=name)
+        return ProxyFactory(
+            Milestone(product=product, distribution=distribution,
+                      productseries=productseries, distroseries=distroseries,
+                      name=name))
 
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
@@ -682,8 +687,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if milestone is None:
             milestone = self.makeMilestone(product=product,
                                            productseries=productseries)
-        return milestone.createProductRelease(
-            milestone.product.owner, datetime.now(pytz.UTC))
+        with person_logged_in(milestone.productseries.product.owner):
+            release = milestone.createProductRelease(
+                milestone.product.owner, datetime.now(pytz.UTC))
+        return release
 
     def makeProductReleaseFile(self, signed=True,
                                product=None, productseries=None,
@@ -699,12 +706,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             release = self.makeProductRelease(product=product,
                                               productseries=productseries,
                                               milestone=milestone)
-        return release.addReleaseFile(
-            'test.txt', 'test', 'text/plain',
-            uploader=release.milestone.product.owner,
-            signature_filename=signature_filename,
-            signature_content=signature_content,
-            description=description)
+        with person_logged_in(release.milestone.product.owner):
+            release_file = release.addReleaseFile(
+                'test.txt', 'test', 'text/plain',
+                uploader=release.milestone.product.owner,
+                signature_filename=signature_filename,
+                signature_content=signature_content,
+                description=description)
+        return release_file
 
     def makeProduct(
         self, name=None, project=None, displayname=None,
@@ -747,7 +756,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
-                          summary=None):
+                          summary=None, date_created=None):
         """Create and return a new ProductSeries."""
         if product is None:
             product = self.makeProduct()
@@ -760,8 +769,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
         naked_product = removeSecurityProxy(product)
-        return ProxyFactory(
-            naked_product.newSeries(owner=owner, name=name, summary=summary))
+        series = naked_product.newSeries(
+            owner=owner, name=name, summary=summary)
+        if date_created is not None:
+            series.datecreated = date_created
+        return ProxyFactory(series)
 
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,
@@ -2437,7 +2449,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             dsc_binaries=dsc_binaries,
             date_uploaded=date_uploaded)
 
-        sspph = SourcePackagePublishingHistory(
+        return ProxyFactory(SourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
             component=spr.component,
@@ -2447,11 +2459,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             dateremoved=dateremoved,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            archive=archive)
-
-        # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
-        # of SSPPH and other useful attributes.
-        return SourcePackagePublishingHistory.get(sspph.id)
+            archive=archive))
 
     def makeBinaryPackagePublishingHistory(self, binarypackagerelease=None,
                                            distroarchseries=None,
@@ -2588,7 +2596,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distribution is None:
             distribution = self.makeDistribution()
 
-        return DistributionSourcePackage(distribution, sourcepackagename)
+        return distribution.getSourcePackage(sourcepackagename)
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None, encode_attachments=False):
@@ -2768,7 +2776,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # other Python libraries.
 unwrapped_types = (
     BaseRecipeBranch, DSCFile, InstanceType, MergeDirective2, Message,
-    datetime, int, str, unicode,)
+    datetime, int, str, unicode)
 
 
 def is_security_proxied_or_harmless(obj):
@@ -2793,7 +2801,7 @@ class UnproxiedFactoryMethodWarning(UserWarning):
     def __init__(self, method_name):
         super(UnproxiedFactoryMethodWarning, self).__init__(
             "PLEASE FIX: LaunchpadObjectFactory.%s returns an "
-            "unproxied object." % (method_name,))
+            "unproxied object." % (method_name, ))
 
 
 class ShouldThisBeUsingRemoveSecurityProxy(UserWarning):

@@ -46,7 +46,6 @@ class QueueItemsView(LaunchpadView):
     template/distroseries-queue.pt and callsite details in DistroSeries
     view classes.
     """
-    __used_for__ = IHasQueueItems
 
     def setupQueueList(self):
         """Setup a batched queue list.

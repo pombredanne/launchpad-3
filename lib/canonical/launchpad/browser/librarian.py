@@ -46,8 +46,6 @@ class LibraryFileAliasView(LaunchpadView):
     http://launchpad.net/firefox/1.0./1.0.0/+download/firefox-1.0.0.tgz.
     """
 
-    __used_for__ = ILibraryFileAlias
-
     def initialize(self):
         """Redirect the request to the URL of the file in the Librarian."""
         # Redirect based on the scheme of the request, as set by Apache in the
@@ -65,8 +63,6 @@ class LibraryFileAliasView(LaunchpadView):
 class LibraryFileAliasMD5View(LaunchpadView):
     """View to show the MD5 digest for a librarian file."""
 
-    __used_for__ = ILibraryFileAlias
-
     def render(self):
         """Return the plain text MD5 signature"""
         self.request.response.setHeader('Content-type', 'text/plain')
@@ -80,8 +76,6 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
     to public ones.
     """
     implements(IBrowserPublisher)
-
-    __used_for__ = ILibraryFileAlias
 
     def getFileContents(self):
         # Reset system proxy setting if it exists. The urllib2 default
