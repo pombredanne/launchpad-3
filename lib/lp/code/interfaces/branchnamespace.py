@@ -11,7 +11,6 @@ __all__ = [
     'IBranchNamespace',
     'IBranchNamespacePolicy',
     'IBranchNamespaceSet',
-    'InvalidNamespace',
     'lookup_branch_namespace',
     'split_unique_name',
     ]
@@ -279,19 +278,6 @@ class IBranchNamespaceSet(Interface):
             cannot be found.
         :return: `IBranch`.
         """
-
-
-class InvalidNamespace(Exception):
-    """Raised when someone tries to lookup a namespace with a bad name.
-
-    By 'bad', we mean that the name is unparseable. It might be too short, too
-    long or malformed in some other way.
-    """
-
-    def __init__(self, name):
-        self.name = name
-        Exception.__init__(
-            self, "Cannot understand namespace name: '%s'" % (name,))
 
 
 def get_branch_namespace(person, product=None, distroseries=None,

@@ -86,11 +86,11 @@ from lp.code.enums import (
     CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems,
     UICreatableBranchType)
 from lp.code.errors import (
-    CodeImportAlreadyRequested, CodeImportAlreadyRunning,
-    CodeImportNotInReviewedState, InvalidBranchMergeProposal)
+    BranchCreationForbidden, BranchExists, CodeImportAlreadyRequested,
+    CodeImportAlreadyRunning, CodeImportNotInReviewedState,
+    InvalidBranchMergeProposal)
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch,
-    user_has_special_branch_access)
+    IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
@@ -325,8 +325,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
 
 
 class BranchView(LaunchpadView, FeedsMixin):
-
-    __used_for__ = IBranch
 
     feed_types = (
         BranchFeedLink,
@@ -1154,8 +1152,6 @@ class BranchSubscriptionsView(LaunchpadView):
 
 class BranchMergeQueueView(LaunchpadView):
     """The view used to render the merge queue for a branch."""
-
-    __used_for__ = IBranch
 
     @cachedproperty
     def merge_queue(self):

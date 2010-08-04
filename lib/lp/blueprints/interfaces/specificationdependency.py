@@ -46,7 +46,6 @@ class ISpecificationDependencyRemoval(Interface):
 
 class SpecDependencyIsAlsoRemoval:
     implements(ISpecificationDependencyRemoval)
-    __used_for__ = ISpecificationDependency
 
     def __init__(self, specdep):
         self.specdep = specdep
