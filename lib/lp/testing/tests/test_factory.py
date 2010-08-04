@@ -5,23 +5,88 @@
 
 __metaclass__ = type
 
+from datetime import datetime
+import pytz
 import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
 from lp.code.enums import CodeImportReviewStatus
-from lp.testing import TestCaseWithFactory
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.worlddata.interfaces.language import ILanguage
+from lp.soyuz.interfaces.binarypackagerelease import (
+    BinaryPackageFileType, IBinaryPackageRelease)
+from lp.soyuz.interfaces.files import (
+    IBinaryPackageFile, ISourcePackageReleaseFile)
+from lp.soyuz.interfaces.publishing import (
+    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
+    PackagePublishingPriority, PackagePublishingStatus)
+from lp.testing import TestCaseWithFactory
 from lp.testing.factory import is_security_proxied_or_harmless
+from lp.testing.matchers import IsProxied, Provides, ProvidesAndIsProxied
 
 
 class TestFactory(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    # loginAsAnyone
+    def test_loginAsAnyone(self):
+        # Login as anyone logs you in as any user.
+        person = self.factory.loginAsAnyone()
+        current_person = getUtility(ILaunchBag).user
+        self.assertIsNot(None, person)
+        self.assertEqual(person, current_person)
+
+    # makeBinaryPackagePublishingHistory
+    def test_makeBinaryPackagePublishingHistory_returns_IBPPH(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        self.assertThat(
+            removeSecurityProxy(bpph),
+            Provides(IBinaryPackagePublishingHistory))
+
+    def test_makeBinaryPackagePublishingHistory_returns_proxied(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        self.assertThat(bpph, IsProxied())
+
+    def test_makeBinaryPackagePublishingHistory_uses_status(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            status=PackagePublishingStatus.PENDING)
+        self.assertEquals(PackagePublishingStatus.PENDING, bpph.status)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertEquals(PackagePublishingStatus.PUBLISHED, bpph.status)
+
+    def test_makeBinaryPackagePublishingHistory_uses_dateremoved(self):
+        dateremoved = datetime.now(pytz.UTC)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            dateremoved=dateremoved)
+        self.assertEquals(dateremoved, bpph.dateremoved)
+
+    def test_makeBinaryPackagePublishingHistory_scheduleddeletiondate(self):
+        scheduleddeletiondate = datetime.now(pytz.UTC)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            scheduleddeletiondate=scheduleddeletiondate)
+        self.assertEquals(scheduleddeletiondate, bpph.scheduleddeletiondate)
+
+    def test_makeBinaryPackagePublishingHistory_uses_priority(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            priority=PackagePublishingPriority.OPTIONAL)
+        self.assertEquals(PackagePublishingPriority.OPTIONAL, bpph.priority)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            priority=PackagePublishingPriority.EXTRA)
+        self.assertEquals(PackagePublishingPriority.EXTRA, bpph.priority)
+
+    # makeBinaryPackageRelease
+    def test_makeBinaryPackageRelease_returns_IBinaryPackageRelease(self):
+        bpr = self.factory.makeBinaryPackageRelease()
+        self.assertThat(bpr, ProvidesAndIsProxied(IBinaryPackageRelease))
+
+    # makeCodeImport
     def test_makeCodeImportNoStatus(self):
         # If makeCodeImport is not given a review status, it defaults to NEW.
         code_import = self.factory.makeCodeImport()
@@ -35,6 +100,7 @@ class TestFactory(TestCaseWithFactory):
         code_import = self.factory.makeCodeImport(review_status=status)
         self.assertEqual(status, code_import.review_status)
 
+    # makeLanguage
     def test_makeLanguage(self):
         # Without parameters, makeLanguage creates a language with code
         # starting with 'lang'.
@@ -61,12 +127,109 @@ class TestFactory(TestCaseWithFactory):
         # And name is constructed from code as 'Language %(code)s'.
         self.assertEquals('Test language', language.englishname)
 
-    def test_loginAsAnyone(self):
-        # Login as anyone logs you in as any user.
-        person = self.factory.loginAsAnyone()
-        current_person = getUtility(ILaunchBag).user
-        self.assertIsNot(None, person)
-        self.assertEqual(person, current_person)
+    # makeSourcePackagePublishingHistory
+    def test_makeSourcePackagePublishingHistory_returns_ISPPH(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        self.assertThat(
+            removeSecurityProxy(spph),
+            Provides(ISourcePackagePublishingHistory))
+
+    def test_makeSourcePackagePublishingHistory_returns_proxied(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        self.assertThat(spph, IsProxied())
+
+    def test_makeSourcePackagePublishingHistory_uses_spr(self):
+        spr = self.factory.makeSourcePackageRelease()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        self.assertEquals(spr, spph.sourcepackagerelease)
+
+    def test_makeSourcePackagePublishingHistory_uses_status(self):
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PENDING)
+        self.assertEquals(PackagePublishingStatus.PENDING, spph.status)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertEquals(PackagePublishingStatus.PUBLISHED, spph.status)
+
+    def test_makeSourcePackagePublishingHistory_uses_date_uploaded(self):
+        date_uploaded = datetime.now(pytz.UTC)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            date_uploaded=date_uploaded)
+        self.assertEquals(date_uploaded, spph.datecreated)
+
+    def test_makeSourcePackagePublishingHistory_uses_dateremoved(self):
+        dateremoved = datetime.now(pytz.UTC)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            dateremoved=dateremoved)
+        self.assertEquals(dateremoved, spph.dateremoved)
+
+    def test_makeSourcePackagePublishingHistory_scheduleddeletiondate(self):
+        scheduleddeletiondate = datetime.now(pytz.UTC)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            scheduleddeletiondate=scheduleddeletiondate)
+        self.assertEquals(scheduleddeletiondate, spph.scheduleddeletiondate)
+
+
+class TestFactoryWithLibrarian(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    # makeBinaryPackageFile
+    def test_makeBinaryPackageFile_returns_IBinaryPackageFile(self):
+        bpf = self.factory.makeBinaryPackageFile()
+        self.assertThat(bpf, ProvidesAndIsProxied(IBinaryPackageFile))
+
+    def test_makeBinaryPackageFile_uses_binarypackagerelease(self):
+        binarypackagerelease = self.factory.makeBinaryPackageRelease()
+        bpf = self.factory.makeBinaryPackageFile(
+            binarypackagerelease=binarypackagerelease)
+        self.assertEqual(binarypackagerelease, bpf.binarypackagerelease)
+
+    def test_makeBinaryPackageFile_uses_library_file(self):
+        library_file = self.factory.makeLibraryFileAlias()
+        bpf = self.factory.makeBinaryPackageFile(
+            library_file=library_file)
+        self.assertEqual(library_file, bpf.libraryfile)
+
+    def test_makeBinaryPackageFile_uses_filetype(self):
+        bpf = self.factory.makeBinaryPackageFile(
+            filetype=BinaryPackageFileType.DEB)
+        self.assertEqual(BinaryPackageFileType.DEB, bpf.filetype)
+        bpf = self.factory.makeBinaryPackageFile(
+            filetype=BinaryPackageFileType.DDEB)
+        self.assertEqual(BinaryPackageFileType.DDEB, bpf.filetype)
+
+    # makeSourcePackageReleaseFile
+    def test_makeSourcePackageReleaseFile_returns_ISPRF(self):
+        spr_file = self.factory.makeSourcePackageReleaseFile()
+        self.assertThat(
+            spr_file, ProvidesAndIsProxied(ISourcePackageReleaseFile))
+
+    def test_makeSourcePackageReleaseFile_uses_sourcepackagerelease(self):
+        spr = self.factory.makeSourcePackageRelease()
+        spr_file = self.factory.makeSourcePackageReleaseFile(
+            sourcepackagerelease=spr)
+        self.assertEqual(spr, spr_file.sourcepackagerelease)
+
+    def test_makeSourcePackageReleaseFile_uses_library_file(self):
+        library_file = self.factory.makeLibraryFileAlias()
+        spr_file = self.factory.makeSourcePackageReleaseFile(
+            library_file=library_file)
+        self.assertEqual(library_file, spr_file.libraryfile)
+
+    def test_makeSourcePackageReleaseFile_uses_filetype(self):
+        spr_file = self.factory.makeSourcePackageReleaseFile(
+            filetype=SourcePackageFileType.DIFF)
+        self.assertEqual(SourcePackageFileType.DIFF, spr_file.filetype)
+        spr_file = self.factory.makeSourcePackageReleaseFile(
+            filetype=SourcePackageFileType.DSC)
+        self.assertEqual(SourcePackageFileType.DSC, spr_file.filetype)
+
+
+class IsSecurityProxiedOrHarmlessTests(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
 
     def test_is_security_proxied_or_harmless__none(self):
         # is_security_proxied_or_harmless() considers the None object

@@ -26,6 +26,7 @@ from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.app.errors import NotFoundError
 # XXX 2009-05-10 julian
 # This should not import from archivepublisher, but to avoid
 # that it needs a bit of redesigning here around the publication stuff.
@@ -69,7 +70,6 @@ from lp.soyuz.scripts.packagecopier import update_files_privacy
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 

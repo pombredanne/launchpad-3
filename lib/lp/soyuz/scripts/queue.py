@@ -25,9 +25,9 @@ from datetime import datetime
 
 from zope.component import getUtility
 
+from lp.app.errors import NotFoundError
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet, PackageUploadStatus, QueueInconsistentStateError)
 from canonical.cachedproperty import cachedproperty

@@ -26,6 +26,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bug import (
@@ -57,7 +58,6 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)

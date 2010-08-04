@@ -1,3 +1,8 @@
+XXX Julian 2010-08-03 bug=613096
+Most of this doctest is really a unit test in disguise.  It should get
+re-written and unit tests moved to buildmaster/tests/test_builder.py
+
+
 =============
 Builder Class
 =============
@@ -173,11 +178,26 @@ show up in the calculated queue size.
     >>> from lp.soyuz.interfaces.processor import IProcessorFamilySet
     >>> i386_family = getUtility(IProcessorFamilySet).getByName('x86')
     >>> recipe_bq.processor = i386_family.processors[0]
-    
+    >>> recipe_bq.virtualized = True
     >>> transaction.commit()
+    
     >>> queue_sizes = builderset.getBuildQueueSizes()
     >>> print queue_sizes['virt']['386']
     (1L, datetime.timedelta(0, 64))
+
+Any BuildQueues with a null `virtualized` property are considered virtual
+by default.
+
+    >>> recipe_bq = factory.makeSourcePackageRecipeBuildJob()
+    >>> recipe_bq.virtualized = None
+    >>> recipe_bq.processor = i386_family.processors[0]
+    >>> transaction.commit()
+    >>> queue_sizes = builderset.getBuildQueueSizes()
+
+The virtual queue size has increased accordingly:
+
+    >>> print queue_sizes['virt']['386']
+    (2L, datetime.timedelta(0, 128))
 
 
 Resuming buildd slaves

@@ -26,18 +26,17 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interaction import setupInteractionForPerson
-from canonical.launchpad.webapp.interfaces import (
-    NameLookupFailed, NotFoundError)
 from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.helpers import return_fault
 
-from lp.code.errors import UnknownBranchTypeError
+from lp.app.errors import NameLookupFailed, NotFoundError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType
-from lp.code.interfaces.branch import BranchCreationException
+from lp.code.errors import (
+    BranchCreationException, InvalidNamespace, UnknownBranchTypeError)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
-    InvalidNamespace, lookup_branch_namespace, split_unique_name)
+    lookup_branch_namespace, split_unique_name)
 from lp.code.interfaces import branchpuller
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, ICodehostingAPI, LAUNCHPAD_ANONYMOUS,
