@@ -86,36 +86,43 @@ class NascentUpload:
     queue_root = None
 
     def __init__(self, changesfile, policy, logger):
-        """Setup a ChangesFile based on given changesfile or path.
+        """Setup a NascentUpload for the given ChangesFile.
 
-        May raise FatalUploadError due to unrecoverable problems building
-        the ChangesFile object.
-        Also store given and initialized Upload Policy, as 'policy'
+        :param changesfile: the ChangesFile object to be uploaded.
+        :param policy: the upload policy to be used.
+        :param logger: the logger to be used.
         """
         self.policy = policy
         self.logger = logger
 
         self.rejections = []
         self.warnings = []
-
         self.librarian = getUtility(ILibraryFileAliasSet)
 
-        # If a path is given, a new ChangesFile object will be
-        # constructed. Otherwise we use the given object.
-        if isinstance(changesfile, str):
-            try:
-                self.changes = ChangesFile(
-                    changesfile, self.policy, self.logger)
-            except UploadError, e:
-                # We can't run reject() because unfortunately we don't have
-                # the address of the uploader to notify -- we broke in that
-                # exact step.
-                # XXX cprov 2007-03-26: we should really be emailing this
-                # rejection to the archive admins. For now, this will end
-                # up in the script log.
-                raise FatalUploadError(str(e))
-        else:
-            self.changes = changesfile
+        self.changes = changesfile
+
+    @classmethod
+    def from_changesfile_path(cls, changesfile_path, policy, logger):
+        """Create a NascentUpload from the given changesfile path.
+
+        May raise FatalUploadError due to unrecoverable problems building
+        the ChangesFile object.
+
+        :param changesfile_path: path to the changesfile to be uploaded.
+        :param policy: the upload policy to be used.
+        :param logger: the logger to be used.
+        """
+        try:
+            changesfile = ChangesFile(changesfile_path, policy, logger)
+        except UploadError, e:
+            # We can't run reject() because unfortunately we don't have
+            # the address of the uploader to notify -- we broke in that
+            # exact step.
+            # XXX cprov 2007-03-26: we should really be emailing this
+            # rejection to the archive admins. For now, this will end
+            # up in the script log.
+            raise FatalUploadError(str(e))
+        return cls(changesfile, policy, logger)
 
     def process(self):
         """Process this upload, checking it against policy, loading it into

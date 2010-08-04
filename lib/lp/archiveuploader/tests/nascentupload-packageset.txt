@@ -31,7 +31,7 @@ rights to all components from 'ubuntu-team' to 'mark':
 This time the upload will fail because the ACLs don't let
 "name16", the key owner, upload a package.
 
-    >>> bar_failed = NascentUpload(
+    >>> bar_failed = NascentUpload.from_changesfile_path(
     ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
     ...     insecure_policy, mock_logger_quiet)
 
@@ -111,7 +111,7 @@ There are still no package sets that include 'bar'.
 
 Let's retry the upload.
 
-    >>> bar_failed = NascentUpload(
+    >>> bar_failed = NascentUpload.from_changesfile_path(
     ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
     ...     insecure_policy, mock_logger_quiet)
 
@@ -166,7 +166,7 @@ With the authorization above the upload should work again.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('uploader')
-    >>> bar2 = NascentUpload(
+    >>> bar2 = NascentUpload.from_changesfile_path(
     ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
     ...     insecure_policy, mock_logger_quiet)
     >>> bar2.process()
