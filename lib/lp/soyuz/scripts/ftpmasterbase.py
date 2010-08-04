@@ -15,10 +15,10 @@ __all__ = [
 
 from zope.component import getUtility
 
+from lp.app.errors import NotFoundError
 from lp.soyuz.adapters.packagelocation import (
     build_package_location)
 from lp.soyuz.interfaces.component import IComponentSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 

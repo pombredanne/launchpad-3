@@ -46,12 +46,12 @@ from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import (
     BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
     BranchVisibilityRule, CodeReviewNotificationLevel)
-from lp.code.errors import InvalidBranchMergeProposal
-from lp.code.interfaces.branch import (
+from lp.code.errors import (
     BranchCannotBePrivate, BranchCannotBePublic,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchTargetError, CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING,
-    IBranch)
+    BranchTargetError, CannotDeleteBranch, InvalidBranchMergeProposal)
+from lp.code.interfaces.branch import (
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
 from lp.code.interfaces.branchjob import (
     IBranchUpgradeJobSource, IBranchScanJobSource)
 from lp.code.interfaces.branchlookup import IBranchLookup
@@ -1954,11 +1954,12 @@ class TestPendingWrites(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         self.assertEqual(False, branch.pending_writes)
 
-    def test_requestMirror_for_hosted(self):
-        # If a hosted branch has a requested mirror, then someone has just
-        # pushed something up. Therefore, pending writes.
+    def test_branchChanged_for_hosted(self):
+        # If branchChanged has been called with a new tip revision id, there
+        # are pending writes.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        branch.requestMirror()
+        with person_logged_in(branch.owner):
+            branch.branchChanged('', 'new-tip', None, None, None)
         self.assertEqual(True, branch.pending_writes)
 
     def test_requestMirror_for_imported(self):
@@ -1980,7 +1981,7 @@ class TestPendingWrites(TestCaseWithFactory):
         # If a branch has been pulled (mirrored) but not scanned, then we have
         # yet to load the revisions into the database. This means there are
         # pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
@@ -1990,7 +1991,7 @@ class TestPendingWrites(TestCaseWithFactory):
     def test_pulled_and_scanned(self):
         # If a branch has been pulled and scanned, then there are no pending
         # writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
@@ -2004,14 +2005,14 @@ class TestPendingWrites(TestCaseWithFactory):
     def test_first_mirror_started(self):
         # If we have started mirroring the branch for the first time, then
         # there are probably pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         self.assertEqual(True, branch.pending_writes)
 
     def test_following_mirror_started(self):
         # If we have started mirroring the branch, then there are probably
         # pending writes.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(

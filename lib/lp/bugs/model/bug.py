@@ -62,10 +62,10 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
+    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
 
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.errors import NotFoundError, UserCannotUnsubscribePerson
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
     BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)

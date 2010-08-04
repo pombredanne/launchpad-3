@@ -40,6 +40,7 @@ from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, flush_database_updates, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.app.errors import NotFoundError
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.services.database.prejoin import prejoin
 from lp.services.database.collection import Collection
@@ -55,7 +56,6 @@ from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem)
 from lp.translations.model.vpotexport import VPOTExport
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
     IHasTranslationTemplates,
@@ -1560,7 +1560,8 @@ class HasTranslationTemplatesMixin:
     @property
     def has_current_translation_templates(self):
         """See `IHasTranslationTemplates`."""
-        return bool(self.getCurrentTranslationTemplates(just_ids=True).any())
+        return bool(
+            self.getCurrentTranslationTemplates(just_ids=True).any())
 
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
@@ -1655,10 +1656,16 @@ class TranslationTemplatesCollection(Collection):
         """
         return self.joinInner(POFile, POTemplate.id == POFile.potemplateID)
 
-    def joinOuterPOFile(self):
+    def joinOuterPOFile(self, language=None):
         """Outer-join `POFile` into the collection.
 
         :return: A `TranslationTemplatesCollection` with an added outer
             join to `POFile`.
         """
-        return self.joinOuter(POFile, POTemplate.id == POFile.potemplateID)
+        if language is not None:
+            return self.joinOuter(
+                POFile, And(POTemplate.id == POFile.potemplateID,
+                            POFile.languageID == language.id))
+        else:
+            return self.joinOuter(
+                POFile, POTemplate.id == POFile.potemplateID)

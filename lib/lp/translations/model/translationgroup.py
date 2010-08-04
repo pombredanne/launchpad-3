@@ -19,6 +19,7 @@ from sqlobject import (
 from storm.expr import Join
 from storm.store import Store
 
+from lp.app.errors import NotFoundError
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from lp.registry.model.person import Person
@@ -28,7 +29,7 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.services.worlddata.model.language import Language
 from lp.translations.model.translator import Translator
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, NotFoundError)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT

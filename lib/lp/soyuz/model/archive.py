@@ -15,14 +15,14 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import Or, And, Select, Sum, In, Desc
+from storm.expr import And, Desc, Or, Select, Sum
 from storm.locals import Count, Join
 from storm.store import Store
-from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import alsoProvides, implements
 
+from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
@@ -85,8 +85,7 @@ from lp.soyuz.interfaces.buildrecords import (
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import PersonVisibility
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.queue import PackageUploadStatus
@@ -1594,7 +1593,7 @@ class Archive(SQLBase):
     def _getEnabledRestrictedFamilies(self):
         """Retrieve the restricted architecture families this archive can
         build on."""
-        # Main archives are always allowed to build on restricted 
+        # Main archives are always allowed to build on restricted
         # architectures.
         if self.is_main:
             return getUtility(IProcessorFamilySet).getRestricted()
@@ -1606,7 +1605,7 @@ class Archive(SQLBase):
     def _setEnabledRestrictedFamilies(self, value):
         """Set the restricted architecture families this archive can
         build on."""
-        # Main archives are always allowed to build on restricted 
+        # Main archives are always allowed to build on restricted
         # architectures.
         if self.is_main:
             proc_family_set = getUtility(IProcessorFamilySet)

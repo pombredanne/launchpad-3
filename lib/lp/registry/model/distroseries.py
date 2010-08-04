@@ -19,7 +19,7 @@ from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
 
-from storm.locals import And, Desc, Join, SQL
+from storm.locals import Desc, Join, SQL
 from storm.store import Store
 
 from zope.component import getUtility
@@ -35,6 +35,7 @@ from canonical.database.sqlbase import (
     quote, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
+from lp.app.errors import NotFoundError
 from lp.translations.model.pofiletranslator import (
     POFileTranslator)
 from lp.translations.model.pofile import POFile
@@ -118,7 +119,7 @@ from lp.blueprints.interfaces.specification import (
 from canonical.launchpad.mail import signed_message_from_string
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR)
+    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet)
 
@@ -335,14 +336,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         condition = SQL(conditions + "AND packaging.id IS NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC', SourcePackageName.name)
-        return [{
-                 'package': SourcePackage(
-                    sourcepackagename=spn, distroseries=self),
-                 'bug_count': bug_count,
-                 'total_messages': total_messages}
-                for (spn, score, bug_count, total_messages) in results]
+        results = results.config(distinct=True)
 
-    def getPrioritizedlPackagings(self):
+        def decorator(result):
+            spn, score, bug_count, total_messages = result
+            return {
+                'package': SourcePackage(
+                    sourcepackagename=spn, distroseries=self),
+                'bug_count': bug_count,
+                'total_messages': total_messages,
+                }
+        return DecoratedResultSet(results, decorator)
+
+    def getPrioritizedPackagings(self):
         """See `IDistroSeries`.
 
         The prioritization is a heuristic rule using the branch, bug heat,
@@ -351,31 +357,36 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # We join to SourcePackageName, ProductSeries, and Product to cache
         # the objects that are implcitly needed to work with a
         # Packaging object.
-        # Avoid circular import failures.
-        from lp.registry.model.product import Product
-        from lp.registry.model.productseries import ProductSeries
-        find_spec = (
-            Packaging, SourcePackageName, ProductSeries, Product,
-            SQL("""
-                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END +
-                    CASE WHEN Product.bugtracker IS NULL
-                        THEN coalesce(total_bug_heat, 10) ELSE 0 END +
-                    CASE WHEN ProductSeries.translations_autoimport_mode = 1
-                        THEN coalesce(po_messages, 10) ELSE 0 END +
-                    CASE WHEN ProductSeries.branch IS NULL THEN 500
-                        ELSE 0 END AS score"""))
         joins, conditions = self._current_sourcepackage_joins_and_conditions
-        origin = SQL(joins + """
+        # XXX: EdwinGrubbs 2010-07-29 bug=374777
+        # Storm doesn't support DISTINCT ON.
+        origin = SQL('''
+            (
+            SELECT DISTINCT ON (Packaging.id)
+                Packaging.*,
+                spr.component AS spr_component,
+                SourcePackageName.name AS spn_name,
+                total_bug_heat,
+                po_messages
+            FROM %(joins)s
+            WHERE %(conditions)s
+                AND packaging.id IS NOT NULL
+            ) AS Packaging
             JOIN ProductSeries
                 ON Packaging.productseries = ProductSeries.id
             JOIN Product
                 ON ProductSeries.product = Product.id
-            """)
-        condition = SQL(conditions + "AND packaging.id IS NOT NULL")
-        results = IStore(self).using(origin).find(find_spec, condition)
-        results = results.order_by('score DESC, SourcePackageName.name ASC')
-        return [packaging
-                for (packaging, spn, series, product, score) in results]
+            ''' % dict(joins=joins, conditions=conditions))
+        return IStore(self).using(origin).find(Packaging).order_by('''
+                (CASE WHEN spr_component = 1 THEN 1000 ELSE 0 END
+                + CASE WHEN Product.bugtracker IS NULL
+                    THEN coalesce(total_bug_heat, 10) ELSE 0 END
+                + CASE WHEN ProductSeries.translations_autoimport_mode = 1
+                    THEN coalesce(po_messages, 10) ELSE 0 END
+                + CASE WHEN ProductSeries.branch IS NULL THEN 500 ELSE 0 END
+                ) DESC,
+                spn_name ASC
+                ''')
 
     @property
     def _current_sourcepackage_joins_and_conditions(self):
