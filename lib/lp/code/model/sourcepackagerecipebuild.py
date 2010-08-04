@@ -19,7 +19,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.librarian import (
     ProxiedLibraryFileAlias)
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 
 from psycopg2 import ProgrammingError
 from storm.locals import Int, Reference, Storm
@@ -29,6 +28,7 @@ from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 from canonical.launchpad.webapp import errorlog
+from lp.app.errors import NotFoundError
 from lp.buildmaster.model.packagebuild import (
     PackageBuild, PackageBuildDerived)
 from lp.buildmaster.interfaces.buildbase import BuildStatus

@@ -55,7 +55,9 @@ from lp.code.enums import (
     BranchLifecycleStatus, BranchMergeControlStatus,
     BranchMergeProposalStatus, BranchType)
 from lp.code.errors import (
-    BranchMergeProposalExists, InvalidBranchMergeProposal)
+    BranchCannotBePrivate, BranchCannotBePublic, BranchTargetError,
+    BranchTypeError, BranchMergeProposalExists, CannotDeleteBranch,
+    InvalidBranchMergeProposal)
 from lp.code.mail.branch import send_branch_modified_notifications
 from lp.code.model.branchmergeproposal import (
      BranchMergeProposal, BranchMergeProposalGetter)
@@ -65,9 +67,7 @@ from lp.code.model.revision import Revision, RevisionAuthor
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
-    BranchCannotBePrivate, BranchCannotBePublic,
-    BranchTargetError, BranchTypeError, BzrIdentityMixin, CannotDeleteBranch,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    BzrIdentityMixin, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchNavigationMenu, IBranchSet, user_has_special_branch_access)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchlookup import IBranchLookup

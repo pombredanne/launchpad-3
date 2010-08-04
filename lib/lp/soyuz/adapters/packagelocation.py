@@ -14,7 +14,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 
 
 class PackageLocation:
