@@ -37,7 +37,8 @@
         This template is for a multistep view, and only the first
         step provides the register_upstream_url.
       </tal:comment>
-      <a tal:condition="view/register_upstream_url | nothing"
+      <a id="register-upstream-link"
+         tal:condition="view/register_upstream_url | nothing"
          tal:attributes="href view/register_upstream_url">
         Register the upstream project
       </a>
