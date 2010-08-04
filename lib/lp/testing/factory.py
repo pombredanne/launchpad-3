@@ -28,6 +28,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itertools import count
 from operator import isSequenceType
+import os
 import os.path
 from random import randint
 from StringIO import StringIO
@@ -2831,7 +2832,7 @@ class LaunchpadObjectFactory:
 
     def __getattr__(self, name):
         attr = getattr(self._factory, name)
-        if callable(attr):
+        if os.environ.get('PROXY_WARNINGS') == '1' and callable(attr):
 
             def guarded_method(*args, **kw):
                 result = attr(*args, **kw)
@@ -2854,5 +2855,6 @@ def remove_security_proxy_and_shout_at_engineer(obj):
     This function should only be used in legacy tests which fail because
     they expect unproxied objects.
     """
-    warnings.warn(ShouldThisBeUsingRemoveSecurityProxy(obj), stacklevel=2)
+    if os.environ.get('PROXY_WARNINGS') == '1':
+        warnings.warn(ShouldThisBeUsingRemoveSecurityProxy(obj), stacklevel=2)
     return removeSecurityProxy(obj)
