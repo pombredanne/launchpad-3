@@ -12,8 +12,8 @@ from sqlobject import StringCol, SQLRelatedJoin, ForeignKey
 
 from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.app.errors import NotFoundError
 from lp.services.worlddata.interfaces.country import (
     ICountry, ICountrySet, IContinent)
 

@@ -40,6 +40,7 @@ from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, flush_database_updates, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
+from lp.app.errors import NotFoundError
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.services.database.prejoin import prejoin
 from lp.services.database.collection import Collection
@@ -55,7 +56,6 @@ from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem)
 from lp.translations.model.vpotexport import VPOTExport
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
     IHasTranslationTemplates,

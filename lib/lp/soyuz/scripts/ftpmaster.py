@@ -35,7 +35,7 @@ from lp.soyuz.adapters.packagelocation import (
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import (
     determine_source_file_type)
 from lp.registry.interfaces.distribution import IDistributionSet

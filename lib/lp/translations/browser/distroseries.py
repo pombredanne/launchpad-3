@@ -20,13 +20,13 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import action
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
 from canonical.launchpad.webapp.menu import (
     Link, NavigationMenu, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
 
+from lp.app.errors import TranslationUnavailable
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.translations.browser.translations import TranslationsMixin

@@ -22,6 +22,7 @@ from canonical.launchpad.fields import (
     ContentNameField, PersonChoice, Title)
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
+from lp.app.errors import NameLookupFailed
 from lp.code.interfaces.branch import IBranch
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
 from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
@@ -39,7 +40,6 @@ from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad import _
 

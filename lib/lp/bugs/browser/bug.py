@@ -49,7 +49,9 @@ from lazr.restful.interfaces import (
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from lp.app.errors import NotFoundError
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
@@ -472,16 +474,28 @@ class BugViewMixin:
     @property
     def regular_attachments(self):
         """The list of bug attachments that are not patches."""
-        return [attachment
-                for attachment in self.context.attachments
-                if attachment.type != BugAttachmentType.PATCH]
+        return [
+            {
+                'attachment': attachment,
+                'file': ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment),
+                }
+            for attachment in self.context.attachments
+            if attachment.type != BugAttachmentType.PATCH
+            ]
 
     @property
     def patches(self):
         """The list of bug attachments that are patches."""
-        return [attachment
-                for attachment in self.context.attachments
-                if attachment.type == BugAttachmentType.PATCH]
+        return [
+            {
+                'attachment': attachment,
+                'file': ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment),
+                }
+            for attachment in self.context.attachments
+            if attachment.type == BugAttachmentType.PATCH
+            ]
 
 
 class BugView(LaunchpadView, BugViewMixin):
