@@ -239,10 +239,12 @@ class TestSourcePackage(TestCaseWithFactory):
         sp = getUtility(
             ILaunchpadCelebrities).ubuntu['warty'].getSourcePackage(
             'mozilla-firefox')
-        expected_summary = u'mozilla-firefox: Mozilla Firefox \
-Web Browser\nmozilla-firefox-data: No summary available for \
-mozilla-firefox-data in ubuntu warty.'
-        self.assertEqual(expected_summary, sp.summary)
+
+        expected_summary = (
+            u'mozilla-firefox: Mozilla Firefox Web Browser\n'
+            u'mozilla-firefox-data: No summary available for '
+            u'mozilla-firefox-data in ubuntu warty.')
+        self.assertEqual(''.join(expected_summary), sp.summary)
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
