@@ -93,9 +93,7 @@ class BugAttachmentSet:
         attachment = BugAttachment(
             bug=bug, libraryfile=filealias, type=attach_type, title=title,
             message=message)
+        Store.of(attachment).flush()
         if send_notifications:
-            # We need the ID of the new attachment to generate the
-            # the download URL in notifications.
-            Store.of(attachment).flush()
             notify(ObjectCreatedEvent(attachment, user=message.owner))
         return attachment
