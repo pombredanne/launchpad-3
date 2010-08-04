@@ -24,7 +24,7 @@ import xmlrpclib
 
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
-from storm.expr import Count, Sum
+from storm.expr import Coalesce, Count, Sum
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
@@ -704,15 +704,18 @@ class BuilderSet(object):
             Count(),
             Sum(BuildQueue.estimated_duration),
             Processor,
-            BuildQueue.virtualized),
+            Coalesce(BuildQueue.virtualized, True)),
             Processor.id == BuildQueue.processorID,
             Job.id == BuildQueue.jobID,
             Job._status == JobStatus.WAITING).group_by(
-                Processor, BuildQueue.virtualized)
+                Processor, Coalesce(BuildQueue.virtualized, True))
 
         result_dict = {'virt': {}, 'nonvirt': {}}
         for size, duration, processor, virtualized in results:
-            virt_str = 'virt' if virtualized else 'nonvirt'
+            if virtualized is False:
+                virt_str = 'nonvirt'
+            else:
+                virt_str = 'virt'
             result_dict[virt_str][processor.name] = (
                 size, duration)
 
