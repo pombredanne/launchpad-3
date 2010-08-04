@@ -20,7 +20,7 @@ from zope.component import getUtility
 from zope.contenttype import guess_content_type
 
 from canonical.launchpad.browser.librarian import (
-    FileNavigationMixin, StreamOrRedirectLibraryFileAliasView)
+    FileNavigationMixin, ProxiedLibraryFileAlias, StreamOrRedirectLibraryFileAliasView)
 from canonical.launchpad.webapp import (
     canonical_url, custom_widget, GetitemNavigation, Navigation)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -156,9 +156,11 @@ class BugAttachmentEditView(LaunchpadFormView, BugAttachmentContentCheck):
 
     @action('Delete Attachment', name='delete')
     def delete_action(self, action, data):
+        libraryfile_url = ProxiedLibraryFileAlias(
+            self.context.libraryfile, self.context).http_url
         self.request.response.addInfoNotification(structured(
             'Attachment "<a href="%(url)s">%(name)s</a>" has been deleted.',
-            url=self.context.libraryfile.http_url, name=self.context.title))
+            url=libraryfile_url, name=self.context.title))
         self.context.removeFromBug(user=self.user)
 
     def updateContentType(self, new_content_type):

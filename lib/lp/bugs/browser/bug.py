@@ -557,6 +557,11 @@ class BugView(LaunchpadView, BugViewMixin):
 
         return dupes
 
+    def proxiedUrlForLibraryFile(self, attachment):
+        """Return the proxied download URL for a Librarian file."""
+        return ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
+
 
 class BugWithoutContextView:
     """View that redirects to the new bug page.
@@ -870,7 +875,9 @@ class BugTextView(LaunchpadView):
         """Return a text representation of a bug attachment."""
         mime_type = normalize_mime_type.sub(
             ' ', attachment.libraryfile.mimetype)
-        return "%s %s" % (attachment.libraryfile.http_url, mime_type)
+        download_url = ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
+        return "%s %s" % (download_url, mime_type)
 
     def comment_text(self):
         """Return a text representation of bug comments."""
