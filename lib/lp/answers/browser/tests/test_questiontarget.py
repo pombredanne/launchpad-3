@@ -34,8 +34,8 @@ class TestSearchQuestionsView(TestCaseWithFactory):
             hoary, sourcepackagename, product.owner)
 
 
-class TestSearchQuestionsViewTemplate(TestSearchQuestionsView):
-    """Test the behaviour of SearchQuestionsView."""
+class TestSearchQuestionsViewSelectedTemplate(TestSearchQuestionsView):
+    """Test the behaviour of SearchQuestionsView.selected_template"""
 
     def assertViewTemplate(self, context, file_name):
         view = create_initialized_view(context, '+questions')
