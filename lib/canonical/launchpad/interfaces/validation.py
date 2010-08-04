@@ -30,7 +30,7 @@ from zope.component import getUtility
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email

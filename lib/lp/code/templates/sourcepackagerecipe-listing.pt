@@ -33,7 +33,7 @@
             </td>
             <td tal:condition="view/branch_enabled">
               <a tal:replace="structure recipe/base_branch/fmt:link">
-                Owner
+                Branch
               </a>
             </td>
             <td tal:content="recipe/date_created/fmt:datetime" />

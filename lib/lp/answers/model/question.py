@@ -36,16 +36,29 @@ from lazr.enum import DBItem, Item
 from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.interfaces import (
-    BugTaskStatus, IBugLinkTarget, IDistribution, IDistributionSet,
-    IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
-    ILaunchpadCelebrities, IMessage, IPerson, IProduct, IProductSet,
-    IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
-    QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
-    QuestionPriority, QuestionSort, QuestionStatus)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.message import IMessage
+from lp.services.worlddata.interfaces.language import ILanguage
+from lp.registry.interfaces.person import IPerson, validate_public_person
+from lp.registry.interfaces.product import IProduct, IProductSet
+from lp.registry.interfaces.distribution import (
+    IDistribution, IDistributionSet)
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.bugs.interfaces.buglink import IBugLinkTarget
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.questionenums import (
+    QuestionAction, QuestionParticipation, QuestionPriority, QuestionSort,
+    QuestionStatus)
+from lp.answers.interfaces.question import (
+    InvalidQuestionStateError, IQuestion)
+from lp.answers.interfaces.questioncollection import (
+    IQuestionSet, QUESTION_STATUS_DEFAULT_SEARCH)
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -83,6 +96,7 @@ class notify_question_modified:
 
     def __call__(self, func):
         """Return the ObjectModifiedEvent decorator."""
+
         def notify_question_modified(self, *args, **kwargs):
             """Create the ObjectModifiedEvent decorator."""
             old_question = Snapshot(self, providing=providedBy(self))
@@ -509,7 +523,8 @@ class Question(SQLBase, BugLinkTargetMixin):
         When update_question_dates is True, the question's datelastquery or
         datelastresponse attribute is updated to the message creation date.
         The datelastquery attribute is updated when the message owner is the
-        same than the question owner, otherwise the datelastresponse is updated.
+        same than the question owner, otherwise the datelastresponse is
+        updated.
 
         :owner: An IPerson.
         :content: A string or an IMessage. When it's an IMessage, the owner
@@ -907,7 +922,7 @@ class QuestionSearch:
         elif sort is QuestionSort.RECENT_OWNER_ACTIVITY:
             return ['-Question.datelastquery']
         else:
-            raise AssertionError, "Unknown QuestionSort value: %s" % sort
+            raise AssertionError("Unknown QuestionSort value: %s" % sort)
 
     def getResults(self):
         """Return the questions that match this query."""

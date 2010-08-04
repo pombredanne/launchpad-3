@@ -14,7 +14,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)

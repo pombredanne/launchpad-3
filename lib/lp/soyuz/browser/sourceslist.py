@@ -31,7 +31,6 @@ class SourcesListEntries:
 class SourcesListEntriesView(LaunchpadView):
     """Renders sources.list entries with a Javascript menu."""
 
-    __used_for__ = SourcesListEntries
     template = ViewPageTemplateFile('../templates/sources-list-entries.pt')
 
     def __init__(self, context, request, initially_without_selection=False,

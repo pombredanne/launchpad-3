@@ -18,13 +18,13 @@ __all__ = [
 
 from zope.component import getUtility
 
+from lp.app.errors import NotFoundError
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from lp.translations.interfaces.translator import (
     ITranslator, ITranslatorSet)
 from lp.registry.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView)

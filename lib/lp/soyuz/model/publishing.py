@@ -43,7 +43,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
@@ -517,14 +517,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         :param available_archs: Architectures to consider
         :return: Sequence of `IDistroArch` instances.
         """
-        associated_proc_families = [
-            archivearch.processorfamily for archivearch
-            in getUtility(IArchiveArchSet).getByArchive(self.archive)]
         # Return all distroarches with unrestricted processor families or with
         # processor families the archive is explicitly associated with.
         return [distroarch for distroarch in available_archs
             if not distroarch.processorfamily.restricted or
-               distroarch.processorfamily in associated_proc_families]
+               distroarch.processorfamily in
+                    self.archive.enabled_restricted_families]
 
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):

@@ -70,8 +70,8 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, NotFoundError, UnexpectedFormData)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.errors import NotFoundError, UnexpectedFormData
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugAddForm, IProjectGroupBugAddForm)
 from lp.bugs.interfaces.malone import IMaloneApplication

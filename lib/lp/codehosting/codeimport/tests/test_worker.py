@@ -1015,7 +1015,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         paths to database connections, which happily returns the connection
         that corresponds to a path that no longer exists.
         """
-        from bzrlib.plugins.git.shamap import mapdbs
+        from bzrlib.plugins.git.cache import mapdbs
         mapdbs().clear()
         WorkerTest.tearDown(self)
 
