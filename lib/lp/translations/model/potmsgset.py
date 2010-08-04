@@ -438,8 +438,9 @@ class POTMsgSet(SQLBase):
                 WHERE
                     POTMsgSet.id <> %s AND
                     msgid_singular = %s AND
-                    POTemplate.iscurrent AND
-                    (Product.official_rosetta OR Distribution.official_rosetta)
+                    POTemplate.iscurrent AND (
+                        Product.official_rosetta OR
+                        Distribution.official_rosetta)
             )''' % sqlvalues(self, self.msgid_singular))
 
         # Subquery to find the ids of TranslationMessages that are
@@ -454,7 +455,7 @@ class POTMsgSet(SQLBase):
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
         ids_query_params = {
             'msgstrs': msgstrs,
-            'where': ' AND '.join(query)
+            'where': ' AND '.join(query),
         }
         ids_query = '''
             SELECT DISTINCT ON (%(msgstrs)s)
@@ -795,7 +796,6 @@ class POTMsgSet(SQLBase):
         if is_current_upstream or new_message == upstream_message:
             new_message.makeCurrentUpstream()
 
-
     def _isTranslationMessageASuggestion(self, force_suggestion,
                                          pofile, submitter,
                                          force_edition_rights,
@@ -1069,8 +1069,7 @@ class POTMsgSet(SQLBase):
 
         translation_args = dict(
             ('msgstr%d' % form, translation)
-            for form, translation in translations.iteritems()
-            )
+            for form, translation in translations.iteritems())
 
         return TranslationMessage(
             potmsgset=self,
@@ -1231,7 +1230,7 @@ class POTMsgSet(SQLBase):
             current.is_current_ubuntu = False
             # Converge the current translation only if it is diverged and not
             # current upstream.
-            is_diverged =  current.potemplate is not None
+            is_diverged = current.potemplate is not None
             if is_diverged and not current.is_current_upstream:
                 current.potemplate = None
             pofile.date_changed = UTC_NOW
@@ -1462,4 +1461,3 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return TranslationTemplateItem.selectBy(
             potmsgset=self, orderBy=['id'])
-
