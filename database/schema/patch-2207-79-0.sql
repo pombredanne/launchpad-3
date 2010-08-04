@@ -11,4 +11,4 @@ UPDATE LibraryFileAlias SET restricted=true
         SELECT libraryfile from BugAttachment, Bug
             WHERE BugAttachment.bug = Bug.id AND Bug.private);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 79, 0);
