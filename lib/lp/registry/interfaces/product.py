@@ -36,8 +36,9 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
-    ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
+    PersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
+from lp.app.errors import NameLookupFailed
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.registry.interfaces.structuralsubscription import (
@@ -72,7 +73,6 @@ from lp.translations.interfaces.translationgroup import (
     ITranslationPolicy)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, collection_default_content,
@@ -373,7 +373,7 @@ class IProductPublic(
         exported_as='project_group')
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
@@ -390,7 +390,7 @@ class IProductPublic(
                           "Launchpad.")))
 
     driver = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_("Driver"),
             description=_(
                 "This person or team will be able to set feature goals for "

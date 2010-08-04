@@ -29,7 +29,7 @@ from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError, IGPGHandler)
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.codeofconduct import (
     ICodeOfConduct, ICodeOfConductConf, ICodeOfConductSet,
     ISignedCodeOfConduct, ISignedCodeOfConductSet)

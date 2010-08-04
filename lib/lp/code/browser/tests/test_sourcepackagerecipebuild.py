@@ -9,6 +9,7 @@ __metaclass__ = type
 from mechanize import LinkNotFoundError
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
@@ -36,7 +37,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         self.squirrel = self.factory.makeDistroSeries(
             displayname='Secret Squirrel', name='secret', version='100.04',
             distribution=self.ppa.distribution)
-        self.squirrel.nominatedarchindep = self.squirrel.newArch(
+        naked_squirrel = removeSecurityProxy(self.squirrel)
+        naked_squirrel.nominatedarchindep = self.squirrel.newArch(
             'i386', ProcessorFamily.get(1), False, self.chef,
             supports_virtualized=True)
 
@@ -98,6 +100,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         """If the build isn't queued, you can't cancel it."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
         build = self.makeRecipeBuild()
+        build.cancelBuild()
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -158,8 +161,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
         self.assertEqual(
             extract_text(find_tags_by_class(browser.contents, 'message')[1]),
-            'You have specified an invalid value for score. '
-            'Please specify an integer')
+            'Invalid integer data')
 
     def test_rescore_build_not_admin(self):
         """No one but admins can rescore a build."""
@@ -178,6 +180,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         """If the build isn't queued, you can't rescore it."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
         build = self.makeRecipeBuild()
+        build.cancelBuild()
         transaction.commit()
         build_url = canonical_url(build)
         logout()

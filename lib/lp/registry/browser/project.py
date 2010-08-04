@@ -42,7 +42,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)

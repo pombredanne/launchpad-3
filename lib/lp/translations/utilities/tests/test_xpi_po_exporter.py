@@ -25,6 +25,7 @@ from lp.translations.utilities.xpi_po_exporter import (
 from canonical.testing import LaunchpadZopelessLayer
 from lp.translations.utilities.tests.test_xpi_import import (
     get_en_US_xpi_file_to_import)
+from lp.translations.utilities.translation_export import ExportFileStorage
 
 
 class XPIPOExporterTestCase(unittest.TestCase):
@@ -106,8 +107,9 @@ class XPIPOExporterTestCase(unittest.TestCase):
 
         translation_file_data = getAdapter(
             self.firefox_template, ITranslationFileData, 'all_messages')
-        exported_template = self.translation_exporter.exportTranslationFiles(
-            [translation_file_data])
+        storage = ExportFileStorage()
+        self.translation_exporter.exportTranslationFile(
+            translation_file_data, storage)
 
         expected_template = dedent(ur'''
             #, fuzzy
@@ -215,5 +217,5 @@ class XPIPOExporterTestCase(unittest.TestCase):
             msgstr ""
             ''').strip()
 
-        output = exported_template.read().decode("utf-8")
+        output = storage.export().read().decode("utf-8")
         self._compareExpectedAndExported(expected_template, output)

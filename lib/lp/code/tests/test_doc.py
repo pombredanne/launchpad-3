@@ -45,12 +45,6 @@ special = {
         tearDown=zopelessLaunchpadSecurityTearDown,
         layer=LaunchpadZopelessLayer,
         ),
-    'branch-merge-proposals.txt': LayeredDocFileSuite(
-        '../doc/branch-merge-proposals.txt',
-        setUp=zopelessLaunchpadSecuritySetUp,
-        tearDown=zopelessLaunchpadSecurityTearDown,
-        layer=LaunchpadZopelessLayer,
-        ),
     'revision.txt': LayeredDocFileSuite(
         '../doc/revision.txt',
         setUp=branchscannerSetUp, tearDown=tearDown,
