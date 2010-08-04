@@ -18,6 +18,8 @@ from zope.app.publication.requestpublicationregistry import factoryRegistry
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.publisher.interfaces.browser import IDefaultSkin
+from zope.security.management import (
+    endInteraction, newInteraction, restoreInteraction)
 
 from canonical.launchpad.interfaces.launchpad import IOpenLaunchBag
 import canonical.launchpad.layers as layers
@@ -106,10 +108,16 @@ def test_traverse(url):
     principal = publication.getPrincipal(request)
     request.setPrincipal(principal)
 
+    endInteraction()
+    newInteraction(request)
+
     getUtility(IOpenLaunchBag).clear()
     app = publication.getApplication(request)
     view = request.traverse(app)
     # Since the last traversed object is the view, the second last should be
     # the object that the view is on.
     obj = request.traversed_objects[-2]
+
+    restoreInteraction()
+
     return obj, view, request
