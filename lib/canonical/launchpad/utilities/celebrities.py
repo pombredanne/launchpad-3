@@ -10,7 +10,9 @@ from zope.interface import implements
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILaunchpadCelebrities, IPersonSet, IDistributionSet,
-    IBugTrackerSet, IProductSet, NotFoundError, IDistributionMirrorSet)
+    IBugTrackerSet, IProductSet, IDistributionMirrorSet)
+from lp.app.errors import NotFoundError
+
 
 class MutatedCelebrityError(Exception):
     """A celebrity has had its id or name changed in the database.

@@ -15,13 +15,12 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.testing.codeimporthelpers import (
     make_running_import)
 from lp.code.errors import (
-    CodeImportAlreadyRequested, CodeImportAlreadyRunning,
-    CodeImportNotInReviewedState)
+    BranchCreatorNotMemberOfOwnerTeam, CodeImportAlreadyRequested,
+    CodeImportAlreadyRunning, CodeImportNotInReviewedState)
 from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportjob import CodeImportJob, CodeImportJobSet
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.interfaces.branch import BranchCreatorNotMemberOfOwnerTeam
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.person import IPersonSet
 from lp.code.enums import (

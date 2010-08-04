@@ -42,8 +42,8 @@ class LibraryFileAliasView(LaunchpadView):
     """View to handle redirection for downloading files by URL.
 
     Rather than reference downloadable files via the obscure Librarian
-    URL, downloadable files can be referenced via the Product Release URL, e.g.
-    http://launchpad.net/firefox/1.0./1.0.0/+download/firefox-1.0.0.tgz.
+    URL, downloadable files can be referenced via the Product Release URL,
+    e.g. http://launchpad.net/firefox/1.0./1.0.0/+download/firefox-1.0.0.tgz.
     """
 
     __used_for__ = ILibraryFileAlias
@@ -173,19 +173,20 @@ class FileNavigationMixin:
     extended in order to allow traversing to multiple files potentially
     with the same filename (product files or bug attachments).
     """
+    view_class = StreamOrRedirectLibraryFileAliasView
+
     @stepthrough('+files')
     def traverse_files(self, filename):
         """Traverse on filename in the archive domain."""
         if not check_permission('launchpad.View', self.context):
             raise Unauthorized()
-        library_file  = self.context.getFileByName(filename)
+        library_file = self.context.getFileByName(filename)
 
         # Deleted library files result in NotFound-like error.
         if library_file.deleted:
             raise DeletedProxiedLibraryFileAlias(filename, self.context)
 
-        return StreamOrRedirectLibraryFileAliasView(
-            library_file, self.request)
+        return self.view_class(library_file, self.request)
 
 
 class ProxiedLibraryFileAlias:

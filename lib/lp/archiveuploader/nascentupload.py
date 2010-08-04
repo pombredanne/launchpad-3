@@ -23,6 +23,7 @@ import os
 
 from zope.component import getUtility
 
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
@@ -34,7 +35,7 @@ from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, ILibraryFileAliasSet,
-    ISourcePackageNameSet, NotFoundError, QueueInconsistentStateError)
+    ISourcePackageNameSet, QueueInconsistentStateError)
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -166,6 +167,35 @@ class NascentUpload:
         self.logger.debug("Verifying files in upload.")
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
+
+        unmatched_ddebs = {}
+        for uploaded_file in self.changes.files:
+            if isinstance(uploaded_file, DdebBinaryUploadFile):
+                ddeb_key = (uploaded_file.package, uploaded_file.version,
+                            uploaded_file.architecture)
+                if ddeb_key in unmatched_ddebs:
+                    self.reject("Duplicated debug packages: %s %s (%s)" %
+                        ddeb_key)
+                else:
+                    unmatched_ddebs[ddeb_key] = uploaded_file
+
+        for uploaded_file in self.changes.files:
+            # We need exactly a DEB, not a DDEB.
+            if (isinstance(uploaded_file, DebBinaryUploadFile) and
+                not isinstance(uploaded_file, DdebBinaryUploadFile)):
+                try:
+                    matching_ddeb = unmatched_ddebs.pop(
+                        (uploaded_file.package + '-dbgsym',
+                         uploaded_file.version,
+                         uploaded_file.architecture))
+                except KeyError:
+                    continue
+                uploaded_file.ddeb_file = matching_ddeb
+                matching_ddeb.deb_file = uploaded_file
+
+        if len(unmatched_ddebs) > 0:
+            self.reject("Orphaned debug packages: %s" % ', '.join('%s %s (%s)' % d
+                for d in unmatched_ddebs))
 
         if (len(self.changes.files) == 1 and
             isinstance(self.changes.files[0], CustomUploadFile)):

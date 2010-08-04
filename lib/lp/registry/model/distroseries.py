@@ -35,6 +35,7 @@ from canonical.database.sqlbase import (
     quote, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
+from lp.app.errors import NotFoundError
 from lp.translations.model.pofiletranslator import (
     POFileTranslator)
 from lp.translations.model.pofile import POFile
@@ -118,7 +119,7 @@ from lp.blueprints.interfaces.specification import (
 from canonical.launchpad.mail import signed_message_from_string
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR)
+    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet)
 

@@ -450,8 +450,7 @@ to present the import's details on the page of the branch.
     u':pserver:anonymous@cvs.example.com:/cvsroot'
 
 When you ask for an id that is not present ICodeImportSet.get() raises
-canonical.launchpad.interfaces.NotFoundError, rather than some
-internal database exception.
+lp.app.errors.NotFoundError, rather than some internal database exception.
 
     >>> code_import_set.get(-10)
     Traceback (most recent call last):

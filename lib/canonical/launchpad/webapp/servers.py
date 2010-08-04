@@ -46,6 +46,7 @@ from lazr.restful.interfaces import (
 from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
+from lp.app.errors import UnexpectedFormData
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from canonical.launchpad.interfaces.launchpad import (
     IFeedsApplication, IPrivateApplication, IWebServiceApplication)
@@ -64,7 +65,7 @@ from canonical.launchpad.webapp.interfaces import (
     IAPIDocRoot, IBasicLaunchpadRequest, IBrowserFormNG,
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
     INotificationRequest, INotificationResponse, IPlacelessAuthUtility,
-    IPlacelessLoginSource, OAuthPermission, UnexpectedFormData)
+    IPlacelessLoginSource, OAuthPermission)
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
