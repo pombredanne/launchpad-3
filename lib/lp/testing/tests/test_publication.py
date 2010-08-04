@@ -41,9 +41,10 @@ class TestTestTraverse(TestCaseWithFactory):
             required[n] = CheckerPublic
         defineChecker(new_class, Checker(required))
         getSiteManager().registerAdapter(
-            new_class, (ILaunchpadRoot, IDefaultBrowserLayer), Interface, name)
+            new_class, (ILaunchpadRoot, IDefaultBrowserLayer), Interface, 
+            name)
         self.addCleanup(
-            getSiteManager().unregisterAdapter, new_class, 
+            getSiteManager().unregisterAdapter, new_class,
             (ILaunchpadRoot, IDefaultBrowserLayer), Interface, name)
         return 'https://launchpad.dev/' + name
 
@@ -89,4 +90,3 @@ class TestTestTraverse(TestCaseWithFactory):
             self.registerViewCallable(record_user))
         self.assertEqual(1, len(users))
         self.assertEqual(person, users[0])
-
