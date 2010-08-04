@@ -218,6 +218,14 @@ class ITranslationMessage(Interface):
     def getOnePOFile():
         """Get any POFile containing this translation."""
 
+    def shareIfPossible():
+        """Make this message shared, if possible.
+
+        If there is already a similar message that is shared, this
+        message's information is merged into that of the existing one,
+        and self is deleted.
+        """
+
     def isHidden(pofile):
         """Whether this is an unused, hidden suggestion in `pofile`.
 

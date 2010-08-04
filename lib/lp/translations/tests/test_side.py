@@ -70,6 +70,7 @@ class TestTranslationSideTraitsSet(TestCaseWithFactory):
 
 
 class TraitsScenario:
+    """Tests that can be run on either the upstream or the Ubuntu side."""
 
     def _makeTemplate(self):
         """Create a template for the side being tested."""
