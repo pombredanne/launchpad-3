@@ -16,7 +16,7 @@ from sqlobject import StringCol, ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.soyuz.interfaces.component import (
     IComponent, IComponentSelection, IComponentSet)
 

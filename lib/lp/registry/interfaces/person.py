@@ -77,9 +77,9 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadApplication, NameLookupFailed)
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
+from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications)

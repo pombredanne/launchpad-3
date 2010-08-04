@@ -28,10 +28,10 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import smartquote
 from canonical.launchpad import _
+from lp.app.errors import NotFoundError
+from lp.buildmaster.interfaces.builder import IBuilderSet, IBuilder
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.buildmaster.interfaces.builder import IBuilderSet, IBuilder
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,

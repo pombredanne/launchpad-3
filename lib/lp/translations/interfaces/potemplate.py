@@ -13,8 +13,8 @@ from lazr.restful.declarations import (
     operation_returns_collection_of)
 
 from canonical.launchpad.fields import PersonChoice
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.translations.interfaces.rosettastats import IRosettaStats
 from lp.registry.interfaces.sourcepackagename import (

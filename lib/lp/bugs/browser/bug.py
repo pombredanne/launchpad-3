@@ -50,7 +50,8 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from lp.app.errors import NotFoundError
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
