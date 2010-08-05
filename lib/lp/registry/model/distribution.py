@@ -1179,6 +1179,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 DistroArchSeries.id,
             BinaryPackagePublishingHistory.archiveID.is_in(
                 self.all_distro_archive_ids),
+            BinaryPackagePublishingHistory.dateremoved == None,
             BinaryPackageRelease.id ==
                 BinaryPackagePublishingHistory.binarypackagereleaseID,
             ]
