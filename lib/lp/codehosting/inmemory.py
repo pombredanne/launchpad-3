@@ -30,12 +30,13 @@ from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
-    LAUNCHPAD_SERVICES)
+    BRANCH_ALIAS_PREFIX, BRANCH_TRANSPORT, CONTROL_TRANSPORT,
+    LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.xmlrpc.codehosting import datetime_from_tuple
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.utils import iter_split
+from lp.services.xmlrpc import LaunchpadFault
 from lp.testing.factory import ObjectFactory
 
 
@@ -266,10 +267,11 @@ class FakeTeam(FakePerson):
 class FakeProduct(FakeDatabaseObject):
     """Fake product."""
 
-    def __init__(self, name):
+    def __init__(self, name, owner):
         self.name = name
+        self.owner = owner
         self.bzr_path = name
-        self.development_focus = FakeProductSeries()
+        self.development_focus = FakeProductSeries(self, 'trunk')
 
 
 @adapter(FakeProduct)
@@ -283,13 +285,17 @@ def fake_product_to_branch_target(fake_product):
 @implementer(ICanHasLinkedBranch)
 def fake_product_to_can_has_linked_branch(fake_product):
     """Adapt a `FakeProduct` to `ICanHasLinkedBranch`."""
-    return fake_product
+    return fake_product.development_focus
 
 
 class FakeProductSeries(FakeDatabaseObject):
     """Fake product series."""
 
     branch = None
+
+    def __init__(self, product, name):
+        self.product = product
+        self.name = name
 
 
 class FakeScriptActivity(FakeDatabaseObject):
@@ -429,10 +435,19 @@ class FakeObjectFactory(ObjectFactory):
         self._person_set._add(person)
         return person
 
-    def makeProduct(self):
-        product = FakeProduct(self.getUniqueString())
+    def makeProduct(self, name=None, owner=None):
+        if name is None:
+            name = self.getUniqueString()
+        if owner is None:
+            owner = self.makePerson()
+        product = FakeProduct(name, owner)
         self._product_set._add(product)
         return product
+
+    def makeProductSeries(self, product, name=None):
+        if name is None:
+            name = self.getUniqueString()
+        return FakeProductSeries(product, name)
 
     def enableDefaultStackingForProduct(self, product, branch=None):
         """Give 'product' a default stacked-on branch.
@@ -520,21 +535,45 @@ class FakeCodehosting:
             FakeScriptActivity(name, hostname, date_started, date_completed))
         return True
 
-    def createBranch(self, requester_id, branch_path):
-        if not branch_path.startswith('/'):
-            return faults.InvalidPath(branch_path)
-        escaped_path = unescape(branch_path.strip('/'))
+    def _parseUniqueName(self, branch_path):
+        """Return a dict of the parsed information and the branch name."""
         try:
-            namespace_path, branch_name = escaped_path.rsplit('/', 1)
+            namespace_path, branch_name = branch_path.rsplit('/', 1)
         except ValueError:
-            return faults.PermissionDenied(
+            raise faults.PermissionDenied(
                 "Cannot create branch at '%s'" % branch_path)
         data = BranchNamespaceSet().parse(namespace_path)
+        return data, branch_name
+
+    def _createBranch(self, registrant, branch_path):
+        """The guts of the create branch method.
+
+        Raises exceptions on error conditions.
+        """
+        to_link = None
+        if branch_path.startswith(BRANCH_ALIAS_PREFIX + '/'):
+            branch_path = branch_path[len(BRANCH_ALIAS_PREFIX) + 1:]
+            if branch_path.startswith('~'):
+                data, branch_name = self._parseUniqueName(branch_path)
+            else:
+                tokens = branch_path.split('/')
+                data = {
+                    'person': registrant.name,
+                    'product': tokens[0],
+                    }
+                branch_name = 'trunk'
+                # check the series
+                product = self._product_set.getByName(data['product'])
+                if product is not None:
+                    to_link = ICanHasLinkedBranch(product)
+                # don't forget the link.
+        else:
+            data, branch_name = self._parseUniqueName(branch_path)
+
         owner = self._person_set.getByName(data['person'])
         if owner is None:
             return faults.NotFound(
                 "User/team '%s' does not exist." % (data['person'],))
-        registrant = self._person_set.get(requester_id)
         # The real code consults the branch creation policy of the product. We
         # don't need to do so here, since the tests above this layer never
         # encounter that behaviour. If they *do* change to rely on the branch
@@ -574,11 +613,27 @@ class FakeCodehosting:
         else:
             return faults.PermissionDenied(
                 "Cannot create branch at '%s'" % branch_path)
+        branch = self._factory.makeBranch(
+            owner=owner, name=branch_name, product=product,
+            sourcepackage=sourcepackage, registrant=registrant,
+            branch_type=BranchType.HOSTED)
+        if to_link is not None:
+            if registrant.inTeam(to_link.product.owner):
+                to_link.branch = branch
+            else:
+                return faults.PermissionDenied(
+                    "Cannot create linked branch at '%s'." % branch_path)
+        return branch.id
+
+    def createBranch(self, requester_id, branch_path):
+        if not branch_path.startswith('/'):
+            return faults.InvalidPath(branch_path)
+        escaped_path = unescape(branch_path.strip('/'))
+        registrant = self._person_set.get(requester_id)
         try:
-            return self._factory.makeBranch(
-                owner=owner, name=branch_name, product=product,
-                sourcepackage=sourcepackage, registrant=registrant,
-                branch_type=BranchType.HOSTED).id
+            return self._createBranch(registrant, escaped_path)
+        except LaunchpadFault, e:
+            return e
         except LaunchpadValidationError, e:
             msg = e.args[0]
             if isinstance(msg, unicode):
