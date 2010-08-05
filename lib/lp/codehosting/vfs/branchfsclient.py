@@ -15,6 +15,8 @@ __all__ = [
 
 import time
 
+from bzrlib.trace import mutter
+
 from twisted.internet import defer
 
 from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
@@ -106,6 +108,16 @@ class BranchFileSystemClient:
                 return (transport_type, data, trailing_path)
         raise NotInCache(path)
 
+    def _log_xmlrpc_call(self, return_value, method, *args):
+        # XXX: This should probably be disabled on the production
+        # server. Easiest way is to check a flag and return 'return_value'.
+
+        # XXX: Completely untested!
+        arg_list = ', '.join(map(repr, args))
+        log_msg = '%s(%s) => %s' % (method, arg_list, return_value)
+        mutter(log_msg)
+        return return_value
+
     def createBranch(self, branch_path):
         """Create a Launchpad `IBranch` in the database.
 
@@ -116,9 +128,10 @@ class BranchFileSystemClient:
         :param branch_path: The path to the branch to create.
         :return: A `Deferred` that fires the ID of the created branch.
         """
-        return defer.maybeDeferred(
+        d = defer.maybeDeferred(
             self._codehosting_endpoint.callRemote, 'createBranch',
             self._user_id, branch_path)
+        return d.addBoth(self._log_xmlrpc_call, 'createBranch', branch_path)
 
     def branchChanged(self, branch_id, stacked_on_url, last_revision_id,
                       control_string, branch_string, repository_string):
@@ -126,11 +139,14 @@ class BranchFileSystemClient:
 
         :param branch_id: The database ID of the branch.
         """
-        return defer.maybeDeferred(
+        d = defer.maybeDeferred(
             self._codehosting_endpoint.callRemote,
             'branchChanged', self._user_id, branch_id, stacked_on_url,
             last_revision_id, control_string, branch_string,
             repository_string)
+        return d.addBoth(
+            self._log_xmlrpc_call, 'branchChanged', branch_id, stacked_on_url,
+            last_revision_id, control_string, branch_string, repository_string)
 
     def translatePath(self, path):
         """Translate 'path'."""
@@ -140,5 +156,6 @@ class BranchFileSystemClient:
             deferred = defer.maybeDeferred(
                 self._codehosting_endpoint.callRemote,
                 'translatePath', self._user_id, path)
+            deferred.addBoth(self._log_xmlrpc_call, 'translatePath', path)
             deferred.addCallback(self._addToCache, path)
             return deferred
