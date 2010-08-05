@@ -373,7 +373,7 @@ class SourcePackageView:
     def processForm(self):
         # look for an update to any of the things we track
         form = self.request.form
-        if form.has_key('packaging'):
+        if 'packaging' in form:
             if self.productseries_widget.hasValidInput():
                 new_ps = self.productseries_widget.getInputValue()
                 # we need to create or update the packaging

@@ -2004,7 +2004,7 @@ class IProductEditPeopleSchema(Interface):
 
     driver = copy_field(IProduct['driver'])
 
-    transfer_to_registry =  Bool(
+    transfer_to_registry = Bool(
         title=_("I do not want to maintain this project"),
         required=False,
         description=_(
