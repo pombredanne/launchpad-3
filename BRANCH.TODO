@@ -2,3 +2,9 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+- Need a custom LaunchpadImageFolder and IcingFolder which first delegates to
+the default ones used by Launchpad and if the resource is not found look for
+it in a vostok-specific folder.
+
+

@@ -266,6 +266,11 @@ def feeds(_context, module, classes):
                           layer=layer, class_=feedclass)
 
 
+# XXX: Using a separate navigation class for the vostok root object is easy
+# because it is different from Launchpad's root object. All the objects under
+# the root will be the same in Launchpad/Vostok, though, so we'll have to
+# extend this in order to be able to register custom navigation views for
+# VostokLayer.  
 def navigation(_context, module, classes):
     """Handler for the `INavigationDirective`."""
     if not inspect.ismodule(module):

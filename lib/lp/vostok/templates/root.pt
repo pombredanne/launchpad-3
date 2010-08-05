@@ -9,7 +9,7 @@
     <tal:heading metal:fill-slot="heading">
       <h1>Vostok</h1>
     </tal:heading>
-    <tal:content metal:fill-slot="content">
+    <tal:content metal:fill-slot="main">
       <ul id="distro-list">
         <tal:loop tal:repeat="distro view/distributions">
           <li tal:content="structure distro/fmt:link" />

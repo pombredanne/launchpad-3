@@ -32,4 +32,21 @@
       classes="VostokRootNavigation"
       />
 
+  <browser:page
+      name=""
+      for="lp.vostok.publisher.VostokRoot"
+      class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+      permission="zope.Public"
+      />
+
+  <browser:page
+      for="lp.vostok.publisher.VostokRoot"
+      name="+icing"
+      class="canonical.launchpad.browser.launchpad.IcingFolder"
+      attribute="__call__"
+      permission="zope.Public"
+      />
+
+  <adapter factory="lp.vostok.browser.root.VostokLayerToMainTemplateAdapter" />
+
 </configure>

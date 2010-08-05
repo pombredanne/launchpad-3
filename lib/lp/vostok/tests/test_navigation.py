@@ -9,10 +9,10 @@ from zope.component import getMultiAdapter
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.app.errors import NotFoundError
 from lp.testing import TestCaseWithFactory
 from lp.vostok.publisher import VostokRootNavigation, VostokRoot
 
