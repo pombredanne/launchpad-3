@@ -272,6 +272,12 @@ class FakeProduct(FakeDatabaseObject):
         self.owner = owner
         self.bzr_path = name
         self.development_focus = FakeProductSeries(self, 'trunk')
+        self.series = {
+            'trunk': self.development_focus,
+            }
+
+    def getSeries(self, name):
+        return self.series.get(name, None)
 
 
 @adapter(FakeProduct)
@@ -296,6 +302,13 @@ class FakeProductSeries(FakeDatabaseObject):
     def __init__(self, product, name):
         self.product = product
         self.name = name
+
+
+@adapter(FakeProductSeries)
+@implementer(ICanHasLinkedBranch)
+def fake_productseries_to_can_has_linked_branch(fake_productseries):
+    """Adapt a `FakeProductSeries` to `ICanHasLinkedBranch`."""
+    return fake_productseries
 
 
 class FakeScriptActivity(FakeDatabaseObject):
@@ -447,7 +460,9 @@ class FakeObjectFactory(ObjectFactory):
     def makeProductSeries(self, product, name=None):
         if name is None:
             name = self.getUniqueString()
-        return FakeProductSeries(product, name)
+        series = FakeProductSeries(product, name)
+        product.series[name] = series
+        return series
 
     def enableDefaultStackingForProduct(self, product, branch=None):
         """Give 'product' a default stacked-on branch.
@@ -565,14 +580,22 @@ class FakeCodehosting:
                 # check the series
                 product = self._product_set.getByName(data['product'])
                 if product is not None:
-                    to_link = ICanHasLinkedBranch(product)
+                    if len(tokens) > 1:
+                        series = product.getSeries(tokens[1])
+                        if series is None:
+                            raise faults.NotFound(
+                                "No such product series: '%s'." % tokens[1])
+                        else:
+                            to_link = ICanHasLinkedBranch(series)
+                    else:
+                        to_link = ICanHasLinkedBranch(product)
                 # don't forget the link.
         else:
             data, branch_name = self._parseUniqueName(branch_path)
 
         owner = self._person_set.getByName(data['person'])
         if owner is None:
-            return faults.NotFound(
+            raise faults.NotFound(
                 "User/team '%s' does not exist." % (data['person'],))
         # The real code consults the branch creation policy of the product. We
         # don't need to do so here, since the tests above this layer never
@@ -580,7 +603,7 @@ class FakeCodehosting:
         # creation policy, the observed behaviour will be failure to raise
         # exceptions.
         if not registrant.inTeam(owner):
-            return faults.PermissionDenied(
+            raise faults.PermissionDenied(
                 ('%s cannot create branches owned by %s'
                  % (registrant.displayname, owner.displayname)))
         product = sourcepackage = None
@@ -589,29 +612,29 @@ class FakeCodehosting:
         elif data['product'] is not None:
             product = self._product_set.getByName(data['product'])
             if product is None:
-                return faults.NotFound(
+                raise faults.NotFound(
                     "Project '%s' does not exist." % (data['product'],))
         elif data['distribution'] is not None:
             distro = self._distribution_set.getByName(data['distribution'])
             if distro is None:
-                return faults.NotFound(
+                raise faults.NotFound(
                     "No such distribution: '%s'." % (data['distribution'],))
             distroseries = self._distroseries_set.getByName(
                 data['distroseries'])
             if distroseries is None:
-                return faults.NotFound(
+                raise faults.NotFound(
                     "No such distribution series: '%s'."
                     % (data['distroseries'],))
             sourcepackagename = self._sourcepackagename_set.getByName(
                 data['sourcepackagename'])
             if sourcepackagename is None:
-                return faults.NotFound(
+                raise faults.NotFound(
                     "No such source package: '%s'."
                     % (data['sourcepackagename'],))
             sourcepackage = self._factory.makeSourcePackage(
                 distroseries, sourcepackagename)
         else:
-            return faults.PermissionDenied(
+            raise faults.PermissionDenied(
                 "Cannot create branch at '%s'" % branch_path)
         branch = self._factory.makeBranch(
             owner=owner, name=branch_name, product=product,
@@ -621,7 +644,7 @@ class FakeCodehosting:
             if registrant.inTeam(to_link.product.owner):
                 to_link.branch = branch
             else:
-                return faults.PermissionDenied(
+                raise faults.PermissionDenied(
                     "Cannot create linked branch at '%s'." % branch_path)
         return branch.id
 
@@ -822,6 +845,7 @@ class InMemoryFrontend:
         sm.registerAdapter(fake_product_to_can_has_linked_branch)
         sm.registerAdapter(fake_product_to_branch_target)
         sm.registerAdapter(fake_source_package_to_branch_target)
+        sm.registerAdapter(fake_productseries_to_can_has_linked_branch)
 
     def getCodehostingEndpoint(self):
         """See `LaunchpadDatabaseFrontend`.
