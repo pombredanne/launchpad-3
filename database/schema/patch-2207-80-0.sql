@@ -5,4 +5,4 @@ SET client_min_messages=ERROR;
 
 DROP VIEW PublishedPackage;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 80, 0);
