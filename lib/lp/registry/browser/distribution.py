@@ -299,7 +299,8 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
              'builds', 'cdimage_mirrors', 'archive_mirrors',
              'pending_review_mirrors', 'disabled_mirrors',
              'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
-             'ppas',]
+             'ppas', 'configure_answers',
+             ]
 
     @enabled_with_permission('launchpad.Edit')
     def branding(self):
@@ -403,6 +404,12 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
     def ppas(self):
         text = 'Personal Package Archives'
         return Link('+ppas', text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_answers(self):
+        text = 'Configure support tracker'
+        summary = 'Allow users to ask questions on this project'
+        return Link('+edit', text, summary, icon='edit')
 
 
 class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
@@ -572,6 +579,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
             return False
 
         return self.has_exact_matches
+
 
 class DistributionView(HasAnnouncementsView, FeedsMixin, UsesLaunchpadMixin):
     """Default Distribution view class."""
