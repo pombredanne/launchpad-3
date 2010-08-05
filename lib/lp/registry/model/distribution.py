@@ -1218,8 +1218,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                         BinaryPackageBuild.source_package_release_id,
                     SourcePackageRelease.sourcepackagename ==
                         sourcepackagename,
-                    *bpph_location_clauses).order_by(
-                        BinaryPackagePublishingHistory.id).first()
+                    *bpph_location_clauses).any()
                 if bpph is not None:
                     bpr = bpph.binarypackagerelease
                     return (sourcepackagename, bpr.binarypackagename)
@@ -1239,8 +1238,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             bpph = IStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
                 BinaryPackageRelease.binarypackagename == binarypackagename,
-                *bpph_location_clauses).order_by(
-                    BinaryPackagePublishingHistory.id).first()
+                *bpph_location_clauses).any()
             if bpph is not None:
                 spr = bpph.binarypackagerelease.build.source_package_release
                 return (spr.sourcepackagename, binarypackagename)
