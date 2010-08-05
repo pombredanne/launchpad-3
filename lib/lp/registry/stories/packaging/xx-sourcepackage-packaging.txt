@@ -115,8 +115,8 @@ link to all versions and follows it to the distro source package page.
     The Hoary Hedgehog Release (active development) ...
       0.1-2  release (main) ... weeks ago
 
-Register a project from the source package index page
------------------------------------------------------
+Register a project from a source package
+----------------------------------------
 
 If an upstream project doesn't already exist in Launchpad, it can
 be registered with data from the source package prefilling the first
@@ -127,6 +127,14 @@ step of the multistep form.
     >>> user_browser.getControl(
     ...     'Register the upstream project').selected = True
     >>> user_browser.getControl("Link to Upstream Project").click()
+    >>> print user_browser.url.replace('&', '\n&')
+    http://launchpad.dev/projects/+new?_return_url=http...%2Bindex
+    &field.__visited_steps__=projectaddstep1
+    &field.actions.continue=Continue
+    &field.displayname=Bonkers
+    &field.name=bonkers
+    &field.summary=flubber%3A+floating+rubber+summary
+    &field.title=Bonkers
     >>> print user_browser.getControl(name='field.name').value
     bonkers
     >>> print user_browser.getControl(name='field.displayname').value
@@ -145,5 +153,33 @@ just needs to be selected.
     >>> user_browser.getControl(name='field.licenses').value = ['BSD']
     >>> user_browser.getControl("Complete Registration").click()
     >>> print user_browser.url
-    http://launchpad.dev/youbuntu/busy/+source/bonkers
-    >>> print find_tag_by_id(user_browser.contents, 'maincontent')
+    http://launchpad.dev/youbuntu/busy/+source/bonkers/+index
+
+If an upstream project doesn't already exist in Launchpad, it can
+be registered with data from the source package prefilling the first
+step of the multistep form.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/youbuntu/busy/+source/bonkers/'
+    ...     '+edit-packaging')
+    >>> user_browser.getLink("Register the upstream project").click()
+    >>> print user_browser.url.replace('&', '\n&')
+    http://launchpad.dev/projects/+new?_return_url=http...%2Bedit-packaging
+    &field.__visited_steps__=projectaddstep1
+    &field.actions.continue=Continue
+    &field.displayname=Bonkers
+    &field.name=bonkers
+    &field.summary=flubber%3A+floating+rubber+summary
+    &field.title=Bonkers
+    >>> print user_browser.getControl(name='field.name').value
+    bonkers
+    >>> print user_browser.getControl(name='field.displayname').value
+    Bonkers
+    >>> print user_browser.getControl(name='field.title').value
+    Bonkers
+    >>> print user_browser.getControl(name='field.summary').value
+    flubber: floating rubber summary
+    >>> for tag in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print extract_text(tag)
+    There is 1 error.
+    bonkers is already used by another project

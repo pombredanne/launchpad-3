@@ -1800,6 +1800,16 @@ class ProjectAddStepOne(StepView):
     search_results_count = 0
 
     @property
+    def _return_url(self):
+        """This view is using the hidden _return_url field.
+
+        It is not using the `ReturnToReferrerMixin`, since none
+        of its other code is used, because multistep views can't
+        have next_url set until the form submission succeeds.
+        """
+        return self.request.form.get('_return_url')
+
+    @property
     def _next_step(self):
         """Define the next step.
 
@@ -1817,7 +1827,7 @@ class ProjectAddStepOne(StepView):
         self.request.form['summary'] = data['summary']
 
     # Make this a safe_action, so that the sourcepackage page can skip
-    # the first step with a GET request providing form values.
+    # the first step with a link (GET request) providing form values.
     continue_action = safe_action(StepView.continue_action)
 
 
@@ -1839,6 +1849,16 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     custom_widget('name', ProductNameWidget, label='URL')
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
+
+    @property
+    def _return_url(self):
+        """This view is using the hidden _return_url field.
+
+        It is not using the `ReturnToReferrerMixin`, since none
+        of its other code is used, because multistep views can't
+        have next_url set until the form submission succeeds.
+        """
+        return self.request.form.get('_return_url')
 
     @property
     def step_description(self):
@@ -1955,7 +1975,10 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         self.product = self.create_product(data)
         self.notifyCommercialMailingList()
         notify(ObjectCreatedEvent(self.product))
-        self.next_url = canonical_url(self.product)
+        if self._return_url is None:
+            self.next_url = canonical_url(self.product)
+        else:
+            self.next_url = self._return_url
 
 
 class ProductAddView(MultiStepView):

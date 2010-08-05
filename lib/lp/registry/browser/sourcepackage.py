@@ -66,9 +66,10 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.utils import smartquote
 
 
-def get_register_upstream_url(source_package):
+def get_register_upstream_url(source_package, return_url):
     displayname = string.capwords(source_package.name.replace('-', ' '))
     params = {
+        '_return_url': return_url,
         'field.name': source_package.name,
         'field.displayname': displayname,
         'field.title': displayname,
@@ -214,7 +215,8 @@ class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
 
     @property
     def register_upstream_url(self):
-        return get_register_upstream_url(self.context)
+        return get_register_upstream_url(
+            self.context, return_url=self.request.getURL())
 
 
 class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
@@ -519,8 +521,9 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
             return
         elif upstream is self.register_upstream:
             # The user wants to create a new project.
-            self.request.response.redirect(
-                get_register_upstream_url(self.context))
+            url = get_register_upstream_url(
+                self.context, return_url=self.request.getURL())
+            self.request.response.redirect(url)
             return
         self.context.setPackaging(upstream.development_focus, self.user)
         self.request.response.addInfoNotification(
