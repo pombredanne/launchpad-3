@@ -25,6 +25,5 @@ when starting a web request.
 
 
 def getFeatureFlag(flag):
-    """Get the value of a flag for this thread's scopes.
-    """
+    """Get the value of a flag for this thread's scopes."""
     return per_thread.features.getFlag(flag)

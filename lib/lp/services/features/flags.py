@@ -87,6 +87,12 @@ class FeatureController(object):
         self.scopes = ScopeDict(self)
 
     def getFlag(self, flag):
+        """Get the value of a specific flag.
+        
+        :param flag: A name to lookup. e.g. 'recipes.enabled'
+        :return: The value of the flag determined by the highest priority rule
+            that matched.
+        """
         return self._known_flags.lookup(flag)
 
     def _checkFlag(self, flag):
@@ -139,8 +145,7 @@ class FeatureController(object):
             self._rules = self._loadRules()
 
     def usedFlags(self):
-        """Return dict of flags used in this controller so far.
-        """
+        """Return dict of flags used in this controller so far."""
         return dict(self._known_flags._known)
 
     def usedScopes(self):
