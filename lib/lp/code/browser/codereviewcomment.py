@@ -113,7 +113,6 @@ class DiffAttachment:
 
 class CodeReviewCommentView(LaunchpadView):
     """Standard view of a CodeReviewComment"""
-    __used_for__ = ICodeReviewComment
 
     page_title = "Code review comment"
 
