@@ -24,7 +24,7 @@ import xmlrpclib
 
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
-from storm.expr import Count, Sum
+from storm.expr import Coalesce, Count, Sum
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
@@ -35,11 +35,11 @@ from canonical.buildd.slave import BuilderStatus
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, SLAVE_FLAVOR)
 from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
+from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
     CannotResumeHost, CorruptBuildCookie, IBuilder, IBuilderSet,
@@ -716,15 +716,18 @@ class BuilderSet(object):
             Count(),
             Sum(BuildQueue.estimated_duration),
             Processor,
-            BuildQueue.virtualized),
+            Coalesce(BuildQueue.virtualized, True)),
             Processor.id == BuildQueue.processorID,
             Job.id == BuildQueue.jobID,
             Job._status == JobStatus.WAITING).group_by(
-                Processor, BuildQueue.virtualized)
+                Processor, Coalesce(BuildQueue.virtualized, True))
 
         result_dict = {'virt': {}, 'nonvirt': {}}
         for size, duration, processor, virtualized in results:
-            virt_str = 'virt' if virtualized else 'nonvirt'
+            if virtualized is False:
+                virt_str = 'nonvirt'
+            else:
+                virt_str = 'virt'
             result_dict[virt_str][processor.name] = (
                 size, duration)
 

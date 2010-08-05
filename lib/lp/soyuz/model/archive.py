@@ -22,6 +22,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import alsoProvides, implements
 
+from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
@@ -77,15 +78,13 @@ from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import (
     IHasBuildRecords, IncompatibleArguments)
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import PersonVisibility
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.queue import PackageUploadStatus
@@ -172,6 +171,9 @@ class Archive(SQLBase):
 
     require_virtualized = BoolCol(
         dbName='require_virtualized', notNull=True, default=True)
+
+    build_debug_symbols = BoolCol(
+        dbName='build_debug_symbols', notNull=True, default=False)
 
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=2048)
@@ -335,9 +337,9 @@ class Archive(SQLBase):
     def archive_url(self):
         """See `IArchive`."""
         archive_postfixes = {
-            ArchivePurpose.PRIMARY : '',
-            ArchivePurpose.PARTNER : '-partner',
-            ArchivePurpose.DEBUG : '-debug',
+            ArchivePurpose.PRIMARY: '',
+            ArchivePurpose.PARTNER: '-partner',
+            ArchivePurpose.DEBUG: '-debug',
         }
 
         if self.is_ppa:
@@ -430,7 +432,7 @@ class Archive(SQLBase):
             try:
                 status = tuple(status)
             except TypeError:
-                status = (status,)
+                status = (status, )
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -500,7 +502,7 @@ class Archive(SQLBase):
             try:
                 status = tuple(status)
             except TypeError:
-                status = (status,)
+                status = (status, )
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -542,7 +544,7 @@ class Archive(SQLBase):
         result = store.find((
             LibraryFileAlias.filename,
             LibraryFileContent.sha1,
-            LibraryFileContent.filesize,),
+            LibraryFileContent.filesize),
             SourcePackagePublishingHistory.archive == self.id,
             SourcePackagePublishingHistory.dateremoved == None,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
@@ -567,7 +569,7 @@ class Archive(SQLBase):
         # the result is empty, so instead:
         return sum(result.values(LibraryFileContent.filesize))
 
-    def _getBinaryPublishingBaseClauses (
+    def _getBinaryPublishingBaseClauses(
         self, name=None, version=None, status=None, distroarchseries=None,
         pocket=None, exact_match=False):
         """Base clauses and clauseTables for binary publishing queries.
@@ -614,7 +616,7 @@ class Archive(SQLBase):
             try:
                 status = tuple(status)
             except TypeError:
-                status = (status,)
+                status = (status, )
             clauses.append("""
                 BinaryPackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -623,7 +625,7 @@ class Archive(SQLBase):
             try:
                 distroarchseries = tuple(distroarchseries)
             except TypeError:
-                distroarchseries = (distroarchseries,)
+                distroarchseries = (distroarchseries, )
             # XXX cprov 20071016: there is no sqlrepr for DistroArchSeries
             # uhmm, how so ?
             das_ids = "(%s)" % ", ".join(str(d.id) for d in distroarchseries)
@@ -647,7 +649,7 @@ class Archive(SQLBase):
             distroarchseries=distroarchseries, exact_match=exact_match)
 
         all_binaries = BinaryPackagePublishingHistory.select(
-            ' AND '.join(clauses) , clauseTables=clauseTables,
+            ' AND '.join(clauses), clauseTables=clauseTables,
             orderBy=orderBy)
 
         return all_binaries
@@ -719,15 +721,8 @@ class Archive(SQLBase):
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
                 BinaryPackageFile.binarypackagereleaseID,
             BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
-            LibraryFileAlias.contentID == LibraryFileContent.id
+            LibraryFileAlias.contentID == LibraryFileContent.id,
             ]
-
-        # Exclude DDEBs from the repository size, they are not published
-        # on disk for PPAs. See bug #399444 for more information.
-        if self.is_ppa:
-            clauses.append(
-                BinaryPackageFile.filetype != BinaryPackageFileType.DDEB)
-
         result = store.find(LibraryFileContent, *clauses)
 
         # See `IArchive.sources_size`.
@@ -749,10 +744,10 @@ class Archive(SQLBase):
     def allowUpdatesToReleasePocket(self):
         """See `IArchive`."""
         purposeToPermissionMap = {
-            ArchivePurpose.COPY : True,
-            ArchivePurpose.PARTNER : True,
-            ArchivePurpose.PPA : True,
-            ArchivePurpose.PRIMARY : False,
+            ArchivePurpose.COPY: True,
+            ArchivePurpose.PARTNER: True,
+            ArchivePurpose.PPA: True,
+            ArchivePurpose.PRIMARY: False,
         }
 
         try:
@@ -774,6 +769,7 @@ class Archive(SQLBase):
         # gets fixed we should probably change it to a normal list and
         # benefit of the FTI rank for ordering.
         cache_contents = set()
+
         def add_cache_content(content):
             """Sanitise and add contents to the cache."""
             content = clean_text.sub(' ', content)
@@ -913,7 +909,7 @@ class Archive(SQLBase):
 
         find_spec = (
             BuildFarmJob.status,
-            Count(BinaryPackageBuild.id)
+            Count(BinaryPackageBuild.id),
             )
         result = store.using(
             BinaryPackageBuild, PackageBuild, BuildFarmJob).find(
@@ -921,8 +917,7 @@ class Archive(SQLBase):
             BinaryPackageBuild.package_build == PackageBuild.id,
             PackageBuild.archive == self,
             PackageBuild.build_farm_job == BuildFarmJob.id,
-            *extra_exprs
-            ).group_by(BuildFarmJob.status).order_by(
+            *extra_exprs).group_by(BuildFarmJob.status).order_by(
                 BuildFarmJob.status)
 
         # Create a map for each count summary to a number of buildstates:
@@ -954,7 +949,7 @@ class Archive(SQLBase):
                 BuildStatus.BUILDING,
                 BuildStatus.FULLYBUILT,
                 BuildStatus.SUPERSEDED,
-                ]
+                ],
             }
 
         # If we were asked to include builds with the state NEEDSBUILD,
@@ -1096,7 +1091,11 @@ class Archive(SQLBase):
                 return None
 
         if not self.getComponentsForUploader(person):
-            if not self.getPackagesetsForUploader(person):
+            # XXX: JamesWestby 2010-08-01 bug=612351: We have to use
+            # is_empty() as we don't get an SQLObjectResultSet back, and
+            # so __nonzero__ isn't defined on it, and a straight bool
+            # check wouldn't do the right thing.
+            if self.getPackagesetsForUploader(person).is_empty():
                 return NoRightsForArchive()
             else:
                 return InsufficientUploadRights()
@@ -1667,7 +1666,6 @@ class ArchiveSet:
 
         return default_name_by_purpose[purpose]
 
-
     def getByDistroPurpose(self, distribution, purpose, name=None):
         """See `IArchiveSet`."""
         if purpose == ArchivePurpose.PPA:
@@ -1776,7 +1774,6 @@ class ArchiveSet:
 
         return new_archive
 
-
     def __iter__(self):
         """See `IArchiveSet`."""
         return iter(Archive.select())
@@ -1851,7 +1848,8 @@ class ArchiveSet:
         origin = (
             Archive,
             Join(SourcePackagePublishingHistory,
-                 SourcePackagePublishingHistory.archive == Archive.id),)
+                 SourcePackagePublishingHistory.archive == Archive.id),
+            )
         results = store.using(*origin).find(
             Archive,
             Archive.signing_key == None,
@@ -1976,7 +1974,7 @@ class ArchiveSet:
         # If a single purpose is passed in, convert it into a tuple,
         # otherwise assume a list was passed in.
         if purposes in ArchivePurpose:
-            purposes = (purposes,)
+            purposes = (purposes, )
 
         if purposes:
             extra_exprs.append(Archive.purpose.is_in(purposes))

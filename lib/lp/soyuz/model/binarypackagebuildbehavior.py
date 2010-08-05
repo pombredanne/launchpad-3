@@ -174,7 +174,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                          "(%s, %s)" % (
                             self._builder.url, file_name, url, sha1))
             self._builder.slave.sendFileToSlave(
-                sha1, url,  "buildd", archive.buildd_secret)
+                sha1, url, "buildd", archive.buildd_secret)
 
     def _extraBuildArgs(self, build):
         """
@@ -210,8 +210,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
         args['archives'] = get_sources_list_for_building(build,
             build.distro_arch_series, build.source_package_release.name)
-
-        # Let the build slave know whether this is a build in a private
-        # archive.
         args['archive_private'] = build.archive.private
+        args['build_debug_symbols'] = build.archive.build_debug_symbols
+
         return args

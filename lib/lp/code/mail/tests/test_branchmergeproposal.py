@@ -277,7 +277,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         self.assertEqual('inline; filename="review-diff.txt"',
                          attachment['Content-Disposition'])
         self.assertEqual(diff_text[:25], attachment.get_payload(decode=True))
-        warning_text = "The attached diff has been truncated due to its size."
+        warning_text = "The attached diff has been truncated due to its size.\n"
         self.assertTrue(warning_text in ctrl.body)
 
     def getProposalUpdatedEmailJob(self, merge_proposal):

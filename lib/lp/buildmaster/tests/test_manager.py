@@ -615,6 +615,7 @@ class TestSlaveScannerScan(TrialTestCase):
                 'archive_purpose': 'PRIMARY',
                 'archives':
                 ['deb http://ftpmaster.internal/ubuntu hoary main'],
+                'build_debug_symbols': False,
                 'ogrecomponent': 'main',
                 'suite': u'hoary'}))],
             slave.calls, "Job was not properly dispatched.")
@@ -957,7 +958,7 @@ def is_file_growing(filepath, poll_interval=1, poll_repeat=10):
         polled a total of poll_repeat+1 times. The default values create a
         total poll time of 11 seconds. The BuilddManager logs
         "scanning cycles" every 5 seconds so these settings should see an
-        increase if the process is logging to this file. 
+        increase if the process is logging to this file.
     """
     last_size = None
     for poll in range(poll_repeat+1):

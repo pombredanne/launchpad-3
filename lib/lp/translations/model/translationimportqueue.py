@@ -35,7 +35,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPersonRoles)
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, ISlaveStore
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import IDistroSeries

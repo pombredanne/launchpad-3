@@ -42,10 +42,10 @@ from canonical.launchpad.layers import setFirstLayer, WebServiceLayer
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
-    ILaunchpadRoot, IOpenLaunchBag, IStructuredString, NoCanonicalUrl,
-    NotFoundError)
+    ILaunchpadRoot, IOpenLaunchBag, IStructuredString, NoCanonicalUrl)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lazr.utils import get_current_browser_request
+from lp.app.errors import NotFoundError
 
 
 # HTTP Status code constants - define as appropriate.
