@@ -2485,16 +2485,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if priority is None:
             priority = PackagePublishingPriority.OPTIONAL
 
-        bpr = self.makeBinaryPackageRelease(
-            component=component,
-            section_name=section_name,
-            priority=priority)
+        if binarypackagerelease is None:
+            binarypackagerelease = self.makeBinaryPackageRelease(
+                component=component,
+                section_name=section_name,
+                priority=priority)
 
         return BinaryPackagePublishingHistory(
             distroarchseries=distroarchseries,
-            binarypackagerelease=bpr,
-            component=bpr.component,
-            section=bpr.section,
+            binarypackagerelease=binarypackagerelease,
+            component=binarypackagerelease.component,
+            section=binarypackagerelease.section,
             status=status,
             dateremoved=dateremoved,
             scheduleddeletiondate=scheduleddeletiondate,

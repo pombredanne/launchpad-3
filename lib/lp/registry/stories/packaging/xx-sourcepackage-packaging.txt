@@ -1,6 +1,60 @@
 Packaging
 =========
 
+Create test data.
+
+    >>> login('admin@canonical.com')
+    >>> distribution = factory.makeDistribution(
+    ...     name='youbuntu', displayname='Youbuntu')
+    >>> distroseries = factory.makeDistroRelease(name='busy',
+    ...     distribution=distribution)
+    >>> sourcepackagename = factory.makeSourcePackageName(name='bonkers')
+    >>> package = factory.makeSourcePackage(
+    ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
+    >>> component = factory.makeComponent('multiverse')
+    >>> das = factory.makeDistroArchSeries(distroseries=distroseries)
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=sourcepackagename, distroseries=distroseries,
+    ...     component=component)
+
+    # The setup below this point is needed to fill in the
+    # SourcePackageName.summary, which is assembled from the
+    # BinaryPackageRelease.summary info stored in the
+    # DistroSeriesPackageCache.summary.
+    >>> build = factory.makeBinaryPackageBuild(
+    ...     source_package_release=spph.sourcepackagerelease,
+    ...     distroarchseries=das)
+    >>> bpr = factory.makeBinaryPackageRelease(
+    ...     binarypackagename=factory.makeBinaryPackageName('flubber'),
+    ...     summary='floating rubber summary',
+    ...     build=build, component=component)
+    >>> bpph = factory.makeBinaryPackagePublishingHistory(
+    ...     binarypackagerelease=bpr, distroarchseries=das)
+    >>> class TestLogger:
+    ...     def debug(self, msg):
+    ...         print 'DEBUG:', msg
+    >>> import transaction
+    >>> from canonical.config import config
+    >>> from canonical.testing.layers import reconnect_stores
+    >>> transaction.commit()
+
+    # XXX: EdwinGrubbs 2010-08-04 bug=396419. Currently there is no
+    # test api call to switchDbUser that works for non-zopeless layers.
+    # When bug 396419 is fixed, we can instead use
+    # DatabaseLayer.switchDbUser() instead of reconnect_stores()
+    >>> reconnect_stores(config.statistician.dbuser)
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    >>> distroseries = getUtility(IDistroSeriesSet).get(distroseries.id)
+    >>> distroseries.updateCompletePackageCache(
+    ...     archive=distroseries.distribution.main_archive,
+    ...     ztm=transaction,
+    ...     log=TestLogger())
+    DEBUG: Considering binary 'flubber'...
+    >>> transaction.commit()
+    >>> reconnect_stores('launchpad')
+    >>> logout()
+
 No Privileges Person visit the distroseries upstream links page for Hoary
 and sees that pmount is not linked.
 
@@ -60,3 +114,36 @@ link to all versions and follows it to the distro source package page.
     ...     user_browser.contents, 'packages_list'))
     The Hoary Hedgehog Release (active development) ...
       0.1-2  release (main) ... weeks ago
+
+Register a project from the source package index page
+-----------------------------------------------------
+
+If an upstream project doesn't already exist in Launchpad, it can
+be registered with data from the source package prefilling the first
+step of the multistep form.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/youbuntu/busy/+source/bonkers')
+    >>> user_browser.getControl(
+    ...     'Register the upstream project').selected = True
+    >>> user_browser.getControl("Link to Upstream Project").click()
+    >>> print user_browser.getControl(name='field.name').value
+    bonkers
+    >>> print user_browser.getControl(name='field.displayname').value
+    Bonkers
+    >>> print user_browser.getControl(name='field.title').value
+    Bonkers
+    >>> print user_browser.getControl(name='field.summary').value
+    flubber: floating rubber summary
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'step-title'))
+    Step 2 (of 2): Check for duplicate projects
+
+If there are no problems with the prefilled data, then the license
+just needs to be selected.
+
+    >>> user_browser.getControl(name='field.licenses').value = ['BSD']
+    >>> user_browser.getControl("Complete Registration").click()
+    >>> print user_browser.url
+    http://launchpad.dev/youbuntu/busy/+source/bonkers
+    >>> print find_tag_by_id(user_browser.contents, 'maincontent')
