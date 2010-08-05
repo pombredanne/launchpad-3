@@ -13,6 +13,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import DatabaseFunctionalLayer
+from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.testing import login_person, person_logged_in, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
@@ -123,6 +124,10 @@ class TestSearchQuestionsViewSelectedTemplate(TestSearchQuestionsView):
         with person_logged_in(dsp.distribution.owner) as owner:
             dsp.distribution.official_answers = True
         self.assertViewTemplate(dsp, 'question-listing.pt')
+
+    def test_template_question_set(self):
+        question_set = getUtility(IQuestionSet)
+        self.assertViewTemplate(question_set, 'question-listing.pt')
 
 
 class TestSearchQuestionsView_ubuntu_packages(TestSearchQuestionsView):

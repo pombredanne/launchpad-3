@@ -173,6 +173,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
         Subclasses can redefine this property to choose their own template.
         """
+        if IQuestionSet.providedBy(self.context):
+            return self.template
         involvement = getMultiAdapter(
             (self.context, self.request), name='+get-involved')
         if involvement.official_answers:
