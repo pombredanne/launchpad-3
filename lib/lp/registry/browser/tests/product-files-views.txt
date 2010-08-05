@@ -4,7 +4,8 @@
 Test for the product/+download page.
 
     >>> product = factory.makeProduct(name='alfajore')
-    >>> productseries = factory.makeSeries(product=product, name="sammy")
+    >>> productseries = factory.makeProductSeries(
+    ...     product=product, name="sammy")
     >>> milestone = factory.makeMilestone(productseries=productseries,
     ...                                   name="apple")
     >>> release_file = factory.makeProductReleaseFile(
@@ -28,7 +29,8 @@ Test for the product/+download page.
 
     >>> product = factory.makeProduct(name='bombilla')
     >>> for i in range(1,5):
-    ...     productseries = factory.makeSeries(product=product, name="s%d"%i)
+    ...     productseries = factory.makeProductSeries(
+    ...         product=product, name="s%d"%i)
     ...     for j in range(1,4):
     ...         milestone = factory.makeMilestone(productseries=productseries,
     ...                                           name="%d.%d"%(i,j))

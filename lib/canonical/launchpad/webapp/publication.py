@@ -118,13 +118,7 @@ class LaunchpadBrowserPublication(
         if end_of_traversal_stack == ['+login']:
             return LoginRoot()
         else:
-            bag = getUtility(IOpenLaunchBag)
-            if bag.site is None:
-                root_object = getUtility(self.root_object_interface)
-                bag.add(root_object)
-            else:
-                root_object = bag.site
-            return root_object
+            return getUtility(self.root_object_interface)
 
     # The below overrides to zopepublication (callTraversalHooks,
     # afterTraversal, and _maybePlacefullyAuthenticate) make the

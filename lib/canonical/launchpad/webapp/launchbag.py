@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import (
         ISpecification, IBugTask, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, ILaunchpadApplication, ILoggedInEvent, IOpenLaunchBag)
+    ILaunchBag, ILoggedInEvent, IOpenLaunchBag)
 
 _utc_tz = pytz.timezone('UTC')
 
@@ -32,7 +32,6 @@ class LaunchBag:
 
     # Map Interface to attribute name.
     _registry = {
-        ILaunchpadApplication: 'site',
         IPerson: 'person',
         IProjectGroup: 'project',
         IProduct: 'product',
@@ -87,10 +86,6 @@ class LaunchBag:
         store.time_zone = None
 
     @property
-    def site(self):
-        return self._store.site
-
-    @property
     def person(self):
         return self._store.person
 
@@ -141,7 +136,7 @@ class LaunchBag:
 
     @property
     def bugtask(self):
-        return self._store.bugtask
+        return getattr(self._store, "bugtask", None)
 
     @property
     def time_zone(self):

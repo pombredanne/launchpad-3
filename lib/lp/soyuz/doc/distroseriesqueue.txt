@@ -69,7 +69,7 @@ Construct an upload.
   >>> anything_policy.can_upload_binaries = True
   >>> anything_policy.can_upload_mixed = True
 
-  >>> ed_upload = NascentUpload(
+  >>> ed_upload = NascentUpload.from_changesfile_path(
   ...     datadir('ed_0.2-20_i386.changes'),
   ...     anything_policy, mock_logger_quiet)
 
@@ -263,7 +263,7 @@ Let's process a new upload:
   >>> insecure_policy = getPolicy(
   ...     name='insecure', distro='ubuntu', distroseries='hoary')
 
-  >>> bar_ok = NascentUpload(
+  >>> bar_ok = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
   ...     insecure_policy, mock_logger_quiet)
   >>> bar_ok.process()

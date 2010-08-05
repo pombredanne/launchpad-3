@@ -54,8 +54,7 @@ from lp.answers.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.helpers import (
     is_english_variant, preferred_or_request_languages)
 
-from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, UnexpectedFormData)
+from lp.app.errors import NotFoundError, UnexpectedFormData
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, Link, canonical_url,
     enabled_with_permission, Navigation, LaunchpadView, action,

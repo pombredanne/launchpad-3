@@ -56,6 +56,7 @@ from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
 
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from lp.archiveuploader.uploadpolicy import (
@@ -65,7 +66,6 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
-from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from contrib.glock import GlobalLock
 
@@ -335,7 +335,8 @@ class UploadProcessor:
         # The path we want for NascentUpload is the path to the folder
         # containing the changes file (and the other files referenced by it).
         changesfile_path = os.path.join(upload_path, changes_file)
-        upload = NascentUpload(changesfile_path, policy, self.log)
+        upload = NascentUpload.from_changesfile_path(
+            changesfile_path, policy, self.log)
 
         # Reject source upload to buildd upload paths.
         first_path = relative_path.split(os.path.sep)[0]

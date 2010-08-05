@@ -41,8 +41,8 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI
 from lp.code.bzr import get_branch_formats
 from lp.code.enums import BranchType, CodeReviewVote
-from lp.code.errors import BranchMergeProposalExists, UserNotBranchReviewer
-from lp.code.interfaces.branch import BranchCreationException
+from lp.code.errors import (
+    BranchCreationException, BranchMergeProposalExists, UserNotBranchReviewer)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalGetter, ICreateMergeProposalJobSource)
