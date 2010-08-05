@@ -424,6 +424,22 @@ class CodehostingTest(TestCaseWithFactory):
         branch = self.branch_lookup.get(branch_id)
         self.assertEqual(unique_name, branch.unique_name)
 
+    def test_createBranch_using_branch_alias_then_lookup(self):
+        # XXX: Comment here.
+
+        # XXX: This test currently fails.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch_name = self.factory.getUniqueString('branch-name')
+        unique_name = u'~%s/%s/%s' % (owner.name, product.name, branch_name)
+        path = escape(u'/%s/%s' % (BRANCH_ALIAS_PREFIX, unique_name))
+        branch_id = self.codehosting_api.createBranch(owner.id, path)
+        login(ANONYMOUS)
+        translation = self.codehosting_api.translatePath(owner.id, path)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch_id, 'writable': True}, ''),
+            translation)
+
     def test_createBranch_using_branch_alias_product(self):
         # If the person creating the branch has permission to link the new
         # branch to the alias, then they are able to create a branch and link
@@ -438,6 +454,18 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual('trunk', branch.name)
         self.assertEqual(product, branch.product)
         self.assertEqual(ICanHasLinkedBranch(product).branch, branch)
+
+    def test_createBranch_using_branch_alias_product_then_lookup(self):
+        # XXX: Comment here.
+        product = self.factory.makeProduct()
+        owner = product.owner
+        path = escape(u'/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name))
+        branch_id = self.codehosting_api.createBranch(owner.id, path)
+        login(ANONYMOUS)
+        translation = self.codehosting_api.translatePath(owner.id, path)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch_id, 'writable': True}, ''),
+            translation)
 
     def test_createBranch_using_branch_alias_product_not_auth(self):
         # If the person creating the branch does not have permission to link
@@ -920,6 +948,14 @@ class CodehostingTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
         self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_bzrdir(self):
+        # XXX: Currently fails
+        # translatePath('/+branch/.bzr') *must* return not found, otherwise
+        # bzr will look for it and we don't have a global bzr dir.
+        requester = self.factory.makePerson()
+        self.assertNotFound(
+            requester, '/%s/.bzr/branch-format' % BRANCH_ALIAS_PREFIX)
 
     def assertTranslationIsControlDirectory(self, translation,
                                             default_stacked_on,
