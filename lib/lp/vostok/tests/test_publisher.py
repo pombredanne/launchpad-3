@@ -9,14 +9,11 @@ import unittest
 
 from canonical.config import config
 from canonical.testing.layers import FunctionalLayer
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 from lp.testing import TestCase
 from lp.testing.publication import get_request_and_publication
 
 from lp.vostok.publisher import VostokLayer, VostokRoot
-
-from zope.component import getUtility
 
 
 class TestRegistration(TestCase):
@@ -37,10 +34,6 @@ class TestRegistration(TestCase):
         request, publication = get_request_and_publication(
             host=config.vhost.vostok.hostname)
         self.assertProvides(request, VostokLayer)
-        # XXX 2010-07-30 MichaelHudson, bug=611542: getApplication caches the
-        # root object in the LaunchBag, so we need to set it up, or it
-        # crashes.
-        getUtility(IOpenLaunchBag).clear()
         root = publication.getApplication(request)
         self.assertIsInstance(root, VostokRoot)
 
