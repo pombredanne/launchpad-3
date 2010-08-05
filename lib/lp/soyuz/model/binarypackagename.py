@@ -8,7 +8,7 @@ __all__ = [
     'BinaryPackageName',
     'BinaryPackageNameSet',
     'BinaryPackageNameVocabulary',
-    'getBinaryPackageDescriptions'
+    'getBinaryPackageDescriptions',
 ]
 
 # Zope imports
@@ -17,7 +17,7 @@ from zope.schema.vocabulary import SimpleTerm
 
 # SQLObject/SQLBase
 from sqlobject import (
-    SQLObjectNotFound, StringCol, SQLMultipleJoin, CONTAINSSTRING)
+    SQLObjectNotFound, StringCol, CONTAINSSTRING)
 
 from storm.store import EmptyResultSet
 
@@ -38,10 +38,6 @@ class BinaryPackageName(SQLBase):
     _table = 'BinaryPackageName'
     name = StringCol(dbName='name', notNull=True, unique=True,
                      alternateID=True)
-
-    binarypackages = SQLMultipleJoin(
-        'BinaryPackage', joinColumn='binarypackagename'
-        )
 
     def __unicode__(self):
         return self.name
@@ -125,6 +121,7 @@ class BinaryPackageNameIterator(BatchedCountableIterator):
 
     Builds descriptions based on releases of that binary package name.
     """
+
     def getTermsWithDescriptions(self, results):
         # Prefill the descriptions dictionary with the latest
         # description uploaded for that package name.
@@ -165,11 +162,10 @@ def getBinaryPackageDescriptions(results, use_names=False,
 
     for release in releases:
         binarypackagename = release.binarypackagename.name
-        if not descriptions.has_key(binarypackagename):
+        if binarypackagename in descriptions:
             description = release.description.strip().replace("\n", " ")
             if len(description) > max_title_length:
                 description = (release.description[:max_title_length]
                               + "...")
             descriptions[binarypackagename] = description
     return descriptions
-
