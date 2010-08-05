@@ -78,7 +78,6 @@ from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import (
     IHasBuildRecords, IncompatibleArguments)
@@ -433,7 +432,7 @@ class Archive(SQLBase):
             try:
                 status = tuple(status)
             except TypeError:
-                status = (status,)
+                status = (status, )
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -503,7 +502,7 @@ class Archive(SQLBase):
             try:
                 status = tuple(status)
             except TypeError:
-                status = (status,)
+                status = (status, )
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -545,7 +544,7 @@ class Archive(SQLBase):
         result = store.find((
             LibraryFileAlias.filename,
             LibraryFileContent.sha1,
-            LibraryFileContent.filesize,),
+            LibraryFileContent.filesize),
             SourcePackagePublishingHistory.archive == self.id,
             SourcePackagePublishingHistory.dateremoved == None,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
@@ -617,7 +616,7 @@ class Archive(SQLBase):
             try:
                 status = tuple(status)
             except TypeError:
-                status = (status,)
+                status = (status, )
             clauses.append("""
                 BinaryPackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -626,7 +625,7 @@ class Archive(SQLBase):
             try:
                 distroarchseries = tuple(distroarchseries)
             except TypeError:
-                distroarchseries = (distroarchseries,)
+                distroarchseries = (distroarchseries, )
             # XXX cprov 20071016: there is no sqlrepr for DistroArchSeries
             # uhmm, how so ?
             das_ids = "(%s)" % ", ".join(str(d.id) for d in distroarchseries)
@@ -724,13 +723,6 @@ class Archive(SQLBase):
             BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
             LibraryFileAlias.contentID == LibraryFileContent.id,
             ]
-
-        # Exclude DDEBs from the repository size, they are not published
-        # on disk for PPAs. See bug #399444 for more information.
-        if self.is_ppa:
-            clauses.append(
-                BinaryPackageFile.filetype != BinaryPackageFileType.DDEB)
-
         result = store.find(LibraryFileContent, *clauses)
 
         # See `IArchive.sources_size`.
@@ -1856,7 +1848,8 @@ class ArchiveSet:
         origin = (
             Archive,
             Join(SourcePackagePublishingHistory,
-                 SourcePackagePublishingHistory.archive == Archive.id),)
+                 SourcePackagePublishingHistory.archive == Archive.id),
+            )
         results = store.using(*origin).find(
             Archive,
             Archive.signing_key == None,
@@ -1981,7 +1974,7 @@ class ArchiveSet:
         # If a single purpose is passed in, convert it into a tuple,
         # otherwise assume a list was passed in.
         if purposes in ArchivePurpose:
-            purposes = (purposes,)
+            purposes = (purposes, )
 
         if purposes:
             extra_exprs.append(Archive.purpose.is_in(purposes))
