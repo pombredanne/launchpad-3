@@ -545,34 +545,6 @@
         factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
         permission="zope.Public" />
 
-    <!-- PublishedPackage -->
-
-    <class
-        class="canonical.launchpad.database.PublishedPackage">
-        <allow
-            interface="lp.soyuz.interfaces.publishedpackage.IPublishedPackage"/>
-        <require
-            permission="zope.Public"
-            set_schema="lp.soyuz.interfaces.publishedpackage.IPublishedPackage"/>
-    </class>
-
-    <!-- PublishedPackageSet -->
-
-    <class
-        class="canonical.launchpad.database.PublishedPackageSet">
-        <allow
-            interface="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"/>
-        <require
-            permission="zope.Public"
-            set_schema="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"/>
-    </class>
-    <securedutility
-        provides="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"
-        class="canonical.launchpad.database.PublishedPackageSet">
-        <allow
-            interface="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"/>
-    </securedutility>
-
     <!-- ArchiveSubscriber -->
 
     <class
