@@ -662,9 +662,10 @@ def launchpadPublisher(_context, name, factory, methods=['*'],
     # supplied -- we don't care about the priority in Launchpad but it
     # needs to be unique -- and to do nothing if no hostname is
     # configured for this publisher.
-    section = getattr(config.vhost, name, None)
-    if section is None or section.hostname is None:
-        return
+    if not name.startswith('shipit'):
+        section = getattr(config.vhost, name, None)
+        if section is None or section.hostname is None:
+            return
     global _arbitrary_priority
     if priority is None:
         _arbitrary_priority += 1
