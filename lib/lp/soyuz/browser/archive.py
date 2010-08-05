@@ -49,6 +49,7 @@ from canonical.launchpad import _
 from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.lazr.utils import smartquote
+from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.services.browser_helpers import get_user_agent_distroseries
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -72,8 +73,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.series import SeriesStatus
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from lp.soyuz.interfaces.packageset import IPackagesetSet
@@ -807,7 +807,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     Implements useful actions and collects useful sets for the page template.
     """
 
-    __used_for__ = IArchive
     implements(IArchiveIndexActionsMenu)
 
     def initialize(self):
@@ -1818,8 +1817,6 @@ class ArchiveActivateView(LaunchpadFormView):
 
 class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
     """Build Records View for IArchive."""
-
-    __used_for__ = IHasBuildRecords
 
     # The archive builds view presents all package builds (binary
     # or source package recipe builds).

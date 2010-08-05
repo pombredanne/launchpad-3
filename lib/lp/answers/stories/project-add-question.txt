@@ -62,7 +62,7 @@ the form with the 'Continue' button. In this case, a question for
 Firefox in English regarding SVG.
 
     >>> user_browser.getControl('Summary').value = (
-    ...     'Problem displaying complex SVG')
+    ...     'Problem with SVG')
     >>> user_browser.getControl('Continue').click()
 
 He's shown a list of similar questions related to the product Firefox

@@ -24,10 +24,10 @@ from lp.code.interfaces.codehosting import BRANCH_TRANSPORT, CONTROL_TRANSPORT
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 
+from lp.app.errors import NotFoundError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType
 from lp.code.errors import UnknownBranchTypeError
@@ -206,11 +206,11 @@ class CodehostingTest(TestCaseWithFactory):
         started_tuple = tuple(started.utctimetuple())
         completed_tuple = tuple(completed.utctimetuple())
         success = self.codehosting_api.recordSuccess(
-            'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
+            'test-recordsuccess', 'server-name', started_tuple, completed_tuple)
         self.assertEqual(True, success)
 
         activity = self.getLastActivity('test-recordsuccess')
-        self.assertEqual('vostok', activity.hostname)
+        self.assertEqual('server-name', activity.hostname)
         self.assertEqual(started, activity.date_started)
         self.assertEqual(completed, activity.date_completed)
 
