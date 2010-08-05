@@ -24,8 +24,8 @@ from zope.security.management import restoreInteraction
 from canonical.launchpad.interfaces.launchpad import IOpenLaunchBag
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp import urlsplit
-from canonical.launchpad.webapp.interaction import setupInteraction
-from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.webapp.interaction import (
+    get_current_principal, setupInteraction)
 from canonical.launchpad.webapp.servers import ProtocolErrorPublication
 
 
@@ -107,7 +107,7 @@ def test_traverse(url):
     if layer is not None:
         layers.setAdditionalLayer(request, layer)
 
-    principal = get_current_browser_request().principal
+    principal = get_current_principal()
 
     if IUnauthenticatedPrincipal.providedBy(principal):
         login = None
