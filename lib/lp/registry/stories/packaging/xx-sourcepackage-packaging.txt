@@ -147,21 +147,18 @@ step of the multistep form.
     ...     find_tag_by_id(user_browser.contents, 'step-title'))
     Step 2 (of 2): Check for duplicate projects
 
-If there are no problems with the prefilled data, then the license
-just needs to be selected.
-
-    >>> user_browser.getControl(name='field.licenses').value = ['BSD']
-    >>> user_browser.getControl("Complete Registration").click()
-    >>> print user_browser.url
-    http://launchpad.dev/youbuntu/busy/+source/bonkers/+index
-
-If an upstream project doesn't already exist in Launchpad, it can
-be registered with data from the source package prefilling the first
-step of the multistep form.
+If the user selects "Choose another upstream project" and then finds out
+that the project doesn't exist, there is a also a link on the
++edit-packaging page to register the project.
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/youbuntu/busy/+source/bonkers/'
-    ...     '+edit-packaging')
+    ...     'http://launchpad.dev/youbuntu/busy/+source/bonkers/')
+    >>> user_browser.getControl(
+    ...     'Choose another upstream project').selected = True
+    >>> user_browser.getControl("Link to Upstream Project").click()
+    >>> print user_browser.url
+    http://launchpad.dev/youbuntu/busy/+source/bonkers/+edit-packaging
+
     >>> user_browser.getLink("Register the upstream project").click()
     >>> print user_browser.url.replace('&', '\n&')
     http://launchpad.dev/projects/+new?_return_url=http...%2Bedit-packaging
@@ -179,7 +176,15 @@ step of the multistep form.
     Bonkers
     >>> print user_browser.getControl(name='field.summary').value
     flubber: floating rubber summary
-    >>> for tag in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print extract_text(tag)
-    There is 1 error.
-    bonkers is already used by another project
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'step-title'))
+    Step 2 (of 2): Check for duplicate projects
+
+If there are no problems with the prefilled data, then the license
+just needs to be selected. The user will then be redirected back
+to the source package page so that it can be linked.
+
+    >>> user_browser.getControl(name='field.licenses').value = ['BSD']
+    >>> user_browser.getControl("Complete Registration").click()
+    >>> print user_browser.url
+    http://launchpad.dev/youbuntu/busy/+source/bonkers/+edit-packaging
