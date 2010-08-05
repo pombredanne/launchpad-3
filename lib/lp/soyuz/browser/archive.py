@@ -919,7 +919,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
                 'status': status_names[current_status.title],
                 'status_class': current_status.title,
                 'duration': duration,
-                'builds': builds
+                'builds': builds,
                 })
 
         return latest_updates_list
@@ -1871,8 +1871,8 @@ class ArchiveEditView(BaseArchiveEditView):
 class ArchiveAdminView(BaseArchiveEditView):
 
     field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
-                   'buildd_secret', 'authorized_size', 'relative_build_score',
-                   'external_dependencies']
+                   'build_debug_symbols', 'buildd_secret', 'authorized_size',
+                   'relative_build_score', 'external_dependencies']
 
     custom_widget('external_dependencies', TextAreaWidget, height=3)
 
@@ -1917,7 +1917,7 @@ class ArchiveAdminView(BaseArchiveEditView):
                 'Do not specify for non-private archives')
 
         # Check the external_dependencies field.
-        ext_deps =  data.get('external_dependencies')
+        ext_deps = data.get('external_dependencies')
         if ext_deps is not None:
             errors = self.validate_external_dependencies(ext_deps)
             if len(errors) != 0:

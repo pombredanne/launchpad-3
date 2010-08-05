@@ -173,6 +173,9 @@ class Archive(SQLBase):
     require_virtualized = BoolCol(
         dbName='require_virtualized', notNull=True, default=True)
 
+    build_debug_symbols = BoolCol(
+        dbName='build_debug_symbols', notNull=True, default=False)
+
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=2048)
 

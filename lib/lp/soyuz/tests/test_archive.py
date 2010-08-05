@@ -36,7 +36,8 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
+from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
@@ -1078,9 +1079,40 @@ class TestCommercialArchive(TestCaseWithFactory):
             Unauthorized, self.setCommercial, self.archive, True)
 
         # Commercial admins can change it.
-        login("commercial-member@canonical.com")
+        login(COMMERCIAL_ADMIN_EMAIL)
         self.setCommercial(self.archive, True)
         self.assertTrue(self.archive.commercial)
+
+
+class TestBuildDebugSymbols(TestCaseWithFactory):
+    """Tests relating to the build_debug_symbols flag."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBuildDebugSymbols, self).setUp()
+        self.archive = self.factory.makeArchive()
+
+    def setBuildDebugSymbols(self, archive, build_debug_symbols):
+        """Helper function."""
+        archive.build_debug_symbols = build_debug_symbols
+
+    def test_build_debug_symbols_is_public(self):
+        # Anyone can see the attribute.
+        login(ANONYMOUS)
+        self.assertFalse(self.archive.build_debug_symbols)
+
+    def test_owner_cannot_set_build_debug_symbols(self):
+        # The archive owner cannot set it.
+        login_person(self.archive.owner)
+        self.assertRaises(
+            Unauthorized, self.setBuildDebugSymbols, self.archive, True)
+
+    def test_commercial_admin_can_set_build_debug_symbols(self):
+        # A commercial admin can set it.
+        login(COMMERCIAL_ADMIN_EMAIL)
+        self.setBuildDebugSymbols(self.archive, True)
+        self.assertTrue(self.archive.build_debug_symbols)
 
 
 class TestFindDepCandidates(TestCaseWithFactory):
