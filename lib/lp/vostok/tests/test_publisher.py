@@ -9,14 +9,11 @@ import unittest
 
 from canonical.config import config
 from canonical.testing.layers import FunctionalLayer
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 from lp.testing import TestCase
 from lp.testing.publication import get_request_and_publication
 
 from lp.vostok.publisher import VostokLayer, VostokRoot
-
-from zope.component import getUtility
 
 
 class TestRegistration(TestCase):
@@ -37,8 +34,6 @@ class TestRegistration(TestCase):
         request, publication = get_request_and_publication(
             host=config.vhost.vostok.hostname)
         self.assertProvides(request, VostokLayer)
-        # XXX This shouldn't be needed:
-        getUtility(IOpenLaunchBag).clear()
         root = publication.getApplication(request)
         self.assertIsInstance(root, VostokRoot)
 

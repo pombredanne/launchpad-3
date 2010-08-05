@@ -13,8 +13,8 @@ from lazr.restful.declarations import (
     operation_returns_collection_of)
 
 from canonical.launchpad.fields import ParticipatingPersonChoice
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.translations.interfaces.rosettastats import IRosettaStats
 from lp.registry.interfaces.sourcepackagename import (
@@ -780,6 +780,20 @@ class IHasTranslationTemplates(Interface):
         A template's language count is the number of `POFile`s that
         exist for it.
         """
+
+class ITranslationTemplatesCollection(Interface):
+    """A `Collection` of `POTemplate`s."""
+
+    def joinOuterPOFile(language=None):
+        """Outer-join `POFile` into the collection.
+
+        :return: A `TranslationTemplatesCollection` with an added outer
+            join to `POFile`.
+        """
+
+    def select(*args):
+        """Return a ResultSet for this collection with values set to args."""
+
 
 # Monkey patch for circular import avoidance done in
 # _schema_circular_imports.py

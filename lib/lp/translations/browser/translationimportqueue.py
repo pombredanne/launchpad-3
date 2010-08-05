@@ -23,8 +23,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
-from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, UnexpectedFormData)
+from lp.app.errors import NotFoundError, UnexpectedFormData
 from lp.translations.browser.hastranslationimports import (
     HasTranslationImportsView)
 from lp.registry.interfaces.distroseries import IDistroSeries
