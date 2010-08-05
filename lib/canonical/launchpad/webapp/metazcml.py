@@ -34,6 +34,7 @@ import z3c.ptcompat.zcml
 from z3c.ptcompat.zcml import page_directive as original_page
 from z3c.ptcompat.zcml import pages_directive as original_pages
 
+from canonical.config import config
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IAuthorization, ICanonicalUrlData, IContextMenu,
@@ -655,10 +656,15 @@ _arbitrary_priority = 12
 
 
 def launchpadPublisher(_context, name, factory, methods=['*'],
-                       mimetypes=['*'], priority=None):
-    # This overrides zope's definition of the <publisher> directive to supply
-    # an arbitrary unique priority if none is explicitly supplied -- we don't
-    # care about the priority in Launchpad but it needs to be unique.
+                       mimetypes=['*'], priority=None, vhost_name=None):
+    # This overrides zope's definition of the <publisher> directive to
+    # supply an arbitrary unique priority if none is explicitly
+    # supplied -- we don't care about the priority in Launchpad but it
+    # needs to be unique -- and to do nothing if no hostname is
+    # configured for this publisher.
+    section = getattr(config.vhost, name, None)
+    if section is None or section.hostname is None:
+        return
     global _arbitrary_priority
     if priority is None:
         _arbitrary_priority += 1
