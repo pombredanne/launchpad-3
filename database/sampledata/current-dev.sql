@@ -1,5 +1,6 @@
 -- Copyright 2010 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
+-- Created using pg_dump (PostgreSQL) 8.4.4
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -2313,7 +2314,7 @@ INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started
 INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (26, 1, true, '2007-07-08 00:00:00', '2007-07-07 23:58:41', '2007-07-08 00:00:01', NULL, 1, 2, 1, 1);
 INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (27, 1, true, '2007-07-24 00:00:00', '2007-07-23 23:58:41', '2007-07-24 00:00:01', NULL, 1, 1, 1, 1);
 INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (28, 3, true, '2007-08-10 00:00:00', '2007-08-10 00:00:00', '2007-08-10 00:00:13', NULL, 1, 1, 1, 1);
-INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (29, 1, false, '2007-08-09 21:54:18.553132', NULL, '2007-08-09 23:59:59', NULL, NULL, 1, NULL, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (29, 1, false, '2007-08-09 21:54:18.553132', '2007-08-09 23:49:59', '2007-08-09 23:59:59', NULL, NULL, 1, NULL, 1);
 INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (30, 3, false, '2007-08-10 00:00:01', '2007-08-10 00:00:01', '2007-08-10 00:00:14', NULL, 1, 1, 1, 1);
 
 
@@ -10541,6 +10542,13 @@ INSERT INTO structuralsubscription (id, product, productseries, project, milesto
 
 
 ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
+
+
+ALTER TABLE suggestivepotemplate DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE suggestivepotemplate ENABLE TRIGGER ALL;
 
 
 ALTER TABLE teammembership DISABLE TRIGGER ALL;
