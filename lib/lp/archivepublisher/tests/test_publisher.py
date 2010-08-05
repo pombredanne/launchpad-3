@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisher class."""
@@ -13,7 +13,6 @@ import shutil
 import stat
 import tempfile
 import transaction
-import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -370,7 +369,7 @@ class TestPublisher(TestPublisherBase):
         foo_path = "%s/main/f/foo/foo_1.dsc" % test_pool_dir
         self.assertEqual(
             open(foo_path).read().strip(),
-            'I am supposed to be a embargoed archive',)
+            'I am supposed to be a embargoed archive', )
 
         # remove locally created dir
         shutil.rmtree(test_pool_dir)
@@ -472,7 +471,6 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(
             1 + old_num_pending_archives, new_num_pending_archives)
 
-
     def _checkCompressedFile(self, archive_publisher, compressed_file_path,
                              uncompressed_file_path):
         """Assert that a compressed file is equal to its uncompressed version.
@@ -503,7 +501,7 @@ class TestPublisher(TestPublisherBase):
             raise AssertionError(
                 'Unsupported compression: %s' % compressed_file_path)
 
-        index_file = open(index_path,'r')
+        index_file = open(index_path, 'r')
         index_contents = index_file.read().splitlines()
         index_file.close()
 
@@ -696,7 +694,7 @@ class TestPublisher(TestPublisherBase):
         expected_dirty_pockets = [
             ('breezy-autotest', PackagePublishingPocket.RELEASE),
             ('breezy-autotest', PackagePublishingPocket.SECURITY),
-            ('breezy-autotest', PackagePublishingPocket.BACKPORTS)
+            ('breezy-autotest', PackagePublishingPocket.BACKPORTS),
             ]
         self.checkDirtyPockets(publisher, expected=expected_dirty_pockets)
 
@@ -710,7 +708,7 @@ class TestPublisher(TestPublisherBase):
 
         expected_dirty_pockets = [
             ('breezy-autotest', PackagePublishingPocket.SECURITY),
-            ('breezy-autotest', PackagePublishingPocket.BACKPORTS)
+            ('breezy-autotest', PackagePublishingPocket.BACKPORTS),
             ]
         self.checkDirtyPockets(publisher, expected=expected_dirty_pockets)
 
@@ -1072,7 +1070,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(
             self._getReleaseFileOrigin(arch_release_contents),
             'Canonical')
-        
+
         # The Label: field should be set to the archive displayname
         self.assertEqual(release_contents[1], 'Label: Partner archive')
 
@@ -1115,6 +1113,7 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
 
     def tearDown(self):
         """Purge the archive root location. """
+        super(TestPublisherRepositorySignatures, self).tearDown()
         if self.archive_publisher is not None:
             shutil.rmtree(self.archive_publisher._config.distsroot)
 
@@ -1123,7 +1122,6 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         allowed_suites = []
         self.archive_publisher = getPublisher(
             archive, allowed_suites, self.logger)
-
 
     def _publishArchive(self, archive):
         """Publish a test source in the given archive.
@@ -1205,8 +1203,3 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
 
         # All done, turn test-keyserver off.
         z.tearDown()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

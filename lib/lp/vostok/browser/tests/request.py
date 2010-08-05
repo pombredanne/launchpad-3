@@ -14,4 +14,4 @@ from lp.vostok.publisher import VostokRequestMixin
 
 
 class VostokTestRequest(VostokRequestMixin, LaunchpadTestRequest):
-    pass
+    """A test request for `VostokLayer`."""

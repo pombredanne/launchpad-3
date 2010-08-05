@@ -1,7 +1,15 @@
 <metal:page
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
-  define-macro="master">
-<h1 metal:define-slot="heading" />
-<div metal:define-slot="content" />
+  define-macro="master"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <!-- Obviously, we'll need to do something better here. -->
+    <title>Vostok page</title>
+  </head>
+  <body>
+    <h1 metal:define-slot="heading" />
+    <div metal:define-slot="content" />
+  </body>
+</html>
 </metal:page>

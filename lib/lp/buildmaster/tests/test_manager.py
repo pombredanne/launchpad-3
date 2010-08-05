@@ -1,10 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the renovated slave scanner aka BuilddManager."""
 
 import os
 import signal
+import time
 import transaction
 import unittest
 
@@ -34,6 +35,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing import TestCase as LaunchpadTestCase
 
 
 class TestRecordingSlaves(TrialTestCase):
@@ -228,12 +230,15 @@ class TestBuilddManager(TrialTestCase):
 
         # Stop cyclic execution and record the end of the cycle.
         self.stopped = False
+
         def testNextCycle():
             self.stopped = True
+
         self.manager.nextCycle = testNextCycle
 
         # Return the testing Proxy version.
         self.test_proxy = TestingXMLRPCProxy()
+
         def testGetProxyForSlave(slave):
             return self.test_proxy
         self.manager._getProxyForSlave = testGetProxyForSlave
@@ -270,6 +275,7 @@ class TestBuilddManager(TrialTestCase):
         # When `finishCycle` is called, and it is called after all build
         # slave interaction, active deferreds are consumed.
         events = self.manager.finishCycle()
+
         def check_events(results):
             # The cycle was stopped (and in the production the next cycle
             # would have being scheduled).
@@ -334,14 +340,17 @@ class TestBuilddManager(TrialTestCase):
         # slave by calling self.reset_result(slave)().
 
         reset_result_calls = []
+
         class LoggingResetResult(BaseDispatchResult):
             """A DispatchResult that logs calls to itself.
 
             This *must* subclass BaseDispatchResult, otherwise finishCycle()
             won't treat it like a dispatch result.
             """
+
             def __init__(self, slave, info=None):
                 self.slave = slave
+
             def __call__(self):
                 reset_result_calls.append(self.slave)
 
@@ -499,6 +508,7 @@ class TestBuilddManager(TrialTestCase):
         self.assertEqual(2, len(self.manager._deferreds))
 
         events = self.manager.finishCycle()
+
         def check_no_events(results):
             errors = [
                 r for s, r in results if isinstance(r, BaseDispatchResult)]
@@ -520,6 +530,7 @@ class TestBuilddManager(TrialTestCase):
             self.test_proxy.calls)
 
         events = self.manager.finishCycle()
+
         def check_events(results):
             [error] = [r for s, r in results if r is not None]
             self.assertEqual(
@@ -637,6 +648,7 @@ class TestBuilddManagerScan(TrialTestCase):
                 'archive_purpose': 'PRIMARY',
                 'archives':
                 ['deb http://ftpmaster.internal/ubuntu hoary main'],
+                'build_debug_symbols': False,
                 'ogrecomponent': 'main',
                 'suite': u'hoary'}))],
             slave.calls, "Job was not properly dispatched.")
@@ -858,15 +870,88 @@ class TestDispatchResult(unittest.TestCase):
         self.assertEqual('does not work!', builder.failnotes)
 
 
-class TestBuilddManagerScript(unittest.TestCase):
+def is_file_growing(filepath, poll_interval=1, poll_repeat=10):
+    """Poll the file size to see if it grows.
+
+    Checks the size of the file in given intervals and returns True as soon as
+    it sees the size increase between two polls. If the size does not
+    increase after a given number of polls, the function returns False.
+    If the file does not exist, the function silently ignores that and waits
+    for it to appear on the next pall. If it has not appeared by the last
+    poll, the exception is propagated.
+    Program execution is blocked during polling.
+
+    :param filepath: The path to the file to be palled.
+    :param poll_interval: The number of seconds in between two polls.
+    :param poll_repeat: The number times to repeat the polling, so the size is
+        polled a total of poll_repeat+1 times. The default values create a
+        total poll time of 11 seconds. The BuilddManager logs
+        "scanning cycles" every 5 seconds so these settings should see an
+        increase if the process is logging to this file.
+    """
+    last_size = None
+    for poll in range(poll_repeat+1):
+        try:
+            statinfo = os.stat(filepath)
+            if last_size is None:
+                last_size = statinfo.st_size
+            elif statinfo.st_size > last_size:
+                return True
+            else:
+                # The file should not be shrinking.
+                assert statinfo.st_size == last_size
+        except OSError:
+            if poll == poll_repeat:
+                # Propagate only on the last loop, i.e. give up.
+                raise
+        time.sleep(poll_interval)
+    return False
+
+
+class TestBuilddManagerScript(LaunchpadTestCase):
 
     layer = LaunchpadScriptLayer
 
     def testBuilddManagerRuns(self):
-        # Ensure `buildd-manager.tac` starts and stops correctly.
+        # The `buildd-manager.tac` starts and stops correctly.
         BuilddManagerTestSetup().setUp()
         BuilddManagerTestSetup().tearDown()
 
+    def testBuilddManagerLogging(self):
+        # The twistd process logs as execpected.
+        test_setup = BuilddManagerTestSetup()
+        logfilepath = test_setup.logfile
+        test_setup.setUp()
+        self.addCleanup(test_setup.tearDown)
+        # The process logs to its logfile.
+        self.assertTrue(is_file_growing(logfilepath))
+        # After rotating the log, the process keeps using the old file, no
+        # new file is created.
+        rotated_logfilepath = logfilepath+'.1'
+        os.rename(logfilepath, rotated_logfilepath)
+        self.assertTrue(is_file_growing(rotated_logfilepath))
+        self.assertFalse(os.access(logfilepath, os.F_OK))
+        # Upon receiving the USR1 signal, the process will re-open its log
+        # file at the old location.
+        test_setup.sendSignal(signal.SIGUSR1)
+        self.assertTrue(is_file_growing(logfilepath))
+        self.assertTrue(os.access(rotated_logfilepath, os.F_OK))
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def testBuilddManagerLoggingNoRotation(self):
+        # The twistd process does not perform its own rotation.
+        # By default twistd will rotate log files that grow beyond
+        # 1000000 bytes but this is deactivated for the buildd manager.
+        test_setup = BuilddManagerTestSetup()
+        logfilepath = test_setup.logfile
+        rotated_logfilepath = logfilepath+'.1'
+        # Prefill the log file to just under 1000000 bytes.
+        test_setup.precreateLogfile(
+            "2010-07-27 12:36:54+0200 [-] Starting scanning cycle.\n", 18518)
+        test_setup.setUp()
+        self.addCleanup(test_setup.tearDown)
+        # The process logs to the logfile.
+        self.assertTrue(is_file_growing(logfilepath))
+        # No rotation occured.
+        self.assertFalse(
+            os.access(rotated_logfilepath, os.F_OK),
+            "Twistd's log file was rotated by twistd.")

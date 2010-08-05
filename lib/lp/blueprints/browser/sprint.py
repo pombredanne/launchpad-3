@@ -140,8 +140,6 @@ class SprintSetFacets(StandardLaunchpadFacets):
 
 class SprintView(HasSpecificationsView, LaunchpadView):
 
-    __used_for__ = ISprint
-
     implements(IMajorHeadingView)
 
     # XXX Michael Nelson 20090923 bug=435255
@@ -149,7 +147,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
     # a second h1 to display. But as this view implements IMajorHeadingView
     # it should not include an h1 below the app buttons.
     label = None
-    
+
     @property
     def page_title(self):
         return '%s (sprint or meeting)' % self.context.title
@@ -542,19 +540,18 @@ class SprintAttendeesCsvExportView(LaunchpadView):
             irc_nicknames = ', '.join(sorted(set(
                 [ircid.nickname for ircid
                  in attendance.attendee.ircnicknames])))
-            if attendance.attendee.country is None:
-                country = ''
-            else:
-                country = attendance.attendee.country.name
             rows.append(
                 (attendance.attendee.name,
                  attendance.attendee.displayname,
                  attendance.attendee.safe_email_or_blank,
                  irc_nicknames,
-                 attendance.attendee.phone,
-                 attendance.attendee.organization,
-                 attendance.attendee.city,
-                 country,
+                 # We used to store phone, organization, city and
+                 # country, but this was a lie because users could not
+                 # update these fields.
+                 '', # attendance.attendee.phone
+                 '', # attendance.attendee.organization
+                 '', # attendance.attendee.city
+                 '', # country
                  time_zone,
                  attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
                  attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ'),

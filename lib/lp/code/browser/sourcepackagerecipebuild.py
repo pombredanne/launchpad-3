@@ -10,9 +10,11 @@ __all__ = [
     'SourcePackageRecipeBuildNavigation',
     'SourcePackageRecipeBuildView',
     'SourcePackageRecipeBuildCancelView',
+    'SourcePackageRecipeBuildRescoreView',
     ]
 
 from zope.interface import Interface
+from zope.schema import Int
 
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.webapp import (
@@ -24,6 +26,12 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild)
 from lp.services.job.interfaces.job import JobStatus
 
+
+UNEDITABLE_BUILD_STATES = (
+    BuildStatus.FULLYBUILT,
+    BuildStatus.FAILEDTOBUILD,
+    BuildStatus.SUPERSEDED,
+    BuildStatus.FAILEDTOUPLOAD,)
 
 class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
 
@@ -37,11 +45,23 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     facet = 'branches'
 
-    links = ('cancel',)
+    links = ('cancel', 'rescore')
 
     @enabled_with_permission('launchpad.Edit')
     def cancel(self):
-        return Link('+cancel', 'Cancel build', icon='remove')
+        if self.context.status in UNEDITABLE_BUILD_STATES:
+            enabled = False
+        else:
+            enabled = True
+        return Link('+cancel', 'Cancel build', icon='remove', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def rescore(self):
+        if self.context.status in UNEDITABLE_BUILD_STATES:
+            enabled = False
+        else:
+            enabled = True
+        return Link('+rescore', 'Rescore build', icon='edit', enabled=enabled)
 
 
 class SourcePackageRecipeBuildView(LaunchpadView):
@@ -50,7 +70,7 @@ class SourcePackageRecipeBuildView(LaunchpadView):
     @property
     def status(self):
         """A human-friendly status string."""
-        if (self.context.buildstate == BuildStatus.NEEDSBUILD
+        if (self.context.status == BuildStatus.NEEDSBUILD
             and self.eta is None):
             return 'No suitable builders'
         return {
@@ -63,7 +83,7 @@ class SourcePackageRecipeBuildView(LaunchpadView):
             BuildStatus.SUPERSEDED: (
                 'Could not build because source package was superseded'),
             BuildStatus.FAILEDTOUPLOAD: 'Could not be uploaded correctly',
-            }.get(self.context.buildstate, self.context.buildstate.title)
+            }.get(self.context.status, self.context.status.title)
 
     @property
     def eta(self):
@@ -89,12 +109,12 @@ class SourcePackageRecipeBuildView(LaunchpadView):
         """The date when the build completed or is estimated to complete."""
         if self.estimate:
             return self.eta
-        return self.context.datebuilt
+        return self.context.date_finished
 
     @property
     def estimate(self):
         """If true, the date value is an estimate."""
-        if self.context.datebuilt is not None:
+        if self.context.date_finished is not None:
             return False
         return self.eta is not None
 
@@ -119,3 +139,29 @@ class SourcePackageRecipeBuildCancelView(LaunchpadFormView):
     def request_action(self, action, data):
         """Cancel the build."""
         self.context.cancelBuild()
+
+
+class SourcePackageRecipeBuildRescoreView(LaunchpadFormView):
+    """View for rescoring a build."""
+
+    class schema(Interface):
+        """Schema for deleting a build."""
+        score = Int(
+            title=u'Score', required=True,
+            description=u'The score of the recipe.')
+
+    page_title = label = "Rescore build"
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+    next_url = cancel_url
+
+    @action('Rescore build', name='rescore')
+    def request_action(self, action, data):
+        """Rescore the build."""
+        self.context.buildqueue_record.lastscore = int(data['score'])
+
+    @property
+    def initial_values(self):
+        return {'score': str(self.context.buildqueue_record.lastscore)}

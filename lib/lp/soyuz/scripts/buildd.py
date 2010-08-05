@@ -14,7 +14,7 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.utils import process_in_batches
 from lp.buildmaster.interfaces.buildbase import BuildStatus

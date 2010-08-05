@@ -36,8 +36,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.version import sane_version
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
+from lp.app.errors import NameLookupFailed
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
 from lp.bugs.interfaces.bugtarget import (
@@ -414,7 +414,7 @@ class IDistroSeriesPublic(
         and total_messages (translatable messages).
         """
 
-    def getPrioritizedlPackagings():
+    def getPrioritizedPackagings():
         """Return a list of packagings that need more upstream information."""
 
     def getMostRecentlyLinkedPackagings():
@@ -514,15 +514,16 @@ class IDistroSeriesPublic(
 
         If version is not specified, return packages with any version.
 
-        if exclude_pocket is specified we exclude results matching that pocket.
+        If exclude_pocket is specified we exclude results matching that
+        pocket.
 
         If 'include_pending' is True, we return also the pending publication
         records, those packages that will get published in the next publisher
         run (it's only useful when we need to know if a given package is
         known during a publisher run, mostly in pre-upload checks)
 
-        If 'archive' is not specified consider publication in the main_archive,
-        otherwise respect the given value.
+        If 'archive' is not specified consider publication in the
+        main_archive, otherwise respect the given value.
         """
 
     def getAllPublishedSources():

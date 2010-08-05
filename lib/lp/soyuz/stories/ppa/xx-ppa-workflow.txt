@@ -402,25 +402,13 @@ a sources.list entry.  If the field fails validation an error is displayed.
     'deb not_a_url' is not a complete and valid sources.list entry
 
 
-When the archive is private, the buildd secret must also be set, or an
-error is issued:
-
-    >>> admin_browser.getControl(
-    ...     name="field.external_dependencies").value = ""
-    >>> admin_browser.getControl(name="field.private").value = True
-    >>> admin_browser.getControl(name="field.buildd_secret").value = ""
-    >>> admin_browser.getControl("Save").click()
-
-    >>> for error in get_feedback_messages(admin_browser.contents):
-    ...     print error
-    There is 1 error.
-    Required for private archives.
-
-Conversely, setting the buildd secret for non-private archives also generates
+Setting the buildd secret for non-private archives also generates
 an error.  Because the "commercial" flag is also currently set, removing
 privacy will also trigger a validation error because the commercial flag can
 only be set on private archives:
 
+    >>> admin_browser.getControl(
+    ...     name="field.external_dependencies").value = ""
     >>> admin_browser.getControl(name="field.private").value = False
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl("Save").click()

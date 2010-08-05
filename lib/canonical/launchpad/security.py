@@ -11,8 +11,11 @@ __all__ = ['AuthorizationBase']
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
+from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAliasWithParent)
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
@@ -651,7 +654,7 @@ class ViewTeamMembership(AuthorizationBase):
         """Verify that the user can view the team's membership.
 
         Anyone can see a public team's membership. Only a team member or
-        a Launchpad admin can view a private membership.
+        a Launchpad admin can view a private team.
         """
         if self.obj.team.visibility == PersonVisibility.PUBLIC:
             return True
@@ -705,9 +708,9 @@ class EditPersonBySelf(AuthorizationBase):
 
 
 class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
-    """Restrict viewing of private memberships of teams.
+    """Restrict viewing of private teams.
 
-    Only members of a team with a private membership can view the
+    Only members of a private team can view the
     membership list.
     """
     permission = 'launchpad.View'
@@ -723,7 +726,7 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
         """Verify that the user can view the team's membership.
 
         Anyone can see a public team's membership. Only a team member
-        or a Launchpad admin can view a private membership.
+        or a Launchpad admin can view a private team's members.
         """
         if self.obj.visibility == PersonVisibility.PUBLIC:
             return True
@@ -1080,11 +1083,37 @@ class EditAnnouncement(AuthorizationBase):
 
 
 class UseApiDoc(AuthorizationBase):
+    """This is just to please apidoc.launchpad.dev."""
     permission = 'zope.app.apidoc.UseAPIDoc'
     usedfor = Interface
 
+    def checkUnauthenticated(self):
+        # We only want this permission to work at all for devmode.
+        return config.devmode
+
     def checkAuthenticated(self, user):
-        return True
+        # We only want this permission to work at all for devmode.
+        return config.devmode
+
+
+class ManageApplicationForEverybody(UseApiDoc):
+    """This is just to please apidoc.launchpad.dev.
+
+    We do this because zope.app.apidoc uses that permission, but nothing else
+    should be using it.
+    """
+    permission = 'zope.ManageApplication'
+    usedfor = Interface
+
+
+class ZopeViewForEverybody(UseApiDoc):
+    """This is just to please apidoc.launchpad.dev.
+
+    We do this because zope.app.apidoc uses that permission, but nothing else
+    should be using it.
+    """
+    permission = 'zope.View'
+    usedfor = Interface
 
 
 class OnlyBazaarExpertsAndAdmins(AuthorizationBase):
@@ -1201,15 +1230,12 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
         template = self.obj
         if template.distroseries is not None:
             # Template is on a distribution.
-            distribution = template.distroseries.distribution
-            return (
-                AdminDistributionTranslations(
-                    distribution).checkAuthenticated(user))
-
+            return AdminDistroSeriesTranslations(
+                template.distroseries).checkAuthenticated(user)
         else:
             # Template is on a product.
-            return OnlyRosettaExpertsAndAdmins.checkAuthenticated(
-                self, user)
+            return AdminProductSeriesTranslations(
+                template.productseries).checkAuthenticated(user)
 
 
 class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
@@ -1483,6 +1509,7 @@ class EditPackageBuild(EditBuildFarmJob):
         # If it's a PPA or a copy archive only allow its owner.
         return (self.obj.archive.owner and
                 user.inTeam(self.obj.archive.owner))
+
 
 class EditBinaryPackageBuild(EditPackageBuild):
     permission = 'launchpad.Edit'
@@ -1778,6 +1805,16 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
             self.obj.distribution).checkAuthenticated(user))
 
 
+class AdminProductSeriesTranslations(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IProductSeries
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IProductSeries` translations."""
+
+        return OnlyRosettaExpertsAndAdmins(self.obj).checkAuthenticated(user)
+
+
 class BranchMergeProposalView(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBranchMergeProposal
@@ -2031,8 +2068,7 @@ class ViewHWDeviceClass(ViewHWDBBase):
 class ViewArchive(AuthorizationBase):
     """Restrict viewing of private archives.
 
-    Only admins or members of a team with a private membership can
-    view the archive.
+    Only admins or members of a private team can view the archive.
     """
     permission = 'launchpad.View'
     usedfor = IArchive
@@ -2459,3 +2495,23 @@ class EditPackagesetSet(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         return user.in_admin or user.in_ubuntu_techboard
+
+
+class EditLibraryFileAliasWithParent(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ILibraryFileAliasWithParent
+
+    def checkAuthenticated(self, user):
+        """Only persons which can edit an LFA's parent can edit an LFA.
+
+        By default, a LibraryFileAlias does not know about its parent.
+        Such aliases are never editable. Use an adapter to provide a
+        parent object.
+
+        If a parent is known, users which can edit the parent can also
+        edit properties of the LibraryFileAlias.
+        """
+        parent = getattr(self.obj, '__parent__', None)
+        if parent is None:
+            return False
+        return check_permission(self.permission, parent)

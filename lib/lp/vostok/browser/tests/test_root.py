@@ -1,24 +1,27 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""XXX: Module docstring goes here."""
+"""Tests for browsing the root of the vostok skin."""
 
 __metaclass__ = type
 
 import unittest
 
 from zope.app.publisher.browser import getDefaultViewName
-from zope.component import getMultiAdapter
 
 from canonical.testing.layers import DatabaseFunctionalLayer, FunctionalLayer
 from canonical.launchpad.testing.pages import extract_text, find_tag_by_id
 
-from lp.testing import TestCase, TestCaseWithFactory, with_anonymous_login
+from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing.views import create_initialized_view
 from lp.vostok.browser.root import VostokRootView
 from lp.vostok.browser.tests.request import VostokTestRequest
-from lp.vostok.publisher import VostokRoot
+from lp.vostok.publisher import VostokLayer, VostokRoot
+
+
 
 class TestRootRegistrations(TestCase):
+    """Test the registration of views for `VostokRoot`."""
 
     layer = FunctionalLayer
 
@@ -29,19 +32,19 @@ class TestRootRegistrations(TestCase):
 
     def test_root_index_view(self):
         # VostokRootView is registered as the view for the VostokRoot object.
-        view = getMultiAdapter(
-            (VostokRoot(), VostokTestRequest()), name='+index')
-        view.initialize()
+        view = create_initialized_view(
+            VostokRoot(), name='+index', layer=VostokLayer)
         self.assertIsInstance(view, VostokRootView)
 
 
 class TestRootView(TestCaseWithFactory):
+    """Tests for `VostokRootView`."""
 
     layer = DatabaseFunctionalLayer
 
     def view(self):
-        return getMultiAdapter(
-            (VostokRoot(), VostokTestRequest()), name='+index')
+        return create_initialized_view(
+            VostokRoot(), name='+index', layer=VostokLayer)
 
     def test_distributions(self):
         # VostokRootView.distributions is an iterable of all registered
@@ -52,15 +55,15 @@ class TestRootView(TestCaseWithFactory):
 
 
 class TestRootTemplate(TestCaseWithFactory):
+    """Tests for the templates used by views of `VostokRoot`."""
 
     layer = DatabaseFunctionalLayer
 
     def test_distribution_list(self):
         # The element with id 'distro-list' on the root page contains a list
         # of links to all registered distributions.
-        v = getMultiAdapter(
-            (VostokRoot(), VostokTestRequest()), name='+index')
-        v.initialize()
+        v = create_initialized_view(
+            VostokRoot(), name='+index', layer=VostokLayer)
         contents = v.render()
         link_list = find_tag_by_id(contents, 'distro-list')('a')
         distro_list = list(v.distributions)

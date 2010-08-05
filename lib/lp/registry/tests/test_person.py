@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
 from datetime import datetime
 import pytz
 import time
@@ -26,7 +25,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.person import (
     IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility)
-from canonical.launchpad.database import Bug, BugTask, BugSubscription
+from canonical.launchpad.database import Bug
 from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
 from lp.registry.model.karma import KarmaCategory
@@ -35,7 +34,7 @@ from lp.bugs.model.bugtask import get_related_bugtasks_search_params
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
-from lp.testing import login_person, logout, TestCaseWithFactory
+from lp.testing import login_person, logout, TestCase, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
@@ -114,19 +113,6 @@ class TestPerson(TestCaseWithFactory):
             self.assertRaises(
                 PrivatePersonLinkageError,
                 setattr, bug, attr_name, self.myteam)
-
-    def test_BugTask_person_validator(self):
-        bug_task = BugTask.select(limit=1)[0]
-        for attr_name in ['assignee', 'owner']:
-            self.assertRaises(
-                PrivatePersonLinkageError,
-                setattr, bug_task, attr_name, self.myteam)
-
-    def test_BugSubscription_person_validator(self):
-        bug_subscription = BugSubscription.select(limit=1)[0]
-        self.assertRaises(
-            PrivatePersonLinkageError,
-            setattr, bug_subscription, 'person', self.myteam)
 
     def test_Specification_person_validator(self):
         specification = Specification.select(limit=1)[0]
@@ -214,12 +200,14 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual('(\\u0170-tester)>', displayname)
 
 
-class TestPersonSet(unittest.TestCase):
+class TestPersonSet(TestCase):
     """Test `IPersonSet`."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        TestCase.setUp(self)
         login(ANONYMOUS)
+        self.addCleanup(logout)
         self.person_set = getUtility(IPersonSet)
 
     def test_isNameBlacklisted(self):
@@ -299,12 +287,14 @@ class TestPersonSetMerge(TestCaseWithFactory):
         self.assertEqual(expected, second_account.openid_identifier)
 
 
-class TestCreatePersonAndEmail(unittest.TestCase):
+class TestCreatePersonAndEmail(TestCase):
     """Test `IPersonSet`.createPersonAndEmail()."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        TestCase.setUp(self)
         login(ANONYMOUS)
+        self.addCleanup(logout)
         self.person_set = getUtility(IPersonSet)
 
     def test_duplicated_name_not_accepted(self):
@@ -545,7 +535,3 @@ class TestPersonKarma(TestCaseWithFactory):
         names = [entry['project'].name for entry in results]
         self.assertEqual(
             ['cc', 'bb', 'aa', 'dd', 'ee'], names)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

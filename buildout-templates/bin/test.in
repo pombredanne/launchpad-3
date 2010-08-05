@@ -160,10 +160,11 @@ warnings.filterwarnings(
     re.escape('clear_request_started() called outside of a request'),
     UserWarning
     )
+# Unicode warnings are always fatal
+warnings.filterwarnings('error', category=UnicodeWarning)
 
-# Any warnings not explicitly silenced are errors
-warnings.filterwarnings('error', append=True)
-
+# shortlist() raises an error when it is misused.
+warnings.filterwarnings('error', r'shortlist\(\)')
 
 from canonical.ftests import pgsql
 # If this is removed, make sure canonical.ftests.pgsql is updated
@@ -252,15 +253,14 @@ if __name__ == '__main__':
     # tree. This is very useful for IDE integration, so an IDE can
     # e.g. run the test that you are currently editing.
     try:
-        there = os.getcwd()
-        os.chdir(BUILD_DIR)
-        result = testrunner.run([])
+        try:
+            there = os.getcwd()
+            os.chdir(BUILD_DIR)
+            testrunner.run([])
+        except SystemExit:
+            # Print Layer profiling report if requested.
+            if main_process and local_options.verbose >= 3:
+                profiled.report_profile_stats()
+            raise
     finally:
         os.chdir(there)
-    # Cribbed from sourcecode/zope/test.py - avoid spurious error during exit.
-    logging.disable(999999999)
-
-    # Print Layer profiling report if requested.
-    if main_process and local_options.verbose >= 3:
-        profiled.report_profile_stats()
-    sys.exit(result)
