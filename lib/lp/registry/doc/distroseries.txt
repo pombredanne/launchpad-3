@@ -309,23 +309,36 @@ initialisation. In particular the initialiser won't overwrite
 publishing records etc. Essentially this is a "Do not push this button
 again" type set of assertions.
 
-XXX StevenK Use of initialiseFromParent
+First, we need to correct some of the sampledata:
+
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     >>> login("foo.bar@canonical.com")
+    >>> pending_builds = hoary.getBuildRecords(BuildStatus.NEEDSBUILD,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+    >>> for build in pending_builds:
+    ...     build.status = BuildStatus.FAILEDTOBUILD
+
+    >>> import transaction
+    >>> transaction.commit()
+
+And then we can initialise the new distroseries:
+
+    >>> from lp.soyuz.scripts.initialise_distroseries import (
+    ...     InitialiseDistroSeries)
     >>> humpy = ubuntu.newSeries('humpy', 'Humpy Hippo',
     ...                          'The Humpy Hippo', 'Fat', 'Yo Momma',
     ...                          '99.2',hoary, hoary.owner)
-    >>> humpy_i386 = humpy.newArch('i386', hoary['i386'].processorfamily,
-    ...                            True, humpy.owner)
-    >>> humpy.nominatedarchindep = humpy_i386
-    >>> humpy.initialiseFromParent()
+    >>> ids = InitialiseDistroSeries(humpy)
+    >>> ids.initialise()
     >>> len(hoary.getPublishedReleases('pmount'))
     1
     >>> len(humpy.getPublishedReleases('pmount'))
     1
     >>> len(hoary['i386'].getReleasedPackages('pmount'))
     1
-    >>> len(humpy_i386.getReleasedPackages('pmount'))
+    >>> len(humpy['i386'].getReleasedPackages('pmount'))
     1
 
 Check if the attributes of an DRSPR instance for the just initialised
@@ -351,11 +364,8 @@ one coherent published source + binary, mozilla-firefox)
     >>> bumpy = ubuntu.newSeries('bumpy', 'Bumpy',
     ...                          'The Bumpy', 'Fat', 'Boom',
     ...                          '99.3', warty, warty.owner)
-
-    >>> bumpy_i386 = bumpy.newArch('i386', warty['i386'].processorfamily,
-    ...                            True, bumpy.owner)
-    >>> bumpy.nominatedarchindep = bumpy_i386
-    >>> bumpy.initialiseFromParent()
+    >>> ids = InitialiseDistroSeries(bumpy)
+    >>> ids.initialise()
 
 Build a new ISourcePackage based in the new distroseries:
 
@@ -366,11 +376,12 @@ Check the content IDRSPR binaries & builds attributes:
 'binaries' should be inherited from parent release.
 
     >>> bumpy_firefox_sp.currentrelease.binaries.count()
-    2
+    3
 
     >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
     ...     print bin.id, bin.title, bin.build.distro_arch_series.title
     27 mozilla-firefox-data-0.9 The Warty Warthog Release for i386 (x86)
+    26 mozilla-firefox-0.9 The Warty Warthog Release for hppa (hppa)
     12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
 
 

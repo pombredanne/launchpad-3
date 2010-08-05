@@ -28,15 +28,17 @@ class InitialisationError(Exception):
 
 
 class InitialiseDistroSeries:
+
     def __init__(self, distroseries):
         self.distroseries = distroseries
+        self.parent = self.distroseries.parent_series
         self._store = getUtility(
             IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         self._check()
 
     def _check(self):
-        if self.distroseries.parent_series is None:
-            raise InitialisationError, "Parent series required."
+        if self.parent is None:
+            raise InitialisationError("Parent series required.")
         self._checkBuilds()
         self._checkQueue()
         self._checkSeries()
@@ -47,15 +49,13 @@ class InitialiseDistroSeries:
         Only cares about the RELEASE pocket, which is the only one inherited
         via initialiseFromParent method.
         """
-        parentseries = self.distroseries.parent_series
-
         # only the RELEASE pocket is inherited, so we only check
         # pending build records for it.
-        pending_builds = parentseries.getBuildRecords(
+        pending_builds = self.parent.getBuildRecords(
             BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
 
         if pending_builds.count():
-            raise InitialisationError, "Parent series has pending builds."
+            raise InitialisationError("Parent series has pending builds.")
 
     def _checkQueue(self):
         """Assert upload queue is empty on parent series.
@@ -63,18 +63,15 @@ class InitialiseDistroSeries:
         Only cares about the RELEASE pocket, which is the only one inherited
         via initialiseFromParent method.
         """
-        parentseries = self.distroseries.parent_series
-
         # only the RELEASE pocket is inherited, so we only check
         # queue items for it.
         for queue in (
             PackageUploadStatus.NEW, PackageUploadStatus.ACCEPTED,
             PackageUploadStatus.UNAPPROVED):
-            items = parentseries.getQueueItems(
+            items = self.parent.getQueueItems(
                 queue, pocket=PackagePublishingPocket.RELEASE)
             if items:
-                raise (
-                    InitialisationError,
+                raise InitialisationError(
                     "Parent series queues are not empty.")
 
     def _checkSeries(self):
@@ -83,16 +80,16 @@ class InitialiseDistroSeries:
             "Can not copy distroarchseries from parent, there are "
             "already distroarchseries(s) initialised for this series.")
         if sources.count():
-            raise InitialisationError, error
+            raise InitialisationError(error)
         binaries = self.distroseries.getAllPublishedBinaries()
         if binaries.count():
-            raise InitialisationError, error
+            raise InitialisationError(error)
         if self.distroseries.architectures.count():
-            raise InitialisationError, error
+            raise InitialisationError(error)
         if self.distroseries.components.count():
-            raise InitialisationError, error
+            raise InitialisationError(error)
         if self.distroseries.sections.count():
-            raise InitialisationError, error
+            raise InitialisationError(error)
 
     def initialise(self):
         self._copy_architectures()
@@ -105,10 +102,10 @@ class InitialiseDistroSeries:
             SELECT %s, processorfamily, architecturetag, %s, official
             FROM DistroArchSeries WHERE distroseries = %s
             """ % sqlvalues(self.distroseries, self.distroseries.owner,
-            self.distroseries.parent_series))
+            self.parent))
 
         self.distroseries.nominatedarchindep = self.distroseries[
-            self.distroseries.parent_series.nominatedarchindep.architecturetag]
+            self.parent.nominatedarchindep.architecturetag]
 
     def _copy_packages(self):
         # Perform the copies
@@ -118,7 +115,7 @@ class InitialiseDistroSeries:
         # shall be copied.
         distroarchseries_list = []
         for arch in self.distroseries.architectures:
-            parent_arch = self.distroseries.parent_series[arch.architecturetag]
+            parent_arch = self.parent[arch.architecturetag]
             distroarchseries_list.append((parent_arch, arch))
         # Now copy source and binary packages.
         self._copy_publishing_records(distroarchseries_list)
@@ -132,7 +129,7 @@ class InitialiseDistroSeries:
                 SELECT pdr.lucilleconfig FROM DistroSeries AS pdr
                 WHERE pdr.id = %s)
             WHERE id = %s
-            ''' % sqlvalues(self.distroseries.parent_series.id,
+            ''' % sqlvalues(self.parent.id,
             self.distroseries.id))
 
     def _copy_publishing_records(self, distroarchseries_list):
@@ -145,24 +142,19 @@ class InitialiseDistroSeries:
         We copy only the RELEASE pocket in the PRIMARY and DEBUG archives.
         """
         archive_set = getUtility(IArchiveSet)
-        parent = self.distroseries.parent_series
 
-        for archive in parent.distribution.all_distro_archives:
-            print archive.name
+        for archive in self.parent.distribution.all_distro_archives:
             if archive.purpose not in (
                 ArchivePurpose.PRIMARY, ArchivePurpose.DEBUG):
                 continue
 
-            purpose = 'primary'
-            if archive.purpose == ArchivePurpose.DEBUG:
-                purpose = 'debug'
-            print "Getting target archive, for %s/%s" % (self.distroseries.distribution.name, purpose)
             target_archive = archive_set.getByDistroPurpose(
                 self.distroseries.distribution, archive.purpose)
-            print "Which is %s" % target_archive
-            assert target_archive is not None, "Target archive doesn't exist?"
+            if archive.purpose is ArchivePurpose.PRIMARY:
+                assert target_archive is not None, (
+                    "Target archive doesn't exist?")
             origin = PackageLocation(
-                archive, parent.distribution, parent,
+                archive, self.parent.distribution, self.parent,
                 PackagePublishingPocket.RELEASE)
             destination = PackageLocation(
                 target_archive, self.distroseries.distribution,
@@ -179,14 +171,14 @@ class InitialiseDistroSeries:
             SELECT %s AS distroseries, cs.component AS component
             FROM ComponentSelection AS cs WHERE cs.distroseries = %s
             ''' % sqlvalues(self.distroseries.id,
-            self.distroseries.parent_series.id))
+            self.parent.id))
         # Copy the section selections
         self._store.execute('''
             INSERT INTO SectionSelection (distroseries, section)
             SELECT %s as distroseries, ss.section AS section
             FROM SectionSelection AS ss WHERE ss.distroseries = %s
             ''' % sqlvalues(self.distroseries.id,
-            self.distroseries.parent_series.id))
+            self.parent.id))
         # Copy the source format selections
         self._store.execute('''
             INSERT INTO SourcePackageFormatSelection (distroseries, format)
@@ -194,7 +186,7 @@ class InitialiseDistroSeries:
             FROM SourcePackageFormatSelection AS spfs
             WHERE spfs.distroseries = %s
             ''' % sqlvalues(self.distroseries.id,
-            self.distroseries.parent_series.id))
+            self.parent.id))
 
     def _copy_packaging_links(self):
         """Copy the packaging links from the parent series to this one."""
@@ -238,4 +230,3 @@ class InitialiseDistroSeries:
                         )
                     )
             """ % self.distroseries.id)
-

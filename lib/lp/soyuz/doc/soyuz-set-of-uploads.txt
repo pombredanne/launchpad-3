@@ -69,9 +69,11 @@ Import public keyring into current LPDB.
 Having set up that infrastructure we need to prepare a breezy distroseries
 for the ubuntutest distribution.
 
-XXX StevenK Use of initialiseFromParent
-
   >>> from lp.registry.model.distribution import Distribution
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+  >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
+  >>> from lp.soyuz.scripts.initialise_distroseries import (
+  ...     InitialiseDistroSeries)
   >>> from canonical.launchpad.database import LibraryFileAlias
   >>> ubuntu = Distribution.byName('ubuntu')
   >>> breezy_autotest = ubuntu['breezy-autotest']
@@ -80,13 +82,20 @@ XXX StevenK Use of initialiseFromParent
   ...     'breezy', 'Breezy Badger', 'The Breezy Badger',
   ...     'Black and White', 'Someone', '5.10', breezy_autotest,
   ...     breezy_autotest.owner)
-  >>> breezy_i386 = breezy.newArch(
-  ...     'i386', breezy_autotest['i386'].processorfamily, True, breezy.owner)
-  >>> breezy.nominatedarchindep = breezy_i386
+  >>> new = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
+  ...     pocket=PackagePublishingPocket.RELEASE)
+  >>> unapproved = breezy_autotest.getQueueItems(
+  ...     PackageUploadStatus.UNAPPROVED,
+  ...     pocket=PackagePublishingPocket.RELEASE)
+  >>> for item in new:
+  ...     item.setRejected()
+  >>> for item in unapproved:
+  ...     item.setRejected()
+  >>> ids = InitialiseDistroSeries(breezy)
+  >>> ids.initialise()
   >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
-  >>> breezy.initialiseFromParent()
   >>> fake_chroot = LibraryFileAlias.get(1)
-  >>> unused = breezy_i386.addOrUpdateChroot(fake_chroot)
+  >>> unused = breezy['i386'].addOrUpdateChroot(fake_chroot)
 
 Add disk content for file inherited from ubuntu/breezy-autotest:
 

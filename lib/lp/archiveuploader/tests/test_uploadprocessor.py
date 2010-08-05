@@ -37,6 +37,7 @@ from lp.soyuz.model.publishing import (
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
+from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
 from canonical.launchpad.ftests import import_public_test_keys
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
@@ -192,8 +193,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         breezy_i386.addOrUpdateChroot(fake_chroot)
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
-        # XXX StevenK Use of initialiseFromParent
-        self.breezy.initialiseFromParent()
+        ids = InitialiseDistroSeries(self.breezy)
+        ids.initialise()
 
         if permitted_formats is None:
             permitted_formats = [SourcePackageFormat.FORMAT_1_0]
