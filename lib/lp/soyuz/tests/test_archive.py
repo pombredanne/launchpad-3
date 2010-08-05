@@ -33,8 +33,6 @@ from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFileType, BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -138,44 +136,10 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def publishDDEBInArchive(self, archive):
-        """Publish an arbitrary DDEB with content in to the archive.
-
-        Publishes a DDEB that will take up some space in to `archive`.
-
-        :param archive: the IArchive to publish to.
-        """
-        binarypackagerelease = self.factory.makeBinaryPackageRelease(
-            binpackageformat=BinaryPackageFormat.DDEB)
-        self.factory.makeBinaryPackagePublishingHistory(
-            archive=archive, binarypackagerelease=binarypackagerelease,
-            status=PackagePublishingStatus.PUBLISHED)
-        self.factory.makeBinaryPackageFile(
-            binarypackagerelease=binarypackagerelease,
-            filetype=BinaryPackageFileType.DDEB)
-
     def test_empty_ppa_has_zero_binaries_size(self):
         # An empty PPA has no binaries so has zero binaries_size.
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.assertEquals(0, ppa.binaries_size)
-
-    def test_binaries_size_does_not_include_ddebs_for_ppas(self):
-        # DDEBs are not computed in the PPA binaries size because
-        # they are not being published. See bug #399444.
-        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.publishDDEBInArchive(ppa)
-        self.assertEquals(0, ppa.binaries_size)
-
-    def test_empty_primary_archive_has_zero_binaries_size(self):
-        # PRIMARY archives have zero binaries_size when created.
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        self.assertEquals(0, archive.binaries_size)
-
-    def test_binaries_size_includes_ddebs_for_other_archives(self):
-        # DDEBs size are computed for all archive purposes, except PPAs.
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        self.publishDDEBInArchive(archive)
-        self.assertNotEquals(0, archive.binaries_size)
 
     def test_sources_size_on_empty_archive(self):
         # Zero is returned for an archive without sources.
