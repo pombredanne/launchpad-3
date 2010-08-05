@@ -300,7 +300,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `ISourcePackage`."""
         releases = self.releases
         if len(releases) == 0:
-            print '\n@@@@@@@@@@@@@@@@@@@@@@No releases'
             return None
         current = releases[0]
         name_summaries = [
