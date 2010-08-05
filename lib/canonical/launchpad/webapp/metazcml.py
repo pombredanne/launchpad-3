@@ -662,6 +662,9 @@ def launchpadPublisher(_context, name, factory, methods=['*'],
     # supplied -- we don't care about the priority in Launchpad but it
     # needs to be unique -- and to do nothing if no hostname is
     # configured for this publisher.
+
+    # shipit, uniquely, uses a different name in its <publisher>
+    # directives to the name of the section in the config.
     if not name.startswith('shipit'):
         section = getattr(config.vhost, name, None)
         if section is None or section.hostname is None:
