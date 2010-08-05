@@ -14,7 +14,9 @@ from zope.component import getUtility
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, ILaunchpadCelebrities, NotFoundError)
+    IPersonSet, IEmailAddressSet, ILaunchpadCelebrities)
+from lp.app.errors import NotFoundError
+
 
 execute_zcml_for_scripts()
 ztm = initZopeless()

@@ -35,6 +35,8 @@ from lp.registry.interfaces.codeofconduct import (
     ICodeOfConduct, ICodeOfConductConf, ICodeOfConductSet,
     ISignedCodeOfConduct, ISignedCodeOfConductSet)
 from lp.registry.interfaces.person import IPerson
+
+
 class SignedCodeOfConductSetNavigation(GetitemNavigation):
 
     usedfor = ISignedCodeOfConductSet
@@ -183,8 +185,6 @@ class SignedCodeOfConductAddView(LaunchpadFormView):
 class SignedCodeOfConductAckView(AddView):
     """Acknowledge a Paper Submitted CoC."""
 
-    __used_for__ = ICodeOfConduct
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -261,8 +261,6 @@ class SignedCodeOfConductActiveView(EditView):
      * set active.
     """
 
-    __used_for__ = ISignedCodeOfConduct
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -303,8 +301,6 @@ class SignedCodeOfConductDeactiveView(EditView):
      * store recipient,
      * clear active.
     """
-
-    __used_for__ = ISignedCodeOfConduct
 
     def __init__(self, context, request):
         self.context = context

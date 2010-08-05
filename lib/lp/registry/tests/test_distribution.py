@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.tests.test_distroseries import (
@@ -115,7 +113,7 @@ class SeriesByStatusTests(TestCaseWithFactory):
 
     def test_get_current(self):
         distro = self.factory.makeDistribution()
-        series = self.factory.makeDistroSeries(distribution=distro, 
+        series = self.factory.makeDistroSeries(distribution=distro,
             status=SeriesStatus.CURRENT)
         self.assertEquals([series],
             list(distro.getSeriesByStatus(SeriesStatus.CURRENT)))
@@ -133,16 +131,12 @@ class SeriesTests(TestCaseWithFactory):
 
     def test_get_by_name(self):
         distro = self.factory.makeDistribution()
-        series = self.factory.makeDistroSeries(distribution=distro, 
+        series = self.factory.makeDistroSeries(distribution=distro,
             name="dappere")
         self.assertEquals(series, distro.getSeries("dappere"))
 
     def test_get_by_version(self):
         distro = self.factory.makeDistribution()
-        series = self.factory.makeDistroSeries(distribution=distro, 
+        series = self.factory.makeDistroSeries(distribution=distro,
             name="dappere", version="42.6")
         self.assertEquals(series, distro.getSeries("42.6"))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
