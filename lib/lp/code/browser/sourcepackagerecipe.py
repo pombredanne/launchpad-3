@@ -381,7 +381,6 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
                 return
 
 
-
         distros = data.pop('distros')
         if distros != self.context.distroseries:
             self.context.distroseries.clear()
