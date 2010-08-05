@@ -27,14 +27,14 @@ from zope.security.interfaces import Unauthorized
 
 from lazr.restful.interfaces import IWebServiceClientRequest
 
+from lp.app.errors import UnexpectedFormData
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
 
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    NoCanonicalUrl, UnexpectedFormData)
+from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary

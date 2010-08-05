@@ -149,8 +149,9 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
+    ILaunchBag, IOpenLaunchBag)
 from lp.answers.interfaces.questionenums import QuestionParticipation
+from lp.app.errors import NotFoundError, UnexpectedFormData
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet

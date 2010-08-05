@@ -39,6 +39,8 @@ containing the target PPA owner name, see bug #172377.
 
 We need to be logged into the security model in order to get any further
 
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
   >>> login('foo.bar@canonical.com')
 
 Helper functions to examine emails that were sent:
@@ -58,17 +60,12 @@ distroseries so that we can upload to it. Also adjust 'changeslist'
 address and allow uploads to universe:
 
   >>> from canonical.launchpad.interfaces import (
-  ...     SeriesStatus, IComponentSet, IDistributionSet,
-  ...     ILibraryFileAliasSet)
+  ...     SeriesStatus, IDistributionSet, ILibraryFileAliasSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = SeriesStatus.DEVELOPMENT
   >>> hoary.changeslist = "hoary-announce@lists.ubuntu.com"
-  >>> from canonical.launchpad.database import ComponentSelection
-  >>> universe = getUtility(IComponentSet)['universe']
-  >>> trash = ComponentSelection(distroseries=hoary, component=universe)
   >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
-  >>> trash = hoary['i386'].addOrUpdateChroot(fake_chroot)
   >>> trash = hoary['hppa'].addOrUpdateChroot(fake_chroot)
 
 NEW source upload to RELEASE pocket via 'sync' policy (it presents

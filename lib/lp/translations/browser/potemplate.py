@@ -39,7 +39,8 @@ from canonical.lazr.utils import smartquote
 
 from canonical.launchpad import helpers, _
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.errors import NotFoundError
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.registry.browser.productseries import ProductSeriesFacets
 from lp.translations.browser.translations import TranslationsMixin
