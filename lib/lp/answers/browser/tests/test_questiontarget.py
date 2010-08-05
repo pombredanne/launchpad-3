@@ -34,6 +34,43 @@ class TestSearchQuestionsView(TestCaseWithFactory):
             hoary, sourcepackagename, product.owner)
 
 
+class TestSearchQuestionsViewCanConfigureAnswers(TestSearchQuestionsView):
+
+    def test_can_configure_answers_product_no_edit_permission(self):
+        product = self.factory.makeProduct()
+        view = create_initialized_view(product, '+questions')
+        self.assertEqual(False, view.can_configure_answers)
+
+    def test_can_configure_answers_product_with_edit_permission(self):
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        view = create_initialized_view(product, '+questions')
+        self.assertEqual(True, view.can_configure_answers)
+
+    def test_can_configure_answers_distribution_no_edit_permission(self):
+        distribution = self.factory.makeDistribution()
+        view = create_initialized_view(distribution, '+questions')
+        self.assertEqual(False, view.can_configure_answers)
+
+    def test_can_configure_answers_distribution_with_edit_permission(self):
+        distribution = self.factory.makeDistribution()
+        login_person(distribution.owner)
+        view = create_initialized_view(distribution, '+questions')
+        self.assertEqual(True, view.can_configure_answers)
+
+    def test_can_configure_answers_projectgroup_with_edit_permission(self):
+        project_group = self.factory.makeProject()
+        login_person(project_group.owner)
+        view = create_initialized_view(project_group, '+questions')
+        self.assertEqual(False, view.can_configure_answers)
+
+    def test_can_configure_answers_dsp_with_edit_permission(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        login_person(dsp.distribution.owner)
+        view = create_initialized_view(dsp, '+questions')
+        self.assertEqual(False, view.can_configure_answers)
+
+
 class TestSearchQuestionsViewSelectedTemplate(TestSearchQuestionsView):
     """Test the behaviour of SearchQuestionsView.selected_template"""
 
