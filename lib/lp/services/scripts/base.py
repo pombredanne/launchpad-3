@@ -324,12 +324,14 @@ def cronscript_enabled(control_path, name, log):
     if not os.path.isabs(control_path):
         control_path = os.path.abspath(
             os.path.join(config.root, control_path))
+
+    cron_config = SafeConfigParser({'enabled': str(True)})
+
     if not os.path.exists(control_path):
         # No control file exists. Everything enabled by default.
         log.debug("Cronscript control file not found at %s", control_path)
     else:
         log.debug("Cronscript control file found at %s", control_path)
-        cron_config = SafeConfigParser({'enabled': str(True)})
 
         # Try reading the config file. If it fails, we log the
         # traceback and continue on using the defaults.
@@ -338,21 +340,22 @@ def cronscript_enabled(control_path, name, log):
         except:
             log.exception("Error parsing %s", control_path)
 
-        if cron_config.has_option(name, 'enabled'):
-            section = name
-        else:
-            section = 'DEFAULT'
+    if cron_config.has_option(name, 'enabled'):
+        section = name
+    else:
+        section = 'DEFAULT'
 
-        try:
-            enabled = cron_config.getboolean(section, 'enabled')
-        except:
-            log.exception(
-                "Failed to load value from %s section of %s",
-                section, control_path)
-            enabled = True
+    try:
+        enabled = cron_config.getboolean(section, 'enabled')
+    except:
+        log.exception(
+            "Failed to load value from %s section of %s",
+            section, control_path)
+        enabled = True
 
-        if enabled:
-            log.debug("Enabled by %s section", section)
-        else:
-            log.info("Disabled by %s section", section)
-            sys.exit(0)
+    if enabled:
+        log.debug("Enabled by %s section", section)
+    else:
+        log.info("Disabled by %s section", section)
+
+    return enabled
