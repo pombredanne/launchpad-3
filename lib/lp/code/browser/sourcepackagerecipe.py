@@ -166,7 +166,6 @@ class SourcePackageRecipeView(LaunchpadView):
             builds.append(build)
             if len(builds) >= 5:
                 break
-        builds.reverse()
         return builds
 
 
