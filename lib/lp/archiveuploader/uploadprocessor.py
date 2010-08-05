@@ -74,6 +74,7 @@ from contrib.glock import GlobalLock
 
 __all__ = [
     'UploadProcessor',
+    'parse_build_upload_leaf_name',
     'parse_upload_path',
     ]
 
@@ -85,6 +86,19 @@ UPLOAD_PATH_ERROR_TEMPLATE = (
 It is likely that you have a configuration problem with dput/dupload.
 %(extra_info)s
 """)
+
+
+def parse_build_upload_leaf_name(name):
+    """Parse the leaf directory name of a build upload.
+
+    :param name: Directory name.
+    :return: Tuple with build id and build queue record id.
+    """
+    (build_id_str, queue_record_str) = name.split("-", 1)
+    try:
+        return int(build_id_str), int(queue_record_str)
+    except TypeError:
+        raise ValueError
 
 
 class UploadStatusEnum:
@@ -178,12 +192,15 @@ class UploadProcessor:
         """Process an upload that is the result of a build.
 
         The name of the leaf is the build id of the build.
+        Build uploads always contain a single package per leaf.
         """
         try:
-            (build_id, queue_record) = upload.split("-", 1)
-        except ValueError:
-            self.logger("Unable to extract build id from leaf name %s" %
+            (build_id, build_queue_record_id) = parse_build_upload_leaf_name(
                 upload)
+        except ValueError:
+            self.log.warn("Unable to extract build id from leaf name %s,"
+                " skipping." % upload)
+            return
         build = getUtility(IBinaryPackageBuildSet).getByBuildID(int(build_id))
         self.logger.debug("Build %s found" % build.id)
         logger = BufferLogger()
@@ -205,7 +222,6 @@ class UploadProcessor:
             error_utility.raising(info, request)
             logger.error('%s (%s)' % (message, request.oopsid))
             result = UploadStatusEnum.FAILED
-
         destination = {
             UploadStatusEnum.FAILED: "failed",
             UploadStatusEnum.REJECTED: "rejected",

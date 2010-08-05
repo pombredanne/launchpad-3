@@ -25,7 +25,8 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadpolicy import (AbstractUploadPolicy,
     findPolicyByOptions)
-from lp.archiveuploader.uploadprocessor import UploadProcessor
+from lp.archiveuploader.uploadprocessor import (UploadProcessor,
+    parse_build_upload_leaf_name)
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from lp.soyuz.model.archivepermission import ArchivePermission
@@ -60,7 +61,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.services.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCase, TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
@@ -1818,3 +1819,29 @@ class TestUploadProcessor(TestUploadProcessorBase):
         pubrec.datepublished = UTC_NOW
         queue_item.setDone()
         self.PGPSignatureNotPreserved(archive=self.breezy.main_archive)
+
+    def testProcessBuildUploadInvalidName(self):
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1")
+        uploadprocessor.processBuildUpload(upload_dir, "bar_1.0-1")
+        self.assertLogContains('Unable to extract build id from leaf '
+                               'name bar_1.0-1, skipping.')
+
+    def testProcessBuildUploadNoBuildEntry(self):
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("42-60")
+        uploadprocessor.processBuildUpload(upload_dir, "42-60")
+        self.assertEquals([], self.log.lines)
+
+
+class ParseBuildUploadLeafNameTests(TestCase):
+    """Tests for parse_build_upload_leaf_name."""
+
+    def test_valid(self):
+        self.assertEquals((42, 60), parse_build_upload_leaf_name("42-60"))
+
+    def test_invalid_chars(self):
+        self.assertRaises(ValueError, parse_build_upload_leaf_name, "a42-460")
+
+    def test_no_dash(self):
+        self.assertRaises(ValueError, parse_build_upload_leaf_name, "32")
