@@ -2367,7 +2367,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 libraryfile=library_file, filetype=filetype))
 
     def makeBinaryPackageBuild(self, source_package_release=None,
-            distroarchseries=None, archive=None, builder=None):
+            distroarchseries=None, archive=None, builder=None,
+            status=None):
         """Create a BinaryPackageBuild.
 
         If archive is not supplied, the source_package_release is used
@@ -2377,6 +2378,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param distroarchseries: The DistroArchSeries to use.
         :param archive: The Archive to use.
         :param builder: An optional builder to assign.
+        :param status: The BuildStatus for the build.
         """
         if archive is None:
             if source_package_release is None:
@@ -2387,16 +2389,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             multiverse = self.makeComponent(name='multiverse')
             source_package_release = self.makeSourcePackageRelease(
                 archive, component=multiverse)
+            self.makeSourcePackagePublishingHistory(
+                distroseries=source_package_release.upload_distroseries,
+                archive=archive, sourcepackagerelease=source_package_release)
         processor = self.makeProcessor()
         if distroarchseries is None:
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=source_package_release.upload_distroseries,
                 processorfamily=processor.family)
+        if status is None:
+            status = BuildStatus.NEEDSBUILD
         binary_package_build = getUtility(IBinaryPackageBuildSet).new(
             source_package_release=source_package_release,
             processor=processor,
             distro_arch_series=distroarchseries,
-            status=BuildStatus.NEEDSBUILD,
+            status=status,
             archive=archive,
             pocket=PackagePublishingPocket.RELEASE,
             date_created=self.getUniqueDate())
@@ -2615,7 +2622,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             isinstance(sourcepackagename, basestring)):
             sourcepackagename = self.getOrMakeSourcePackageName(
                 sourcepackagename)
-        return SuiteSourcePackage(distroseries, pocket, sourcepackagename)
+        return ProxyFactory(
+            SuiteSourcePackage(distroseries, pocket, sourcepackagename))
 
     def makeDistributionSourcePackage(self, sourcepackagename=None,
                                       distribution=None):
