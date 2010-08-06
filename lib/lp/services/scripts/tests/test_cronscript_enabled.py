@@ -7,6 +7,9 @@ __metaclass__ = type
 
 from cStringIO import StringIO
 from logging import DEBUG
+import os.path
+import subprocess
+import sys
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 import unittest
@@ -119,6 +122,22 @@ class TestCronscriptEnabled(TestCase):
             """))
         enabled = cronscript_enabled(config, 'foo', self.log)
         self.assertIs(True, enabled)
+
+    def test_enabled_cronscript(self):
+        cmd = [
+            sys.executable,
+            os.path.join(os.path.dirname(__file__), 'example-cronscript.py'),
+            '-qqqqq', 'enabled',
+            ]
+        self.assertEqual(42, subprocess.call(cmd))
+
+    def test_disabled_cronscript(self):
+        cmd = [
+            sys.executable,
+            os.path.join(os.path.dirname(__file__), 'example-cronscript.py'),
+            '-qqqqq', 'disabled',
+            ]
+        self.assertEqual(0, subprocess.call(cmd))
 
 
 def test_suite():
