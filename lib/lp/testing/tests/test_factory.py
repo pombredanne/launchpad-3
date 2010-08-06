@@ -283,6 +283,12 @@ class TestFactory(TestCaseWithFactory):
         bpr = self.factory.makeBinaryPackageRelease(installed_size=110)
         self.assertEqual(110, bpr.installedsize)
 
+    def test_makeBinaryPackageName_uses_date_created(self):
+        date_created = datetime(2000, 01, 01, tzinfo=pytz.UTC)
+        bpr = self.factory.makeBinaryPackageRelease(
+            date_created=date_created)
+        self.assertEqual(date_created, bpr.datecreated)
+
     # makeCodeImport
     def test_makeCodeImportNoStatus(self):
         # If makeCodeImport is not given a review status, it defaults to NEW.

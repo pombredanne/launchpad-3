@@ -68,12 +68,6 @@ class BinaryPackageNameSet:
     def new(self, name):
         return BinaryPackageName(name=name)
 
-    def getOrCreateByName(self, name):
-        try:
-            return self[name]
-        except NotFoundError:
-            return self.new(name)
-
     def ensure(self, name):
         """Ensure that the given BinaryPackageName exists, creating it
         if necessary.
@@ -81,9 +75,11 @@ class BinaryPackageNameSet:
         Returns the BinaryPackageName
         """
         try:
-            return BinaryPackageName.byName(name)
-        except SQLObjectNotFound:
-            return BinaryPackageName(name=name)
+            return self[name]
+        except NotFoundError:
+            return self.new(name)
+
+    getOrCreateByName = ensure
 
     def getNotNewByNames(self, name_ids, distroseries, archive_ids):
         """See `IBinaryPackageNameSet`."""
@@ -145,6 +141,8 @@ def getBinaryPackageDescriptions(results, use_names=False,
 
     See sourcepackage.py:getSourcePackageDescriptions, which is analogous.
     """
+    if len(list(results)) < 1:
+        return {}
     if use_names:
         clause = ("BinaryPackageName.name in %s" %
                  sqlvalues([pn.name for pn in results]))
@@ -162,7 +160,7 @@ def getBinaryPackageDescriptions(results, use_names=False,
 
     for release in releases:
         binarypackagename = release.binarypackagename.name
-        if binarypackagename in descriptions:
+        if binarypackagename not in descriptions:
             description = release.description.strip().replace("\n", " ")
             if len(description) > max_title_length:
                 description = (release.description[:max_title_length]

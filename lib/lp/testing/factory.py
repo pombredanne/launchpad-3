@@ -2604,7 +2604,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  conflicts=None, replaces=None,
                                  provides=None, pre_depends=None,
                                  enhances=None, breaks=None,
-                                 essential=False, installed_size=None):
+                                 essential=False, installed_size=None,
+                                 date_created=None):
         """Make a `BinaryPackageRelease`."""
         if build is None:
             build = self.makeBinaryPackageBuild()
@@ -2625,7 +2626,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description = self.getUniqueString("description")
         if installed_size is None:
             installed_size = self.getUniqueInteger()
-        return build.createBinaryPackageRelease(
+        bpr = build.createBinaryPackageRelease(
                 binarypackagename=binarypackagename, version=version,
                 binpackageformat=binpackageformat,
                 component=component, section=section, priority=priority,
@@ -2636,6 +2637,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 provides=provides, pre_depends=pre_depends,
                 enhances=enhances, breaks=breaks, essential=essential,
                 installedsize=installed_size)
+        if date_created is not None:
+            removeSecurityProxy(bpr).datecreated = date_created
+        return bpr
 
     def makeSection(self, name=None):
         """Make a `Section`."""
