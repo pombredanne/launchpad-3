@@ -644,6 +644,7 @@ class TestBuilddManagerScan(TrialTestCase):
                {'alsa-utils_1.0.9a-4ubuntu1.dsc':
                 '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33'},
                {'arch_indep': True,
+                'arch_tag': 'i386',
                 'archive_private': False,
                 'archive_purpose': 'PRIMARY',
                 'archives':
