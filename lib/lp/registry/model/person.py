@@ -1957,15 +1957,18 @@ class Person(
     def teams_indirectly_participated_in(self):
         """See `IPerson`."""
         store = Store.of(self)
-        subselect = Select(TeamMembership.teamID,
-            And(TeamMembership.person == self,
-                TeamMembership.status.is_in([
-                TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN])))
-        return store.find(Person,
-            And(Person.id == TeamParticipation.teamID,
-                TeamParticipation.person == self,
+        origin = [
+            Person, 
+            Join(TeamMembership, Person.id == TeamMembership.personID),
+            Join(TeamParticipation, TeamMembership.teamID == TeamParticipation.teamID)]
+        find_objects = (Person, TeamMembership)
+        return store.using(*origin).find(find_objects,
+            And(TeamParticipation.person == self,
                 TeamParticipation.team != self,
-                Not(TeamParticipation.teamID.is_in(subselect))))
+                Or(TeamMembership.person != self,
+                    Not(TeamMembership.status.is_in([
+                        TeamMembershipStatus.APPROVED, 
+                        TeamMembershipStatus.ADMIN])))))
 
     @property
     def teams_with_icons(self):
