@@ -8,7 +8,7 @@ __all__ = [
     'collect_import_info',
     'HasTranslationImportsMixin',
     'TranslationImportQueueEntry',
-    'TranslationImportQueue'
+    'TranslationImportQueue',
     ]
 
 import logging
@@ -23,7 +23,7 @@ from textwrap import dedent
 from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
-from storm.expr import And, Or
+from storm.expr import And, Like, Or
 from storm.locals import Int, Reference
 
 from canonical.database.sqlbase import (
@@ -35,7 +35,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPersonRoles)
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, ISlaveStore
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -354,7 +354,7 @@ class TranslationImportQueueEntry(SQLBase):
                 self.sourcepackagename)
         else:
             target = self.productseries.product
-        
+
         return target.getCustomLanguageCode(language_code)
 
     def _guessLanguage(self):
@@ -401,7 +401,7 @@ class TranslationImportQueueEntry(SQLBase):
         :arg sourcepackagename: The ISourcePackageName that uses this
             translation or None if we don't know it.
         """
-        assert (lang_code is not None and translation_domain is not None) , (
+        assert (lang_code is not None and translation_domain is not None), (
             "lang_code and translation_domain cannot be None")
 
         language_set = getUtility(ILanguageSet)
@@ -1305,6 +1305,15 @@ class TranslationImportQueue:
             deletion_clauses.append(And(
                 TranslationImportQueueEntry.status == status,
                 TranslationImportQueueEntry.date_status_changed < cutoff))
+
+        # Also clean out Blocked PO files for Ubuntu that haven't been
+        # touched for a year.  Keep blocked templates because they may
+        # determine the blocking of future translation uploads.
+        blocked_cutoff = now - datetime.timedelta(days=365)
+        deletion_clauses.append(And(
+            TranslationImportQueueEntry.distroseries_id != None,
+            TranslationImportQueueEntry.date_status_changed < blocked_cutoff,
+            Like(TranslationImportQueueEntry.path, '%.po')))
 
         entries = store.find(
             TranslationImportQueueEntry, Or(*deletion_clauses))

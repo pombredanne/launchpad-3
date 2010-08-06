@@ -78,8 +78,6 @@
           <dd><span tal:replace="context/pocket/title">Release</span></dd>
       </dl>
       <dl>
-        <dt tal:condition="context/source_package_release">Result:</dt>
-        <dd tal:condition="context/source_package_release" tal:content="structure context/source_package_release/fmt:link"></dd>
         <dt>Binary builds:</dt>
         <dd tal:repeat="binary view/binary_builds"
             tal:content="structure binary/fmt:link">
@@ -118,7 +116,10 @@
       <tal:pending condition="context/buildqueue_record/job/status/enumvalue:WAITING">
         <li tal:define="eta context/buildqueue_record/getEstimatedJobStartTime">
           Start <tal:eta
-            replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
+          replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
+          (<span tal:replace="context/buildqueue_record/lastscore"/>)
+          <a href="https://help.launchpad.net/Packaging/BuildScores"
+             target="_blank">What's this?</a>
         </li>
       </tal:pending>
       </tal:reallypending>
@@ -158,6 +159,25 @@
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>
     </ul>
+
+    <div
+      style="margin-top: 1.5em"
+      tal:define="context_menu view/context/menu:context;
+                  link context_menu/cancel"
+      tal:condition="link/enabled"
+      >
+      <a tal:replace="structure link/fmt:link" />
+    </div>
+    <div
+      style="margin-top: 1.5em"
+      tal:define="context_menu view/context/menu:context;
+                  link context_menu/rescore"
+      tal:condition="link/enabled"
+      >
+      <a tal:replace="structure link/fmt:link" />
+    </div>
+
+
   </metal:macro>
 
   <metal:macro define-macro="buildlog">

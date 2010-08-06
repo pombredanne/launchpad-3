@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -13,8 +13,8 @@ from lazr.restful.declarations import (
     operation_returns_collection_of)
 
 from canonical.launchpad.fields import ParticipatingPersonChoice
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.translations.interfaces.rosettastats import IRosettaStats
 from lp.registry.interfaces.sourcepackagename import (
@@ -418,7 +418,7 @@ class IPOTemplate(IRosettaStats):
             loops when creating a new IPOTemplate.
         """
 
-    def getDummyPOFile(language_code, requester=None):
+    def getDummyPOFile(language, requester=None, check_for_existing=True):
         """Return a DummyPOFile if there isn't already a persistent `IPOFile`
 
         Raise `LanguageNotFound` if the language does not exist in the
@@ -427,7 +427,8 @@ class IPOTemplate(IRosettaStats):
         This method is designed to be used by read only actions. This way you
         only create a POFile when you actually need to store data.
 
-        We should not have already a POFile for the given language_code.
+        We should not have already a POFile for the given language:
+        if check_for_existing is set to False, no check will be done for this.
         """
 
     def createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural=None,
@@ -698,17 +699,44 @@ class IHasTranslationTemplates(Interface):
     Examples include `ISourcePackage`, `IDistroSeries`, and `IProductSeries`.
     """
 
+    has_translation_templates = Bool(
+        title=_("Does this object have any translation templates?"),
+        readonly=True)
+
     has_current_translation_templates = Bool(
         title=_("Does this object have current translation templates?"),
         readonly=True)
 
+    def getTemplatesCollection():
+        """Return templates as a `TranslationTemplatesCollection`.
+
+        The collection selects all `POTemplate`s attached to the
+        translation target that implements this interface.
+        """
+
+    def getCurrentTemplatesCollection():
+        """Return `TranslationTemplatesCollection` of current templates.
+
+        A translation template is considered active when both
+        `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
+        containing `Product` or `Distribution` are set to True.
+        """
+        # XXX JeroenVermeulen 2010-07-16 bug=605924: Move the
+        # official_rosetta distinction into browser code.
+
     def getCurrentTranslationTemplates(just_ids=False):
         """Return an iterator over all active translation templates.
 
+        :param just_ids: If True, return only the `POTemplate.id` rather
+            than the full `POTemplate`.  Used to save time on retrieving
+            and deserializing the objects from the database.
+
         A translation template is considered active when both
-        `IPOTemplate`.iscurrent and parent official_rosetta flags
-        are set to True.
+        `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
+        containing `Product` or `Distribution` are set to True.
         """
+        # XXX JeroenVermeulen 2010-07-16 bug=605924: Move the
+        # official_rosetta distinction into browser code.
 
     def getCurrentTranslationFiles(just_ids=False):
         """Return an iterator over all active translation files.
@@ -736,6 +764,27 @@ class IHasTranslationTemplates(Interface):
     def getTranslationTemplateFormats():
         """A list of native formats for all current translation templates.
         """
+
+    def getTemplatesAndLanguageCounts():
+        """List tuples of `POTemplate` and its language count.
+
+        A template's language count is the number of `POFile`s that
+        exist for it.
+        """
+
+class ITranslationTemplatesCollection(Interface):
+    """A `Collection` of `POTemplate`s."""
+
+    def joinOuterPOFile(language=None):
+        """Outer-join `POFile` into the collection.
+
+        :return: A `TranslationTemplatesCollection` with an added outer
+            join to `POFile`.
+        """
+
+    def select(*args):
+        """Return a ResultSet for this collection with values set to args."""
+
 
 # Monkey patch for circular import avoidance done in
 # _schema_circular_imports.py

@@ -35,7 +35,7 @@ from lp.soyuz.adapters.packagelocation import (
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import (
     determine_source_file_type)
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -451,13 +451,14 @@ class ArchiveCruftChecker:
                 dasbp = distroarchseries.getBinaryPackage(binarypackagename)
                 dasbpr = dasbp.currentrelease
                 try:
-                    sbpph = dasbpr.current_publishing_record.supersede()
+                    bpph = dasbpr.current_publishing_record
+                    bpph.supersede()
                     # We're blindly removing for all arches, if it's not there
                     # for some, that's fine ...
                 except NotFoundError:
                     pass
                 else:
-                    version = sbpph.binarypackagerelease.version
+                    version = bpph.binarypackagerelease.version
                     self.logger.info ("Removed %s_%s from %s/%s ... "
                                       % (package, version,
                                          self.distroseries.name,

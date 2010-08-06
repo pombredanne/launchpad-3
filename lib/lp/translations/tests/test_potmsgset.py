@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 import pytz
-import unittest
 
 import transaction
 
@@ -103,7 +102,6 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         self.assertRaises(POTMsgSetInIncompatibleTemplatesError,
                           naked_potmsgset.__getattribute__, "singular_text")
-
 
     def test_POTMsgSetUsesEnglishMsgids(self):
         """Test that `uses_english_msgids` property works correctly."""
@@ -782,8 +780,7 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
         # There is no local suggestion.
         self.assertContentEqual([],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)
-            )
+                self.potemplate, self.pofile.language))
         # Dismiss suggestions.
         self.potmsgset.dismissAllSuggestions(
             self.pofile, self.factory.makePerson(), self.now())
@@ -822,7 +819,7 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
                 self.potemplate, self.pofile.language))
         # Dismiss suggestions using an older timestamp fails if there is
         # a newer curent translation.
-        self.assertRaises(TranslationConflict, 
+        self.assertRaises(TranslationConflict,
             self.potmsgset.dismissAllSuggestions,
             self.pofile, self.factory.makePerson(), old_now)
         # Still only the 2nd suggestion is visible.
@@ -954,8 +951,9 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         self.assertTrue(translation.potemplate is None)
 
     def test_resetCurrentTranslation_diverged_not_imported(self):
-        # Resettting a diverged current translation that was not imported, will
-        # change is_current to False and will make it shared.
+        # Resetting a diverged current translation that was not
+        # imported, will change is_current to False and will make it
+        # shared.
 
         translation = self.factory.makeTranslationMessage(
             self.pofile, self.potmsgset, translations=[u'Diverged text'],
@@ -1113,7 +1111,6 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         self.assertTrue(tm1.potemplate is None)
         self.assertEquals(tm2.potemplate, self.potemplate)
 
-
     def test_updateTranslation_DivergedImportedToSharedImported(self):
         # Corner case for bug #381645:
         # Adding a shared imported translation "tm1",
@@ -1205,7 +1202,6 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
 
         self.assertFalse(tm1.is_imported)
         self.assertTrue(tm2.is_imported)
-
 
     def test_updateTranslation_DivergedCurrentToDivergedImported(self):
         # Corner case that came up when fixing bug #394224:
@@ -1350,7 +1346,3 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
                 sequence=sequence)
             self.assertTrue(credits.is_translation_credit)
             self.assertEqual(credits_type, credits.translation_credits_type)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

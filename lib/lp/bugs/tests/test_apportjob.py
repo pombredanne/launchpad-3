@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import os
 import transaction
-import unittest
 
 from sqlobject import SQLObjectNotFound
 
@@ -213,24 +212,22 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # IProcessApportBlobJobSource.create() will create only one
         # ProcessApportBlobJob for a given BLOB, no matter how many
         # times it is called.
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        blobjobsource = getUtility(IProcessApportBlobJobSource)
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no ProcessApportBlobJobs. Found %s" %
             len(current_jobs))
 
-        job = getUtility(IProcessApportBlobJobSource).create(self.blob)
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        job = blobjobsource.create(self.blob)
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             1, len(current_jobs),
             "There should be only one ProcessApportBlobJob. Found %s" %
             len(current_jobs))
 
-        another_job = getUtility(IProcessApportBlobJobSource).create(self.blob)
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        another_job = blobjobsource.create(self.blob)
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             1, len(current_jobs),
             "There should be only one ProcessApportBlobJob. Found %s" %
@@ -242,17 +239,14 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # IProcessApportBlobJobSource.
         job.job.start()
         job.job.complete()
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no ready ProcessApportBlobJobs. Found %s" %
             len(current_jobs))
 
-        yet_another_job = getUtility(
-            IProcessApportBlobJobSource).create(self.blob)
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        yet_another_job = blobjobsource.create(self.blob)
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no new ProcessApportBlobJobs. Found %s" %
@@ -446,7 +440,3 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
             view.extra_data_to_process,
             "view.extra_data_to_process should be False when there is no "
             "job.")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

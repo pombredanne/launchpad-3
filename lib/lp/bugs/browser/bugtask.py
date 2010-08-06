@@ -25,7 +25,6 @@ __all__ = [
     'BugTaskPortletView',
     'BugTaskPrivacyAdapter',
     'BugTaskRemoveQuestionView',
-    'BugTaskSOP',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
     'BugTaskStatusView',
@@ -123,7 +122,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IStructuralObjectPresentation)
+    ILaunchpadCelebrities)
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -132,8 +131,8 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_distrotask)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, NotFoundError, UnexpectedFormData)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.errors import NotFoundError, UnexpectedFormData
 
 from canonical.launchpad.searchbuilder import all, any, NULL
 
@@ -144,7 +143,6 @@ from lp.bugs.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink, FeedsMixin)
 from lp.registry.browser.mentoringoffer import CanBeMentoredView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
@@ -543,9 +541,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
     @property
     def page_title(self):
-        return smartquote('%s: "%s"') % (
-            IStructuralObjectPresentation(self.context).getMainHeading(),
-            self.context.bug.title)
+        bugtask = self.context
+        if INullBugTask.providedBy(bugtask):
+            heading = 'Bug #%s is not in %s' % (
+                bugtask.bug.id, bugtask.bugtargetdisplayname)
+        else:
+            heading = 'Bug #%s in %s' % (
+                bugtask.bug.id, bugtask.bugtargetdisplayname)
+        return smartquote('%s: "%s"') % (heading, self.context.bug.title)
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -1317,6 +1320,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         if self.user_is_subscribed is None:
             self.user_is_subscribed = self.context.bug.isSubscribed(self.user)
 
+    page_title = 'Edit status'
 
     @cachedproperty
     def field_names(self):
@@ -1779,6 +1783,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
 class BugTaskStatusView(LaunchpadView):
     """Viewing the status of a bug task."""
+
+    page_title = 'View status'
 
     def initialize(self):
         """Set up the appropriate widgets.
@@ -3651,35 +3657,6 @@ class BugTaskPrivacyAdapter:
     def is_private(self):
         """Return True if the bug is private, otherwise False."""
         return self.context.bug.private
-
-
-# XXX mars 2008-08-25 bug=261188
-# This whole class hierarchy should be replaced with something more
-# specific, ie. a class that generates BugTask page titles.
-class BugTaskSOP(StructuralObjectPresentation):
-    """Provides the structural heading for `IBugTask`."""
-
-    def getIntroHeading(self):
-        """Return None."""
-        return None
-
-    def getMainHeading(self):
-        """Return the heading using the BugTask."""
-        bugtask = self.context
-        if INullBugTask.providedBy(bugtask):
-            return 'Bug #%s is not in %s' % (
-                bugtask.bug.id, bugtask.bugtargetdisplayname)
-        else:
-            return 'Bug #%s in %s' % (
-                bugtask.bug.id, bugtask.bugtargetdisplayname)
-
-    def listChildren(self, num):
-        """Return an empty list."""
-        return []
-
-    def listAltChildren(self, num):
-        """Return None."""
-        return None
 
 
 class BugTaskCreateQuestionView(LaunchpadFormView):

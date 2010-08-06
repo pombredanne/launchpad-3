@@ -11,8 +11,11 @@ __all__ = ['AuthorizationBase']
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
+from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAliasWithParent)
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
@@ -1080,11 +1083,37 @@ class EditAnnouncement(AuthorizationBase):
 
 
 class UseApiDoc(AuthorizationBase):
+    """This is just to please apidoc.launchpad.dev."""
     permission = 'zope.app.apidoc.UseAPIDoc'
     usedfor = Interface
 
+    def checkUnauthenticated(self):
+        # We only want this permission to work at all for devmode.
+        return config.devmode
+
     def checkAuthenticated(self, user):
-        return True
+        # We only want this permission to work at all for devmode.
+        return config.devmode
+
+
+class ManageApplicationForEverybody(UseApiDoc):
+    """This is just to please apidoc.launchpad.dev.
+
+    We do this because zope.app.apidoc uses that permission, but nothing else
+    should be using it.
+    """
+    permission = 'zope.ManageApplication'
+    usedfor = Interface
+
+
+class ZopeViewForEverybody(UseApiDoc):
+    """This is just to please apidoc.launchpad.dev.
+
+    We do this because zope.app.apidoc uses that permission, but nothing else
+    should be using it.
+    """
+    permission = 'zope.View'
+    usedfor = Interface
 
 
 class OnlyBazaarExpertsAndAdmins(AuthorizationBase):
@@ -1142,6 +1171,15 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     usedfor = ICodeImportMachine
 
 
+class DeleteSourcePackageRecipeBuilds(OnlyBazaarExpertsAndAdmins):
+    """Control who can delete SourcePackageRecipeBuilds.
+
+    Access is restricted to members of ~bazaar-experts and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ISourcePackageRecipeBuild
+
+
 class AdminDistributionTranslations(AuthorizationBase):
     """Class for deciding who can administer distribution translations.
 
@@ -1192,15 +1230,12 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
         template = self.obj
         if template.distroseries is not None:
             # Template is on a distribution.
-            distribution = template.distroseries.distribution
-            return (
-                AdminDistributionTranslations(
-                    distribution).checkAuthenticated(user))
-
+            return AdminDistroSeriesTranslations(
+                template.distroseries).checkAuthenticated(user)
         else:
             # Template is on a product.
-            return OnlyRosettaExpertsAndAdmins.checkAuthenticated(
-                self, user)
+            return AdminProductSeriesTranslations(
+                template.productseries).checkAuthenticated(user)
 
 
 class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
@@ -1474,6 +1509,7 @@ class EditPackageBuild(EditBuildFarmJob):
         # If it's a PPA or a copy archive only allow its owner.
         return (self.obj.archive.owner and
                 user.inTeam(self.obj.archive.owner))
+
 
 class EditBinaryPackageBuild(EditPackageBuild):
     permission = 'launchpad.Edit'
@@ -1767,6 +1803,16 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
 
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
+
+
+class AdminProductSeriesTranslations(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IProductSeries
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IProductSeries` translations."""
+
+        return OnlyRosettaExpertsAndAdmins(self.obj).checkAuthenticated(user)
 
 
 class BranchMergeProposalView(AuthorizationBase):
@@ -2450,3 +2496,23 @@ class EditPackagesetSet(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         return user.in_admin or user.in_ubuntu_techboard
+
+
+class EditLibraryFileAliasWithParent(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ILibraryFileAliasWithParent
+
+    def checkAuthenticated(self, user):
+        """Only persons which can edit an LFA's parent can edit an LFA.
+
+        By default, a LibraryFileAlias does not know about its parent.
+        Such aliases are never editable. Use an adapter to provide a
+        parent object.
+
+        If a parent is known, users which can edit the parent can also
+        edit properties of the LibraryFileAlias.
+        """
+        parent = getattr(self.obj, '__parent__', None)
+        if parent is None:
+            return False
+        return check_permission(self.permission, parent)

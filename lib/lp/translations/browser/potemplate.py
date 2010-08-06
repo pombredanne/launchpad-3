@@ -39,7 +39,8 @@ from canonical.lazr.utils import smartquote
 
 from canonical.launchpad import helpers, _
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.errors import NotFoundError
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.registry.browser.productseries import ProductSeriesFacets
 from lp.translations.browser.translations import TranslationsMixin
@@ -55,6 +56,7 @@ from lp.translations.interfaces.translationimporter import (
     ITranslationImporter)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, GetitemNavigation,
     LaunchpadView, LaunchpadEditFormView, Link, Navigation, NavigationMenu,
@@ -90,7 +92,9 @@ class POTemplateNavigation(Navigation):
         elif self.request.method in ['GET', 'HEAD']:
             # It's just a query, get a fake one so we don't create new
             # POFiles just because someone is browsing the web.
-            return self.context.getDummyPOFile(name, requester=user)
+            language = getUtility(ILanguageSet).getLanguageByCode(name)
+            return self.context.getDummyPOFile(language, requester=user,
+                                               check_for_existing=False)
         else:
             # It's a POST.
             # XXX CarlosPerelloMarin 2006-04-20 bug=40275: We should
@@ -802,6 +806,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
     productseries = None
     label = "Translation templates"
     page_title = "All templates"
+    can_edit = None
+    can_admin = None
 
     def initialize(self, series, is_distroseries=True):
         self.is_distroseries = is_distroseries
@@ -809,6 +815,10 @@ class BaseSeriesTemplatesView(LaunchpadView):
             self.distroseries = series
         else:
             self.productseries = series
+        self.can_admin = check_permission(
+            'launchpad.TranslationsAdmin', series)
+        self.can_edit = (
+            self.can_admin or check_permission('launchpad.Edit', series))
 
     def iter_templates(self):
         potemplateset = getUtility(IPOTemplateSet)
@@ -822,10 +832,3 @@ class BaseSeriesTemplatesView(LaunchpadView):
             return "active-template"
         else:
             return "inactive-template"
-
-    def isVisible(self, template):
-        if (template.iscurrent or
-            check_permission('launchpad.Edit', template)):
-            return True
-        else:
-            return False

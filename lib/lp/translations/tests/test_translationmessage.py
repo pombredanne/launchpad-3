@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -15,6 +13,7 @@ from lp.testing import TestCaseWithFactory
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.interfaces.translations import TranslationConstants
 from canonical.testing import ZopelessDatabaseLayer
+
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
     """Tests for `TranslationMessage.findIdenticalMessage`."""
@@ -145,7 +144,3 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
         setattr(self.other_message, last_form, translation)
         nonclone = self._find(self.other_potmsgset, self.other_template)
         self.assertEqual(nonclone, None)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

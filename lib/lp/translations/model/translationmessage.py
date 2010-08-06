@@ -7,7 +7,7 @@ __all__ = [
     'make_plurals_sql_fragment',
     'make_plurals_fragment',
     'TranslationMessage',
-    'TranslationMessageSet'
+    'TranslationMessageSet',
     ]
 
 from datetime import datetime
@@ -229,7 +229,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         dbName='date_created', notNull=True, default=UTC_NOW)
     submitter = ForeignKey(
         foreignKey='Person', storm_validator=validate_public_person,
-        dbName='submitter',notNull=True)
+        dbName='submitter', notNull=True)
     date_reviewed = UtcDateTimeCol(
         dbName='date_reviewed', notNull=False, default=None)
     reviewer = ForeignKey(

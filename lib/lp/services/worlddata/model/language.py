@@ -16,12 +16,10 @@ from sqlobject import (
 from storm.locals import Or
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
-
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import ISlaveStore
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.services.worlddata.interfaces.language import (
     ILanguage, ILanguageSet, TextDirection)
 

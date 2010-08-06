@@ -56,6 +56,7 @@ from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
 
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from lp.archiveuploader.uploadpolicy import (
@@ -65,7 +66,6 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
-from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from contrib.glock import GlobalLock
 
@@ -293,7 +293,7 @@ class UploadProcessor:
             (distribution, suite_name,
              archive) = parse_upload_path(relative_path)
         except UploadPathError, e:
-            # pick some defaults to create the NascentUploap() object.
+            # pick some defaults to create the NascentUpload() object.
             # We will be rejecting the upload so it doesn matter much.
             distribution = getUtility(IDistributionSet)['ubuntu']
             suite_name = None

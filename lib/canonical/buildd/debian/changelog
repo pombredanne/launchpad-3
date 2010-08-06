@@ -1,3 +1,22 @@
+launchpad-buildd (68) UNRELEASED; urgency=low
+
+  * Take an 'arch_tag' argument, so the master can override the slave
+    architecture.
+
+ -- William Grant <wgrant@ubuntu.com>  Sun, 01 Aug 2010 22:00:32 +1000
+
+launchpad-buildd (67) hardy-cat; urgency=low
+
+  * Force aptitude installation for recipe builds on maverick
+
+ -- LaMont Jones <lamont@canonical.com>  Fri, 23 Jul 2010 14:22:23 -0600
+
+launchpad-buildd (66) hardy-cat; urgency=low
+
+  * handle [linux-any] build-dependencies.  LP#604981
+
+ -- LaMont Jones <lamont@canonical.com>  Mon, 19 Jul 2010 12:13:31 -0600
+
 launchpad-buildd (65) hardy-cat; urgency=low
 
   * Drop preinst check, since human time does not scale across a large

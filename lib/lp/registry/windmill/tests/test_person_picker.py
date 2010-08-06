@@ -14,6 +14,11 @@ from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
 
 
+VISIBLE_PICKER_OVERLAY = (
+    u'//div[contains(@class, "yui-picker ") and '
+     'not(contains(@class, "yui-picker-hidden"))]')
+
+
 class TesPersonPickerWidget(WindmillTestCase):
 
     layer = RegistryWindmillLayer
@@ -31,7 +36,8 @@ class TesPersonPickerWidget(WindmillTestCase):
         client.type(text=u'guilherme', name=u'field.dupe_person')
 
         client.click(id=u'show-widget-field-dupe_person')
-        client.waits.forElement(id=u'shadow', timeout=constants.FOR_ELEMENT)
+        client.waits.forElement(xpath=VISIBLE_PICKER_OVERLAY,
+                                timeout=constants.FOR_ELEMENT)
 
         client.asserts.assertProperty(
             xpath=u'//div[@class="yui-picker-search-box"]/input',
