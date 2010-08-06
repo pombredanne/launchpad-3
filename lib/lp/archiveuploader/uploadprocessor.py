@@ -47,7 +47,9 @@ above, failed being worst).
 
 __metaclass__ = type
 
+import datetime
 import os
+import pytz
 import shutil
 import stat
 import sys
@@ -231,6 +233,7 @@ class UploadProcessor:
                 build.verifySuccessfulUpload() and
                 build.status == BuildStatus.FULLYBUILT):
             build.status = BuildStatus.FAILEDTOUPLOAD
+            build.date_finished = datetime.datetime.now(pytz.UTC)
             build.notify(extra_info="Uploading build %s failed." % upload)
         build.storeUploadLog(logger.buffer.getvalue())
 

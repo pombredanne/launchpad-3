@@ -219,20 +219,18 @@ class BuildBase:
             if not os.path.exists(uploader_queue_dir):
                 os.mkdir(uploader_queue_dir)
             os.rename(upload_dir, os.path.join(uploader_queue_dir, upload_leaf))
-            #upload_log = process_upload(upload_leaf, root, build.id, logger,
-            #    build.distribution, build.distro_series, build.pocket,
-            #    build.policy_name)
         else:
             logger.warning("Copy from slave for build %s was unsuccessful." % build.id)
-            build.notify(extra_info='Copy from slave was unsuccessful.')
             build.status = BuildStatus.FAILEDTOUPLOAD
-
-        # Remove BuildQueue record.
-        build.buildqueue_record.destroySelf()
+            build.notify(extra_info='Copy from slave was unsuccessful.')
 
         # Store build information, build record was already updated during
         # the binary upload.
         build.storeBuildInfo(build, librarian, slave_status)
+
+        # Remove BuildQueue record.
+        build.buildqueue_record.destroySelf()
+
 
     @staticmethod
     def _handleStatus_PACKAGEFAIL(build, librarian, slave_status, logger):
