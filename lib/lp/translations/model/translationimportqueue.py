@@ -1186,7 +1186,7 @@ class TranslationImportQueue:
     def _attemptToApprove(self, entry):
         """Attempt to approve one queue entry."""
         if entry.status != RosettaImportStatus.NEEDS_REVIEW:
-            return
+            return False
 
         if entry.import_into is None:
             # We don't have a place to import this entry. Try to guess it.
