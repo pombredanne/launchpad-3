@@ -1200,7 +1200,8 @@ class TranslationImportQueue:
                 potemplate = entry.guessed_potemplate
                 pofile = entry.pofile
 
-        self._attemptToSet(entry, potemplate=potemplate, pofile=pofile)
+            self._attemptToSet(entry, potemplate=potemplate, pofile=pofile)
+
         if entry.import_into is None:
             # Still no dice.
             return False
