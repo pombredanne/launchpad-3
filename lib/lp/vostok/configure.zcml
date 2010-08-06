@@ -18,5 +18,4 @@
      provides="lp.vostok.publisher.IVostokRoot">
     <allow interface="lp.vostok.publisher.IVostokRoot" />
   </securedutility>
-
 </configure>

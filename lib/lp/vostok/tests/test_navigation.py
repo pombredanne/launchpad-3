@@ -11,7 +11,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp import urlparse
 from canonical.testing.layers import DatabaseFunctionalLayer
 
-from lp.app.errors import NotFoundError
 from lp.testing import TestCaseWithFactory
 from lp.testing.publication import test_traverse
 
