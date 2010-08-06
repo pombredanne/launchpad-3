@@ -12,7 +12,7 @@ and an external bug, see bugwatch.txt.
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> bugtracker_set = getUtility(IBugTrackerSet)
     >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
-    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> now = datetime.now(pytz.UTC)
 
     >>> def print_watches(bugtracker):
     ...     watches = sorted(
