@@ -48,7 +48,7 @@ from sqlobject import (
     StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
-from storm.expr import And, In, Join, Lower, Not, Or, SQL
+from storm.expr import And, In, Join, Lower, Not, Or, SQL, Select
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -1956,27 +1956,16 @@ class Person(
     @property
     def teams_indirectly_participated_in(self):
         """See `IPerson`."""
-        return Person.select("""
-              -- we are looking for teams, so we want "people" that are on the
-              -- teamparticipation.team side of teamparticipation
-            Person.id = TeamParticipation.team AND
-              -- where this person participates in the team
-            TeamParticipation.person = %s AND
-              -- but not the teamparticipation for "this person in himself"
-              -- which exists for every person
-            TeamParticipation.team != %s AND
-              -- nor do we want teams in which the person is a direct
-              -- participant, so we exclude the teams in which there is
-              -- a teammembership for this person
-            TeamParticipation.team NOT IN
-              (SELECT TeamMembership.team FROM TeamMembership WHERE
-                      TeamMembership.person = %s AND
-                      TeamMembership.status IN (%s, %s))
-            """ % sqlvalues(self.id, self.id, self.id,
-                            TeamMembershipStatus.APPROVED,
-                            TeamMembershipStatus.ADMIN),
-            clauseTables=['TeamParticipation'],
-            orderBy=Person.sortingColumns)
+        store = Store.of(self)
+        subselect = Select(TeamMembership.teamID,
+            And(TeamMembership.person == self,
+                TeamMembership.status.is_in([
+                TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN])))
+        return store.find(Person,
+            And(Person.id == TeamParticipation.teamID,
+                TeamParticipation.person == self,
+                TeamParticipation.team != self,
+                Not(TeamParticipation.teamID.is_in(subselect))))
 
     @property
     def teams_with_icons(self):
