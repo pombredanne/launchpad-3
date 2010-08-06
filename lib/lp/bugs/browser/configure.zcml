@@ -767,7 +767,7 @@
     <browser:navigation
         module="lp.bugs.browser.bugattachment"
         classes="
-            BugAttachmentSetNavigation"/>
+            BugAttachmentSetNavigation BugAttachmentFileNavigation"/>
     <browser:page
         name="+bugsupervisor"
         for="lp.bugs.interfaces.bugsupervisor.IHasBugSupervisor"
@@ -1159,4 +1159,9 @@
             classes="
                 BugWatchSetNavigation"/>
     </facet>
+    <class class="lp.bugs.browser.bugattachment.SafeStreamOrRedirectLibraryFileAliasView">
+      <allow attributes="__call__" />
+      <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+    </class>
+
 </configure>

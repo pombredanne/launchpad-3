@@ -163,10 +163,13 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(found_translations, [translation])
 
         # Adding a translation for same POTMsgSet, but to a different
-        # POFile (i.e. language or variant) will not add the translation
+        # POFile (different language) will not add the translation
         # to the list of submitter's translations for *former* POFile.
+        serbian_latin = self.factory.makeLanguage(
+            'sr@latin', 'Serbian Latin')
+
         self.devel_sr_latin_pofile = self.factory.makePOFile(
-            'sr', variant=u'latin', potemplate=self.devel_potemplate)
+            'sr@latin', potemplate=self.devel_potemplate)
         self.factory.makeTranslationMessage(
             pofile=self.devel_sr_latin_pofile, potmsgset=potmsgset,
             translations=[u"Yet another translation"],

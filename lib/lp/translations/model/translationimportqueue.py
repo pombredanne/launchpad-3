@@ -40,7 +40,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
-    IPerson, validate_person_not_private_membership)
+    IPerson, validate_person)
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -115,7 +115,7 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False)
     importer = ForeignKey(
         dbName='importer', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=True)
     dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)
@@ -405,8 +405,7 @@ class TranslationImportQueueEntry(SQLBase):
             "lang_code and translation_domain cannot be None")
 
         language_set = getUtility(ILanguageSet)
-        (language, variant) = language_set.getLanguageAndVariantFromString(
-            lang_code)
+        language = language_set.getLanguageByCode(lang_code)
 
         if language is None or not language.visible:
             # Either we don't know the language or the language is hidden by
@@ -450,9 +449,9 @@ class TranslationImportQueueEntry(SQLBase):
             return None
 
         # Get or create an IPOFile based on the info we guess.
-        pofile = potemplate.getPOFileByLang(language.code, variant=variant)
+        pofile = potemplate.getPOFileByLang(language.code)
         if pofile is None:
-            pofile = potemplate.newPOFile(language.code, variant=variant)
+            pofile = potemplate.newPOFile(language.code)
             if pofile.canEditTranslations(self.importer):
                 pofile.owner = self.importer
 
@@ -617,6 +616,7 @@ class TranslationImportQueueEntry(SQLBase):
                 'engb': 'en_GB',
                 'ptbr': 'pt_BR',
                 'srlatn': 'sr@Latn',
+                'sr-latin': 'sr@latin',
                 'zhcn': 'zh_CN',
                 'zhtw': 'zh_TW',
                 }
@@ -658,8 +658,7 @@ class TranslationImportQueueEntry(SQLBase):
 
         # Let's check if whether the filename is a valid language.
         language_set = getUtility(ILanguageSet)
-        (language, variant) = language_set.getLanguageAndVariantFromString(
-            filename)
+        language = language_set.getLanguageByCode(filename)
 
         if language is None:
             # The filename is not a valid language, so let's try it as a

@@ -74,7 +74,7 @@
                  tal:define="patch patch_task/bug/latest_patch;
                              age python:view.patchAge(patch)"
                  tal:attributes="id string:patch-cell-${repeat/patch_task/index}">
-                   <a tal:attributes="href patch/libraryfile/http_url"
+                   <a tal:attributes="href python:view.proxiedUrlForLibraryFile(patch)"
                       tal:content="age/fmt:approximateduration/use-digits"></a>
                <div class="popupTitle"
                     tal:attributes="id string:patch-popup-${repeat/patch_task/index};">
@@ -82,7 +82,7 @@
                     <strong>From:</strong>
                     <a tal:replace="structure submitter/fmt:link"></a><br/>
                     <strong>Link:</strong>
-                    <a tal:attributes="href patch/libraryfile/http_url"
+                    <a tal:attributes="href python:view.proxiedUrlForLibraryFile(patch)"
                        tal:content="patch/libraryfile/filename"></a></p>
                  <p tal:content="string:${patch/title}"></p>
                </div>

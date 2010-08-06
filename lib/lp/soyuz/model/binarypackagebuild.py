@@ -451,7 +451,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         binpackageformat, component,section, priority, shlibdeps,
         depends, recommends, suggests, conflicts, replaces, provides,
         pre_depends, enhances, breaks, essential, installedsize,
-        architecturespecific):
+        architecturespecific, debug_package):
         """See IBuild."""
         return BinaryPackageRelease(
             build=self, binarypackagename=binarypackagename, version=version,
@@ -462,7 +462,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             suggests=suggests, conflicts=conflicts, replaces=replaces,
             provides=provides, pre_depends=pre_depends, enhances=enhances,
             breaks=breaks, essential=essential, installedsize=installedsize,
-            architecturespecific=architecturespecific)
+            architecturespecific=architecturespecific,
+            debug_package=debug_package)
 
     def estimateDuration(self):
         """See `IBuildBase`."""
@@ -678,14 +679,11 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
 
     def _getDebByFileName(self, filename):
         """Helper function to get a .deb LFA in the context of this build."""
-        store = Store.of(self)
-        return store.find(
-            LibraryFileAlias,
-            BinaryPackageRelease.build == self.id,
-            BinaryPackageFile.binarypackagerelease == BinaryPackageRelease.id,
-            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
-            LibraryFileAlias.filename == filename
-            ).one()
+        bpf = self.getBinaryPackageFileByName(filename)
+        if bpf is not None:
+            return bpf.libraryfile
+        else:
+            return None
 
     def getFileByName(self, filename):
         """See `IBuild`."""
@@ -704,6 +702,15 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             return file_object
 
         raise NotFoundError(filename)
+
+    def getBinaryPackageFileByName(self, filename):
+        """See `IBuild`."""
+        return Store.of(self).find(
+            BinaryPackageFile,
+            BinaryPackageRelease.build == self.id,
+            BinaryPackageFile.binarypackagerelease == BinaryPackageRelease.id,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            LibraryFileAlias.filename == filename).one()
 
     def getSpecificJob(self):
         """See `IBuildFarmJob`."""
