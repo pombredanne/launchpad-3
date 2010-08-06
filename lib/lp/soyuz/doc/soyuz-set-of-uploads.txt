@@ -82,15 +82,6 @@ for the ubuntutest distribution.
   ...     'breezy', 'Breezy Badger', 'The Breezy Badger',
   ...     'Black and White', 'Someone', '5.10', breezy_autotest,
   ...     breezy_autotest.owner)
-  >>> new = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
-  ...     pocket=PackagePublishingPocket.RELEASE)
-  >>> unapproved = breezy_autotest.getQueueItems(
-  ...     PackageUploadStatus.UNAPPROVED,
-  ...     pocket=PackagePublishingPocket.RELEASE)
-  >>> for item in new:
-  ...     item.setRejected()
-  >>> for item in unapproved:
-  ...     item.setRejected()
   >>> ids = InitialiseDistroSeries(breezy)
   >>> ids.initialise()
   >>> breezy.changeslist = 'breezy-changes@ubuntu.com'

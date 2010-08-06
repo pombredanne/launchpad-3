@@ -59,9 +59,8 @@ class InitialiseDistroSeries:
         self.parent = self.distroseries.parent_series
         self._store = getUtility(
             IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        self._check()
 
-    def _check(self):
+    def check(self):
         if self.parent is None:
             raise InitialisationError("Parent series required.")
         self._checkBuilds()

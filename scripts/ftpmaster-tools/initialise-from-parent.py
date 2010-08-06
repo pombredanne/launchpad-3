@@ -70,6 +70,7 @@ def main():
         log.debug('Copying distroarchseries from parent '
                       'and setting nominatedarchindep.')
         ids = InitialiseDistroSeries(distroseries)
+        ids.check()
         log.debug('initialising from parent, copying publishing records.')
         ids.initialise()
     except InitialisationError, e:

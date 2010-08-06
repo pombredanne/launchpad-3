@@ -309,22 +309,6 @@ initialisation. In particular the initialiser won't overwrite
 publishing records etc. Essentially this is a "Do not push this button
 again" type set of assertions.
 
-First, we need to correct some of the sampledata:
-
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
-    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-
-    >>> login("foo.bar@canonical.com")
-    >>> pending_builds = hoary.getBuildRecords(BuildStatus.NEEDSBUILD,
-    ...     pocket=PackagePublishingPocket.RELEASE)
-    >>> for build in pending_builds:
-    ...     build.status = BuildStatus.FAILEDTOBUILD
-
-    >>> import transaction
-    >>> transaction.commit()
-
-And then we can initialise the new distroseries:
-
     >>> from lp.soyuz.scripts.initialise_distroseries import (
     ...     InitialiseDistroSeries)
     >>> humpy = ubuntu.newSeries('humpy', 'Humpy Hippo',
