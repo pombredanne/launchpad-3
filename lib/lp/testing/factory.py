@@ -28,6 +28,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itertools import count
 from operator import isSequenceType
+import os
 import os.path
 from random import randint
 from StringIO import StringIO
@@ -2023,12 +2024,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return template
 
     def makePOFile(self, language_code, potemplate=None, owner=None,
-                   variant=None, create_sharing=False):
+                   create_sharing=False, variant=None):
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        return potemplate.newPOFile(language_code, variant,
-                                    create_sharing=create_sharing)
+        pofile = potemplate.newPOFile(language_code,
+                                      create_sharing=create_sharing)
+        if variant is not None:
+            removeSecurityProxy(pofile).variant = variant
+        return pofile
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       context=None, sequence=0):
@@ -2870,7 +2874,7 @@ class LaunchpadObjectFactory:
 
     def __getattr__(self, name):
         attr = getattr(self._factory, name)
-        if callable(attr):
+        if os.environ.get('LP_PROXY_WARNINGS') == '1' and callable(attr):
 
             def guarded_method(*args, **kw):
                 result = attr(*args, **kw)
@@ -2893,5 +2897,6 @@ def remove_security_proxy_and_shout_at_engineer(obj):
     This function should only be used in legacy tests which fail because
     they expect unproxied objects.
     """
-    warnings.warn(ShouldThisBeUsingRemoveSecurityProxy(obj), stacklevel=2)
+    if os.environ.get('LP_PROXY_WARNINGS') == '1':
+        warnings.warn(ShouldThisBeUsingRemoveSecurityProxy(obj), stacklevel=2)
     return removeSecurityProxy(obj)

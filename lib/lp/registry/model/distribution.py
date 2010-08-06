@@ -29,6 +29,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.components.storm_operators import FTQ, Match, RANK
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import safe_hasattr
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.soyuz.model.archive import Archive
@@ -59,7 +60,6 @@ from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from lp.registry.model.pillar import HasAliasMixin
-from lp.soyuz.model.publishedpackage import PublishedPackage
 from lp.soyuz.model.publishing import (
     BinaryPackageFilePublishing, BinaryPackagePublishingHistory,
     SourcePackageFilePublishing, SourcePackagePublishingHistory)
@@ -1201,6 +1201,18 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # instance, when people file bugs, it might actually be bad for
         # us to allow them to be associated with obsolete packages.
 
+        bpph_location_clauses = [
+            DistroSeries.distribution == self,
+            DistroArchSeries.distroseriesID == DistroSeries.id,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.archiveID.is_in(
+                self.all_distro_archive_ids),
+            BinaryPackagePublishingHistory.dateremoved == None,
+            BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID,
+            ]
+
         sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
         if sourcepackagename:
             # Note that in the source package case, we don't restrict
@@ -1226,20 +1238,20 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             if publishing is not None:
                 # Attempt to find a published binary package of the
                 # same name.
-                publishedpackage = PublishedPackage.selectFirst('''
-                    PublishedPackage.sourcepackagename = %s AND
-                    PublishedPackage.binarypackagename = %s AND
-                    PublishedPackage.distribution = %s AND
-                    PublishedPackage.archive IN %s
-                    ''' % sqlvalues(sourcepackagename.name,
-                                    sourcepackagename.name,
-                                    self,
-                                    self.all_distro_archive_ids),
-                    orderBy=['-id'])
-                if publishedpackage is not None:
-                    binarypackagename = BinaryPackageName.byName(
-                        publishedpackage.binarypackagename)
-                    return (sourcepackagename, binarypackagename)
+                bpph = IStore(BinaryPackagePublishingHistory).find(
+                    BinaryPackagePublishingHistory,
+                    BinaryPackageRelease.binarypackagename ==
+                        BinaryPackageName.id,
+                    BinaryPackageName.name == sourcepackagename.name,
+                    BinaryPackageBuild.id == BinaryPackageRelease.buildID,
+                    SourcePackageRelease.id ==
+                        BinaryPackageBuild.source_package_release_id,
+                    SourcePackageRelease.sourcepackagename ==
+                        sourcepackagename,
+                    *bpph_location_clauses).any()
+                if bpph is not None:
+                    bpr = bpph.binarypackagerelease
+                    return (sourcepackagename, bpr.binarypackagename)
                 # No binary with a similar name, so just return None
                 # rather than returning some arbitrary binary package.
                 return (sourcepackagename, None)
@@ -1253,18 +1265,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # latest publication in the distribution (this may be an old
             # package name the end-user is groping for) -- and then get
             # the sourcepackagename from that.
-            publishing = PublishedPackage.selectFirst('''
-                PublishedPackage.binarypackagename = %s AND
-                PublishedPackage.distribution = %s AND
-                PublishedPackage.archive IN %s
-                ''' % sqlvalues(binarypackagename.name,
-                                self,
-                                self.all_distro_archive_ids),
-                orderBy=['-id'])
-            if publishing is not None:
-                sourcepackagename = SourcePackageName.byName(
-                                        publishing.sourcepackagename)
-                return (sourcepackagename, binarypackagename)
+            bpph = IStore(BinaryPackagePublishingHistory).find(
+                BinaryPackagePublishingHistory,
+                BinaryPackageRelease.binarypackagename == binarypackagename,
+                *bpph_location_clauses).any()
+            if bpph is not None:
+                spr = bpph.binarypackagerelease.build.source_package_release
+                return (spr.sourcepackagename, binarypackagename)
 
         # We got nothing so signal an error.
         if sourcepackagename is None:
