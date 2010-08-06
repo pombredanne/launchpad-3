@@ -28,6 +28,31 @@ class InitialisationError(Exception):
 
 
 class InitialiseDistroSeries:
+    """Copy in all of the parent distroseries's configuration. This
+    includes all configuration for distroseries as well as distroarchseries,
+    publishing and all publishing records for sources and binaries.
+
+    Preconditions:
+      The distroseries must exist, and be completly unused, with no source
+      or binary packages existing, as well as no distroarchseries set up.
+      Section and component selections must be empty.
+
+    Outcome:
+      The distroarchseries set up in the parent series will be copied.
+      The publishing structure will be copied from the parent. All
+      PUBLISHED and PENDING packages in the parent will be created in
+      this distroseries and its distroarchseriess. The lucille config
+      will be copied in, all component and section selections will be
+      duplicated as will any permission-related structures.
+
+    Note:
+      This method will raise a InitialisationError when the pre-conditions
+      are not met. After this is run, you still need to construct chroots
+      for building, you need to add anything missing wrt. ports etc. This
+      method is only meant to give you a basic copy of a parent series in
+      order to assist you in preparing a new series of a distribution or
+      in the initialisation of a derivative.
+    """
 
     def __init__(self, distroseries):
         self.distroseries = distroseries

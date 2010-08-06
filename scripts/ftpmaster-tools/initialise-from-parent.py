@@ -3,7 +3,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Initialise a new distroseries from its parent"""
+"""Initialise a new distroseries from its parent series."""
 
 import _pythonpath
 
