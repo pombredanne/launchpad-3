@@ -55,7 +55,7 @@ class TestMilestoneMemcache(MemcacheTestCase):
         content = view.render()
         self.assertCacheMiss('<dt>Assigned to you:</dt>', content)
         self.assertCacheMiss('id="milestone_bugtasks"', content)
-        # Hit the cache on the second render.
+        # Miss the cache again on the second render.
         view = create_initialized_view(
             self.milestone, name='+index', principal=self.observer)
         self.assertTrue(view.milestone.active)
