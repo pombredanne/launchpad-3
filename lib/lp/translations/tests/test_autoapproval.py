@@ -603,56 +603,20 @@ class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
             template.path, '# Content here', False, template.owner,
             productseries=template.productseries, potemplate=template)
 
-        # Before approval, the two entries differ only in that the
-        # original one has potemplate set.
+        # Before approval, the two entries differ in that the new one
+        # has a potemplate.
         self.assertNotEqual(old_entry, new_entry)
         self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, old_entry.status)
-        self.assertEqual(None, old_entry.potemplate)
+        self.assertIs(None, old_entry.potemplate)
         self.assertEqual(template, new_entry.potemplate)
+        IMasterStore(old_entry).flush()
 
         # The approver deals with the problem by skipping the entry.
         queue._attemptToApprove(old_entry)
 
         # So nothing changes.
-        self.assertEqual(template, old_entry.potemplate)
-        self.assertIs(None, new_entry.potemplate)
-
-
-class TestPOFileGuess(TestCaseWithFactory):
-    """Test (aspects of) the POFile guessing logic."""
-    layer = LaunchpadZopelessLayer
-
-    def test_avoid_clash_with_existing_entry(self):
-        # When trying to approve a translation upload that didn't have
-        # its pofile field set during upload or an earlier approval run,
-        # the approver will fill out the field if it can.  But if by
-        # then there's already another entry from the same person and
-        # for the same target that does have the field set, then filling
-        # out the field would make the two entries clash.
-        queue = TranslationImportQueue()
-        queue = TranslationImportQueue()
-        pofile = self.factory.makePOFile('nl')
-        template = pofile.potemplate
-        old_entry = queue.addOrUpdateEntry(
-            pofile.path, '# Content here', False, template.owner,
-            productseries=template.productseries)
-        new_entry = queue.addOrUpdateEntry(
-            pofile.path, '# Content here', False, template.owner,
-            productseries=template.productseries, pofile=pofile)
-
-        # Before approval, the two entries differ only in that the
-        # original one has pofile set.
-        self.assertNotEqual(old_entry, new_entry)
-        self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, old_entry.status)
-        self.assertEqual(pofile, old_entry.pofile)
-        self.assertEqual(None, new_entry.pofile)
-
-        # The approver deals with this by skipping the entry.
-        queue._attemptToApprove(old_entry)
-
-        # So nothing changes.
-        self.assertEqual(None, old_entry.pofile)
-        self.assertIs(pofile, new_entry.pofile)
+        self.assertIs(None, old_entry.potemplate)
+        self.assertEqual(template, new_entry.potemplate)
 
 
 class TestKdePOFileGuess(TestCaseWithFactory, GardenerDbUserMixin):
