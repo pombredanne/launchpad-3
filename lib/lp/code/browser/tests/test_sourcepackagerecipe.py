@@ -787,6 +787,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Code
             my-recipe
+            created .*
             Build status
             Needs building
             Start in .* \\(9876\\) What's this?.*
@@ -816,6 +817,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Code
             my-recipe
+            created .*
             Build status
             Successfully built
             Started on .*
