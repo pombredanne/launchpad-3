@@ -84,7 +84,7 @@ We are able to search languages with this method.
   es_US Spanish (United States)
   es_UY Spanish (Uruguay)
   es_VE Spanish (Venezuela)
-  es@test Spanish (test)
+  es@test Spanish test
 
 It's case insensitive:
 
@@ -112,7 +112,7 @@ It's case insensitive:
   es_US Spanish (United States)
   es_UY Spanish (Uruguay)
   es_VE Spanish (Venezuela)
-  es@test Spanish (test)
+  es@test Spanish test
 
 And it even does substring searching!
 
@@ -140,7 +140,7 @@ And it even does substring searching!
   es_US Spanish (United States)
   es_UY Spanish (Uruguay)
   es_VE Spanish (Venezuela)
-  es@test Spanish (test)
+  es@test Spanish test
 
 We escape special characters like '%', which is an SQL wildcard
 matching any string:
