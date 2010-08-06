@@ -577,18 +577,11 @@ class TestCaseWithFactory(TestCase):
         return os.path.join(base, branch_id_to_path(branch.id))
 
     def useTempBzrHome(self):
-        # XXX: Extract the temporary environment blatting into a generic
-        # helper function.
         self.useTempDir()
         # Avoid leaking local user configuration into tests.
-        old_bzr_home = os.environ.get('BZR_HOME')
-        def restore_bzr_home():
-            if old_bzr_home is None:
-                del os.environ['BZR_HOME']
-            else:
-                os.environ['BZR_HOME'] = old_bzr_home
-        os.environ['BZR_HOME'] = os.getcwd()
-        self.addCleanup(restore_bzr_home)
+        self.useContext(override_environ(
+            BZR_HOME=os.getcwd(), BZR_EMAIL=None, EMAIL=None,
+            ))
 
     def useBzrBranches(self, direct_database=False):
         """Prepare for using bzr branches.
@@ -1006,6 +999,30 @@ def temp_dir():
     tempdir = tempfile.mkdtemp()
     yield tempdir
     shutil.rmtree(tempdir)
+
+
+@contextmanager
+def override_environ(**kwargs):
+    """Override environment variables with the kwarg values.
+
+    If a value is None, the environment variable is deleted.  Variables are
+    restored to their previous state when exiting the context.
+    """
+    def set_environ(new_values):
+        old_values = {}
+        for name, value in new_values.iteritems():
+            old_values[name] = os.environ.get(name)
+            if value is None:
+                if old_values[name] is not None:
+                    del os.environ[name]
+            else:
+                os.environ[name] = value
+        return old_values
+    old_values = set_environ(kwargs)
+    try:
+        yield
+    finally:
+        set_environ(old_values)
 
 
 def unlink_source_packages(product):
