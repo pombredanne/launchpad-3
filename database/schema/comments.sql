@@ -31,10 +31,10 @@ COMMENT ON COLUMN ApportJob.json_data IS 'A JSON struct containing data for the 
 
 -- ArchiveJob
 
-COMMENT ON TABLE ArchiveJob is 'Contains references to jobs to be run against Archives.';
-COMMENT ON COLUMN ArchiveJob.archive IS 'The archive on which the job is to be run.';
-COMMENT ON COLUMN ArchiveJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of ArchiveJobs.';
-COMMENT ON COLUMN ArchiveJob.json_data IS 'A JSON struct containing data for the job.';
+COMMENT ON TABLE DistroSeriesJob is 'Contains references to jobs linked to a DistroSeries.';
+COMMENT ON COLUMN DistroSeriesJob.distroseries IS 'The distroseries on which the job is to be run.';
+COMMENT ON COLUMN DistroSeriesJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of DistroSeriesJob.';
+COMMENT ON COLUMN DistroSeriesJob.json_data IS 'A JSON struct containing data for the job.';
 
 
 -- Branch
