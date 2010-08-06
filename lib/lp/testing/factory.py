@@ -2286,14 +2286,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket, changes_filename, changes_file_content, archive,
             signing_key=signing_key)
         if status is not None:
-            status_to_method = {
-                PackageUploadStatus.DONE: 'setDone',
-                PackageUploadStatus.ACCEPTED: 'setAccepted',
-                }
             naked_package_upload = removeSecurityProxy(package_upload)
-            method = getattr(
-                naked_package_upload, status_to_method[status])
-            method()
+            status_changers = {
+                PackageUploadStatus.DONE: naked_package_upload.setDone,
+                PackageUploadStatus.ACCEPTED:
+                    naked_package_upload.setAccepted,
+                }
+            status_changers[status]()
         return package_upload
 
     def makeSourcePackageRelease(self, archive=None, sourcepackagename=None,
