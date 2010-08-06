@@ -37,7 +37,7 @@ class TestRootNavigation(TestCaseWithFactory):
         self.assertEqual('/' + distro.name, parse_result.path)
 
     def test_can_not_traverse_to_projects(self):
-        # 
+        # We cannot travers to a project from the vostok root.
         path = self.factory.makeProject().name
         self.assertRaises(
             NotFound, test_traverse, 'http://vostok.dev/' + path)
