@@ -117,6 +117,7 @@ from lp.testing._webservice import (
     launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
 from lp.testing.matchers import Provides
 from lp.testing.fixture import ZopeEventHandlerFixture
+from lp.services.osutils import override_environ
 
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
@@ -999,30 +1000,6 @@ def temp_dir():
     tempdir = tempfile.mkdtemp()
     yield tempdir
     shutil.rmtree(tempdir)
-
-
-@contextmanager
-def override_environ(**kwargs):
-    """Override environment variables with the kwarg values.
-
-    If a value is None, the environment variable is deleted.  Variables are
-    restored to their previous state when exiting the context.
-    """
-    def set_environ(new_values):
-        old_values = {}
-        for name, value in new_values.iteritems():
-            old_values[name] = os.environ.get(name)
-            if value is None:
-                if old_values[name] is not None:
-                    del os.environ[name]
-            else:
-                os.environ[name] = value
-        return old_values
-    old_values = set_environ(kwargs)
-    try:
-        yield
-    finally:
-        set_environ(old_values)
 
 
 def unlink_source_packages(product):

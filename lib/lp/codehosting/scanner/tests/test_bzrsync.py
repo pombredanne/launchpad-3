@@ -5,6 +5,8 @@
 
 # pylint: disable-msg=W0141
 
+from __future__ import with_statement
+
 import datetime
 import os
 import random
@@ -31,6 +33,7 @@ from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
+from lp.services.osutils import override_environ
 
 
 def run_as_db_user(username):
@@ -154,10 +157,13 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
             committer = self.factory.getUniqueString()
         if extra_parents is not None:
             self.bzr_tree.add_pending_merge(*extra_parents)
-        return self.bzr_tree.commit(
-            message, committer=committer, rev_id=rev_id,
-            timestamp=timestamp, timezone=timezone, allow_pointless=True,
-            revprops=revprops)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            return self.bzr_tree.commit(
+                message, committer=committer, rev_id=rev_id,
+                timestamp=timestamp, timezone=timezone, allow_pointless=True,
+                revprops=revprops)
 
     def uncommitRevision(self):
         branch = self.bzr_tree.branch
