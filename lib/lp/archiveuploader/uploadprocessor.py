@@ -202,14 +202,14 @@ class UploadProcessor:
                 " skipping." % upload)
             return
         build = getUtility(IBinaryPackageBuildSet).getByBuildID(int(build_id))
-        self.logger.debug("Build %s found" % build.id)
+        self.log.debug("Build %s found" % build.id)
         logger = BufferLogger()
         upload_path = os.path.join(fsroot, upload)
         try:
             [changes_file] = self.locateChangesFiles(upload_path)
             logger.debug("Considering changefile %s" % changes_file)
             result = self.processChangesFile(upload_path, changes_file,
-                    self.log)
+                    logger)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:

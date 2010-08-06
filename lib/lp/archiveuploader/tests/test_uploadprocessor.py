@@ -115,7 +115,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         super(TestUploadProcessorBase, self).setUp()
 
         self.queue_folder = tempfile.mkdtemp()
-        os.makedirs(os.path.join(self.queue_folder, "incoming"))
+        self.incoming_folder = os.path.join(self.queue_folder, "incoming")
+        os.makedirs(self.incoming_folder)
 
         self.test_files_dir = os.path.join(config.root,
             "lib/lp/archiveuploader/tests/data/suite")
@@ -220,25 +221,29 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             filename, len(content), StringIO(content),
             'application/x-gtar')
 
-    def queueUpload(self, upload_name, relative_path="", test_files_dir=None):
+    def queueUpload(self, upload_name, relative_path="", test_files_dir=None,
+            queue_entry=None):
         """Queue one of our test uploads.
 
-        upload_name is the name of the test upload directory. It is also
+        upload_name is the name of the test upload directory. If there 
+        is no explicit queue entry name specified, it is also
         the name of the queue entry directory we create.
         relative_path is the path to create inside the upload, eg
         ubuntu/~malcc/default. If not specified, defaults to "".
 
         Return the path to the upload queue entry directory created.
         """
+        if queue_entry is None:
+            queue_entry = upload_name
         target_path = os.path.join(
-            self.queue_folder, "incoming", upload_name, relative_path)
+            self.incoming_folder, queue_entry, relative_path)
         if test_files_dir is None:
             test_files_dir = self.test_files_dir
         upload_dir = os.path.join(test_files_dir, upload_name)
         if relative_path:
             os.makedirs(os.path.dirname(target_path))
         shutil.copytree(upload_dir, target_path)
-        return os.path.join(self.queue_folder, "incoming", upload_name)
+        return os.path.join(self.incoming_folder, queue_entry)
 
     def processUpload(self, processor, upload_dir):
         """Process an upload queue entry directory.
@@ -1829,9 +1834,34 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     def testProcessBuildUploadNoBuildEntry(self):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
-        upload_dir = self.queueUpload("42-60")
-        uploadprocessor.processBuildUpload(upload_dir, "42-60")
-        self.assertEquals([], self.log.lines)
+        upload_dir = self.queueUpload("bar_1.0-1", queue_entry="42-60")
+        self.assertRaises(NotFoundError, uploadprocessor.processBuildUpload,
+                upload_dir, "42-60")
+
+    def testProcessBuildUpload(self):
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+
+        # Upload a source package
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        source_pub = self._publishPackage('bar', '1.0-1')
+        [build] = source_pub.createMissingBuilds()
+
+        # Move the source from the accepted queue.
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-1", name="bar")
+        queue_item.setDone()
+
+        # Upload and accept a binary for the primary archive source.
+        shutil.rmtree(upload_dir)
+        self.layer.txn.commit()
+        leaf_name = "%d-%d" % (build.id, 60)
+        upload_dir = self.queueUpload("bar_1.0-1_binary",
+                queue_entry=leaf_name)
+        self.options.context = 'buildd'
+        uploadprocessor.processBuildUpload(self.incoming_folder, leaf_name)
+        self.assertEquals("", build.upload_log)
 
 
 class ParseBuildUploadLeafNameTests(TestCase):
