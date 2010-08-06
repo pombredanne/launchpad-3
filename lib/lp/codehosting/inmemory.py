@@ -303,6 +303,13 @@ class FakeProductSeries(FakeDatabaseObject):
         self.product = product
         self.name = name
 
+    @property
+    def bzr_path(self):
+        if self.product.development_focus is self:
+            return self.product.name
+        else:
+            return "%s/%s" % (self.product.name, self.name)
+
 
 @adapter(FakeProductSeries)
 @implementer(ICanHasLinkedBranch)
@@ -556,7 +563,7 @@ class FakeCodehosting:
             namespace_path, branch_name = branch_path.rsplit('/', 1)
         except ValueError:
             raise faults.PermissionDenied(
-                "Cannot create branch at '%s'" % branch_path)
+                "Cannot create branch at '/%s'" % branch_path)
         data = BranchNamespaceSet().parse(namespace_path)
         return data, branch_name
 
