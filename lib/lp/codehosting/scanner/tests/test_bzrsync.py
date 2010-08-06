@@ -207,21 +207,24 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         db_branch = self.makeDatabaseBranch()
         db_branch, trunk_tree = self.create_branch_and_tree(
             db_branch=db_branch)
-        trunk_tree.commit(u'base revision', rev_id=base_rev_id)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            trunk_tree.commit(u'base revision', rev_id=base_rev_id)
 
-        # Branch from the base revision.
-        new_db_branch = self.makeDatabaseBranch(product=db_branch.product)
-        new_db_branch, branch_tree = self.create_branch_and_tree(
-            db_branch=new_db_branch)
-        branch_tree.pull(trunk_tree.branch)
+            # Branch from the base revision.
+            new_db_branch = self.makeDatabaseBranch(product=db_branch.product)
+            new_db_branch, branch_tree = self.create_branch_and_tree(
+                db_branch=new_db_branch)
+            branch_tree.pull(trunk_tree.branch)
 
-        # Commit to both branches.
-        trunk_tree.commit(u'trunk revision', rev_id=trunk_rev_id)
-        branch_tree.commit(u'branch revision', rev_id=branch_rev_id)
+            # Commit to both branches.
+            trunk_tree.commit(u'trunk revision', rev_id=trunk_rev_id)
+            branch_tree.commit(u'branch revision', rev_id=branch_rev_id)
 
-        # Merge branch into trunk.
-        trunk_tree.merge_from_branch(branch_tree.branch)
-        trunk_tree.commit(u'merge revision', rev_id=merge_rev_id)
+            # Merge branch into trunk.
+            trunk_tree.merge_from_branch(branch_tree.branch)
+            trunk_tree.commit(u'merge revision', rev_id=merge_rev_id)
 
         LaunchpadZopelessLayer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
