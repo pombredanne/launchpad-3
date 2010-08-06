@@ -193,6 +193,10 @@ class IMenusDirective(IGlueDirective):
 class INavigationDirective(IGlueDirective):
     """Hook up traversal etc."""
 
+    layer = GlobalInterface(
+        title=u"The layer where this navigation is going to be available.",
+        required=False)
+
 
 class IFeedsDirective(IGlueDirective):
     """Hook up feeds."""
@@ -267,7 +271,7 @@ def feeds(_context, module, classes):
                           layer=layer, class_=feedclass)
 
 
-def navigation(_context, module, classes):
+def navigation(_context, module, classes, layer=IDefaultBrowserLayer):
     """Handler for the `INavigationDirective`."""
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
@@ -281,7 +285,6 @@ def navigation(_context, module, classes):
         for_ = [navclass.usedfor]
 
         # Register the navigation as the traversal component.
-        layer = IDefaultBrowserLayer
         provides = IBrowserPublisher
         name = ''
         view(_context, factory, layer, name, for_,
