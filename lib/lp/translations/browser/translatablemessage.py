@@ -18,7 +18,7 @@ class TranslatableMessageView(LaunchpadView):
         """The form label."""
         return 'Translate messge %d into %s' % (
             self.context.sequence,
-            self.context.pofile.language.getFullEnglishName())
+            self.context.pofile.language.englishname)
 
     @property
     def page_title(self):

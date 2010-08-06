@@ -515,6 +515,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         build.status = BuildStatus.FULLYBUILT
+        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
         build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
@@ -596,8 +597,9 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             set(view.builds))
 
         def set_day(build, day):
-            removeSecurityProxy(build).date_finished = datetime(
-                2010, 03, day, tzinfo=utc)
+            naked_build = removeSecurityProxy(build)
+            naked_build.date_started = datetime(2010, 03, day, tzinfo=utc)
+            naked_build.date_finished = datetime(2010, 03, day, tzinfo=utc)
         set_day(build1, 16)
         set_day(build2, 15)
         # When there are 4+ pending builds, only the the most
