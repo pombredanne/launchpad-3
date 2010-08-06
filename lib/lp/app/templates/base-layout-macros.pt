@@ -420,9 +420,6 @@
       &nbsp;&bull;&nbsp;
       <a href="http://identi.ca/launchpadstatus"
         >System status</a>
-      &nbsp;&bull;&nbsp;
-      <a href="http://www.surveymonkey.com/s/launchpadsummer2010"
-        ><strong>Take our survey!</strong></a>
       <span id="lp-version" tal:condition="not:is_lpnet">
       &nbsp;&bull;&nbsp;
         r<tal:revno replace="revno" />
