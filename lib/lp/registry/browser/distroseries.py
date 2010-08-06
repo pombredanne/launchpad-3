@@ -332,7 +332,8 @@ class DistroSeriesView(MilestoneOverlayMixin):
     @cachedproperty
     def needs_linking(self):
         """Return a list of 10 packages most in need of upstream linking."""
-        #disabling this feature for now
+        # XXX sinzui 2010-02-26 bug=528648: This method causes a timeout.
+        # return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
         return None
 
     milestone_can_release = False
