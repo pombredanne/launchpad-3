@@ -12,7 +12,7 @@ from lazr.restful.declarations import (
     exported, export_as_webservice_entry, export_read_operation,
     operation_returns_collection_of)
 
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from canonical.launchpad.fields import PersonChoice
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
@@ -124,7 +124,7 @@ class IPOTemplate(IRosettaStats):
         required=True,
         default=True), exported_as='active')
 
-    owner = exported(ParticipatingPersonChoice(
+    owner = exported(PersonChoice(
         title=_("Owner"),
         required=True,
         description=_(
@@ -631,6 +631,18 @@ class IPOTemplateSet(Interface):
         Sort using this function to order sharing templates from most
         representative to least representative, as per the message-sharing
         migration spec.
+        """
+
+    def wipeSuggestivePOTemplatesCache():
+        """Erase suggestive-templates cache.
+
+        :return: Number of rows deleted.
+        """
+
+    def populateSuggestivePOTemplatesCache():
+        """Populate suggestive-templates cache.
+
+        :return: Number of rows inserted.
         """
 
 

@@ -1264,6 +1264,7 @@ class DummyPOFile(POFileMixIn):
         self.id = None
         self.potemplate = potemplate
         self.language = language
+        self.variant = None
         self.description = None
         self.topcomment = None
         self.header = None

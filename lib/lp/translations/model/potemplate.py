@@ -39,7 +39,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, flush_database_updates, sqlvalues)
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from lp.app.errors import NotFoundError
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.services.database.prejoin import prejoin
@@ -1302,7 +1302,7 @@ class POTemplateSet:
 
     @staticmethod
     def compareSharingPrecedence(left, right):
-        """See IPOTemplateSet."""
+        """See `IPOTemplateSet`."""
         if left == right:
             return 0
 
@@ -1335,6 +1335,33 @@ class POTemplateSet:
         else:
             assert left.id < right.id, "Got unordered ids."
             return 1
+
+    def wipeSuggestivePOTemplatesCache(self):
+        """See `IPOTemplateSet`."""
+        return IMasterStore(POTemplate).execute(
+            "DELETE FROM SuggestivePOTemplate").rowcount
+
+    def populateSuggestivePOTemplatesCache(self):
+        """See `IPOTemplateSet`."""
+        return IMasterStore(POTemplate).execute("""
+            INSERT INTO SuggestivePOTemplate (
+                SELECT POTemplate.id
+                FROM POTemplate
+                LEFT JOIN DistroSeries ON
+                    DistroSeries.id = POTemplate.distroseries
+                LEFT JOIN Distribution ON
+                    Distribution.id = DistroSeries.distribution
+                LEFT JOIN ProductSeries ON
+                    ProductSeries.id = POTemplate.productseries
+                LEFT JOIN Product ON
+                    Product.id = ProductSeries.product
+                WHERE
+                    POTemplate.iscurrent AND (
+                        Distribution.official_rosetta OR
+                        Product.official_rosetta)
+                ORDER BY POTemplate.id
+            )
+            """).rowcount
 
 
 class POTemplateSharingSubset(object):
