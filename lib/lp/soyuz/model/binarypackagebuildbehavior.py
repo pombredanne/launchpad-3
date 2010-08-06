@@ -192,6 +192,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             suite += "-%s" % (build.pocket.name.lower())
         args['suite'] = suite
 
+        args['arch_tag'] = build.distro_arch_series.architecturetag
+
         archive_purpose = build.archive.purpose
         if (archive_purpose == ArchivePurpose.PPA and
             not build.archive.require_virtualized):
