@@ -3093,7 +3093,7 @@ class PersonParticipationView(LaunchpadView):
             else:
                 subscribed = 'Subscribed'
         else:
-            subscribed = None
+            subscribed = '&mdash;' 
         return dict(
             displayname=team.displayname, team=team, membership=membership,
             role=role, via=via, subscribed=subscribed)

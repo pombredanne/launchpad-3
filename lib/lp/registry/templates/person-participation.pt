@@ -60,13 +60,9 @@
           </td>
           <td
             tal:condition="not: context/teamowner">
-            <tal:subscribed condition="participation/team/mailing_list"
-              replace="participation/subscribed">
+            <tal:subscribed replace="participation/subscribed">
               yes
             </tal:subscribed>
-            <tal:no-list condition="not: participation/team/mailing_list">
-              &mdash;
-            </tal:no-list>
           </td>
         </tr>
       </tbody>
