@@ -161,10 +161,15 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         return
 
     def makeCurrentUbuntu(self, new_value=True):
+        """See `ITranslationMessage`."""
         self.is_current_ubuntu = new_value
 
     def makeCurrentUpstream(self, new_value=True):
+        """See `ITranslationMessage`."""
         self.is_current_upstream = new_value
+
+    def shareIfPossible(self):
+        """See `ITranslationMessage`."""
 
 
 class TranslationMessage(SQLBase, TranslationMessageMixIn):
