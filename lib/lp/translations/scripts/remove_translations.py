@@ -125,8 +125,7 @@ def compose_language_match(language_code):
     :param: Language code to match.
     :return: SQL condition in string form.
     """
-    language_conditions = ['Language.code = %s' % sqlvalues(language_code)]
-    return ' AND '.join(language_conditions)
+    return 'Language.code = %s' % sqlvalues(language_code)
 
 
 def add_bool_match(conditions, expression, match_value):

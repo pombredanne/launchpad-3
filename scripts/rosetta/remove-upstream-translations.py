@@ -221,11 +221,7 @@ def main(argv):
             # transaction commits.
             potemplates = list(potemplate_subset)
 
-    lang_code = None
-    if options.languagecode is not None:
-        lang_code = options.languagecode
-
-    remove_upstream_entries(ztm, potemplates, lang_code)
+    remove_upstream_entries(ztm, potemplates, options.languagecode)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

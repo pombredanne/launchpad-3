@@ -650,9 +650,7 @@ class POTemplateExportView(BaseExportView):
             pofiles = []
             export_potemplate = 'potemplate' in self.request.form
 
-            for key in self.request.form:
-                code = key
-
+            for code in self.request.form:
                 pofile = self.context.getPOFileByLang(code)
                 if pofile is not None:
                     pofiles.append(pofile)
