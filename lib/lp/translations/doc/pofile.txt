@@ -98,7 +98,7 @@ Returns the complete code for this POFile's language.
     es
 
     >>> sr_latin = factory.makeLanguage('sr@latin', 'Serbian Latin')
-    >>> print potemplate.getDummyPOFile('sr@latin').getFullLanguageCode()
+    >>> print potemplate.getDummyPOFile(sr_latin).getFullLanguageCode()
     sr@latin
 
 
@@ -109,7 +109,7 @@ Returns the complete English name for this POFile's language.
     >>> print potemplate.getPOFileByLang('es').getFullLanguageName()
     Spanish
 
-    >>> print potemplate.getDummyPOFile('sr@latin').getFullLanguageName()
+    >>> print potemplate.getDummyPOFile(sr_latin).getFullLanguageName()
     Serbian Latin
 
 
