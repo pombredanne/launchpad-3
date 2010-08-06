@@ -1860,6 +1860,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1_binary",
                 queue_entry=leaf_name)
         self.options.context = 'buildd'
+        self.options.builds = True
         uploadprocessor.processBuildUpload(self.incoming_folder, leaf_name)
         self.assertEquals("", build.upload_log)
 
