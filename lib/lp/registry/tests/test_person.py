@@ -40,6 +40,28 @@ from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
 
 
+class TestPersonTeams(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+
+    def test_teams_indirectly_participated_in(self):
+        a_team = self.factory.makeTeam(name='a')
+        b_team = self.factory.makeTeam(name='b', owner=a_team)
+        c_team = self.factory.makeTeam(name='c', owner=b_team)
+        login_person(a_team.teamowner)
+        transaction.commit()
+        indirect_teams = a_team.teamowner.teams_indirectly_participated_in
+        
+        #we expect that a_team.teamowner is in b_team and c_team indirectly.
+        #ateam_owner should not be in a_team indirectly
+        self.assertEqual(2, indirect_teams.count())
+        self.assertTrue((b_team in indirect_teams) and
+        (c_team in indirect_teams) and not (a_team in indirect_teams))
+   
+
 class TestPerson(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
