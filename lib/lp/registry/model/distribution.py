@@ -94,7 +94,7 @@ from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
 from lp.app.interfaces.launchpad import ILaunchpadUsage, IServiceUsage
-from lp.app.enum import ServiceUsage
+from lp.app.enums import ServiceUsage
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.pillar import IPillarNameSet

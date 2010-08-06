@@ -33,7 +33,7 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadUsage, IServiceUsage
-from lp.app.enum import ServiceUsage
+from lp.app.enums import ServiceUsage
 from lp.code.enums import BranchType
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -86,7 +86,7 @@ from lp.registry.model.structuralsubscription import (
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes)
 from canonical.launchpad.interfaces.launchpadstatistic import (
@@ -284,9 +284,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def codehosting_usage(self):
         if self.development_focus.branch is None:
             return ServiceUsage.UNKNOWN
-        elif self.development_focus.branch.type == BranchType.HOSTED:
+        elif self.development_focus.branch.branch_type == BranchType.HOSTED:
             return ServiceUsage.LAUNCHPAD
-        elif self.development_focus.branch.type == BranchType.MIRRORED:
+        elif self.development_focus.branch.branch_type == BranchType.MIRRORED:
             return ServiceUsage.EXTERNAL
         return ServiceUsage.NOT_APPLICABLE
     @property
