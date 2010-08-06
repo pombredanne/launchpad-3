@@ -1157,52 +1157,58 @@ class TranslationImportQueue:
 
         return distroseriess + products
 
+    def _attemptToApprove(self, entry):
+        if entry.import_into is None:
+            # We don't have a place to import this entry. Try to guess it.
+            importer = getUtility(ITranslationImporter)
+            if importer.isTranslationName(entry.path):
+                # Try to figure out where it should be imported.
+                guess = entry.getGuessedPOFile()
+                if guess is None:
+                    # We were not able to guess a place to import it.
+                    # Leave the entry's status as NEEDS_REVIEW and wait
+                    # for an expert to review it manually.
+                    return False
+
+                # Set the place where it should be imported.
+                entry.pofile = guess
+
+            else:
+                # It's a template.
+                # Check if we can guess where it should be imported.
+                guess = entry.guessed_potemplate
+                if guess is None:
+                    # We were not able to guess a place to import it,
+                    # leave the status of this entry as
+                    # RosettaImportStatus.NEEDS_REVIEW and wait for an
+                    # admin to manually review it.
+                    return False
+
+                # Set the place where it should be imported.
+                entry.potemplate = guess
+
+        assert entry.import_into is not None, "Approval is incomplete."
+
+        approved = (entry.status != RosettaImportStatus.APPROVED)
+
+        # Already know where it should be imported. The entry is approved
+        # automatically.
+        entry.setStatus(RosettaImportStatus.APPROVED,
+                        getUtility(ILaunchpadCelebrities).rosetta_experts)
+
+        return approved
+
     def executeOptimisticApprovals(self, txn=None):
-        """See ITranslationImportQueue."""
-        there_are_entries_approved = False
-        importer = getUtility(ITranslationImporter)
+        """See `ITranslationImportQueue`."""
+        approved_entries = False
         for entry in self._iterNeedsReview():
-            if entry.import_into is None:
-                # We don't have a place to import this entry. Try to guess it.
-                if importer.isTranslationName(entry.path):
-                    # Check if we can guess where it should be imported.
-                    guess = entry.getGuessedPOFile()
-                    if guess is None:
-                        # We were not able to guess a place to import it,
-                        # leave the status of this entry as
-                        # RosettaImportStatus.NEEDS_REVIEW and wait for an
-                        # admin to manually review it.
-                        continue
-                    # Set the place where it should be imported.
-                    entry.pofile = guess
-
-                else:
-                    # It's a template.
-                    # Check if we can guess where it should be imported.
-                    guess = entry.guessed_potemplate
-                    if guess is None:
-                        # We were not able to guess a place to import it,
-                        # leave the status of this entry as
-                        # RosettaImportStatus.NEEDS_REVIEW and wait for an
-                        # admin to manually review it.
-                        continue
-                    # Set the place where it should be imported.
-                    entry.potemplate = guess
-
-            assert not entry.import_into is None
-
-            if entry.status != RosettaImportStatus.APPROVED:
-                there_are_entries_approved = True
-
-            # Already know where it should be imported. The entry is approved
-            # automatically.
-            entry.setStatus(RosettaImportStatus.APPROVED,
-                            getUtility(ILaunchpadCelebrities).rosetta_experts)
-
+            success = self._attemptToApprove(entry)
+            if success:
+                approved_entries = True
             if txn is not None:
                 txn.commit()
 
-        return there_are_entries_approved
+        return approved_entries
 
     def _getSlaveStore(self):
         """Return the slave store for the import queue.
