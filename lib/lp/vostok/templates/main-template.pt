@@ -1,31 +1,12 @@
 <metal:page
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
-  define-macro="master"
-  tal:define="
-    revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    devmode modules/canonical.config/config/devmode;
-    rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-    icingroot string:${rooturl}+icing/rev${revno};"
-><metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;" /></metal:doctype>
-<html
-  xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en" lang="en" dir="ltr">
+  define-macro="master"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 
-  <head tal:define="
-    yui string:${icingroot}/yui/current/build;
-    lazr_js string:${icingroot}/lazr/build;
-    lp_js string:${icingroot}/build">
+  <head>
 
     <title tal:content="view/fmt:pagetitle">Page Title</title>
-
-    <link rel="shortcut icon" href="/@@/linaro.png" />
-
-    <metal:launchpad-stylesheet
-      use-macro="context/@@+base-layout-macros/launchpad-stylesheet-3-0" />
 
   </head>
 
