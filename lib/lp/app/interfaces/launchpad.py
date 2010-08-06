@@ -17,49 +17,43 @@ from zope.interface import Interface
 from zope.schema import Bool, Choice
 
 from canonical.launchpad import _
-from lp.app.enums import LaunchpadServiceUsage
+from lp.app.enums import ServiceUsage
 
 
 class IServiceUsage(Interface):
-    """Project service usages."""
+    """Pillar service usages."""
 
+    # XXX: BradCrittenden 2010-08-06 bug=n/a:  I hate using the term 'pillar'
+    # but cannot use 'project' or 'distribution'.  The phrase 'Where does'
+    # implies an actual location not an answer of "Launchpad, externally, or
+    # neither."
     answers_usage = Choice(
-        title=_('Location of answers'),
-        required=True,
-        readonly=True,
-        description=_("Where does this project host an answers forum?"),
-        default=LaunchpadServiceUsage.UNKNOWN,
-        vocabulary=LaunchpadServiceUsage)
+        title=_('Type of service for answers application.'),
+        description=_("Where does this pillar have an Answers forum?"),
+        default=ServiceUsage.UNKNOWN,
+        vocabulary=ServiceUsage)
     blueprints_usage = Choice(
-        title=_('Location of blueprints'),
-        required=True,
-        readonly=True,
-        description=_("Where does this project host blueprints?"),
-        default=LaunchpadServiceUsage.UNKNOWN,
-        vocabulary=LaunchpadServiceUsage)
+        title=_('Type of service for blueprints application.'),
+        description=_("Where does this pillar host blueprints?"),
+        default=ServiceUsage.UNKNOWN,
+        vocabulary=ServiceUsage)
     codehosting_usage = Choice(
-        title=_('Location of code hosting'),
-        required=True,
-        readonly=True,
-        description=_("Where does this project host code?"),
-        default=LaunchpadServiceUsage.UNKNOWN,
-        vocabulary=LaunchpadServiceUsage)
+        title=_('Type of service for hosting code.'),
+        description=_("Where does this pillar host code?"),
+        default=ServiceUsage.UNKNOWN,
+        vocabulary=ServiceUsage)
     translations_usage = Choice(
-        title=_('Location of translations'),
-        required=True,
-        readonly=True,
-        description=_("Where does this project do translations?"),
-        default=LaunchpadServiceUsage.UNKNOWN,
-        vocabulary=LaunchpadServiceUsage)
+        title=_('Type of service for translations application.'),
+        description=_("Where does this pillar do translations?"),
+        default=ServiceUsage.UNKNOWN,
+        vocabulary=ServiceUsage)
     bug_tracking_usage = Choice(
-        title=_('Location of bug tracking'),
-        required=True,
-        readonly=True,
-        description=_("Where does this project track bugs?"),
-        default=LaunchpadServiceUsage.UNKNOWN,
-        vocabulary=LaunchpadServiceUsage)
+        title=_('Type of service for tracking bugs.'),
+        description=_("Where does this pillar track bugs?"),
+        default=ServiceUsage.UNKNOWN,
+        vocabulary=ServiceUsage)
     uses_launchpad = Bool(
-        title=_('Uses Launchpad for something'))
+        title=_('Uses Launchpad for something.'))
 
 
 class ILaunchpadUsage(Interface):
