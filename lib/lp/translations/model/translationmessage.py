@@ -223,6 +223,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         default=None)
     language = ForeignKey(
         foreignKey='Language', dbName='language', notNull=False, default=None)
+    variant = StringCol(dbName='variant',
+                        notNull=False,
+                        default=None)
     potmsgset = ForeignKey(
         foreignKey='POTMsgSet', dbName='potmsgset', notNull=True)
     date_created = UtcDateTimeCol(

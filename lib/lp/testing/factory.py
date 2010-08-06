@@ -2020,12 +2020,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return template
 
     def makePOFile(self, language_code, potemplate=None, owner=None,
-                   create_sharing=False):
+                   create_sharing=False, variant=None):
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        return potemplate.newPOFile(language_code,
-                                    create_sharing=create_sharing)
+        pofile = potemplate.newPOFile(language_code,
+                                      create_sharing=create_sharing)
+        pofile.variant = variant
+        return pofile
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       context=None, sequence=0):

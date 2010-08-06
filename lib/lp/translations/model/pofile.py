@@ -437,6 +437,9 @@ class POFile(SQLBase, POFileMixIn):
     language = ForeignKey(foreignKey='Language',
                           dbName='language',
                           notNull=True)
+    variant = StringCol(dbName='variant',
+                        notNull=False,
+                        default=None)
     description = StringCol(dbName='description',
                             notNull=False,
                             default=None)
