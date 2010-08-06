@@ -1171,8 +1171,6 @@ class TranslationImportQueue:
         This will do nothing if setting potemplate or pofile would clash
         with another entry.
         """
-        assert entry.pofile is None, "Entry already has pofile set."
-        assert entry.potemplate is None, "Entry already has potemplate set."
         if potemplate == entry.potemplate and pofile == entry.pofile:
             # Nothing to do here.
             return False
