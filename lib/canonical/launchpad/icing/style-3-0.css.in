@@ -1199,7 +1199,7 @@ div.watermark-apps-portlet span img {
     }
 .registering {
     /* Registered slot */
-    margin: 0 0 0.2em 0;
+    margin: .5em 0 1em 0;
     font-style: italic;
     font-size: 77%;
     color: #666;
