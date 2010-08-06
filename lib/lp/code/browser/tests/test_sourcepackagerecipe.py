@@ -610,7 +610,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         set_day(build5, 12)
         set_day(build6, 11)
         self.assertEqual(
-            [build5, build4, build3, build2, build1], view.builds)
+            [build1, build2, build3, build4, build5], view.builds)
 
     def test_request_builds_page(self):
         """Ensure the +request-builds page is sane."""
