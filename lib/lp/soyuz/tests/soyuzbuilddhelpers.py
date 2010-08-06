@@ -71,9 +71,6 @@ class MockBuilder:
     def checkSlaveAlive(self):
         pass
 
-    def checkSlaveArchitecture(self):
-        pass
-
     def rescueIfLost(self, logger=None):
         rescueBuilderIfLost(self, logger)
 
