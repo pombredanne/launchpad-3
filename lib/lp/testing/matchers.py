@@ -6,6 +6,7 @@ __all__ = [
     'DoesNotCorrectlyProvide',
     'DoesNotProvide',
     'DoesNotStartWith',
+    'HasQueryCount',
     'IsNotProxied',
     'IsProxied',
     'Provides',
@@ -18,6 +19,8 @@ from zope.interface.exceptions import (
     BrokenImplementation, BrokenMethodImplementation, DoesNotImplement)
 from zope.security.proxy import builtin_isinstance, Proxy
 
+from testtools.content import Content
+from testtools.content_type import ContentType
 from testtools.matchers import Matcher, Mismatch
 
 
@@ -90,6 +93,45 @@ class Provides(Matcher):
                 matchee, self.interface, extra=extra)
         return None
 
+
+class HasQueryCount(Matcher):
+    """Adapt a Binary Matcher to the query count on a QueryCollector.
+
+    If there is a mismatch, the queries from the collector are provided as a
+    test attachment.
+    """
+
+    def __init__(self, count_matcher):
+        """Create a HasQueryCount that will match using count_matcher."""
+        self.count_matcher = count_matcher
+
+    def __str__(self):
+        return "HasQueryCount(%s)" % self.count_matcher
+
+    def match(self, something):
+        mismatch = self.count_matcher.match(something.count)
+        if mismatch is None:
+            return None
+        return _MismatchedQueryCount(mismatch, something)
+
+
+class _MismatchedQueryCount(Mismatch):
+    """The Mismatch for a HasQueryCount matcher."""
+
+    def __init__(self, mismatch, query_collector):
+        self.count_mismatch = mismatch
+        self.query_collector = query_collector
+
+    def describe(self):
+        return "queries do not match: %s" % (self.count_mismatch.describe(),)
+
+    def get_details(self):
+        result = []
+        for query in self.query_collector.queries:
+            result.append(unicode(query).encode('utf8'))
+        return {'queries': Content(ContentType('text', 'plain',
+            {'charset': 'utf8'}), lambda:['\n'.join(result)])}
+ 
 
 class IsNotProxied(Mismatch):
     """An object is not proxied."""
