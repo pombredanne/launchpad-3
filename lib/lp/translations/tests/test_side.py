@@ -31,8 +31,8 @@ class TestTranslationSideTraitsSet(TestCaseWithFactory):
         upstream = utility.getTraits(TranslationSide.UPSTREAM)
         ubuntu = utility.getTraits(TranslationSide.UBUNTU)
 
-        self.assertEqual(ubuntu, upstream.other_side)
-        self.assertEqual(upstream, ubuntu.other_side)
+        self.assertEqual(ubuntu, upstream.other_side_traits)
+        self.assertEqual(upstream, ubuntu.other_side_traits)
 
     def test_getTraits(self):
         utility = getUtility(ITranslationSideTraitsSet)
@@ -98,18 +98,19 @@ class TraitsScenario:
     def test_getFlag_and_setFlag(self):
         template, message = self._makeTemplateAndTranslationMessage()
         traits = self._getTraits(template)
+        other_side_traits = traits.other_side_traits
 
         traits.setFlag(message, True)
 
         self.assertEqual(
             (True, False),
-            (traits.getFlag(message), traits.other_side.getFlag(message)))
+            (traits.getFlag(message), other_side_traits.getFlag(message)))
 
         traits.setFlag(message, False)
 
         self.assertEqual(
             (False, False),
-            (traits.getFlag(message), traits.other_side.getFlag(message)))
+            (traits.getFlag(message), other_side_traits.getFlag(message)))
 
     def test_getCurrentMessage(self):
         template, message = self._makeTemplateAndTranslationMessage()
@@ -130,14 +131,15 @@ class TraitsScenario:
     def test_getCurrentMessage_ignores_other_flag(self):
         template, message = self._makeTemplateAndTranslationMessage()
         traits = self._getTraits(template)
+        other_side_traits = traits.other_side_traits
 
-        traits.other_side.setFlag(message, True)
+        other_side_traits.setFlag(message, True)
 
         current_message = traits.getCurrentMessage(
             message.potmsgset, template, message.language)
         self.assertIs(None, current_message)
 
-        traits.other_side.setFlag(message, False)
+        other_side_traits.setFlag(message, False)
 
         current_message = traits.getCurrentMessage(
             message.potmsgset, template, message.language)

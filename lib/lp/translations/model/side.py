@@ -23,7 +23,7 @@ class TranslationSideTraits:
 
     def __init__(self, side, flag_name):
         self.side = side
-        self.other_side = None
+        self.other_side_traits = None
         self.flag_name = flag_name
 
     def getFlag(self, translationmessage):
@@ -56,8 +56,8 @@ class TranslationSideTraitsSet:
             TranslationSide.UPSTREAM, 'is_current_upstream')
         ubuntu = TranslationSideTraits(
             TranslationSide.UBUNTU, 'is_current_ubuntu')
-        ubuntu.other_side = upstream
-        upstream.other_side = ubuntu
+        ubuntu.other_side_traits = upstream
+        upstream.other_side_traits = ubuntu
         self.traits = dict(
             (traits.side, traits)
             for traits in [ubuntu, upstream])

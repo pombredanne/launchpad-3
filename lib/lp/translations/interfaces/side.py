@@ -37,7 +37,7 @@ class ITranslationSideTraits(Interface):
     http://www.cantrip.org/traits.html
     """
     side = Attribute("This TranslationSide")
-    other_side = Reference(
+    other_side_traits = Reference(
         Interface, title=u"Traits for other side.", required=True,
         readonly=True)
     flag_name = TextLine(

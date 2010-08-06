@@ -1637,13 +1637,13 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
 
         self.assertEqual('is_current_upstream', helper.traits.flag_name)
 
-        self.assertFalse(helper.getFlag(message))
+        self.assertFalse(helper.traits.getFlag(message))
         self.assertFalse(message.is_current_upstream)
         self.assertEquals(None, helper.incumbent_message)
 
         helper.setFlag(message, True)
 
-        self.assertTrue(helper.getFlag(message))
+        self.assertTrue(helper.traits.getFlag(message))
         self.assertTrue(message.is_current_upstream)
         self.assertEquals(message, helper.incumbent_message)
 
@@ -1659,13 +1659,13 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
 
         self.assertEqual('is_current_ubuntu', helper.traits.flag_name)
 
-        self.assertFalse(helper.getFlag(message))
+        self.assertFalse(helper.traits.getFlag(message))
         self.assertFalse(message.is_current_ubuntu)
         self.assertEquals(None, helper.incumbent_message)
 
         helper.setFlag(message, True)
 
-        self.assertTrue(helper.getFlag(message))
+        self.assertTrue(helper.traits.getFlag(message))
         self.assertTrue(message.is_current_ubuntu)
         self.assertEquals(message, helper.incumbent_message)
 

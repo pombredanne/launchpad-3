@@ -91,7 +91,12 @@ incumbent_unknown = object()
 
 
 class MessageSideHelper:
-    """Helper for manipulating messages on one `TranslationSide`."""
+    """Helper for manipulating messages on one `TranslationSide`.
+
+    Does some caching so that the caller doesn't need to worry about
+    unnecessary queries e.g. when disabling a previously current
+    message.
+    """
 
     # The TranslationSideTraits that this helper is for.
     traits = None
@@ -115,13 +120,9 @@ class MessageSideHelper:
                 self.potmsgset, self.potemplate, self.language)
         return self._incumbent
 
-    def getFlag(self, translationmessage):
-        """Is this message the current one on this side?"""
-        return self.traits.getFlag(translationmessage)
-
     def setFlag(self, translationmessage, value):
         """Set or clear a message's "current" flag for this side."""
-        if value == self.getFlag(translationmessage):
+        if value == self.traits.getFlag(translationmessage):
             return
 
         if value:
@@ -1048,7 +1049,7 @@ class POTMsgSet(SQLBase):
             return 'none'
         elif message.is_diverged:
             return 'diverged'
-        elif translation_side_traits.other_side.getFlag(message):
+        elif translation_side_traits.other_side_traits.getFlag(message):
             return 'other_shared'
         else:
             return 'shared'
@@ -1085,13 +1086,13 @@ class POTMsgSet(SQLBase):
     def setCurrentTranslation(self, pofile, submitter, translations, origin,
                               translation_side, share_with_other_side=False):
         """See `IPOTMsgSet`."""
-        traits = make_message_side_helpers(
+        helper = make_message_side_helpers(
             translation_side, self, pofile.potemplate, pofile.language)
 
         translations = self._findPOTranslations(translations)
 
         # The current message on this translation side, if any.
-        incumbent_message = traits.incumbent_message
+        incumbent_message = helper.incumbent_message
 
         # An already existing message, if any, that's either shared, or
         # diverged for the template/pofile we're working on, whose
@@ -1141,8 +1142,8 @@ class POTMsgSet(SQLBase):
         }
 
         incumbent_state = "incumbent_%s" % self._nameMessageStatus(
-            incumbent_message, traits)
-        twin_state = "twin_%s" % self._nameMessageStatus(twin, traits)
+            incumbent_message, helper.traits)
+        twin_state = "twin_%s" % self._nameMessageStatus(twin, helper.traits)
 
         decisions = decision_matrix[incumbent_state][twin_state]
         assert re.match('[ABZ]?[124567]?[+*]?$', decisions), (
@@ -1152,11 +1153,11 @@ class POTMsgSet(SQLBase):
             if character == 'A':
                 # Deactivate & converge.
                 # There may be an identical shared message.
-                traits.setFlag(incumbent_message, False)
+                helper.traits.setFlag(incumbent_message, False)
                 incumbent_message.shareIfPossible()
             elif character == 'B':
                 # Deactivate.
-                traits.setFlag(incumbent_message, False)
+                helper.setFlag(incumbent_message, False)
             elif character == 'Z':
                 # There is no incumbent message, so do nothing to it.
                 assert incumbent_message is None, (
@@ -1177,14 +1178,14 @@ class POTMsgSet(SQLBase):
                 # (If not, it's already active and has been unmasked by
                 # our deactivating the incumbent).
                 message = twin
-                if not traits.getFlag(twin):
-                    assert not traits.other_side.getFlag(twin), (
+                if not helper.traits.getFlag(twin):
+                    assert not helper.other_side.traits.getFlag(twin), (
                         "Trying to diverge a message that is current on the "
                         "other side.")
                     message.potemplate = pofile.potemplate
             elif character == '6':
                 # If other is not active, fork a diverged message.
-                if traits.getFlag(twin):
+                if helper.traits.getFlag(twin):
                     message = twin
                 else:
                     # The twin is used on the other side, so we can't
@@ -1199,11 +1200,11 @@ class POTMsgSet(SQLBase):
                 message.shareIfPossible()
             elif character == '*':
                 if share_with_other_side:
-                    if traits.other_side.incumbent_message is None:
-                        traits.other_side.setFlag(message, True)
+                    if helper.other_side.incumbent_message is None:
+                        helper.other_side.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:
-                    traits.other_side.setFlag(message, True)
+                    helper.other_side.setFlag(message, True)
             else:
                 raise AssertionError(
                     "Bad character in decision string: %s" % character)
@@ -1211,7 +1212,7 @@ class POTMsgSet(SQLBase):
         if decisions == '':
             message = twin
 
-        traits.setFlag(message, True)
+        helper.setFlag(message, True)
 
         return message
 
