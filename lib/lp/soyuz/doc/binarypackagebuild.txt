@@ -1200,7 +1200,7 @@ launchpad.Edit.
     >>> properties = {
     ...     'log': 1,
     ...     'date_finished': UTC_NOW,
-    ...     'date_started': None,
+    ...     'date_started': UTC_NOW,
     ...     'builder': bob,
     ...     'status': BuildStatus.FAILEDTOUPLOAD,
     ...     'dependencies': u'whatever',
@@ -1417,10 +1417,12 @@ specified builder ID, ordered from most-recently built.
     >>> earlier_builds = src_pkg_earlier.createMissingBuilds()
     >>> eg_build_date = earlier_builds[0].date_created
     >>> for build in earlier_builds:
+    ...     build.date_started = eg_build_date - timedelta(1)
     ...     build.date_finished = eg_build_date - timedelta(1)
 
     >>> later_builds = src_pkg_later.createMissingBuilds()
     >>> for build in later_builds:
+    ...     build.date_started = eg_build_date
     ...     build.date_finished = eg_build_date
 
     Ensure that the i386 builds are created by the 'frog' builder,
