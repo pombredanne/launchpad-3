@@ -474,8 +474,7 @@
         <require
             permission="launchpad.Edit"
             attributes="
-                destroySelf"
-            set_attributes="fixed_in_revision_id"/>
+                destroySelf"/>
     </class>
     <adapter
         for="lp.bugs.interfaces.bugbranch.IBugBranch"

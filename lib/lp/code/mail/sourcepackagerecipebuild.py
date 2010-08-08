@@ -11,6 +11,7 @@ __all__ = [
 
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.services.mail.basemailer import BaseMailer, RecipientReason
 
 
@@ -25,7 +26,8 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
         requester = build.requester
         recipients = {requester: RecipientReason.forBuildRequester(requester)}
         return cls(
-            '%(status)s: %(recipe)s for %(distroseries)s',
+            '[recipe build #%(build_id)d] of ~%(recipe_owner)s %(recipe)s in'
+            ' %(distroseries)s: %(status)s',
             'build-request.txt', recipients,
             config.canonical.noreply_from_address, build)
 
@@ -51,12 +53,25 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
             SourcePackageRecipeBuildMailer, self)._getTemplateParams(email)
         params.update({
             'status': self.build.status.title,
+            'build_id': self.build.id,
             'distroseries': self.build.distroseries.name,
             'recipe': self.build.recipe.name,
             'recipe_owner': self.build.recipe.owner.name,
             'archive': self.build.archive.name,
+            'archive_owner': self.build.archive.owner.name,
+            'log_url': '',
+            'component': self.build.current_component.name,
+            'duration': '',
+            'builder_url': '',
             'build_url': canonical_url(self.build),
         })
+        if self.build.builder is not None:
+            params['builder_url'] = canonical_url(self.build.builder)
+        if self.build.duration is not None:
+            duration_formatter = DurationFormatterAPI(self.build.duration)
+            params['duration'] = duration_formatter.approximateduration()
+        if self.build.log is not None:
+            params['log_url'] = self.build.log.getURL()
         return params
 
     def _getFooter(self, params):

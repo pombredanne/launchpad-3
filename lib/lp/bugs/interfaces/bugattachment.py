@@ -99,6 +99,14 @@ class IBugAttachment(IHasBug):
         The library file content for this attachment is set to None.
         """
 
+    def getFileByName(filename):
+        """Return the `ILibraryFileAlias for the given file name.
+
+        NotFoundError is raised if the given filename does not match
+        libraryfile.filename.
+        """
+
+
 # Need to do this here because of circular imports.
 IMessage['bugattachments'].value_type.schema = IBugAttachment
 

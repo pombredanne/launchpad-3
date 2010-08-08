@@ -47,7 +47,7 @@ doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
   >>> sync_policy = getPolicy(
   ...     name='sync', distro='ubuntutest', distroseries=None)
 
-  >>> upload = NascentUpload(
+  >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('ddtp-tarball/translations-main_20060728.changes'),
   ...     sync_policy, mock_logger_quiet)
   >>> upload.process()
@@ -60,7 +60,7 @@ Now do a proper upload into the system.
   >>> insecure_policy = getPolicy(
   ...     name='insecure', distro='ubuntutest', distroseries=None)
 
-  >>> upload = NascentUpload(
+  >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('ddtp-tarball/translations-main_20060728_all.changes'),
   ...     insecure_policy, mock_logger)
   DEBUG: Verifying signature on translations-main_20060728_all.changes
@@ -228,7 +228,7 @@ language indexes or adding new ones:
   >>> insecure_policy = getPolicy(
   ...     name='insecure', distro='ubuntutest', distroseries=None)
 
-  >>> upload = NascentUpload(
+  >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('ddtp-tarball/translations-main_20060817_all.changes'),
   ...     insecure_policy, mock_logger_quiet)
   >>> upload.process()

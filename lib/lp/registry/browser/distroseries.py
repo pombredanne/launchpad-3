@@ -28,6 +28,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad import helpers
+from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
@@ -41,8 +42,7 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -332,7 +332,9 @@ class DistroSeriesView(MilestoneOverlayMixin):
     @cachedproperty
     def needs_linking(self):
         """Return a list of 10 packages most in need of upstream linking."""
-        return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
+        # XXX sinzui 2010-02-26 bug=528648: This method causes a timeout.
+        # return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
+        return None
 
     milestone_can_release = False
 

@@ -77,7 +77,7 @@ queue:
   ...     name='buildd', distro='ubuntu', distroseries='dapper',
   ...     buildid=build.id)
 
-  >>> pmount_upload = NascentUpload(
+  >>> pmount_upload = NascentUpload.from_changesfile_path(
   ...     datadir('pmount_0.9.7-2ubuntu2_amd64.changes'),
   ...     buildd_policy, mock_logger)
   DEBUG: Changes file can be unsigned.

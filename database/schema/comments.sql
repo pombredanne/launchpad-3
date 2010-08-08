@@ -197,6 +197,10 @@ COMMENT ON COLUMN BugNomination.date_decided IS 'The date the nomination was app
 COMMENT ON COLUMN BugNomination.owner IS 'The person that submitted the nomination';
 COMMENT ON COLUMN BugNomination.decider IS 'The person who approved or declined the nomination';
 
+--- BugSubscription
+COMMENT ON TABLE BugSubscription IS 'A subscription by a Person to a bug.';
+COMMENT ON COLUMN BugSubscription.bug_notification_level IS 'The level of notifications which the Person will receive from this subscription.';
+
 -- BugTag
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
 COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';
@@ -1109,14 +1113,6 @@ COMMENT ON COLUMN BinaryPackagePublishingHistory.archive IS 'Target archive for 
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
 
--- PublishedPackage View
-
-COMMENT ON VIEW PublishedPackage IS
-    'A very large view that brings together all the information about
-    packages that are currently being published within a distribution. This
-    view was designed for the page which shows packages published in the
-    distribution, but may be more widely used.';
-
 -- ProcessorFamily
 
 COMMENT ON TABLE ProcessorFamily IS 'An architecture, that might consist of several actual processors. Different distributions call these architectures different things, so we have an "architecturetag" in DistroArchSeries that might be different to the architecture''s name.';
@@ -1988,6 +1984,7 @@ COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions 
 COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
 COMMENT ON COLUMN Archive.external_dependencies IS 'Newline-separated list of repositories to be used to retrieve any external build dependencies when building packages in this archive, in the format: deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]  The series variable is replaced with the series name of the context build.  This column is specifically and only intended for OEM migration to Launchpad and should be re-examined in October 2010 to see if it is still relevant.';
 COMMENT ON COLUMN Archive.commercial IS 'Whether this archive is a commercial Archive and should appear in the Software Center.';
+COMMENT ON COLUMN Archive.build_debug_symbols IS 'Whether builds for this archive should create debug symbol packages.';
 
 -- ArchiveAuthToken
 

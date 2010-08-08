@@ -100,9 +100,5 @@ upstream packaging.
     evolution linked...
     mozilla-firefox linked...
     netapplet linked 2005-07-05
-    Needs more information or linking to upstream:
-    cdrkit
-    iceweasel
-    linux-source-2.6.15
     Needs upstream links
     All upstream links

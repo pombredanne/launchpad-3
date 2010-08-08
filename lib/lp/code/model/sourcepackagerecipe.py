@@ -229,8 +229,9 @@ class SourcePackageRecipe(Storm):
         build = getUtility(ISourcePackageRecipeBuildSource).new(distroseries,
             self, requester, archive)
         build.queueBuild()
+        queue_record = build.buildqueue_record
         if manual:
-            build.buildqueue_record.manualScore(1000)
+            queue_record.manualScore(queue_record.lastscore + 100)
         return build
 
     def getBuilds(self, pending=False):

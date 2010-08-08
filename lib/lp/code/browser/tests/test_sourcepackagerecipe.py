@@ -4,6 +4,8 @@
 
 """Tests for the source package recipe view classes and templates."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 
@@ -28,7 +30,8 @@ from lp.code.browser.sourcepackagerecipebuild import (
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.testing import ANONYMOUS, BrowserTestCase, login, logout
+from lp.testing import (
+    ANONYMOUS, BrowserTestCase, login, logout, person_logged_in)
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 
 
@@ -303,6 +306,18 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             get_message_text(browser, 2),
             'There is already a recipe owned by Master Chef with this name.')
 
+    def test_create_recipe_private_branch(self):
+        # If a user tries to create source package recipe with a private
+        # base branch, they should get an error.
+        branch = self.factory.makeAnyBranch(private=True, owner=self.user)
+        with person_logged_in(self.user):
+            bzr_identity = branch.bzr_identity
+        recipe_text = MINIMAL_RECIPE_TEXT % bzr_identity
+        browser = self.createRecipe(recipe_text)
+        self.assertEqual(
+            get_message_text(browser, 2),
+            'Recipe may not refer to private branch: %s' % bzr_identity)
+
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):
     """Test the editing behaviour of a source package recipe."""
@@ -475,6 +490,21 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
 
+    def test_edit_recipe_private_branch(self):
+        # If a user tries to set source package recipe to use a private
+        # branch, they should get an error.
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.user)
+        branch = self.factory.makeAnyBranch(private=True, owner=self.user)
+        with person_logged_in(self.user):
+            bzr_identity = branch.bzr_identity
+        recipe_text = MINIMAL_RECIPE_TEXT % bzr_identity
+        browser = self.getViewBrowser(recipe, '+edit')
+        browser.getControl('Recipe text').value = recipe_text
+        browser.getControl('Update Recipe').click()
+        self.assertEqual(
+            get_message_text(browser, 1),
+            'Recipe may not refer to private branch: %s' % bzr_identity)
+
 
 class TestSourcePackageRecipeView(TestCaseForRecipe):
 
@@ -485,6 +515,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         build.status = BuildStatus.FULLYBUILT
+        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
         build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
@@ -566,8 +597,9 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             set(view.builds))
 
         def set_day(build, day):
-            removeSecurityProxy(build).date_finished = datetime(
-                2010, 03, day, tzinfo=utc)
+            naked_build = removeSecurityProxy(build)
+            naked_build.date_started = datetime(2010, 03, day, tzinfo=utc)
+            naked_build.date_finished = datetime(2010, 03, day, tzinfo=utc)
         set_day(build1, 16)
         set_day(build2, 15)
         # When there are 4+ pending builds, only the the most
@@ -580,7 +612,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         set_day(build5, 12)
         set_day(build6, 11)
         self.assertEqual(
-            [build5, build4, build3, build2, build1], view.builds)
+            [build1, build2, build3, build4, build5], view.builds)
 
     def test_request_builds_page(self):
         """Ensure the +request-builds page is sane."""
@@ -625,7 +657,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
         self.assertEqual(
-            set([1000]),
+            set([2505]),
             set(build.buildqueue_record.lastscore for build in builds))
 
     def test_request_builds_archive(self):
@@ -759,7 +791,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             my-recipe
             Build status
             Needs building
-            Start in .*
+            Start in .* \\(9876\\) What's this?.*
             Estimated finish in .*
             Build details
             Recipe:        Recipe my-recipe for Owner

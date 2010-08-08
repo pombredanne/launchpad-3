@@ -10,7 +10,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
 from lp.services.job.model.job import Job
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -82,13 +81,6 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         # Previous builds of the same source are used for estimates.
         self.create_previous_build(335)
         self.assertEqual(335, self.build.estimateDuration().seconds)
-
-    def test_estimateDuration_with_bad_history(self):
-        # If the latest matching build has bad data, ignore it.
-        # See bug 589068.
-        previous_build = self.create_previous_build(335)
-        previous_build.date_started = None
-        self.assertEqual(60, self.build.estimateDuration().seconds)
 
     def addFakeBuildLog(self):
         lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
@@ -418,8 +410,7 @@ class TestStoreBuildInfo(TestCaseWithFactory):
 
         self.builder = self.factory.makeBuilder()
         self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
-        self.build.buildqueue_record.builder = self.builder
-        self.build.buildqueue_record.setDateStarted(UTC_NOW)
+        self.build.buildqueue_record.markAsBuilding(self.builder)
 
     def testDependencies(self):
         """Verify that storeBuildInfo sets any dependencies."""
