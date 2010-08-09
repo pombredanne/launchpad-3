@@ -79,7 +79,7 @@ from windmill.authoring import WindmillTestClient
 
 from zope.component import adapter, getUtility
 import zope.event
-from zope.interface.verify import verifyClass, verifyObject
+from zope.interface.verify import verifyClass
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
@@ -115,6 +115,7 @@ from lp.testing._login import (
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
+from lp.testing.matchers import Provides
 from lp.testing.fixture import ZopeEventHandlerFixture
 
 # zope.exception demands more of frame objects than twisted.python.failure
@@ -286,13 +287,7 @@ class TestCase(testtools.TestCase):
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
-        self.assertTrue(
-            interface.providedBy(obj),
-            "%r does not provide %r." % (obj, interface))
-        self.assertTrue(
-            verifyObject(interface, obj),
-            "%r claims to provide %r but does not do so correctly."
-            % (obj, interface))
+        self.assertThat(obj, Provides(interface))
 
     def assertClassImplements(self, cls, interface):
         """Assert 'cls' may correctly implement 'interface'."""
