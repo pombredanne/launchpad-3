@@ -48,7 +48,7 @@ from sqlobject import (
     StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
-from storm.expr import And, In, Join, Lower, Not, Or, SQL
+from storm.expr import And, In, Join, LeftJoin, Lower, Not, Or, SQL
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -63,6 +63,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
+from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
 from canonical.launchpad.database.account import Account, AccountPassword
 from canonical.launchpad.interfaces.account import AccountSuspendedError
 from lp.bugs.model.bugtarget import HasBugsBase
@@ -1028,9 +1029,10 @@ class Person(
         result = result.order_by(KarmaCategory.title)
         return [karma_cache for (karma_cache, category) in result]
 
-    @property
+    @cachedproperty('_karma_cached')
     def karma(self):
         """See `IPerson`."""
+        # May also be loaded from _all_members
         cache = KarmaTotalCache.selectOneBy(person=self)
         if cache is None:
             # Newly created accounts may not be in the cache yet, meaning the
@@ -1452,22 +1454,52 @@ class Person(
     @property
     def all_members_prepopulated(self):
         """See `IPerson`."""
-        return self._all_members()
+        return self._all_members(need_karma=True)
 
-    def _all_members(self):
-        """Lookup all members of the team with optional precaching."""
+    def _all_members(self, need_karma=False):
+        """Lookup all members of the team with optional precaching.
+        
+        :param need_karma: the karma attribute will be looked for.
+        """
         # TODO: consolidate this with getMembersWithPreferredEmails.
         store = Store.of(self)
         origin = [
             Person,
             Join(TeamParticipation, TeamParticipation.person == Person.id),
             ]
+        if need_karma:
+            # New people have no karmatotalcache rows.
+            origin.append(
+                LeftJoin(KarmaTotalCache, KarmaTotalCache.person == Person.id))
         conditions = And(
             # Members of this team,
             TeamParticipation.team == self.id,
             # But not the team itself.
             TeamParticipation.person != self.id)
-        return store.using(*origin).find(Person, conditions)
+        tables = [Person]
+        if need_karma:
+            tables.append(KarmaTotalCache)
+        if len(tables) == 1:
+            tables = tables[0]
+            # Return a simple ResultSet
+            return store.using(*origin).find(tables, conditions)
+        # Adapt the result into a cached Person.
+        tables = tuple(tables)
+        raw_result = store.using(*origin).find(tables, conditions)
+        def prepopulate_person(row):
+            result = row[0]
+            index = 1
+            #-- karma caching
+            if need_karma:
+                karma = row[index]
+                index += 1
+                if karma is None:
+                    karma_total = 0
+                else:
+                    karma_total = karma.karma_total
+                result._karma_cached = karma_total
+            return result
+        return DecoratedResultSet(raw_result, result_decorator=prepopulate_person)
 
     def _getMembersWithPreferredEmails(self, include_teams=False):
         """Helper method for public getMembersWithPreferredEmails.
