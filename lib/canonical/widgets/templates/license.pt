@@ -149,8 +149,8 @@ YUI().use('node', 'lazr.effects', function(Y) {
     <div id="copyright">
       <div
         tal:content="structure view/source_package_release/@@+copyright"
-        style="overflow: auto; max-width: 60em; max-height: 20em;
-              background: #f8f8f8"
+        style="overflow-x: hidden; overflow-y: auto;
+               max-width: 60em; max-height: 32em; background: #f8f8f8"
         />
     </div>
   </tal:copyright>

@@ -9,11 +9,16 @@ import cgi
 import urllib
 
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.testing import DatabaseFunctionalLayer
 
+
 from lp.registry.browser.sourcepackage import get_register_upstream_url
-from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import (
+    IDistroSeries, IDistroSeriesSet)
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -24,26 +29,35 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_get_register_upstream_url_displayname(self):
+        distroseries = self.factory.makeDistroRelease(
+            distribution=self.factory.makeDistribution(name='zoobuntu'),
+            name='walrus')
         source_package = self.factory.makeSourcePackage(
+            distroseries=distroseries,
             sourcepackagename='python-super-package')
-        return_url = 'http://example.com/foo?a=b&c=d'
-        url = get_register_upstream_url(source_package, return_url)
-        expected_url = (
-            '/projects/+new?'
-            '_return_url='
-            'http%3A%2F%2Fexample.com%2Ffoo%3Fa%3Db%26c%3Dd'
-            '&field.__visited_steps__=projectaddstep1'
-            '&field.actions.continue=Continue'
+        url = get_register_upstream_url(source_package)
+        expected_base = '/projects/+new'
+        expected_params = [
+            ('_return_url',
+             'http://launchpad.dev/zoobuntu/walrus/'
+             '+source/python-super-package'),
+            ('field.__visited_steps__', 'projectaddstep1'),
+            ('field.actions.continue', 'Continue'),
             # The sourcepackagename 'python-super-package' is split on
             # the hyphens, and each word is capitalized.
-            '&field.displayname=Python+Super+Package'
-            '&field.name=python-super-package'
-            '&field.source_package_name=python-super-package'
-            # The summary is empty, since the source package doesn't
-            # have a binary package release.
-            '&field.summary='
-            '&field.title=Python+Super+Package')
-        self.assertEqual(expected_url, url)
+            ('field.displayname', 'Python Super Package'),
+            ('field.distroseries', 'zoobuntu/walrus'),
+            ('field.name', 'python-super-package'),
+            # The summary is missing, since the source package doesn't
+            # have a binary package release, and parse_qsl() excludes
+            # empty params.
+            ('field.source_package_name', 'python-super-package'),
+            ('field.title', 'Python Super Package'),
+            ]
+        base, query = urllib.splitquery(url)
+        params = cgi.parse_qsl(query)
+        self.assertEqual((expected_base, expected_params),
+                         (base, params))
 
     def test_get_register_upstream_url_summary(self):
         test_publisher = SoyuzTestPublisher()
@@ -58,14 +72,15 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         # objects need to be reloaded.
         distroseries = getUtility(IDistroSeriesSet).get(distroseries_id)
         source_package = distroseries.getSourcePackage(source_package_name)
-        return_url = 'http://example.com/foo?a=b&c=d'
-        url = get_register_upstream_url(source_package, return_url)
+        url = get_register_upstream_url(source_package)
         expected_base = '/projects/+new'
         expected_params = [
-            ('_return_url', 'http://example.com/foo?a=b&c=d'),
+            ('_return_url',
+             'http://launchpad.dev/youbuntu/busy/+source/bonkers'),
             ('field.__visited_steps__', 'projectaddstep1'),
             ('field.actions.continue', 'Continue'),
             ('field.displayname', 'Bonkers'),
+            ('field.distroseries', 'youbuntu/busy'),
             ('field.name', 'bonkers'),
             ('field.source_package_name', 'bonkers'),
             ('field.summary', 'summary for flubber-bin\n'
@@ -79,35 +94,45 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
 
     def test_get_register_upstream_url_summary_duplicates(self):
 
-        class FakeDistroSeriesBinaryPackage:
-            def __init__(self, summary):
-                self.summary = summary
+        class Faker:
+            # Fakes attributes easily.
+            def __init__(self, **kw):
+                self.__dict__.update(kw)
 
-        class FakeDistributionSourcePackageRelease:
-            sample_binary_packages = [
-                FakeDistroSeriesBinaryPackage('summary for foo'),
-                FakeDistroSeriesBinaryPackage('summary for bar'),
-                FakeDistroSeriesBinaryPackage('summary for baz'),
-                FakeDistroSeriesBinaryPackage('summary for baz'),
-                ]
+        class FakeSourcePackage(Faker):
+            # Interface necessary for canonical_url() call in
+            # get_register_upstream_url().
+            implements(ISourcePackage)
 
-        class FakeSourcePackageName:
-            name = 'foo'
+        class FakeDistroSeries(Faker):
+            implements(IDistroSeries)
 
-        class FakeSourcePackage:
-            name = 'foo'
-            sourcepackagename = FakeSourcePackageName()
-            releases = [FakeDistributionSourcePackageRelease()]
+        class FakeDistribution(Faker):
+            implements(IDistribution)
 
-        source_package = FakeSourcePackage()
-        return_url = 'http://example.com/foo?a=b&c=d'
-        url = get_register_upstream_url(source_package, return_url)
+        releases = Faker(sample_binary_packages=[
+            Faker(summary='summary for foo'),
+            Faker(summary='summary for bar'),
+            Faker(summary='summary for baz'),
+            Faker(summary='summary for baz'),
+            ])
+        source_package = FakeSourcePackage(
+            name='foo',
+            sourcepackagename=Faker(name='foo'),
+            distroseries=FakeDistroSeries(
+                name='walrus',
+                distribution=FakeDistribution(name='zoobuntu')),
+            releases=[releases])
+
+        url = get_register_upstream_url(source_package)
         expected_base = '/projects/+new'
         expected_params = [
-            ('_return_url', 'http://example.com/foo?a=b&c=d'),
+            ('_return_url',
+             'http://launchpad.dev/zoobuntu/walrus/+source/foo'),
             ('field.__visited_steps__', 'projectaddstep1'),
             ('field.actions.continue', 'Continue'),
             ('field.displayname', 'Foo'),
+            ('field.distroseries', 'zoobuntu/walrus'),
             ('field.name', 'foo'),
             ('field.source_package_name', 'foo'),
             ('field.summary', 'summary for bar\n'

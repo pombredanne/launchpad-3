@@ -66,11 +66,15 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.utils import smartquote
 
 
-def get_register_upstream_url(source_package, return_url):
+def get_register_upstream_url(source_package):
     displayname = string.capwords(source_package.name.replace('-', ' '))
+    distroseries_string = "%s/%s" % (
+        source_package.distroseries.distribution.name,
+        source_package.distroseries.name)
     params = {
-        '_return_url': return_url,
+        '_return_url': canonical_url(source_package),
         'field.source_package_name': source_package.sourcepackagename.name,
+        'field.distroseries': distroseries_string,
         'field.name': source_package.name,
         'field.displayname': displayname,
         'field.title': displayname,
@@ -221,8 +225,7 @@ class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
 
     @property
     def register_upstream_url(self):
-        return get_register_upstream_url(
-            self.context, return_url=self.request.getURL())
+        return get_register_upstream_url(self.context)
 
 
 class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
@@ -374,7 +377,6 @@ class SourcePackageView:
 
     @property
     def cancel_url(self):
-        import pdb; pdb.set_trace()
         return canonical_url(self.context)
 
     def processForm(self):
@@ -528,8 +530,7 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
             return
         elif upstream is self.register_upstream:
             # The user wants to create a new project.
-            url = get_register_upstream_url(
-                self.context, return_url=self.request.getURL())
+            url = get_register_upstream_url(self.context)
             self.request.response.redirect(url)
             return
         self.context.setPackaging(upstream.development_focus, self.user)
