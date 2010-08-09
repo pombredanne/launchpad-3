@@ -67,7 +67,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         if requester.preferredemail is None:
             # Use a constant, known, name and email.
             args["author_name"] = 'Launchpad Package Builder'
-            args["author_email"] = 'noreply@launchpad.net'
+            args["author_email"] = config.canonical.noreply_from_address
         else:
             args["author_name"] = requester.displayname
             args["author_email"] = requester.preferredemail.email
