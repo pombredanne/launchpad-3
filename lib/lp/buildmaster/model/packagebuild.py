@@ -14,10 +14,12 @@ import logging
 import os.path
 import subprocess
 
+from cStringIO import StringIO
 from lazr.delegates import delegates
 import pytz
 from storm.expr import Desc
 from storm.locals import Int, Reference, Storm, Unicode
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 from zope.security.proxy import removeSecurityProxy
@@ -28,6 +30,8 @@ from canonical.database.sqlbase import (
     clear_current_connection_cache, cursor, flush_database_updates)
 from canonical.launchpad.browser.librarian import (
     ProxiedLibraryFileAlias)
+from canonical.launchpad.helpers import filenameToContentType
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -38,9 +42,9 @@ from lp.buildmaster.interfaces.buildbase import (BUILDD_MANAGER_LOG_NAME,
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild, IPackageBuildSet, IPackageBuildSource)
-from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob, BuildFarmJobDerived)
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.adapters.archivedependencies import (
@@ -174,8 +178,23 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
     @staticmethod
     def getUploadLogContent(root, leaf):
-        """See `IPackageBuild`."""
-        return BuildBase.getUploadLogContent(root, leaf)
+        """Retrieve the upload log contents.
+
+        :param root: Root directory for the uploads
+        :param leaf: Leaf for this particular upload
+        :return: Contents of log file or message saying no log file was found.
+        """
+        # Retrieve log file content.
+        possible_locations = (
+            'failed', 'failed-to-move', 'rejected', 'accepted')
+        for location_dir in possible_locations:
+            log_filepath = os.path.join(root, location_dir, leaf,
+                UPLOAD_LOG_FILENAME)
+            if os.path.exists(log_filepath):
+                with open(log_filepath, 'r') as uploader_log_file:
+                    return uploader_log_file.read()
+        else:
+            return 'Could not find upload log file'
 
     def estimateDuration(self):
         """See `IPackageBuild`."""
@@ -200,11 +219,34 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IPackageBuild`."""
         raise NotImplementedError
 
+    def createUploadLog(self, content, filename=None):
+        """Creates a file on the librarian for the upload log.
+
+        :return: ILibraryFileAlias for the upload log file.
+        """
+        # The given content is stored in the librarian, restricted as
+        # necessary according to the targeted archive's privacy.  The content
+        # object's 'upload_log' attribute will point to the
+        # `LibrarianFileAlias`.
+
+        assert self.upload_log is None, (
+            "Upload log information already exists and cannot be overridden.")
+
+        if filename is None:
+            filename = 'upload_%s_log.txt' % self.id
+        contentType = filenameToContentType(filename)
+        file_size = len(content)
+        file_content = StringIO(content)
+        restricted = self.is_private
+
+        return getUtility(ILibraryFileAliasSet).create(
+            filename, file_size, file_content, contentType=contentType,
+            restricted=restricted)
+
     def storeUploadLog(self, content):
         """See `IPackageBuild`."""
         filename = "upload_%s_log.txt" % self.build_farm_job.id
-        library_file = BuildBase.createUploadLog(
-            self, content, filename=filename)
+        library_file = self.createUploadLog(content, filename=filename)
         self.upload_log = library_file
 
     def notify(self, extra_info=None):
@@ -228,29 +270,22 @@ class PackageBuildDerived:
     """
     delegates(IPackageBuild, context="package_build")
 
-    @staticmethod
-    def getUploadLogContent(root, leaf):
-        """Retrieve the upload log contents.
-
-        :param root: Root directory for the uploads
-        :param leaf: Leaf for this particular upload
-        :return: Contents of log file or message saying no log file was found.
-        """
-        # Retrieve log file content.
-        possible_locations = (
-            'failed', 'failed-to-move', 'rejected', 'accepted')
-        for location_dir in possible_locations:
-            log_filepath = os.path.join(root, location_dir, leaf,
-                UPLOAD_LOG_FILENAME)
-            if os.path.exists(log_filepath):
-                with open(log_filepath, 'r') as uploader_log_file:
-                    return uploader_log_file.read()
-        else:
-            return 'Could not find upload log file'
-
     def queueBuild(self, suspended=False):
         """See `IPackageBuild`."""
-        return BuildBase.queueBuild(self, suspended=suspended)
+        specific_job = self.makeJob()
+
+        # This build queue job is to be created in a suspended state.
+        if suspended:
+            specific_job.job.suspend()
+
+        duration_estimate = self.estimateDuration()
+        queue_entry = BuildQueue(
+            estimated_duration=duration_estimate,
+            job_type=self.build_farm_job_type,
+            job=specific_job.job, processor=specific_job.processor,
+            virtualized=specific_job.virtualized)
+        Store.of(self).add(queue_entry)
+        return queue_entry
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IPackageBuild`."""
@@ -262,10 +297,6 @@ class PackageBuildDerived:
             return
         method(librarian, slave_status, logger)
 
-    # The following private handlers currently re-use the BuildBase
-    # implementation until it is no longer in use. If we find in the
-    # future that it would be useful to delegate these also, they can be
-    # added to IBuildFarmJob or IPackageBuild as necessary.
     def _handleStatus_OK(self, librarian, slave_status, logger):
         """Handle a package that built successfully.
 
@@ -425,24 +456,79 @@ class PackageBuildDerived:
         self.buildqueue_record.destroySelf()
 
     def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger):
-        return BuildBase._handleStatus_PACKAGEFAIL(
-            self, librarian, slave_status, logger)
+        """Handle a package that had failed to build.
+
+        Build has failed when trying the work with the target package,
+        set the job status as FAILEDTOBUILD, store available info and
+        remove Buildqueue entry.
+        """
+        self.status = BuildStatus.FAILEDTOBUILD
+        self.storeBuildInfo(self, librarian, slave_status)
+        self.buildqueue_record.builder.cleanSlave()
+        self.notify()
+        self.buildqueue_record.destroySelf()
 
     def _handleStatus_DEPFAIL(self, librarian, slave_status, logger):
-        return BuildBase._handleStatus_DEPFAIL(
-            self, librarian, slave_status, logger)
+        """Handle a package that had missing dependencies.
+
+        Build has failed by missing dependencies, set the job status as
+        MANUALDEPWAIT, store available information, remove BuildQueue
+        entry and release builder slave for another job.
+        """
+        self.status = BuildStatus.MANUALDEPWAIT
+        self.storeBuildInfo(self, librarian, slave_status)
+        logger.critical("***** %s is MANUALDEPWAIT *****"
+                        % self.buildqueue_record.builder.name)
+        self.buildqueue_record.builder.cleanSlave()
+        self.buildqueue_record.destroySelf()
 
     def _handleStatus_CHROOTFAIL(self, librarian, slave_status, logger):
-        return BuildBase._handleStatus_CHROOTFAIL(
-            self, librarian, slave_status, logger)
+        """Handle a package that had failed when unpacking the CHROOT.
+
+        Build has failed when installing the current CHROOT, mark the
+        job as CHROOTFAIL, store available information, remove BuildQueue
+        and release the builder.
+        """
+        self.status = BuildStatus.CHROOTWAIT
+        self.storeBuildInfo(self, librarian, slave_status)
+        logger.critical("***** %s is CHROOTWAIT *****" %
+                        self.buildqueue_record.builder.name)
+        self.buildqueue_record.builder.cleanSlave()
+        self.notify()
+        self.buildqueue_record.destroySelf()
 
     def _handleStatus_BUILDERFAIL(self, librarian, slave_status, logger):
-        return BuildBase._handleStatus_BUILDERFAIL(
-            self, librarian, slave_status, logger)
+        """Handle builder failures.
+
+        Build has been failed when trying to build the target package,
+        The environment is working well, so mark the job as NEEDSBUILD again
+        and 'clean' the builder to do another jobs.
+        """
+        logger.warning("***** %s has failed *****"
+                       % self.buildqueue_record.builder.name)
+        self.buildqueue_record.builder.failBuilder(
+            "Builder returned BUILDERFAIL when asked for its status")
+        # simply reset job
+        self.storeBuildInfo(self, librarian, slave_status)
+        self.buildqueue_record.reset()
 
     def _handleStatus_GIVENBACK(self, librarian, slave_status, logger):
-        return BuildBase._handleStatus_GIVENBACK(
-            self, librarian, slave_status, logger)
+        """Handle automatic retry requested by builder.
+
+        GIVENBACK pseudo-state represents a request for automatic retry
+        later, the build records is delayed by reducing the lastscore to
+        ZERO.
+        """
+        logger.warning("***** %s is GIVENBACK by %s *****"
+                       % (self.buildqueue_record.specific_job.build.title,
+                          self.buildqueue_record.builder.name))
+        self.storeBuildInfo(self, librarian, slave_status)
+        # XXX cprov 2006-05-30: Currently this information is not
+        # properly presented in the Web UI. We will discuss it in
+        # the next Paris Summit, infinity has some ideas about how
+        # to use this content. For now we just ensure it's stored.
+        self.buildqueue_record.builder.cleanSlave()
+        self.buildqueue_record.reset()
 
 
 class PackageBuildSet:
