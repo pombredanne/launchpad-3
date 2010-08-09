@@ -289,6 +289,10 @@ class IPOTemplate(IRosettaStats):
             gettext uses the original English strings to identify messages.
             """))
 
+    translation_side_traits = Attribute(
+        _("TranslationSideTraits for this template."), required=True,
+        readonly=True)
+
     def __iter__():
         """Return an iterator over current `IPOTMsgSet` in this template."""
 

@@ -64,6 +64,9 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplateSharingSubset,
     IPOTemplateSubset,
     LanguageNotFound)
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    TranslationSide)
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.translations.interfaces.translationexporter import (
@@ -983,6 +986,15 @@ class POTemplate(SQLBase, RosettaStats):
         for row in rows:
             yield VPOTExport(self, *row)
 
+    @property
+    def translation_side_traits(self):
+        """See `IPOTemplate`."""
+        if self.productseries:
+            side = TranslationSide.UPSTREAM
+        else:
+            side = TranslationSide.UBUNTU
+        return getUtility(ITranslationSideTraitsSet).getTraits(side)
+
 
 class POTemplateSubset:
     implements(IPOTemplateSubset)
@@ -1388,7 +1400,7 @@ class POTemplateSharingSubset(object):
         The translation focus is used to pick a distroseries, so a source
         package instance can be created. If no translation focus is set,
         the distribution's current series is used."""
-        
+
         from lp.registry.model.sourcepackage import SourcePackage
         distroseries = distribution.translation_focus
         if distroseries is None:
