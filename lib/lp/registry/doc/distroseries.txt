@@ -311,6 +311,7 @@ again" type set of assertions.
 
     >>> from lp.soyuz.scripts.initialise_distroseries import (
     ...     InitialiseDistroSeries)
+    >>> login("foo.bar@canonical.com")
     >>> humpy = ubuntu.newSeries('humpy', 'Humpy Hippo',
     ...                          'The Humpy Hippo', 'Fat', 'Yo Momma',
     ...                          '99.2',hoary, hoary.owner)
