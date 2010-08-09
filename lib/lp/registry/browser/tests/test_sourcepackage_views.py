@@ -66,9 +66,47 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
             ('field.actions.continue', 'Continue'),
             ('field.displayname', 'Bonkers'),
             ('field.name', 'bonkers'),
-            ('field.summary', 'flubber-bin: summary for flubber-bin\n'
-                              + 'flubber-lib: summary for flubber-lib'),
+            ('field.summary', 'summary for flubber-bin\n'
+                              + 'summary for flubber-lib'),
             ('field.title', 'Bonkers'),
+            ]
+        base, query = urllib.splitquery(url)
+        params = cgi.parse_qsl(query)
+        self.assertEqual((expected_base, expected_params),
+                         (base, params))
+
+    def test_get_register_upstream_url_summary_duplicates(self):
+
+        class FakeDistroSeriesBinaryPackage:
+            def __init__(self, summary):
+                self.summary = summary
+
+        class FakeDistributionSourcePackageRelease:
+            sample_binary_packages = [
+                FakeDistroSeriesBinaryPackage('summary for foo'),
+                FakeDistroSeriesBinaryPackage('summary for bar'),
+                FakeDistroSeriesBinaryPackage('summary for baz'),
+                FakeDistroSeriesBinaryPackage('summary for baz'),
+                ]
+
+        class FakeSourcePackage:
+            name = 'foo'
+            releases = [FakeDistributionSourcePackageRelease()]
+
+        source_package = FakeSourcePackage()
+        return_url = 'http://example.com/foo?a=b&c=d'
+        url = get_register_upstream_url(source_package, return_url)
+        expected_base = '/projects/+new'
+        expected_params = [
+            ('_return_url', 'http://example.com/foo?a=b&c=d'),
+            ('field.__visited_steps__', 'projectaddstep1'),
+            ('field.actions.continue', 'Continue'),
+            ('field.displayname', 'Foo'),
+            ('field.name', 'foo'),
+            ('field.summary', 'summary for bar\n'
+                              + 'summary for baz\n'
+                              + 'summary for foo'),
+            ('field.title', 'Foo'),
             ]
         base, query = urllib.splitquery(url)
         params = cgi.parse_qsl(query)

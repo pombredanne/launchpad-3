@@ -89,7 +89,7 @@ step of the multistep form.
     &field.actions.continue=Continue
     &field.displayname=Bonkers
     &field.name=bonkers
-    &field.summary=flubber-bin%3A+summary...flubber-lib%3A+summary...
+    &field.summary=summary+for+flubber-bin%0Asummary+for+flubber-lib
     &field.title=Bonkers
     >>> print user_browser.getControl(name='field.name').value
     bonkers
@@ -98,8 +98,8 @@ step of the multistep form.
     >>> print user_browser.getControl(name='field.title').value
     Bonkers
     >>> print user_browser.getControl(name='field.summary').value
-    flubber-bin: summary for flubber-bin
-    flubber-lib: summary for flubber-lib
+    summary for flubber-bin
+    summary for flubber-lib
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'step-title'))
     Step 2 (of 2): Check for duplicate projects
@@ -123,7 +123,7 @@ that the project doesn't exist, there is a also a link on the
     &field.actions.continue=Continue
     &field.displayname=Bonkers
     &field.name=bonkers
-    &field.summary=flubber-bin%3A+summary...flubber-lib%3A+summary...
+    &field.summary=summary+for+flubber-bin%0Asummary+for+flubber-lib
     &field.title=Bonkers
     >>> print user_browser.getControl(name='field.name').value
     bonkers
@@ -132,8 +132,8 @@ that the project doesn't exist, there is a also a link on the
     >>> print user_browser.getControl(name='field.title').value
     Bonkers
     >>> print user_browser.getControl(name='field.summary').value
-    flubber-bin: summary for flubber-bin
-    flubber-lib: summary for flubber-lib
+    summary for flubber-bin
+    summary for flubber-lib
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'step-title'))
     Step 2 (of 2): Check for duplicate projects

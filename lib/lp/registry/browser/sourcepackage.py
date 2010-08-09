@@ -76,10 +76,15 @@ def get_register_upstream_url(source_package, return_url):
         'field.__visited_steps__': ProjectAddStepOne.step_name,
         'field.actions.continue': 'Continue',
         }
-    if source_package.summary is None:
+    if len(source_package.releases) == 0:
         params['field.summary'] = ''
     else:
-        params['field.summary'] = source_package.summary
+        # This is based on the SourcePackageName.summary attribute, but
+        # it eliminates the binary.name and duplicate summary lines.
+        summary_set = set()
+        for binary in source_package.releases[0].sample_binary_packages:
+            summary_set.add(binary.summary)
+        params['field.summary'] = '\n'.join(sorted(summary_set))
     query_string = urllib.urlencode(
         sorted(params.items()), doseq=True)
     return '/projects/+new?%s' % query_string
