@@ -38,6 +38,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
             # the hyphens, and each word is capitalized.
             '&field.displayname=Python+Super+Package'
             '&field.name=python-super-package'
+            '&field.source_package_name=python-super-package'
             # The summary is empty, since the source package doesn't
             # have a binary package release.
             '&field.summary='
@@ -66,6 +67,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
             ('field.actions.continue', 'Continue'),
             ('field.displayname', 'Bonkers'),
             ('field.name', 'bonkers'),
+            ('field.source_package_name', 'bonkers'),
             ('field.summary', 'summary for flubber-bin\n'
                               + 'summary for flubber-lib'),
             ('field.title', 'Bonkers'),
@@ -89,8 +91,12 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
                 FakeDistroSeriesBinaryPackage('summary for baz'),
                 ]
 
+        class FakeSourcePackageName:
+            name = 'foo'
+
         class FakeSourcePackage:
             name = 'foo'
+            sourcepackagename = FakeSourcePackageName()
             releases = [FakeDistributionSourcePackageRelease()]
 
         source_package = FakeSourcePackage()
@@ -103,6 +109,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
             ('field.actions.continue', 'Continue'),
             ('field.displayname', 'Foo'),
             ('field.name', 'foo'),
+            ('field.source_package_name', 'foo'),
             ('field.summary', 'summary for bar\n'
                               + 'summary for baz\n'
                               + 'summary for foo'),

@@ -70,6 +70,7 @@ def get_register_upstream_url(source_package, return_url):
     displayname = string.capwords(source_package.name.replace('-', ' '))
     params = {
         '_return_url': return_url,
+        'field.source_package_name': source_package.sourcepackagename.name,
         'field.name': source_package.name,
         'field.displayname': displayname,
         'field.title': displayname,

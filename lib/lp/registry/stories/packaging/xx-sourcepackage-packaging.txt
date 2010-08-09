@@ -89,6 +89,7 @@ step of the multistep form.
     &field.actions.continue=Continue
     &field.displayname=Bonkers
     &field.name=bonkers
+    &field.source_package_name=bonkers
     &field.summary=summary+for+flubber-bin%0Asummary+for+flubber-lib
     &field.title=Bonkers
     >>> print user_browser.getControl(name='field.name').value
@@ -123,6 +124,7 @@ that the project doesn't exist, there is a also a link on the
     &field.actions.continue=Continue
     &field.displayname=Bonkers
     &field.name=bonkers
+    &field.source_package_name=bonkers
     &field.summary=summary+for+flubber-bin%0Asummary+for+flubber-lib
     &field.title=Bonkers
     >>> print user_browser.getControl(name='field.name').value

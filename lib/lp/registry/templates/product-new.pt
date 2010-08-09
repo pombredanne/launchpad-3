@@ -254,11 +254,6 @@ LPS.use('node', 'lazr.effects', function(Y) {
       <metal:step fill-slot="extra_info">
       <div style="float: right;">Not sure what to do?
         <a href="https://help.launchpad.net/Feedback">Contact us</a>
-        <div style="border: 3px solid red"
-          tal:content="view/request/form/field.source_package_name
-            | nothing"/>
-        <div style="border: 3px solid green"
-          tal:content="view/request/source_package_name | nothing"/>
       </div>
 
       <div tal:condition="view/is_step/1">
@@ -305,7 +300,7 @@ LPS.use('node', 'lazr.effects', function(Y) {
           There are similar projects already registered in Launchpad.
           Is project
           <strong><tal:displayname tal:replace="view/request/field.displayname" />
-          (<tal:name  tal:replace="view/request/name" />)</strong>
+          (<tal:name  tal:replace="view/request/field.name" />)</strong>
           one of these?
           </div>
 
