@@ -1171,12 +1171,12 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class EditSourcePackageRecipeBuilds(AuthorizationBase):
+class AdminSourcePackageRecipeBuilds(AuthorizationBase):
     """Control who can edit SourcePackageRecipeBuilds.
 
     Access is restricted to members of ~bazaar-experts and Buildd Admins.
     """
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.Admin'
     usedfor = ISourcePackageRecipeBuild
 
     def checkAuthenticated(self, user):
