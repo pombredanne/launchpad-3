@@ -14,8 +14,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
 from lp.registry.model.karma import KarmaTotalCache
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -29,8 +27,8 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
     def test_dsp_with_no_series_summary(self):
         distribution_set = getUtility(IDistributionSet)
 
-        distribution = distribution_set.new(name='wart', 
-            displayname='wart', title='wart', description='lots of warts', 
+        distribution = distribution_set.new(name='wart',
+            displayname='wart', title='wart', description='lots of warts',
             summary='lots of warts', domainname='wart.dumb',
             members=self.factory.makeTeam(), owner=self.factory.makePerson())
         naked_distribution = removeSecurityProxy(distribution)

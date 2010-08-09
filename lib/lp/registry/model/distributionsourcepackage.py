@@ -56,6 +56,7 @@ from lp.translations.interfaces.customlanguagecode import (
 from lp.translations.model.customlanguagecode import (
     CustomLanguageCode, HasCustomLanguageCodesMixin)
 
+
 def is_upstream_link_allowed(spph):
     """Metapackages shouldn't have upstream links.
 
@@ -67,6 +68,7 @@ def is_upstream_link_allowed(spph):
 
 
 class DistributionSourcePackageProperty:
+
     def __init__(self, attrname):
         self.attrname = attrname
 
@@ -331,8 +333,7 @@ class DistributionSourcePackage(BugTargetBase,
             # Next, the joins for the ordering by soyuz karma of the
             # SPR creator.
             KarmaTotalCache.person == SourcePackageRelease.creatorID,
-            *extra_args
-            )
+            *extra_args)
 
         # Note: If and when we later have a field on IArchive to order by,
         # such as IArchive.rank, we will then be able to return distinct
@@ -354,8 +355,7 @@ class DistributionSourcePackage(BugTargetBase,
         condition = And(
             Packaging.sourcepackagename == self.sourcepackagename,
             Packaging.distroseriesID == DistroSeries.id,
-            DistroSeries.distribution == self.distribution
-            )
+            DistroSeries.distribution == self.distribution)
         result = store.find(Packaging, condition)
         result.order_by("debversion_sort_key(version) DESC")
         if result.count() == 0:
@@ -520,8 +520,7 @@ class DistributionSourcePackage(BugTargetBase,
             DistributionSourcePackageInDatabase.sourcepackagename ==
                 sourcepackagename,
             DistributionSourcePackageInDatabase.distribution ==
-                distribution
-            ).one()
+                distribution).one()
 
     @classmethod
     def _new(cls, distribution, sourcepackagename,
