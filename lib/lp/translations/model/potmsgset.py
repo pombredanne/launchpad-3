@@ -1270,7 +1270,32 @@ class POTMsgSet(SQLBase):
 
     def clearCurrentTranslation(self, pofile, share_with_other_side=False):
         """See `IPOTMsgSet`."""
-# XXX: Implement!
+        submitter = None # XXX: Need to know this!
+        origin = None # XXX: Need to know this!
+
+        template = pofile.potemplate
+        traits = template.translation_side_traits
+
+        current = traits.getCurrentMessage(self, template, pofile.language)
+        if current is None:
+            # Trivial case: there's nothing to disable.
+            return
+
+        if current.is_diverged:
+            # XXX: Check for clashes; may need to delete.
+            traits.setFlag(current, False)
+
+            shared = traits.getCurrentMessage(self, template, pofile.language)
+            if shared is not None and not shared.is_empty:
+                # Mask the shared message with a diverged empty message.
+                # XXX: Find & reuse an existing empty message if
+                # possible.
+                self._makeTranslationMessage(
+                    pofile, submitter, [], origin, diverged=True)
+        else:
+            traits.setFlag(current, False)
+            if share_with_other_side:
+                traits.other_side_traits.setFlag(current, False)
 
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""
