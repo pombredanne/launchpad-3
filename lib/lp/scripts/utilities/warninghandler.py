@@ -147,7 +147,9 @@ def find_important_info():
 
 need_page_titles = []
 no_order_by = []
-other_warnings = []
+
+# Maps (category, filename, lineno) to WarningReport
+other_warnings = {}
 
 old_show_warning = warnings.showwarning
 def launchpad_showwarning(message, category, filename, lineno, file=None,
@@ -177,7 +179,8 @@ def launchpad_showwarning(message, category, filename, lineno, file=None,
                     WarningReport(warning_message, important_info)
                     )
                 return
-    other_warnings.append(WarningReport(warning_message, important_info))
+    other_warnings[(category, filename, lineno)] = WarningReport(
+        warning_message, important_info)
 
 def report_need_page_titles():
     global need_page_titles
@@ -202,7 +205,7 @@ def report_other_warnings():
     if other_warnings:
         print
         print "General warnings."
-        for warninginfo in other_warnings:
+        for warninginfo in other_warnings.itervalues():
             print
             print warninginfo
 
