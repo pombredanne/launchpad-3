@@ -44,9 +44,10 @@ class ScenarioMixin:
                                 diverged=False):
         """Create a (non-current) TranslationMessage for potmsgset."""
         if translations is None:
-            translations = [self.factory.getUniqueString()]
+            translations = {0: self.factory.getUniqueString()}
         message = potmsgset.submitSuggestion(
             pofile, pofile.potemplate.owner, translations)
+
         if diverged:
             removeSecurityProxy(message).potemplate = pofile.potemplate
         return message
