@@ -54,7 +54,8 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot, ILaunchpadUsage)
+    IHasLogo, IHasMugshot)
+from lp.app.interfaces.launchpad import ILaunchpadUsage, IServiceUsage
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
@@ -347,13 +348,10 @@ class IProductPublic(
     IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
     ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget, IHasRecipes,
-    IHasCodeImports):
+    IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
+    ISpecificationTarget, IHasRecipes, IHasCodeImports):
     """Public IProduct properties."""
 
-    # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
-    # unless we really need them. BradB says he can remove the need for them
-    # in SQLObject soon.
     id = Int(title=_('The Project ID'))
 
     project = exported(
