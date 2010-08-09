@@ -1357,14 +1357,17 @@ class IPersonViewRestricted(Interface):
             center_lat, and center_lng
         """
 
-    def getMembersWithPreferredEmails(include_teams=False):
+    def getMembersWithPreferredEmails():
         """Returns a result set of persons with precached addresses.
 
         Persons or teams without preferred email addresses are not included.
         """
 
-    def getMembersWithPreferredEmailsCount(include_teams=False):
-        """Returns the count of persons/teams with preferred emails."""
+    def getMembersWithPreferredEmailsCount():
+        """Returns the count of persons/teams with preferred emails.
+        
+        See also getMembersWithPreferredEmails.
+        """
 
     def getDirectAdministrators():
         """Return this team's administrators.

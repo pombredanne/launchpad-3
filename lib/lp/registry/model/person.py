@@ -1546,7 +1546,7 @@ class Person(
             return result
         return DecoratedResultSet(raw_result, result_decorator=prepopulate_person)
 
-    def _getMembersWithPreferredEmails(self, include_teams=False):
+    def _getMembersWithPreferredEmails(self):
         """Helper method for public getMembersWithPreferredEmails.
 
         We can't return the preferred email address directly to the
@@ -1564,20 +1564,18 @@ class Person(
             EmailAddress.status == EmailAddressStatus.PREFERRED)
         return store.using(*origin).find((Person, EmailAddress), conditions)
 
-    def getMembersWithPreferredEmails(self, include_teams=False):
+    def getMembersWithPreferredEmails(self):
         """See `IPerson`."""
-        result = self._getMembersWithPreferredEmails(
-            include_teams=include_teams)
+        result = self._getMembersWithPreferredEmails()
         person_list = []
         for person, email in result:
             person._preferredemail_cached = email
             person_list.append(person)
         return person_list
 
-    def getMembersWithPreferredEmailsCount(self, include_teams=False):
+    def getMembersWithPreferredEmailsCount(self):
         """See `IPerson`."""
-        result = self._getMembersWithPreferredEmails(
-            include_teams=include_teams)
+        result = self._getMembersWithPreferredEmails()
         return result.count()
 
     @property
