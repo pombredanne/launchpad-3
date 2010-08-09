@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationmessage import (
@@ -40,16 +42,20 @@ class ScenarioMixin:
 
     def _makeTranslationMessage(self, potmsgset, pofile, translations=None,
                                 diverged=False):
-        """Create a `TranslationMessage` for `potmsgset."""
-        return self.factory.makeTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset, suggestion=True,
-            translations=translations, force_diverged=diverged)
+        """Create a (non-current) TranslationMessage for potmsgset."""
+        if translations is None:
+            translations = [self.factory.getUniqueString()]
+        message = potmsgset.submitSuggestion(
+            pofile, pofile.potemplate.owner, translations)
+        if diverged:
+            removeSecurityProxy(message).potemplate = pofile.potemplate
+        return message
 
     def test_does_nothing_if_not_translated(self):
         pofile = self._makePOFile()
         template = pofile.potemplate
         potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
-        
+
         potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
         current = template.translation_side_traits.getCurrentMessage(
@@ -62,7 +68,7 @@ class ScenarioMixin:
         traits = template.translation_side_traits
         potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         tm = self._makeTranslationMessage(potmsgset, pofile)
-        traits.setFlag(tm)
+        traits.setFlag(tm, True)
         self.assertTrue(traits.getFlag(tm))
 
         potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
@@ -82,21 +88,29 @@ class ScenarioMixin:
         self.assertFalse(traits.getFlag(tm))
 
     def test_hides_unmasked_shared_message(self):
+        # When disabling a diverged message that masks a (nonempty)
+        # shared message, clearCurrentTranslation leaves an empty
+        # diverged message to mask the shared message.
         pofile = self._makePOFile()
         template = pofile.potemplate
         traits = template.translation_side_traits
         potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         shared_tm = self._makeTranslationMessage(potmsgset, pofile)
-        traits.setFlag(shared_tm)
+        traits.setFlag(shared_tm, True)
         diverged_tm = self._makeTranslationMessage(
             potmsgset, pofile, diverged=True)
-        traits.setFlag(diverged_tm)
+        traits.setFlag(diverged_tm, True)
 
         potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
         current = traits.getCurrentMessage(
             potmsgset, template, pofile.language)
-        self.assertIs(None, current.msgstr0)
+        self.assertNotEqual(shared_tm, current)
+        self.assertNotEqual(diverged_tm, current)
+        self.assertTrue(current.is_empty)
+        self.assertTrue(current.is_diverged)
+        self.assertEqual(template.owner, current.reviewer)
+
         self.assertTrue(traits.getFlag(shared_tm))
 
     def test_ignores_other_message(self):
@@ -105,12 +119,12 @@ class ScenarioMixin:
         traits = template.translation_side_traits
         potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         tm = self._makeTranslationMessage(potmsgset, pofile)
-        traits.setFlag(tm)
+        traits.setFlag(tm, True)
 
         other_template = self.makeOtherPOTemplate()
         other_pofile = self._makePOFile(potemplate=other_template)
         other_tm = self._makeTranslationMessage(potmsgset, pofile)
-        traits.other_side_traits.setFlag(other_tm)
+        traits.other_side_traits.setFlag(other_tm, True)
 
         potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
@@ -122,13 +136,13 @@ class ScenarioMixin:
         traits = template.translation_side_traits
         potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         tm = self._makeTranslationMessage(potmsgset, pofile)
-        traits.setFlag(tm)
-        traits.other_side_traits.setFlag(tm)
+        traits.setFlag(tm, True)
+        traits.other_side_traits.setFlag(tm, True)
 
         potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
         self.assertFalse(traits.getFlag(tm))
-        self.assertTrue(traits.other_side_flags.getFlag(tm))
+        self.assertTrue(traits.other_side_traits.getFlag(tm))
 
     def test_deactivates_both_sides(self):
         pofile = self._makePOFile()
@@ -136,8 +150,8 @@ class ScenarioMixin:
         traits = template.translation_side_traits
         potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         tm = self._makeTranslationMessage(potmsgset, pofile)
-        traits.setFlag(tm)
-        traits.other_side_traits.setFlag(tm)
+        traits.setFlag(tm, True)
+        traits.other_side_traits.setFlag(tm, True)
 
         potmsgset.clearCurrentTranslation(
             pofile, template.owner, ORIGIN, share_with_other_side=True)
@@ -151,7 +165,7 @@ class ScenarioMixin:
         template = pofile.potemplate
         potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         tm = self._makeTranslationMessage(potmsgset, pofile, translations)
-        template.translation_side_traits.setFlag(tm)
+        template.translation_side_traits.setFlag(tm, True)
         suggestion = self._makeTranslationMessage(
             potmsgset, pofile, translations)
 
@@ -168,9 +182,9 @@ class ScenarioMixin:
         potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         diverged_tm = self._makeTranslationMessage(
             potmsgset, pofile, diverged=True)
-        traits.setFlag(diverged_tm)
+        traits.setFlag(diverged_tm, True)
         blank_shared_tm = self._makeTranslationMessage(potmsgset, pofile, [])
-        traits.setFlag(blank_shared_tm)
+        traits.setFlag(blank_shared_tm, True)
 
         potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
@@ -186,9 +200,17 @@ class TestClearCurrentTranslationsUpstream(TestCaseWithFactory,
     makePOTemplate = ScenarioMixin.makeUpstreamTemplate
     makeOtherPOTemplate = ScenarioMixin.makeUbuntuTemplate
 
+    def setUp(self):
+        super(TestClearCurrentTranslationsUpstream, self).setUp(
+            'carlos@canonical.com')
+
 
 class TestClearCurrentTranslationsUbuntu(TestCaseWithFactory,
                                            ScenarioMixin):
     """Test clearCurrentTranslationsUpstream on Ubuntu side."""
     makePOTemplate = ScenarioMixin.makeUbuntuTemplate
     makeOtherPOTemplate = ScenarioMixin.makeUpstreamTemplate
+
+    def setUp(self):
+        super(TestClearCurrentTranslationsUbuntu, self).setUp(
+            'carlos@canonical.com')

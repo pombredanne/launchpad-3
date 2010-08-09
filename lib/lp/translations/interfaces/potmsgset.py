@@ -305,6 +305,8 @@ class IPOTMsgSet(Interface):
             translation for this `POTMsgSet` cleared.  If the message is
             shared, this may not be the only translation file that will
             be affected.
+        :param submitter: The person responsible for clearing the message.
+        :param origin: `RosettaTranslationOrigin`.
         :param share_with_other_side: If the current message is also
             current on the other side (i.e. the Ubuntu side if working
             upstream, or vice versa) then should it be cleared there as

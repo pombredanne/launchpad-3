@@ -217,6 +217,9 @@ class ITranslationMessage(Interface):
     def getOnePOFile():
         """Get any POFile containing this translation."""
 
+    def getSharedEquivalent():
+        """Find shared message that otherwise exactly matches this one."""
+
     def shareIfPossible():
         """Make this message shared, if possible.
 

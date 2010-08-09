@@ -1249,16 +1249,35 @@ class POTMsgSet(SQLBase):
             return
 
         if current.is_diverged:
-            # XXX: Check for clashes; may need to delete.
-            traits.setFlag(current, False)
+            # Disable the current message.
+            if current.getSharedEquivalent() is not None:
+                current.destroySelf()
+            else:
+                traits.setFlag(current, False)
 
             shared = traits.getCurrentMessage(self, template, pofile.language)
+            assert shared is None or not shared.is_diverged, (
+                "I killed a divergence but the current message is still "
+                "diverged.")
             if shared is not None and not shared.is_empty:
                 # Mask the shared message with a diverged empty message.
-                # XXX: Find & reuse an existing empty message if
-                # possible.
-                self._makeTranslationMessage(
-                    pofile, submitter, [], origin, diverged=True)
+                existing_empty_message = self._findTranslationMessage(
+                    pofile, self._findPOTranslations([]), prefer_shared=True)
+                can_reuse = not (
+                    existing_empty_message is None or
+                    existing_empty_message.is_current_upstream or
+                    existing_empty_message.is_current_ubuntu)
+                if can_reuse:
+                    existing_empty_message.potemplate = template
+                    mask = existing_empty_message
+                else:
+                    mask = self._makeTranslationMessage(
+                        pofile, submitter, {}, origin, diverged=True)
+
+                Store.of(mask).add_flush_order(current, mask)
+                mask.reviewer = submitter
+                mask.date_reviewed = UTC_NOW
+                traits.setFlag(mask, True)
         else:
             traits.setFlag(current, False)
             if share_with_other_side:

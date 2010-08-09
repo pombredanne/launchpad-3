@@ -168,6 +168,10 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         self.is_current_upstream = new_value
 
+    def getSharedEquivalent(self):
+        """See `ITranslationMessage`."""
+        raise NotImplementedError()
+
     def shareIfPossible(self):
         """See `ITranslationMessage`."""
 
@@ -327,9 +331,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         else:
             return None
 
-    def _getSharedEquivalent(self):
-        """Get shared message that otherwise exactly matches this one.
-        """
+    def getSharedEquivalent(self):
+        """See `ITranslationMessage`."""
         clauses = [
             'potemplate IS NULL',
             'potmsgset = %s' % sqlvalues(self.potmsgset),
@@ -361,7 +364,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             return
 
         # Existing shared direct equivalent to this message, if any.
-        shared = self._getSharedEquivalent()
+        shared = self.getSharedEquivalent()
 
         # Existing shared current translation for this POTMsgSet, if
         # any.

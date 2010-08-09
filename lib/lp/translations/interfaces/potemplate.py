@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.translations.interfaces.rosettastats import IRosettaStats
+from lp.translations.interfaces.side import ITranslationSideTraits
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
 from lp.translations.interfaces.translationfileformat import (
@@ -289,8 +290,9 @@ class IPOTemplate(IRosettaStats):
             gettext uses the original English strings to identify messages.
             """))
 
-    translation_side_traits = Attribute(
-        _("TranslationSideTraits for this template."), required=True,
+    translation_side_traits = Object(
+        schema=ITranslationSideTraits,
+        title=_("TranslationSideTraits for this template."), required=True,
         readonly=True)
 
     def __iter__():
