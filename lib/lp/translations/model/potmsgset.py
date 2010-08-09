@@ -1240,9 +1240,6 @@ class POTMsgSet(SQLBase):
     def clearCurrentTranslation(self, pofile, submitter, origin,
                                 share_with_other_side=False):
         """See `IPOTMsgSet`."""
-        submitter = None # XXX: Need to know this!
-        origin = None # XXX: Need to know this!
-
         template = pofile.potemplate
         traits = template.translation_side_traits
 
