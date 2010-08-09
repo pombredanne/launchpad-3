@@ -63,8 +63,14 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             suite += "-%s" % (self.build.pocket.name.lower())
         args['suite'] = suite
         args['arch_tag'] = distroarchseries.architecturetag
-        args["author_name"] = self.build.requester.displayname
-        args["author_email"] = self.build.requester.preferredemail.email
+        requester = self.build.requester
+        if requester.preferredemail is None:
+            # Use a constant, known, name and email.
+            args["author_name"] = 'Launchpad Package Builder'
+            args["author_email"] = 'noreply@launchpad.net'
+        else:
+            args["author_name"] = requester.displayname
+            args["author_email"] = requester.preferredemail.email
         args["recipe_text"] = str(self.build.recipe.builder_recipe)
         args['archive_purpose'] = self.build.archive.purpose.name
         args["ogrecomponent"] = get_primary_current_component(
