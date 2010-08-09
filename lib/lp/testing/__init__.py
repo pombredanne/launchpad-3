@@ -92,7 +92,6 @@ from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import branch_id_to_path, get_rw_server
 from lp.registry.interfaces.packaging import IPackagingUtil
-from lp.testing.karma import KarmaRecorder
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -577,7 +576,8 @@ class TestCaseWithFactory(TestCase):
         bzr_branch = self.createBranchAtURL(db_branch.getInternalBzrUrl())
         if parent:
             bzr_branch.pull(parent)
-            removeSecurityProxy(db_branch).last_scanned_id = bzr_branch.last_revision()
+            naked_branch = removeSecurityProxy(db_branch)
+            naked_branch.last_scanned_id = bzr_branch.last_revision()
         return bzr_branch
 
     @staticmethod
