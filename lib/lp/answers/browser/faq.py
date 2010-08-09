@@ -57,8 +57,6 @@ class FAQBreadcrumb(Breadcrumb):
 class FAQView(LaunchpadView):
     """View for the FAQ index."""
 
-    __used_for__ = IFAQ
-
     @property
     def label(self):
         return self.context.title

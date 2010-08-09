@@ -117,12 +117,12 @@
                 metal:define-slot="heading"
                 >Page Label
               </h1>
-              <div id="registration" class="registering">
-                <metal:registering define-slot="registering" />
-              </div>
               <tal:breadcrumbs replace="structure context/@@+hierarchy">
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
+              <div id="registration" class="registering">
+                <metal:registering define-slot="registering" />
+              </div>
             </div>
 
             <tal:maintenance

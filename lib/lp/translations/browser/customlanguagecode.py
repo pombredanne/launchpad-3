@@ -18,6 +18,7 @@ import re
 
 from canonical.lazr.utils import smartquote
 
+from lp.app.errors import NotFoundError
 from lp.translations.interfaces.customlanguagecode import (
     ICustomLanguageCode, IHasCustomLanguageCodes)
 
@@ -25,7 +26,6 @@ from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView, Navigation,
     stepthrough)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
 
 

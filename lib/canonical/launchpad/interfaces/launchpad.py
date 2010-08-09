@@ -23,7 +23,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 # entire codebase and fix where the import should come from.
 from canonical.launchpad.webapp.interfaces import (
     IBasicLaunchpadRequest, ILaunchBag, ILaunchpadRoot, IOpenLaunchBag,
-    NotFoundError, UnexpectedFormData, UnsafeFormGetSubmissionError)
+    UnsafeFormGetSubmissionError)
 
 
 __all__ = [
@@ -65,8 +65,6 @@ __all__ = [
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
     'NameNotAvailable',
-    'NotFoundError',
-    'UnexpectedFormData',
     'UnknownRecipientError',
     'UnsafeFormGetSubmissionError',
     ]

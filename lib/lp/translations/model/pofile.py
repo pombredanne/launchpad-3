@@ -1803,8 +1803,7 @@ class POFileToTranslationFileDataAdapter:
                 msgset.flags = set([
                     flag.strip()
                     for flag in row.flags_comment.split(',')
-                    if flag
-                    ])
+                    if flag])
 
             messages.append(msgset)
 

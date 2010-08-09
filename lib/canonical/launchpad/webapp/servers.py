@@ -46,6 +46,7 @@ from lazr.restful.interfaces import (
 from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
+from lp.app.errors import UnexpectedFormData
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from canonical.launchpad.interfaces.launchpad import (
     IFeedsApplication, IPrivateApplication, IWebServiceApplication)
@@ -64,7 +65,7 @@ from canonical.launchpad.webapp.interfaces import (
     IAPIDocRoot, IBasicLaunchpadRequest, IBrowserFormNG,
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
     INotificationRequest, INotificationResponse, IPlacelessAuthUtility,
-    IPlacelessLoginSource, OAuthPermission, UnexpectedFormData)
+    IPlacelessLoginSource, OAuthPermission)
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
@@ -979,7 +980,9 @@ class LaunchpadAccessLogger(CommonAccessLogger):
                 userid,
                 pageid,
                 referer,
-                user_agent))
+                user_agent,
+                )
+           )
 
 
 http = wsgi.ServerType(
@@ -1104,6 +1107,16 @@ class WebServicePublication(WebServicePublicationMixin,
     """The publication used for Launchpad web service requests."""
 
     root_object_interface = IWebServiceApplication
+
+    def constructPageID(self, view, context):
+        """Add the web service named operation (if any) to the page ID."""
+        pageid = super(WebServicePublication, self).constructPageID(
+            view, context)
+        op = (view.request.get('ws.op')
+            or view.request.query_string_params.get('ws.op'))
+        if op:
+            pageid += ':' + op
+        return pageid
 
     def getApplication(self, request):
         """See `zope.publisher.interfaces.IPublication`.
