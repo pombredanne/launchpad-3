@@ -161,10 +161,19 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         return
 
     def makeCurrentUbuntu(self, new_value=True):
+        """See `ITranslationMessage`."""
         self.is_current_ubuntu = new_value
 
     def makeCurrentUpstream(self, new_value=True):
+        """See `ITranslationMessage`."""
         self.is_current_upstream = new_value
+
+    def getSharedEquivalent(self):
+        """See `ITranslationMessage`."""
+        raise NotImplementedError()
+
+    def shareIfPossible(self):
+        """See `ITranslationMessage`."""
 
 
 class TranslationMessage(SQLBase, TranslationMessageMixIn):
@@ -322,9 +331,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         else:
             return None
 
-    def _getSharedEquivalent(self):
-        """Get shared message that otherwise exactly matches this one.
-        """
+    def getSharedEquivalent(self):
+        """See `ITranslationMessage`."""
         clauses = [
             'potemplate IS NULL',
             'potmsgset = %s' % sqlvalues(self.potmsgset),
@@ -350,18 +358,13 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         return Store.of(self).find(TranslationMessage, where_clause).one()
 
     def shareIfPossible(self):
-        """Make this message shared, if possible.
-
-        If there is already a similar message that is shared, this
-        message's information is merged into that of the existing one,
-        and self is deleted.
-        """
+        """See `ITranslationMessage`."""
         if self.potemplate is None:
             # Already converged.
             return
 
         # Existing shared direct equivalent to this message, if any.
-        shared = self._getSharedEquivalent()
+        shared = self.getSharedEquivalent()
 
         # Existing shared current translation for this POTMsgSet, if
         # any.
@@ -456,7 +459,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 Store.of(self).add_flush_order(incumbent, self)
 
         self.is_current_upstream = new_value
-
 
 
 class TranslationMessageSet:

@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.translations.interfaces.rosettastats import IRosettaStats
+from lp.translations.interfaces.side import ITranslationSideTraits
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
 from lp.translations.interfaces.translationfileformat import (
@@ -288,6 +289,11 @@ class IPOTemplate(IRosettaStats):
             Some formats, such as Mozilla's XPI, use symbolic msgids where
             gettext uses the original English strings to identify messages.
             """))
+
+    translation_side_traits = Object(
+        schema=ITranslationSideTraits,
+        title=_("TranslationSideTraits for this template."), required=True,
+        readonly=True)
 
     def __iter__():
         """Return an iterator over current `IPOTMsgSet` in this template."""
@@ -815,6 +821,7 @@ class IHasTranslationTemplates(Interface):
         A template's language count is the number of `POFile`s that
         exist for it.
         """
+
 
 class ITranslationTemplatesCollection(Interface):
     """A `Collection` of `POTemplate`s."""

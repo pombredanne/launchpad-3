@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = [
     'TranslationConstants',
     'TranslationsBranchImportMode',
-    'TranslationSide',
     ]
 
 
@@ -52,12 +51,3 @@ class TranslationsBranchImportMode(DBEnumeratedType):
         Import all translation files (templates and translations)
         found in the branch.
         """)
-
-
-class TranslationSide:
-    """The two "sides" of software that can be translated in Launchpad.
-
-    These are "upstream" and "Ubuntu."
-    """
-    UPSTREAM = 1
-    UBUNTU = 2

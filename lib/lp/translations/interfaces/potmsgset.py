@@ -51,6 +51,7 @@ class TranslationCreditsType(EnumeratedType):
 class BrokenTextError(ValueError):
     """Exception raised when we detect values on a text that aren't valid."""
 
+
 class POTMsgSetInIncompatibleTemplatesError(Exception):
     """Raised when a POTMsgSet appears in multiple incompatible templates.
 
@@ -292,6 +293,25 @@ class IPOTMsgSet(Interface):
             want to update.
 
         If a translation conflict is detected, TranslationConflict is raised.
+        """
+
+    def clearCurrentTranslation(pofile, submitter, origin,
+                                share_with_other_side=False):
+        """Set the current message in `pofile` to be untranslated.
+
+        If the current message is shared, this will also clear it in
+        other translations that share the same message.
+
+        :param pofile: The translation file that should have its current
+            translation for this `POTMsgSet` cleared.  If the message is
+            shared, this may not be the only translation file that will
+            be affected.
+        :param submitter: The person responsible for clearing the message.
+        :param origin: `RosettaTranslationOrigin`.
+        :param share_with_other_side: If the current message is also
+            current on the other side (i.e. the Ubuntu side if working
+            upstream, or vice versa) then should it be cleared there as
+            well?
         """
 
     def applySanityFixes(unicode_text):

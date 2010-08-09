@@ -125,9 +125,8 @@ class ITranslationMessage(Interface):
         readonly=False, required=False)
 
     reviewer = Object(
-        title=_(
-            "The person who did the review and accepted current translations"
-            ), readonly=False, required=False, schema=IPerson)
+        title=_("The person who reviewed and accepted this translation"),
+        readonly=False, required=False, schema=IPerson)
 
     # Message references for up to TranslationConstants.MAX_PLURAL_FORMS
     # plural forms.
@@ -218,6 +217,17 @@ class ITranslationMessage(Interface):
     def getOnePOFile():
         """Get any POFile containing this translation."""
 
+    def getSharedEquivalent():
+        """Find shared message that otherwise exactly matches this one."""
+
+    def shareIfPossible():
+        """Make this message shared, if possible.
+
+        If there is already a similar message that is shared, this
+        message's information is merged into that of the existing one,
+        and self is deleted.
+        """
+
     def isHidden(pofile):
         """Whether this is an unused, hidden suggestion in `pofile`.
 
@@ -256,7 +266,6 @@ class ITranslationMessage(Interface):
         If setting to True, clears the flag on any competing
         TranslationMessages.
         """
-
 
 
 class ITranslationMessageSuggestions(Interface):

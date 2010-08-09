@@ -13,8 +13,7 @@ from canonical.testing import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin)
-from lp.translations.interfaces.translations import (
-    TranslationSide)
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.model.translationmessage import (
     TranslationMessage)
 
@@ -87,7 +86,8 @@ class SetCurrentTranslationTestMixin:
          * current: represents a current shared translation for this context.
          * diverged: represents a diverged translation for this context.
          * other_shared: represents a shared translation for "other" context.
-         * divergences_elsewhere: a list of other divergences in both contexts.
+         * divergences_elsewhere: a list of other divergences in both
+            contexts.
         """
         new_current, new_diverged, new_other, new_divergences = (
             summarize_current_translations(self.pofile, self.potmsgset))
