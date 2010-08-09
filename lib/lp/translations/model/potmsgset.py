@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'make_translation_side_message_traits',
+    'make_message_side_helpers',
     'POTMsgSet',
     ]
 
@@ -38,6 +38,8 @@ from lp.translations.interfaces.potmsgset import (
     IPOTMsgSet,
     POTMsgSetInIncompatibleTemplatesError,
     TranslationCreditsType)
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet, TranslationSide)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.interfaces.translationimporter import (
@@ -46,8 +48,7 @@ from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     TranslationConflict,
     TranslationValidationStatus)
-from lp.translations.interfaces.translations import (
-    TranslationConstants, TranslationSide)
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import (
@@ -85,99 +86,68 @@ credits_message_str = (u'This is a dummy translation so that the '
                        u'credits are counted as translated.')
 
 
-class TranslationSideMessageTraits:
-    """Dealing with a `POTMsgSet` on either `TranslationSide`.
+# Marker for "no incumbent message found yet."
+incumbent_unknown = object()
 
-    Encapsulates primitives that depend on translation side: finding the
-    message that is current on the given side, checking the flag that
-    says whether a message is current on this side, setting or clearing
-    the flag, and providing the same capabilities for the other side.
 
-    For an introduction to the Traits pattern, see
-    http://www.cantrip.org/traits.html
+class MessageSideHelper:
+    """Helper for manipulating messages on one `TranslationSide`.
+
+    Does some caching so that the caller doesn't need to worry about
+    unnecessary queries e.g. when disabling a previously current
+    message.
     """
-    # The TranslationSide that these Traits are for.
-    side = None
 
-    # TranslationSideMessageTraits for this message on the "other side."
+    # The TranslationSideTraits that this helper is for.
+    traits = None
+
+    # MessageSideHelper for this message on the "other side."
     other_side = None
 
-    # Name of this side's flag.
-    flag_name = None
+    _incumbent = incumbent_unknown
 
-    def __init__(self, potmsgset, potemplate=None, language=None,
-                 variant=None):
+    def __init__(self, side, potmsgset, potemplate=None, language=None):
+        self.traits = getUtility(ITranslationSideTraitsSet).getTraits(side)
         self.potmsgset = potmsgset
         self.potemplate = potemplate
         self.language = language
-        self.variant = variant
-
-        self._found_incumbent = False
 
     @property
     def incumbent_message(self):
         """Message that currently has the flag."""
-        if not self._found_incumbent:
-            self._incumbent = self._getIncumbentMessage()
-            self._found_incumbent = True
+        if self._incumbent == incumbent_unknown:
+            self._incumbent = self.traits.getCurrentMessage(
+                self.potmsgset, self.potemplate, self.language)
         return self._incumbent
-
-    def getFlag(self, translationmessage):
-        """Is this message the current one on this side?"""
-        return getattr(translationmessage, self.flag_name)
 
     def setFlag(self, translationmessage, value):
         """Set or clear a message's "current" flag for this side."""
-        if value == self.getFlag(translationmessage):
+        if value == self.traits.getFlag(translationmessage):
             return
 
-        if value and self.incumbent_message is not None:
-            Store.of(self.incumbent_message).add_flush_order(
-                self.incumbent_message, translationmessage)
-            self.setFlag(self.incumbent_message, False)
+        if value:
+            if self.incumbent_message is not None:
+                Store.of(self.incumbent_message).add_flush_order(
+                    self.incumbent_message, translationmessage)
+                self.setFlag(self.incumbent_message, False)
+            self._incumbent = translationmessage
+        else:
+            self._incumbent = incumbent_unknown
 
-        setattr(translationmessage, self.flag_name, value)
-        self._found_incumbent = False
-
-    def _getIncumbentMessage(self):
-        """Get the message that is current on this side, if any."""
-        raise NotImplementedError('_getIncumbentMessage')
-
-
-class UpstreamSideTraits(TranslationSideMessageTraits):
-    """Traits for upstream translations."""
-
-    side = TranslationSide.UPSTREAM
-
-    flag_name = 'is_current_upstream'
-
-    def _getIncumbentMessage(self):
-        """See `TranslationSideMessageTraits`."""
-        return self.potmsgset.getImportedTranslationMessage(
-            self.potemplate, self.language, variant=self.variant)
+        self.traits.setFlag(translationmessage, value)
 
 
-class UbuntuSideTraits(TranslationSideMessageTraits):
-    """Traits for Ubuntu translations."""
-
-    side = TranslationSide.UBUNTU
-
-    flag_name = 'is_current_ubuntu'
-
-    def _getIncumbentMessage(self):
-        """See `TranslationSideMessageTraits`."""
-        return self.potmsgset.getCurrentTranslationMessage(
-            self.potemplate, self.language, variant=self.variant)
-
-
-def make_translation_side_message_traits(side, potmsgset, potemplate,
-                                         language, variant=None):
-    """Create `TranslationSideTraits` object of the appropriate subtype."""
-    ubuntu = UbuntuSideTraits(potmsgset, potemplate, language, variant)
-    upstream = UpstreamSideTraits(potmsgset, potemplate, language, variant)
+def make_message_side_helpers(side, potmsgset, potemplate, language):
+    """Create `MessageSideHelper` object of the appropriate subtype."""
+    upstream = MessageSideHelper(
+        TranslationSide.UPSTREAM, potmsgset, potemplate, language)
+    ubuntu = MessageSideHelper(
+        TranslationSide.UBUNTU, potmsgset, potemplate, language)
     upstream.other_side = ubuntu
     ubuntu.other_side = upstream
-    mapping = dict((traits.side, traits) for traits in (ubuntu, upstream))
+    mapping = dict(
+        (helper.traits.side, helper)
+        for helper in (ubuntu, upstream))
     return mapping[side]
 
 
@@ -469,8 +439,9 @@ class POTMsgSet(SQLBase):
                 WHERE
                     POTMsgSet.id <> %s AND
                     msgid_singular = %s AND
-                    POTemplate.iscurrent AND
-                    (Product.official_rosetta OR Distribution.official_rosetta)
+                    POTemplate.iscurrent AND (
+                        Product.official_rosetta OR
+                        Distribution.official_rosetta)
             )''' % sqlvalues(self, self.msgid_singular))
 
         # Subquery to find the ids of TranslationMessages that are
@@ -485,7 +456,7 @@ class POTMsgSet(SQLBase):
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
         ids_query_params = {
             'msgstrs': msgstrs,
-            'where': ' AND '.join(query)
+            'where': ' AND '.join(query),
         }
         ids_query = '''
             SELECT DISTINCT ON (%(msgstrs)s)
@@ -826,7 +797,6 @@ class POTMsgSet(SQLBase):
         if is_current_upstream or new_message == upstream_message:
             new_message.makeCurrentUpstream()
 
-
     def _isTranslationMessageASuggestion(self, force_suggestion,
                                          pofile, submitter,
                                          force_edition_rights,
@@ -1079,7 +1049,7 @@ class POTMsgSet(SQLBase):
             return 'none'
         elif message.is_diverged:
             return 'diverged'
-        elif translation_side_traits.other_side.getFlag(message):
+        elif translation_side_traits.other_side_traits.getFlag(message):
             return 'other_shared'
         else:
             return 'shared'
@@ -1100,8 +1070,7 @@ class POTMsgSet(SQLBase):
 
         translation_args = dict(
             ('msgstr%d' % form, translation)
-            for form, translation in translations.iteritems()
-            )
+            for form, translation in translations.iteritems())
 
         return TranslationMessage(
             potmsgset=self,
@@ -1117,14 +1086,13 @@ class POTMsgSet(SQLBase):
     def setCurrentTranslation(self, pofile, submitter, translations, origin,
                               translation_side, share_with_other_side=False):
         """See `IPOTMsgSet`."""
-        traits = make_translation_side_message_traits(
-            translation_side, self, pofile.potemplate, pofile.language,
-            variant=pofile.variant)
+        helper = make_message_side_helpers(
+            translation_side, self, pofile.potemplate, pofile.language)
 
         translations = self._findPOTranslations(translations)
 
         # The current message on this translation side, if any.
-        incumbent_message = traits.incumbent_message
+        incumbent_message = helper.incumbent_message
 
         # An already existing message, if any, that's either shared, or
         # diverged for the template/pofile we're working on, whose
@@ -1174,8 +1142,8 @@ class POTMsgSet(SQLBase):
         }
 
         incumbent_state = "incumbent_%s" % self._nameMessageStatus(
-            incumbent_message, traits)
-        twin_state = "twin_%s" % self._nameMessageStatus(twin, traits)
+            incumbent_message, helper.traits)
+        twin_state = "twin_%s" % self._nameMessageStatus(twin, helper.traits)
 
         decisions = decision_matrix[incumbent_state][twin_state]
         assert re.match('[ABZ]?[124567]?[+*]?$', decisions), (
@@ -1185,11 +1153,11 @@ class POTMsgSet(SQLBase):
             if character == 'A':
                 # Deactivate & converge.
                 # There may be an identical shared message.
-                traits.setFlag(incumbent_message, False)
+                helper.traits.setFlag(incumbent_message, False)
                 incumbent_message.shareIfPossible()
             elif character == 'B':
                 # Deactivate.
-                traits.setFlag(incumbent_message, False)
+                helper.setFlag(incumbent_message, False)
             elif character == 'Z':
                 # There is no incumbent message, so do nothing to it.
                 assert incumbent_message is None, (
@@ -1210,14 +1178,14 @@ class POTMsgSet(SQLBase):
                 # (If not, it's already active and has been unmasked by
                 # our deactivating the incumbent).
                 message = twin
-                if not traits.getFlag(twin):
-                    assert not traits.other_side.getFlag(twin), (
+                if not helper.traits.getFlag(twin):
+                    assert not helper.other_side.traits.getFlag(twin), (
                         "Trying to diverge a message that is current on the "
                         "other side.")
                     message.potemplate = pofile.potemplate
             elif character == '6':
                 # If other is not active, fork a diverged message.
-                if traits.getFlag(twin):
+                if helper.traits.getFlag(twin):
                     message = twin
                 else:
                     # The twin is used on the other side, so we can't
@@ -1232,11 +1200,11 @@ class POTMsgSet(SQLBase):
                 message.shareIfPossible()
             elif character == '*':
                 if share_with_other_side:
-                    if traits.other_side.incumbent_message is None:
-                        traits.other_side.setFlag(message, True)
+                    if helper.other_side.incumbent_message is None:
+                        helper.other_side.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:
-                    traits.other_side.setFlag(message, True)
+                    helper.other_side.setFlag(message, True)
             else:
                 raise AssertionError(
                     "Bad character in decision string: %s" % character)
@@ -1244,7 +1212,7 @@ class POTMsgSet(SQLBase):
         if decisions == '':
             message = twin
 
-        traits.setFlag(message, True)
+        helper.setFlag(message, True)
 
         return message
 
@@ -1263,7 +1231,7 @@ class POTMsgSet(SQLBase):
             current.is_current_ubuntu = False
             # Converge the current translation only if it is diverged and not
             # current upstream.
-            is_diverged =  current.potemplate is not None
+            is_diverged = current.potemplate is not None
             if is_diverged and not current.is_current_upstream:
                 current.potemplate = None
             pofile.date_changed = UTC_NOW
@@ -1494,4 +1462,3 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return TranslationTemplateItem.selectBy(
             potmsgset=self, orderBy=['id'])
-
