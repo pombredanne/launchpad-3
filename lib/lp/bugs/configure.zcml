@@ -474,8 +474,7 @@
         <require
             permission="launchpad.Edit"
             attributes="
-                destroySelf"
-            set_attributes="fixed_in_revision_id"/>
+                destroySelf"/>
     </class>
     <adapter
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
@@ -653,7 +652,6 @@
                     getBugTasksByPackageName
                     users_affected_count
                     users_unaffected_count
-                    readonly_duplicateof
                     users_affected
                     users_unaffected
                     users_affected_count_with_dupes
@@ -704,7 +702,6 @@
                     date_last_updated
                     date_made_private
                     datecreated
-                    duplicateof
                     hits
                     hitstimestamp
                     name

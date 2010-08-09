@@ -18,9 +18,9 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadZopelessLayer)
+from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import Config
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -43,7 +43,8 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.scripts import FakeLogger
 from lp.testing import TestCaseWithFactory
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import (
+    LaunchpadObjectFactory, remove_security_proxy_and_shout_at_engineer)
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -145,7 +146,9 @@ class SoyuzTestPublisher:
             PackageUploadStatus.DONE: 'setDone',
             PackageUploadStatus.ACCEPTED: 'setAccepted',
             }
-        method = getattr(package_upload, status_to_method[upload_status])
+        naked_package_upload = removeSecurityProxy(package_upload)
+        method = getattr(
+            naked_package_upload, status_to_method[upload_status])
         method()
 
         return package_upload
@@ -221,7 +224,9 @@ class SoyuzTestPublisher:
             changes_file_name=changes_file_name,
             changes_file_content=changes_file_content,
             upload_status=upload_status)
-        package_upload.addSource(spr)
+        naked_package_upload = removeSecurityProxy(
+            package_upload)
+        naked_package_upload.addSource(spr)
 
         if filename is None:
             filename = "%s_%s.dsc" % (sourcename, version)

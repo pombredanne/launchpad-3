@@ -241,6 +241,8 @@
       define="overview_menu context/menu:overview">
       <tal:menu replace="structure view/@@+global-actions" />
 
+      <div tal:replace="structure context/@@+get-involved" />
+
       <div id="downloads" class="top-portlet downloads"
         tal:define="release view/latest_release_with_download_files">
         <h2>Downloads</h2>
@@ -261,8 +263,6 @@
            </tal:no-files>
         </p>
       </div>
-
-      <div tal:replace="structure context/@@+get-involved" />
 
       <div tal:replace="structure context/@@+portlet-latestannouncements" />
     </tal:side>

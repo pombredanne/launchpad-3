@@ -49,20 +49,6 @@
         </p>
       </tal:package>
     </dd>
-
-    <dt id="needs-linking"
-        tal:condition="view/needs_linking">
-      Needs more information or linking to upstream:
-    </dt>
-    <dd tal:condition="view/needs_linking">
-      <ul class="horizontal">
-          <li repeat="package view/needs_linking">
-            <a class="sprite package-source"
-               tal:attributes="href package/package/fmt:url"
-               tal:content="package/package/name">evolution</a>
-          </li>
-      </ul>
-    </dd>
   </dl>
 
   <ul class="horizontal">

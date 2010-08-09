@@ -28,6 +28,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad import helpers
+from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
@@ -41,8 +42,7 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -180,7 +180,6 @@ class DistroSeriesOverviewMenu(
 
     # A search link isn't needed because the distro series overview
     # has a search form.
-
     def answers(self):
         text = 'Ask a question'
         url = canonical_url(self.context.distribution) + '/+addquestion'
@@ -332,7 +331,7 @@ class DistroSeriesView(MilestoneOverlayMixin):
 
     @cachedproperty
     def needs_linking(self):
-        """Return a list of 10 packages most in need of upstream linking.""" 
+        """Return a list of 10 packages most in need of upstream linking."""
         # XXX sinzui 2010-02-26 bug=528648: This method causes a timeout.
         # return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
         return None
@@ -481,7 +480,7 @@ class DistroSeriesPackagesView(LaunchpadView):
     @cachedproperty
     def cached_packagings(self):
         """The batched upstream packaging links."""
-        packagings = self.context.getPrioritizedlPackagings()
+        packagings = self.context.getPrioritizedPackagings()
         navigator = BatchNavigator(packagings, self.request, size=20)
         navigator.setHeadings('packaging', 'packagings')
         return navigator

@@ -22,11 +22,11 @@ from email import message_from_string
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadpolicy import AbstractUploadPolicy
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (

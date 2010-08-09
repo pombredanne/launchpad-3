@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -84,7 +84,7 @@ class TestProductFiles(unittest.TestCase):
         firefox_owner.open('http://launchpad.dev/firefox/+download')
         content = find_main_content(firefox_owner.contents)
         rows = content.findAll('tr')
-        print
+
         a_list = rows[-1].findAll('a')
         # 1st row
         a_element = a_list[0]

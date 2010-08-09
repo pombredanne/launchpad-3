@@ -6,12 +6,17 @@
 __metaclass__ = type
 
 import unittest
+import re
 
 from launchpadlib.launchpad import EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT
 
+from lp.testing.fakemethod import FakeMethod
+
 from devscripts.autoland import (
     get_bazaar_host, get_bugs_clause, get_reviewer_clause,
-    get_reviewer_handle, MissingReviewError)
+    get_reviewer_handle, get_qa_clause, get_testfix_clause,
+    MissingReviewError, MissingBugsError, MissingBugsIncrementalError,
+    MergeProposal)
 
 
 class FakeBug:
@@ -46,6 +51,64 @@ class FakeIRC:
         self.network = network
 
 
+class FakeLPMergeProposal:
+    """Fake launchpadlib MergeProposal object.
+
+    Only used for the purposes of testing.
+    """
+
+    def __init__(self, root=None):
+        self._root = root
+
+
+class TestPQMRegexAcceptance(unittest.TestCase):
+    """Tests if the generated commit message is accepted by PQM regexes."""
+
+    def setUp(self):
+        # PQM regexes; might need update once in a while
+        self.devel_open_re = ("(?is)^\s*(:?\[testfix\])?\[(?:"
+            "release-critical=[^\]]+|rs?=[^\]]+)\]\[ui=(?:.+)\]")
+        self.dbdevel_normal_re = ("(?is)^\s*(:?\[testfix\])?\[(?:"
+            "release-critical|rs?=[^\]]+)\]")
+
+        self.mp = MergeProposal(FakeLPMergeProposal())
+        self.fake_bug = FakeBug(20)
+        self.fake_person = FakePerson('foo', [])
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+    def assertRegexpMatches(self, text, expected_regexp, msg=None):
+        """Fail the test unless the text matches the regular expression.
+
+        Method default in Python 2.7. Can be removed as soon as LP goes 2.7.
+        """
+        if isinstance(expected_regexp, basestring):
+            expected_regexp = re.compile(expected_regexp)
+        if not expected_regexp.search(text):
+            msg = msg or "Regexp didn't match"
+            msg = '%s: %r not found in %r' % (msg, expected_regexp.pattern,
+                text)
+            raise self.failureException(msg)
+
+    def _test_commit_message_match(self, incr, no_qa, testfix):
+        commit_message = self.mp.get_commit_message("Foobaring the sbrubble.",
+            testfix, no_qa, incr)
+        self.assertRegexpMatches(commit_message, self.devel_open_re)
+        self.assertRegexpMatches(commit_message, self.dbdevel_normal_re)
+
+    def test_testfix_match(self):
+        self._test_commit_message_match(incr=False, no_qa=False, testfix=True)
+
+    def test_regular_match(self):
+        self._test_commit_message_match(incr=False, no_qa=False, testfix=False)
+
+    def test_noqa_match(self):
+        self._test_commit_message_match(incr=False, no_qa=True, testfix=False)
+
+    def test_incr_match(self):
+        self._test_commit_message_match(incr=True, no_qa=False, testfix=False)
+
+
 class TestBugsClaused(unittest.TestCase):
     """Tests for `get_bugs_clause`."""
 
@@ -66,6 +129,149 @@ class TestBugsClaused(unittest.TestCase):
         bug2 = FakeBug(45)
         bugs_clause = get_bugs_clause([bug1, bug2])
         self.assertEqual('[bug=20,45]', bugs_clause)
+
+
+class TestGetCommitMessage(unittest.TestCase):
+
+    def setUp(self):
+        self.mp = MergeProposal(FakeLPMergeProposal())
+        self.fake_bug = FakeBug(20)
+        self.fake_person = self.makePerson('foo')
+
+    def makePerson(self, name):
+        return FakePerson(name, [])
+
+    def test_commit_with_bugs(self):
+        incr = False
+        no_qa = False
+        testfix = False
+
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+        self.assertEqual("[r=foo][ui=none][bug=20] Foobaring the sbrubble.",
+            self.mp.get_commit_message("Foobaring the sbrubble.",
+                testfix, no_qa, incr))
+
+    def test_commit_no_bugs_no_noqa(self):
+        incr = False
+        no_qa = False
+        testfix = False
+
+        self.mp.get_bugs = FakeMethod([])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+        self.assertRaises(MissingBugsError, self.mp.get_commit_message,
+            testfix, no_qa, incr)
+
+    def test_commit_no_bugs_with_noqa(self):
+        incr = False
+        no_qa = True
+        testfix = False
+
+        self.mp.get_bugs = FakeMethod([])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+        self.assertEqual("[r=foo][ui=none][no-qa] Foobaring the sbrubble.",
+            self.mp.get_commit_message("Foobaring the sbrubble.",
+                testfix, no_qa, incr))
+
+    def test_commit_bugs_with_noqa(self):
+        incr = False
+        no_qa = True
+        testfix = False
+
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+        self.assertEqual(
+            "[r=foo][ui=none][bug=20][no-qa] Foobaring the sbrubble.",
+            self.mp.get_commit_message("Foobaring the sbrubble.",
+                testfix, no_qa, incr))
+
+    def test_commit_bugs_with_incr(self):
+        incr = True
+        no_qa = False
+        testfix = False
+
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+        self.assertEqual(
+            "[r=foo][ui=none][bug=20][incr] Foobaring the sbrubble.",
+            self.mp.get_commit_message("Foobaring the sbrubble.",
+                testfix, no_qa, incr))
+
+    def test_commit_no_bugs_with_incr(self):
+        incr = True
+        no_qa = False
+        testfix = False
+
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+        self.assertEqual(
+            "[r=foo][ui=none][bug=20][incr] Foobaring the sbrubble.",
+            self.mp.get_commit_message("Foobaring the sbrubble.",
+                testfix, no_qa, incr))
+
+
+class TestGetTestfixClause(unittest.TestCase):
+    """Tests for `get_testfix_clause`"""
+
+    def test_no_testfix(self):
+        testfix = False
+        self.assertEqual('', get_testfix_clause(testfix))
+
+    def test_is_testfix(self):
+        testfix = True
+        self.assertEqual('[testfix]', get_testfix_clause(testfix))
+
+
+class TestGetQaClause(unittest.TestCase):
+    """Tests for `get_qa_clause`"""
+
+    def test_no_bugs_no_option_given(self):
+        bugs = None
+        no_qa = False
+        incr = False
+        self.assertRaises(MissingBugsError, get_qa_clause, bugs, no_qa,
+            incr)
+
+    def test_bugs_noqa_option_given(self):
+        bug1 = FakeBug(20)
+        no_qa = True
+        incr = False
+        self.assertEqual('[no-qa]',
+            get_qa_clause([bug1], no_qa, incr))
+
+    def test_no_bugs_noqa_option_given(self):
+        bugs = None
+        no_qa = True
+        incr = False
+        self.assertEqual('[no-qa]',
+            get_qa_clause(bugs, no_qa, incr))
+
+    def test_bugs_no_option_given(self):
+        bug1 = FakeBug(20)
+        no_qa = False
+        incr = False
+        self.assertEqual('',
+            get_qa_clause([bug1], no_qa, incr))
+
+    def test_bugs_incr_option_given(self):
+        bug1 = FakeBug(20)
+        no_qa = False
+        incr = True
+        self.assertEqual('[incr]',
+            get_qa_clause([bug1], no_qa, incr))
+
+    def test_no_bugs_incr_option_given(self):
+        bugs = None
+        no_qa = False
+        incr = True
+        self.assertRaises(MissingBugsIncrementalError,
+            get_qa_clause, bugs, no_qa, incr)
 
 
 class TestGetReviewerHandle(unittest.TestCase):

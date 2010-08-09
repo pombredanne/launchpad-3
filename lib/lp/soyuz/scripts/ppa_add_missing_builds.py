@@ -6,7 +6,7 @@ import sys
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 

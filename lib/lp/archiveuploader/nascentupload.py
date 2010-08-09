@@ -23,6 +23,7 @@ import os
 
 from zope.component import getUtility
 
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
@@ -34,7 +35,7 @@ from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, ILibraryFileAliasSet,
-    ISourcePackageNameSet, NotFoundError, QueueInconsistentStateError)
+    ISourcePackageNameSet, QueueInconsistentStateError)
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -81,10 +82,6 @@ class NascentUpload:
     binaryful = False
     archindep = False
     archdep = False
-
-    # Defined in check_sourceful_consistency()
-    native = False
-    hasorig = False
 
     # Defined if we successfully do_accept() and storeObjectsInDatabase()
     queue_root = None
@@ -308,30 +305,16 @@ class NascentUpload:
         assert self.sourceful, (
             "Source consistency check called for a non-source upload")
 
-        dsc = 0
-        native_tarball = 0
-        orig_tarball = 0
-
-        for uploaded_file in self.changes.files:
-            filetype = determine_source_file_type(uploaded_file.filename)
-            if filetype == SourcePackageFileType.DSC:
-                dsc += 1
-            elif (filetype == SourcePackageFileType.NATIVE_TARBALL
-                  and not isinstance(uploaded_file, CustomUploadFile)):
-                native_tarball += 1
-            elif filetype == SourcePackageFileType.ORIG_TARBALL:
-                orig_tarball += 1
-
+        dsc = len([
+            file for file in self.changes.files
+            if determine_source_file_type(file.filename) ==
+                SourcePackageFileType.DSC])
 
         # It is never sane to upload more than one source at a time.
         if dsc > 1:
             self.reject("Changes file lists more than one .dsc")
-
         if dsc == 0:
             self.reject("Sourceful upload without a .dsc")
-
-        self.native = bool(native_tarball)
-        self.hasorig = bool(orig_tarball)
 
     def _check_binaryful_consistency(self):
         """Heuristic checks on a binaryful upload.

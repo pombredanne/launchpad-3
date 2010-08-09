@@ -581,6 +581,7 @@ release manager and can create milestones.
 
     >>> distroseries = factory.makeDistroRelease(name='pumpkin')
     >>> driver = factory.makePerson(name='a-driver')
+    >>> login_person(distroseries.distribution.owner)
     >>> distroseries.driver = driver
     >>> login_person(driver)
 

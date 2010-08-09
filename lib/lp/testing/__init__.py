@@ -50,6 +50,7 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
+from cStringIO import StringIO
 from datetime import datetime, timedelta
 from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
@@ -78,7 +79,7 @@ from windmill.authoring import WindmillTestClient
 
 from zope.component import adapter, getUtility
 import zope.event
-from zope.interface.verify import verifyClass, verifyObject
+from zope.interface.verify import verifyClass
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
@@ -114,6 +115,7 @@ from lp.testing._login import (
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
+from lp.testing.matchers import Provides
 from lp.testing.fixture import ZopeEventHandlerFixture
 
 # zope.exception demands more of frame objects than twisted.python.failure
@@ -285,13 +287,7 @@ class TestCase(testtools.TestCase):
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
-        self.assertTrue(
-            interface.providedBy(obj),
-            "%r does not provide %r." % (obj, interface))
-        self.assertTrue(
-            verifyObject(interface, obj),
-            "%r claims to provide %r but does not do so correctly."
-            % (obj, interface))
+        self.assertThat(obj, Provides(interface))
 
     def assertClassImplements(self, cls, interface):
         """Assert 'cls' may correctly implement 'interface'."""
@@ -426,6 +422,15 @@ class TestCase(testtools.TestCase):
         config.push(name, "\n[%s]\n%s\n" % (section, body))
         self.addCleanup(config.pop, name)
 
+    def attachOopses(self):
+        if len(self.oopses) > 0:
+            content_type = testtools.content_type.ContentType(
+                "text", "plain", {"charset": "utf8"})
+            for (i, oops) in enumerate(self.oopses):
+                content = testtools.content.Content(
+                    content_type, oops.get_chunks)
+                self.addDetail("oops-%d" % i, content)
+
     def setUp(self):
         testtools.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
@@ -433,6 +438,7 @@ class TestCase(testtools.TestCase):
         # Record the oopses generated during the test run.
         self.oopses = []
         self.installFixture(ZopeEventHandlerFixture(self._recordOops))
+        self.addCleanup(self.attachOopses)
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):

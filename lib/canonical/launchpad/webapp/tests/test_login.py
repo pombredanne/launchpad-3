@@ -187,6 +187,48 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         }
         self.assertEquals(params, expected_params)
 
+    def test_gather_params_with_unicode_data(self):
+        # If the currently requested URL includes a query string, the
+        # parameters in the query string will be included when constructing
+        # the params mapping (which is then used to complete the open ID
+        # response) and if there are non-ASCII characters in the query string,
+        # they are properly decoded.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=%E1%9B%9D',
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        params = view._gather_params(request)
+        self.assertEquals(params['foo'], u'\u16dd')
+
+    def test_unexpected_multivalue_fields(self):
+        # The parameter gatering doesn't expect to find multi-valued form
+        # field and it reports an error if it finds any.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=1&foo=2',
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        self.assertRaises(ValueError, view._gather_params, request)
+
+    def test_csrfmiddlewaretoken_is_ignored(self):
+        # Show that the _gather_params filters out the errant
+        # csrfmiddlewaretoken form field.  See comment in _gather_params for
+        # more info.
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://example.com',
+            QUERY_STRING='foo=bar',
+            form={'starting_url': 'http://launchpad.dev/after-login',
+                'csrfmiddlewaretoken': '12345'},
+            environ={'PATH_INFO': '/'})
+        view = OpenIDCallbackView(context=None, request=None)
+        params = view._gather_params(request)
+        expected_params = {
+            'starting_url': 'http://launchpad.dev/after-login',
+            'foo': 'bar',
+        }
+        self.assertEquals(params, expected_params)
+
     def test_get_requested_url(self):
         # The OpenIDCallbackView needs to pass the currently-being-requested
         # URL to the OpenID library.  OpenIDCallbackView._get_requested_url

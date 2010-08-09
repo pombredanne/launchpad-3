@@ -35,12 +35,12 @@ from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView, safe_action)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 from lazr.batchnavigator.z3batching import batch
 
 from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.errors import NotFoundError
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.bugs.interfaces.bug import IBugSet

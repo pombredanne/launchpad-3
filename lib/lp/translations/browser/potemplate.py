@@ -39,7 +39,8 @@ from canonical.lazr.utils import smartquote
 
 from canonical.launchpad import helpers, _
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.errors import NotFoundError
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.registry.browser.productseries import ProductSeriesFacets
 from lp.translations.browser.translations import TranslationsMixin
@@ -55,6 +56,7 @@ from lp.translations.interfaces.translationimporter import (
     ITranslationImporter)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, GetitemNavigation,
     LaunchpadView, LaunchpadEditFormView, Link, Navigation, NavigationMenu,
@@ -90,7 +92,9 @@ class POTemplateNavigation(Navigation):
         elif self.request.method in ['GET', 'HEAD']:
             # It's just a query, get a fake one so we don't create new
             # POFiles just because someone is browsing the web.
-            return self.context.getDummyPOFile(name, requester=user)
+            language = getUtility(ILanguageSet).getLanguageByCode(name)
+            return self.context.getDummyPOFile(language, requester=user,
+                                               check_for_existing=False)
         else:
             # It's a POST.
             # XXX CarlosPerelloMarin 2006-04-20 bug=40275: We should
