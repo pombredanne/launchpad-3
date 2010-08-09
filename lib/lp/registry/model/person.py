@@ -48,7 +48,9 @@ from sqlobject import (
     StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
-from storm.expr import And, In, Join, LeftJoin, Lower, Not, Or, SQL
+from storm.expr import (
+    Alias, And, Exists, In, Join, LeftJoin, Lower, Not, Or, Select, SQL,
+    )
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -1454,14 +1456,19 @@ class Person(
     @property
     def all_members_prepopulated(self):
         """See `IPerson`."""
-        return self._all_members(need_karma=True)
+        return self._all_members(need_karma=True, need_ubuntu_coc=True)
 
-    def _all_members(self, need_karma=False):
+    def _all_members(self, need_karma=False, need_ubuntu_coc=False):
         """Lookup all members of the team with optional precaching.
         
-        :param need_karma: the karma attribute will be looked for.
+        :param need_karma: The karma attribute will be cached.
+        :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
+            cached.
         """
         # TODO: consolidate this with getMembersWithPreferredEmails.
+        #       The difference between the two is that
+        #       getMembersWithPreferredEmails includes self, which is arguably
+        #       wrong, but perhaps deliberate.
         store = Store.of(self)
         origin = [
             Person,
@@ -1476,16 +1483,20 @@ class Person(
             TeamParticipation.team == self.id,
             # But not the team itself.
             TeamParticipation.person != self.id)
-        tables = [Person]
+        where = [Person]
         if need_karma:
-            tables.append(KarmaTotalCache)
-        if len(tables) == 1:
-            tables = tables[0]
+            where.append(KarmaTotalCache)
+        if need_ubuntu_coc:
+            where.append(Alias(Exists(Select(SignedCodeOfConduct,
+                Person._is_ubuntu_coc_signer_condition())),
+                name='is_ubuntu_coc_signer'))
+        if len(where) == 1:
+            where = where[0]
             # Return a simple ResultSet
-            return store.using(*origin).find(tables, conditions)
+            return store.using(*origin).find(where, conditions)
         # Adapt the result into a cached Person.
-        tables = tuple(tables)
-        raw_result = store.using(*origin).find(tables, conditions)
+        where = tuple(where)
+        raw_result = store.using(*origin).find(where, conditions)
         def prepopulate_person(row):
             result = row[0]
             index = 1
@@ -1498,6 +1509,10 @@ class Person(
                 else:
                     karma_total = karma.karma_total
                 result._karma_cached = karma_total
+            if need_ubuntu_coc:
+                signed = row[index]
+                index += 1
+                result._is_ubuntu_coc_signer_cached = signed
             return result
         return DecoratedResultSet(raw_result, result_decorator=prepopulate_person)
 
@@ -2337,17 +2352,23 @@ class Person(
             distribution.main_archive, self)
         return permissions.count() > 0
 
-    @cachedproperty
+    @cachedproperty('_is_ubuntu_coc_signer_cached')
     def is_ubuntu_coc_signer(self):
         """See `IPerson`."""
+        # Also assigned to by self._all_members.
+        store = Store.of(self)
+        query = Person._is_ubuntu_coc_signer_condition()
+        # TODO: Using exists would be faster than count().
+        return bool(store.find(SignedCodeOfConduct, query).count())
+
+    @staticmethod
+    def _is_ubuntu_coc_signer_condition():
+        """Generate a Storm Expr for determing the coc signing status."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
-
-        query = AND(SignedCodeOfConduct.q.active==True,
-                    SignedCodeOfConduct.q.ownerID==self.id,
-                    SignedCodeOfConduct.q.datecreated>=lastdate)
-
-        return bool(SignedCodeOfConduct.select(query).count())
+        return AND(SignedCodeOfConduct.active == True,
+            SignedCodeOfConduct.ownerID == Person.id,
+            SignedCodeOfConduct.datecreated >= lastdate)
 
     @property
     def activesignatures(self):
