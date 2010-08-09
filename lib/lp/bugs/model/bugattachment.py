@@ -16,7 +16,7 @@ from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachment, IBugAttachmentSet)
 
@@ -58,6 +58,12 @@ class BugAttachment(SQLBase):
         # in bug 387188.
         self.libraryfile.content = None
         super(BugAttachment, self).destroySelf()
+
+    def getFileByName(self, filename):
+        """See IBugAttachment."""
+        if filename == self.libraryfile.filename:
+            return self.libraryfile
+        raise NotFoundError(filename)
 
 
 class BugAttachmentSet:

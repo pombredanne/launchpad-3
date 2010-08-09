@@ -13,8 +13,12 @@
     <include
         package=".browser"/>
 
+    <publisher
+       name="translations"
+       factory="lp.translations.publisher.translations_request_publication_factory"/>
+
     <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.TranslationsLayer" />
+        folder="help" type="lp.translations.publisher.TranslationsLayer" />
 
     <class
         class="lp.translations.model.vpotexport.VPOTExport">
@@ -395,6 +399,16 @@
             interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguageSet"/>
     </securedutility>
 
+    <!-- TranslatedLanguage -->
+    <facet
+        facet="translations">
+        <class
+            class="lp.translations.model.translatedlanguage.POFilesByPOTemplates">
+            <allow
+                interface="lp.translations.interfaces.translatedlanguage.IPOFilesByPOTemplates"/>
+        </class>
+    </facet>
+
     <!-- POTemplate -->
     <facet
         facet="translations">
@@ -425,6 +439,13 @@
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             provides="lp.translations.interfaces.translationcommonformat.ITranslationFileData"
             factory="lp.translations.model.potemplate.POTemplateToTranslationFileDataAdapter"/>
+
+        <!-- TranslationTemplatesCollection -->
+        <class
+            class="lp.translations.model.potemplate.TranslationTemplatesCollection">
+            <allow
+                interface="lp.translations.interfaces.potemplate.ITranslationTemplatesCollection"/>
+        </class>
 
         <!-- POTemplateSet -->
 
@@ -548,6 +569,19 @@
             provides="lp.translations.interfaces.translationmessage.ITranslationMessageSet">
             <allow
                 interface="lp.translations.interfaces.translationmessage.ITranslationMessageSet"/>
+        </securedutility>
+
+        <!-- TranslationSideTraits -->
+        <class class="lp.translations.model.side.TranslationSideTraits">
+          <allow interface="lp.translations.interfaces.side.ITranslationSideTraits"/>
+        </class>
+
+        <!-- TranslationSideTraitsSet -->
+        <securedutility
+            class="lp.translations.model.side.TranslationSideTraitsSet"
+            provides="lp.translations.interfaces.side.ITranslationSideTraitsSet">
+            <allow
+              interface="lp.translations.interfaces.side.ITranslationSideTraitsSet"/>
         </securedutility>
     </facet>
     <adapter

@@ -87,16 +87,16 @@ class TestInlineSubscribing(WindmillTestCase):
             name=u'search', timeout=FOR_ELEMENT)
         client.type(
             text=u'ubuntu-team',
-            xpath=u'//table[contains(@class, "yui-picker") '
+            xpath=u'//div[contains(@class, "yui-picker ") '
                    'and not(contains(@class, "yui-picker-hidden"))]'
                    '//div[@class="yui-picker-search-box"]'
                    '/input[@name="search"]')
         client.click(
-            xpath=u'//table[contains(@class, "yui-picker") '
+            xpath=u'//div[contains(@class, "yui-picker ") '
                    'and not(contains(@class, "yui-picker-hidden"))]'
                    '//div[@class="yui-picker-search-box"]/button')
         search_result_xpath = (
-            u'//table[contains(@class, "yui-picker") '
+            u'//div[contains(@class, "yui-picker ") '
             'and not(contains(@class, "yui-picker-hidden"))]'
             '//ul[@class="yui-picker-results"]/li[1]/span')
         client.waits.forElement(

@@ -106,7 +106,7 @@ class IPackageBuild(IBuildFarmJob):
             stored.
         """
 
-    def getLogFromSlave():
+    def getLogFromSlave(package_build):
         """Get last buildlog from slave. """
 
     def getUploadLogContent(root, leaf):
@@ -120,7 +120,7 @@ class IPackageBuild(IBuildFarmJob):
     def estimateDuration():
         """Estimate the build duration."""
 
-    def storeBuildInfo(librarian, slave_status):
+    def storeBuildInfo(package_build, librarian, slave_status):
         """Store available information for the build job.
 
         Derived classes can override this as needed, and call it from
@@ -193,4 +193,3 @@ class IPackageBuildSet(Interface):
             will be returned.
         :return: a `ResultSet` representing the requested package builds.
         """
-

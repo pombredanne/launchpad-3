@@ -8,7 +8,7 @@ import os
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry, get_files_to_parse, parse_file)
 from lp.services.scripts.base import LaunchpadCronScript

@@ -7,7 +7,7 @@ __all__ = [
     'make_plurals_sql_fragment',
     'make_plurals_fragment',
     'TranslationMessage',
-    'TranslationMessageSet'
+    'TranslationMessageSet',
     ]
 
 from datetime import datetime
@@ -161,10 +161,15 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         return
 
     def makeCurrentUbuntu(self, new_value=True):
+        """See `ITranslationMessage`."""
         self.is_current_ubuntu = new_value
 
     def makeCurrentUpstream(self, new_value=True):
+        """See `ITranslationMessage`."""
         self.is_current_upstream = new_value
+
+    def shareIfPossible(self):
+        """See `ITranslationMessage`."""
 
 
 class TranslationMessage(SQLBase, TranslationMessageMixIn):
@@ -186,7 +191,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         dbName='date_created', notNull=True, default=UTC_NOW)
     submitter = ForeignKey(
         foreignKey='Person', storm_validator=validate_public_person,
-        dbName='submitter',notNull=True)
+        dbName='submitter', notNull=True)
     date_reviewed = UtcDateTimeCol(
         dbName='date_reviewed', notNull=False, default=None)
     reviewer = ForeignKey(
@@ -350,12 +355,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         return Store.of(self).find(TranslationMessage, where_clause).one()
 
     def shareIfPossible(self):
-        """Make this message shared, if possible.
-
-        If there is already a similar message that is shared, this
-        message's information is merged into that of the existing one,
-        and self is deleted.
-        """
+        """See `ITranslationMessage`."""
         if self.potemplate is None:
             # Already converged.
             return
@@ -456,7 +456,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 Store.of(self).add_flush_order(incumbent, self)
 
         self.is_current_upstream = new_value
-
 
 
 class TranslationMessageSet:

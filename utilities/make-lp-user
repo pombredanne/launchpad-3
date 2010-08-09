@@ -46,7 +46,6 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IPersonSet,
     ISSHKeySet,
-    SSHKeyType,
     TeamMembershipStatus,
     )
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
@@ -111,8 +110,8 @@ def add_ssh_public_keys(person):
     ssh_dir = os.path.expanduser('~/.ssh')
     key_set = getUtility(ISSHKeySet)
     key_guesses = [
-        (SSHKeyType.RSA, 'id_rsa.pub'),
-        (SSHKeyType.DSA, 'id_dsa.pub'),
+        ("ssh-rsa", 'id_rsa.pub'),
+        ("ssh-dsa", 'id_dsa.pub'),
         ]
     for key_type, guessed_filename in key_guesses:
         guessed_filename = os.path.join(ssh_dir, guessed_filename)
@@ -125,7 +124,8 @@ def add_ssh_public_keys(person):
         except (OSError, IOError):
             continue
         public_key = public_key.split()[1]
-        key_set.new(person, key_type, public_key, 'Added by utility script.')
+        key_set.new(person,
+            "%s %s %s" % (key_type, public_key, 'Added by utility script.'))
         print 'Registered SSH key: %s' % (guessed_filename,)
 
 

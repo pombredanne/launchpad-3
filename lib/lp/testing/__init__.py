@@ -50,6 +50,7 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
+from cStringIO import StringIO
 from datetime import datetime, timedelta
 from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
@@ -116,6 +117,7 @@ from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
 from lp.testing.fixture import ZopeEventHandlerFixture
+from lp.testing.karma import KarmaRecorder
 
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
@@ -438,6 +440,15 @@ class TestCase(testtools.TestCase):
         config.push(name, "\n[%s]\n%s\n" % (section, body))
         self.addCleanup(config.pop, name)
 
+    def attachOopses(self):
+        if len(self.oopses) > 0:
+            content_type = testtools.content_type.ContentType(
+                "text", "plain", {"charset": "utf8"})
+            for (i, oops) in enumerate(self.oopses):
+                content = testtools.content.Content(
+                    content_type, oops.get_chunks)
+                self.addDetail("oops-%d" % i, content)
+
     def setUp(self):
         testtools.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
@@ -445,6 +456,7 @@ class TestCase(testtools.TestCase):
         # Record the oopses generated during the test run.
         self.oopses = []
         self.installFixture(ZopeEventHandlerFixture(self._recordOops))
+        self.addCleanup(self.attachOopses)
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):
