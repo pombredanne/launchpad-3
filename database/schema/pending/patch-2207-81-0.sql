@@ -14,4 +14,4 @@ ALTER TABLE Distribution
     ADD COLUMN blueprints_usage INTEGER NOT NULL DEFAULT 10,
     ADD COLUMN translations_usage INTEGER NOT NULL DEFAULT 10;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 81, 0);
