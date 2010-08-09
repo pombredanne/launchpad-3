@@ -30,44 +30,14 @@ HERE = os.path.dirname(os.path.realpath(__file__))
 def main():
     """Call bin/test with whatever arguments this script was run with.
 
-    Prior to running the tests this script checks the project files with
-    Python2.5's tabnanny and sets up the test database.
+    Prior to running the tests this script sets up the test database.
 
     Returns 1 on error, otherwise it returns the testrunner's exit code.
     """
-    if run_tabnanny() != 0:
-        return 1
-
     if setup_test_database() != 0:
         return 1
 
     return run_test_process()
-
-
-def run_tabnanny():
-    """Run the tabnanny, return its exit code.
-
-    If tabnanny raises an exception, run "python /usr/lib/python2.5/tabnanny.py
-    -vv lib/canonical for more detailed output.
-    """
-    # XXX mars 2010-05-26
-    # Tabnanny reports some of its errors on sys.stderr, so this code is
-    # already wrong.  subprocess.Popen.communicate() would work better.
-    print "Checking the source tree with tabnanny..."
-    org_stdout = sys.stdout
-    sys.stdout = StringIO()
-    tabnanny.check(os.path.join(HERE, 'lib', 'canonical'))
-    tabnanny.check(os.path.join(HERE, 'lib', 'lp'))
-    tabnanny_results = sys.stdout.getvalue()
-    sys.stdout = org_stdout
-    if len(tabnanny_results) > 0:
-        print '---- tabnanny bitching ----'
-        print tabnanny_results
-        print '---- end tabnanny bitching ----'
-        return 1
-    else:
-        print "Done"
-        return 0
 
 
 def setup_test_database():
