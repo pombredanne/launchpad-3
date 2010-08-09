@@ -1456,14 +1456,17 @@ class Person(
     @property
     def all_members_prepopulated(self):
         """See `IPerson`."""
-        return self._all_members(need_karma=True, need_ubuntu_coc=True)
+        return self._all_members(need_karma=True, need_ubuntu_coc=True,
+            need_location=True)
 
-    def _all_members(self, need_karma=False, need_ubuntu_coc=False):
+    def _all_members(self, need_karma=False, need_ubuntu_coc=False,
+        need_location=False):
         """Lookup all members of the team with optional precaching.
         
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
+        :param need_location: The location attribute will be cached.
         """
         # TODO: consolidate this with getMembersWithPreferredEmails.
         #       The difference between the two is that
@@ -1474,10 +1477,6 @@ class Person(
             Person,
             Join(TeamParticipation, TeamParticipation.person == Person.id),
             ]
-        if need_karma:
-            # New people have no karmatotalcache rows.
-            origin.append(
-                LeftJoin(KarmaTotalCache, KarmaTotalCache.person == Person.id))
         conditions = And(
             # Members of this team,
             TeamParticipation.team == self.id,
@@ -1485,11 +1484,19 @@ class Person(
             TeamParticipation.person != self.id)
         where = [Person]
         if need_karma:
+            # New people have no karmatotalcache rows.
+            origin.append(
+                LeftJoin(KarmaTotalCache, KarmaTotalCache.person == Person.id))
             where.append(KarmaTotalCache)
         if need_ubuntu_coc:
             where.append(Alias(Exists(Select(SignedCodeOfConduct,
                 Person._is_ubuntu_coc_signer_condition())),
                 name='is_ubuntu_coc_signer'))
+        if need_location:
+            # New people have no location rows
+            origin.append(
+                LeftJoin(PersonLocation, PersonLocation.person == Person.id))
+            where.append(PersonLocation)
         if len(where) == 1:
             where = where[0]
             # Return a simple ResultSet
@@ -1509,10 +1516,16 @@ class Person(
                 else:
                     karma_total = karma.karma_total
                 result._karma_cached = karma_total
+            #-- ubuntu code of conduct signer status caching.
             if need_ubuntu_coc:
                 signed = row[index]
                 index += 1
                 result._is_ubuntu_coc_signer_cached = signed
+            #-- location caching
+            if need_location:
+                location = row[index]
+                index += 1
+                result._location = location
             return result
         return DecoratedResultSet(raw_result, result_decorator=prepopulate_person)
 
