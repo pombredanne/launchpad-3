@@ -160,6 +160,8 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def summary(self):
         """See `IDistributionSourcePackage`."""
+        if self.development_version is None:
+            return None
         return self.development_version.summary
 
     @property
