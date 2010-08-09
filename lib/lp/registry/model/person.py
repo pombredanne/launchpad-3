@@ -1447,6 +1447,15 @@ class Person(
     @property
     def allmembers(self):
         """See `IPerson`."""
+        return self._all_members()
+
+    @property
+    def all_members_prepopulated(self):
+        """See `IPerson`."""
+        return self._all_members()
+
+    def _all_members(self):
+        """Lookup all members of the team with optional precaching."""
         query = """
             Person.id = TeamParticipation.person AND
             TeamParticipation.team = %s AND

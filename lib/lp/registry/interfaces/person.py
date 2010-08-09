@@ -1264,7 +1264,7 @@ class IPersonViewRestricted(Interface):
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
-    allmembers = exported(
+    all_members_prepopulated = exported(
         doNotSnapshot(
             CollectionField(
                 title=_("All participants of this team."),
@@ -1276,6 +1276,8 @@ class IPersonViewRestricted(Interface):
                     "IPerson.inTeam()."),
                 value_type=Reference(schema=Interface))),
         exported_as='participants')
+    allmembers = doNotSnapshot(
+        Attribute("List of all members, without checking karma etc."))
     approvedmembers = doNotSnapshot(
         Attribute("List of members with APPROVED status"))
     deactivated_member_count = Attribute("Number of deactivated members")
@@ -2156,9 +2158,16 @@ class NoSuchPerson(NameLookupFailed):
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
-for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
-             'invited_members', 'deactivatedmembers', 'expiredmembers',
-             'unmapped_participants']:
+for name in [
+    'all_members_prepopulated',
+    'activemembers',
+    'adminmembers',
+    'proposedmembers',
+    'invited_members',
+    'deactivatedmembers',
+    'expiredmembers',
+    'unmapped_participants',
+    ]:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam
