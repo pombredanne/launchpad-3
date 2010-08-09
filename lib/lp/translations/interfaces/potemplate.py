@@ -822,6 +822,7 @@ class IHasTranslationTemplates(Interface):
         exist for it.
         """
 
+
 class ITranslationTemplatesCollection(Interface):
     """A `Collection` of `POTemplate`s."""
 

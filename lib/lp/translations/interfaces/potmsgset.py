@@ -51,6 +51,7 @@ class TranslationCreditsType(EnumeratedType):
 class BrokenTextError(ValueError):
     """Exception raised when we detect values on a text that aren't valid."""
 
+
 class POTMsgSetInIncompatibleTemplatesError(Exception):
     """Raised when a POTMsgSet appears in multiple incompatible templates.
 
