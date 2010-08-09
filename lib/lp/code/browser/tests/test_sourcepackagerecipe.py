@@ -515,8 +515,9 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         recipe = self.makeRecipe()
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
-        build.buildstate = BuildStatus.FULLYBUILT
-        build.datebuilt = datetime(2010, 03, 16, tzinfo=utc)
+        build.status = BuildStatus.FULLYBUILT
+        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
+        build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Master Chef Recipes cake_recipe
@@ -597,8 +598,9 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             set(view.builds))
 
         def set_day(build, day):
-            removeSecurityProxy(build).datebuilt = datetime(
-                2010, 03, day, tzinfo=utc)
+            naked_build = removeSecurityProxy(build)
+            naked_build.date_started = datetime(2010, 03, day, tzinfo=utc)
+            naked_build.date_finished = datetime(2010, 03, day, tzinfo=utc)
         set_day(build1, 16)
         set_day(build2, 15)
         # When there are 4+ pending builds, only the the most
@@ -682,7 +684,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         for x in range(5):
             build = recipe.requestBuild(
                 self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
-            removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
+            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
 
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
@@ -723,7 +725,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.user = self.factory.makePerson(
             displayname='Owner', name='build-owner', password='test')
 
-    def makeBuild(self, buildstate=None):
+    def makeBuild(self):
         """Make a build suitabe for testing."""
         archive = self.factory.makeArchive(name='build',
             owner=self.user)
@@ -748,7 +750,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.assertTrue(view.estimate)
         view.context.buildqueue_record.job.start()
         self.assertTrue(view.estimate)
-        removeSecurityProxy(view.context).datebuilt = datetime.now(utc)
+        removeSecurityProxy(view.context).date_finished = datetime.now(utc)
         self.assertFalse(view.estimate)
 
     def test_eta(self):
@@ -805,11 +807,12 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         release = self.makeBuildAndRelease()
         self.makeBinaryBuild(release, 'itanic')
         naked_build = removeSecurityProxy(release.source_package_recipe_build)
-        naked_build.buildstate = BuildStatus.FULLYBUILT
-        naked_build.buildduration = timedelta(minutes=1)
-        naked_build.datebuilt = datetime(2009, 1, 1, tzinfo=utc)
+        naked_build.status = BuildStatus.FULLYBUILT
+        naked_build.date_finished = datetime(2009, 1, 1, tzinfo=utc)
+        naked_build.date_started = (
+            naked_build.date_finished - timedelta(minutes=1))
         naked_build.buildqueue_record.destroySelf()
-        naked_build.buildlog = self.factory.makeLibraryFileAlias(
+        naked_build.log = self.factory.makeLibraryFileAlias(
             content='buildlog')
         naked_build.upload_log = self.factory.makeLibraryFileAlias(
             content='upload_log')
@@ -872,10 +875,10 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         build.buildqueue_record.builder = self.factory.makeBuilder()
         main_text = self.getMainText(build, '+index')
         self.assertNotIn('Logs have no tails!', main_text)
-        removeSecurityProxy(build).buildstate = BuildStatus.BUILDING
+        removeSecurityProxy(build).status = BuildStatus.BUILDING
         main_text = self.getMainText(build, '+index')
         self.assertIn('Logs have no tails!', main_text)
-        removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
+        removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
         self.assertIn('Logs have no tails!', main_text)
 
     def getMainText(self, build, view_name=None):
@@ -886,9 +889,9 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
     def test_buildlog(self):
         """A link to the build log is shown if available."""
         build = self.makeBuild()
-        removeSecurityProxy(build).buildlog = (
+        removeSecurityProxy(build).log = (
             self.factory.makeLibraryFileAlias())
-        build_log_url = build.build_log_url
+        build_log_url = build.log_url
         browser = self.getViewBrowser(build)
         link = browser.getLink('buildlog')
         self.assertEqual(build_log_url, link.url)

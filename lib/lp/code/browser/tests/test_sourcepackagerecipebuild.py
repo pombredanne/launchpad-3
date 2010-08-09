@@ -10,6 +10,7 @@ from mechanize import LinkNotFoundError
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
@@ -19,7 +20,6 @@ from canonical.testing import DatabaseFunctionalLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import ANONYMOUS, BrowserTestCase, login, logout
-from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 
 
 class TestSourcePackageRecipeBuild(BrowserTestCase):
@@ -38,8 +38,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         self.squirrel = self.factory.makeDistroSeries(
             displayname='Secret Squirrel', name='secret', version='100.04',
             distribution=self.ppa.distribution)
-        naked_squirrel = remove_security_proxy_and_shout_at_engineer(
-            self.squirrel)
+        naked_squirrel = removeSecurityProxy(self.squirrel)
         naked_squirrel.nominatedarchindep = self.squirrel.newArch(
             'i386', ProcessorFamily.get(1), False, self.chef,
             supports_virtualized=True)

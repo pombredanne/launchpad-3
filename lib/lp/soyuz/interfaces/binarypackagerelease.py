@@ -18,7 +18,7 @@ __all__ = [
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import exported, export_as_webservice_entry
 from lazr.restful.fields import Reference, ReferenceChoice
-from zope.schema import Bool, Date, Int, Text, TextLine, Datetime
+from zope.schema import Bool, Date, Datetime, Int, Object, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -52,6 +52,10 @@ class IBinaryPackageRelease(Interface):
     installedsize = Int(required=False)
     architecturespecific = Bool(required=True)
     datecreated = Datetime(required=True, readonly=True)
+    debug_package = Object(
+        title=_("Debug package"), schema=Interface, required=False,
+        description=_("The corresponding package containing debug symbols "
+                      "for this binary."))
 
     files = Attribute("Related list of IBinaryPackageFile entries")
 
