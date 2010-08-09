@@ -1456,12 +1456,18 @@ class Person(
 
     def _all_members(self):
         """Lookup all members of the team with optional precaching."""
-        query = """
-            Person.id = TeamParticipation.person AND
-            TeamParticipation.team = %s AND
-            TeamParticipation.person != %s
-            """ % sqlvalues(self.id, self.id)
-        return Person.select(query, clauseTables=['TeamParticipation'])
+        # TODO: consolidate this with getMembersWithPreferredEmails.
+        store = Store.of(self)
+        origin = [
+            Person,
+            Join(TeamParticipation, TeamParticipation.person == Person.id),
+            ]
+        conditions = And(
+            # Members of this team,
+            TeamParticipation.team == self.id,
+            # But not the team itself.
+            TeamParticipation.person != self.id)
+        return store.using(*origin).find(Person, conditions)
 
     def _getMembersWithPreferredEmails(self, include_teams=False):
         """Helper method for public getMembersWithPreferredEmails.
