@@ -34,7 +34,7 @@ class TestNavigationDirective(TestCase):
         # only be available on that layer.
         directive = """
             <browser:navigation
-                module="%(this)s" classes="ThingNavigation"
+                module="%(this)s" classes="OtherThingNavigation"
                 layer="%(this)s.IOtherLayer" />
             """ % dict(this=this)
         xmlconfig.string(zcml_configure % directive)
@@ -45,7 +45,27 @@ class TestNavigationDirective(TestCase):
 
         navigation = getMultiAdapter(
             (Thing(), OtherLayer()), IBrowserPublisher, name='')
-        self.assertIsInstance(navigation, ThingNavigation)
+        self.assertIsInstance(navigation, OtherThingNavigation)
+
+    def test_multiple_navigations_for_single_context(self):
+        # It is possible to have multiple navigation classes for a given
+        # context class as long as they specify different layers and only one
+        # of them is used for XMLRPC requests.
+        directive = """ 
+            <browser:navigation
+                module="%(this)s" classes="ThingNavigation"/>
+            <browser:navigation
+                module="%(this)s" classes="OtherThingNavigation"
+                layer="%(this)s.IOtherLayer"
+                used_for_xmlrpc="false" />
+            """ % dict(this=this)
+        xmlconfig.string(zcml_configure % directive)
+
+        navigation = getMultiAdapter(
+            (Thing(), DefaultBrowserLayer()), IBrowserPublisher, name='')
+        other_navigation = getMultiAdapter(
+            (Thing(), OtherLayer()), IBrowserPublisher, name='')
+        self.assertNotEqual(navigation, other_navigation)
 
     def tearDown(self):
         TestCase.tearDown(self)
@@ -65,6 +85,10 @@ class Thing(object):
 
 
 class ThingNavigation(Navigation):
+    usedfor = IThing
+
+
+class OtherThingNavigation(Navigation):
     usedfor = IThing
 
 

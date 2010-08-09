@@ -20,7 +20,7 @@ from zope.interface import Interface, implements
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
-from zope.schema import TextLine
+from zope.schema import Bool, TextLine
 from zope.security.checker import Checker, CheckerPublic
 from zope.security.interfaces import IPermission
 from zope.security.permission import Permission
@@ -197,6 +197,12 @@ class INavigationDirective(IGlueDirective):
         title=u"The layer where this navigation is going to be available.",
         required=False)
 
+    used_for_xmlrpc = Bool(
+        title=u"Is this the navigation used for XMLRPC requests as well?",
+        description=(u"For any given context, only one navigation class can "
+                     "be used for XMLRPC requests."),
+        required=False)
+
 
 class IFeedsDirective(IGlueDirective):
     """Hook up feeds."""
@@ -271,7 +277,8 @@ def feeds(_context, module, classes):
                           layer=layer, class_=feedclass)
 
 
-def navigation(_context, module, classes, layer=IDefaultBrowserLayer):
+def navigation(_context, module, classes, layer=IDefaultBrowserLayer,
+               used_for_xmlrpc=True):
     """Handler for the `INavigationDirective`."""
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
@@ -288,15 +295,14 @@ def navigation(_context, module, classes, layer=IDefaultBrowserLayer):
         provides = IBrowserPublisher
         name = ''
         view(_context, factory, layer, name, for_,
-                permission=PublicPermission, provides=provides,
-                allowed_interface=[IBrowserPublisher])
-        #view(_context, factory, layer, name, for_,
-        #     permission=PublicPermission, provides=provides)
+             permission=PublicPermission, provides=provides,
+             allowed_interface=[IBrowserPublisher])
 
         # Also register the navigation as a traversal component for XMLRPC.
-        xmlrpc_layer = IXMLRPCRequest
-        view(_context, factory, xmlrpc_layer, name, for_,
-             permission=PublicPermission, provides=provides)
+        if used_for_xmlrpc:
+            xmlrpc_layer = IXMLRPCRequest
+            view(_context, factory, xmlrpc_layer, name, for_,
+                 permission=PublicPermission, provides=provides)
 
 
 class InterfaceInstanceDispatcher:
