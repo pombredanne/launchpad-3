@@ -1,8 +1,12 @@
-= Jabber IDs =
+==========
+Jabber IDs
+==========
+
 
 In their Launchpad profile, users can register their Jabber IDs.
 
-== Adding and editing an ID ==
+Adding and editing an ID
+------------------------
 
 To register a Jabber ID with his account, the user visits his
 profile page and uses the 'Update Jabber IDs' link.
@@ -29,7 +33,8 @@ an error is displayed and the user can enter another one:
 However, if the user enters a Jabber ID which isn't already registered,
 it will be associated with his account.
 
-    >>> user_browser.getControl(name='newjabberid').value = 'no-priv@jabber.org'
+    >>> user_browser.getControl(name='newjabberid').value = (
+    ...     'no-priv@jabber.org')
     >>> user_browser.getControl('Save Changes').click()
 
     >>> def show_jabberids(browser):
@@ -43,7 +48,8 @@ it will be associated with his account.
     >>> show_jabberids(user_browser)
     no-priv@jabber.org
 
-== Removing an ID ==
+Removing an ID
+--------------
 
 To remove an existing Jabber ID, the user simply checks the 'Remove'
 checkbox besides the ID:
