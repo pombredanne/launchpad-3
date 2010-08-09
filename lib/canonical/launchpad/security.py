@@ -1171,13 +1171,16 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class DeleteSourcePackageRecipeBuilds(OnlyBazaarExpertsAndAdmins):
-    """Control who can delete SourcePackageRecipeBuilds.
+class EditSourcePackageRecipeBuilds(AuthorizationBase):
+    """Control who can edit SourcePackageRecipeBuilds.
 
-    Access is restricted to members of ~bazaar-experts and Launchpad admins.
+    Access is restricted to members of ~bazaar-experts and Buildd Admins.
     """
     permission = 'launchpad.Edit'
     usedfor = ISourcePackageRecipeBuild
+
+    def checkAuthenticated(self, user):
+        return user.in_bazaar_experts or user.in_buildd_admin
 
 
 class AdminDistributionTranslations(AuthorizationBase):
