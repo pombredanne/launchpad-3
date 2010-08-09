@@ -294,7 +294,8 @@ class IPOTMsgSet(Interface):
         If a translation conflict is detected, TranslationConflict is raised.
         """
 
-    def clearCurrentTranslation(pofile, share_with_other_side=False):
+    def clearCurrentTranslation(pofile, submitter, origin,
+                                share_with_other_side=False):
         """Set the current message in `pofile` to be untranslated.
 
         If the current message is shared, this will also clear it in

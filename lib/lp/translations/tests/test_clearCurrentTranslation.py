@@ -7,6 +7,10 @@ __metaclass__ = type
 
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin)
+
+ORIGIN = RosettaTranslationOrigin.SCM
 
 
 class ScenarioMixin:
@@ -43,59 +47,63 @@ class ScenarioMixin:
 
     def test_does_nothing_if_not_translated(self):
         pofile = self._makePOFile()
-        traits = pofile.potemplate.translation_side_traits
-        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        template = pofile.potemplate
+        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         
-        potmsgset.clearCurrentTranslation(pofile)
+        potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
-        current = traits.getCurrentMessage(
-            potmsgset, pofile.potemplate, pofile.language)
+        current = template.translation_side_traits.getCurrentMessage(
+            potmsgset, template, pofile.language)
         self.assertIs(None, current)
 
     def test_deactivates_shared_message(self):
         pofile = self._makePOFile()
-        traits = pofile.potemplate.translation_side_traits
-        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        template = pofile.potemplate
+        traits = template.translation_side_traits
+        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         tm = self._makeTranslationMessage(potmsgset, pofile)
         traits.setFlag(tm)
         self.assertTrue(traits.getFlag(tm))
 
-        potmsgset.clearCurrentTranslation(pofile)
+        potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
         self.assertFalse(traits.getFlag(tm))
 
     def test_deactivates_diverged_message(self):
         pofile = self._makePOFile()
-        traits = pofile.potemplate.translation_side_traits
-        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        template = pofile.potemplate
+        traits = template.translation_side_traits
+        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         tm = self._makeTranslationMessage(potmsgset, pofile, diverged=True)
         traits.setFlag(tm, True)
 
-        potmsgset.clearCurrentTranslation(pofile)
+        potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
         self.assertFalse(traits.getFlag(tm))
 
     def test_hides_unmasked_shared_message(self):
         pofile = self._makePOFile()
-        traits = pofile.potemplate.translation_side_traits
-        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        template = pofile.potemplate
+        traits = template.translation_side_traits
+        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         shared_tm = self._makeTranslationMessage(potmsgset, pofile)
         traits.setFlag(shared_tm)
         diverged_tm = self._makeTranslationMessage(
             potmsgset, pofile, diverged=True)
         traits.setFlag(diverged_tm)
 
-        potmsgset.clearCurrentTranslation(pofile)
+        potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
         current = traits.getCurrentMessage(
-            potmsgset, pofile.potemplate, pofile.language)
+            potmsgset, template, pofile.language)
         self.assertIs(None, current.msgstr0)
         self.assertTrue(traits.getFlag(shared_tm))
 
     def test_ignores_other_message(self):
         pofile = self._makePOFile()
-        traits = pofile.potemplate.translation_side_traits
-        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        template = pofile.potemplate
+        traits = template.translation_side_traits
+        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         tm = self._makeTranslationMessage(potmsgset, pofile)
         traits.setFlag(tm)
 
@@ -104,32 +112,35 @@ class ScenarioMixin:
         other_tm = self._makeTranslationMessage(potmsgset, pofile)
         traits.other_side_traits.setFlag(other_tm)
 
-        potmsgset.clearCurrentTranslation(pofile)
+        potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
         self.assertTrue(traits.other_side_traits.getFlag(other_tm))
 
     def test_deactivates_one_side(self):
         pofile = self._makePOFile()
-        traits = pofile.potemplate.translation_side_traits
-        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        template = pofile.potemplate
+        traits = template.translation_side_traits
+        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         tm = self._makeTranslationMessage(potmsgset, pofile)
         traits.setFlag(tm)
         traits.other_side_traits.setFlag(tm)
 
-        potmsgset.clearCurrentTranslation(pofile)
+        potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
         self.assertFalse(traits.getFlag(tm))
         self.assertTrue(traits.other_side_flags.getFlag(tm))
 
     def test_deactivates_both_sides(self):
         pofile = self._makePOFile()
-        traits = pofile.potemplate.translation_side_traits
-        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        template = pofile.potemplate
+        traits = template.translation_side_traits
+        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         tm = self._makeTranslationMessage(potmsgset, pofile)
         traits.setFlag(tm)
         traits.other_side_traits.setFlag(tm)
 
-        potmsgset.clearCurrentTranslation(pofile, share_with_other_side=True)
+        potmsgset.clearCurrentTranslation(
+            pofile, template.owner, ORIGIN, share_with_other_side=True)
 
         self.assertFalse(traits.getFlag(tm))
         self.assertFalse(traits.other_side_traits.getFlag(tm))
@@ -137,14 +148,14 @@ class ScenarioMixin:
     def test_discards_redundant_suggestion(self):
         translations = [self.factory.getUniqueString()]
         pofile = self._makePOFile()
-        traits = pofile.potemplate.translation_side_traits
-        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        template = pofile.potemplate
+        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         tm = self._makeTranslationMessage(potmsgset, pofile, translations)
-        traits.setFlag(tm)
+        template.translation_side_traits.setFlag(tm)
         suggestion = self._makeTranslationMessage(
             potmsgset, pofile, translations)
 
-        potmsgset.clearCurrentTranslation(pofile)
+        potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
         remaining_tms = list(potmsgset.getAllTranslationMessages())
         self.assertEqual(1, len(remaining_tms))
@@ -152,19 +163,20 @@ class ScenarioMixin:
 
     def test_converges_with_empty_shared_message(self):
         pofile = self._makePOFile()
-        traits = pofile.potemplate.translation_side_traits
-        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        template = pofile.potemplate
+        traits = template.translation_side_traits
+        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
         diverged_tm = self._makeTranslationMessage(
             potmsgset, pofile, diverged=True)
         traits.setFlag(diverged_tm)
         blank_shared_tm = self._makeTranslationMessage(potmsgset, pofile, [])
         traits.setFlag(blank_shared_tm)
 
-        potmsgset.clearCurrentTranslation(pofile)
+        potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
         self.assertTrue(traits.getFlag(blank_shared_tm))
         current = traits.getCurrentMessage(
-            potmsgset, pofile.potemplate, pofile.language)
+            potmsgset, template, pofile.language)
         self.assertEqual(blank_shared_tm, current)
 
 

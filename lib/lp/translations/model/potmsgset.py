@@ -1237,7 +1237,8 @@ class POTMsgSet(SQLBase):
                 current.potemplate = None
             pofile.date_changed = UTC_NOW
 
-    def clearCurrentTranslation(self, pofile, share_with_other_side=False):
+    def clearCurrentTranslation(self, pofile, submitter, origin,
+                                share_with_other_side=False):
         """See `IPOTMsgSet`."""
         submitter = None # XXX: Need to know this!
         origin = None # XXX: Need to know this!
