@@ -18,6 +18,14 @@ ORIGIN = RosettaTranslationOrigin.SCM
 class ScenarioMixin:
     layer = DatabaseFunctionalLayer
 
+    def makePOTemplate(self):
+        """Create a POTemplate for the side that's being tested."""
+        raise NotImplementedError()
+
+    def makeOtherPOTemplate(self):
+        """Create a POTemplate for the other side."""
+        raise NotImplementedError()
+
     def makeUpstreamTemplate(self):
         """Create a POTemplate for a project."""
         productseries = self.factory.makeProductSeries()
@@ -195,23 +203,23 @@ class ScenarioMixin:
         self.assertEqual(blank_shared_tm, current)
 
 
-class TestClearCurrentTranslationsUpstream(TestCaseWithFactory,
-                                           ScenarioMixin):
-    """Test clearCurrentTranslationsUpstream on upstream side."""
+class TestClearCurrentTranslationUpstream(TestCaseWithFactory,
+                                          ScenarioMixin):
+    """Test clearCurrentTranslationUpstream on upstream side."""
     makePOTemplate = ScenarioMixin.makeUpstreamTemplate
     makeOtherPOTemplate = ScenarioMixin.makeUbuntuTemplate
 
     def setUp(self):
-        super(TestClearCurrentTranslationsUpstream, self).setUp(
+        super(TestClearCurrentTranslationUpstream, self).setUp(
             'carlos@canonical.com')
 
 
-class TestClearCurrentTranslationsUbuntu(TestCaseWithFactory,
-                                           ScenarioMixin):
-    """Test clearCurrentTranslationsUpstream on Ubuntu side."""
+class TestClearCurrentTranslationUbuntu(TestCaseWithFactory,
+                                        ScenarioMixin):
+    """Test clearCurrentTranslationUpstream on Ubuntu side."""
     makePOTemplate = ScenarioMixin.makeUbuntuTemplate
     makeOtherPOTemplate = ScenarioMixin.makeUpstreamTemplate
 
     def setUp(self):
-        super(TestClearCurrentTranslationsUbuntu, self).setUp(
+        super(TestClearCurrentTranslationUbuntu, self).setUp(
             'carlos@canonical.com')

@@ -983,7 +983,7 @@ class POTemplate(SQLBase, RosettaStats):
     @property
     def translation_side_traits(self):
         """See `IPOTemplate`."""
-        if self.productseries:
+        if self.productseries is not None:
             side = TranslationSide.UPSTREAM
         else:
             side = TranslationSide.UBUNTU
