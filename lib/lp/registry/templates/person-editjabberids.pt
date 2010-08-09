@@ -20,10 +20,8 @@
         </tr>
 
         <tr tal:repeat="jabber context/jabberids">
-          <td>
-            <input tal:attributes="name string:jabberid_${jabber/jabberid};
-                                   value jabber/jabberid"
-                   type="text" style="margin-bottom: 0.5em;"/>
+          <td tal:content="jabber/jabberid"
+              class="jabberid">
           </td>
 
           <td>

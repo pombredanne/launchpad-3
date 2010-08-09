@@ -29,36 +29,27 @@ an error is displayed and the user can enter another one:
 However, if the user enters a Jabber ID which isn't already registered,
 it will be associated with his account.
 
-    >>> user_browser.getControl(name='newjabberid').value = 'nopriv@jabber.org'
+    >>> user_browser.getControl(name='newjabberid').value = 'no-priv@jabber.org'
     >>> user_browser.getControl('Save Changes').click()
 
-The new ID can be edited by changing its value, and another ID can
-also be entered.
+    >>> def show_jabberids(browser):
+    ...     tags = find_tags_by_class(browser.contents, 'jabberid')
+    ...     if tags:
+    ...         for tag in tags:
+    ...             print extract_text(tag)
+    ...     else:
+    ...         print "No jabberids"
 
-    >>> user_browser.getControl(name='jabberid_nopriv@jabber.org').value = (
-    ...     'no-priv@jabber.org')
-    >>> user_browser.getControl(name='newjabberid').value = (
-    ...     'no-priv@gmail.org')
-    >>> user_browser.getControl('Save Changes').click()
-
-    >>> import re
-    >>> main_content = find_main_content(user_browser.contents)
-    >>> for input in main_content.findAll(
-    ...     'input', {'name': re.compile('jabberid_')}):
-    ...     print input['value']
-    no-priv@gmail.org
+    >>> show_jabberids(user_browser)
     no-priv@jabber.org
 
 == Removing an ID ==
 
-To remove an existing Jabber ID, the user simply check the 'Remove'
+To remove an existing Jabber ID, the user simply checks the 'Remove'
 checkbox besides the ID:
 
     >>> user_browser.getControl('Remove', index=0).click()
     >>> user_browser.getControl('Save Changes').click()
 
-    >>> main_content = find_main_content(user_browser.contents)
-    >>> for input in main_content.findAll(
-    ...     'input', {'name': re.compile('jabberid_')}):
-    ...     print input['value']
-    no-priv@jabber.org
+    >>> show_jabberids(user_browser)
+    No jabberids

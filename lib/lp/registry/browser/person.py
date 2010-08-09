@@ -3541,13 +3541,6 @@ class PersonEditJabberIDsView(LaunchpadFormView):
         for jabber in self.context.jabberids:
             if form.get('remove_%s' % jabber.jabberid):
                 jabber.destroySelf()
-            else:
-                jabberid = form.get('jabberid_%s' % jabber.jabberid)
-                if not jabberid:
-                    self.request.response.addErrorNotification(
-                        "You cannot save an empty Jabber ID.")
-                    return
-                jabber.jabberid = jabberid
 
         jabberid = form.get('newjabberid')
         if jabberid:
@@ -3600,8 +3593,8 @@ class PersonEditSSHKeysView(LaunchpadView):
 
     def add_ssh(self):
         sshkey = self.request.form.get('sshkey')
-	try:
-      	    getUtility(ISSHKeySet).new(self.user, sshkey)
+        try:
+            getUtility(ISSHKeySet).new(self.user, sshkey)
         except SSHKeyAdditionError:
             self.error_message = structured('Invalid public key')
         except SSHKeyCompromisedError:
