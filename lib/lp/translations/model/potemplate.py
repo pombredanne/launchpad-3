@@ -64,6 +64,9 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplateSharingSubset,
     IPOTemplateSubset,
     LanguageNotFound)
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    TranslationSide)
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.translations.interfaces.translationexporter import (
@@ -576,8 +579,7 @@ class POTemplate(SQLBase, RosettaStats):
         if sharing_templates:
             clauses.append(
                 'TranslationTemplateItem.potemplate in %s' % sqlvalues(
-                    self._sharing_ids)
-                )
+                    self._sharing_ids))
         else:
             clauses.append(
                 'TranslationTemplateItem.potemplate = %s' % sqlvalues(self))
@@ -977,6 +979,15 @@ class POTemplate(SQLBase, RosettaStats):
 
         for row in rows:
             yield VPOTExport(self, *row)
+
+    @property
+    def translation_side_traits(self):
+        """See `IPOTemplate`."""
+        if self.productseries is not None:
+            side = TranslationSide.UPSTREAM
+        else:
+            side = TranslationSide.UBUNTU
+        return getUtility(ITranslationSideTraitsSet).getTraits(side)
 
 
 class POTemplateSubset:
@@ -1410,7 +1421,7 @@ class POTemplateSharingSubset(object):
         The translation focus is used to pick a distroseries, so a source
         package instance can be created. If no translation focus is set,
         the distribution's current series is used."""
-        
+
         from lp.registry.model.sourcepackage import SourcePackage
         distroseries = distribution.translation_focus
         if distroseries is None:
@@ -1431,12 +1442,11 @@ class POTemplateSharingSubset(object):
         origin = Join(
             Packaging, DistroSeries,
             Packaging.distroseries == DistroSeries.id)
-        result = Store.of(distribution).using(origin).find(
+        matches = Store.of(distribution).using(origin).find(
             Packaging,
             And(DistroSeries.distribution == distribution.id,
-                Packaging.sourcepackagename == sourcepackagename.id)
-            ).count()
-        return result == 0
+                Packaging.sourcepackagename == sourcepackagename.id))
+        return not bool(matches.any())
 
     def _get_potemplate_equivalence_class(self, template):
         """Return whatever we group `POTemplate`s by for sharing purposes."""
@@ -1463,23 +1473,21 @@ class POTemplateSharingSubset(object):
         origin = LeftJoin(
             LeftJoin(
                 POTemplate, ProductSeries,
-                POTemplate.productseriesID == ProductSeries.id), 
+                POTemplate.productseriesID == ProductSeries.id),
             Join(
                 Packaging, ProductSeries1,
                 Packaging.productseriesID == ProductSeries1.id),
             And(
                 Packaging.distroseriesID == POTemplate.distroseriesID,
                 Packaging.sourcepackagenameID == (
-                        POTemplate.sourcepackagenameID)
-                )
+                        POTemplate.sourcepackagenameID))
             )
         return Store.of(self.product).using(origin).find(
             POTemplate,
             And(
                 Or(
                     ProductSeries.productID == self.product.id,
-                    ProductSeries1.productID == self.product.id
-                    ),
+                    ProductSeries1.productID == self.product.id),
                 templatename_clause
                 ))
 
@@ -1500,8 +1508,7 @@ class POTemplateSharingSubset(object):
             And(
                 DistroSeries.distributionID == self.distribution.id,
                 POTemplate.sourcepackagename == self.sourcepackagename,
-                templatename_clause
-                ))
+                templatename_clause))
 
     def _queryByDistribution(self, templatename_clause):
         """Special case when templates are searched across a distribution."""
