@@ -1804,6 +1804,7 @@ class ArchiveSet:
 
     def getPPAOwnedByPerson(self, person, name=None):
         """See `IArchiveSet`."""
+        # See Person._all_members which also directly queries this.
         store = Store.of(person)
         clause = [
             Archive.purpose == ArchivePurpose.PPA,

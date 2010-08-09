@@ -49,7 +49,7 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
 from storm.expr import (
-    Alias, And, Exists, In, Join, LeftJoin, Lower, Not, Or, Select, SQL,
+    Alias, And, Exists, In, Join, LeftJoin, Lower, Min, Not, Or, Select, SQL,
     )
 from storm.info import ClassAlias
 
@@ -1457,16 +1457,17 @@ class Person(
     def all_members_prepopulated(self):
         """See `IPerson`."""
         return self._all_members(need_karma=True, need_ubuntu_coc=True,
-            need_location=True)
+            need_location=True, need_archive=True)
 
     def _all_members(self, need_karma=False, need_ubuntu_coc=False,
-        need_location=False):
+        need_location=False, need_archive=False):
         """Lookup all members of the team with optional precaching.
         
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
         :param need_location: The location attribute will be cached.
+        :param need_archive: The archive attribute will be cached.
         """
         # TODO: consolidate this with getMembersWithPreferredEmails.
         #       The difference between the two is that
@@ -1482,28 +1483,39 @@ class Person(
             TeamParticipation.team == self.id,
             # But not the team itself.
             TeamParticipation.person != self.id)
-        where = [Person]
+        columns = [Person]
         if need_karma:
             # New people have no karmatotalcache rows.
             origin.append(
                 LeftJoin(KarmaTotalCache, KarmaTotalCache.person == Person.id))
-            where.append(KarmaTotalCache)
+            columns.append(KarmaTotalCache)
         if need_ubuntu_coc:
-            where.append(Alias(Exists(Select(SignedCodeOfConduct,
+            columns.append(Alias(Exists(Select(SignedCodeOfConduct,
                 Person._is_ubuntu_coc_signer_condition())),
                 name='is_ubuntu_coc_signer'))
         if need_location:
             # New people have no location rows
             origin.append(
                 LeftJoin(PersonLocation, PersonLocation.person == Person.id))
-            where.append(PersonLocation)
-        if len(where) == 1:
-            where = where[0]
+            columns.append(PersonLocation)
+        if need_archive:
+            # Not everyone has PPA's 
+            # It would be nice to cleanly expose the soyuz rules for this to avoid
+            # duplicating the relationships.
+            origin.append(
+                LeftJoin(Archive, Archive.owner == Person.id))
+            columns.append(Archive)
+            conditions = And(conditions,
+                Or(Archive.id == None, And(
+                Archive.id == Select(Min(Archive.id), Archive.owner == Person.id, Archive),
+                Archive.purpose == ArchivePurpose.PPA)))
+        if len(columns) == 1:
+            columns = columns[0]
             # Return a simple ResultSet
-            return store.using(*origin).find(where, conditions)
+            return store.using(*origin).find(columns, conditions)
         # Adapt the result into a cached Person.
-        where = tuple(where)
-        raw_result = store.using(*origin).find(where, conditions)
+        columns = tuple(columns)
+        raw_result = store.using(*origin).find(columns, conditions)
         def prepopulate_person(row):
             result = row[0]
             index = 1
@@ -1526,6 +1538,11 @@ class Person(
                 location = row[index]
                 index += 1
                 result._location = location
+            #-- archive caching
+            if need_archive:
+                archive = row[index]
+                index += 1
+                result._archive_cached = archive
             return result
         return DecoratedResultSet(raw_result, result_decorator=prepopulate_person)
 
@@ -2395,7 +2412,7 @@ class Person(
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
 
-    @property
+    @cachedproperty('_archive_cached')
     def archive(self):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
