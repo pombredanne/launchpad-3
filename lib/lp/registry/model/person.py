@@ -1052,7 +1052,7 @@ class Person(
 
         return self.is_valid_person
 
-    @property
+    @cachedproperty('_is_valid_person_cached')
     def is_valid_person(self):
         """See `IPerson`."""
         if self.is_team:
@@ -1457,10 +1457,12 @@ class Person(
     def all_members_prepopulated(self):
         """See `IPerson`."""
         return self._all_members(need_karma=True, need_ubuntu_coc=True,
-            need_location=True, need_archive=True)
+            need_location=True, need_archive=True, need_preferred_email=True,
+            need_validity=True)
 
     def _all_members(self, need_karma=False, need_ubuntu_coc=False,
-        need_location=False, need_archive=False):
+        need_location=False, need_archive=False, need_preferred_email=False,
+        need_validity=False):
         """Lookup all members of the team with optional precaching.
         
         :param need_karma: The karma attribute will be cached.
@@ -1468,6 +1470,9 @@ class Person(
             cached.
         :param need_location: The location attribute will be cached.
         :param need_archive: The archive attribute will be cached.
+        :param need_preferred_email: The preferred email attribute will be
+            cached.
+        :param need_validity: The is_valid attribute will be cached.
         """
         # TODO: consolidate this with getMembersWithPreferredEmails.
         #       The difference between the two is that
@@ -1507,8 +1512,22 @@ class Person(
             columns.append(Archive)
             conditions = And(conditions,
                 Or(Archive.id == None, And(
-                Archive.id == Select(Min(Archive.id), Archive.owner == Person.id, Archive),
+                Archive.id == Select(Min(Archive.id),
+                    Archive.owner == Person.id, Archive),
                 Archive.purpose == ArchivePurpose.PPA)))
+        if need_preferred_email:
+            # Teams don't have email.
+            origin.append(
+                LeftJoin(EmailAddress, EmailAddress.person == Person.id))
+            columns.append(EmailAddress)
+            conditions = And(conditions,
+                Or(EmailAddress.status == None,
+                    EmailAddress.status == EmailAddressStatus.PREFERRED))
+        if need_validity:
+            # May find invalid persons
+            origin.append(
+                LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id))
+            columns.append(ValidPersonCache)
         if len(columns) == 1:
             columns = columns[0]
             # Return a simple ResultSet
@@ -1543,6 +1562,15 @@ class Person(
                 archive = row[index]
                 index += 1
                 result._archive_cached = archive
+            #-- preferred email caching
+            if need_preferred_email:
+                email = row[index]
+                index += 1
+                result._preferredemail_cached = email
+            if need_validity:
+                valid = row[index]
+                index += 1
+                result._is_valid_person_cached = valid is not None
             return result
         return DecoratedResultSet(raw_result, result_decorator=prepopulate_person)
 
