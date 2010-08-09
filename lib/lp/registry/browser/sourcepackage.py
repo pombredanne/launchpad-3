@@ -373,6 +373,7 @@ class SourcePackageView:
 
     @property
     def cancel_url(self):
+        import pdb; pdb.set_trace()
         return canonical_url(self.context)
 
     def processForm(self):

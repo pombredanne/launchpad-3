@@ -254,6 +254,11 @@ LPS.use('node', 'lazr.effects', function(Y) {
       <metal:step fill-slot="extra_info">
       <div style="float: right;">Not sure what to do?
         <a href="https://help.launchpad.net/Feedback">Contact us</a>
+        <div style="border: 3px solid red"
+          tal:content="view/request/form/field.source_package_name
+            | nothing"/>
+        <div style="border: 3px solid green"
+          tal:content="view/request/source_package_name | nothing"/>
       </div>
 
       <div tal:condition="view/is_step/1">
@@ -299,7 +304,7 @@ LPS.use('node', 'lazr.effects', function(Y) {
           <img src="/@@/info" />
           There are similar projects already registered in Launchpad.
           Is project
-          <strong><tal:displayname tal:replace="view/request/displayname" />
+          <strong><tal:displayname tal:replace="view/request/field.displayname" />
           (<tal:name  tal:replace="view/request/name" />)</strong>
           one of these?
           </div>
@@ -326,8 +331,8 @@ LPS.use('node', 'lazr.effects', function(Y) {
               tal:condition="view/search_results_count"
               >Registration details</h3>
           Select the licenses for project
-          <strong><tal:displayname tal:replace="view/request/displayname" />
-          (<tal:name  tal:replace="view/request/name" />)</strong>
+          <strong><tal:displayname tal:replace="view/request/field.displayname" />
+          (<tal:name  tal:replace="view/request/field.name" />)</strong>
           and complete the registration.  You may also update the project's
           title and summary.
         </div>

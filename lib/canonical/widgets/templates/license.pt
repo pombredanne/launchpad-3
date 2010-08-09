@@ -76,6 +76,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 target.slide.run();
             }, target_name);
         }
+        make_slider({which: 'copyright'});
         make_slider({which: 'recommended'});
         make_slider({which: 'more'});
         make_slider({which: 'deprecated'});
@@ -136,6 +137,23 @@ YUI().use('node', 'lazr.effects', function(Y) {
 //]]>
 </script>
 <div style="color: black">
+  <tal:copyright condition="view/source_package_release">
+    <a href="" id="copyright-expand" class="js-action">
+      <img id="copyright-expand-arrow"
+            src="/@@/treeCollapsed"
+            title="Copyright info from source package"
+            alt="Copyright info from source package"
+            tal:attributes="count view/more_count"/>
+      Copyright info from source package
+    </a>
+    <div id="copyright">
+      <div
+        tal:content="structure view/source_package_release/@@+copyright"
+        style="overflow: auto; max-width: 60em; max-height: 20em;
+              background: #f8f8f8"
+        />
+    </div>
+  </tal:copyright>
 
   Select the license(s) under which you release your project.
   <div tal:condition="view/allow_pending_license"

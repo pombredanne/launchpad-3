@@ -49,13 +49,14 @@ from operator import attrgetter
 
 import pytz
 
+
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser import CheckBoxWidget, TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
-from zope.schema import Bool, Choice
+from zope.schema import Bool, Choice, Text
 from zope.schema.vocabulary import (
     SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import removeSecurityProxy
@@ -69,6 +70,8 @@ from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
+
+
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
 from lp.blueprints.browser.specificationtarget import (
@@ -83,6 +86,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductReviewSearch, License
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from lp.registry.interfaces.productrelease import (
@@ -1849,6 +1853,18 @@ class ProjectAddStepOne(StepView):
     step_description = 'Project basics'
     search_results_count = 0
 
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(ProjectAddStepOne, self).setUpFields()
+        self.form_fields = (
+            self.form_fields +
+            form.Fields(Text(__name__='source_package_name', required=False)))
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`."""
+        super(ProjectAddStepOne, self).setUpWidgets()
+        self.widgets['source_package_name'].visible = False
+
     @property
     def _return_url(self):
         """This view is using the hidden _return_url field.
@@ -1872,9 +1888,6 @@ class ProjectAddStepOne(StepView):
     def main_action(self, data):
         """See `MultiStepView`."""
         self.next_step = self._next_step
-        self.request.form['displayname'] = data['displayname']
-        self.request.form['name'] = data['name'].lower()
-        self.request.form['summary'] = data['summary']
 
     # Make this a safe_action, so that the sourcepackage page can skip
     # the first step with a link (GET request) providing form values.
@@ -1921,7 +1934,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpFields()
         self.form_fields = (self.form_fields +
-                            self._createDisclaimMaintainerField())
+                            self._createDisclaimMaintainerField() +
+                            self._createSourcePackageNameField())
 
     def _createDisclaimMaintainerField(self):
         """Return a Bool field for disclaiming maintainer.
@@ -1944,6 +1958,10 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
                      "can be found.")),
             render_context=self.render_context)
 
+    def _createSourcePackageNameField(self):
+        return form.Fields(
+            Text(__name__='source_package_name', required=False))
+
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpWidgets()
@@ -1954,12 +1972,23 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
                                      "this will be the project's URL.")
         self.widgets['displayname'].visible = False
 
+        self.widgets['source_package_name'].visible = False
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        source_package_name_set = getUtility(ISourcePackageNameSet)
+        source_package_name = self.request.form['field.source_package_name']
+        if source_package_name is not None:
+            release_list = ubuntu.getCurrentSourceReleases(
+                [source_package_name_set[source_package_name]])
+            if len(release_list) != 0:
+                self.widgets['licenses'].source_package_release = (
+                    release_list.items()[0][1])
+
     @cachedproperty
     def _search_string(self):
         """Return the ORed terms to match."""
-        search_text = SPACE.join((self.request.form['name'],
-                                  self.request.form['displayname'],
-                                  self.request.form['summary']))
+        search_text = SPACE.join((self.request.form['field.name'],
+                                  self.request.form['field.displayname'],
+                                  self.request.form['field.summary']))
         # OR all the terms together.
         return OR.join(search_text.split())
 
