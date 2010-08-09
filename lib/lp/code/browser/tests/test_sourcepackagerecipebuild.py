@@ -9,6 +9,7 @@ __metaclass__ = type
 from mechanize import LinkNotFoundError
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -96,6 +97,10 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             LinkNotFoundError,
             browser.getLink, 'Cancel build')
 
+        self.assertRaises(
+            Unauthorized,
+            self.getUserBrowser, build_url + '/+cancel', user=self.chef)
+
     def test_cancel_build_wrong_state(self):
         """If the build isn't queued, you can't cancel it."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
@@ -175,6 +180,10 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Rescore build')
+
+        self.assertRaises(
+            Unauthorized,
+            self.getUserBrowser, build_url + '/+rescore', user=self.chef)
 
     def test_rescore_build_wrong_state(self):
         """If the build isn't queued, you can't rescore it."""

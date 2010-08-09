@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from textwrap import dedent
 
 import transaction
+from mechanize import LinkNotFoundError
 from pytz import utc
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -922,3 +923,19 @@ class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
         self.assertEqual(
             'http://code.launchpad.dev/~chef',
             browser.url)
+
+    def test_delete_recipe_no_permissions(self):
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+        nopriv_person = self.factory.makePerson()
+        recipe_url = canonical_url(recipe)
+
+        browser = self.getUserBrowser(
+            recipe_url, user=nopriv_person)
+
+        self.assertRaises(
+            LinkNotFoundError,
+            browser.getLink, 'Delete recipe')
+
+        self.assertRaises(
+            Unauthorized,
+            self.getUserBrowser, recipe_url + '/+delete', user=nopriv_person)
