@@ -1959,16 +1959,23 @@ class Person(
         store = Store.of(self)
         origin = [
             Person, 
-            Join(TeamMembership, Person.id == TeamMembership.personID),
-            Join(TeamParticipation, TeamMembership.teamID == TeamParticipation.teamID)]
+            Join(TeamMembership, Person.id == TeamMembership.teamID),
+            Join(TeamParticipation, Person.id == TeamParticipation.teamID)]
         find_objects = (Person, TeamMembership)
         return store.using(*origin).find(find_objects,
-            And(TeamParticipation.person == self,
+            And(
+                TeamParticipation.person == self,
                 TeamParticipation.team != self,
-                Or(TeamMembership.person != self,
-                    Not(TeamMembership.status.is_in([
-                        TeamMembershipStatus.APPROVED, 
-                        TeamMembershipStatus.ADMIN])))))
+                Or(
+                    TeamMembership.person != self,
+                    Not(
+                        TeamMembership.status.is_in([
+                            TeamMembershipStatus.APPROVED, 
+                            TeamMembershipStatus.ADMIN])
+                    )
+                )
+            )
+        )
 
     @property
     def teams_with_icons(self):
