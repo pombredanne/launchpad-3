@@ -846,7 +846,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Use the facility provided by IBinaryPackageBuildSet to
         # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            arch_ids, build_state, name, pocket)
+            self, arch_ids, build_state, name, pocket)
 
     def getSourcePackageCaches(self, archive=None):
         """See `IDistribution`."""
