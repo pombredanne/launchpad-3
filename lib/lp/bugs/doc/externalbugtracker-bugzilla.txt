@@ -311,7 +311,7 @@ returned.
 TODO
 
     >>> external_bugzilla.convertRemoteImportance('IMMEDIATE BLOCKER').title
-    'Unknown'
+    'Critical'
 
 
 == Updating Bug Watches ==

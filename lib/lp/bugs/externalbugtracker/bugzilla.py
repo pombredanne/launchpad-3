@@ -52,7 +52,7 @@ class Bugzilla(ExternalBugTracker):
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
         self.remote_bug_status = {}
-        self.remote_bug_importance = {}
+        self.remote_bug_importance = {'1': 'NORMAL NORMAL', '2': 'NORMAL NORMAL'}
         self.remote_bug_product = {}
 
     @ensure_no_transaction
@@ -210,6 +210,10 @@ class Bugzilla(ExternalBugTracker):
 
         return tuple(int(number) for number in version_numbers)
 
+    _importance_lookup = {
+        'IMMEDIATE BLOCKER': BugTaskImportance.CRITICAL,
+        }
+
     def convertRemoteImportance(self, remote_importance):
         """See `ExternalBugTracker`.
 
@@ -217,6 +221,8 @@ class Bugzilla(ExternalBugTracker):
         existing functionality is preserved. As a result,
         BugTaskImportance.UNKNOWN will always be returned.
         """
+        if remote_importance in self._importance_lookup:
+            return self._importance_lookup[remote_importance]
         return BugTaskImportance.UNKNOWN
 
     _status_lookup_titles = 'Bugzilla status', 'Bugzilla resolution'
@@ -365,9 +371,6 @@ class Bugzilla(ExternalBugTracker):
                     resolution = resolution_nodes[0].childNodes[0].data
                     status += ' %s' % resolution
             self.remote_bug_status[bug_id] = status
-
-            # TODO
-            self.remote_bug_importance[bug_id] = "NORMAL NORMAL"
 
             product_nodes = bug_node.getElementsByTagName('bz:product')
             assert len(product_nodes) <= 1, (
