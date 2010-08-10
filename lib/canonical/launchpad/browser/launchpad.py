@@ -62,8 +62,7 @@ from canonical.launchpad.webapp import (
     stepto)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    GoneError, IBreadcrumb, ILaunchBag, ILaunchpadRoot,
-    INavigationMenu, NotFoundError, POSTToNonCanonicalURL)
+    IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import PageTemplateContextsAPI
@@ -73,6 +72,7 @@ from canonical.widgets.project import ProjectScopeWidget
 
 from lazr.uri import URI
 
+from lp.app.errors import GoneError, NotFoundError, POSTToNonCanonicalURL
 from lp.app.interfaces.headings import IMajorHeadingView
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.soyuz.interfaces.binarypackagename import (
@@ -80,12 +80,11 @@ from lp.soyuz.interfaces.binarypackagename import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.code.errors import (
+    CannotHaveLinkedBranch, InvalidNamespace, NoLinkedBranch)
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchnamespace import InvalidNamespace
 from lp.code.interfaces.codeimport import ICodeImportSet
-from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, NoLinkedBranch)
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet

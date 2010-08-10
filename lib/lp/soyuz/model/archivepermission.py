@@ -22,6 +22,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import sqlvalues, SQLBase
 
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.archive import ComponentNotFound, IArchive
 from lp.soyuz.interfaces.archivepermission import (
@@ -33,7 +34,6 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from lp.soyuz.interfaces.packageset import IPackageset
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
-from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
