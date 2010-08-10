@@ -3093,7 +3093,7 @@ class PersonParticipationView(LaunchpadView):
             else:
                 subscribed = 'Subscribed'
         else:
-            subscribed = '&mdash;' 
+            subscribed = '&mdash;'
         return dict(
             displayname=team.displayname, team=team, membership=membership,
             role=role, via=via, subscribed=subscribed)
@@ -3105,7 +3105,7 @@ class PersonParticipationView(LaunchpadView):
                 for membership in self.context.myactivememberships
                 if check_permission('launchpad.View', membership.team)]
         membership_set = getUtility(ITeamMembershipSet)
-        for team in self.context.teams_indirectly_participated_in:
+        for team, foo in self.context.teams_indirectly_participated_in:
             if not check_permission('launchpad.View', team):
                 continue
             # The key points of the path for presentation are:
@@ -3600,8 +3600,8 @@ class PersonEditSSHKeysView(LaunchpadView):
 
     def add_ssh(self):
         sshkey = self.request.form.get('sshkey')
-	try:
-      	    getUtility(ISSHKeySet).new(self.user, sshkey)
+        try:
+            getUtility(ISSHKeySet).new(self.user, sshkey)
         except SSHKeyAdditionError:
             self.error_message = structured('Invalid public key')
         except SSHKeyCompromisedError:
