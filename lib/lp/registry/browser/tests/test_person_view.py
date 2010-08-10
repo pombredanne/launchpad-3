@@ -562,7 +562,7 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
         view = create_initialized_view(
             user, '+deactivate-account', form=self.form)
         self.assertEqual([], view.errors)
-        notifications =  view.request.response.notifications
+        notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
         self.assertEqual(
             'Your account has been deactivated.', notifications[0].message)
