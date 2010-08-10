@@ -2077,6 +2077,40 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_translation_message.sync()
         return translation_message
 
+    def _makeTranslationsDict(self, translations):
+        """Make sure translations are in the right format (dict, not list).
+
+        Create an arbitrary single translation if translations are None.
+        """
+        if translations is None:
+            return {0: self.getUniqueString()}
+        if isinstance(translations, (tuple, list)):
+            return dict(enumerate(translations))
+        assert isinstance(translations, dict)
+        return translations
+
+    def makeSuggestion(self, pofile=None, potmsgset=None, translator=None,
+                       translations=None, date_updated=None):
+        """Make a new suggested `TranslationMessage` in the given PO file."""
+        if pofile is None:
+            pofile = self.makePOFile('sr')
+        if potmsgset is None:
+            potmsgset = self.makePOTMsgSet(pofile.potemplate)
+            potmsgset.setSequence(pofile.potemplate, 1)
+        if translator is None:
+            translator = self.makePerson()
+        translations=self._makeTranslationsDict(translations)
+        translation_message = potmsgset.submitSuggestion(
+            pofile, translator, translations)
+        assert translation_message is not None, (
+            "Cannot make suggestion on translation credits POTMsgSet.")
+        if date_updated is not None:
+            naked_translation_message = removeSecurityProxy(
+                translation_message)
+            naked_translation_message.date_created = date_updated
+            naked_translation_message.sync()
+        return translation_message
+
     def makeSharedTranslationMessage(self, pofile=None, potmsgset=None,
                                      translator=None, suggestion=False,
                                      reviewer=None, translations=None,
