@@ -1394,7 +1394,6 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
         self.assertEqual(translation[0], suggestion.msgstr0.translation)
         self.assertEqual(None, suggestion.msgstr1)
         self.assertEqual(pofile.language, suggestion.language)
-        self.assertEqual(pofile.variant, suggestion.variant)
         self.assertEqual(None, suggestion.potemplate)
         self.assertEqual(pofile.potemplate.owner, suggestion.submitter)
         self.assertEqual(potmsgset, suggestion.potmsgset)
@@ -1538,21 +1537,6 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
         suggestion2 = potmsgset.submitSuggestion(pofile2, owner, translation)
 
         self.assertEqual(suggestion, suggestion2)
-
-    def test_different_variants(self):
-        # Identical suggestions for different variants of the same
-        # language lead separate lives.
-        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
-        owner = pofile.potemplate.owner
-        pofile2 = self.factory.makePOFile(
-            pofile.language.code, variant=u'Latn',
-            potemplate=pofile.potemplate)
-        translation = {0: self.factory.getUniqueString()}
-
-        suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
-        suggestion2 = potmsgset.submitSuggestion(pofile2, owner, translation)
-
-        self.assertNotEqual(suggestion, suggestion2)
 
     def test_credits_message(self):
         # Suggestions for translation-credits messages are ignored.

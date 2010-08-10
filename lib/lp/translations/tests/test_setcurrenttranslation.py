@@ -1141,13 +1141,12 @@ class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
         # A POFile in the same context as self.pofile, used for diverged
         # translations.
         self.diverging_pofile = sharing_potemplate.getPOFileByLang(
-            self.pofile.language.code, self.pofile.variant)
+            self.pofile.language.code)
 
         # A POFile in a different context from self.pofile and
         # self.diverging_pofile.
         self.other_pofile = self.factory.makePOFile(
-            language_code=self.pofile.language.code,
-            variant=self.pofile.variant)
+            language_code=self.pofile.language.code)
 
         self.potmsgset = self.factory.makePOTMsgSet(
             potemplate=potemplate, sequence=1)
@@ -1176,7 +1175,7 @@ class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
 #        # A POFile in the same context as self.pofile, used for diverged
 #        # translations.
 #        self.diverging_pofile = sharing_potemplate.getPOFileByLang(
-#            self.pofile.language.code, self.pofile.variant)
+#            self.pofile.language.code)
 #
 #        # A POFile in a different context from self.pofile and
 #        # self.diverging_pofile.
@@ -1187,8 +1186,7 @@ class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
 #            sourcepackagename=sourcepackagename)
 #        self.other_pofile = self.factory.makePOFile(
 #            potemplate=ubuntu_template,
-#            language_code=self.pofile.language.code,
-#            variant=self.pofile.variant)
+#            language_code=self.pofile.language.code)
 #
 #        self.potmsgset = self.factory.makePOTMsgSet(potemplate=potemplate,
 #                                                    sequence=1)

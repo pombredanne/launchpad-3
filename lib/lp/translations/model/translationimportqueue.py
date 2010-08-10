@@ -882,7 +882,7 @@ class TranslationImportQueue:
         return (
             format, translation_importer.getTranslationFormatImporter(format))
 
-    def addOrUpdateEntry(self, path, content, is_published, importer,
+    def addOrUpdateEntry(self, path, content, from_upstream, importer,
                          sourcepackagename=None, distroseries=None,
                          productseries=None, potemplate=None, pofile=None,
                          format=None):

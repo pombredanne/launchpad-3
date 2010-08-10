@@ -982,9 +982,9 @@ class POTMsgSet(SQLBase):
             for form, potranslation in potranslations.iteritems())
 
         message = TranslationMessage(
-            potmsgset=self, language=pofile.language, variant=pofile.variant,
-            origin=RosettaTranslationOrigin.ROSETTAWEB, submitter=submitter,
-            **forms)
+            potmsgset=self, language=pofile.language,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            submitter=submitter, **forms)
 
         template = pofile.potemplate
         submitter.assignKarma(
@@ -1065,7 +1065,6 @@ class POTMsgSet(SQLBase):
             potemplate=potemplate,
             pofile=pofile,
             language=pofile.language,
-            variant=pofile.variant,
             origin=origin,
             submitter=submitter,
             validation_status=TranslationValidationStatus.OK,

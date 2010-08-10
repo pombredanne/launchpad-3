@@ -425,7 +425,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         if new_value and not self.is_current_ubuntu:
             incumbent = self.potmsgset.getCurrentTranslationMessage(
-                self.potemplate, self.language, self.variant)
+                self.potemplate, self.language)
             if incumbent == self:
                 return
             if (incumbent is not None and
@@ -440,7 +440,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         if new_value and not self.is_current_upstream:
             incumbent = self.potmsgset.getImportedTranslationMessage(
-                self.potemplate, self.language, self.variant)
+                self.potemplate, self.language)
             if incumbent == self:
                 return
             if (incumbent is not None and

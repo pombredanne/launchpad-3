@@ -34,8 +34,7 @@ class TestTranslationMessageHelpers(TestCaseWithFactory):
 
         # A POFile in a different context from self.pofile.
         self.other_pofile = self.factory.makePOFile(
-            language_code=self.pofile.language.code,
-            variant=self.pofile.variant)
+            language_code=self.pofile.language.code)
 
     def test_make_translationmessage(self):
         translations = [u"testing"]
