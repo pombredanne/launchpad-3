@@ -93,7 +93,7 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         master_bugtask = getUtility(IBugTaskSet).createTask(
             bug, productseries=product.development_focus, owner=product.owner)
         milestone = self.factory.makeMilestone(
-            productseries=product.development_focus, name="red")
+            productseries=product.development_focus)
         login_person(product.owner)
         master_bugtask.transitionToMilestone(milestone, product.owner)
         form = {
