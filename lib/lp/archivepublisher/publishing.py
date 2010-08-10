@@ -483,7 +483,7 @@ class Publisher(object):
         release_file["Description"] = drsummary
 
         for f in sorted(list(all_files), key=os.path.dirname):
-            entry = self._createSumLine(full_name, f)
+            entry = self._readIndexFileContents(full_name, f)
             if entry is None:
                 continue
             release_file.setdefault("MD5Sum", []).append(
@@ -567,11 +567,12 @@ class Publisher(object):
 
         return clean_architecture
 
-    def _createSumLine(self, distroseries_name, file_name):
-        """Generate out a checksum entry.
+    def _readIndexFileContents(self, distroseries_name, file_name):
+        """Read an index files' contents.
 
-        Writes a checksum to the given file for the given filename in
-        the given form.
+        :param distroseries_name: Distro series name
+        :param file_name: Filename relative to the parent container directory.
+        :return: File contents, or None if the file could not be found.
         """
         full_name = os.path.join(self._config.distsroot,
                                  distroseries_name, file_name)
