@@ -48,7 +48,7 @@ from sqlobject import (
     StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
-from storm.expr import And, In, Join, LeftJoin, Lower, Not, Or, Select, SQL
+from storm.expr import And, In, Join, LeftJoin, Lower, Not, Or, SQL
 from storm.info import ClassAlias
 
 from canonical.config import config
