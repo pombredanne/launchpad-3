@@ -150,7 +150,7 @@ class POTemplate(SQLBase, RosettaStats):
     description = StringCol(dbName='description', notNull=False, default=None)
     copyright = StringCol(dbName='copyright', notNull=False, default=None)
     datecreated = UtcDateTimeCol(dbName='datecreated', default=DEFAULT)
-    path = StringCol(dbName='path', notNull=False, default=None)
+    path = StringCol(dbName='path', notNull=True)
     source_file = ForeignKey(foreignKey='LibraryFileAlias',
         dbName='source_file', notNull=False, default=None)
     source_file_format = EnumCol(dbName='source_file_format',

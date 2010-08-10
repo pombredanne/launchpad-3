@@ -182,7 +182,7 @@ class IPOTemplate(IRosettaStats):
     path = exported(TextLine(
         title=_(
             "Path of the template in the source tree, including filename."),
-        required=False))
+        required=True))
 
     source_file = Object(
         title=_('Source file for this translation template'),
