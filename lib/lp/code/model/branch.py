@@ -1320,6 +1320,6 @@ def compose_public_url(scheme, unique_name, suffix=None):
     assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
     host = URI(config.codehosting.supermirror_root).host
     path = '/' + urlutils.escape(unique_name)
-    if suffix is not None:
+    if suffix:
         path = os.path.join(path, suffix)
     return str(URI(scheme=scheme, host=host, path=path))

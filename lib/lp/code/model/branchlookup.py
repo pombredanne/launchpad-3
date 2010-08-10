@@ -367,8 +367,8 @@ class BranchLookup:
             suffix = '/'.join(segments)
             if not check_permission('launchpad.View', branch):
                 raise NoSuchBranch(path)
-            if suffix == '':
-                suffix = None
+        if suffix == '':
+            suffix = None
         return branch, suffix
 
     def _getLinkedBranch(self, provided):

@@ -538,7 +538,7 @@ class TestGetByLPPath(TestCaseWithFactory):
             registrant,
             ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
         self.assertEqual(
-            (branch, u''),
+            (branch, None),
             self.branch_lookup.getByLPPath(
                 '%s/%s' % (
                     distro_package.distribution.name,
