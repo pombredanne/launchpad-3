@@ -8,6 +8,7 @@ __metaclass__ = type
 import os
 import subprocess
 import sys
+import transaction
 from zope.component import getUtility
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -19,7 +20,7 @@ from lp.testing import TestCaseWithFactory
 
 from canonical.config import config
 from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests import login
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 
@@ -34,15 +35,18 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.ubuntutest = distribution_set['ubuntutest']
         self.ubuntu = distribution_set['ubuntu']
         self.hoary = self.ubuntu['hoary']
-        logout()
 
     def _create_distroseries(self, parent_series):
-        login("foo.bar@canonical.com")
         foobuntu = self.ubuntutest.newSeries(
             'foobuntu', 'FooBuntu', 'The Foobuntu', 'yeck', 'doom',
             '888', parent_series, self.hoary.owner)
-        logout()
         return foobuntu
+
+    def _set_pending_to_failed(self, distroseries):
+        pending_builds = distroseries.getBuildRecords(
+            BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
+        for build in pending_builds:
+            build.status = BuildStatus.FAILEDTOBUILD
 
     def test_failure_with_no_parent_series(self):
         foobuntu = self._create_distroseries(None)
@@ -50,42 +54,34 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertRaises(InitialisationError, ids.check)
 
     def test_failure_for_already_released_distroseries(self):
-        login("foo.bar@canonical.com")
         ids = InitialiseDistroSeries(self.ubuntutest['breezy-autotest'])
         self.assertRaises(InitialisationError, ids.check)
-        logout()
 
     def test_failure_with_pending_builds(self):
         foobuntu = self._create_distroseries(self.hoary)
-        login("foo.bar@canonical.com")
+        transaction.commit()
         ids = InitialiseDistroSeries(foobuntu)
         self.assertRaises(InitialisationError, ids.check)
-        logout()
 
     def test_failure_with_queue_items(self):
         foobuntu = self._create_distroseries(
-            self.ubuntutest['breezy-autotest'])
-        login('foo.bar@canonical.com')
+            self.ubuntu['breezy-autotest'])
         ids = InitialiseDistroSeries(foobuntu)
         self.assertRaises(InitialisationError, ids.check)
-        logout()
 
     def test_initialise(self):
         foobuntu = self._create_distroseries(self.hoary)
-        login("foo.bar@canonical.com")
-        pending_builds = self.hoary.getBuildRecords(
-            BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
-        for build in pending_builds:
-            build.status = BuildStatus.FAILEDTOBUILD
+        self._set_pending_to_failed(self.hoary)
+        transaction.commit()
         ids = InitialiseDistroSeries(foobuntu)
         ids.check()
         ids.initialise()
         hoary_pmount_pubs = self.hoary.getPublishedReleases('pmount')
         foobuntu_pmount_pubs = foobuntu.getPublishedReleases('pmount')
         self.assertEqual(len(hoary_pmount_pubs), len(foobuntu_pmount_pubs))
-        hoary_i386_pmount_pubs = self.hoary['i386'].getPublishedReleases(
+        hoary_i386_pmount_pubs = self.hoary['i386'].getReleasedPackages(
             'pmount')
-        foobuntu_i386_pmount_pubs = foobuntu['i386'].getPublishedReleases(
+        foobuntu_i386_pmount_pubs = foobuntu['i386'].getReleasedPackages(
             'pmount')
         self.assertEqual(
             len(hoary_i386_pmount_pubs), len(foobuntu_i386_pmount_pubs))
@@ -131,6 +127,8 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
 
     def test_script(self):
         foobuntu = self._create_distroseries(self.hoary)
+        self._set_pending_to_failed(self.hoary)
+        transaction.commit()
         ifp = os.path.join(
             config.root, 'scripts', 'ftpmaster-tools',
             'initialise-from-parent.py')
@@ -138,9 +136,9 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             [sys.executable, ifp, "-vv", "-d", "ubuntutest", "foobuntu"],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
-        print stderr
         self.assertEqual(process.returncode, 0)
-        login("foo.bar@canonical.com")
+        self.assertTrue(
+            "DEBUG   Committing transaction." in stderr.split('\n'))
         hoary_pmount_pubs = self.hoary.getPublishedReleases('pmount')
         foobuntu_pmount_pubs = foobuntu.getPublishedReleases('pmount')
         self.assertEqual(len(hoary_pmount_pubs), len(foobuntu_pmount_pubs))
