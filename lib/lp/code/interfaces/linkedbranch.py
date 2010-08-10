@@ -57,7 +57,6 @@ def get_linked_to_branch(provided):
             # pocket.
             provided = provided[0]
         raise CannotHaveLinkedBranch(provided)
-    branch = has_linked_branch.branch
-    if branch is None:
+    if has_linked_branch.branch is None:
         raise NoLinkedBranch(provided)
     return has_linked_branch

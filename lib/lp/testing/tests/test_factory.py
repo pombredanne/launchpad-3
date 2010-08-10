@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.code.enums import CodeImportReviewStatus
+from lp.code.enums import BranchType, CodeImportReviewStatus
 from lp.testing import TestCaseWithFactory
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.testing.factory import is_security_proxied_or_harmless
@@ -21,6 +21,12 @@ from lp.testing.factory import is_security_proxied_or_harmless
 class TestFactory(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_makeBranch_initialMirrorRequest(self):
+        # The default 'next_mirror_time' for a newly created hosted branch
+        # should be None.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        self.assertIs(None, branch.next_mirror_time)
 
     def test_makeCodeImportNoStatus(self):
         # If makeCodeImport is not given a review status, it defaults to NEW.

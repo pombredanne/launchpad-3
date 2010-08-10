@@ -414,6 +414,8 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual(faults.NotFound(message), fault)
 
     def test_createBranch_using_branch_alias(self):
+        # Branches can be created using the branch alias and the full unique
+        # name of the branch.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         branch_name = self.factory.getUniqueString('branch-name')
@@ -425,9 +427,8 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual(unique_name, branch.unique_name)
 
     def test_createBranch_using_branch_alias_then_lookup(self):
-        # XXX: Comment here.
-
-        # XXX: This test currently fails.
+        # A branch newly created using createBranch is immediately traversable
+        # using translatePath.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         branch_name = self.factory.getUniqueString('branch-name')
@@ -456,7 +457,8 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual(ICanHasLinkedBranch(product).branch, branch)
 
     def test_createBranch_using_branch_alias_product_then_lookup(self):
-        # XXX: Comment here.
+        # A branch newly created using createBranch using a product alias is
+        # immediately traversable using translatePath.
         product = self.factory.makeProduct()
         owner = product.owner
         path = escape(u'/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name))
@@ -520,12 +522,6 @@ class CodehostingTest(TestCaseWithFactory):
         fault = self.codehosting_api.createBranch(owner.id, escape(path))
         message = "No such product series: 'nip'."
         self.assertEqual(faults.NotFound(message), fault)
-
-    def test_initialMirrorRequest(self):
-        # The default 'next_mirror_time' for a newly created hosted branch
-        # should be None.
-        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        self.assertIs(None, branch.next_mirror_time)
 
     def test_requestMirror(self):
         # requestMirror should set the next_mirror_time field to be the
@@ -950,7 +946,6 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertNotFound(requester, path)
 
     def test_translatePath_branch_alias_bzrdir(self):
-        # XXX: Currently fails
         # translatePath('/+branch/.bzr') *must* return not found, otherwise
         # bzr will look for it and we don't have a global bzr dir.
         requester = self.factory.makePerson()

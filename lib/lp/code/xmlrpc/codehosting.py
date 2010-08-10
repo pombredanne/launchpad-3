@@ -179,7 +179,6 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             if not branch_path.startswith('/'):
                 return faults.InvalidPath(branch_path)
             escaped_path = unescape(branch_path.strip('/'))
-
             try:
                 namespace, branch_name, link_func, path = (
                     self._getBranchNamespaceExtras(escaped_path, requester))
@@ -197,7 +196,6 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                     "Project '%s' does not exist." % e.name)
             except NameLookupFailed, e:
                 return faults.NotFound(str(e))
-
             try:
                 branch = namespace.createBranch(
                     BranchType.HOSTED, branch_name, requester)
@@ -307,9 +305,6 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                 first = unescape(first)
                 # Is it a branch?
                 if first.startswith(BRANCH_ALIAS_PREFIX + '/'):
-                    # XXX: 'first' will start with BRANCH_ALIAS_PREFIX on
-                    # every iteration of the loop or it never will. So, change
-                    # this to be more efficient.
                     try:
                         # translatePath('/+branch/.bzr') *must* return not
                         # found, otherwise bzr will look for it and we don't
@@ -320,10 +315,9 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                         branch, trailing = getUtility(
                             IBranchLookup).getByLPPath(lp_path)
                     except (NameLookupFailed, InvalidNamespace, NoLinkedBranch):
-                        # XXX: I don't know if this is a good idea. The reason
-                        # we're doing it is that getByLPPath thinks that
-                        # 'foo/.bzr' is a request for the '.bzr' series of a
-                        # product. -- jml
+                        # The reason we're doing it is that getByLPPath thinks
+                        # that 'foo/.bzr' is a request for the '.bzr' series
+                        # of a product.
                         continue
                     if trailing is None:
                         trailing = ''
