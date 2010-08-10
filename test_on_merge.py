@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests that get run automatically on a merge."""
@@ -13,7 +13,7 @@ from StringIO import StringIO
 import psycopg2
 from subprocess import Popen, PIPE, STDOUT
 from signal import SIGKILL, SIGTERM
-from select import select
+import select
 
 # The TIMEOUT setting (expressed in seconds) affects how long a test will run
 # before it is deemed to be hung, and then appropriately terminated.
@@ -155,7 +155,19 @@ def main():
     # stderr for too long.
     open_readers = set([proc.stdout])
     while open_readers:
-        rlist, wlist, xlist = select(open_readers, [], [], TIMEOUT)
+        # blocks for a long time and can easily fail with EINTR
+        # <https://bugs.launchpad.net/launchpad/+bug/615740> - catching
+        # it just here is not the perfect fix (other syscalls might be
+        # interrupted) but is pragmatic
+        while True:
+            try:
+                rlist, wlist, xlist = select.select(open_readers, [], [], TIMEOUT)
+                break
+            except select.error, e:
+                if e.errno == errno.EINTR:
+                    continue
+                else:
+                    raise
 
         if len(rlist) == 0:
             if proc.poll() is not None:
