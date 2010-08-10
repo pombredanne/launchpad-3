@@ -981,13 +981,18 @@ class POTemplate(SQLBase, RosettaStats):
             yield VPOTExport(self, *row)
 
     @property
-    def translation_side_traits(self):
+    def translation_side(self):
         """See `IPOTemplate`."""
         if self.productseries is not None:
-            side = TranslationSide.UPSTREAM
+            return TranslationSide.UPSTREAM
         else:
-            side = TranslationSide.UBUNTU
-        return getUtility(ITranslationSideTraitsSet).getTraits(side)
+            return TranslationSide.UBUNTU
+
+    @property
+    def translation_side_traits(self):
+        """See `IPOTemplate`."""
+        return getUtility(ITranslationSideTraitsSet).getTraits(
+            self.translation_side)
 
 
 class POTemplateSubset:
