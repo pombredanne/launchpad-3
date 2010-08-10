@@ -85,7 +85,7 @@ class TestPPAPackages(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def test_ppa_packages(self):
+    def test_ppa_packages_menu_is_enabled(self):
         joe = self.factory.makePerson()
         ppa = self.factory.makeArchive()
         login_person(joe)
