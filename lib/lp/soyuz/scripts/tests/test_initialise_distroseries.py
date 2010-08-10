@@ -123,7 +123,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             foobuntu['hppa'], foobuntu.main_archive), None)
         self.assertTrue(
             foobuntu.isSourcePackageFormatPermitted(
-            SourcePackageFormat.FORMAT_1_0))        
+            SourcePackageFormat.FORMAT_1_0))
 
     def test_script(self):
         foobuntu = self._create_distroseries(self.hoary)
@@ -142,4 +142,3 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         hoary_pmount_pubs = self.hoary.getPublishedReleases('pmount')
         foobuntu_pmount_pubs = foobuntu.getPublishedReleases('pmount')
         self.assertEqual(len(hoary_pmount_pubs), len(foobuntu_pmount_pubs))
-
