@@ -151,9 +151,8 @@ class POFileTranslationActions(WindmillTestCase):
         current_translation = self.factory.makeTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, translations=['current'])
         transaction.commit()
-        suggestion = self.factory.makeTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset,
-            translations=['suggestion'], suggestion=True)
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=potmsgset, translations=['suggestion'])
         transaction.commit()
         logout()
 
