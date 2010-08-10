@@ -1971,11 +1971,7 @@ class Person(
                     Not(
                         TeamMembership.status.is_in([
                             TeamMembershipStatus.APPROVED, 
-                            TeamMembershipStatus.ADMIN])
-                    )
-                )
-            )
-        )
+                            TeamMembershipStatus.ADMIN])))))
 
     @property
     def teams_with_icons(self):

@@ -44,16 +44,17 @@ class TestPersonTeams(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+
     def test_teams_indirectly_participated_in(self):
         a_team = self.factory.makeTeam(name='a')
         b_team = self.factory.makeTeam(name='b', owner=a_team)
         c_team = self.factory.makeTeam(name='c', owner=b_team)
         login_person(a_team.teamowner)
-        transaction.commit()
-        indirect_teams = a_team.teamowner.teams_indirectly_participated_in
-        
-        #we expect that a_team.teamowner is in b_team and c_team indirectly.
-        #ateam_owner should not be in a_team indirectly
+        a_team.addMember(self.user, a_team.teamowner)
+        indirect_teams = self.user.teams_indirectly_participated_in
         self.assertEqual(2, indirect_teams.count())
         teams = [ind_team[0] for ind_team in indirect_teams]
         self.assertTrue((b_team in teams) and
