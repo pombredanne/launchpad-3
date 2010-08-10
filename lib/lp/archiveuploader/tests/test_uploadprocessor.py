@@ -37,6 +37,7 @@ from lp.soyuz.model.publishing import (
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
+from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
 from canonical.launchpad.ftests import import_public_test_keys
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
@@ -184,15 +185,13 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             name, 'Breezy Badger',
             'The Breezy Badger', 'Black and White', 'Someone',
             '5.10', bat, bat.owner)
-        breezy_i386 = self.breezy.newArch(
-            'i386', bat['i386'].processorfamily, True, self.breezy.owner)
-        self.breezy.nominatedarchindep = breezy_i386
-
-        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
-        breezy_i386.addOrUpdateChroot(fake_chroot)
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
-        self.breezy.initialiseFromParent()
+        ids = InitialiseDistroSeries(self.breezy)
+        ids.initialise()
+
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        self.breezy['i386'].addOrUpdateChroot(fake_chroot)
 
         if permitted_formats is None:
             permitted_formats = [SourcePackageFormat.FORMAT_1_0]
