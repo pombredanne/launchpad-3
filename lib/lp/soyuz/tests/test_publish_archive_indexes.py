@@ -4,6 +4,7 @@
 """Test native archive index generation for Soyuz."""
 
 import apt_pkg
+from debian.deb822 import Packages, Sources
 import os
 import tempfile
 import unittest
@@ -313,7 +314,7 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
         # Avoid circular imports.
         from lp.soyuz.model.publishing import IndexStanzaFields
 
-        fields = IndexStanzaFields()
+        fields = IndexStanzaFields(Packages)
         fields.append('breakfast', 'coffee')
         fields.append('lunch', 'beef')
         fields.append('dinner', 'fish')
@@ -324,7 +325,7 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
             ['breakfast: coffee', 'lunch: beef', 'dinner: fish',
              ], fields.makeOutput().splitlines())
 
-        fields = IndexStanzaFields()
+        fields = IndexStanzaFields(Packages)
         fields.append('one', 'um')
         fields.append('three', 'tres')
         fields.append('two', 'dois')
@@ -336,9 +337,12 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
         # Special treatment for field named 'Files'
         # do not add a space between <name>:<value>
         # <value> will always start with a new line.
-        fields = IndexStanzaFields()
+        fields = IndexStanzaFields(Sources)
         fields.append('one', 'um')
-        fields.append('Files', '<no_sep>')
-
+        fields.append('Files', {
+            "md5sum": "foo",
+            "size": "42",
+            "name": "universe" })
         self.assertEqual(
-            ['one: um', 'Files:<no_sep>'], fields.makeOutput().splitlines())
+            ['one: um', 'Files:  foo 42 universe'],
+            fields.makeOutput().splitlines())
