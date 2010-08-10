@@ -3,6 +3,7 @@
 
 __all__ = [
     'FeatureController',
+    'NullFeatureController',
     ]
 
 
@@ -151,3 +152,13 @@ class FeatureController(object):
     def usedScopes(self):
         """Return {scope: active} for scopes that have been used so far."""
         return dict(self._known_scopes._known)
+
+
+class NullFeatureController(FeatureController):
+    """For use in testing: everything is turned off"""
+
+    def __init__(self):
+        FeatureController.__init__(self, lambda scope: None)
+
+    def _loadRules(self):
+        return []

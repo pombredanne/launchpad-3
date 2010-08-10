@@ -78,6 +78,10 @@ from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
 
 from canonical.lazr.timeout import set_default_timeout_function
 
+from lp.services.features.flags import (
+    NullFeatureController,
+    )
+
 
 class StepsToGo:
     """
@@ -833,6 +837,9 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
         self.needs_datetimepicker_iframe = False
         self.needs_json = False
         self.needs_gmap2 = False
+        # stub out the FeatureController that would normally be provided by
+        # the publication mechanism
+        self.features = NullFeatureController()
 
     @property
     def uuid(self):
