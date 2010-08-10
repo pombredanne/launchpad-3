@@ -64,9 +64,7 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplateSharingSubset,
     IPOTemplateSubset,
     LanguageNotFound)
-from lp.translations.interfaces.side import (
-    ITranslationSideTraitsSet,
-    TranslationSide)
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.translations.interfaces.translationexporter import (
@@ -987,12 +985,6 @@ class POTemplate(SQLBase, RosettaStats):
             return TranslationSide.UPSTREAM
         else:
             return TranslationSide.UBUNTU
-
-    @property
-    def translation_side_traits(self):
-        """See `IPOTemplate`."""
-        return getUtility(ITranslationSideTraitsSet).getTraits(
-            self.translation_side)
 
 
 class POTemplateSubset:

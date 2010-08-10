@@ -1085,8 +1085,9 @@ class POTMsgSet(SQLBase):
             **translation_args)
 
     def setCurrentTranslation(self, pofile, submitter, translations, origin,
-                              translation_side, share_with_other_side=False):
+                              share_with_other_side=False):
         """See `IPOTMsgSet`."""
+        translation_side = pofile.potemplate.translation_side
         helper = make_message_side_helpers(
             translation_side, self, pofile.potemplate, pofile.language)
 
@@ -1241,7 +1242,8 @@ class POTMsgSet(SQLBase):
                                 share_with_other_side=False):
         """See `IPOTMsgSet`."""
         template = pofile.potemplate
-        traits = template.translation_side_traits
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(
+            template.translation_side)
 
         current = traits.getCurrentMessage(self, template, pofile.language)
         if current is None:

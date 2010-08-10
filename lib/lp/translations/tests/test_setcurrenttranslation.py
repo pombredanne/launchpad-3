@@ -13,7 +13,6 @@ from canonical.testing import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin)
-from lp.translations.interfaces.side import TranslationSide
 from lp.translations.model.translationmessage import (
     TranslationMessage)
 
@@ -75,7 +74,6 @@ class SetCurrentTranslationTestMixin:
         return self.potmsgset.setCurrentTranslation(
             self.pofile, self.pofile.owner, translations,
             origin=RosettaTranslationOrigin.ROSETTAWEB,
-            translation_side=TranslationSide.UBUNTU,
             share_with_other_side=share_with_other_side)
 
     def assert_Current_Diverged_Other_DivergencesElsewhere_are(

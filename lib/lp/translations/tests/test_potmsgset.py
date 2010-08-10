@@ -1605,8 +1605,7 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         origin = RosettaTranslationOrigin.SCM
 
         message = potmsgset.setCurrentTranslation(
-            pofile, pofile.potemplate.owner, translations, origin,
-            TranslationSide.UPSTREAM)
+            pofile, pofile.potemplate.owner, translations, origin)
 
         self.assertEqual(message, potmsgset.getImportedTranslationMessage(
             pofile.potemplate, pofile.language))
@@ -1676,10 +1675,10 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
 
         first_message = potmsgset.setCurrentTranslation(
             pofile, pofile.potemplate.owner, translations,
-            RosettaTranslationOrigin.ROSETTAWEB, TranslationSide.UPSTREAM)
+            RosettaTranslationOrigin.ROSETTAWEB)
         second_message = potmsgset.setCurrentTranslation(
             pofile, self.factory.makePerson(), translations,
-            RosettaTranslationOrigin.SCM, TranslationSide.UPSTREAM)
+            RosettaTranslationOrigin.SCM)
 
         self.assertEqual(first_message, second_message)
         message = first_message
@@ -1694,8 +1693,7 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         origin = RosettaTranslationOrigin.ROSETTAWEB
 
         message = potmsgset.setCurrentTranslation(
-            pofile, pofile.potemplate.owner, translations, origin,
-            TranslationSide.UPSTREAM)
+            pofile, pofile.potemplate.owner, translations, origin)
 
         self.assertEqual(message, potmsgset.getImportedTranslationMessage(
             pofile.potemplate, pofile.language))
