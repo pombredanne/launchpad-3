@@ -2075,6 +2075,10 @@ class Person(
         all_addresses = IMasterStore(self).find(
             EmailAddress, EmailAddress.personID == self.id)
         for address in all_addresses:
+            # Delete all email addresses that are not the preferred email
+            # address, or the team's email address. If this method was called
+            # with None, and there is no mailing list, then this condidition
+            # is (None, None), causing all email addresses to be deleted.
             if address not in (email, mailing_list_email):
                 address.destroySelf()
 
