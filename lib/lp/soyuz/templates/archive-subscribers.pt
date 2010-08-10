@@ -10,11 +10,6 @@
   <metal:block fill-slot="head_epilogue">
     <metal:yui-dependencies
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
-
-    <tal:devmode condition="devmode">
-        <script type="text/javascript"
-                tal:attributes="src string:${lp_js}/soyuz/archivesubscribers_index.js"></script>
-    </tal:devmode>
   </metal:block>
 
   <div metal:fill-slot="main">

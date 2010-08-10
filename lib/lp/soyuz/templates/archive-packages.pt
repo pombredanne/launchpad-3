@@ -8,19 +8,6 @@
   >
 <body>
     <metal:block fill-slot="head_epilogue">
-      <tal:devmode condition="devmode">
-        <tal:archive_js define="lp_js string:${icingroot}/build">
-          <script type="text/javascript"
-                  tal:attributes="src string:${lp_js}/soyuz/base.js">
-          </script>
-          <script type="text/javascript"
-                  tal:attributes="src string:${lp_js}/soyuz/lp_dynamic_dom_updater.js">
-          </script>
-          <script type="text/javascript"
-                  tal:attributes="src string:${lp_js}/soyuz/update_archive_build_statuses.js">
-          </script>
-        </tal:archive_js>
-      </tal:devmode>
       <script type="text/javascript" id="repository-size-update"
               tal:condition="view/archive_url">
 LPS.use('io-base', 'lazr.anim', 'node', 'soyuz-base',
