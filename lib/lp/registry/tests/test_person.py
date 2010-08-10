@@ -11,7 +11,6 @@ import transaction
 
 from zope.component import getUtility
 from zope.interface import providedBy
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
@@ -40,6 +39,8 @@ from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
 
 
+
+
 class TestPersonTeams(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -55,10 +56,10 @@ class TestPersonTeams(TestCaseWithFactory):
         login_person(a_team.teamowner)
         a_team.addMember(self.user, a_team.teamowner)
         indirect_teams = self.user.teams_indirectly_participated_in
-        self.assertEqual(2, indirect_teams.count())
-        teams = [ind_team[0] for ind_team in indirect_teams]
-        self.assertTrue((b_team in teams) and
-        (c_team in teams) and not (a_team in teams))
+        expected_teams = [b_team, c_team]
+        test_teams = sorted([it[0] for it in indirect_teams],
+            key=lambda team: team.displayname)
+        self.assertEqual(expected_teams, test_teams)
    
 
 class TestPerson(TestCaseWithFactory):

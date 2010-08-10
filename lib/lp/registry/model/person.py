@@ -48,7 +48,7 @@ from sqlobject import (
     StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
-from storm.expr import And, In, Join, Lower, Not, Or, SQL, Select
+from storm.expr import And, In, Join, LeftJoin, Lower, Not, Or, Select, SQL
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -1956,22 +1956,23 @@ class Person(
     @property
     def teams_indirectly_participated_in(self):
         """See `IPerson`."""
+        Team = ClassAlias(Person, "Team")
         store = Store.of(self)
         origin = [
-            Person, 
-            Join(TeamMembership, Person.id == TeamMembership.teamID),
-            Join(TeamParticipation, Person.id == TeamParticipation.teamID)]
-        find_objects = (Person, TeamMembership)
+            Team,
+            Join(TeamParticipation, Team.id == TeamParticipation.teamID),
+            LeftJoin(TeamMembership,
+                And(TeamMembership.person == self.id,
+                    TeamMembership.teamID == TeamParticipation.teamID,
+                    TeamMembership.status.is_in([
+                        TeamMembershipStatus.APPROVED,
+                        TeamMembershipStatus.ADMIN])))]
+        find_objects = (Team, TeamMembership)
         return store.using(*origin).find(find_objects,
             And(
-                TeamParticipation.person == self,
-                TeamParticipation.team != self,
-                Or(
-                    TeamMembership.person != self,
-                    Not(
-                        TeamMembership.status.is_in([
-                            TeamMembershipStatus.APPROVED, 
-                            TeamMembershipStatus.ADMIN])))))
+                TeamParticipation.person == self.id,
+                TeamParticipation.person != TeamParticipation.teamID,
+                TeamMembership.id == None))
 
     @property
     def teams_with_icons(self):
