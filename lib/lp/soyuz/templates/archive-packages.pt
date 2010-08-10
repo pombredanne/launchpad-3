@@ -11,7 +11,7 @@
       <script type="text/javascript" id="repository-size-update"
               tal:condition="view/archive_url">
 LPS.use('io-base', 'lazr.anim', 'node', 'soyuz-base',
-          'soyuz.update_archive_build_statuses', function(Y) {
+          'lp.soyuz.update_archive_build_statuses', function(Y) {
 
 
 /*
