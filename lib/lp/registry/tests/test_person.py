@@ -11,7 +11,7 @@ import transaction
 
 from zope.component import getUtility
 from zope.interface import providedBy
-from zope.security import removeSecurityProxy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
@@ -53,8 +53,8 @@ class TestPersonTeams(TestCaseWithFactory):
         a_team.addMember(self.user, a_team.teamowner)
         indirect_teams = self.user.teams_indirectly_participated_in
         expected_teams = [b_team, c_team]
-        test_teams = sorted([it[0] for it in indirect_teams],
-            key=lambda team: team.displayname)
+        test_teams = sorted(indirect_teams,
+            key=lambda team: team[0].displayname)
         self.assertEqual(expected_teams, test_teams)
 
 

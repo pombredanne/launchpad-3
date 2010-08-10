@@ -39,7 +39,7 @@
           </td>
           <td>
             <tal:date condition="not: participation/via"
-              tal:replace="participation/membership/datejoined/fmt:date">
+              tal:replace="participation/datejoined/fmt:date">
               2005-06-17
             </tal:date>
             <tal:no-date condition="participation/via">
@@ -60,7 +60,7 @@
           </td>
           <td
             tal:condition="not: context/teamowner">
-            <tal:subscribed replace="participation/subscribed">
+            <tal:subscribed replace="structure participation/subscribed">
               yes
             </tal:subscribed>
           </td>

@@ -3073,19 +3073,26 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    def _asParticipation(self, membership, team_path=None):
+    def _asParticipation(self, membership, team_path=None, team=None):
         """Return a dict of participation information for the membership."""
         if team_path is None:
             via = None
         else:
             via = COMMASPACE.join(team.displayname for team in team_path)
-        team = membership.team
-        if membership.person == team.teamowner:
-            role = 'Owner'
-        elif membership.status == TeamMembershipStatus.ADMIN:
-            role = 'Admin'
-        else:
+        if membership is None:
             role = 'Member'
+            datejoined = None
+        else:
+            if team is None:
+                team = membership.team
+            datejoined = membership.datejoined
+            if membership.person == team.teamowner:
+                role = 'Owner'
+            elif membership.status == TeamMembershipStatus.ADMIN:
+                role = 'Admin'
+            else:
+                role = 'Member'
+        
         if team.mailing_list is not None and team.mailing_list.is_usable:
             subscription = team.mailing_list.getSubscription(self.context)
             if subscription is None:
@@ -3095,7 +3102,7 @@ class PersonParticipationView(LaunchpadView):
         else:
             subscribed = '&mdash;'
         return dict(
-            displayname=team.displayname, team=team, membership=membership,
+            displayname=team.displayname, team=team, datejoined=datejoined,
             role=role, via=via, subscribed=subscribed)
 
     @cachedproperty
@@ -3105,16 +3112,14 @@ class PersonParticipationView(LaunchpadView):
                 for membership in self.context.myactivememberships
                 if check_permission('launchpad.View', membership.team)]
         membership_set = getUtility(ITeamMembershipSet)
-        for team, foo in self.context.teams_indirectly_participated_in:
+        for team, membership in self.context.teams_indirectly_participated_in:
             if not check_permission('launchpad.View', team):
                 continue
             # The key points of the path for presentation are:
             # [-?] indirect memberships, [-2] direct membership, [-1] team.
             team_path = self.context.findPathToTeam(team)
-            membership = membership_set.getByPersonAndTeam(
-                team_path[-2], team)
             participations.append(
-                self._asParticipation(membership, team_path=team_path[:-1]))
+                self._asParticipation(membership, team_path=team_path[:-1], team=team))
         return sorted(participations, key=itemgetter('displayname'))
 
     @cachedproperty
