@@ -141,7 +141,7 @@ def run_test_process():
     # We run the test suite under a virtual frame buffer server so that the
     # JavaScript integration test suite can run.
     cmd = [
-        'xvfb-run',
+        '/usr/bin/xvfb-run',
         "--error-file=/var/tmp/xvfb-errors.log",
         "--server-args='-screen 0 1024x768x24'",
         os.path.join(HERE, 'bin', 'test')] + sys.argv[1:]
@@ -154,7 +154,8 @@ def run_test_process():
         command_line,
         stdout=PIPE,
         stderr=STDOUT,
-        preexec_fn=os.setpgrp)
+        preexec_fn=os.setpgrp,
+        shell=True)
 
     # This code is very similar to what takes place in Popen._communicate(),
     # but this code times out if there is no activity on STDOUT for too long.
