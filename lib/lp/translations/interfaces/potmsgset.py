@@ -267,7 +267,7 @@ class IPOTMsgSet(Interface):
         """
 
     def setCurrentTranslation(pofile, submitter, translations, origin,
-                              translation_side, share_with_other_side=False):
+                              share_with_other_side=False):
         """Set the message's translation in Ubuntu, or upstream, or both.
 
         :param pofile: `POFile` you're setting translations in.  Other
@@ -277,8 +277,6 @@ class IPOTMsgSet(Interface):
         :param translations: a dict mapping plural-form numbers to the
             translated string for that form.
         :param origin: A `RosettaTranslationOrigin`.
-        :param translation_side: The `TranslationSide` that this
-            translation is for (Ubuntu or upstream).
         :param share_with_other_side: When sharing this translation,
             share it with the other `TranslationSide` as well.
         """

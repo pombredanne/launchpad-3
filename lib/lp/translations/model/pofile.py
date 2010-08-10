@@ -43,8 +43,6 @@ from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter)
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
 from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from lp.translations.interfaces.translationimporter import (
@@ -239,13 +237,7 @@ class POFileMixIn(RosettaStats):
     @property
     def plural_forms(self):
         """See `IPOFile`."""
-        if self.language.pluralforms is not None:
-            forms = self.language.pluralforms
-        else:
-            # Don't know anything about plural forms for this
-            # language, fallback to the most common case, 2.
-            forms = 2
-        return forms
+        return self.language.guessed_pluralforms
 
     def canEditTranslations(self, person):
         """See `IPOFile`."""

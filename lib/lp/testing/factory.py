@@ -1632,7 +1632,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         syncUpdate(series)
         return series
 
-    def makeLanguage(self, language_code=None, name=None):
+    def makeLanguage(self, language_code=None, name=None, pluralforms=None):
         """Makes a language given the language_code and name."""
         if language_code is None:
             language_code = self.getUniqueString('lang')
@@ -1640,7 +1640,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             name = "Language %s" % language_code
 
         language_set = getUtility(ILanguageSet)
-        return language_set.createLanguage(language_code, name)
+        return language_set.createLanguage(
+            language_code, name, pluralforms=pluralforms)
 
     def makeLibraryFileAlias(self, filename=None, content=None,
                              content_type='text/plain', restricted=False,

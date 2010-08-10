@@ -64,9 +64,7 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplateSharingSubset,
     IPOTemplateSubset,
     LanguageNotFound)
-from lp.translations.interfaces.side import (
-    ITranslationSideTraitsSet,
-    TranslationSide)
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.translations.interfaces.translationexporter import (
@@ -981,13 +979,12 @@ class POTemplate(SQLBase, RosettaStats):
             yield VPOTExport(self, *row)
 
     @property
-    def translation_side_traits(self):
+    def translation_side(self):
         """See `IPOTemplate`."""
         if self.productseries is not None:
-            side = TranslationSide.UPSTREAM
+            return TranslationSide.UPSTREAM
         else:
-            side = TranslationSide.UBUNTU
-        return getUtility(ITranslationSideTraitsSet).getTraits(side)
+            return TranslationSide.UBUNTU
 
 
 class POTemplateSubset:

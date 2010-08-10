@@ -73,6 +73,16 @@ class Language(SQLBase):
             self.__class__.__name__, self.englishname, self.code)
 
     @property
+    def guessed_pluralforms(self):
+        """See `ILanguage`."""
+        forms = self.pluralforms
+        if forms is None:
+            # Just take a plausible guess.  The caller needs a number.
+            return 2
+        else:
+            return forms
+
+    @property
     def alt_suggestion_language(self):
         """See `ILanguage`.
 
