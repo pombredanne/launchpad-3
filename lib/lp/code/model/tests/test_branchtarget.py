@@ -94,6 +94,8 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertIsInstance(target, PackageBranchTarget)
 
     def test_distrosourcepackage_adapter(self):
+        # Adapting a distrosourcepackage will make a branch target with the
+        # current series of the distro as the distroseries.
         distro = self.original.distribution
         distro_sourcepackage = distro.getSourcePackage(
             self.original.sourcepackagename)
@@ -334,10 +336,12 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertIsInstance(target, ProductBranchTarget)
 
     def test_productseries_adapter(self):
-        series = self.factory.makeProductSeries(product=self.original)
+        # Adapting a product series will make a product branch target.
+        product = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product)
         target = IBranchTarget(series)
         self.assertIsInstance(target, ProductBranchTarget)
-        self.assertEqual([self.original], target.components)
+        self.assertEqual([product], target.components)
 
     def test_components(self):
         target = IBranchTarget(self.original)
