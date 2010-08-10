@@ -756,13 +756,12 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
             removeSecurityProxy(self.pofile), self.potmsgset,
             translations=[u'trans1'], reviewer=self.factory.makePerson(),
             is_current_upstream=True, date_updated=self.now())
-        self.suggestion1 = self.factory.makeTranslationMessage(
-            self.pofile, self.potmsgset, suggestion=True,
-            translations=[u'sugg1'], reviewer=self.factory.makePerson(),
+        self.suggestion1 = self.factory.makeSuggestion(
+            self.pofile, self.potmsgset, translations=[u'sugg1'],
             date_updated=self.now())
-        self.suggestion2 = self.factory.makeTranslationMessage(
-            self.pofile, self.potmsgset, suggestion=True,
-            translations=[u'sugg2'], date_updated=self.now())
+        self.suggestion2 = self.factory.makeSuggestion(
+            self.pofile, self.potmsgset, translations=[u'sugg2'],
+            date_updated=self.now())
         self._setDateCreated(self.suggestion2)
 
     def test_dismiss_all(self):
