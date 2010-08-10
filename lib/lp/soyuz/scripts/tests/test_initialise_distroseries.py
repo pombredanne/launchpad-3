@@ -12,6 +12,7 @@ from zope.component import getUtility
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.soyuz.scripts.initialise_distroseries import (
     InitialiseDistroSeries, InitialisationError)
 from lp.testing import TestCaseWithFactory
@@ -82,6 +83,51 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         hoary_pmount_pubs = self.hoary.getPublishedReleases('pmount')
         foobuntu_pmount_pubs = foobuntu.getPublishedReleases('pmount')
         self.assertEqual(len(hoary_pmount_pubs), len(foobuntu_pmount_pubs))
+        hoary_i386_pmount_pubs = self.hoary['i386'].getPublishedReleases(
+            'pmount')
+        foobuntu_i386_pmount_pubs = foobuntu['i386'].getPublishedReleases(
+            'pmount')
+        self.assertEqual(
+            len(hoary_i386_pmount_pubs), len(foobuntu_i386_pmount_pubs))
+        pmount_binrel = (
+            foobuntu['i386'].getReleasedPackages(
+            'pmount')[0].binarypackagerelease)
+        self.assertEqual(pmount_binrel.title, u'pmount-0.1-1')
+        self.assertEqual(pmount_binrel.build.id, 7)
+        self.assertEqual(
+            pmount_binrel.build.title,
+            u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE')
+        pmount_srcrel = pmount_binrel.build.source_package_release
+        self.assertEqual(pmount_srcrel.title, u'pmount - 0.1-1')
+        foobuntu_pmount = pmount_srcrel.getBuildByArch(
+            foobuntu['i386'], foobuntu.main_archive)
+        hoary_pmount = pmount_srcrel.getBuildByArch(
+            self.hoary['i386'], self.hoary.main_archive)
+        self.assertEqual(foobuntu_pmount.id, hoary_pmount.id)
+        pmount_source = self.hoary.getSourcePackage(
+            'pmount').currentrelease
+        self.assertEqual(
+            pmount_source.title,
+            '"pmount" 0.1-2 source package in The Hoary Hedgehog Release')
+        pmount_source = foobuntu.getSourcePackage('pmount').currentrelease
+        self.assertEqual(
+            pmount_source.title,
+            '"pmount" 0.1-2 source package in The Foobuntu')
+        self.assertEqual(
+            pmount_source.sourcepackagerelease.getBuildByArch(
+            foobuntu['i386'], foobuntu.main_archive), None)
+        created_build = pmount_source.sourcepackagerelease.createBuild(
+            foobuntu['i386'], PackagePublishingPocket.RELEASE,
+            foobuntu.main_archive)
+        retrieved_build = pmount_source.sourcepackagerelease.getBuildByArch(
+            foobuntu['i386'], foobuntu.main_archive)
+        self.assertEqual(retrieved_build.id, created_build.id)
+        self.assertEqual(
+            pmount_source.sourcepackagerelease.getBuildByArch(
+            foobuntu['hppa'], foobuntu.main_archive), None)
+        self.assertTrue(
+            foobuntu.isSourcePackageFormatPermitted(
+            SourcePackageFormat.FORMAT_1_0))        
 
     def test_script(self):
         foobuntu = self._create_distroseries(self.hoary)
