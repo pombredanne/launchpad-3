@@ -42,10 +42,7 @@ class TestDistroSeriesView(TestCaseWithFactory):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
         view = create_initialized_view(distroseries, '+index')
-        self.assertTrue(
-            IResultSet.providedBy(view.needs_linking),
-            '%s should implement IResultSet so that slicing will limit the '
-            'query' % view.needs_linking)
+        self.assertEqual(view.needs_linking, None)
 
 
 def test_suite():

@@ -26,6 +26,7 @@ from lp.buildmaster.model.builder import (rescueBuilderIfLost,
     updateBuilderStatus)
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior)
+from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
 
 class MockBuilder:
@@ -70,9 +71,6 @@ class MockBuilder:
     def checkSlaveAlive(self):
         pass
 
-    def checkSlaveArchitecture(self):
-        pass
-
     def rescueIfLost(self, logger=None):
         rescueBuilderIfLost(self, logger)
 
@@ -85,7 +83,7 @@ class OkSlave:
 
     The architecture tag can be customised during initialisation."""
 
-    def __init__(self, arch_tag='i386'):
+    def __init__(self, arch_tag=I386_ARCHITECTURE_NAME):
         self.arch_tag = arch_tag
 
     def status(self):
@@ -159,7 +157,7 @@ class BuildingSlave(OkSlave):
     def getFile(self, sum):
         if sum == "buildlog":
             s = StringIO("This is a build log")
-            s.headers = {'content-length':19}
+            s.headers = {'content-length': 19}
             return s
 
 
@@ -185,7 +183,7 @@ class WaitingSlave(OkSlave):
         if hash in self.valid_file_hashes:
             content = "This is a %s" % hash
             s = StringIO(content)
-            s.headers = {'content-length':len(content)}
+            s.headers = {'content-length': len(content)}
             return s
 
 
