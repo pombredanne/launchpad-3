@@ -317,7 +317,7 @@ class DistroSeriesView(MilestoneOverlayMixin):
     @cachedproperty
     def num_linked_packages(self):
         """The number of linked packagings for this distroseries."""
-        return len(self.context.packagings)
+        return self.context.packagings.count()
 
     @property
     def num_unlinked_packages(self):
