@@ -209,11 +209,11 @@ class CodehostingTest(TestCaseWithFactory):
         started_tuple = tuple(started.utctimetuple())
         completed_tuple = tuple(completed.utctimetuple())
         success = self.codehosting_api.recordSuccess(
-            'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
+            'test-recordsuccess', 'server-name', started_tuple, completed_tuple)
         self.assertEqual(True, success)
 
         activity = self.getLastActivity('test-recordsuccess')
-        self.assertEqual('vostok', activity.hostname)
+        self.assertEqual('server-name', activity.hostname)
         self.assertEqual(started, activity.date_started)
         self.assertEqual(completed, activity.date_completed)
 
