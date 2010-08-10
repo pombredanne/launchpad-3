@@ -262,8 +262,8 @@ class TestPersonSetMerge(TestCaseWithFactory):
         transaction.commit()
         logout()
 
-    def _get_testible_account(self, person, date_created, openid_identifier):
-        # Return a naked account with predicable attributes.
+    def _get_testable_account(self, person, date_created, openid_identifier):
+        # Return a naked account with predictable attributes.
         account = removeSecurityProxy(person.account)
         account.date_created = date_created
         account.openid_identifier = openid_identifier
@@ -277,7 +277,7 @@ class TestPersonSetMerge(TestCaseWithFactory):
             2010, 04, 01, 0, 0, 0, 0, tzinfo=pytz.timezone('UTC'))
         # Free an OpenID identifier using merge.
         first_duplicate = self.factory.makePerson()
-        first_account = self._get_testible_account(
+        first_account = self._get_testable_account(
             first_duplicate, test_date, test_identifier)
         first_person = self.factory.makePerson()
         self._do_premerge(first_duplicate, first_person)
@@ -289,7 +289,7 @@ class TestPersonSetMerge(TestCaseWithFactory):
         # Create an account that reuses the freed OpenID_identifier.
         test_date = test_date.replace(2010, 05)
         second_duplicate = self.factory.makePerson()
-        second_account = self._get_testible_account(
+        second_account = self._get_testable_account(
             second_duplicate, test_date, test_identifier)
         second_person = self.factory.makePerson()
         self._do_premerge(second_duplicate, second_person)

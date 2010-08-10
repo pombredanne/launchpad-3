@@ -73,6 +73,7 @@ from lp.translations.interfaces.translationgroup import (
     ITranslationPolicy)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, collection_default_content,
@@ -587,7 +588,8 @@ class IProductPublic(
         "this product"))
 
     series = exported(
-        CollectionField(value_type=Object(schema=IProductSeries)))
+        doNotSnapshot(
+            CollectionField(value_type=Object(schema=IProductSeries))))
 
     development_focus = exported(
         ReferenceChoice(
@@ -604,10 +606,12 @@ class IProductPublic(
         "product; otherwise, simply returns the product name."))
 
     releases = exported(
-        CollectionField(
-            title=_("An iterator over the ProductReleases for this product."),
-            readonly=True,
-            value_type=Reference(schema=IProductRelease)))
+        doNotSnapshot(
+            CollectionField(
+                title=_("An iterator over the ProductReleases for "
+                        "this product."),
+                readonly=True,
+                value_type=Reference(schema=IProductRelease))))
 
     translation_focus = exported(
         ReferenceChoice(

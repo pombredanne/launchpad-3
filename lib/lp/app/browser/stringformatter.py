@@ -770,7 +770,7 @@ class FormattersAPI:
         letter.
 
         :param prefix: an optional string to prefix to the id. It can be
-            used to ensure that the start of the id is predicable.
+            used to ensure that the start of the id is predictable.
         """
         if prefix is not None:
             raw_text = prefix + self._stringtoformat
