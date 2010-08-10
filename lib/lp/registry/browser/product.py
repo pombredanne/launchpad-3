@@ -56,7 +56,7 @@ from zope.app.form.browser import CheckBoxWidget, TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
-from zope.schema import Bool, Choice, Text
+from zope.schema import Bool, Choice
 from zope.schema.vocabulary import (
     SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import removeSecurityProxy
