@@ -82,10 +82,10 @@ class ReviewTestMixin:
 
         later_time = self.base_time + timedelta(0, 3600)
         self.suggestion = removeSecurityProxy(
-            self.factory.makeTranslationMessage(
+            self.factory.makeSuggestion(
                 potmsgset=self.potmsgset, pofile=self.pofile,
                 translator=self.factory.makePerson(), translations=['wi'],
-                date_updated=later_time, suggestion=True))
+                date_updated=later_time))
 
         self.assertTrue(self.translation.is_current_ubuntu)
         self.pofile.updateStatistics()
