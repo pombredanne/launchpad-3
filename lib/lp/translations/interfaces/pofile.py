@@ -264,10 +264,10 @@ class IPOFile(IRosettaStats):
         """
 
     def getFullLanguageCode():
-        """Return full language code, including variant if applicable."""
+        """Return the language code."""
 
     def getFullLanguageName():
-        """Return full language name, including variant if applicable."""
+        """Return the language name."""
 
     def getTranslationRows():
         """Return exportable rows of translation data.

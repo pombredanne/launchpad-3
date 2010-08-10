@@ -105,8 +105,7 @@ class ITranslationMessage(Interface):
         vocabulary='Language', required=False)
 
     variant = TextLine(
-        title=_('The language variant for this translation message.'),
-        default=None)
+        title=_('The language variant for this translation file.'))
 
     potmsgset = Object(
         title=_("The template message that this translation is for"),

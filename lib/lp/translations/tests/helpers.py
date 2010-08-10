@@ -70,7 +70,6 @@ def make_translationmessage(factory, pofile=None, potmsgset=None,
         potemplate=potemplate,
         pofile=None,
         language=pofile.language,
-        variant=pofile.variant,
         origin=origin,
         submitter=submitter,
         msgstr0=potranslations[0],
@@ -98,8 +97,7 @@ def get_all_translations_current_anywhere(pofile, potmsgset):
             TranslationMessage.is_current_ubuntu == True,
             TranslationMessage.is_current_upstream == True),
         TranslationMessage.potemplate != None,
-        TranslationMessage.language == pofile.language,
-        TranslationMessage.variant == pofile.variant)
+        TranslationMessage.language == pofile.language)
     return result.order_by(-Coalesce(TranslationMessage.potemplateID, -1))
 
 
@@ -114,16 +112,16 @@ def summarize_current_translations(pofile, potmsgset):
        diverged in `pofile`) or an empty list if there are none.
     """
     current_shared = potmsgset.getCurrentTranslationMessage(
-        None, pofile.language, pofile.variant)
+        None, pofile.language)
     current_diverged = potmsgset.getCurrentTranslationMessage(
-        pofile.potemplate, pofile.language, pofile.variant)
+        pofile.potemplate, pofile.language)
     if current_diverged is not None and not current_diverged.is_diverged:
         current_diverged = None
 
     other_shared = potmsgset.getImportedTranslationMessage(
-        None, pofile.language, pofile.variant)
+        None, pofile.language)
     other_diverged = potmsgset.getImportedTranslationMessage(
-        pofile.potemplate, pofile.language, pofile.variant)
+        pofile.potemplate, pofile.language)
     assert other_diverged is None or other_diverged.potemplate is None, (
         "There is a diverged 'other' translation for "
         "this same template, which should be impossible.")

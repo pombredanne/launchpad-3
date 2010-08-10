@@ -147,12 +147,6 @@ class ILanguage(Interface):
         required=True,
         readonly=True)
 
-    def getFullCode(variant=None):
-        """Compose full language code for this language."""
-
-    def getFullEnglishName(variant=None):
-        """Compose full English name for this language."""
-
 
 class ILanguageSet(Interface):
     """The collection of languages.
@@ -202,12 +196,6 @@ class ILanguageSet(Interface):
         """Convert a list of ISO language codes to language objects.
 
         Unrecognised language codes are ignored.
-        """
-
-    def getLanguageAndVariantFromString(language_string):
-        """Return the ILanguage and variant that language_string represents.
-
-        If language_string doesn't represent a know language, return None.
         """
 
     def createLanguage(code, englishname, nativename=None, pluralforms=None,

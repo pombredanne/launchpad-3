@@ -26,6 +26,7 @@ from storm.store import Store
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
+from zope.security.proxy import ProxyFactory
 
 from canonical.launchpad.webapp import errorlog
 from lp.app.errors import NotFoundError
@@ -345,3 +346,12 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
 
     def score(self):
         return 2405 + self.build.archive.relative_build_score
+
+
+def get_recipe_build_for_build_farm_job(build_farm_job):
+    """Return the SourcePackageRecipeBuild associated with a BuildFarmJob."""
+    store = Store.of(build_farm_job)
+    result = store.find(SourcePackageRecipeBuild,
+        SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
+        PackageBuild.build_farm_job_id == build_farm_job.id)
+    return ProxyFactory(result.one())

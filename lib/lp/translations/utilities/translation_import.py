@@ -138,7 +138,6 @@ class ExistingPOFileInDatabase:
             'translation_columns': ', '.join(translations),
             'translation_joins': '\n'.join(msgstr_joins),
             'language': quote(self.pofile.language),
-            'variant': quote(self.pofile.variant),
             'potemplate': quote(self.pofile.potemplate),
         }
 
@@ -159,8 +158,7 @@ class ExistingPOFileInDatabase:
               POTMsgSet.id=TranslationMessage.potmsgset AND
               (TranslationMessage.potemplate = %(potemplate)s OR
                TranslationMessage.potemplate IS NULL) AND
-              TranslationMessage.language = %(language)s AND
-              TranslationMessage.variant IS NOT DISTINCT FROM %(variant)s
+              TranslationMessage.language = %(language)s
             %(translation_joins)s
             JOIN POMsgID ON
               POMsgID.id=POTMsgSet.msgid_singular
@@ -834,8 +832,7 @@ class POFileImporter(FileImporter):
             if potmsgset is not None:
                 previous_upstream_message = (
                     potmsgset.getImportedTranslationMessage(
-                    self.potemplate, self.pofile.language,
-                    self.pofile.variant))
+                    self.potemplate, self.pofile.language))
                 if previous_upstream_message is not None:
                     # The message was not imported this time, it
                     # therefore looses its imported status.
