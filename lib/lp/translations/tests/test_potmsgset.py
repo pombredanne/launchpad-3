@@ -272,8 +272,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             set([]))
 
         # A shared suggestion is shown in both templates.
-        shared_suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=True)
+        shared_suggestion = self.factory.makeSuggestion(
+            pofile=sr_pofile, potmsgset=self.potmsgset)
         self.assertEquals(
             set(self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian)),
@@ -284,9 +284,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             set([shared_suggestion]))
 
         # A suggestion on another PO file is still shown in both templates.
-        another_suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=sr_stable_pofile, potmsgset=self.potmsgset,
-            suggestion=True)
+        another_suggestion = self.factory.makeSuggestion(
+            pofile=sr_stable_pofile, potmsgset=self.potmsgset)
         self.assertEquals(
             set(self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian)),
@@ -300,22 +299,19 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # them both 'reviewed' and thus hidden.
         current_translation = self.factory.makeSharedTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=False)
-        self.assertEquals(
-            set(self.potmsgset.getLocalTranslationMessages(
-                self.devel_potemplate, serbian)),
-            set([]))
+        local_messages = self.potmsgset.getLocalTranslationMessages(
+            self.devel_potemplate, serbian)
+        self.assertContentEqual([], local_messages)
 
     def test_getLocalTranslationMessages_empty_message(self):
         # An empty suggestion is never returned.
         self.potmsgset.setSequence(self.stable_potemplate, 1)
         pofile = self.factory.makePOFile('sr', self.stable_potemplate)
-        empty_suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=pofile, potmsgset=self.potmsgset, suggestion=True,
-            translations=[""])
-        self.assertEquals(
-            set([]),
-            set(self.potmsgset.getLocalTranslationMessages(
-                self.stable_potemplate, pofile.language)))
+        empty_suggestion = self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=self.potmsgset, translations=[""])
+        local_messages = self.potmsgset.getLocalTranslationMessages(
+                self.stable_potemplate, pofile.language)
+        self.assertEquals([], local_messages)
 
     def test_getExternallyUsedTranslationMessages(self):
         """Test retrieval of externally used translations."""
@@ -342,9 +338,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # If there are only suggestions on the external POTMsgSet,
         # no externally used suggestions are returned.
-        external_suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=external_pofile, potmsgset=external_potmsgset,
-            suggestion=True)
+        external_suggestion = self.factory.makeSuggestion(
+            pofile=external_pofile, potmsgset=external_potmsgset)
 
         transaction.commit()
 
@@ -402,9 +397,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # If there is a suggestion on the external POTMsgSet,
         # it is returned.
-        external_suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=external_pofile, potmsgset=external_potmsgset,
-            suggestion=True)
+        external_suggestion = self.factory.makeSuggestion(
+            pofile=external_pofile, potmsgset=external_potmsgset)
 
         transaction.commit()
 
