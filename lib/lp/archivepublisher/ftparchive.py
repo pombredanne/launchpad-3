@@ -138,7 +138,14 @@ class FTPArchiveHandler:
         self._config = config
         self._diskpool = diskpool
         self.distro = distro
-        self.distroseries = self.distro.series
+        self.distroseries = []
+        for distroseries in self.distro.series:
+            if not distroseries.name in self._config.distroSeriesNames():
+                self.log.warning("Distroseries %s in %s doesn't have "
+                    "a lucille configuration.", distroseries.name,
+                    self.distro.name)
+            else:
+                self.distroseries.append(distroseries)
         self.publisher = publisher
         self.release_files_needed = {}
 
