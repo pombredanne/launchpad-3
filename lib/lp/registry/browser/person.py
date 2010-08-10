@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,C0322
@@ -156,7 +156,7 @@ from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
-from lp.registry.interfaces.jabber import IJabberIDSet
+from lp.registry.interfaces.jabber import IJabberID, IJabberIDSet
 from lp.registry.interfaces.mailinglist import (
     CannotUnsubscribe, IMailingListSet)
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -3520,7 +3520,18 @@ class PersonEditIRCNicknamesView(LaunchpadFormView):
 
 
 class PersonEditJabberIDsView(LaunchpadFormView):
-    schema = Interface
+
+    schema = IJabberID
+    field_names = ['jabberid']
+
+    def setUpFields(self):
+        super(PersonEditJabberIDsView, self).setUpFields()
+        if self.context.jabberids.count() > 0:
+            # Make the jabberid entry optional on the edit page if one or more
+            # ids already exist, which allows the removal of ids without
+            # filling out the new jabberid field.
+            jabber_field = self.form_fields['jabberid']
+            jabber_field.field.required = False
 
     @property
     def page_title(self):
@@ -3529,8 +3540,30 @@ class PersonEditJabberIDsView(LaunchpadFormView):
     label = page_title
 
     @property
-    def cancel_url(self):
+    def next_url(self):
         return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    def validate(self, data):
+        """Ensure the edited data does not already exist."""
+        jabberid = data.get('jabberid')
+        if jabberid is not None:
+            jabberset = getUtility(IJabberIDSet)
+            existingjabber = jabberset.getByJabberID(jabberid)
+            if existingjabber is not None:
+                if existingjabber.person != self.context:
+                    self.setFieldError(
+                        'jabberid',
+                        structured(
+                            'The Jabber ID %s is already registered by '
+                            '<a href="%s">%s</a>.',
+                            jabberid, canonical_url(existingjabber.person),
+                            existingjabber.person.displayname))
+                else:
+                    self.setFieldError(
+                        'jabberid',
+                        'The Jabber ID %s already belongs to you.' % jabberid)
 
     @action(_("Save Changes"), name="save")
     def save(self, action, data):
@@ -3541,23 +3574,10 @@ class PersonEditJabberIDsView(LaunchpadFormView):
         for jabber in self.context.jabberids:
             if form.get('remove_%s' % jabber.jabberid):
                 jabber.destroySelf()
-
-        jabberid = form.get('newjabberid')
-        if jabberid:
+        jabberid = data.get('jabberid')
+        if jabberid is not None:
             jabberset = getUtility(IJabberIDSet)
-            existingjabber = jabberset.getByJabberID(jabberid)
-            if existingjabber is None:
-                jabberset.new(self.context, jabberid)
-            elif existingjabber.person != self.context:
-                self.request.response.addErrorNotification(
-                    structured(
-                        'The Jabber ID %s is already registered by '
-                        '<a href="%s">%s</a>.',
-                        jabberid, canonical_url(existingjabber.person),
-                        existingjabber.person.displayname))
-            else:
-                self.request.response.addErrorNotification(
-                    'The Jabber ID %s already belongs to you.' % jabberid)
+            jabberset.new(self.context, jabberid)
 
 
 class PersonEditSSHKeysView(LaunchpadView):
