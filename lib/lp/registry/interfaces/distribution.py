@@ -48,7 +48,8 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, ILaunchpadUsage)
+    IHasAppointedDriver, IHasDrivers)
+from lp.app.interfaces.launchpad import ILaunchpadUsage, IServiceUsage
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
@@ -94,7 +95,8 @@ class IDistributionPublic(
     IHasBuildRecords, IHasDrivers, IHasMentoringOffers, IHasMilestones,
     IHasOwner, IHasSecurityContact, IHasSprints, ITranslationPolicy,
     IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget):
+    IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
+    ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")

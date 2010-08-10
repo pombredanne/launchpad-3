@@ -11,8 +11,11 @@ from zope.security.proxy import ProxyFactory
 
 from lp.testing import TestCase
 from lp.testing.matchers import (
-    DoesNotCorrectlyProvide, DoesNotProvide, IsNotProxied, IsProxied,
-    Provides, ProvidesAndIsProxied)
+    DoesNotCorrectlyProvide, DoesNotProvide, HasQueryCount, IsNotProxied,
+    IsProxied, Provides, ProvidesAndIsProxied)
+from lp.testing._webservice import QueryCollector
+
+from testtools.matchers import Is, Not, LessThan
 
 
 class ITestInterface(Interface):
@@ -169,3 +172,41 @@ class ProvidesAndIsProxiedTests(TestCase):
         obj = ProxyFactory(object(), checker=NamesChecker())
         matcher = ProvidesAndIsProxied(ITestInterface)
         self.assertIsInstance(matcher.match(obj), DoesNotProvide)
+
+
+class TestQueryMatching(TestCase):
+    """Query matching is a work in progress and can be factored out more.
+
+    For now its pretty hard coded to the initial use case and overlaps some
+    unwritten hypothetical testtools infrastructure - e.g. permitting use of
+    attrgetter and the like.
+    """
+
+    def test_match(self):
+        matcher = HasQueryCount(Is(3))
+        collector = QueryCollector()
+        collector.count = 3 
+        # not inspected
+        del collector.queries
+        self.assertThat(matcher.match(collector), Is(None))
+
+    def test_mismatch(self):
+        matcher = HasQueryCount(LessThan(2))
+        collector = QueryCollector()
+        collector.count = 2
+        collector.queries = [("foo", "bar"), ("baaz", "quux")]
+        mismatch = matcher.match(collector)
+        self.assertThat(mismatch, Not(Is(None)))
+        details = mismatch.get_details()
+        lines = []
+        for name, content in details.items():
+            self.assertEqual("queries", name)
+            self.assertEqual("text", content.content_type.type)
+            lines.append(''.join(content.iter_text()))
+        self.assertEqual(["('foo', 'bar')\n('baaz', 'quux')"],
+            lines)
+        self.assertEqual(
+            "queries do not match: %s" % (LessThan(2).match(2).describe(),),
+            mismatch.describe())
+
+
