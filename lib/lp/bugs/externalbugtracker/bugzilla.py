@@ -583,7 +583,6 @@ class BugzillaAPI(Bugzilla):
         remote_bugs = response_dict['bugs']
 
         self._storeBugs(remote_bugs)
-        self.initializeRemoteImportance(bug_ids)
 
     def getRemoteStatus(self, bug_id):
         """See `IExternalBugTracker`."""
@@ -601,6 +600,23 @@ class BugzillaAPI(Bugzilla):
             return "%s %s" % (status, resolution)
         else:
             return status
+
+    def getRemoteImportance(self, bug_id):
+        """See `IExternalBugTracker`."""
+        actual_bug_id = self._getActualBugId(bug_id)
+
+        # Attempt to get the priority and severity from the bug.
+        # If we don't have the data for either, raise an error.
+        try:
+            priority = self._bugs[actual_bug_id]['priority']
+            severity = self._bugs[actual_bug_id]['severity']
+        except KeyError:
+            raise UnparseableBugData
+
+        if severity != '':
+            return "%s %s" % (priority, severity)
+        else:
+            return priority
 
     @ensure_no_transaction
     def getModifiedRemoteBugs(self, bug_ids, last_checked):

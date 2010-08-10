@@ -250,10 +250,10 @@ Similarly with BugzillaAPI.getRemoteStatus(), which returns the remote
 priority and severity as a string.
 
     >>> print bugzilla.getRemoteImportance(1)
-    NORMAL NORMAL
+    P1 normal
 
     >>> print bugzilla.getRemoteImportance(2)
-    NORMAL NORMAL
+    P1 high
 
 If a bug can't be found a BugNotFound error will be raised.
 
