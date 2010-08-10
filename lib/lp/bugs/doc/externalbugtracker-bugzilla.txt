@@ -306,6 +306,14 @@ returned.
     UnknownRemoteStatusError: FOO
 
 
+== Importance Conversion ==
+
+TODO
+
+    >>> external_bugzilla.convertRemoteImportance('IMMEDIATE BLOCKER').title
+    'Unknown'
+
+
 == Updating Bug Watches ==
 
 The main use of an ExternalBugtracker is to update bug watches. This is

@@ -52,6 +52,7 @@ class Bugzilla(ExternalBugTracker):
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
         self.remote_bug_status = {}
+        self.remote_bug_importance = {}
         self.remote_bug_product = {}
 
     @ensure_no_transaction
@@ -365,6 +366,9 @@ class Bugzilla(ExternalBugTracker):
                     status += ' %s' % resolution
             self.remote_bug_status[bug_id] = status
 
+            # TODO
+            self.remote_bug_importance[bug_id] = "NORMAL NORMAL"
+
             product_nodes = bug_node.getElementsByTagName('bz:product')
             assert len(product_nodes) <= 1, (
                 "Should be at most one product node for bug %s." % bug_id)
@@ -376,13 +380,13 @@ class Bugzilla(ExternalBugTracker):
                     product_node.childNodes[0].data)
 
     def getRemoteImportance(self, bug_id):
-        """See `ExternalBugTracker`.
-
-        This method is implemented here as a stub to ensure that
-        existing functionality is preserved. As a result,
-        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
-        """
-        return UNKNOWN_REMOTE_IMPORTANCE
+        """See `ExternalBugTracker`."""
+        try:
+            if str(bug_id) not in self.remote_bug_importance:
+                return "Bug %s is not in remote_bug_importance" %(bug_id)
+            return self.remote_bug_importance[bug_id]
+        except:
+            return UNKNOWN_REMOTE_IMPORTANCE
 
     def getRemoteStatus(self, bug_id):
         """See ExternalBugTracker."""
