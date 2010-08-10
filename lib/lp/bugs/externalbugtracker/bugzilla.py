@@ -211,7 +211,18 @@ class Bugzilla(ExternalBugTracker):
         return tuple(int(number) for number in version_numbers)
 
     _importance_lookup = {
-        'IMMEDIATE BLOCKER': BugTaskImportance.CRITICAL,
+        'blocker':    BugTaskImportance.CRITICAL,
+        'critical':   BugTaskImportance.CRITICAL,
+        'immediate':  BugTaskImportance.CRITICAL,
+        'urgent':     BugTaskImportance.CRITICAL,
+        'major':      BugTaskImportance.HIGH,
+        'high':       BugTaskImportance.HIGH,
+        'normal':     BugTaskImportance.MEDIUM,
+        'medium':     BugTaskImportance.MEDIUM,
+        'minor':      BugTaskImportance.LOW,
+        'low':        BugTaskImportance.LOW,
+        'trivial':    BugTaskImportance.LOW,
+        'enhancement':BugTaskImportance.WISHLIST,
         }
 
     def convertRemoteImportance(self, remote_importance):
@@ -221,8 +232,13 @@ class Bugzilla(ExternalBugTracker):
         existing functionality is preserved. As a result,
         BugTaskImportance.UNKNOWN will always be returned.
         """
-        if remote_importance in self._importance_lookup:
-            return self._importance_lookup[remote_importance]
+        try:
+            words = remote_importance.lower().split()
+            return self._importance_lookup[words.pop()]
+
+        except KeyError:
+            raise UnknownRemoteImportanceError(remote_importance)
+
         return BugTaskImportance.UNKNOWN
 
     _status_lookup_titles = 'Bugzilla status', 'Bugzilla resolution'
@@ -266,7 +282,6 @@ class Bugzilla(ExternalBugTracker):
             self.version = self._probe_version()
 
         super(Bugzilla, self).initializeRemoteBugDB(bug_ids)
-        self.initializeRemoteImportance(bug_ids)
 
     def getRemoteBug(self, bug_id):
         """See `ExternalBugTracker`."""
@@ -373,7 +388,7 @@ class Bugzilla(ExternalBugTracker):
                     status += ' %s' % resolution
             self.remote_bug_status[bug_id] = status
 
-            # TODO: This is where the bug importance *should* be set
+            # TODO:
             self.remote_bug_importance[bug_id] = "NORMAL NORMAL"
 
             product_nodes = bug_node.getElementsByTagName('bz:product')
