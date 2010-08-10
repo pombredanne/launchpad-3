@@ -150,7 +150,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
       <div
         tal:content="structure view/source_package_release/@@+copyright"
         style="overflow-x: hidden; overflow-y: auto;
-               max-width: 60em; max-height: 32em; background: #f8f8f8"
+               max-width: 60em; max-height: 32em; background: #f7f7f7"
         />
     </div>
   </tal:copyright>
