@@ -19,4 +19,3 @@ class SoyuzYUIUnitTestCase(YUIUnitTestCase):
 def test_suite():
     app_testing_path = 'lp/soyuz/javascript/tests'
     return build_yui_unittest_suite(app_testing_path, SoyuzYUIUnitTestCase)
-
