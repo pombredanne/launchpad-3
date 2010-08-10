@@ -3092,7 +3092,6 @@ class PersonParticipationView(LaunchpadView):
                 role = 'Admin'
             else:
                 role = 'Member'
-        
         if team.mailing_list is not None and team.mailing_list.is_usable:
             subscription = team.mailing_list.getSubscription(self.context)
             if subscription is None:
@@ -3119,7 +3118,8 @@ class PersonParticipationView(LaunchpadView):
             # [-?] indirect memberships, [-2] direct membership, [-1] team.
             team_path = self.context.findPathToTeam(team)
             participations.append(
-                self._asParticipation(membership, team_path=team_path[:-1], team=team))
+                self._asParticipation(
+                    membership, team_path=team_path[:-1], team=team))
         return sorted(participations, key=itemgetter('displayname'))
 
     @cachedproperty
