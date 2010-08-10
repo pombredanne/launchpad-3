@@ -308,10 +308,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.potmsgset.setSequence(self.stable_potemplate, 1)
         pofile = self.factory.makePOFile('sr', self.stable_potemplate)
         empty_suggestion = self.factory.makeSuggestion(
-            pofile=pofile, potmsgset=self.potmsgset, translations=[""])
+            pofile=pofile, potmsgset=self.potmsgset, translations=[None])
         local_messages = self.potmsgset.getLocalTranslationMessages(
                 self.stable_potemplate, pofile.language)
-        self.assertEquals([], local_messages)
+        self.assertContentEqual([], local_messages)
 
     def test_getExternallyUsedTranslationMessages(self):
         """Test retrieval of externally used translations."""
