@@ -26,8 +26,8 @@ from lp.testing import run_with_login, TestCaseWithFactory
 
 class BaseBranchTargetTests:
 
-    def test_provides_IPrimaryContext(self):
-        self.assertProvides(self.target, IPrimaryContext)
+    def test_provides_IBranchTarget(self):
+        self.assertProvides(self.target, IBranchTarget)
 
     def test_context(self):
         # IBranchTarget.context is the original object.
