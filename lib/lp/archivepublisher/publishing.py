@@ -486,21 +486,21 @@ class Publisher(object):
             reorder_components(all_components))
         release_file["Description"] = drsummary
 
-        for f in sorted(list(all_files), key=os.path.dirname):
-            entry = self._readIndexFileContents(full_name, f)
+        for filename in sorted(list(all_files), key=os.path.dirname):
+            entry = self._readIndexFileContents(full_name, filename)
             if entry is None:
                 continue
             release_file.setdefault("MD5Sum", []).append({
                 "md5sum": hashlib.md5(entry).hexdigest(),
-                "name": f,
+                "name": filename,
                 "size": len(entry)})
             release_file.setdefault("SHA1", []).append({
                 "sha1": hashlib.sha1(entry).hexdigest(),
-                "name": f,
+                "name": filename,
                 "size": len(entry)})
             release_file.setdefault("SHA256", []).append({
                 "sha256": hashlib.sha256(entry).hexdigest(),
-                "name": f,
+                "name": filename,
                 "size": len(entry)})
 
         f = open(os.path.join(
