@@ -21,10 +21,10 @@ from lp.code.enums import (
     BranchLifecycleStatus, BranchType, BranchVisibilityRule)
 from lp.code.errors import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchCreatorNotOwner, BranchExists, NoSuchBranch)
+    BranchCreatorNotOwner, BranchExists, InvalidNamespace, NoSuchBranch)
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespacePolicy, IBranchNamespace,
-    IBranchNamespaceSet, lookup_branch_namespace, InvalidNamespace)
+    IBranchNamespaceSet, lookup_branch_namespace)
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.distribution import NoSuchDistribution
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries

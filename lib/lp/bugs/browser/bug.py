@@ -50,8 +50,9 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from lp.app.errors import NotFoundError
+from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
@@ -481,8 +482,7 @@ class BugViewMixin:
                     attachment.libraryfile, attachment),
                 }
             for attachment in self.context.attachments
-            if attachment.type != BugAttachmentType.PATCH
-            ]
+            if attachment.type != BugAttachmentType.PATCH]
 
     @property
     def patches(self):
@@ -494,8 +494,7 @@ class BugViewMixin:
                     attachment.libraryfile, attachment),
                 }
             for attachment in self.context.attachments
-            if attachment.type == BugAttachmentType.PATCH
-            ]
+            if attachment.type == BugAttachmentType.PATCH]
 
 
 class BugView(LaunchpadView, BugViewMixin):
@@ -556,6 +555,11 @@ class BugView(LaunchpadView, BugViewMixin):
             dupes.append(dupe)
 
         return dupes
+
+    def proxiedUrlForLibraryFile(self, attachment):
+        """Return the proxied download URL for a Librarian file."""
+        return ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
 
 
 class BugWithoutContextView:
@@ -672,9 +676,35 @@ class BugMarkAsDuplicateView(BugEditViewBase):
     field_names = ['duplicateof']
     label = "Mark bug report as a duplicate"
 
+    def setUpFields(self):
+        """Make the readonly version of duplicateof available."""
+        super(BugMarkAsDuplicateView, self).setUpFields()
+
+        duplicateof_field = DuplicateBug(
+            __name__='duplicateof', title=_('Duplicate Of'), required=False)
+
+        self.form_fields = self.form_fields.omit('duplicateof')
+        self.form_fields = formlib.form.Fields(duplicateof_field)
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        return {'duplicateof': self.context.bug.duplicateof}
+
     @action('Change', name='change')
     def change_action(self, action, data):
         """Update the bug."""
+        data = dict(data)
+        # We handle duplicate changes by hand instead of leaving it to
+        # the usual machinery because we must use bug.markAsDuplicate().
+        bug = self.context.bug
+        bug_before_modification = Snapshot(
+            bug, providing=providedBy(bug))
+        duplicateof = data.pop('duplicateof')
+        bug.markAsDuplicate(duplicateof)
+        notify(
+            ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
+        # Apply other changes.
         self.updateBugFromData(data)
 
 
@@ -870,7 +900,9 @@ class BugTextView(LaunchpadView):
         """Return a text representation of a bug attachment."""
         mime_type = normalize_mime_type.sub(
             ' ', attachment.libraryfile.mimetype)
-        return "%s %s" % (attachment.libraryfile.http_url, mime_type)
+        download_url = ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
+        return "%s %s" % (download_url, mime_type)
 
     def comment_text(self):
         """Return a text representation of bug comments."""

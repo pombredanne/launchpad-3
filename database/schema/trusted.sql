@@ -583,16 +583,14 @@ BEGIN
               JOIN TranslationTemplateItem AS old_template_item
                 ON OLD.potmsgset = old_template_item.potmsgset AND
                    old_template_item.potemplate = pofile.potemplate AND
-                   pofile.language = OLD.language AND
-                   pofile.variant IS NOT DISTINCT FROM OLD.variant
+                   pofile.language = OLD.language
               JOIN TranslationTemplateItem AS new_template_item
                 ON (old_template_item.potemplate =
                      new_template_item.potemplate)
               JOIN TranslationMessage AS new_latest_message
                 ON new_latest_message.potmsgset =
                        new_template_item.potmsgset AND
-                   new_latest_message.language = OLD.language AND
-                   new_latest_message.variant IS NOT DISTINCT FROM OLD.variant
+                   new_latest_message.language = OLD.language
               LEFT OUTER JOIN POfileTranslator AS ExistingEntry
                 ON ExistingEntry.person = OLD.submitter AND
                    ExistingEntry.pofile = POFile.id
@@ -621,7 +619,6 @@ BEGIN
               TranslationTemplateItem.potmsgset=NEW.potmsgset AND
               TranslationTemplateItem.potemplate=pofile.potemplate AND
               pofile.language=NEW.language AND
-              pofile.variant IS NOT DISTINCT FROM NEW.variant AND
               POFileTranslator.pofile = pofile.id;
         IF found THEN
             RETURN NULL; -- Return value ignored as this is an AFTER trigger
@@ -634,7 +631,6 @@ BEGIN
               FROM TranslationTemplateItem
               JOIN POFile
                 ON pofile.language = NEW.language AND
-                   pofile.variant IS NOT DISTINCT FROM NEW.variant AND
                    pofile.potemplate = translationtemplateitem.potemplate
               WHERE
                 TranslationTemplateItem.potmsgset = NEW.potmsgset;

@@ -12,6 +12,7 @@ from zope.interface import implements
 from lazr.lifecycle.event import ObjectCreatedEvent, ObjectDeletedEvent
 
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
+from storm.store import Store
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
@@ -92,6 +93,10 @@ class BugAttachmentSet:
         attachment = BugAttachment(
             bug=bug, libraryfile=filealias, type=attach_type, title=title,
             message=message)
+        # canonial_url(attachment) (called by notification subscribers
+        # to generate the download URL of the attachments) blows up if
+        # attachment.id is not (yet) set.
+        Store.of(attachment).flush()
         if send_notifications:
             notify(ObjectCreatedEvent(attachment, user=message.owner))
         return attachment

@@ -248,14 +248,14 @@ To do this test, we are going to do all in a single transaction and will
 rollback it when it's finished.
 
 First, we are going to add three new sourcepackagenames for this test,
-kdebase, kde-i18n-es and kde-i18n-srlatn. The first is from where the .pot
+kdebase, kde-i18n-es and kde-l10n-sr-latin. The first is from where the .pot
 file come and the others have .po files.
 
     >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> kdebase = sourcepackagenameset.new('kdebase')
     >>> kde_i18n_es = sourcepackagenameset.new('kde-i18n-es')
-    >>> kde_i18n_srlatn = sourcepackagenameset.new('kde-i18n-srlatn')
+    >>> kde_l10n_sr_latin = sourcepackagenameset.new('kde-i18n-sr-latin')
 
 Let's attach the .pot file
 
@@ -293,20 +293,19 @@ And we will get the right IPOFile.
     >>> es_entry.getGuessedPOFile().title
     u'Spanish (es) translation of kdebugdialog in Ubuntu Hoary package "kdebase"'
 
-The kde-i18n-srlatn is a bit special, the language is sr@Latn and we should be
-able to know that.
+The kde-i18n-sr-latin is a bit special, the language is sr@latin and we should
+be able to know that.
 
-    >>> srlatn_entry = translationimportqueue.addOrUpdateEntry(
+    >>> sr_latin = factory.makeLanguage('sr@latin', 'Serbian Latin')
+    >>> sr_latin_entry = translationimportqueue.addOrUpdateEntry(
     ...     'messages/kdebase/kdebugdialog.po', 'foo content', True,
     ...     rosetta_experts, distroseries=hoary_distroseries,
-    ...      sourcepackagename=kde_i18n_srlatn)
+    ...      sourcepackagename=kde_l10n_sr_latin)
 
 And we will get the right IPOFile.
 
-    >>> srlatn_entry.getGuessedPOFile().title
-    u'Serbian (sr) translation of kdebugdialog in Ubuntu Hoary package "kdebase"'
-    >>> srlatn_entry.getGuessedPOFile().variant
-    u'Latn'
+    >>> sr_latin_entry.getGuessedPOFile().title
+    u'Serbian Latin (sr@latin) translation of kdebugdialog in Ubuntu Hoary package "kdebase"'
 
 Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.
@@ -419,19 +418,18 @@ And we will get the right IPOFile.
     >>> es_entry.getGuessedPOFile().title
     u'Spanish (es) translation of koffice in Ubuntu Hoary package "koffice"'
 
-Let's try now a language with variant information like sr@Latn.
+Let's try now a language with variant information like sr@latin.
 
-    >>> srlatn_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'koffice-i18n-sr@Latn-1.5.2/messages/koffice/koffice.po',
+    >>> sr_latin = factory.makeLanguage('sr@latin', 'Serbian Latin')
+    >>> sr_latin_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'koffice-i18n-sr@latin-1.5.2/messages/koffice/koffice.po',
     ...     'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=koffice_l10n)
 
 And we will get the right IPOFile.
 
-    >>> srlatn_entry.getGuessedPOFile().title
-    u'Serbian (sr) translation of koffice in Ubuntu Hoary package "koffice"'
-    >>> srlatn_entry.getGuessedPOFile().variant
-    u'Latn'
+    >>> sr_latin_entry.getGuessedPOFile().title
+    u'Serbian Latin (sr@latin) translation of koffice in Ubuntu Hoary package "koffice"'
 
 Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.

@@ -335,7 +335,7 @@ Fuzzy translations are ignored.
     >>> def get_pofile_translation_message(pofile, msgid):
     ...     potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(msgid)
     ...     return potmsgset.getCurrentTranslationMessage(
-    ...         pofile.potemplate, pofile.language, pofile.variant)
+    ...         pofile.potemplate, pofile.language)
     >>> message = get_pofile_translation_message(pofile, u'bar')
     >>> print message
     None

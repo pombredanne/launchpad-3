@@ -1159,7 +1159,7 @@ class BinaryPackageBuildSet:
             )
         result_set = store.using(*origin).find(
             (BuildQueue, Builder, BuildPackageJob),
-            In(BinaryPackageBuild.id, build_ids))
+            BinaryPackageBuild.id.is_in(build_ids))
 
         return result_set
 

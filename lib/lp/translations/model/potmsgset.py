@@ -300,8 +300,7 @@ class POTMsgSet(SQLBase):
                 'There is already a translation message in our database.')
         return DummyTranslationMessage(pofile, self)
 
-    def _getUsedTranslationMessage(self, potemplate, language, variant,
-                                   current=True):
+    def _getUsedTranslationMessage(self, potemplate, language, current=True):
         """Get a translation message which is either used in
         Launchpad (current=True) or in an import (current=False).
 
@@ -326,11 +325,6 @@ class POTMsgSet(SQLBase):
             used_clause,
             template_clause,
             'TranslationMessage.language = %s' % sqlvalues(language)]
-        if variant is None:
-            clauses.append('TranslationMessage.variant IS NULL')
-        else:
-            clauses.append(
-                'TranslationMessage.variant=%s' % sqlvalues(variant))
 
         order_by = '-COALESCE(potemplate, -1)'
 
@@ -339,22 +333,20 @@ class POTMsgSet(SQLBase):
         return TranslationMessage.selectFirst(
             ' AND '.join(clauses), orderBy=[order_by])
 
-    def getCurrentTranslationMessage(self, potemplate,
-                                     language, variant=None):
+    def getCurrentTranslationMessage(self, potemplate, language):
         """See `IPOTMsgSet`."""
         return self._getUsedTranslationMessage(
-            potemplate, language, variant, current=True)
+            potemplate, language, current=True)
 
-    def getImportedTranslationMessage(self, potemplate,
-                                      language, variant=None):
+    def getImportedTranslationMessage(self, potemplate, language):
         """See `IPOTMsgSet`."""
         return self._getUsedTranslationMessage(
-            potemplate, language, variant, current=False)
+            potemplate, language, current=False)
 
-    def getSharedTranslationMessage(self, language, variant=None):
+    def getSharedTranslationMessage(self, language):
         """See `IPOTMsgSet`."""
         return self._getUsedTranslationMessage(
-            None, language, variant, current=True)
+            None, language, current=True)
 
     def getLocalTranslationMessages(self, potemplate, language,
                                     include_dismissed=False,
@@ -612,10 +604,6 @@ class POTMsgSet(SQLBase):
                    'language = %s' % sqlvalues(pofile.language),
                    '(potemplate IS NULL OR potemplate = %s)' % sqlvalues(
                                                         pofile.potemplate)]
-        if pofile.variant is None:
-            clauses.append('variant IS NULL')
-        else:
-            clauses.append('variant = %s' % sqlvalues(pofile.variant))
 
         for pluralform in range(pofile.plural_forms):
             if potranslations[pluralform] is None:
@@ -660,7 +648,7 @@ class POTMsgSet(SQLBase):
                                        force_diverged=False):
         """Make the given translation message the current one."""
         current_message = self.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language, pofile.variant)
+            pofile.potemplate, pofile.language)
 
         # Converging from a diverged to a shared translation:
         # when the new translation matches a shared one (iscurrent,
@@ -895,7 +883,7 @@ class POTMsgSet(SQLBase):
             matching_message.is_current_upstream)
         if is_current_upstream or match_is_upstream:
             upstream_message = self.getImportedTranslationMessage(
-                pofile.potemplate, pofile.language, pofile.variant)
+                pofile.potemplate, pofile.language)
         else:
             upstream_message = None
 
@@ -925,7 +913,6 @@ class POTMsgSet(SQLBase):
                     potemplate=pofile.potemplate,
                     pofile=pofile,
                     language=pofile.language,
-                    variant=pofile.variant,
                     origin=origin,
                     submitter=submitter,
                     msgstr0=potranslations[0],
@@ -1029,7 +1016,7 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         assert(lock_timestamp is not None)
         current = self.getCurrentTranslationMessage(
-            self.potemplate, pofile.language, pofile.variant)
+            self.potemplate, pofile.language)
         if current is None:
             # Create an empty translation message.
             current = self.updateTranslation(

@@ -131,19 +131,19 @@ class IPOTMsgSet(Interface):
         an exception is raised.
         """
 
-    def getCurrentTranslationMessage(potemplate, language, variant=None):
+    def getCurrentTranslationMessage(potemplate, language):
         """Returns a TranslationMessage marked as being currently used.
 
         Diverged messages are preferred.
         """
 
-    def getImportedTranslationMessage(potemplate, language, variant=None):
+    def getImportedTranslationMessage(potemplate, language):
         """Returns a TranslationMessage as imported from the package.
 
         Diverged messages are preferred.
         """
 
-    def getSharedTranslationMessage(language, variant=None):
+    def getSharedTranslationMessage(language):
         """Returns a shared TranslationMessage."""
 
     def getLocalTranslationMessages(potemplate, language,

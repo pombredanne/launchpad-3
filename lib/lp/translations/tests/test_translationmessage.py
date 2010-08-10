@@ -165,12 +165,6 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
         nonclone = self._find(self.other_potmsgset, self.other_template)
         self.assertEqual(nonclone, None)
 
-    def test_findIdenticalMessageChecksLanguageVariant(self):
-        # A difference in variants also makes messages different.
-        self.other_message.variant = 'Lithp'
-        nonclone = self._find(self.other_potmsgset, self.other_template)
-        self.assertEqual(nonclone, None)
-
     def test_findIdenticalMessageChecksFirstForm(self):
         # Messages with different translations are not identical.
         self.other_message.msgstr0 = self._getPOTranslation('xyz')

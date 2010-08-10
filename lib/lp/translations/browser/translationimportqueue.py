@@ -113,7 +113,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             field_values['potemplate'] = self.context.potemplate
             if self.context.pofile is not None:
                 field_values['language'] = self.context.pofile.language
-                field_values['variant'] = self.context.pofile.variant
             else:
                 # The entries that are translations usually have the language
                 # code
@@ -121,9 +120,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 language_set = getUtility(ILanguageSet)
                 filename = os.path.basename(self.context.path)
                 guessed_language, file_ext = filename.split(u'.', 1)
-                (language, variant) = (
-                    language_set.getLanguageAndVariantFromString(
-                        guessed_language))
+                language = language_set.getLanguageByCode(guessed_language)
                 if language is not None:
                     field_values['language'] = language
                     # Need to warn the user that we guessed the language
@@ -131,8 +128,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                     self.request.response.addWarningNotification(
                         "Review the language selection as we guessed it and"
                         " could not be accurate.")
-                if variant is not None:
-                    field_values['variant'] = variant
 
         return field_values
 
@@ -251,7 +246,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         self.field_names = ['file_type', 'path', 'sourcepackagename',
                             'potemplate', 'potemplate_name',
                             'name', 'translation_domain', 'languagepack',
-                            'language', 'variant']
+                            'language']
 
         if self.context.productseries is not None:
             # We are handling an entry for a productseries, this field is not
@@ -465,7 +460,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         path = data.get('path')
         language = data.get('language')
-        variant = data.get('variant')
 
         # Use manual potemplate, if given.
         # man_potemplate is set in validate().
@@ -474,11 +468,11 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         else:
             potemplate = data.get('potemplate')
 
-        pofile = potemplate.getPOFileByLang(language.code, variant)
+        pofile = potemplate.getPOFileByLang(language.code)
         if pofile is None:
             # We don't have such IPOFile, we need to create it.
             pofile = potemplate.newPOFile(
-                language.code, variant, self.context.importer)
+                language.code, self.context.importer)
         self.context.pofile = pofile
         if (self.context.sourcepackagename is not None and
             potemplate.sourcepackagename is not None and

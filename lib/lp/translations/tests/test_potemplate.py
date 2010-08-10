@@ -36,8 +36,10 @@ class TestPOTemplate(TestCaseWithFactory):
             "(Expected: '%s' Got: '%s')" % (expected, result))
 
         self.potemplate.path = "testdir/messages.pot"
-        expected = "testdir/testdomain-eo@VARIANT.po"
-        result = self.potemplate._composePOFilePath(esperanto, 'VARIANT')
+        expected = "testdir/testdomain-eo@variant.po"
+        esperanto_variant = self.factory.makeLanguage(
+            'eo@variant', 'Esperanto Variant')
+        result = self.potemplate._composePOFilePath(esperanto_variant)
         self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "directory, language code and variant. "

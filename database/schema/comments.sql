@@ -635,7 +635,6 @@ COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of thi
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
 COMMENT ON COLUMN Product.official_answers IS 'Whether or not this product upstream uses Answers officialy. This is useful to help indicate whether or not that a question will receive an answer.';
-COMMENT ON COLUMN Product.official_codehosting IS 'Whether or not this product upstream uses codehosting officially.';
 COMMENT ON COLUMN Product.bug_supervisor IS 'Person who is responsible for managing bugs on this product.';
 COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
@@ -1112,14 +1111,6 @@ COMMENT ON COLUMN BinaryPackagePublishingHistory.pocket IS 'The pocket into whic
 COMMENT ON COLUMN BinaryPackagePublishingHistory.archive IS 'Target archive for this publishing record.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
-
--- PublishedPackage View
-
-COMMENT ON VIEW PublishedPackage IS
-    'A very large view that brings together all the information about
-    packages that are currently being published within a distribution. This
-    view was designed for the page which shows packages published in the
-    distribution, but may be more widely used.';
 
 -- ProcessorFamily
 
@@ -1992,6 +1983,7 @@ COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions 
 COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
 COMMENT ON COLUMN Archive.external_dependencies IS 'Newline-separated list of repositories to be used to retrieve any external build dependencies when building packages in this archive, in the format: deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]  The series variable is replaced with the series name of the context build.  This column is specifically and only intended for OEM migration to Launchpad and should be re-examined in October 2010 to see if it is still relevant.';
 COMMENT ON COLUMN Archive.commercial IS 'Whether this archive is a commercial Archive and should appear in the Software Center.';
+COMMENT ON COLUMN Archive.build_debug_symbols IS 'Whether builds for this archive should create debug symbol packages.';
 
 -- ArchiveAuthToken
 

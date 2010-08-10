@@ -143,7 +143,6 @@ class BuildBreadcrumb(Breadcrumb):
 
 class BuildView(LaunchpadView):
     """Auxiliary view class for IBinaryPackageBuild"""
-    __used_for__ = IBinaryPackageBuild
 
     @property
     def label(self):
@@ -233,8 +232,6 @@ class BuildView(LaunchpadView):
 
 class BuildRetryView(BuildView):
     """View class for retrying `IBinaryPackageBuild`s"""
-
-    __used_for__ = IBinaryPackageBuild
 
     @property
     def label(self):
@@ -334,9 +331,11 @@ def setupCompleteBuilds(batch):
 
     complete_builds = []
     for build in builds:
-        buildqueue = prefetched_data.get(build.id)
-        complete_builds.append(CompleteBuild(build, buildqueue))
-
+        if IBinaryPackageBuild.providedBy(build):
+            buildqueue = prefetched_data.get(build.id)
+            complete_builds.append(CompleteBuild(build, buildqueue))
+        else:
+            complete_builds.append(build)
     return complete_builds
 
 
@@ -348,7 +347,6 @@ class BuildRecordsView(LaunchpadView):
     template/builds-list.pt and callsite details in Builder, Distribution,
     DistroSeries, DistroArchSeries and SourcePackage view classes.
     """
-    __used_for__ = IHasBuildRecords
 
     page_title = 'Builds'
 
