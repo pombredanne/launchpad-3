@@ -872,7 +872,6 @@ class BugzillaLPPlugin(BugzillaAPI):
         remote_bugs = response_dict['bugs']
 
         self._storeBugs(remote_bugs)
-        self.initializeRemoteImportance(bug_ids)
 
     @ensure_no_transaction
     def getCurrentDBTime(self):
