@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.testing import DatabaseFunctionalLayer
 from lazr.lifecycle.interfaces import IDoNotSnapshot
 from lp.services.worlddata.interfaces.language import ILanguage
@@ -23,11 +21,10 @@ class TestLanguageWebservice(TestCaseWithFactory):
             "see bug 553093.")
 
     def test_guessed_pluralforms_guesses(self):
-        language = self.factory.makeLanguage()
+        language = self.factory.makeLanguage(pluralforms=None)
         self.assertIs(None, language.pluralforms)
         self.assertEqual(2, language.guessed_pluralforms)
 
     def test_guessed_pluralforms_knows(self):
-        language = self.factory.makeLanguage()
-        removeSecurityProxy(language).pluralforms = 3
+        language = self.factory.makeLanguage(pluralforms=3)
         self.assertEqual(language.pluralforms, language.guessed_pluralforms)
