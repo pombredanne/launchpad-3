@@ -17,6 +17,7 @@ from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.structuralsubscription import (
@@ -313,4 +314,8 @@ class StructuralSubscriptionMenuMixin:
         else:
             text = 'Subscribe to bug mail'
             icon = 'add'
-        return Link('+subscribe', text, icon=icon, enabled=enabled)
+        if IDistribution.providedBy(sst) and (
+            not sst.userCanAlterBugSubscription(self.user, self.user)):
+                return Link('+subscribe', text, icon=icon, enabled=False)
+        else:
+                return Link('+subscribe', text, icon=icon, enabled=enabled)
