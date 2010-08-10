@@ -2079,23 +2079,23 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             license_info=data['license_info'],
             project=project)
 
-    def link_source_package(self, data):
+    def link_source_package(self, product, data):
         if (data.get('distroseries') is not None
             and self.source_package_name is not None):
             source_package = data['distroseries'].getSourcePackage(
                 self.source_package_name)
             source_package.setPackaging(
-                self.product.development_focus, self.user)
+                product.development_focus, self.user)
             self.request.response.addInfoNotification(
                 'Linked %s project to %s source package.' % (
-                    self.product.displayname, self.source_package_name.name))
+                    product.displayname, self.source_package_name.name))
 
     def main_action(self, data):
         """See `MultiStepView`."""
         self.product = self.create_product(data)
         self.notifyCommercialMailingList()
         notify(ObjectCreatedEvent(self.product))
-        self.link_source_package(data)
+        self.link_source_package(self.product, data)
 
         if self._return_url is None:
             self.next_url = canonical_url(self.product)

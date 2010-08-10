@@ -229,9 +229,9 @@ However, when a proprietary license is selected, a description is required.
     questions.
     <BLANKLINE>
     Sometimes new projects are licensed as 'Other/Open Source' because the
-    licensing decisions have not yet been made.
-    If that is your situation we u= rge
-    you to update the licensing in Launchpad as soon as you make that choice.
+    licensing decisions have not yet been made.  If that is your situation
+    we urge you to update the licensing in Launchpad as soon as you make
+    that choice.
     <BLANKLINE>
     If the license for your project needs to be corrected you can do so by
     following the 'Change Details' link on your project's overview page.
