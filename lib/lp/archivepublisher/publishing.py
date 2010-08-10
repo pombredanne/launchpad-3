@@ -42,14 +42,6 @@ from canonical.librarian.client import LibrarianClient
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
-DISTROARCHRELEASE_STANZA = """Archive: %s
-Version: %s
-Component: %s
-Origin: %s
-Label: %s
-Architecture: %s
-"""
-
 def reorder_components(components):
     """Return a list of the components provided.
 
@@ -489,22 +481,20 @@ class Publisher(object):
         release_file["Architectures"] = " ".join(sorted(list(all_architectures)))
         release_file["Components"] = " ".join(reorder_components(all_components))
         release_file["Description"] = drsummary
-        release_file["MD5Sum"] = []
-        all_files = sorted(list(all_files), key=os.path.dirname)
-        for file_name in all_files:
-            entry = self._createSumLine(full_name, file_name,
-                    hashlib.md5, "md5sum")
-            release_file["MD5Sum"].append(entry)
-        release_file["SHA1"] = []
-        for file_name in all_files:
-            entry = self._createSumLine(full_name, file_name,
-                    hashlib.sha1, "sha1")
-            release_file["SHA1"].append(entry)
-        release_file["SHA256"] = []
-        for file_name in all_files:
-            entry = self._createSumLine(full_name, file_name,
-                    hashlib.sha256, "sha256")
-            release_file["SHA256"].append(entry)
+
+        for f in sorted(list(all_files), key=os.path.dirname):
+            entry = self._createSumLine(full_name, f)
+            if entry is None:
+                continue
+            release_file.setdefault("MD5Sum", []).append(
+                { "md5sum": hashlib.md5(entry).hexdigest(),
+                  "name": f, "size": len(entry)})
+            release_file.setdefault("SHA1", []).append(
+                { "sha1": hashlib.sha1(entry).hexdigest(),
+                  "name": f, "size": len(entry)})
+            release_file.setdefault("SHA256", []).append(
+                { "sha256": hashlib.sha256(entry).hexdigest(),
+                  "name": f, "size": len(entry)})
 
         f = open(os.path.join(
             self._config.distsroot, full_name, "Release"), "w")
@@ -560,22 +550,24 @@ class Publisher(object):
 
         all_files.add(os.path.join(component, architecture, "Release"))
 
+        release_file = Release()
+        release_file["Archive"] = full_name
+        release_file["Version"] = distroseries.version
+        release_file["Component"] = component
+        release_file["Origin"] = self._getOrigin()
+        release_file["Label"] = self._getLabel()
+        release_file["Architecture"] = clean_architecture
+
         f = open(os.path.join(self._config.distsroot, full_name,
                               component, architecture, "Release"), "w")
-
-        stanza = (DISTROARCHRELEASE_STANZA % (
-                full_name,
-                distroseries.version,
-                component,
-                self._getOrigin(),
-                self._getLabel(),
-                unicode(clean_architecture))).encode("utf-8")
-        f.write(stanza)
-        f.close()
+        try:
+            release_file.dump(f, "utf-8")
+        finally:
+            f.close()
 
         return clean_architecture
 
-    def _createSumLine(self, distroseries_name, file_name, sum_form, key):
+    def _createSumLine(self, distroseries_name, file_name):
         """Generate out a checksum entry.
 
         Writes a checksum to the given file for the given filename in
@@ -592,17 +584,13 @@ class Publisher(object):
 
         in_file = open(full_name, 'r')
         try:
-            contents = in_file.read()
-            length = len(contents)
-            checksum = sum_form(contents).hexdigest()
+            return in_file.read()
         finally:
             in_file.close()
 
-        return {key: checksum, "size": length, "name": file_name}
-
     def deleteArchive(self):
         """Delete the archive.
-        
+
         Physically remove the entire archive from disk and set the archive's 
         status to DELETED.
 
