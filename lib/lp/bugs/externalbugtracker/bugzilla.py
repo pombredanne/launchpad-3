@@ -52,7 +52,7 @@ class Bugzilla(ExternalBugTracker):
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
         self.remote_bug_status = {}
-        self.remote_bug_importance = {'1': 'NORMAL NORMAL', '2': 'NORMAL NORMAL'}
+        self.remote_bug_importance = {}
         self.remote_bug_product = {}
 
     @ensure_no_transaction
@@ -266,6 +266,7 @@ class Bugzilla(ExternalBugTracker):
             self.version = self._probe_version()
 
         super(Bugzilla, self).initializeRemoteBugDB(bug_ids)
+        self.initializeRemoteImportance(bug_ids)
 
     def getRemoteBug(self, bug_id):
         """See `ExternalBugTracker`."""
@@ -372,6 +373,9 @@ class Bugzilla(ExternalBugTracker):
                     status += ' %s' % resolution
             self.remote_bug_status[bug_id] = status
 
+            # TODO: This is where the bug importance *should* be set
+            self.remote_bug_importance[bug_id] = "NORMAL NORMAL"
+
             product_nodes = bug_node.getElementsByTagName('bz:product')
             assert len(product_nodes) <= 1, (
                 "Should be at most one product node for bug %s." % bug_id)
@@ -382,10 +386,13 @@ class Bugzilla(ExternalBugTracker):
                 self.remote_bug_product[bug_id] = (
                     product_node.childNodes[0].data)
 
+    def initializeRemoteImportance(self, bug_ids):
+        for bug_id in bug_ids:
+            self.remote_bug_importance[bug_id] = "NORMAL NORMAL"
+
     def getRemoteImportance(self, bug_id):
         """See `ExternalBugTracker`."""
         try:
-            self.remote_bug_importance[bug_id] = "NORMAL NORMAL"
             if bug_id not in self.remote_bug_importance:
                 return "Bug %s is not in remote_bug_importance" %(bug_id)
             return self.remote_bug_importance[bug_id]
@@ -576,6 +583,7 @@ class BugzillaAPI(Bugzilla):
         remote_bugs = response_dict['bugs']
 
         self._storeBugs(remote_bugs)
+        self.initializeRemoteImportance(bug_ids)
 
     def getRemoteStatus(self, bug_id):
         """See `IExternalBugTracker`."""
@@ -848,6 +856,7 @@ class BugzillaLPPlugin(BugzillaAPI):
         remote_bugs = response_dict['bugs']
 
         self._storeBugs(remote_bugs)
+        self.initializeRemoteImportance(bug_ids)
 
     @ensure_no_transaction
     def getCurrentDBTime(self):
