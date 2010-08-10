@@ -42,6 +42,7 @@ from canonical.librarian.client import LibrarianClient
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
+
 def reorder_components(components):
     """Return a list of the components provided.
 
@@ -74,6 +75,7 @@ def _getDiskPool(pubconf, log):
     dp.logger.setLevel(logging.INFO)
 
     return dp
+
 
 def getPublisher(archive, allowed_suites, log, distsroot=None):
     """Return an initialised Publisher instance for the given context.
@@ -478,23 +480,28 @@ class Publisher(object):
         release_file["Codename"] = distroseries.name
         release_file["Date"] = datetime.utcnow().strftime(
             "%a, %d %b %Y %k:%M:%S UTC")
-        release_file["Architectures"] = " ".join(sorted(list(all_architectures)))
-        release_file["Components"] = " ".join(reorder_components(all_components))
+        release_file["Architectures"] = " ".join(
+            sorted(list(all_architectures)))
+        release_file["Components"] = " ".join(
+            reorder_components(all_components))
         release_file["Description"] = drsummary
 
         for f in sorted(list(all_files), key=os.path.dirname):
             entry = self._readIndexFileContents(full_name, f)
             if entry is None:
                 continue
-            release_file.setdefault("MD5Sum", []).append(
-                { "md5sum": hashlib.md5(entry).hexdigest(),
-                  "name": f, "size": len(entry)})
-            release_file.setdefault("SHA1", []).append(
-                { "sha1": hashlib.sha1(entry).hexdigest(),
-                  "name": f, "size": len(entry)})
-            release_file.setdefault("SHA256", []).append(
-                { "sha256": hashlib.sha256(entry).hexdigest(),
-                  "name": f, "size": len(entry)})
+            release_file.setdefault("MD5Sum", []).append({
+                "md5sum": hashlib.md5(entry).hexdigest(),
+                "name": f,
+                "size": len(entry)})
+            release_file.setdefault("SHA1", []).append({
+                "sha1": hashlib.sha1(entry).hexdigest(),
+                "name": f,
+                "size": len(entry)})
+            release_file.setdefault("SHA256", []).append({
+                "sha256": hashlib.sha256(entry).hexdigest(),
+                "name": f,
+                "size": len(entry)})
 
         f = open(os.path.join(
             self._config.distsroot, full_name, "Release"), "w")
@@ -592,10 +599,10 @@ class Publisher(object):
     def deleteArchive(self):
         """Delete the archive.
 
-        Physically remove the entire archive from disk and set the archive's 
+        Physically remove the entire archive from disk and set the archive's
         status to DELETED.
 
-        Any errors encountered while removing the archive from disk will 
+        Any errors encountered while removing the archive from disk will
         be caught and an OOPS report generated.
         """
 
@@ -614,7 +621,7 @@ class Publisher(object):
                 self.log.warning(
                     "Failed to delete directory '%s' for archive "
                     "'%s/%s'\n%s" % (
-                    directory, self.archive.owner.name, 
+                    directory, self.archive.owner.name,
                     self.archive.name, e))
 
         self.archive.status = ArchiveStatus.DELETED
