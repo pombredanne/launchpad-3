@@ -14,6 +14,8 @@ import logging
 import os
 import shutil
 
+from debian.deb822 import Release
+
 from datetime import datetime
 
 from zope.component import getUtility
@@ -39,17 +41,6 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from canonical.librarian.client import LibrarianClient
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
-
-DISTRORELEASE_STANZA = """Origin: %s
-Label: %s
-Suite: %s
-Version: %s
-Codename: %s
-Date: %s
-Architectures: %s
-Components: %s
-Description: %s
-"""
 
 DISTROARCHRELEASE_STANZA = """Archive: %s
 Version: %s
@@ -487,33 +478,40 @@ class Publisher(object):
         else:
             drsummary += pocket.name.capitalize()
 
-        f = open(os.path.join(
-            self._config.distsroot, full_name, "Release"), "w")
-
-        stanza = (DISTRORELEASE_STANZA % (
-                    self._getOrigin(),
-                    self._getLabel(),
-                    full_name,
-                    distroseries.version,
-                    distroseries.name,
-                    datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
-                    " ".join(sorted(list(all_architectures))),
-                    " ".join(reorder_components(all_components)),
-                    drsummary)).encode("utf-8")
-        f.write(stanza)
-
-        f.write("MD5Sum:\n")
+        release_file = Release()
+        release_file["Origin"] = self._getOrigin()
+        release_file["Label"] = self._getLabel()
+        release_file["Suite"] = full_name
+        release_file["Version"] = distroseries.version
+        release_file["Codename"] = distroseries.name
+        release_file["Date"] = datetime.utcnow().strftime(
+            "%a, %d %b %Y %k:%M:%S UTC")
+        release_file["Architectures"] = " ".join(sorted(list(all_architectures)))
+        release_file["Components"] = " ".join(reorder_components(all_components))
+        release_file["Description"] = drsummary
+        release_file["MD5Sum"] = []
         all_files = sorted(list(all_files), key=os.path.dirname)
         for file_name in all_files:
-            self._writeSumLine(full_name, f, file_name, hashlib.md5)
-        f.write("SHA1:\n")
+            entry = self._createSumLine(full_name, file_name,
+                    hashlib.md5, "md5sum")
+            release_file["MD5Sum"].append(entry)
+        release_file["SHA1"] = []
         for file_name in all_files:
-            self._writeSumLine(full_name, f, file_name, hashlib.sha1)
-        f.write("SHA256:\n")
+            entry = self._createSumLine(full_name, file_name,
+                    hashlib.sha1, "sha1")
+            release_file["SHA1"].append(entry)
+        release_file["SHA256"] = []
         for file_name in all_files:
-            self._writeSumLine(full_name, f, file_name, hashlib.sha256)
+            entry = self._createSumLine(full_name, file_name,
+                    hashlib.sha256, "sha256")
+            release_file["SHA256"].append(entry)
 
-        f.close()
+        f = open(os.path.join(
+            self._config.distsroot, full_name, "Release"), "w")
+        try:
+            release_file.dump(f, "utf-8")
+        finally:
+            f.close()
 
         # Skip signature if the archive signing key is undefined.
         if self.archive.signing_key is None:
@@ -577,8 +575,8 @@ class Publisher(object):
 
         return clean_architecture
 
-    def _writeSumLine(self, distroseries_name, out_file, file_name, sum_form):
-        """Write out a checksum line.
+    def _createSumLine(self, distroseries_name, file_name, sum_form, key):
+        """Generate out a checksum entry.
 
         Writes a checksum to the given file for the given filename in
         the given form.
@@ -590,7 +588,7 @@ class Publisher(object):
             # Most likely we have an incomplete archive (E.g. no sources
             # for a given distroseries). This is a non-fatal issue
             self.log.debug("Failed to find " + full_name)
-            return
+            return None
 
         in_file = open(full_name, 'r')
         try:
@@ -600,7 +598,7 @@ class Publisher(object):
         finally:
             in_file.close()
 
-        out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
+        return {key: checksum, "size": length, "name": file_name}
 
     def deleteArchive(self):
         """Delete the archive.
