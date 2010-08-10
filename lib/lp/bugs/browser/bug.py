@@ -49,8 +49,9 @@ from lazr.restful.interfaces import (
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from lp.app.errors import NotFoundError
+from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
@@ -659,9 +660,35 @@ class BugMarkAsDuplicateView(BugEditViewBase):
     field_names = ['duplicateof']
     label = "Mark bug report as a duplicate"
 
+    def setUpFields(self):
+        """Make the readonly version of duplicateof available."""
+        super(BugMarkAsDuplicateView, self).setUpFields()
+
+        duplicateof_field = DuplicateBug(
+            __name__='duplicateof', title=_('Duplicate Of'), required=False)
+
+        self.form_fields = self.form_fields.omit('duplicateof')
+        self.form_fields = formlib.form.Fields(duplicateof_field)
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        return {'duplicateof': self.context.bug.duplicateof}
+
     @action('Change', name='change')
     def change_action(self, action, data):
         """Update the bug."""
+        data = dict(data)
+        # We handle duplicate changes by hand instead of leaving it to
+        # the usual machinery because we must use bug.markAsDuplicate().
+        bug = self.context.bug
+        bug_before_modification = Snapshot(
+            bug, providing=providedBy(bug))
+        duplicateof = data.pop('duplicateof')
+        bug.markAsDuplicate(duplicateof)
+        notify(
+            ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
+        # Apply other changes.
         self.updateBugFromData(data)
 
 
