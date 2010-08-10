@@ -115,9 +115,8 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             score += score_pocket
 
             # Calculates the component-related part of the score.
-            score_component = score_componentname[
-                self.build.current_component.name]
-            score += score_component
+            score += score_componentname.get(
+                self.build.current_component.name, 0)
 
             # Calculates the build queue time component of the score.
             right_now = datetime.now(pytz.timezone('UTC'))

@@ -44,15 +44,20 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         self._builder.slave.cacheFile(logger, chroot)
         cookie = self.buildfarmjob.generateSlaveBuildCookie()
 
-        args = self.buildfarmjob.metadata
+        args = {'arch_tag': self._getDistroArchSeries().architecturetag}
+        args.update(self.buildfarmjob.metadata)
+
         filemap = {}
 
         self._builder.slave.build(
             cookie, self.build_type, chroot_sha1, filemap, args)
 
     def _getChroot(self):
+        return self._getDistroArchSeries().getChroot()
+
+    def _getDistroArchSeries(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        return ubuntu.currentseries.nominatedarchindep.getChroot()
+        return ubuntu.currentseries.nominatedarchindep
 
     def logStartBuild(self, logger):
         """See `IBuildFarmJobBehavior`."""

@@ -122,12 +122,13 @@ class LinkData:
 
         :param menu: The sub menu used by the page that the link represents.
         """
+
         self.target = target
         self.text = text
         self.summary = summary
         self.icon = icon
         if not isinstance(enabled, bool):
-            raise AssertionError, "enabled must be boolean, got %r" % enabled
+            raise AssertionError("enabled must be boolean, got %r" % enabled)
         self.enabled = enabled
         self.site = site
         self.menu = menu

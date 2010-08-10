@@ -307,6 +307,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         name_summaries = [
             '%s: %s' % (binary.name, binary.summary)
             for binary in current.sample_binary_packages]
+        if name_summaries == []:
+            return None
         return '\n'.join(name_summaries)
 
     @property

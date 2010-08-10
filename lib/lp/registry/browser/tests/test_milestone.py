@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from lp.testing import login_person
+from lp.testing import ANONYMOUS, login_person, login
 from lp.testing.views import create_initialized_view
 from lp.testing.memcache import MemcacheTestCase
 
@@ -26,25 +26,43 @@ class TestMilestoneMemcache(MemcacheTestCase):
         bugtask.milestone = self.milestone
         self.observer = self.factory.makePerson()
 
-    def test_milestone_index_memcache(self):
+    def test_milestone_index_memcache_anonymous(self):
+        # Miss the cache on first render.
+        login(ANONYMOUS)
+        view = create_initialized_view(
+            self.milestone, name='+index', principal=None)
+        content = view.render()
+        self.assertCacheMiss('<dt>Assigned to you:</dt>', content)
+        self.assertCacheMiss('id="milestone_bugtasks"', content)
+        # Hit the cache on the second render.
+        view = create_initialized_view(
+            self.milestone, name='+index', principal=None)
+        self.assertTrue(view.milestone.active)
+        self.assertEqual(10, view.expire_cache_minutes)
+        content = view.render()
+        self.assertCacheHit(
+            '<dt>Assigned to you:</dt>',
+            'anonymous, view/expire_cache_minutes minute', content)
+        self.assertCacheHit(
+            'id="milestone_bugtasks"',
+            'anonymous, view/expire_cache_minutes minute', content)
+
+    def test_milestone_index_memcache_no_cache_logged_in(self):
+        login_person(self.observer)
         # Miss the cache on first render.
         view = create_initialized_view(
             self.milestone, name='+index', principal=self.observer)
         content = view.render()
         self.assertCacheMiss('<dt>Assigned to you:</dt>', content)
         self.assertCacheMiss('id="milestone_bugtasks"', content)
-        # Hit the cache on the second render.
+        # Miss the cache again on the second render.
         view = create_initialized_view(
             self.milestone, name='+index', principal=self.observer)
         self.assertTrue(view.milestone.active)
         self.assertEqual(10, view.expire_cache_minutes)
         content = view.render()
-        self.assertCacheHit(
-            '<dt>Assigned to you:</dt>',
-            'private, view/expire_cache_minutes minute', content)
-        self.assertCacheHit(
-            'id="milestone_bugtasks"',
-            'private, view/expire_cache_minutes minute', content)
+        self.assertCacheMiss('<dt>Assigned to you:</dt>', content)
+        self.assertCacheMiss('id="milestone_bugtasks"', content)
 
     def test_milestone_index_active_cache_time(self):
         # Verify the active milestone cache time.

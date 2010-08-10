@@ -28,10 +28,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itertools import count
 from operator import isSequenceType
+import os
 import os.path
 from random import randint
 from StringIO import StringIO
-import sys
 from textwrap import dedent
 from threading import local
 from types import InstanceType
@@ -112,8 +112,6 @@ from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.model.distributionsourcepackage import (
-    DistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
 from lp.registry.interfaces.mailinglist import (
@@ -128,7 +126,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import (
-    ISourcePackage, SourcePackageUrgency)
+    ISourcePackage, SourcePackageFileType, SourcePackageUrgency)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet
@@ -146,33 +144,33 @@ from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import (
     default_name_by_purpose, IArchiveSet, ArchivePurpose)
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
+from lp.soyuz.interfaces.binarypackagerelease import (
+    BinaryPackageFileType, BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority, PackagePublishingStatus)
+    IPublishingSet, PackagePublishingPriority, PackagePublishingStatus)
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.files import BinaryPackageFile, SourcePackageReleaseFile
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from lp.testing import (
     ANONYMOUS,
     login,
     login_as,
+    person_logged_in,
     run_with_login,
     temp_dir,
     time_counter,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
@@ -631,13 +629,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, product=None, distribution=None, productseries=None, name=None):
         if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
-        if productseries is not None:
-            product = productseries.product
+        if distribution is None:
+            if productseries is not None:
+                product = productseries.product
+            else:
+                productseries = self.makeProductSeries(product=product)
+            distroseries = None
+        else:
+            distroseries = self.makeDistroRelease(distribution=distribution)
         if name is None:
             name = self.getUniqueString()
-        return Milestone(product=product, distribution=distribution,
-                         productseries=productseries,
-                         name=name)
+        return ProxyFactory(
+            Milestone(product=product, distribution=distribution,
+                      productseries=productseries, distroseries=distroseries,
+                      name=name))
 
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
@@ -683,8 +688,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if milestone is None:
             milestone = self.makeMilestone(product=product,
                                            productseries=productseries)
-        return milestone.createProductRelease(
-            milestone.product.owner, datetime.now(pytz.UTC))
+        with person_logged_in(milestone.productseries.product.owner):
+            release = milestone.createProductRelease(
+                milestone.product.owner, datetime.now(pytz.UTC))
+        return release
 
     def makeProductReleaseFile(self, signed=True,
                                product=None, productseries=None,
@@ -700,12 +707,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             release = self.makeProductRelease(product=product,
                                               productseries=productseries,
                                               milestone=milestone)
-        return release.addReleaseFile(
-            'test.txt', 'test', 'text/plain',
-            uploader=release.milestone.product.owner,
-            signature_filename=signature_filename,
-            signature_content=signature_content,
-            description=description)
+        with person_logged_in(release.milestone.product.owner):
+            release_file = release.addReleaseFile(
+                'test.txt', 'test', 'text/plain',
+                uploader=release.milestone.product.owner,
+                signature_filename=signature_filename,
+                signature_content=signature_content,
+                description=description)
+        return release_file
 
     def makeProduct(
         self, name=None, project=None, displayname=None,
@@ -748,7 +757,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
-                          summary=None):
+                          summary=None, date_created=None):
         """Create and return a new ProductSeries."""
         if product is None:
             product = self.makeProduct()
@@ -761,8 +770,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
         naked_product = removeSecurityProxy(product)
-        return ProxyFactory(
-            naked_product.newSeries(owner=owner, name=name, summary=summary))
+        series = naked_product.newSeries(
+            owner=owner, name=name, summary=summary)
+        if date_created is not None:
+            series.datecreated = date_created
+        return ProxyFactory(series)
 
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,
@@ -2338,8 +2350,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             dateuploaded=date_uploaded,
             source_package_recipe_build=source_package_recipe_build)
 
+    def makeSourcePackageReleaseFile(self, sourcepackagerelease=None,
+                                     library_file=None, filetype=None):
+        if sourcepackagerelease is None:
+            sourcepackagerelease = self.makeSourcePackageRelease()
+        if library_file is None:
+            library_file = self.makeLibraryFileAlias()
+        if filetype is None:
+            filetype = SourcePackageFileType.DSC
+        return ProxyFactory(
+            SourcePackageReleaseFile(
+                sourcepackagerelease=sourcepackagerelease,
+                libraryfile=library_file, filetype=filetype))
+
     def makeBinaryPackageBuild(self, source_package_release=None,
-            distroarchseries=None, archive=None, builder=None):
+            distroarchseries=None, archive=None, builder=None,
+            status=None):
         """Create a BinaryPackageBuild.
 
         If archive is not supplied, the source_package_release is used
@@ -2349,6 +2375,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param distroarchseries: The DistroArchSeries to use.
         :param archive: The Archive to use.
         :param builder: An optional builder to assign.
+        :param status: The BuildStatus for the build.
         """
         if archive is None:
             if source_package_release is None:
@@ -2359,16 +2386,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             multiverse = self.makeComponent(name='multiverse')
             source_package_release = self.makeSourcePackageRelease(
                 archive, component=multiverse)
+            self.makeSourcePackagePublishingHistory(
+                distroseries=source_package_release.upload_distroseries,
+                archive=archive, sourcepackagerelease=source_package_release)
         processor = self.makeProcessor()
         if distroarchseries is None:
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=source_package_release.upload_distroseries,
                 processorfamily=processor.family)
+        if status is None:
+            status = BuildStatus.NEEDSBUILD
         binary_package_build = getUtility(IBinaryPackageBuildSet).new(
             source_package_release=source_package_release,
             processor=processor,
             distro_arch_series=distroarchseries,
-            status=BuildStatus.NEEDSBUILD,
+            status=status,
             archive=archive,
             pocket=PackagePublishingPocket.RELEASE,
             date_created=self.getUniqueDate())
@@ -2399,6 +2431,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            dsc_standards_version='3.6.2',
                                            dsc_format='1.0',
                                            dsc_binaries='foo-bin',
+                                           sourcepackagerelease=None,
                                            ):
         """Make a `SourcePackagePublishingHistory`."""
         if distroseries is None:
@@ -2419,40 +2452,37 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if status is None:
             status = PackagePublishingStatus.PENDING
 
-        spr = self.makeSourcePackageRelease(
-            archive=archive,
-            sourcepackagename=sourcepackagename,
-            distroseries=distroseries,
-            maintainer=maintainer,
-            creator=creator, component=component,
-            section_name=section_name,
-            urgency=urgency,
-            version=version,
-            builddepends=builddepends,
-            builddependsindep=builddependsindep,
-            build_conflicts=build_conflicts,
-            build_conflicts_indep=build_conflicts_indep,
-            architecturehintlist=architecturehintlist,
-            dsc_standards_version=dsc_standards_version,
-            dsc_format=dsc_format,
-            dsc_binaries=dsc_binaries,
-            date_uploaded=date_uploaded)
+        if sourcepackagerelease is None:
+            sourcepackagerelease = self.makeSourcePackageRelease(
+                archive=archive,
+                sourcepackagename=sourcepackagename,
+                distroseries=distroseries,
+                maintainer=maintainer,
+                creator=creator, component=component,
+                section_name=section_name,
+                urgency=urgency,
+                version=version,
+                builddepends=builddepends,
+                builddependsindep=builddependsindep,
+                build_conflicts=build_conflicts,
+                build_conflicts_indep=build_conflicts_indep,
+                architecturehintlist=architecturehintlist,
+                dsc_standards_version=dsc_standards_version,
+                dsc_format=dsc_format,
+                dsc_binaries=dsc_binaries,
+                date_uploaded=date_uploaded)
 
-        sspph = SourcePackagePublishingHistory(
-            distroseries=distroseries,
-            sourcepackagerelease=spr,
-            component=spr.component,
-            section=spr.section,
-            status=status,
-            datecreated=date_uploaded,
-            dateremoved=dateremoved,
-            scheduleddeletiondate=scheduleddeletiondate,
-            pocket=pocket,
-            archive=archive)
+        spph = getUtility(IPublishingSet).newSourcePublication(
+            archive, sourcepackagerelease, distroseries,
+            sourcepackagerelease.component, sourcepackagerelease.section,
+            pocket)
 
-        # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
-        # of SSPPH and other useful attributes.
-        return SourcePackagePublishingHistory.get(sspph.id)
+        naked_spph = removeSecurityProxy(spph)
+        naked_spph.status = status
+        naked_spph.datecreated = date_uploaded
+        naked_spph.dateremoved = dateremoved
+        naked_spph.scheduleddeletiondate = scheduleddeletiondate
+        return spph
 
     def makeBinaryPackagePublishingHistory(self, binarypackagerelease=None,
                                            distroarchseries=None,
@@ -2485,27 +2515,39 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if priority is None:
             priority = PackagePublishingPriority.OPTIONAL
 
-        bpr = self.makeBinaryPackageRelease(
-            component=component,
-            section_name=section_name,
-            priority=priority)
+        if binarypackagerelease is None:
+            binarypackagerelease = self.makeBinaryPackageRelease(
+                component=component,
+                section_name=section_name,
+                priority=priority)
 
-        return BinaryPackagePublishingHistory(
-            distroarchseries=distroarchseries,
-            binarypackagerelease=bpr,
-            component=bpr.component,
-            section=bpr.section,
-            status=status,
-            dateremoved=dateremoved,
-            scheduleddeletiondate=scheduleddeletiondate,
-            pocket=pocket,
-            priority=priority,
-            archive=archive)
+        bpph = getUtility(IPublishingSet).newBinaryPublication(
+            archive, binarypackagerelease, distroarchseries,
+            binarypackagerelease.component, binarypackagerelease.section,
+            priority, pocket)
+        naked_bpph = removeSecurityProxy(bpph)
+        naked_bpph.status = status
+        naked_bpph.dateremoved = dateremoved
+        naked_bpph.scheduleddeletiondate = scheduleddeletiondate
+        naked_bpph.priority = priority
+        return bpph
 
     def makeBinaryPackageName(self, name=None):
         if name is None:
             name = self.getUniqueString("binarypackage")
         return BinaryPackageName(name=name)
+
+    def makeBinaryPackageFile(self, binarypackagerelease=None,
+                              library_file=None, filetype=None):
+        if binarypackagerelease is None:
+            binarypackagerelease = self.makeBinaryPackageRelease()
+        if library_file is None:
+            library_file = self.makeLibraryFileAlias()
+        if filetype is None:
+            filetype = BinaryPackageFileType.DEB
+        return ProxyFactory(BinaryPackageFile(
+            binarypackagerelease=binarypackagerelease,
+            libraryfile=library_file, filetype=filetype))
 
     def makeBinaryPackageRelease(self, binarypackagename=None,
                                  version=None, build=None,
@@ -2531,13 +2573,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             summary = self.getUniqueString("summary")
         if description is None:
             description = self.getUniqueString("description")
-        return BinaryPackageRelease(binarypackagename=binarypackagename,
-                                    version=version, build=build,
-                                    binpackageformat=binpackageformat,
-                                    component=component, section=section,
-                                    priority=priority, summary=summary,
-                                    description=description,
-                                    architecturespecific=architecturespecific)
+        return ProxyFactory(
+            BinaryPackageRelease(
+                binarypackagename=binarypackagename, version=version,
+                build=build, binpackageformat=binpackageformat,
+                component=component, section=section, priority=priority,
+                summary=summary, description=description,
+                architecturespecific=architecturespecific))
 
     def makeSection(self, name=None):
         """Make a `Section`."""
@@ -2577,7 +2619,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             isinstance(sourcepackagename, basestring)):
             sourcepackagename = self.getOrMakeSourcePackageName(
                 sourcepackagename)
-        return SuiteSourcePackage(distroseries, pocket, sourcepackagename)
+        return ProxyFactory(
+            SuiteSourcePackage(distroseries, pocket, sourcepackagename))
 
     def makeDistributionSourcePackage(self, sourcepackagename=None,
                                       distribution=None):
@@ -2589,7 +2632,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distribution is None:
             distribution = self.makeDistribution()
 
-        return DistributionSourcePackage(distribution, sourcepackagename)
+        return distribution.getSourcePackage(sourcepackagename)
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None, encode_attachments=False):
@@ -2769,7 +2812,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # other Python libraries.
 unwrapped_types = (
     BaseRecipeBranch, DSCFile, InstanceType, MergeDirective2, Message,
-    datetime, int, str, unicode,)
+    datetime, int, str, unicode)
 
 
 def is_security_proxied_or_harmless(obj):
@@ -2794,20 +2837,17 @@ class UnproxiedFactoryMethodWarning(UserWarning):
     def __init__(self, method_name):
         super(UnproxiedFactoryMethodWarning, self).__init__(
             "PLEASE FIX: LaunchpadObjectFactory.%s returns an "
-            "unproxied object." % (method_name,))
+            "unproxied object." % (method_name, ))
 
 
-class UnreasonableRemoveSecurityProxyWarning(UserWarning):
-    """Raised when there is an unreasonable call to removeSecurityProxy."""
-
-    # XXX: JonathanLange 2010-07-25: I have no idea what "unreasonable" means
-    # in this context.
+class ShouldThisBeUsingRemoveSecurityProxy(UserWarning):
+    """Raised when there is a potentially bad call to removeSecurityProxy."""
 
     def __init__(self, obj):
         message = (
-            "Called removeSecurityProxy(%r) without a check if this is "
-            "reasonable." % obj)
-        super(UnreasonableRemoveSecurityProxyWarning, self).__init__(message)
+            "removeSecurityProxy(%r) called. Is this correct? "
+            "Either call it directly or fix the test." % obj)
+        super(ShouldThisBeUsingRemoveSecurityProxy, self).__init__(message)
 
 
 class LaunchpadObjectFactory:
@@ -2827,7 +2867,7 @@ class LaunchpadObjectFactory:
 
     def __getattr__(self, name):
         attr = getattr(self._factory, name)
-        if callable(attr):
+        if os.environ.get('LP_PROXY_WARNINGS') == '1' and callable(attr):
 
             def guarded_method(*args, **kw):
                 result = attr(*args, **kw)
@@ -2850,5 +2890,6 @@ def remove_security_proxy_and_shout_at_engineer(obj):
     This function should only be used in legacy tests which fail because
     they expect unproxied objects.
     """
-    warnings.warn(UnreasonableRemoveSecurityProxyWarning(obj), stacklevel=2)
+    if os.environ.get('LP_PROXY_WARNINGS') == '1':
+        warnings.warn(ShouldThisBeUsingRemoveSecurityProxy(obj), stacklevel=2)
     return removeSecurityProxy(obj)
