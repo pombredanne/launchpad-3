@@ -2007,7 +2007,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # setUpWidgets() doesn't have access to the data dictionary,
         # so the source package name needs to be converted from a string
         # into an object here.
-        package_name_string = self.request.form['field.source_package_name']
+        package_name_string = self.request.form.get(
+            'field.source_package_name')
         if package_name_string is None:
             return None
         else:
@@ -2056,7 +2057,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def label(self):
         """See `LaunchpadFormView`."""
         return 'Register %s (%s) in Launchpad' % (
-                self.request.form['displayname'], self.request.form['name'])
+                self.request.form['field.displayname'],
+                self.request.form['field.name'])
 
     def create_product(self, data):
         """Create the product from the user data."""
@@ -2081,7 +2083,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             project=project)
 
     def link_source_package(self, data):
-        if (data['distroseries'] is not None
+        if (data.get('distroseries') is not None
             and self.source_package_name is not None):
             source_package = data['distroseries'].getSourcePackage(
                 self.source_package_name)
