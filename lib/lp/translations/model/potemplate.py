@@ -624,14 +624,11 @@ class POTemplate(SQLBase, RosettaStats):
 
     def export(self):
         """See `IPOTemplate`."""
-        translation_exporter = getUtility(ITranslationExporter)
-        translation_format_exporter = (
-            translation_exporter.getExporterProducingTargetFileFormat(
-                self.source_file_format))
 
+        translation_exporter = getUtility(ITranslationExporter)
         template_file = getAdapter(
             self, ITranslationFileData, 'all_messages')
-        exported_file = translation_format_exporter.exportTranslationFiles(
+        exported_file = translation_exporter.exportTranslationFiles(
             [template_file])
 
         try:
@@ -656,12 +653,9 @@ class POTemplate(SQLBase, RosettaStats):
 
     def exportWithTranslations(self):
         """See `IPOTemplate`."""
-        translation_exporter = getUtility(ITranslationExporter)
-        translation_format_exporter = (
-            translation_exporter.getExporterProducingTargetFileFormat(
-                self.source_file_format))
 
-        return translation_format_exporter.exportTranslationFiles(
+        translation_exporter = getUtility(ITranslationExporter)
+        return translation_exporter.exportTranslationFiles(
             self._generateTranslationFileDatas())
 
     def expireAllMessages(self):
@@ -793,14 +787,15 @@ class POTemplate(SQLBase, RosettaStats):
 
         return pofile
 
-    def getDummyPOFile(self, language_code, variant=None, requester=None):
+    def getDummyPOFile(self, language, variant=None, requester=None,
+                       check_for_existing=True):
         """See `IPOTemplate`."""
-        # see if a valid one exists.
-        existingpo = self.getPOFileByLang(language_code, variant)
-        assert existingpo is None, (
-            'There is already a valid IPOFile (%s)' % existingpo.title)
+        if check_for_existing:
+            # see if a valid one exists.
+            existingpo = self.getPOFileByLang(language.code, variant)
+            assert existingpo is None, (
+                'There is already a valid IPOFile (%s)' % existingpo.title)
 
-        language = self._lookupLanguage(language_code)
         return DummyPOFile(self, language, variant=variant, owner=requester)
 
     def createPOTMsgSetFromMsgIDs(self, msgid_singular, msgid_plural=None,
@@ -1445,6 +1440,7 @@ class POTemplateToTranslationFileDataAdapter:
     def __init__(self, potemplate):
         self._potemplate = potemplate
         self.messages = self._getMessages()
+        self.format = potemplate.source_file_format
 
     @cachedproperty
     def path(self):

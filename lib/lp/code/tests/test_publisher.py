@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.config import config
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.testing.layers import FunctionalLayer
@@ -39,7 +37,3 @@ class TestRegistration(TestCase):
         # actually provides WebServiceLayer in the sense of verifyObject after
         # traversal has started.
         self.assertTrue(WebServiceLayer.providedBy(request))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

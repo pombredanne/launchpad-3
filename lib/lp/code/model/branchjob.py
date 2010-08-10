@@ -46,8 +46,7 @@ from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp import canonical_url, errorlog
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
-from lp.code.enums import match_enum_title
+from lp.code.bzr import get_branch_formats
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
@@ -369,25 +368,12 @@ class BranchUpgradeJob(BranchJobDerived):
             source_branch = BzrBranch.open_from_transport(
                 source_branch_transport)
 
-            control_format = match_enum_title(
-                ControlFormat,
-                source_branch.bzrdir._format.get_format_string(),
-                ControlFormat.UNRECOGNIZED)
-            branch_format = match_enum_title(
-                BranchFormat,
-                source_branch._format.get_format_string(),
-                BranchFormat.UNRECOGNIZED)
-            repository_format = match_enum_title(
-                RepositoryFormat,
-                source_branch.repository._format.get_format_string(),
-                RepositoryFormat.UNRECOGNIZED)
+            formats = get_branch_formats(source_branch)
 
             self.branch.branchChanged(
                 self.branch.stacked_on,
                 self.branch.last_scanned_id,
-                control_format,
-                branch_format,
-                repository_format)
+                *formats)
         finally:
             shutil.rmtree(upgrade_branch_path)
 
