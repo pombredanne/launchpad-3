@@ -61,6 +61,12 @@ class TestFactory(TestCaseWithFactory):
         # And name is constructed from code as 'Language %(code)s'.
         self.assertEquals('Test language', language.englishname)
 
+    def test_makeLanguage_with_pluralforms(self):
+        # makeLanguage takes a number of plural forms for the language.
+        for number_of_forms in [None, 1, 3]:
+            language = self.factory.makeLanguage(pluralforms=number_of_forms)
+            self.assertEqual(number_of_forms, language.pluralforms)
+
     def test_loginAsAnyone(self):
         # Login as anyone logs you in as any user.
         person = self.factory.loginAsAnyone()
