@@ -382,7 +382,8 @@ class Bugzilla(ExternalBugTracker):
     def getRemoteImportance(self, bug_id):
         """See `ExternalBugTracker`."""
         try:
-            if str(bug_id) not in self.remote_bug_importance:
+            self.remote_bug_importance[bug_id] = "NORMAL NORMAL"
+            if bug_id not in self.remote_bug_importance:
                 return "Bug %s is not in remote_bug_importance" %(bug_id)
             return self.remote_bug_importance[bug_id]
         except:
