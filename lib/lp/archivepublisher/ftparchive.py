@@ -138,6 +138,7 @@ class FTPArchiveHandler:
         self._config = config
         self._diskpool = diskpool
         self.distro = distro
+        self.distroseries = self.distro.series
         self.publisher = publisher
         self.release_files_needed = {}
 
@@ -185,7 +186,7 @@ class FTPArchiveHandler:
         # iterate over the pockets, and do the suffix check inside
         # createEmptyPocketRequest; that would also allow us to replace
         # the == "" check we do there by a RELEASE match
-        for distroseries in self.distro:
+        for distroseries in self.distroseries:
             components = self._config.componentsForSeries(distroseries.name)
             for pocket, suffix in pocketsuffix.items():
                 if not fullpublish:
@@ -366,7 +367,7 @@ class FTPArchiveHandler:
 
     def generateOverrides(self, fullpublish=False):
         """Collect packages that need overrides, and generate them."""
-        for distroseries in self.distro.series:
+        for distroseries in self.distroseries:
             for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
@@ -629,7 +630,7 @@ class FTPArchiveHandler:
 
     def generateFileLists(self, fullpublish=False):
         """Collect currently published FilePublishings and write filelists."""
-        for distroseries in self.distro.series:
+        for distroseries in self.distroseries:
             for pocket in pocketsuffix:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
