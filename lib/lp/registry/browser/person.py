@@ -3075,7 +3075,7 @@ class PersonParticipationView(LaunchpadView):
 
     def _asParticipation(self, membership=None, team=None, team_path=None):
         """Return a dict of participation information for the membership.
-        
+
         Method requires membership or team, not both.
         """
         if ((membership is None and team is None) or
@@ -3089,7 +3089,7 @@ class PersonParticipationView(LaunchpadView):
             via = COMMASPACE.join(team.displayname for team in team_path)
 
         if membership is None:
-            #we have membership via an indirect team, and can use 
+            #we have membership via an indirect team, and can use
             #sane defaults
             role = 'Member'     #can only be member
             datejoined = None   #never joined, can't have a join date
@@ -3112,7 +3112,7 @@ class PersonParticipationView(LaunchpadView):
                 subscribed = 'Subscribed'
         else:
             subscribed = '&mdash;'
-        
+
         return dict(
             displayname=team.displayname, team=team, datejoined=datejoined,
             role=role, via=via, subscribed=subscribed)
