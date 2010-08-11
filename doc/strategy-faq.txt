@@ -1,0 +1,76 @@
+==================================================
+Questions frequently asked of Launchpad's strategy
+==================================================
+
+
+When are we going to get wikis?
+===============================
+
+Everyone knows it.  Launchpad needs some way to store large chunks of
+hyperlinked text and some way of giving projects much more control over the
+interface that they present to end users.
+
+We are going to do this, honest.  We just are not going to do it soon.  First,
+we need to make Launchpad blazingly fast and make our privacy offering
+excellent.
+
+After that, we can begin to think about wikis.
+
+
+Git support?
+============
+
+This is a tough one.  If we want more people and projects to use Launchpad,
+then this is an obvious next step.  However, if we were to do it, it would
+have to be done in a certain way.
+
+Cross-project collaboration is at the very heart of Launchpad.  We want people
+to be able to start contributing to other projects with as few barriers as
+possible.  If some projects were only available in Bazaar and some only
+available in Git, then one could never be sure exactly how to begin
+contributing.  The beautiful simplicity of::
+
+  $ bzr branch lp:foo
+
+would disappear if only some projects were available in Bazaar.
+
+If we were to offer Git support, it would have to be in such a way that one
+could always use Bazaar to branch from and push to a project.
+
+
+Are we going to sell Launchpad services?
+========================================
+
+Right now, we aren't particularly interested in making money by offering
+Launchpad services.
+
+Once we get a really top-class privacy offering within Launchpad that works
+well for our internal users, then we will probably consider getting serious
+about selling Launchpad services.
+
+Note that selling Launchpad services involves getting sales people, commercial
+support and possibly some marketing.  It's not as simple as hooking up a
+payment system.
+
+
+Can you please make Launchpad do $THING?
+========================================
+
+Maybe.  We would love to be able to fix all of the bugs in Launchpad and make
+it everything that you ever hoped for in a software development collaboration
+platform.  Sadly, we cannot.
+
+You are more than welcome to use the launchpad-users@lists.launchpad.net
+mailing list to try to convince us, or to talk with us on #launchpad on
+Freenode.  However, if it's something big and it's not already on
+https://dev.launchpad.net/Roadmap, the chances are slim.
+
+Each month, the Canonical Launchpad development team asks our key stakeholders
+what they would like us to do, try to reach some sort of consensus and then do
+whatever we have agreed on.  If you would like the Canonical Launchpad team to
+do some hacking for you, then you should try to convince one of the
+stakeholder representatives that it's the best next thing to do.
+
+Reps are listed at
+https://wiki.canonical.com/Launchpad/Strategy/StakeholderMeeting.  If you
+don't have access to the Canonical wiki, just ask around.

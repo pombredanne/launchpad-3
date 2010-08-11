@@ -12,6 +12,8 @@ Contents:
    :maxdepth: 2
 
    Launchpad: The Vision <vision>
+   Strategy FAQ <strategy-faq>
+
 
 Indices and tables
 ==================
