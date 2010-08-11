@@ -7,8 +7,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -16,6 +14,7 @@ from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.testing.views import create_initialized_view
 
 
@@ -29,7 +28,12 @@ class TestDistroSourcePackageReleaseFiles(TestCaseWithFactory):
         # The package must be published for the page to render.
         stp = SoyuzTestPublisher()
         distroseries = stp.setUpDefaultDistroSeries()
-        distro = distroseries.distribution
+        naked_distroseries = remove_security_proxy_and_shout_at_engineer(
+            distroseries)
+        # XXX Abel Deuring, 2010-07-21, bug 608240. This is scary. But
+        # if we use distroseries.distribution instead,
+        # test_spr_files_deleted() and test_spr_files_one() fail.
+        distro = naked_distroseries.distribution
         source_package_release = stp.getPubSource().sourcepackagerelease
         self.dspr = DistributionSourcePackageRelease(
             distro, source_package_release)
@@ -49,7 +53,3 @@ class TestDistroSourcePackageReleaseFiles(TestCaseWithFactory):
         view = create_initialized_view(self.dspr, "+index")
         html = view.__call__()
         self.failUnless('test_file.dsc (deleted)' in html)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -40,12 +40,13 @@ from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from lp.services.job.model.job import Job
 from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IPersonSet, NotFoundError, PersonCreationRationale,
+    ILibraryFileAliasSet, IPersonSet, PersonCreationRationale,
     UnknownSender)
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, IMessage, IMessageChunk, IMessageJob,
     IMessageSet, IUserToUserEmail, InvalidEmailMessage)
 from canonical.launchpad.mail import signed_message_from_string
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lazr.config import as_timedelta
 
@@ -706,7 +707,6 @@ class DirectEmailAuthorization:
         """
         # Count the number of messages from the sender since the throttle
         # date.
-        store = Store.of(self.sender)
         messages_sent = self._getThrottlers(after).count()
         return messages_sent < config.launchpad.user_to_user_max_messages
 

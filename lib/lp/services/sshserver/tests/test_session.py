@@ -48,7 +48,7 @@ class MockProcessTransport:
 
 
 class TestDoNothing(TestCase):
-    """Tests for ExecOnlySession."""
+    """Tests for DoNothingSession."""
 
     def setUp(self):
         super(TestDoNothing, self).setUp()
@@ -77,16 +77,16 @@ class TestDoNothing(TestCase):
                           self.session.windowChanged, None)
 
     def test_providesISession(self):
-        # ExecOnlySession must provide ISession.
+        # DoNothingSession must provide ISession.
         self.failUnless(ISession.providedBy(self.session),
-                        "ExecOnlySession doesn't implement ISession")
+                        "DoNothingSession doesn't implement ISession")
 
     def test_closedDoesNothing(self):
         # closed is a no-op.
         self.assertEqual(None, self.session.closed())
 
     def test_execCommandNotImplemented(self):
-        # ExecOnlySession.execCommand spawns the appropriate process.
+        # DoNothingSession.execCommand spawns the appropriate process.
         protocol = MockProcessTransport('bash')
         command = 'cat /etc/hostname'
         self.session.execCommand(protocol, command)

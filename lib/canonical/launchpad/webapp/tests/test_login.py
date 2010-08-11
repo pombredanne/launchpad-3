@@ -126,7 +126,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             view_class=StubbedOpenIDCallbackView):
         openid_response = FakeOpenIDResponse(
             ITestOpenIDPersistentIdentity(account).openid_identity_url,
-            status=response_status, message=response_msg)
+            status=response_status, message=response_msg,
+            email='non-existent@example.com', full_name='Foo User')
         return self._createAndRenderView(
             openid_response, view_class=view_class)
 
@@ -155,7 +156,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # In the common case we just login and redirect to the URL specified
         # in the 'starting_url' query arg.
         person = self.factory.makePerson()
-        view, html = self._createViewWithResponse(person.account)
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createViewWithResponse(person.account)
         self.assertTrue(view.login_called)
         response = view.request.response
         self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
@@ -247,7 +249,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # create one.
         account = self.factory.makeAccount('Test account')
         self.assertIs(None, IPerson(account, None))
-        view, html = self._createViewWithResponse(account)
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createViewWithResponse(account)
         self.assertIsNot(None, IPerson(account, None))
         self.assertTrue(view.login_called)
         response = view.request.response
@@ -257,7 +260,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
 
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
-        # stuff. 
+        # stuff.
         self.assertLastWriteIsSet(view.request)
 
     def test_unseen_identity(self):
@@ -286,7 +289,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
 
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
-        # stuff. 
+        # stuff.
         self.assertLastWriteIsSet(view.request)
 
     def test_unseen_identity_with_registered_email(self):
@@ -320,7 +323,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
 
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
-        # stuff. 
+        # stuff.
         self.assertLastWriteIsSet(view.request)
 
     def test_deactivated_account(self):
@@ -346,7 +349,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         self.assertEquals(email, account.preferredemail.email)
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
-        # stuff. 
+        # stuff.
         self.assertLastWriteIsSet(view.request)
 
     def test_never_used_account(self):
@@ -368,7 +371,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         self.assertEquals(email, account.preferredemail.email)
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
-        # stuff. 
+        # stuff.
         self.assertLastWriteIsSet(view.request)
 
     def test_suspended_account(self):
@@ -376,7 +379,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # login, but we must not allow that.
         account = self.factory.makeAccount(
             'Test account', status=AccountStatus.SUSPENDED)
-        view, html = self._createViewWithResponse(account)
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createViewWithResponse(account)
         self.assertFalse(view.login_called)
         main_content = extract_text(find_main_content(html))
         self.assertIn('This account has been suspended', main_content)

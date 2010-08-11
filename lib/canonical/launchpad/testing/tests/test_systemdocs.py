@@ -5,13 +5,12 @@
 
 __metaclass__ = type
 
+import doctest
 import logging
 import os
 import shutil
 import tempfile
 import unittest
-
-from zope.testing import doctest
 
 from canonical.config import config
 from canonical.launchpad.testing.systemdocs import (

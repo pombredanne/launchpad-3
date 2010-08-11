@@ -1365,7 +1365,6 @@ accessing the similar_bugs property of its bug tasks.
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
-    4: Reflow problems with complex page layouts
     5: Firefox install instructions should be complete
 
 This also works for distributions...
@@ -1375,6 +1374,7 @@ This also works for distributions...
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
+
 
 ... and for SourcePackages.
 
@@ -1398,7 +1398,6 @@ against Firefox.
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
-    4: Reflow problems with complex page layouts
     5: Firefox install instructions should be complete
     ...Yet another Firefox bug
 
@@ -1412,7 +1411,6 @@ list for no_priv any more, since they're not a direct subscriber.
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
-    4: Reflow problems with complex page layouts
     5: Firefox install instructions should be complete
 
 

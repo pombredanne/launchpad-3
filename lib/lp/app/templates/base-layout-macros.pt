@@ -171,15 +171,15 @@
             tal:attributes="src string:${lazr_js}/effects/effects.js"></script>
 
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/lp.js"></script>
+            tal:attributes="src string:${lp_js}/app/lp.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/lp-mochi.js"></script>
+            tal:attributes="src string:${lp_js}/app/lp-mochi.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/dragscroll.js"></script>
+            tal:attributes="src string:${lp_js}/app/dragscroll.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/picker.js"></script>
+            tal:attributes="src string:${lp_js}/app/picker.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/mapping.js"></script>
+            tal:attributes="src string:${lp_js}/app/mapping.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/bugs/bugtracker_overlay.js"></script>
     <script type="text/javascript"
@@ -217,9 +217,9 @@
             tal:attributes="src string:${lp_js}/code/productseries-setbranch.js">
     </script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/comment.js"></script>
+            tal:attributes="src string:${lp_js}/app/comment.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/errors.js"></script>
+            tal:attributes="src string:${lp_js}/app/errors.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/team.js"></script>
 
@@ -288,7 +288,7 @@
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
-  <script type="text/javascript">
+  <script id="base-layout-load-scripts" type="text/javascript">
     LPS.use('node', 'lp', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
@@ -420,15 +420,15 @@
       &nbsp;&bull;&nbsp;
       <a href="http://identi.ca/launchpadstatus"
         >System status</a>
-      &nbsp;&bull;&nbsp;
-      <a href="http://www.surveymonkey.com/s/launchpadsummer2010"
-        ><strong>Take our survey!</strong></a>
       <span id="lp-version" tal:condition="not:is_lpnet">
       &nbsp;&bull;&nbsp;
         r<tal:revno replace="revno" />
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
-        <tal:edge condition="is_edge">beta site</tal:edge>
+        <tal:edge condition="is_edge">
+          beta site (<a href="https://code.edge.launchpad.net/~launchpad-pqm/launchpad/stable/"
+             >get the code</a>)
+        </tal:edge>
       </span>
     </div>
   </div>

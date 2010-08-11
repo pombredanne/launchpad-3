@@ -55,13 +55,13 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ParticipatingPersonChoice, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces.launchpad import IPrivacy
+from lp.app.errors import NameLookupFailed
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.processor import IProcessorFamily
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry, exported,
@@ -166,6 +166,7 @@ class InvalidPocketForPartnerArchive(CannotUploadToArchive):
 
 class CannotUploadToPocket(Exception):
     """Returned when a pocket is closed for uploads."""
+    webservice_error(403) # Forbidden.
 
     def __init__(self, distroseries, pocket):
         Exception.__init__(self,
@@ -443,11 +444,24 @@ class IArchivePublic(IHasOwner, IPrivacy):
         Person table indexes while searching.
         """
 
-    def findDepCandidateByName(distroarchseries, name):
-        """Return the last published binarypackage by given name.
+    def findDepCandidates(distro_arch_series, pocket, component,
+                          source_package_name, dep_name):
+        """Return matching binaries in this archive and its dependencies.
 
-        Return the `BinaryPackagePublishingHistory` record by distroarchseries
-        and name, or None if not found.
+        Return all published `IBinaryPackagePublishingHistory` records with
+        the given name, in this archive and dependencies as specified by the
+        given build context, using the usual archive dependency rules.
+
+        We can't just use the first, since there may be other versions
+        published in other dependency archives.
+
+        :param distro_arch_series: the context `IDistroArchSeries`.
+        :param pocket: the context `PackagePublishingPocket`.
+        :param component: the context `IComponent`.
+        :param source_package_name: the context source package name (as text).
+        :param dep_name: the name of the binary package to look up.
+        :return: a sequence of matching `IBinaryPackagePublishingHistory`
+            records.
         """
 
     def removeArchiveDependency(dependency):
@@ -1119,15 +1133,6 @@ class IArchiveView(IHasBuildRecords):
         :param date_created: Optional, defaults to now
 
         :return: A new IArchiveAuthToken
-        """
-
-    @call_with(person=REQUEST_USER)
-    @export_write_operation()
-    def getPrivateSourcesList(person):
-        """Get a text line that is suitable to be used for a sources.list
-        entry.
-
-        It will create a new IArchiveAuthToken if one doesn't already exist.
         """
 
 class IArchiveAppend(Interface):

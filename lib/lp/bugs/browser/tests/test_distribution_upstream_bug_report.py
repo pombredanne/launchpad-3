@@ -43,7 +43,7 @@ class TestDistributionUpstreamBugReport(unittest.TestCase):
             # a tuple in the form (sort_key, reversed).
             view_sort_key, view_sort_reversed = view.sort_order
             self.assertEqual(view_sort_key, sort_key,
-                "Expected a sort_key of '%s', got '%s'" % 
+                "Expected a sort_key of '%s', got '%s'" %
                 (sort_key, view_sort_key))
 
             # By default, reversed is False.
@@ -67,7 +67,3 @@ class TestDistributionUpstreamBugReport(unittest.TestCase):
             self.assertTrue(view_sort_reversed,
                 "Sort order should be reversed for a sort_by value of "
                 "%s" % reversed_key)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

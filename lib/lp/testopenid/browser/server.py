@@ -32,11 +32,12 @@ from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, IPlacelessLoginSource, UnexpectedFormData)
+    ICanonicalUrlData, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import (
     allowUnauthenticatedSession, logInPrincipal, logoutPerson)
 from canonical.launchpad.webapp.publisher import Navigation, stepthrough
 
+from lp.app.errors import UnexpectedFormData
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
 from lp.testopenid.interfaces.server import (
@@ -202,7 +203,10 @@ class OpenIDMixin:
         else:
             response = self.openid_request.answer(True)
 
-        sreg_fields = dict(nickname=IPerson(self.account).name)
+        sreg_fields = dict(
+            nickname=IPerson(self.account).name,
+            email=self.account.preferredemail.email,
+            fullname=self.account.displayname)
         sreg_request = SRegRequest.fromOpenIDRequest(self.openid_request)
         sreg_response = SRegResponse.extractResponse(
             sreg_request, sreg_fields)
@@ -228,7 +232,7 @@ class TestOpenIDView(OpenIDMixin, LaunchpadView):
     This class implements an OpenID endpoint using the python-openid
     library.  In addition to the normal modes of operation, it also
     implements the OpenID 2.0 identifier select mode.
-    
+
     Note that the checkid_immediate mode is not supported.
     """
 

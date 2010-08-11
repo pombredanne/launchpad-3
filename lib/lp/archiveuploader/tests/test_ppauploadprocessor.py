@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -12,12 +12,12 @@ __metaclass__ = type
 from email import message_from_string
 import os
 import shutil
-import unittest
 
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
@@ -35,7 +35,7 @@ from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet, SourcePackageFormat)
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, ILibraryFileAliasSet, NotFoundError)
+    ILaunchpadCelebrities, ILibraryFileAliasSet)
 from canonical.launchpad.testing.fakepackager import FakePackager
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.services.mail import stub
@@ -99,7 +99,7 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
         queue_size = len(stub.test_emails)
         messages = "\n".join(m for f, t, m in stub.test_emails)
         self.assertEqual(
-            queue_size, 1,'Unexpected number of emails sent: %s\n%s'
+            queue_size, 1, 'Unexpected number of emails sent: %s\n%s'
             % (queue_size, messages))
 
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
@@ -1084,7 +1084,6 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             "File bar_1.0.orig.tar.gz already exists in unicode PPA name: "
             "áří" in body)
 
-
     def testPPAConflictingOrigFiles(self):
         """When available, the official 'orig.tar.gz' restricts PPA uploads.
 
@@ -1348,9 +1347,3 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         size = self.name16.archive.binaries_size
         self.assertEqual(size, 36,
             "binaries_size returns %d, expected 36" % size)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
-

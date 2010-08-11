@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugWatchSet."""
@@ -173,6 +173,7 @@ class DebbugsExtractBugTrackerAndBugShorthandTest(
     def test_unregistered_tracker_url(self):
         # bugs.debian.org is already registered, so no dice.
         pass
+
 
 class SFExtractBugTrackerAndBugTest(
     ExtractBugTrackerAndBugTestBase, unittest.TestCase):
@@ -657,7 +658,3 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         messages = [activity.message for activity in self.bug_watch.activity]
         for i in range(MAX_SAMPLE_SIZE):
             self.failUnless("Activity %s" % i in messages)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

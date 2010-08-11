@@ -26,6 +26,7 @@ from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.app.errors import NotFoundError
 # XXX 2009-05-10 julian
 # This should not import from archivepublisher, but to avoid
 # that it needs a bit of redesigning here around the publication stuff.
@@ -69,7 +70,6 @@ from lp.soyuz.scripts.packagecopier import update_files_privacy
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 
@@ -1757,14 +1757,10 @@ class PackageUploadCustom(SQLBase):
         archive = self.packageupload.archive
         # See the XXX near the import for getPubConfig.
         archive_config = getPubConfig(archive)
-        meta_root = os.path.join(
-            archive_config.distroroot, archive.owner.name)
-        dest_dir = os.path.join(
-            meta_root, "meta", archive.name)
         dest_file = os.path.join(
-            dest_dir, self.libraryfilealias.filename)
-        if not os.path.isdir(dest_dir):
-            os.makedirs(dest_dir, 0755)
+            archive_config.metaroot, self.libraryfilealias.filename)
+        if not os.path.isdir(archive_config.metaroot):
+            os.makedirs(archive_config.metaroot, 0755)
 
         # At this point we now have a directory of the format:
         # <person_name>/meta/<ppa_name>

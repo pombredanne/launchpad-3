@@ -26,13 +26,13 @@ from lp.code.enums import (
     BranchLifecycleStatus, BranchMergeControlStatus,
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     BranchVisibilityRule, CodeReviewNotificationLevel)
-from lp.code.interfaces.branch import (
+from lp.code.errors import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchCreatorNotOwner, BranchExists,
-    IBranch, NoSuchBranch,
-    user_has_special_branch_access)
+    BranchCreatorNotOwner, BranchExists, InvalidNamespace, NoSuchBranch)
+from lp.code.interfaces.branch import (
+    IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchnamespace import (
-    IBranchNamespace, IBranchNamespacePolicy, InvalidNamespace)
+    IBranchNamespace, IBranchNamespacePolicy)
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
 from lp.registry.interfaces.distribution import (
@@ -114,7 +114,7 @@ class _BaseNamespace:
         # registrant subscription does not cause email to be sent about
         # attribute changes, just merge proposals and code review comments.
         branch.subscribe(
-            registrant,
+            self.owner,
             BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.FULL,
