@@ -1,5 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
+# copyright 2009 canonical ltd.  this software is licensed under the
+# gnu affero general public license version 3 (see the file license).
 
 # pylint: disable-msg=E0211,E0213,W0401
 
@@ -11,6 +11,7 @@ __all__ = [
     'BugField',
     'ContentNameField',
     'Description',
+    'Datetime',
     'DuplicateBug',
     'FieldNotBoundError',
     'IAnnouncementDate',
@@ -74,7 +75,6 @@ from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.launchpad import _
 from lp.registry.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
@@ -173,7 +173,7 @@ class IURIField(ITextLine):
 
          * whitespace is stripped from the input value
          * if the field requires (or forbids) a trailing slash on the URI,
-           ensures that the widget ends in a slash (or doesn't end in a slash).
+           ensures that the widget ends in a slash (or doesn't end in a slash)
          * the URI is canonicalized.
          """
 
@@ -257,6 +257,30 @@ class Whiteboard(StrippableText):
     implements(IWhiteboard)
 
 
+class FormattableDate(Datetime):
+    """A datetime field that checks for compatibility with Python's strformat
+
+    From the user's perspective this is a date entry field; it converts to and
+    from datetime b/c that's what the db is expecting.
+    """
+    implements(IDatetime)
+
+    def _validate(self, value):
+        error_msg = [
+            "Date and time could not be formatted. Please submit date in ",
+            "YYYY-MM-DD format."]
+        error_msg = ', '.join(error_msg)
+
+        super(FormattableDate, self)._validate(value)
+        #we're only interested in whether or not we can format the input,
+        #not whether it makes sense therwise. so we'll try to format it
+        #and raise an error if we can't.
+        try:
+            value.strftime('%Y')
+        except ValueError:
+            raise LaunchpadValidationError(error_msg)
+
+
 class AnnouncementDate(Datetime):
     implements(IDatetime)
 
@@ -329,6 +353,7 @@ class Tag(TextLine):
 
 
 class SearchTag(Tag):
+
     def constraint(self, value):
         """Make sure the value is a valid search tag.
 
@@ -532,6 +557,7 @@ class ProductBugTracker(Choice):
         else:
             ob.official_malone = False
             setattr(ob, self.__name__, value)
+
 
 class URIField(TextLine):
     implements(IURIField)
