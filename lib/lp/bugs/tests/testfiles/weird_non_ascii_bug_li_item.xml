@@ -5,7 +5,7 @@
           <bz:id nc:parseType="Integer">%(bug_id)s</bz:id>
 
           <bz:bug_severity>%(severity)s</bz:bug_severity>
-          <bz:priority>%(priority)</bz:priority>
+          <bz:priority>%(priority)s</bz:priority>
           <bz:op_sys>NOT USED</bz:op_sys>
           <bz:product>NOT USED</bz:product>
           <bz:status>%(status)s</bz:status>

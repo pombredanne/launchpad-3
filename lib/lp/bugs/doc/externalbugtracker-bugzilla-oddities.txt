@@ -40,8 +40,8 @@ instance here:
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s %s" % (bug_watch.remotebug,
     ...         bug_watch.remotestatus, bug_watch.remote_importance)
-    2000: RESOLVED FIXED NORMAL NORMAL
-    123543: ASSIGNED NORMAL NORMAL
+    2000: RESOLVED FIXED LOW BLOCKER
+    123543: ASSIGNED LOW BLOCKER
     42: FUBAR BAZBAZ
     42: FUBAR BAZBAZ
 
@@ -77,8 +77,8 @@ We support them just fine:
     ...         remote_bug,
     ...         old_bugzilla.getRemoteStatus(remote_bug), 
     ...         old_bugzilla.getRemoteImportance(remote_bug))
-    42: RESOLVED FIXED NORMAL NORMAL
-    123543: ASSIGNED NORMAL NORMAL
+    42: RESOLVED FIXED LOW BLOCKER
+    123543: ASSIGNED LOW BLOCKER
 
 
 Bugzilla oddities
