@@ -309,7 +309,7 @@ class Bugzilla(ExternalBugTracker):
             status_tag = 'issue_status'
             resolution_tag = 'resolution'
             priority_tag = 'priority'
-            severity_tag = 'severity'
+            severity_tag = 'bug_severity'
         elif self.version < (2, 16):
             buglist_page = 'xml.cgi'
             data = {'id': ','.join(bug_ids)}
@@ -318,7 +318,7 @@ class Bugzilla(ExternalBugTracker):
             status_tag = 'bug_status'
             resolution_tag = 'resolution'
             priority_tag = 'priority'
-            severity_tag = 'severity'
+            severity_tag = 'bug_severity'
         else:
             buglist_page = 'buglist.cgi'
             data = {'form_name'   : 'buglist.cgi',
@@ -335,7 +335,7 @@ class Bugzilla(ExternalBugTracker):
             status_tag = 'bz:bug_status'
             resolution_tag = 'bz:resolution'
             priority_tag = 'bz:priority'
-            severity_tag = 'bz:severity'
+            severity_tag = 'bz:bug_severity'
 
         buglist_xml = self._postPage(buglist_page, data)
         try:
