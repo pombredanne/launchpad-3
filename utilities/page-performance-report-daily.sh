@@ -1,54 +1,64 @@
 #!/bin/sh
+
 #TZ=UTC # trace logs are still BST - blech
 
-logs=`find /x/launchpad.net-logs/production \
-    -maxdepth 2 -ctime -14 -name launchpad-trace\* | xargs -x`
+category_report() {
+    max_log_age=$1
+    type=$2
+    from=$3
+    until=$4
+    category=$5
+    log_root=$6
 
-report () {
-    type=$1
-    from=$2
-    until=$3
+    local logs
+    logs=`find ${log_root} \
+        -maxdepth 2 -type f -mtime -${max_log_age} -name launchpad-trace\* \
+        | sort | xargs -x`
 
     local root
-    root=${HOME}/public_html/ppr/lpnet
+    root=${HOME}/public_html/ppr/${category}
 
     local dir
-    dir=${root}/${type}
+    dir=${root}/${type}_${from}_${until}
 
-    local repname
-    repname="${from}_${until}.html"
+    mkdir -p ${dir}
 
-    mkdir -p ${dir}/all
-    mkdir -p ${dir}/categories
-    mkdir -p ${dir}/pageids
+    echo Generating report from $from until $until into $dir `date`
 
-    local ppr
-    ppr="./page-performance-report.py -v --from=$from --until=$until"
+    ./page-performance-report.py -v --from=$from --until=$until \
+        --directory=${dir} $logs
 
-    $ppr --no-pageids    $logs > ${dir}/categories/${repname}
-    $ppr --no-categories $logs > ${dir}/pageids/${repname}
-    $ppr                 $logs > ${dir}/all/${repname}
-
-    ln -sf ${dir}/categories/${repname} ${root}/latest-${type}-categories.html
-    ln -sf ${dir}/pageids/${repname} ${root}/latest-${type}-pageids.html
-    ln -sf ${dir}/all/${repname} ${root}/latest-${type}-all.html
+    ln -sf ${dir}/categories.html ${root}/latest-${type}-categories.html
+    ln -sf ${dir}/pageids.html    ${root}/latest-${type}-pageids.html
+    ln -sf ${dir}/combined.html   ${root}/latest-${type}-combined.html
 
     return 0
     }
 
+report() {
+    category_report $* edge /srv/launchpad.net-logs/edge
+    category_report $* lpnet /srv/launchpad.net-logs/production
+    return 0
+}
+
 fmt='+%Y-%m-%d'
 
-# Store dates in case this takes a while.
-# 'now' is actually 2 days ago, because we need to wait until the logs
-# have been synced.
-now=`date -d '2 days ago' $fmt`
-yesterday=`date -d '3 days ago'  $fmt`
-last_week=`date -d '9 days ago'  $fmt`
-last_month=`date -d '32 days ago' $fmt`
+now=`date $fmt`
 
-report daily   $yesterday  $now
-report weekly  $last_week  $now
-## We don't seem to have a months worth of tracelogs. If we enable this,
-## change the -ctime in the logs= find command.
-##report monthly $last_month $now
+report  3 daily `date -d yesterday $fmt` $now
+
+if [ `date +%a` = 'Sat' ]; then
+    report 9 weekly `date -d 'last week' $fmt` $now
+fi
+
+# We don't seem to have a months worth of tracelogs, but we will
+# generate what we can.
+if [ `date +%d` = '01' ]; then
+    report 32 monthly `date -d 'last month' $fmt` $now
+fi
+
+# One off reports to populate history.
+## report 40 monthly `date -d '1 june 2010' $fmt` `date -d '1 july 2010' $fmt`
+## report 23 weekly `date -d '19 june 2010' $fmt` `date -d '26 june 2010' $fmt`
+## report 16 weekly `date -d '26 june 2010' $fmt` `date -d '3 july 2010' $fmt`
 
