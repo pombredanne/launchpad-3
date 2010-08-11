@@ -846,12 +846,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
     def storeInDatabase(self, build):
         """Insert this binary release and build into the database."""
-
-        known_fields = set(['Description', 'Essential',
-            'Installed-Size', 'Depends', 'Recommends',
-            'Suggests', 'Conflicts', 'Replaces', 'Provides',
-            'Pre-Depends', 'Enhances', 'Breaks'])
-
         # Reencode everything we are supplying, because old packages
         # contain latin-1 text and that sucks.
         encoded = {}
@@ -877,11 +871,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
         else:
             debug_package = None
 
-        user_defined_fields = []
-        for field, value in encoded.iteritems():
-            if field not in known_fields:
-                user_defined_fields.append((field, value))
-
         binary = build.createBinaryPackageRelease(
             binarypackagename=binary_name,
             version=self.control_version,
@@ -901,7 +890,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
             pre_depends=encoded.get('Pre-Depends', ''),
             enhances=encoded.get('Enhances', ''),
             breaks=encoded.get('Breaks', ''),
-            user_defined_fields=user_defined_fields,
             essential=is_essential,
             installedsize=installedsize,
             architecturespecific=architecturespecific,
