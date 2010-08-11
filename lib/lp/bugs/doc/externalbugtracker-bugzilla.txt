@@ -495,8 +495,6 @@ Then updateBugWatches() will make one request per bug watch:
     ...      for bug_watch in gnome_bugzilla.watches])
     >>> remote_importances == expected_remote_importances
     True
-    >>> remote_importances
-    >>> expected_remote_importances
 
     >>> external_bugzilla.trace_calls = False
 
