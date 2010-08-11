@@ -232,7 +232,8 @@ def main():
         help="Output reports in DIR directory")
     parser.add_option(
         "--timeout", dest="timeout",
-        default=10, type="int",
+        # Default to 12: the staging timeout.
+        default=12, type="int",
         help="The configured timeout value : determines high risk page ids.")
 
     options, args = parser.parse_args()
