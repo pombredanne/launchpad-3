@@ -408,9 +408,9 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(found_translations, [])
 
         # When a suggestion is added, the potmsgset is returned.
-        translation = self.factory.makeTranslationMessage(
+        translation = self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"Suggestion"], suggestion=True)
+            translations=[u"Suggestion"])
         self.assertEquals(translation.is_current_ubuntu, False)
 
         found_translations = list(
@@ -423,10 +423,10 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
         # A POTMsgSet has a shared, current translation created 5 days ago.
         date_created = datetime.now(pytz.UTC)-timedelta(5)
-        translation = self.factory.makeSharedTranslationMessage(
+        translation = self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Translation"], date_updated=date_created)
-        self.assertEquals(translation.is_current_ubuntu, True)
+        translation.is_current_upstream = True
 
         # When there are no suggestions, nothing is returned.
         found_translations = list(
@@ -435,10 +435,9 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
         # When a suggestion is added one day after, the potmsgset is returned.
         suggestion_date = date_created + timedelta(1)
-        translation = self.factory.makeTranslationMessage(
+        suggestion = self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"Suggestion"], suggestion=True,
-            date_updated=suggestion_date)
+            translations=[u"Suggestion"], date_updated=suggestion_date)
         self.assertEquals(translation.is_current_ubuntu, False)
 
         found_translations = list(
@@ -447,7 +446,8 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
         # Setting a suggestion as current makes it have no unreviewed
         # suggestions.
-        translation.is_current_ubuntu = True
+        translation.is_current_upstream = False
+        suggestion.is_current_upstream = True
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
         self.assertEquals(found_translations, [])
@@ -455,10 +455,9 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # And adding another suggestion 2 days later, the potmsgset is
         # again returned.
         suggestion_date += timedelta(2)
-        translation = self.factory.makeTranslationMessage(
+        translation = self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"New suggestion"], suggestion=True,
-            date_updated=suggestion_date)
+            translations=[u"New suggestion"], date_updated=suggestion_date)
         self.assertEquals(translation.is_current_ubuntu, False)
 
         found_translations = list(
