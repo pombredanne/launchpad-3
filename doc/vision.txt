@@ -1,25 +1,102 @@
-========================
-Launchpad Product Vision
-========================
+=====================
+Launchpad: The Vision
+=====================
 
-The Problem
-===========
+Introduction
+============
+
+Making a small computer program on one's own is easy.  It is much more
+difficult to make open source software that is built by hundreds and fits
+seamlessly into a complete platform running on someone else's hardware.  To do
+so requires skill, planning and excellent tools.
 
  * Who is affected by it
  * What properties must a solution have
  * Why solve it? (scales)
  * Where is world at now
 
+
 What is Launchpad?
 ==================
 
-  * How it solves problem
+Launchpad is a complete system for gathering changes from different types of
+sources and collaboratively organizing them into packaged software for the end
+user, delivered as part of an operating system that comes pre-installed on
+purchased hardware.
+
 
 Distinctives
 ------------
 
+Launchpad is different from other "forges" in a few important ways:
+
+  Cross-project collaboration
+    No project lives in isolation.  Each project is part of an ecosystem of
+    software.  Projects must be able to interact with each other, share bugs,
+    teams, goals and code with each other.
+
+  Front-end to open source
+    Launchpad aims to be a front-end to open source.  Whether or not a project
+    chooses to host on Launchpad, opportunistic developers can use Launchpad
+    to navigate bugs, get code and send patches.  Likewise, we aim to present a
+    uniform interface to the projects we have.
+
+  Distributions are projects too
+    Making a Linux distribution like Ubuntu is a massive endeavour that needs
+    the support of the best tools.  Launchpad hosts Linux distributions in much
+    the same way as it hosts projects, allowing for cross-project
+    collaboration to
+
+  Gated development
+    Sometimes, secrets are necessary.  Launchpad understands that sometimes
+    development needs to be done privately, and the results only later shared
+    with the world.  Security fixes, OEM development for new hardware,
+    proprietary services with open source clients are all examples of these.
+
+  Hardware matters
+    Many software developers like to pretend that hardware does not really
+    exist.  When building an operating system, however, it matters a great
+    deal.
+
+
 Values
 ------
+
+Invisible.  If not, fun.
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Launchpad is a tool to help busy people get important stuff done.  It should
+stay out of the way where possible.  Bugs, OOPSes, downtime and slowness all
+draw attention to Launchpad and away from the interesting problems that our
+users are trying to solve.
+
+Where it is not possible to stay out of the way, Launchpad should be fun to
+use.  We make next actions obvious and draw attention to users' achievements.
+
+
+Create and highlight opportunities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+One of the grand things about open source software is that it is open to
+contributions from total strangers.
+
+Launchpad makes those contributions possible by removing as many barriers as
+possible to contribution, and highlights areas where contributions would be
+especially welcome.
+
+
+XXX - Where communities intersect
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Curtis goes on about this one.  I think he's on to something, but I don't
+really know what it is or where it should go.
+
+
+XXX - Collaboration occurs between people
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Something about the fact that "cross-project collaboration" is actually about
+acknowledging that people are the entities that exist between projects.
 
 
 Launchpad Agents
