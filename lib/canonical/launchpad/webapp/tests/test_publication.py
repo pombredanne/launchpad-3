@@ -29,7 +29,8 @@ from canonical.launchpad.tests.readonly import (
     remove_read_only_file, touch_read_only_file)
 import canonical.launchpad.webapp.adapter as dbadapter
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, OAuthPermission, SLAVE_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, OAuthPermission, SLAVE_FLAVOR,
+    OffsiteFormPostError, NoReferrerError)
 from canonical.launchpad.webapp.publication import (
     is_browser, LaunchpadBrowserPublication)
 from canonical.launchpad.webapp.servers import (
@@ -311,6 +312,16 @@ class TestWebServicePublication(TestCaseWithFactory):
         request = LaunchpadTestRequest(environ={'USER_AGENT': 'BottyBot'})
         self.assertFalse(is_browser(request))
 
+
+class TestBlockingOffsitePosts(TestCase):
+    """We are very particular about what form POSTs we will accept."""
+
+    def test_NoReferrerError(self):
+        # If this request is a POST and there is no referrer, an exception is
+        # raised.
+        request = LaunchpadTestRequest(method='POST')
+        self.assertRaises(
+            NoReferrerError, maybe_block_offsite_form_post, request)
 
 def test_suite():
     suite = unittest.TestLoader().loadTestsFromName(__name__)
