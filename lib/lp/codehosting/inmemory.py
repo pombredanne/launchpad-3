@@ -122,6 +122,13 @@ class ObjectSet:
         return self._find(name=name)
 
 
+class BranchSet(ObjectSet):
+    """Extra find methods for branches."""
+
+    def getByUniqueName(self, unique_name):
+        return self._find(unique_name=unique_name)
+
+
 class FakeSourcePackage:
     """Fake ISourcePackage."""
 
@@ -450,8 +457,10 @@ class FakeObjectFactory(ObjectFactory):
         self._person_set._add(team)
         return team
 
-    def makePerson(self):
-        person = FakePerson(name=self.getUniqueString())
+    def makePerson(self, name=None):
+        if name is None:
+            name = self.getUniqueString()
+        person = FakePerson(name=name)
         self._person_set._add(person)
         return person
 
@@ -651,6 +660,7 @@ class FakeCodehosting:
             if registrant.inTeam(to_link.product.owner):
                 to_link.branch = branch
             else:
+                self._branch_set._delete(branch)
                 raise faults.PermissionDenied(
                     "Cannot create linked branch at '%s'." % branch_path)
         return branch.id
@@ -832,7 +842,7 @@ class InMemoryFrontend:
     """
 
     def __init__(self):
-        self._branch_set = ObjectSet()
+        self._branch_set = BranchSet()
         self._script_activity_set = ObjectSet()
         self._person_set = ObjectSet()
         self._product_set = ObjectSet()

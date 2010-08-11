@@ -472,12 +472,16 @@ class CodehostingTest(TestCaseWithFactory):
     def test_createBranch_using_branch_alias_product_not_auth(self):
         # If the person creating the branch does not have permission to link
         # the new branch to the alias, then can't create the branch.
-        owner = self.factory.makePerson()
+        owner = self.factory.makePerson(name='eric')
         product = self.factory.makeProduct('wibble')
         path = u'/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
         fault = self.codehosting_api.createBranch(owner.id, escape(path))
         message = "Cannot create linked branch at 'wibble'."
         self.assertEqual(faults.PermissionDenied(message), fault)
+        # Make sure that the branch doesn't exist.
+        login(ANONYMOUS)
+        branch = self.branch_lookup.getByUniqueName('~eric/wibble/trunk')
+        self.assertIs(None, branch)
 
     def test_createBranch_using_branch_alias_product_not_exist(self):
         # If the product doesn't exist, we don't (yet) create one.
@@ -945,12 +949,18 @@ class CodehostingTest(TestCaseWithFactory):
         path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
         self.assertNotFound(requester, path)
 
-    def test_translatePath_branch_alias_bzrdir(self):
-        # translatePath('/+branch/.bzr') *must* return not found, otherwise
+    def test_translatePath_branch_alias_bzrdir_content(self):
+        # translatePath('/+branch/.bzr/.*') *must* return not found, otherwise
         # bzr will look for it and we don't have a global bzr dir.
         requester = self.factory.makePerson()
         self.assertNotFound(
             requester, '/%s/.bzr/branch-format' % BRANCH_ALIAS_PREFIX)
+
+    def test_translatePath_branch_alias_bzrdir(self):
+        # translatePath('/+branch/.bzr') *must* return not found, otherwise
+        # bzr will look for it and we don't have a global bzr dir.
+        requester = self.factory.makePerson()
+        self.assertNotFound(requester, '/%s/.bzr' % BRANCH_ALIAS_PREFIX)
 
     def assertTranslationIsControlDirectory(self, translation,
                                             default_stacked_on,

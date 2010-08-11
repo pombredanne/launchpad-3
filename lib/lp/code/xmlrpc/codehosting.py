@@ -11,6 +11,7 @@ __all__ = [
 
 
 import datetime
+import transaction
 
 import pytz
 
@@ -211,6 +212,8 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                 try:
                     link_func(branch)
                 except Unauthorized:
+                    # We don't want to keep the branch we created.
+                    transaction.abort()
                     return faults.PermissionDenied(
                         "Cannot create linked branch at '%s'." % path)
 
@@ -310,7 +313,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                         # found, otherwise bzr will look for it and we don't
                         # have a global bzr dir.
                         lp_path = first[len(BRANCH_ALIAS_PREFIX + '/'):]
-                        if lp_path.startswith('.bzr/'):
+                        if lp_path == '.bzr' or lp_path.startswith('.bzr/'):
                             raise faults.PathTranslationError(path)
                         branch, trailing = getUtility(
                             IBranchLookup).getByLPPath(lp_path)
