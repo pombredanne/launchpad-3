@@ -82,6 +82,7 @@ class Stats:
     median = 0 # Median time per hit.
     std = 0 # Standard deviation per hit.
     var = 0 # Variance per hit.
+    ninetyninth_percentile_time = 0
     histogram = None # # Request times histogram.
 
     total_sqltime = 0 # Total time spent waiting for SQL to process.
@@ -156,6 +157,12 @@ class Times:
         stats.median = numpy.median(array)
         stats.std = numpy.std(array)
         stats.var = numpy.var(array)
+        # This is an approximation which may not be true: we don't know if we
+        # have a std distribution or not. We could just find the 99th
+        # percentile by counting. Shock. Horror; however this appears pretty
+        # good based on eyeballing things so far - once we're down in the 2-3
+        # second range for everything we may want to revisit.
+        stats.ninetyninth_percentile_time = stats.mean + stats.std*3
         histogram = numpy.histogram(
             array, normed=True,
             range=(0, self.timeout), bins=self.timeout)
@@ -171,7 +178,7 @@ class Times:
 
         # SQL query count.
         array = numpy.asarray(self.sql_statements, numpy.int)
-        stats.total_sqlstatements = numpy.sum(array)
+        stats.total_sqlstatements = int(numpy.sum(array))
         stats.mean_sqlstatements = numpy.mean(array)
         stats.median_sqlstatements = numpy.median(array)
         stats.std_sqlstatements = numpy.std(array)
@@ -201,10 +208,6 @@ def main():
             config.root, "utilities", "page-performance-report.ini"),
         metavar="FILE", help="Load configuration from FILE")
     parser.add_option(
-        "--timeout", dest="timeout", type="int",
-        default=20, metavar="SECS",
-        help="Requests taking more than SECS seconds are timeouts")
-    parser.add_option(
         "--from", dest="from_ts", type="datetime",
         default=None, metavar="TIMESTAMP",
         help="Ignore log entries before TIMESTAMP")
@@ -222,11 +225,15 @@ def main():
         help="Do not produce pageids report")
     parser.add_option(
         "--top-urls", dest="top_urls", type=int, metavar="N",
-        default=0, help="Generate report for top N urls by hitcount.")
+        default=50, help="Generate report for top N urls by hitcount.")
     parser.add_option(
         "--directory", dest="directory",
         default=os.getcwd(), metavar="DIR",
         help="Output reports in DIR directory")
+    parser.add_option(
+        "--timeout", dest="timeout",
+        default=10, type="int",
+        help="The configured timeout value : determines high risk page ids.")
 
     options, args = parser.parse_args()
 
@@ -280,30 +287,39 @@ def main():
         url_times = [(url, times)
             for times, url in sorted_urls[:options.top_urls]]
 
+    def _report_filename(filename):
+        return os.path.join(options.directory, filename)
+
     # Category only report.
     if options.categories:
-        report_filename = os.path.join(options.directory, 'categories.html')
+        report_filename = _report_filename('categories.html')
         log.info("Generating %s", report_filename)
         html_report(open(report_filename, 'w'), categories, None, None)
 
     # Pageid only report.
     if options.pageids:
-        report_filename = os.path.join(options.directory, 'pageids.html')
+        report_filename = _report_filename('pageids.html')
         log.info("Generating %s", report_filename)
         html_report(open(report_filename, 'w'), None, pageid_times, None)
 
     # Top URL only report.
     if options.top_urls:
-        report_filename = os.path.join(
-            options.directory, 'top%d.html' % options.top_urls)
+        report_filename = _report_filename('top%d.html' % options.top_urls)
         log.info("Generating %s", report_filename)
         html_report(open(report_filename, 'w'), None, None, url_times)
 
     # Combined report.
     if options.categories and options.pageids:
-        report_filename = os.path.join(options.directory,'combined.html')
+        report_filename = _report_filename('combined.html')
         html_report(
             open(report_filename, 'w'), categories, pageid_times, url_times)
+
+    # Report of likely timeout candidates
+    report_filename = _report_filename('timeout-candidates.html')
+    log.info("Generating %s", report_filename)
+    html_report(
+        open(report_filename, 'w'), None, pageid_times, None,
+        options.timeout - 2)
 
     return 0
 
@@ -474,15 +490,27 @@ def parse_extension_record(request, args):
     elif prefix == 't':
         if len(args) != 4:
             raise MalformedLine("Wrong number of arguments %s" % (args,))
-        request.ticks = args[1]
-        request.sql_statements = args[2]
+        request.ticks = int(args[1])
+        request.sql_statements = int(args[2])
         request.sql_seconds = float(args[3]) / 1000
     else:
         raise MalformedLine(
             "Unknown extension prefix %s" % prefix)
 
 
-def html_report(outf, categories, pageid_times, url_times):
+def html_report(
+    outf, categories, pageid_times, url_times,
+    ninetyninth_percentile_threshold=None):
+    """Write an html report to outf.
+
+    :param outf: A file object to write the report to.
+    :param categories: Categories to report.
+    :param pageid_times: The time statistics for pageids.
+    :param url_times: The time statistics for the top XXX urls.
+    :param ninetyninth_percentile_threshold: Lower threshold for inclusion of
+        pages in the pageid section; pages where 99 percent of the requests are
+        served under this threshold will not be included.
+    """
 
     print >> outf, dedent('''\
         <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
@@ -542,6 +570,8 @@ def html_report(outf, categories, pageid_times, url_times):
 
             <th class="clickable">Total Time (secs)</th>
 
+            <th class="clickable">99% Under Time (secs)</th>
+
             <th class="clickable">Mean Time (secs)</th>
             <th class="clickable">Time Standard Deviation</th>
             <th class="clickable">Time Variance</th>
@@ -577,6 +607,7 @@ def html_report(outf, categories, pageid_times, url_times):
             <th class="category-title">%s</th>
             <td class="numeric total_hits">%d</td>
             <td class="numeric total_time">%.2f</td>
+            <td class="numeric 99pc_under">%.2f</td>
             <td class="numeric mean_time">%.2f</td>
             <td class="numeric std_time">%.2f</td>
             <td class="numeric var_time">%.2f</td>
@@ -599,6 +630,7 @@ def html_report(outf, categories, pageid_times, url_times):
             """ % (
                 html_title,
                 stats.total_hits, stats.total_time,
+                stats.ninetyninth_percentile_time,
                 stats.mean, stats.std, stats.var, stats.median,
                 len(histograms) - 1,
                 stats.total_sqltime, stats.mean_sqltime,
@@ -631,6 +663,10 @@ def html_report(outf, categories, pageid_times, url_times):
         print >> outf, table_header
         for pageid, times in sorted(pageid_times.items()):
             pageid = pageid or 'None'
+            if (ninetyninth_percentile_threshold is not None and
+                (times.stats().ninetyninth_percentile_time <
+                ninetyninth_percentile_threshold)):
+                continue
             handle_times(html_quote(pageid), times)
         print >> outf, table_footer
 

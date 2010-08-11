@@ -32,6 +32,8 @@ category_report() {
     ln -sf ${dir}/pageids.html    ${root}/latest-${type}-pageids.html
     ln -sf ${dir}/combined.html   ${root}/latest-${type}-combined.html
     ln -sf ${dir}/top200.html   ${root}/latest-${type}-top200.html
+    ln -sf ${dir}/timeout-candidates.html   \
+        ${root}/latest-${type}-timeout-candidates.html
 
     return 0
     }
