@@ -30,8 +30,8 @@ from canonical.launchpad.webapp.url import urlappend, urlparse
 from lp.bugs.externalbugtracker.base import (
     BugNotFound, BugTrackerAuthenticationError, BugTrackerConnectError,
     ExternalBugTracker, InvalidBugId, LookupTree,
-    UnknownRemoteStatusError, UnparseableBugData,
-    UnparseableBugTrackerVersion)
+    UnknownRemoteImportanceError, UnknownRemoteStatusError,
+    UnparseableBugData, UnparseableBugTrackerVersion)
 from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.externalbugtracker.xmlrpc import (
     UrlLib2Transport)
@@ -226,12 +226,7 @@ class Bugzilla(ExternalBugTracker):
         }
 
     def convertRemoteImportance(self, remote_importance):
-        """See `ExternalBugTracker`.
-
-        This method is implemented here as a stub to ensure that
-        existing functionality is preserved. As a result,
-        BugTaskImportance.UNKNOWN will always be returned.
-        """
+        """See `ExternalBugTracker`."""
         try:
             words = remote_importance.lower().split()
             return self._importance_lookup[words.pop()]

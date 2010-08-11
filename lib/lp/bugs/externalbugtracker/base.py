@@ -16,6 +16,7 @@ __all__ = [
     'LookupTree',
     'PrivateRemoteBug',
     'UnknownBugTrackerTypeError',
+    'UnknownRemoteImportanceError',
     'UnknownRemoteStatusError',
     'UnparseableBugData',
     'UnparseableBugTrackerVersion',
@@ -120,8 +121,12 @@ class BugNotFound(BugWatchUpdateWarning):
     """The bug was not found in the external bug tracker."""
 
 
+class UnknownRemoteImportanceError(BugWatchUpdateWarning):
+    """The remote bug's importance isn't mapped to a `BugTaskImportance`."""
+
+
 class UnknownRemoteStatusError(BugWatchUpdateWarning):
-    """Raised when a remote bug's status isn't mapped to a `BugTaskStatus`."""
+    """The remote bug's status isn't mapped to a `BugTaskStatus`."""
 
 
 class PrivateRemoteBug(BugWatchUpdateWarning):
