@@ -83,8 +83,8 @@
       <a tal:repeat="team context/@@+restricted-membership/teams_with_icons"
          tal:attributes="href team/fmt:url"
         ><img tal:attributes="src team/icon/getURL;
-                              title string:Icon of ${team/name}
-                              title string:Icon of ${team/name}"
+                              title string:Member of ${team/displayname}
+                              alt string:Icon of ${team/displayname}"
       /></a>
     </div>
 
