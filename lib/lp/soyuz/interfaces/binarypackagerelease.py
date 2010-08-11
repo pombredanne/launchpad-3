@@ -56,6 +56,8 @@ class IBinaryPackageRelease(Interface):
         title=_("Debug package"), schema=Interface, required=False,
         description=_("The corresponding package containing debug symbols "
                       "for this binary."))
+    user_defined_fields = Attribute(
+        "Sequence of user-defined fields as key-value pairs.")
 
     files = Attribute("Related list of IBinaryPackageFile entries")
 
