@@ -9,13 +9,13 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageRelease, BinaryPackageFormat)
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority,)
+from lp.soyuz.interfaces.publishing import PackagePublishingPriority
 
 from lp.testing import TestCaseWithFactory
 
 
 class TestBinaryPackageRelease(TestCaseWithFactory):
+    """Tests for BinaryPackageRelease."""
 
     layer = LaunchpadFunctionalLayer
 
