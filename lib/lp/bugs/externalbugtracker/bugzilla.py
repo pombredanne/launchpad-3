@@ -308,6 +308,8 @@ class Bugzilla(ExternalBugTracker):
             id_tag = 'issue_id'
             status_tag = 'issue_status'
             resolution_tag = 'resolution'
+            priority_tag = 'priority'
+            severity_tag = 'severity'
         elif self.version < (2, 16):
             buglist_page = 'xml.cgi'
             data = {'id': ','.join(bug_ids)}
@@ -315,6 +317,8 @@ class Bugzilla(ExternalBugTracker):
             id_tag = 'bug_id'
             status_tag = 'bug_status'
             resolution_tag = 'resolution'
+            priority_tag = 'priority'
+            severity_tag = 'severity'
         else:
             buglist_page = 'buglist.cgi'
             data = {'form_name'   : 'buglist.cgi',
@@ -330,6 +334,8 @@ class Bugzilla(ExternalBugTracker):
             id_tag = 'bz:id'
             status_tag = 'bz:bug_status'
             resolution_tag = 'bz:resolution'
+            priority_tag = 'bz:priority'
+            severity_tag = 'bz:severity'
 
         buglist_xml = self._postPage(buglist_page, data)
         try:
@@ -388,9 +394,33 @@ class Bugzilla(ExternalBugTracker):
                     status += ' %s' % resolution
             self.remote_bug_status[bug_id] = status
 
-            # TODO:
-            self.remote_bug_importance[bug_id] = "NORMAL NORMAL"
+            # Priority (for Importance)
+            priority = ''
+            priority_nodes = bug_node.getElementsByTagName(priority_tag)
+            assert len(priority_nodes) <= 1, (
+                "Should only be one priority node for bug %s" % bug_id)
+            if priority_nodes:
+                bug_priority_node = priority_nodes[0]
+                assert len(bug_priority_node.childNodes) == 1, (
+                    "priority node for bug %s should contain a non-empty "
+                    "text string." % bug_id)
+                priority = bug_priority_node.childNodes[0].data
 
+            # Severity (for Importance)
+            severity_nodes = bug_node.getElementsByTagName(severity_tag)
+            assert len(severity_nodes) <= 1, (
+                "Should only be one severity node for bug %s." % bug_id)
+            if severity_nodes:
+                assert len(severity_nodes[0].childNodes) <= 1, (
+                    "Severity for bug %s should just contain "
+                    "a string." % bug_id)
+                if severity_nodes[0].childNodes:
+                    severity = severity_nodes[0].childNodes[0].data
+                    priority += ' %s' % severity
+            self.remote_bug_importance[bug_id] = priority
+            ##TODO: Refactor the above stanzas into a helper function
+
+            # Product
             product_nodes = bug_node.getElementsByTagName('bz:product')
             assert len(product_nodes) <= 1, (
                 "Should be at most one product node for bug %s." % bug_id)
