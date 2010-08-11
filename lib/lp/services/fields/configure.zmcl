@@ -12,7 +12,7 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.ITitle"
+        for="lp.services.fields.ITitle"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.launchpad.browser.TitleWidget"
         permission="zope.Public"
@@ -20,7 +20,7 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.ISummary"
+        for="lp.services.fields.ISummary"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.launchpad.browser.SummaryWidget"
         permission="zope.Public"
@@ -28,7 +28,7 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IDescription"
+        for="lp.services.fields.IDescription"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.launchpad.browser.DescriptionWidget"
         permission="zope.Public"
@@ -36,7 +36,7 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.INoneableDescription"
+        for="lp.services.fields.INoneableDescription"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.launchpad.browser.NoneableDescriptionWidget"
         permission="zope.Public"
@@ -44,7 +44,7 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IWhiteboard"
+        for="lp.services.fields.IWhiteboard"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.launchpad.browser.WhiteboardWidget"
         permission="zope.Public"
@@ -52,7 +52,7 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IBugField"
+        for="lp.services.fields.IBugField"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.widgets.bug.BugWidget"
         permission="zope.Public"
@@ -60,7 +60,7 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IStrippedTextLine"
+        for="lp.services.fields.IStrippedTextLine"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.widgets.textwidgets.StrippedTextWidget"
         permission="zope.Public"
@@ -68,7 +68,7 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.INoneableTextLine"
+        for="lp.services.fields.INoneableTextLine"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.widgets.textwidgets.NoneableTextWidget"
         permission="zope.Public"
@@ -76,7 +76,7 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IURIField"
+        for="lp.services.fields.IURIField"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.widgets.textwidgets.URIWidget"
         permission="zope.Public"
@@ -84,7 +84,7 @@
 
      <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.ContentNameField"
+        for="lp.services.fields.ContentNameField"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.widgets.textwidgets.LowerCaseTextWidget"
         permission="zope.Public"
