@@ -11,6 +11,8 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   Launchpad: The Vision <vision>
+
 Indices and tables
 ==================
 
