@@ -60,9 +60,14 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
 
+OFFSITE_POST_WHITELIST = ('/+storeblob', '/+request-token', '/+access-token',
+    '/+hwdb/+submit', '/+openid')
+
 
 def maybe_block_offsite_form_post(request):
     """Check if an attempt was made to post a form from a remote site.
+
+    This appears to be a XSRF countermeasure.
 
     The OffsiteFormPostError exception is raised if the following
     holds true:
@@ -72,23 +77,20 @@ def maybe_block_offsite_form_post(request):
     """
     if request.method != 'POST':
         return
-    # XXX: jamesh 2007-11-23 bug=124421:
-    # Allow offsite posts to our TestOpenID endpoint.  Ideally we'd
-    # have a better way of marking this URL as allowing offsite
-    # form posts.
-    if request['PATH_INFO'] == '/+openid':
-        return
     if (IOAuthSignedRequest.providedBy(request)
-        or not IBrowserRequest.providedBy(request)
-        or request['PATH_INFO']  in (
-            '/+storeblob', '/+request-token', '/+access-token',
-            '/+hwdb/+submit')):
+        or not IBrowserRequest.providedBy(request)):
         # We only want to check for the referrer header if we are
         # in the middle of a request initiated by a web browser. A
         # request to the web service (which is necessarily
         # OAuth-signed) or a request that does not implement
         # IBrowserRequest (such as an XML-RPC request) can do
         # without a Referer.
+        return
+    if request['PATH_INFO'] in OFFSITE_POST_WHITELIST:
+        # XXX: jamesh 2007-11-23 bug=124421:
+        # Allow offsite posts to our TestOpenID endpoint.  Ideally we'd
+        # have a better way of marking this URL as allowing offsite
+        # form posts.
         #
         # XXX gary 2010-03-09 bug=535122,538097
         # The one-off exceptions are necessary because existing
