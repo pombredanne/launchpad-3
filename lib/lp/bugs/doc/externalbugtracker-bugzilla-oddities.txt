@@ -78,7 +78,7 @@ We support them just fine:
     ...         old_bugzilla.getRemoteStatus(remote_bug), 
     ...         old_bugzilla.getRemoteImportance(remote_bug))
     42: RESOLVED FIXED LOW BLOCKER
-    123543: ASSIGNED LOW BLOCKER
+    123543: ASSIGNED HIGH BLOCKER
 
 
 Bugzilla oddities
@@ -114,8 +114,8 @@ Yet everything still works as expected:
     ...         remote_bug,
     ...         weird_bugzilla.getRemoteStatus(remote_bug),
     ...         weird_bugzilla.getRemoteImportance(remote_bug))
-    2000: ASSIGNED
-    123543: RESOLVED FIXED
+    2000: ASSIGNED HIGH BLOCKER
+    123543: RESOLVED FIXED HIGH BLOCKER
 
 
 Broken Bugzillas
