@@ -309,7 +309,7 @@ class Bugzilla(ExternalBugTracker):
             status_tag = 'issue_status'
             resolution_tag = 'resolution'
             priority_tag = 'priority'
-            severity_tag = 'bug_severity'
+            severity_tag = None
         elif self.version < (2, 16):
             buglist_page = 'xml.cgi'
             data = {'id': ','.join(bug_ids)}
@@ -407,16 +407,17 @@ class Bugzilla(ExternalBugTracker):
                 priority = bug_priority_node.childNodes[0].data
 
             # Severity (for Importance)
-            severity_nodes = bug_node.getElementsByTagName(severity_tag)
-            assert len(severity_nodes) <= 1, (
-                "Should only be one severity node for bug %s." % bug_id)
-            if severity_nodes:
-                assert len(severity_nodes[0].childNodes) <= 1, (
-                    "Severity for bug %s should just contain "
-                    "a string." % bug_id)
-                if severity_nodes[0].childNodes:
-                    severity = severity_nodes[0].childNodes[0].data
-                    priority += ' %s' % severity
+            if severity_tag:
+                severity_nodes = bug_node.getElementsByTagName(severity_tag)
+                assert len(severity_nodes) <= 1, (
+                    "Should only be one severity node for bug %s." % bug_id)
+                if severity_nodes:
+                    assert len(severity_nodes[0].childNodes) <= 1, (
+                        "Severity for bug %s should just contain "
+                        "a string." % bug_id)
+                    if severity_nodes[0].childNodes:
+                        severity = severity_nodes[0].childNodes[0].data
+                        priority += ' %s' % severity
             self.remote_bug_importance[bug_id] = priority
             ##TODO: Refactor the above stanzas into a helper function
 
