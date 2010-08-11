@@ -572,7 +572,7 @@ class IDistroSeriesPublic(
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=None,
-        source_package_recipe_build=None):
+        source_package_recipe_build=None, user_defined_fields=None):
         """Create an uploads `SourcePackageRelease`.
 
         Set this distroseries set to be the uploadeddistroseries.
@@ -608,6 +608,8 @@ class IDistroSeriesPublic(
          :param archive: IArchive to where the upload was targeted
          :param dateuploaded: optional datetime, if omitted assumed nowUTC
          :param source_package_recipe_build: optional SourcePackageRecipeBuild
+         :param user_defined_fields: optional sequence of key-value pairs with
+                                     user defined fields.
          :return: the just creates `SourcePackageRelease`
         """
 

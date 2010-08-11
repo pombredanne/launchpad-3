@@ -96,8 +96,8 @@ class ISourcePackageRelease(Interface):
         "was first uploaded in Launchpad")
     publishings = Attribute("MultipleJoin on SourcepackagePublishing")
 
-
-
+    user_defined_fields = Attribute(
+        "Sequence of user-defined fields as key-value pairs.")
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
     title = Attribute('The title of this sourcepackagerelease')
