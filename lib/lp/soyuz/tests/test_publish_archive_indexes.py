@@ -8,6 +8,8 @@ import os
 import tempfile
 import unittest
 
+from lp.soyuz.model.publishing import IndexStanzaFields
+
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
@@ -301,18 +303,16 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
 
 
 class TestIndexStanzaFieldsHelper(unittest.TestCase):
+    """Check how this auxiliary class works...
 
-    def testIndexStanzaFields(self):
-        """Check how this auxiliary class works...
+    This class provides simple FIFO API for aggregating fields
+    (name & values) in a ordered way.
 
-        This class provides simple FIFO API for aggregating fields
-        (name & values) in a ordered way.
+    Provides an method to format the option in a ready-to-use string.
+    """
 
-        Provides an method to format the option in a ready-to-use string.
-        """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import IndexStanzaFields
 
+    def test_simple(self):
         fields = IndexStanzaFields()
         fields.append('breakfast', 'coffee')
         fields.append('lunch', 'beef')
@@ -324,6 +324,7 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
             ['breakfast: coffee', 'lunch: beef', 'dinner: fish',
              ], fields.makeOutput().splitlines())
 
+    def test_preserves_order(self):
         fields = IndexStanzaFields()
         fields.append('one', 'um')
         fields.append('three', 'tres')
@@ -333,6 +334,7 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
             ['one: um', 'three: tres', 'two: dois',
              ], fields.makeOutput().splitlines())
 
+    def test_files(self):
         # Special treatment for field named 'Files'
         # do not add a space between <name>:<value>
         # <value> will always start with a new line.
