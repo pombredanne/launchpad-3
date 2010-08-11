@@ -1268,7 +1268,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             bpph = IStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
                 BinaryPackageRelease.binarypackagename == binarypackagename,
-                *bpph_location_clauses).any()
+                *bpph_location_clauses).order_by(
+                    Desc(BinaryPackagePublishingHistory.id)).first()
             if bpph is not None:
                 spr = bpph.binarypackagerelease.build.source_package_release
                 return (spr.sourcepackagename, binarypackagename)
