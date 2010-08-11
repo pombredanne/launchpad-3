@@ -81,14 +81,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             InitialisationError,"Parent series queues are not empty.",
             ids.check)
 
-    def test_initialise(self):
-        # Test a full initialise with no errors
-        foobuntu = self._create_distroseries(self.hoary)
-        self._set_pending_to_failed(self.hoary)
-        transaction.commit()
-        ids = InitialiseDistroSeries(foobuntu)
-        ids.check()
-        ids.initialise()
+    def _check_distroseries(self, foobuntu):
         # Check that 'pmount' has been copied correctly
         hoary_pmount_pubs = self.hoary.getPublishedReleases('pmount')
         foobuntu_pmount_pubs = foobuntu.getPublishedReleases('pmount')
@@ -145,6 +138,16 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             foobuntu.isSourcePackageFormatPermitted(
             SourcePackageFormat.FORMAT_1_0))
 
+    def test_initialise(self):
+        # Test a full initialise with no errors
+        foobuntu = self._create_distroseries(self.hoary)
+        self._set_pending_to_failed(self.hoary)
+        transaction.commit()
+        ids = InitialiseDistroSeries(foobuntu)
+        ids.check()
+        ids.initialise()
+        self._check_distroseries(foobuntu)
+
     def test_script(self):
         # Do an end-to-end test using the command-line tool
         foobuntu = self._create_distroseries(self.hoary)
@@ -160,6 +163,4 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(process.returncode, 0)
         self.assertTrue(
             "DEBUG   Committing transaction." in stderr.split('\n'))
-        hoary_pmount_pubs = self.hoary.getPublishedReleases('pmount')
-        foobuntu_pmount_pubs = foobuntu.getPublishedReleases('pmount')
-        self.assertEqual(len(hoary_pmount_pubs), len(foobuntu_pmount_pubs))
+        self._check_distroseries(foobuntu)
