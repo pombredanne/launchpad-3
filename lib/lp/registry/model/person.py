@@ -1967,7 +1967,7 @@ class Person(
                     TeamMembership.status.is_in([
                         TeamMembershipStatus.APPROVED,
                         TeamMembershipStatus.ADMIN])))]
-        find_objects = (Team, TeamMembership)
+        find_objects = (Team)
         return store.using(*origin).find(find_objects,
             And(
                 TeamParticipation.person == self.id,

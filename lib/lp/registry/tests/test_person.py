@@ -54,7 +54,7 @@ class TestPersonTeams(TestCaseWithFactory):
         indirect_teams = self.user.teams_indirectly_participated_in
         expected_teams = [b_team, c_team]
         test_teams = sorted(indirect_teams,
-            key=lambda team: team[0].displayname)
+            key=lambda team: team.displayname)
         self.assertEqual(expected_teams, test_teams)
 
 
