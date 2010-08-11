@@ -209,24 +209,6 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         view = OpenIDCallbackView(context=None, request=None)
         self.assertRaises(ValueError, view._gather_params, request)
 
-    def test_csrfmiddlewaretoken_is_ignored(self):
-        # Show that the _gather_params filters out the errant
-        # csrfmiddlewaretoken form field.  See comment in _gather_params for
-        # more info.
-        request = LaunchpadTestRequest(
-            SERVER_URL='http://example.com',
-            QUERY_STRING='foo=bar',
-            form={'starting_url': 'http://launchpad.dev/after-login',
-                'csrfmiddlewaretoken': '12345'},
-            environ={'PATH_INFO': '/'})
-        view = OpenIDCallbackView(context=None, request=None)
-        params = view._gather_params(request)
-        expected_params = {
-            'starting_url': 'http://launchpad.dev/after-login',
-            'foo': 'bar',
-        }
-        self.assertEquals(params, expected_params)
-
     def test_get_requested_url(self):
         # The OpenIDCallbackView needs to pass the currently-being-requested
         # URL to the OpenID library.  OpenIDCallbackView._get_requested_url
