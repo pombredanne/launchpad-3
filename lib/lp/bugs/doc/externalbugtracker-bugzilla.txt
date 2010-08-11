@@ -355,7 +355,7 @@ TODO
     'Medium'
     >>> external_bugzilla.convertRemoteImportance('HIGH NORMAL').title
     'Medium'
-    >>> external_bugzilla.convertRemoteImportance('NORMAL NORMAL').title
+    >>> external_bugzilla.convertRemoteImportance('MEDIUM NORMAL').title
     'Medium'
     >>> external_bugzilla.convertRemoteImportance('LOW NORMAL').title
     'Medium'
@@ -436,7 +436,7 @@ update:
     ...     print "%s: %s %s" % (bug_watch.remotebug, bug_watch.remotestatus, \
     ...           bug_watch.remote_importance)
     304070: None None
-    3224: RESOLVED FIXED NORMAL NORMAL
+    3224: RESOLVED FIXED MINOR URGENT
 
 Let's add a handful of watches:
 
