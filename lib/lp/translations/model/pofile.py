@@ -39,6 +39,7 @@ from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.interfaces.pofile import IPOFile, IPOFileSet
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError, TranslationCreditsType)
+from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.translations.interfaces.translationexporter import (
@@ -724,12 +725,14 @@ class POFile(SQLBase, POFileMixIn):
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(
+            self.potemplate.translation_side)
         clauses = self._getClausesForPOFileMessages()
         msgstr_clause = make_plurals_sql_fragment(
             "TranslationMessage.msgstr%(form)d IS NOT NULL", "OR")
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-            'TranslationMessage.is_current_ubuntu IS NOT TRUE',
+            'TranslationMessage.%s IS NOT TRUE' % traits.flag_name,
             "(%s)" % msgstr_clause,
             ])
 
@@ -738,13 +741,14 @@ class POFile(SQLBase, POFileMixIn):
             '''(SELECT COALESCE(diverged.date_reviewed, diverged.date_created)
                  FROM TranslationMessage AS diverged
                  WHERE
-                   diverged.is_current_ubuntu IS TRUE AND
+                   diverged.%(current_flag)s IS TRUE AND
                    diverged.potemplate = %(potemplate)s AND
                    diverged.language = %(language)s AND
                    %(variant_clause)s AND
                    diverged.potmsgset=POTMsgSet.id)''' % dict(
             potemplate=quote(self.potemplate),
             language=quote(self.language),
+            current_flag=traits.flag_name,
             variant_clause=variant_clause))
 
         variant_clause = self._getLanguageVariantClause(table='shared')
@@ -752,12 +756,13 @@ class POFile(SQLBase, POFileMixIn):
             '''(SELECT COALESCE(shared.date_reviewed, shared.date_created)
                  FROM TranslationMessage AS shared
                  WHERE
-                   shared.is_current_ubuntu IS TRUE AND
+                   shared.%(current_flag)s IS TRUE AND
                    shared.potemplate IS NULL AND
                    shared.language = %(language)s AND
                    %(variant_clause)s AND
                    shared.potmsgset=POTMsgSet.id)''' % dict(
             language=quote(self.language),
+            current_flag=traits.flag_name,
             variant_clause=variant_clause))
         beginning_of_time = "TIMESTAMP '1970-01-01 00:00:00'"
         newer_than_query = (
