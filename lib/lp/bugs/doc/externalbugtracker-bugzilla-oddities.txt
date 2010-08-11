@@ -9,8 +9,8 @@ Issuezilla
 
 We support Issuezilla-style trackers. These trackers are essentially
 modified (ancient) versions of Bugzilla; their XML elements have
-slightly different names. We pretend Mozilla's Bugzilla is an Issuezilla
-instance here:
+slightly different names, and they lack the severity field. We pretend
+Mozilla's Bugzilla is an Issuezilla instance here:
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
 
@@ -40,8 +40,8 @@ instance here:
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s %s" % (bug_watch.remotebug,
     ...         bug_watch.remotestatus, bug_watch.remote_importance)
-    2000: RESOLVED FIXED LOW BLOCKER
-    123543: ASSIGNED LOW BLOCKER
+    2000: RESOLVED FIXED LOW
+    123543: ASSIGNED LOW
     42: FUBAR BAZBAZ
     42: FUBAR BAZBAZ
 
