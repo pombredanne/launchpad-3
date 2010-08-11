@@ -398,4 +398,3 @@ class BuildFarmJobSet:
         filtered_builds.config(distinct=True)
 
         return filtered_builds
-
