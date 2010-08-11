@@ -23,11 +23,12 @@ instance here:
     >>> issuezilla._probe_version()
     (2, 11)
     >>> for bug_watch in mozilla_bugzilla.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
-    2000:
-    123543:
-    42: FUBAR
-    42: FUBAR
+    ...     print "%s: %s %s" % (bug_watch.remotebug,
+    ...         bug_watch.remotestatus, bug_watch.remote_importance)
+    2000:  
+    123543:  
+    42: FUBAR BAZBAZ
+    42: FUBAR BAZBAZ
     >>> transaction.commit()
     >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> bug_watch_updater.updateBugWatches(
@@ -37,11 +38,12 @@ instance here:
     (local bugs: 1, 2). (OOPS-...)
 
     >>> for bug_watch in mozilla_bugzilla.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    ...     print "%s: %s %s" % (bug_watch.remotebug,
+    ...         bug_watch.remotestatus, bug_watch.remote_importance)
     2000: RESOLVED FIXED
     123543: ASSIGNED
-    42: FUBAR
-    42: FUBAR
+    42: FUBAR BAZBAZ
+    42: FUBAR BAZBAZ
 
 
 Bugzilla prior to 2.11
@@ -71,8 +73,10 @@ We support them just fine:
     >>> remote_bugs = ['42', '123543']
     >>> old_bugzilla.initializeRemoteBugDB(remote_bugs)
     >>> for remote_bug in remote_bugs:
-    ...     print "%s: %s" % (
-    ...         remote_bug, old_bugzilla.getRemoteStatus(remote_bug))
+    ...     print "%s: %s %s" % (
+    ...         remote_bug,
+    ...         old_bugzilla.getRemoteStatus(remote_bug), 
+    ...         old_bugzilla.getRemoteImportance(remote_bug))
     42: RESOLVED FIXED
     123543: ASSIGNED
 
@@ -106,8 +110,10 @@ Yet everything still works as expected:
     >>> remote_bugs = ['2000', '123543']
     >>> weird_bugzilla.initializeRemoteBugDB(remote_bugs)
     >>> for remote_bug in remote_bugs:
-    ...     print "%s: %s" % (
-    ...         remote_bug, weird_bugzilla.getRemoteStatus(remote_bug))
+    ...     print "%s: %s %s" % (
+    ...         remote_bug,
+    ...         weird_bugzilla.getRemoteStatus(remote_bug),
+    ...         weird_bugzilla.getRemoteImportance(remote_bug))
     2000: ASSIGNED
     123543: RESOLVED FIXED
 

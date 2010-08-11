@@ -244,9 +244,10 @@ class TestBugzilla(Bugzilla):
         return self
 
     def _getBugsToTest(self):
-        """Return a dict with bugs in the form bug_id: (status, resolution)"""
-        return {3224: ('RESOLVED', 'FIXED'),
-                328430: ('UNCONFIRMED', '')}
+        """Return a dict with bugs in the form
+           bug_id: (status, resolution, priority, severity)"""
+        return {3224: ('RESOLVED', 'FIXED', 'MINOR', 'URGENT'),
+                328430: ('UNCONFIRMED', '', 'MEDIUM', 'NORMAL')}
 
     def _readBugItemFile(self):
         """Reads in the file for an individual bug item.
@@ -288,11 +289,14 @@ class TestBugzilla(Bugzilla):
                 if bug_id not in self.bugzilla_bugs:
                     #Unknown bugs aren't included in the resulting xml.
                     continue
-                bug_status, bug_resolution = self.bugzilla_bugs[int(bug_id)]
+                bug_status, bug_resolution, bug_priority, bug_severity = \
+                            self.bugzilla_bugs[int(bug_id)]
                 bug_item = self._readBugItemFile() % {
                     'bug_id': bug_id,
                     'status': bug_status,
                     'resolution': bug_resolution,
+                    'priority': bug_priority,
+                    'severity': bug_severity,
                     }
                 bug_li_items.append(bug_item)
             return buglist_xml % {
@@ -321,8 +325,8 @@ class TestBrokenBugzilla(TestBugzilla):
     bug_item_file = 'broken_bug_li_item.xml'
 
     def _getBugsToTest(self):
-        return {42: ('ASSIGNED', ''),
-                2000: ('RESOLVED', 'FIXED')}
+        return {42: ('ASSIGNED', '', 'HIGH', 'BLOCKER'),
+                2000: ('RESOLVED', 'FIXED', 'LOW', 'BLOCKER')}
 
 
 class TestIssuezilla(TestBugzilla):
@@ -335,8 +339,8 @@ class TestIssuezilla(TestBugzilla):
     bug_id_form_element = 'id'
 
     def _getBugsToTest(self):
-        return {2000: ('RESOLVED', 'FIXED'),
-                123543: ('ASSIGNED', '')}
+        return {2000: ('RESOLVED', 'FIXED', 'LOW', 'BLOCKER'),
+                123543: ('ASSIGNED', '', 'HIGH', 'BLOCKER')}
 
 
 class TestOldBugzilla(TestBugzilla):
@@ -349,8 +353,8 @@ class TestOldBugzilla(TestBugzilla):
     bug_id_form_element = 'id'
 
     def _getBugsToTest(self):
-        return {42: ('RESOLVED', 'FIXED'),
-                123543: ('ASSIGNED', '')}
+        return {42: ('RESOLVED', 'FIXED', 'LOW', 'BLOCKER'),
+                123543: ('ASSIGNED', '', 'HIGH', 'BLOCKER')}
 
 
 class FakeHTTPConnection:
