@@ -115,6 +115,12 @@ def maybe_block_offsite_form_post(request):
         # date. We should be able to get rid of the launchpadlib
         # exception after Karmic's end-of-life date.
         return
+    if request['PATH_INFO'].startswith('/+openid-callback'):
+        # If this is a callback from an OpenID provider, we don't require an
+        # on-site referer (because the provider may be off-site).  This
+        # exception was added as a result of bug 597324 (message #10 in
+        # particular).
+        return
     referrer = request.getHeader('referer') # match HTTP spec misspelling
     if not referrer:
         raise NoReferrerError('No value for REFERER header')

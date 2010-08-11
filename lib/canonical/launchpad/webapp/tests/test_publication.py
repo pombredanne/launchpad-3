@@ -399,6 +399,16 @@ class TestBlockingOffsitePosts(TestCase):
             OffsiteFormPostError, maybe_block_offsite_form_post, request)
 
 
+    def test_openid_callback_with_query_string(self):
+        # An OpenId provider (OP) may post to the +openid-callback URL with a
+        # query string and without a referer.  These posts need to be allowed.
+        path_info = u'/+openid-callback?starting_url=...'
+        request = LaunchpadTestRequest(
+            method='POST', environ=dict(PATH_INFO=path_info))
+        # this call shouldn't raise an exception
+        maybe_block_offsite_form_post(request)
+
+
 def test_suite():
     suite = unittest.TestLoader().loadTestsFromName(__name__)
     return suite
