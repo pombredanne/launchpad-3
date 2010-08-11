@@ -169,7 +169,7 @@ faster, and upstream improvements can reach the OS faster.
 
 Two networks are meshed together in Launchpad:
  1. Network of people making software
- 1. The network of dependencies between software.
+ 2. The network of dependencies between software.
 
 People who are interested in doing something great will need to coordinate
 their work, describe the things that they aren't doing yet but wish they
