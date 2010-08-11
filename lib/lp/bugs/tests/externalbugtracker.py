@@ -316,8 +316,8 @@ class TestWeirdBugzilla(TestBugzilla):
     bug_item_file = 'weird_non_ascii_bug_li_item.xml'
 
     def _getBugsToTest(self):
-        return {2000: ('ASSIGNED', ''),
-                123543: ('RESOLVED', 'FIXED')}
+        return {2000: ('ASSIGNED', '', 'HIGH', 'BLOCKER'),
+                123543: ('RESOLVED', 'FIXED', 'HIGH', 'BLOCKER')}
 
 
 class TestBrokenBugzilla(TestBugzilla):
