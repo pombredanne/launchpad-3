@@ -3073,18 +3073,29 @@ class PersonParticipationView(LaunchpadView):
     def label(self):
         return 'Team participation for ' + self.context.displayname
 
-    def _asParticipation(self, membership, team_path=None, team=None):
-        """Return a dict of participation information for the membership."""
+    def _asParticipation(self, membership=None, team=None, team_path=None):
+        """Return a dict of participation information for the membership.
+        
+        Method requires membership or team, not both.
+        """
+        if ((membership is None and team is None) or
+            (membership is not None and team is not None)):
+            raise AssertionError(
+                "The membership or team argument must be provided, not both.")
+
         if team_path is None:
             via = None
         else:
             via = COMMASPACE.join(team.displayname for team in team_path)
+
         if membership is None:
-            role = 'Member'
-            datejoined = None
+            #we have membership via an indirect team, and can use 
+            #sane defaults
+            role = 'Member'     #can only be member
+            datejoined = None   #never joined, can't have a join date
         else:
-            if team is None:
-                team = membership.team
+            #the member is a direct member, so we can use membership data
+            team = membership.team
             datejoined = membership.datejoined
             if membership.person == team.teamowner:
                 role = 'Owner'
@@ -3092,6 +3103,7 @@ class PersonParticipationView(LaunchpadView):
                 role = 'Admin'
             else:
                 role = 'Member'
+
         if team.mailing_list is not None and team.mailing_list.is_usable:
             subscription = team.mailing_list.getSubscription(self.context)
             if subscription is None:
@@ -3100,6 +3112,7 @@ class PersonParticipationView(LaunchpadView):
                 subscribed = 'Subscribed'
         else:
             subscribed = '&mdash;'
+        
         return dict(
             displayname=team.displayname, team=team, datejoined=datejoined,
             role=role, via=via, subscribed=subscribed)
@@ -3107,7 +3120,7 @@ class PersonParticipationView(LaunchpadView):
     @cachedproperty
     def active_participations(self):
         """Return the participation information for active memberships."""
-        participations = [self._asParticipation(membership)
+        participations = [self._asParticipation(membership=membership)
                 for membership in self.context.myactivememberships
                 if check_permission('launchpad.View', membership.team)]
         membership_set = getUtility(ITeamMembershipSet)
@@ -3118,8 +3131,7 @@ class PersonParticipationView(LaunchpadView):
             # [-?] indirect memberships, [-2] direct membership, [-1] team.
             team_path = self.context.findPathToTeam(team)
             participations.append(
-                self._asParticipation(
-                    membership, team_path=team_path[:-1], team=team))
+                self._asParticipation(team_path=team_path[:-1], team=team))
         return sorted(participations, key=itemgetter('displayname'))
 
     @cachedproperty
