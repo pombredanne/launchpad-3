@@ -37,10 +37,9 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.hoary = self.ubuntu['hoary']
 
     def _create_distroseries(self, parent_series):
-        foobuntu = self.ubuntutest.newSeries(
+        return self.ubuntutest.newSeries(
             'foobuntu', 'FooBuntu', 'The Foobuntu', 'yeck', 'doom',
             '888', parent_series, self.hoary.owner)
-        return foobuntu
 
     def _set_pending_to_failed(self, distroseries):
         pending_builds = distroseries.getBuildRecords(
@@ -49,33 +48,48 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             build.status = BuildStatus.FAILEDTOBUILD
 
     def test_failure_with_no_parent_series(self):
+        # Initialising a new distro series requires a parent series to be set
         foobuntu = self._create_distroseries(None)
         ids = InitialiseDistroSeries(foobuntu)
-        self.assertRaises(InitialisationError, ids.check)
+        self.assertRaisesWithContent(
+            InitialisationError, "Parent series required.", ids.check)
 
     def test_failure_for_already_released_distroseries(self):
+        # Initialising a distro series that has already been used will error
         ids = InitialiseDistroSeries(self.ubuntutest['breezy-autotest'])
-        self.assertRaises(InitialisationError, ids.check)
+        self.assertRaisesWithContent(
+            InitialisationError,
+            "Can not copy distroarchseries from parent, there are already "
+            "distroarchseries(s) initialised for this series.", ids.check)
 
     def test_failure_with_pending_builds(self):
+        # If the parent series has pending builds, we can't initialise
         foobuntu = self._create_distroseries(self.hoary)
         transaction.commit()
         ids = InitialiseDistroSeries(foobuntu)
-        self.assertRaises(InitialisationError, ids.check)
+        self.assertRaisesWithContent(
+            InitialisationError, "Parent series has pending builds.",
+            ids.check)
 
     def test_failure_with_queue_items(self):
+        # If the parent series has items in its queues, such as NEW and
+        # UNAPPROVED, we can't initialise
         foobuntu = self._create_distroseries(
             self.ubuntu['breezy-autotest'])
         ids = InitialiseDistroSeries(foobuntu)
-        self.assertRaises(InitialisationError, ids.check)
+        self.assertRaisesWithContent(
+            InitialisationError,"Parent series queues are not empty.",
+            ids.check)
 
     def test_initialise(self):
+        # Test a full initialise with no errors
         foobuntu = self._create_distroseries(self.hoary)
         self._set_pending_to_failed(self.hoary)
         transaction.commit()
         ids = InitialiseDistroSeries(foobuntu)
         ids.check()
         ids.initialise()
+        # Check that 'pmount' has been copied correctly
         hoary_pmount_pubs = self.hoary.getPublishedReleases('pmount')
         foobuntu_pmount_pubs = foobuntu.getPublishedReleases('pmount')
         self.assertEqual(len(hoary_pmount_pubs), len(foobuntu_pmount_pubs))
@@ -85,6 +99,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             'pmount')
         self.assertEqual(
             len(hoary_i386_pmount_pubs), len(foobuntu_i386_pmount_pubs))
+        # And the binary package, and linked source package look fine too
         pmount_binrel = (
             foobuntu['i386'].getReleasedPackages(
             'pmount')[0].binarypackagerelease)
@@ -95,6 +110,10 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE')
         pmount_srcrel = pmount_binrel.build.source_package_release
         self.assertEqual(pmount_srcrel.title, u'pmount - 0.1-1')
+        # It turns out the sampledata of hoary includes pmount 0.1-1 as well
+        # as pmount 0.1-2 source, and if foobuntu and hoary don't share a
+        # pool, 0.1-1 will be marked as NBS and removed. So let's check that
+        # and create a build for foobuntu.
         foobuntu_pmount = pmount_srcrel.getBuildByArch(
             foobuntu['i386'], foobuntu.main_archive)
         hoary_pmount = pmount_srcrel.getBuildByArch(
@@ -121,11 +140,13 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(
             pmount_source.sourcepackagerelease.getBuildByArch(
             foobuntu['hppa'], foobuntu.main_archive), None)
+        # We also inherient the permitted source formats from our parent
         self.assertTrue(
             foobuntu.isSourcePackageFormatPermitted(
             SourcePackageFormat.FORMAT_1_0))
 
     def test_script(self):
+        # Do an end-to-end test using the command-line tool
         foobuntu = self._create_distroseries(self.hoary)
         self._set_pending_to_failed(self.hoary)
         transaction.commit()
