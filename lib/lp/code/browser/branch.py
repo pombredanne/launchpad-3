@@ -326,8 +326,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
 
 class BranchView(LaunchpadView, FeedsMixin):
 
-    __used_for__ = IBranch
-
     feed_types = (
         BranchFeedLink,
         )
@@ -1154,8 +1152,6 @@ class BranchSubscriptionsView(LaunchpadView):
 
 class BranchMergeQueueView(LaunchpadView):
     """The view used to render the merge queue for a branch."""
-
-    __used_for__ = IBranch
 
     @cachedproperty
     def merge_queue(self):

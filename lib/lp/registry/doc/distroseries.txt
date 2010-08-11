@@ -479,7 +479,7 @@ upstream.
     >>> distribution = factory.makeDistribution()
     >>> distroseries = factory.makeDistroRelease(distribution=distribution)
     >>> pkgs = distroseries.getMostRecentlyLinkedPackagings()
-    >>> print len(pkgs)
+    >>> print pkgs.count()
     0
 
     >>> for name in ['aaron', 'bjorn', 'chex', 'deryck', 'edwin', 'francis']:
