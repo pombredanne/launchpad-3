@@ -1511,10 +1511,6 @@ class TranslationMessageSuggestions:
 
     implements(ITranslationMessageSuggestions)
 
-    def isFromSamePOFile(self, submission):
-        """Return if submission is from the same PO file as a POMsgSet."""
-        return self.pofile == submission['pofile']
-
     def __init__(self, title, translation, submissions,
                  user_is_official_translator, form_is_writeable,
                  plural_form, seen_translations=None, legal_warning=False):
