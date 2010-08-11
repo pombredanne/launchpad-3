@@ -5,10 +5,14 @@ Launchpad: The Vision
 Introduction
 ============
 
-Making a small computer program on one's own is easy.  It is much more
-difficult to make open source software that is built by hundreds and fits
-seamlessly into a complete platform running on someone else's hardware.  To do
-so requires skill, planning and excellent tools.
+Open source software is bigger than you think.  It is much more than simply
+writing the code.  Code has to be packaged and delivered to users who then can
+give feedback and file bugs.  Distributions made up of thousands of different
+software packages need to be released to meet a deadline.  Translations must
+be made into hundreds of different languages and accumulated from a variety of
+sources.  Everywhere bugs need to be tracked, plans made and kept.
+Distributions have to be made to work on a wide variety of hardware
+platforms.
 
  * Who is affected by it
  * What properties must a solution have
@@ -21,8 +25,8 @@ What is Launchpad?
 
 Launchpad is a complete system for gathering changes from different types of
 sources and collaboratively organizing them into packaged software for the end
-user, delivered as part of an operating system that comes pre-installed on
-purchased hardware.
+user, delivered as part of an operating system that can be downloaded or comes
+pre-installed on purchased hardware.
 
 
 Distinctives
@@ -42,10 +46,9 @@ Launchpad is different from other "forges" in a few important ways:
     uniform interface to the projects we have.
 
   Distributions are projects too
-    Making a Linux distribution like Ubuntu is a massive endeavour that needs
-    the support of the best tools.  Launchpad hosts Linux distributions in much
-    the same way as it hosts projects, allowing for cross-project
-    collaboration to
+    Launchpad hosts Linux distributions in much the same way as it hosts
+    projects, allowing for developers to feel at home when interacting with
+    distributions.
 
   Gated development
     Sometimes, secrets are necessary.  Launchpad understands that sometimes
@@ -55,8 +58,10 @@ Launchpad is different from other "forges" in a few important ways:
 
   Hardware matters
     Many software developers like to pretend that hardware does not really
-    exist.  When building an operating system, however, it matters a great
-    deal.
+    exist.  When people distribute software as part of an operating system,
+    they don't have the luxury of forgetting. Launchpad understands that
+    developers often need to acknoweldge and work around differences thrown up
+    by hardware.
 
 
 Values
@@ -99,6 +104,14 @@ Something about the fact that "cross-project collaboration" is actually about
 acknowledging that people are the entities that exist between projects.
 
 
+Not our data
+~~~~~~~~~~~~
+
+The data in Launchpad does not really belong to us, we are merely its
+stewards.  We make sure that users can get their data easily and that they can
+change it as they see fit.
+
+
 Launchpad Agents
 ================
 
@@ -139,3 +152,29 @@ New World
  * Describe the impact
  * Example stories
  * Refer to distinctives
+
+
+Quotes lifted from elsewhere
+============================
+
+By encompassing the entire process, all the way to OS delivery, Launchpad and
+Canonical can provide a unique service: enable each contributor to focus on
+the work they care about, while giving them an ambient awareness of how their
+work fits into a larger picture, and providing a path by which they can
+participate in other parts of that picture when they feel the need.
+
+Launchpad's relationship to them is to increase their surface area: to provide
+a binding surface by which OS-driven improvements can reach upstream code
+faster, and upstream improvements can reach the OS faster.
+
+Two networks are meshed together in Launchpad:
+ 1. Network of people making software
+ 1. The network of dependencies between software.
+
+People who are interested in doing something great will need to coordinate
+their work, describe the things that they aren't doing yet but wish they
+could, and keep track of the defects in the things they have already done.
+
+But open source software is not quite the same as proprietary software or a
+commercial product. In open source software, all users are potential
+contributors.
