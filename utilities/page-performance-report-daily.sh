@@ -26,11 +26,12 @@ category_report() {
     echo Generating report from $from until $until into $dir `date`
 
     ./page-performance-report.py -v --from=$from --until=$until \
-        --directory=${dir} $logs
+        --top-urls=200 --directory=${dir} $logs
 
     ln -sf ${dir}/categories.html ${root}/latest-${type}-categories.html
     ln -sf ${dir}/pageids.html    ${root}/latest-${type}-pageids.html
     ln -sf ${dir}/combined.html   ${root}/latest-${type}-combined.html
+    ln -sf ${dir}/top200.html   ${root}/latest-${type}-top200.html
 
     return 0
     }

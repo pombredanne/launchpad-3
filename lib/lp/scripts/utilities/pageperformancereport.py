@@ -6,14 +6,13 @@
 __metaclass__ = type
 __all__ = ['main']
 
-import bz2
 from cgi import escape as html_quote
 from ConfigParser import RawConfigParser
 from datetime import datetime
-import gzip
 import re
 import sre_constants
 import os.path
+import subprocess
 from textwrap import dedent
 import time
 
@@ -103,6 +102,8 @@ empty_stats = Stats() # Singleton.
 class Times:
     """Collection of request times."""
     def __init__(self, timeout):
+        self.total_hits = 0
+        self.total_time = 0
         self.request_times = []
         self.sql_statements = []
         self.sql_times = []
@@ -114,7 +115,10 @@ class Times:
 
         The application time is capped to our timeout.
         """
-        self.request_times.append(min(request.app_seconds, self.timeout))
+        self.total_hits += 1
+        total_time = min(request.app_seconds, self.timeout)
+        self.total_time += total_time
+        self.request_times.append(total_time)
         if request.sql_statements is not None:
             self.sql_statements.append(request.sql_statements)
         if request.sql_seconds is not None:
@@ -135,7 +139,7 @@ class Times:
         1 and 2 seconds etc. histogram is None if there are no requests in
         this Category.
         """
-        if not self.request_times:
+        if not self.total_hits:
             return empty_stats
 
         if self._stats is not None:
@@ -143,10 +147,11 @@ class Times:
 
         stats = Stats()
 
+        stats.total_hits = self.total_hits
+
         # Time stats
         array = numpy.asarray(self.request_times, numpy.float32)
         stats.total_time = numpy.sum(array)
-        stats.total_hits = len(array)
         stats.mean = numpy.mean(array)
         stats.median = numpy.median(array)
         stats.std = numpy.std(array)
@@ -183,6 +188,9 @@ class Times:
         return "%2.2f %2.2f %2.2f %s" % (
             total, mean, median, std, hstr)
 
+    def __cmp__(self, b):
+        return cmp(self.total_time, b.total_time)
+
 
 def main():
     parser = LPOptionParser("%prog [args] tracelog [...]")
@@ -212,6 +220,9 @@ def main():
         "--no-pageids", dest="pageids",
         action="store_false", default=True,
         help="Do not produce pageids report")
+    parser.add_option(
+        "--top-urls", dest="top_urls", type=int, metavar="N",
+        default=0, help="Generate report for top N urls by hitcount.")
     parser.add_option(
         "--directory", dest="directory",
         default=os.getcwd(), metavar="DIR",
@@ -257,25 +268,42 @@ def main():
         parser.error("No data in [categories] section of configuration.")
 
     pageid_times = {}
+    url_times = {}
 
-    parse(args, categories, pageid_times, options)
+    parse(args, categories, pageid_times, url_times, options)
+
+    # Truncate the URL times to the top N.
+    if options.top_urls:
+        sorted_urls = sorted(
+            ((times, url) for url, times in url_times.items()
+                if times.total_hits > 0), reverse=True)
+        url_times = [(url, times)
+            for times, url in sorted_urls[:options.top_urls]]
 
     # Category only report.
     if options.categories:
-        report_filename = os.path.join(options.directory,'categories.html')
+        report_filename = os.path.join(options.directory, 'categories.html')
         log.info("Generating %s", report_filename)
-        html_report(open(report_filename, 'w'), categories, None)
+        html_report(open(report_filename, 'w'), categories, None, None)
 
     # Pageid only report.
     if options.pageids:
-        report_filename = os.path.join(options.directory,'pageids.html')
+        report_filename = os.path.join(options.directory, 'pageids.html')
         log.info("Generating %s", report_filename)
-        html_report(open(report_filename, 'w'), None, pageid_times)
+        html_report(open(report_filename, 'w'), None, pageid_times, None)
+
+    # Top URL only report.
+    if options.top_urls:
+        report_filename = os.path.join(
+            options.directory, 'top%d.html' % options.top_urls)
+        log.info("Generating %s", report_filename)
+        html_report(open(report_filename, 'w'), None, None, url_times)
 
     # Combined report.
     if options.categories and options.pageids:
         report_filename = os.path.join(options.directory,'combined.html')
-        html_report(open(report_filename, 'w'), categories, pageid_times)
+        html_report(
+            open(report_filename, 'w'), categories, pageid_times, url_times)
 
     return 0
 
@@ -287,9 +315,17 @@ def smart_open(filename, mode='r'):
     """
     ext = os.path.splitext(filename)[1]
     if ext == '.bz2':
-        return bz2.BZ2File(filename, mode)
+        p = subprocess.Popen(
+            ['bunzip2', '-c', filename],
+            stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        p.stdin.close()
+        return p.stdout
     elif ext == '.gz':
-        return gzip.open(filename, mode)
+        p = subprocess.Popen(
+            ['gunzip', '-c', filename],
+            stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        p.stdin.close()
+        return p.stdout
     else:
         return open(filename, mode)
 
@@ -310,7 +346,7 @@ def parse_timestamp(ts_string):
         *(int(elem) for elem in match.groups() if elem is not None))
 
 
-def parse(tracefiles, categories, pageid_times, options):
+def parse(tracefiles, categories, pageid_times, url_times, options):
     requests = {}
     total_requests = 0
     for tracefile in tracefiles:
@@ -391,12 +427,12 @@ def parse(tracefiles, categories, pageid_times, options):
                         log.debug("Parsed %d requests", total_requests)
 
                     # Add the request to any matching categories.
-                    if categories is not None:
+                    if options.categories:
                         for category in categories:
                             category.add(request)
 
                     # Add the request to the times for that pageid.
-                    if pageid_times is not None and request.pageid is not None:
+                    if options.pageids:
                         pageid = request.pageid
                         try:
                             times = pageid_times[pageid]
@@ -404,6 +440,21 @@ def parse(tracefiles, categories, pageid_times, options):
                             times = Times(options.timeout)
                             pageid_times[pageid] = times
                         times.add(request)
+
+                    # Add the request to the times for that URL.
+                    if options.top_urls:
+                        url = request.url
+                        # Hack to remove opstats from top N report. This
+                        # should go into a config file if we end up with
+                        # more pages that need to be ignored because
+                        # they are just noise.
+                        if not (url is None or url.endswith('+opstats')):
+                            try:
+                                times = url_times[url]
+                            except KeyError:
+                                times = Times(options.timeout)
+                                url_times[url] = times
+                            times.add(request)
 
                 else:
                     raise MalformedLine('Unknown record type %s', record_type)
@@ -431,7 +482,7 @@ def parse_extension_record(request, args):
             "Unknown extension prefix %s" % prefix)
 
 
-def html_report(outf, categories, pageid_times):
+def html_report(outf, categories, pageid_times, url_times):
 
     print >> outf, dedent('''\
         <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
@@ -557,13 +608,14 @@ def html_report(outf, categories, pageid_times):
                 stats.median_sqlstatements))
 
     # Table of contents
-    if categories and pageid_times:
-        print >> outf, dedent('''\
-            <ol>
-            <li><a href="#catrep">Category Report</a></li>
-            <li><a href="#pageidrep">Pageid Report</a></li>
-            </ol>
-            ''')
+    print >> outf, '<ol>'
+    if categories:
+        print >> outf, '<li><a href="#catrep">Category Report</a></li>'
+    if pageid_times:
+        print >> outf, '<li><a href="#pageidrep">Pageid Report</a></li>'
+    if url_times:
+        print >> outf, '<li><a href="#topurlrep">Top URL Report</a></li>'
+    print >> outf, '</ol>'
 
     if categories:
         print >> outf, '<h2 id="catrep">Category Report</h2>'
@@ -578,7 +630,15 @@ def html_report(outf, categories, pageid_times):
         print >> outf, '<h2 id="pageidrep">Pageid Report</h2>'
         print >> outf, table_header
         for pageid, times in sorted(pageid_times.items()):
+            pageid = pageid or 'None'
             handle_times(html_quote(pageid), times)
+        print >> outf, table_footer
+
+    if url_times:
+        print >> outf, '<h2 id="topurlrep">Top URL Report</h2>'
+        print >> outf, table_header
+        for url, times in url_times:
+            handle_times(html_quote(url), times)
         print >> outf, table_footer
 
     # Ourput the javascript to render our histograms nicely, replacing
