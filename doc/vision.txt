@@ -1,0 +1,64 @@
+========================
+Launchpad Product Vision
+========================
+
+The Problem
+===========
+
+ * Who is affected by it
+ * What properties must a solution have
+ * Why solve it? (scales)
+ * Where is world at now
+
+What is Launchpad?
+==================
+
+  * How it solves problem
+
+Distinctives
+------------
+
+Values
+------
+
+
+Launchpad Agents
+================
+
+ * People
+ * Projects
+ * Distribution
+ * Hardware
+
+Launchpad Stock-in-trade
+========================
+
+Stuff people make
+-----------------
+
+ * Translations
+ * Code
+ * Packages
+ * These are published, reviewed, accepted
+
+Stuff people want
+-----------------
+
+ * Bugs
+ * Blueprints
+ * Milestones
+ * These are plans made, commented on
+
+Shop front
+----------
+
+ * Project home
+ * Answers
+ * Announcement
+
+New World
+=========
+
+ * Describe the impact
+ * Example stories
+ * Refer to distinctives
