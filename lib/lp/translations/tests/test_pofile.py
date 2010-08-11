@@ -478,25 +478,27 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
         # A POTMsgSet has a shared, current translation created 5 days ago.
         date_created = datetime.now(pytz.UTC)-timedelta(5)
-        self.factory.makeSharedTranslationMessage(
+        translation = self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Shared translation"], date_updated=date_created)
+        translation.is_current_upstream = True
 
         # And we also have a diverged translation created a day after shared
         # current translation.
         diverged_date = date_created + timedelta(1)
-        self.factory.makeTranslationMessage(
+        diverged_translation = self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Old translation"], date_updated=diverged_date)
+        diverged_translation.potemplate = self.devel_potemplate
+        diverged_translation.is_current_upstream = True
 
         # There is also a suggestion against the shared translation
         # created 2 days after the shared translation.
         suggestion_date = date_created + timedelta(2)
-        translation = self.factory.makeSharedTranslationMessage(
+        suggestion = self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"Shared suggestion"], suggestion=True,
-            date_updated=suggestion_date)
-        self.assertEquals(translation.is_current_ubuntu, False)
+            translations=[u"Shared suggestion"], date_updated=suggestion_date)
+        self.assertEquals(suggestion.is_current_upstream, False)
 
         # Shared suggestion is shown since diverged_date < suggestion_date.
         found_translations = list(
@@ -506,20 +508,22 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # When a diverged translation is done after the shared suggestion,
         # there are no unreviewed suggestions.
         diverged_date = suggestion_date + timedelta(1)
-        translation = self.factory.makeTranslationMessage(
+        diverged_translation_2 = self.factory.makeTranslationMessage(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Translation"], date_updated=diverged_date)
+        diverged_translation.is_current_upstream = False
+        diverged_translation_2.potemplate = self.devel_potemplate
+        diverged_translation_2.is_current_upstream = True
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
         self.assertEquals(found_translations, [])
 
         # When a suggestion is added one day after, the potmsgset is returned.
         suggestion_date = diverged_date + timedelta(1)
-        translation = self.factory.makeTranslationMessage(
+        suggestion = self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"Suggestion"], suggestion=True,
-            date_updated=suggestion_date)
-        self.assertEquals(translation.is_current_ubuntu, False)
+            translations=[u"Suggestion"], date_updated=suggestion_date)
+        self.assertEquals(suggestion.is_current_upstream, False)
 
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
@@ -527,18 +531,19 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
         # Setting a suggestion as current makes it have no unreviewed
         # suggestions.
-        translation.is_current_ubuntu = True
+        translation.is_current_upstream = False
+        suggestion.is_current_upstream = True
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
         self.assertEquals(found_translations, [])
 
-    def test_getPOTMsgSetWithNewSuggestions_Multiple(self):
+    def test_getPOTMsgSetWithNewSuggestions_multiple(self):
         # Test that multiple unreviewed POTMsgSets are returned.
 
         # One POTMsgSet has no translations, but only a suggestion.
-        self.factory.makeTranslationMessage(
+        self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"New suggestion"], suggestion=True)
+            translations=[u"New suggestion"])
 
         # Another POTMsgSet has both a translation and a suggestion.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
@@ -549,10 +554,9 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Translation"], date_updated=date_created)
         suggestion_date = date_created + timedelta(1)
-        self.factory.makeTranslationMessage(
+        self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=potmsgset,
-            translations=[u"New suggestion"], suggestion=True,
-            date_updated=suggestion_date)
+            translations=[u"New suggestion"], date_updated=suggestion_date)
 
         # Both POTMsgSets are listed.
         found_translations = list(
@@ -562,16 +566,14 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
     def test_getPOTMsgSetWithNewSuggestions_distinct(self):
         # Provide two suggestions on a single message and make sure
         # a POTMsgSet is returned only once.
-        self.factory.makeSharedTranslationMessage(
+        self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile,
             potmsgset=self.potmsgset,
-            translations=["A suggestion"],
-            suggestion=True)
-        self.factory.makeSharedTranslationMessage(
+            translations=["A suggestion"])
+        self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile,
             potmsgset=self.potmsgset,
-            translations=["Another suggestion"],
-            suggestion=True)
+            translations=["Another suggestion"])
 
         potmsgsets = list(
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
@@ -585,9 +587,9 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Test listing of POTMsgSets with empty strings as suggestions.
 
         # When an empty suggestion is added, the potmsgset is NOT returned.
-        translation = self.factory.makeTranslationMessage(
+        translation = self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u""], suggestion=True)
+            translations=[None])
         self.assertEquals(False, translation.is_current_ubuntu)
 
         found_translations = list(
@@ -753,9 +755,9 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Second POTMsgSet is untranslated, but with a suggestion.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         potmsgset.setSequence(self.devel_potemplate, 2)
-        self.factory.makeTranslationMessage(
+        self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=potmsgset,
-            translations=[u"Unreviewed suggestion"], suggestion=True)
+            translations=[u"Unreviewed suggestion"])
 
         # Third POTMsgSet is translated, and with a suggestion.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
@@ -764,9 +766,9 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             pofile=self.devel_sr_pofile, potmsgset=potmsgset,
             translations=[u"Translation"], suggestion=False,
             date_updated=datetime.now(pytz.UTC)-timedelta(1))
-        self.factory.makeTranslationMessage(
+        self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=potmsgset,
-            translations=[u"Another suggestion"], suggestion=True)
+            translations=[u"Another suggestion"])
 
         # Fourth POTMsgSet is translated in import.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
@@ -799,13 +801,13 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         stats = self.devel_sr_pofile.updateStatistics()
         self.assertEquals(stats, (1, 1, 3, 2))
 
-        self.assertEquals(self.devel_sr_pofile.messageCount(), 6)
-        self.assertEquals(self.devel_sr_pofile.translatedCount(), 4)
-        self.assertEquals(self.devel_sr_pofile.untranslatedCount(), 2)
-        self.assertEquals(self.devel_sr_pofile.currentCount(), 1)
-        self.assertEquals(self.devel_sr_pofile.rosettaCount(), 3)
-        self.assertEquals(self.devel_sr_pofile.updatesCount(), 1)
-        self.assertEquals(self.devel_sr_pofile.unreviewedCount(), 2)
+        self.assertEquals(6, self.devel_sr_pofile.messageCount())
+        self.assertEquals(4, self.devel_sr_pofile.translatedCount())
+        self.assertEquals(2, self.devel_sr_pofile.untranslatedCount())
+        self.assertEquals(1, self.devel_sr_pofile.currentCount())
+        self.assertEquals(3, self.devel_sr_pofile.rosettaCount())
+        self.assertEquals(1, self.devel_sr_pofile.updatesCount())
+        self.assertEquals(2, self.devel_sr_pofile.unreviewedCount())
 
     def test_TranslationFileData_adapter(self):
         # Test that exporting works correctly with shared and diverged
@@ -1623,11 +1625,10 @@ class TestPOFileStatistics(TestCaseWithFactory):
         # Adding a suggestion (i.e. unused translation)
         # will not change the current count when there's
         # already an imported message.
-        self.factory.makeTranslationMessage(
+        self.factory.makeSuggestion(
             pofile=self.pofile,
             potmsgset=self.potmsgset,
-            translations=["A suggestion"],
-            suggestion=True)
+            translations=["A suggestion"])
         self.pofile.updateStatistics()
         self.assertEquals(self.pofile.currentCount(), 1)
 
