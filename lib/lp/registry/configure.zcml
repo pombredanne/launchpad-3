@@ -372,6 +372,7 @@
                 name
                 displayname
                 title
+                summary
                 distro
                 get_distroseries_packages
                 subscribers
@@ -402,6 +403,8 @@
                 bugtargetdisplayname
                 bugtargetname
                 getBugCounts
+                bug_count
+                total_bug_heat
                 bug_subscriptions
                 getSubscriptions
                 getSubscription
@@ -464,7 +467,7 @@
     <class
         class="lp.registry.model.commercialsubscription.CommercialSubscription">
         <require
-            permission="launchpad.View"
+            permission="zope.Public"
             interface="lp.registry.interfaces.commercialsubscription.ICommercialSubscription"/>
         <require
             permission="launchpad.Commercial"
@@ -500,22 +503,6 @@
         provides="lp.registry.interfaces.jabber.IJabberIDSet">
         <allow
             interface="lp.registry.interfaces.jabber.IJabberIDSet"/>
-    </securedutility>
-    <class
-        class="lp.registry.utilities.salesforce.SalesforceVoucherProxy">
-        <allow
-            interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy"/>
-    </class>
-    <class
-        class="lp.registry.utilities.salesforce.Voucher">
-        <allow
-            interface="lp.registry.interfaces.salesforce.ISalesforceVoucher"/>
-    </class>
-    <securedutility
-        class="lp.registry.utilities.salesforce.SalesforceVoucherProxy"
-        provides="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy">
-        <allow
-            interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy"/>
     </securedutility>
     <class
         class="lp.registry.model.pillar.PillarName">
@@ -1005,6 +992,16 @@
         for="lp.registry.interfaces.mailinglist.IMailingListApplication"
         interface="lp.registry.interfaces.mailinglist.IMailingListAPIView"
         class="canonical.launchpad.xmlrpc.MailingListAPIView"
+        permission="zope.Public"/>
+    <securedutility
+        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentApplication"
+        provides="lp.registry.interfaces.person.ISoftwareCenterAgentApplication">
+      <allow interface="lp.registry.interfaces.person.ISoftwareCenterAgentApplication" />
+    </securedutility>
+    <xmlrpc:view
+        for="lp.registry.interfaces.person.ISoftwareCenterAgentApplication"
+        interface="lp.registry.interfaces.person.ISoftwareCenterAgentAPI"
+        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentAPI"
         permission="zope.Public"/>
 
     <!-- Helper page for held message approval -->

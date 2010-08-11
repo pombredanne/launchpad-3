@@ -27,8 +27,8 @@ from lp.translations.model.translationmessage import (
     make_plurals_sql_fragment)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.readonly import is_read_only
-from canonical.launchpad.webapp.interfaces import UnexpectedFormData
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from lp.app.errors import UnexpectedFormData
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError,

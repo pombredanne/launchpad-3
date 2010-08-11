@@ -12,6 +12,7 @@ import logging
 import operator
 
 from storm.locals import Int, Reference
+from storm.store import EmptyResultSet
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -31,8 +32,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.helpers import (
      get_contact_email_addresses, get_email_template)
-from canonical.launchpad.interfaces.launchpad import (
-    NotFoundError, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterObject, ISlaveStore
 from canonical.launchpad.mail import (
     simple_sendmail, format_address)
@@ -40,6 +40,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.errors import NotFoundError
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
@@ -50,7 +51,6 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild, PackageBuildDerived)
 from lp.services.job.model.job import Job
-from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus, CannotBeRescored, IBinaryPackageBuild,
@@ -387,33 +387,25 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def _isDependencySatisfied(self, token):
         """Check if the given dependency token is satisfied.
 
-        Check if the dependency exists, if its version constraint is
-        satisfied and if it is reachable in the build context.
+        Check if the dependency exists and that its version constraint is
+        satisfied.
         """
         name, version, relation = self._parseDependencyToken(token)
 
-        dep_candidate = self.archive.findDepCandidateByName(
-            self.distro_arch_series, name)
+        # There may be several published versions in the available
+        # archives and pockets. If any one of them satisifies our
+        # constraints, the dependency is satisfied.
+        dep_candidates = self.archive.findDepCandidates(
+            self.distro_arch_series, self.pocket, self.current_component,
+            self.source_package_release.sourcepackagename.name, name)
 
-        if not dep_candidate:
-            return False
+        for dep_candidate in dep_candidates:
+            if self._checkDependencyVersion(
+                dep_candidate.binarypackagerelease.version, version,
+                relation):
+                return True
 
-        if not self._checkDependencyVersion(
-            dep_candidate.binarypackagerelease.version, version, relation):
-            return False
-
-        # Only PRIMARY archive build dependencies should be restricted
-        # to the ogre_components. Both PARTNER and PPA can reach
-        # dependencies from all components in the PRIMARY archive.
-        # Moreover, PARTNER and PPA component domain is single, i.e,
-        # PARTNER only contains packages in 'partner' component and PPAs
-        # only contains packages in 'main' component.
-        ogre_components = get_components_for_building(self)
-        if (self.archive.purpose == ArchivePurpose.PRIMARY and
-            dep_candidate.component.name not in ogre_components):
-            return False
-
-        return True
+        return False
 
     def _toAptFormat(self, token):
         """Rebuild dependencies line in apt format."""
@@ -886,15 +878,12 @@ class BinaryPackageBuildSet:
             BinaryPackageBuild.select(
                 clause, clauseTables=clauseTables, orderBy=orderBy))
 
-    def getBuildsByArchIds(self, arch_ids, status=None, name=None,
-                           pocket=None):
+    def getBuildsByArchIds(self, distribution, arch_ids, status=None,
+                           name=None, pocket=None):
         """See `IBinaryPackageBuildSet`."""
         # If not distroarchseries was found return empty list
         if not arch_ids:
-            # XXX cprov 2006-09-08: returning and empty SelectResult to make
-            # the callsites happy as bjorn suggested. However it would be
-            # much clearer if we have something like SQLBase.empty() for this
-            return BinaryPackageBuild.select("2=1")
+            return EmptyResultSet()
 
         clauseTables = []
 
@@ -949,12 +938,9 @@ class BinaryPackageBuildSet:
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
-        clauseTables.append("Archive")
-        condition_clauses.append("""
-            Archive.purpose IN (%s) AND
-            Archive.id = PackageBuild.archive
-            """ % ','.join(
-                sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
+        condition_clauses.append(
+            "PackageBuild.archive IN %s" %
+            sqlvalues(list(distribution.all_distro_archive_ids)))
 
         return self._decorate_with_prejoins(
             BinaryPackageBuild.select(' AND '.join(condition_clauses),

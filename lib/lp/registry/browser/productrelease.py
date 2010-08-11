@@ -333,7 +333,6 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
 class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
     """View for ProductRelease overview."""
-    __used_for__ = IProductRelease
 
     def initialize(self):
         self.form = self.request.form

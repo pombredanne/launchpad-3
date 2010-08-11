@@ -137,6 +137,8 @@ class ISourcePackageRelease(Interface):
         "The `PackageUpload` record corresponding to original upload of "
         "this source package release. It's 'None' if it is a source "
         "imported by Gina.")
+    uploader = Attribute(
+        "The user who uploaded the package.")
 
     # Really ISourcePackageRecipeBuild -- see _schema_circular_imports.
     source_package_recipe_build = Reference(
@@ -183,8 +185,8 @@ class ISourcePackageRelease(Interface):
 
         :tarball_alias: is a Librarian alias that references to a tarball with
             translations.
-        :is_published: indicates if the imported files are already published by
-            upstream.
+        :is_published: indicates if the imported files are already published
+            by upstream.
         :importer: is the person that did the import.
 
         raise DownloadFailed if we are not able to fetch the file from

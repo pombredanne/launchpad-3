@@ -36,6 +36,8 @@
 
       <tal:visited_steps
           replace="structure view/widgets/__visited_steps__/hidden" />
+      <tal:add_packaging
+          replace="structure view/widgets/add_packaging/hidden" />
 
       <div class="field">
 

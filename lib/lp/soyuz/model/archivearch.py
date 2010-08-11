@@ -13,7 +13,7 @@ from lp.soyuz.model.processor import ProcessorFamily
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
-from storm.expr import Join, LeftJoin
+from storm.expr import And, Join, LeftJoin
 from storm.locals import Int, Reference, Storm
 
 
@@ -58,14 +58,15 @@ class ArchiveArchSet:
 
         return results
 
-    def getRestrictedfamilies(self, archive):
+    def getRestrictedFamilies(self, archive):
         """See `IArchiveArchSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
             ProcessorFamily,
             LeftJoin(
                 ArchiveArch,
-                ArchiveArch.processorfamily == ProcessorFamily.id))
+                And(ArchiveArch.archive == archive.id,
+                    ArchiveArch.processorfamily == ProcessorFamily.id)))
         result_set = store.using(*origin).find(
             (ProcessorFamily, ArchiveArch),
             (ProcessorFamily.restricted == True))

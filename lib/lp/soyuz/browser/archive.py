@@ -46,8 +46,10 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.lazr.utils import smartquote
+from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.services.browser_helpers import get_user_agent_distroseries
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -71,8 +73,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.series import SeriesStatus
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from lp.soyuz.interfaces.packageset import IPackagesetSet
@@ -201,12 +202,8 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
         # The ID is not enough on its own to identify the publication,
         # we need to make sure it matches the context archive as well.
-        results = getUtility(IPublishingSet).getByIdAndArchive(
+        return getUtility(IPublishingSet).getByIdAndArchive(
             pub_id, self.context, source)
-        if results.count() == 1:
-            return results[0]
-
-        return None
 
     @stepthrough('+binaryhits')
     def traverse_binaryhits(self, name_str):
@@ -810,7 +807,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     Implements useful actions and collects useful sets for the page template.
     """
 
-    __used_for__ = IArchive
     implements(IArchiveIndexActionsMenu)
 
     def initialize(self):
@@ -1822,8 +1818,6 @@ class ArchiveActivateView(LaunchpadFormView):
 class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
     """Build Records View for IArchive."""
 
-    __used_for__ = IHasBuildRecords
-
     # The archive builds view presents all package builds (binary
     # or source package recipe builds).
     binary_only = False
@@ -1873,7 +1867,7 @@ class ArchiveEditView(BaseArchiveEditView):
 
 class ArchiveAdminView(BaseArchiveEditView):
 
-    field_names = ['enabled', 'private', 'require_virtualized',
+    field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
                    'buildd_secret', 'authorized_size', 'relative_build_score',
                    'external_dependencies']
 
@@ -1881,11 +1875,24 @@ class ArchiveAdminView(BaseArchiveEditView):
 
     custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
 
+    def updateContextFromData(self, data):
+        """Update context from form data.
+
+        If the user did not specify a buildd secret but marked the 
+        archive as private, generate a secret for them.
+        """
+        if data['private'] and data['buildd_secret'] is None:
+            # buildd secrets are only used by builders, autogenerate one.
+            self.context.buildd_secret = create_token(16)
+            del(data['buildd_secret'])
+        super(ArchiveAdminView, self).updateContextFromData(data)
+
     def validate_save(self, action, data):
         """Validate the save action on ArchiveAdminView.
 
-        buildd_secret can only be set, and must be set, when
-        this is a private archive.
+        buildd_secret can only, and must, be set for private archives.
+        If the archive is private and the buildd secret is not set it will be
+        generated.
         """
         form.getWidgetsData(self.widgets, 'field', data)
 
@@ -1896,11 +1903,6 @@ class ArchiveAdminView(BaseArchiveEditView):
                     'private',
                     'This archive already has published sources. It is '
                     'not possible to switch the privacy.')
-
-        if data.get('buildd_secret') is None and data['private']:
-            self.setFieldError(
-                'buildd_secret',
-                'Required for private archives.')
 
         if self.owner_is_private_team and not data['private']:
             self.setFieldError(
@@ -1918,6 +1920,11 @@ class ArchiveAdminView(BaseArchiveEditView):
             if len(errors) != 0:
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
+
+        if data.get('commercial') is True and not data['private']:
+            self.setFieldError(
+                'commercial',
+                'Can only set commericial for private archives.')
 
     def validate_external_dependencies(self, ext_deps):
         """Validate the external_dependencies field.

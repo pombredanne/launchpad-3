@@ -42,6 +42,7 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -61,10 +62,10 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
+    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
 
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.errors import NotFoundError, UserCannotUnsubscribePerson
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
     BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)
@@ -83,7 +84,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
-from lp.bugs.scripts.bugheat import BugHeatConstants
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
@@ -437,7 +437,7 @@ class Bug(SQLBase):
         enabled_bug_expiration set to True can be expired. To qualify for
         expiration, the bug and its bugtasks meet the follow conditions:
 
-        1. The bug is inactive; the last update of the is older than
+        1. The bug is inactive; the last update of the bug is older than
             Launchpad expiration age.
         2. The bug is not a duplicate.
         3. The bug has at least one message (a request for more information).
@@ -455,6 +455,7 @@ class Bug(SQLBase):
         if not self.permits_expiration:
             return False
 
+        days_old = config.malone.days_before_expiration
         # Do the search as the Janitor, to ensure that this bug can be
         # found, even if it's private. We don't have access to the user
         # calling this property. If the user has access to view this
@@ -462,14 +463,43 @@ class Bug(SQLBase):
         # exposing something we shouldn't. The Janitor has access to
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
-            0, getUtility(ILaunchpadCelebrities).janitor, bug=self)
+            days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
+        return bugtasks.count() > 0
+
+    def isExpirable(self, days_old=None):
+        """See `IBug`."""
+
+        # If days_old is None read it from the Launchpad configuration
+        # and use that value
+        if days_old is None:
+            days_old = config.malone.days_before_expiration
+
+        # IBugTaskSet.findExpirableBugTasks() is the authoritative determiner
+        # if a bug can expire, but it is expensive. We do a general check
+        # to verify the bug permits expiration before using IBugTaskSet to
+        # determine if a bugtask can cause expiration.
+        if not self.permits_expiration:
+            return False
+
+        # Do the search as the Janitor, to ensure that this bug can be
+        # found, even if it's private. We don't have access to the user
+        # calling this property. If the user has access to view this
+        # property, he has permission to see the bug, so we're not
+        # exposing something we shouldn't. The Janitor has access to
+        # view all bugs.
+        bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
+            days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
         return bugtasks.count() > 0
 
     @property
     def initial_message(self):
         """See `IBug`."""
-        messages = sorted(self.messages, key=lambda ob: ob.id)
-        return messages[0]
+        store = Store.of(self)
+        messages = store.find(
+            Message,
+            BugMessage.bug == self,
+            BugMessage.message == Message.id).order_by('id')
+        return messages.first()
 
     def followup_subject(self):
         """See `IBug`."""
@@ -647,12 +677,14 @@ class Bug(SQLBase):
         if self.private:
             return []
 
-        dupe_subscribers = set(
-            Person.select("""
-                Person.id = BugSubscription.person AND
-                BugSubscription.bug = Bug.id AND
-                Bug.duplicateof = %d""" % self.id,
-                clauseTables=["Bug", "BugSubscription"]))
+        dupe_details = dict(
+            Store.of(self).find(
+                (Person, Bug),
+                BugSubscription.person == Person.id,
+                BugSubscription.bug == Bug.id,
+                Bug.duplicateof == self.id))
+
+        dupe_subscribers = set([person for person in dupe_details.keys()])
 
         # Direct and "also notified" subscribers take precedence over
         # subscribers from dupes. Note that we don't supply recipients
@@ -662,7 +694,7 @@ class Bug(SQLBase):
 
         if recipients is not None:
             for subscriber in dupe_subscribers:
-                recipients.addDupeSubscriber(subscriber)
+                recipients.addDupeSubscriber(subscriber, dupe_details[subscriber])
 
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
@@ -888,7 +920,7 @@ class Bug(SQLBase):
 
         # When a new task is added the bug's heat becomes relevant to the
         # target's max_bug_heat.
-        target.recalculateMaxBugHeat()
+        target.recalculateBugHeatCache()
 
         return new_task
 
@@ -1461,11 +1493,6 @@ class Bug(SQLBase):
 
         self.updateHeat()
 
-    @property
-    def readonly_duplicateof(self):
-        """See `IBug`."""
-        return self.duplicateof
-
     def markAsDuplicate(self, duplicate_of):
         """See `IBug`."""
         field = DuplicateBug()
@@ -1474,6 +1501,16 @@ class Bug(SQLBase):
         try:
             if duplicate_of is not None:
                 field._validate(duplicate_of)
+            if self.duplicates:
+                for duplicate in self.duplicates:
+                    # Fire a notify event in model code since moving
+                    # duplicates of a duplicate does not normally fire an
+                    # event.
+                    dupe_before = Snapshot(
+                        duplicate, providing=providedBy(duplicate))
+                    duplicate.markAsDuplicate(duplicate_of)
+                    notify(ObjectModifiedEvent(
+                            duplicate, dupe_before, 'duplicateof'))
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
@@ -1570,7 +1607,7 @@ class Bug(SQLBase):
         self.heat = heat
         self.heat_last_updated = timestamp
         for task in self.bugtasks:
-            task.target.recalculateMaxBugHeat()
+            task.target.recalculateBugHeatCache()
 
     def updateHeat(self):
         """See `IBug`."""

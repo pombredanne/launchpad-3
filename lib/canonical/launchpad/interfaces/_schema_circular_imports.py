@@ -198,6 +198,10 @@ patch_reference_property(ISourcePackage, 'distribution', IDistribution)
 patch_entry_return_type(IPerson, 'createRecipe', ISourcePackageRecipe)
 patch_list_parameter_type(IPerson, 'createRecipe', 'distroseries',
                           Reference(schema=IDistroSeries))
+patch_plain_parameter_type(IPerson, 'createRecipe', 'daily_build_archive',
+                           IArchive)
+patch_plain_parameter_type(IPerson, 'getArchiveSubscriptionURL', 'archive',
+                           IArchive)
 
 patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
 
@@ -299,6 +303,8 @@ patch_entry_return_type(
     IDistribution, 'getSourcePackage', IDistributionSourcePackage)
 patch_collection_return_type(
     IDistribution, 'searchSourcePackages', IDistributionSourcePackage)
+patch_collection_return_type(
+    IDistribution, 'getCommercialPPAs', IArchive)
 patch_reference_property(
     IDistribution, 'main_archive', IArchive)
 IDistribution['all_distro_archives'].value_type.schema = IArchive
@@ -420,6 +426,10 @@ patch_reference_property(IPOTemplateSubset, 'productseries', IProductSeries)
 
 # IPOTemplateSharingSubset
 patch_reference_property(IPOTemplateSharingSubset, 'product', IProduct)
+
+# IPerson
+patch_collection_return_type(
+        IPerson, 'getBugSubscriberPackages', IDistributionSourcePackage)
 
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)

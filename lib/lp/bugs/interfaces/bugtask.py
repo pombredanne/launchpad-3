@@ -154,22 +154,31 @@ class BugTaskStatus(DBEnumeratedType):
     INCOMPLETE = DBItem(15, """
         Incomplete
 
-        More info is required before making further progress on this bug, likely
-        from the reporter. E.g. the exact error message the user saw, the URL
-        the user was visiting when the bug occurred, etc.
+        More info is required before making further progress on this bug,
+        likely from the reporter. E.g. the exact error message the user saw,
+        the URL the user was visiting when the bug occurred, etc.
+        """)
+
+    OPINION = DBItem(16, """
+        Opinion
+
+        The bug remains open for discussion only. This status is usually
+        used where there is disagreement over whether the bug is relevant
+        to the current target and whether it should be fixed.
         """)
 
     INVALID = DBItem(17, """
         Invalid
 
-        This is not a bug. It could be a support request, spam, or a misunderstanding.
+        This is not a bug. It could be a support request, spam, or a
+        misunderstanding.
         """)
 
     WONTFIX = DBItem(18, """
         Won't Fix
 
-        This will not be fixed. For example, this might be a bug but it's not considered worth
-        fixing, or it might not be fixed in this release.
+        This will not be fixed. For example, this might be a bug but it's not
+        considered worth fixing, or it might not be fixed in this release.
         """)
 
     EXPIRED = DBItem(19, """
@@ -181,8 +190,8 @@ class BugTaskStatus(DBEnumeratedType):
     CONFIRMED = DBItem(20, """
         Confirmed
 
-        This bug has been reviewed, verified, and confirmed as something needing
-        fixing. Anyone can set this status.
+        This bug has been reviewed, verified, and confirmed as something
+        needing fixing. Anyone can set this status.
         """)
 
     TRIAGED = DBItem(21, """
@@ -235,8 +244,8 @@ class BugTaskStatusSearch(DBEnumeratedType):
 
     sort_order = (
         'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
-        'INCOMPLETE', 'INVALID', 'WONTFIX', 'EXPIRED', 'CONFIRMED', 'TRIAGED',
-        'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
+        'INCOMPLETE', 'OPINION', 'INVALID', 'WONTFIX', 'EXPIRED',
+        'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
 
     INCOMPLETE_WITH_RESPONSE = DBItem(35, """
         Incomplete (with response)
@@ -312,6 +321,7 @@ UNRESOLVED_BUGTASK_STATUSES = (
 
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
+    BugTaskStatus.OPINION,
     BugTaskStatus.INVALID,
     BugTaskStatus.WONTFIX,
     BugTaskStatus.EXPIRED)
@@ -332,8 +342,8 @@ DEFAULT_SEARCH_BUGTASK_STATUSES = (
 
 DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
     BugTaskStatusSearchDisplay.items.mapping[item.value]
-    for item in DEFAULT_SEARCH_BUGTASK_STATUSES
-    ]
+    for item in DEFAULT_SEARCH_BUGTASK_STATUSES]
+
 
 class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
@@ -723,8 +733,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     def asEmailHeaderValue():
         """Return a value suitable for an email header value for this bugtask.
 
-        The return value is a single line of arbitrary length, so header folding
-        should be done by the callsite, as needed.
+        The return value is a single line of arbitrary length, so header
+        folding should be done by the callsite, as needed.
 
         For an upstream task, this value might look like:
 
@@ -802,6 +812,7 @@ UPSTREAM_PRODUCT_STATUS_VOCABULARY = SimpleVocabulary(
         "resolved_upstream",
         title="Show bugs that are resolved elsewhere"),
     ])
+
 
 class IBugTaskSearchBase(Interface):
     """The basic search controls."""
@@ -986,10 +997,10 @@ class IBugTaskDelta(Interface):
     milestone = Attribute("The milestone for which this task is scheduled.")
 
 
-# XXX Brad Bollenbach 2006-08-03 bugs=55089:
-# This interface should be renamed.
 class IUpstreamBugTask(IBugTask):
     """A bug needing fixing in a product."""
+    # XXX Brad Bollenbach 2006-08-03 bugs=55089:
+    # This interface should be renamed.
     product = Choice(title=_('Project'), required=True, vocabulary='Product')
 
 
@@ -1064,6 +1075,7 @@ class BugTaskSearchParams:
     distribution = None
     distroseries = None
     productseries = None
+
     def __init__(self, user, bug=None, searchtext=None, fast_searchtext=None,
                  status=None, importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
@@ -1178,10 +1190,9 @@ class BugTaskSearchParams:
         else:
             return value
 
-
     @classmethod
     def fromSearchForm(cls, user,
-                       order_by=('-importance',), search_text=None,
+                       order_by=('-importance', ), search_text=None,
                        status=list(UNRESOLVED_BUGTASK_STATUSES),
                        importance=None,
                        assignee=None, bug_reporter=None, bug_supervisor=None,
@@ -1404,8 +1415,8 @@ class IBugTaskSet(Interface):
         returned. If you want closed tasks too, just pass
         showclosed=True.
 
-        If minimportance is not None, return only the bug tasks with importance
-        greater than minimportance.
+        If minimportance is not None, return only the bug tasks with
+        importance greater than minimportance.
 
         If you want the results ordered, you have to explicitly specify an
         <orderBy>. Otherwise the order used is not predictable.
@@ -1468,7 +1479,16 @@ def valid_remote_bug_url(value):
     return True
 
 
-class IAddBugTaskForm(Interface):
+class ILinkPackaging(Interface):
+    """Form for linking a source package to a project."""
+    add_packaging = Bool(
+        title=_('Link the package to the upstream project?'),
+        description=_('Always suggest this project when adding an '
+                      'upstream bug for this package.'),
+        required=True, default=False)
+
+
+class IAddBugTaskForm(ILinkPackaging):
     """Form for adding an upstream bugtask."""
     # It is tempting to replace the first three attributes here with their
     # counterparts from IUpstreamBugTask and IDistroBugTask.
@@ -1487,7 +1507,7 @@ class IAddBugTaskForm(Interface):
         description=_("The URL of this bug in the remote bug tracker."))
 
 
-class IAddBugTaskWithProductCreationForm(Interface):
+class IAddBugTaskWithProductCreationForm(ILinkPackaging):
 
     bug_url = StrippedTextLine(
         title=_('Bug URL'), required=True, constraint=valid_remote_bug_url,

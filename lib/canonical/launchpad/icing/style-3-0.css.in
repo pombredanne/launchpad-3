@@ -253,7 +253,7 @@ a.help {
 a.help:hover, a.help:hover {
     text-decoration: none;
     }
-a.help.icon {
+a.help.icon, a.sprite.maybe.help {
     border: none;
 }
 img, a img {
@@ -686,6 +686,13 @@ table.summary ul, table.summary ul li {
     margin: 0;
     padding: 0;
     }
+div.centered {
+    text-align: center;
+    }
+div.centered table {
+    margin: 0 auto;
+    text-align: left;
+    }
 .batch-navigation-links .next {
     /* Next links have icons: */
     background: center right no-repeat;
@@ -708,6 +715,13 @@ table.summary ul, table.summary ul li {
 .batch-navigation-links .first, .batch-navigation-links .previous,
 .batch-navigation-links .next {
     margin-right: 0.25em;
+    }
+.flowed-block {
+    display: table-cell;
+    display: inline-table;
+    display: inline-block;
+    text-align: left;
+    vertical-align: top;
     }
 
 
@@ -1111,18 +1125,22 @@ p.search-results {
 .demo {
     background-color: #fee;
     }
-#locationbar {
-    /* The following style works around the fact that the locationbar, which
-    is only used of the Login/Register links in 3.0 UI, is accessible on
-    "locationless" pages. It adds extra space at the top of every page in
-    Launchpad but that does actually look quite good ... ;-).*/
-    height: 1em;
+.login-logout {
+    position: absolute;
+    top: .5em;
+    right: 1.5em;
     }
 div.watermark-apps-portlet {
-    padding-bottom:1em;
+    clear: both;
+    margin-bottom: .5em;
+    white-space: no-wrap;
+    }
+div.watermark-apps-portlet .wide {
+    width: 75%;
+    vertical-align: bottom;
+    margin-bottom: 0.3em;
     }
 div.watermark-apps-portlet img {
-    float: left;
     margin: 0 1.5em 0 0;
     }
 div.watermark-apps-portlet h1, div.watermark-apps-portlet h2 {
@@ -1176,19 +1194,20 @@ div.watermark-apps-portlet span img {
     width: 100%;
     white-space: nowrap;
     }
+.context-publication {
+    margin-bottom: 1em;
+    }
 .registering {
     /* Registered slot */
-    float: right;
-    font-size: 85%;
+    margin: .5em 0 1em 0;
+    font-style: italic;
+    font-size: 77%;
     color: #666;
-    position: relative;
-    top: 2em;
     }
 .breadcrumbs {
     margin-left: 0;
     list-style-type: none;
     clear: both;
-    margin-bottom: 2em;
     font-size: 77%;
     }
 .breadcrumbs li {
@@ -1216,6 +1235,9 @@ div.watermark-apps-portlet span img {
 #logincontrol img {
     /* align the image with the text */
     margin-bottom: -2px;
+    }
+#logincontrol form {
+    margin: 0;
     }
 #logincontrol input[type='submit'] {
     /* The button lacks the right margin that buttons usually have: */
@@ -1413,6 +1435,11 @@ span.help {
    Universal presentation
    Colors and fonts
 */
+pre .highlighted {
+    border: none;
+    padding: 0em;
+    margin: 0em;
+    }
 .answers-stat {
     color: #3840BE;
     }
@@ -1800,6 +1827,12 @@ body.tab-bugs #portlet-subscribers .sprite {
       setting the display in this way breaks the icons.
     */
     display: inline;
+    }
+body.tab-bugs #duplicate-actions .sprite {
+    /* Override sprite style for edit icon on "Mark as duplicate"
+       to make the text not appear on a second line.
+    */
+    display:inline;
     }
 .yui-picker-results li.sprite {
     /* XXX: EdwinGrubbs 2009-07-27 bug=405476

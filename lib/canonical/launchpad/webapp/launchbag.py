@@ -12,7 +12,6 @@ import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.security import management
 from zope import thread
 
 from canonical.database.sqlbase import block_implicit_flushes
@@ -20,28 +19,11 @@ from canonical.launchpad.interfaces import (
         IAccount, IBug, IDistribution, IDistroSeries, IPerson,
         IProjectGroup, IProduct, ISourcePackage, IDistroArchSeries,
         ISpecification, IBugTask, ILaunchpadCelebrities)
+from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, ILaunchpadApplication, ILoggedInEvent, IOpenLaunchBag)
+    ILaunchBag, ILoggedInEvent, IOpenLaunchBag)
 
 _utc_tz = pytz.timezone('UTC')
-
-
-def get_principal():
-    """Return the principal for the current interaction."""
-    interaction = management.queryInteraction()
-    if interaction is None:
-        return None
-    principals = [
-        participation.principal
-        for participation in list(interaction.participations)
-        if participation.principal is not None
-        ]
-    if not principals:
-        return None
-    elif len(principals) > 1:
-        raise ValueError('Too many principals')
-    else:
-        return principals[0]
 
 
 class LaunchBag:
@@ -50,7 +32,6 @@ class LaunchBag:
 
     # Map Interface to attribute name.
     _registry = {
-        ILaunchpadApplication: 'site',
         IPerson: 'person',
         IProjectGroup: 'project',
         IProduct: 'product',
@@ -84,12 +65,12 @@ class LaunchBag:
     @property
     @block_implicit_flushes
     def account(self):
-        return IAccount(get_principal(), None)
+        return IAccount(get_current_principal(), None)
 
     @property
     @block_implicit_flushes
     def user(self):
-        return IPerson(get_principal(), None)
+        return IPerson(get_current_principal(), None)
 
     def add(self, obj):
         store = self._store
@@ -103,10 +84,6 @@ class LaunchBag:
             setattr(store, attribute, None)
         store.login = None
         store.time_zone = None
-
-    @property
-    def site(self):
-        return self._store.site
 
     @property
     def person(self):
@@ -192,6 +169,7 @@ def set_login_in_launchbag_when_principal_identified(event):
     else:
         launchbag.setLogin(loggedinevent.login)
 
+
 def set_developer_in_launchbag_before_traversal(event):
     """Subscriber for IBeforeTraverseEvent
 
@@ -208,11 +186,13 @@ def set_developer_in_launchbag_before_traversal(event):
         is_developer = user.inTeam(celebrities.launchpad_developers)
         launchbag.setDeveloper(is_developer)
 
+
 def reset_login_in_launchbag_on_logout(event):
     """Subscriber for ILoggedOutEvent that sets 'login' in launchbag to None.
     """
     launchbag = getUtility(IOpenLaunchBag)
     launchbag.setLogin(None)
+
 
 def reset_developer_in_launchbag_on_logout(event):
     """Subscriber for ILoggedOutEvent that resets the developer flag."""

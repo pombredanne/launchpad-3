@@ -10,7 +10,9 @@ from zope.interface import implements
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILaunchpadCelebrities, IPersonSet, IDistributionSet,
-    IBugTrackerSet, IProductSet, NotFoundError, IDistributionMirrorSet)
+    IBugTrackerSet, IProductSet, IDistributionMirrorSet)
+from lp.app.errors import NotFoundError
+
 
 class MutatedCelebrityError(Exception):
     """A celebrity has had its id or name changed in the database.
@@ -121,6 +123,8 @@ class LaunchpadCelebrities:
 
     admin = PersonCelebrityDescriptor('admins')
     bazaar_experts = PersonCelebrityDescriptor('bazaar-experts')
+    software_center_agent = PersonCelebrityDescriptor(
+        'software-center-agent')
     bug_importer = PersonCelebrityDescriptor('bug-importer')
     bug_watch_updater = PersonCelebrityDescriptor('bug-watch-updater')
     buildd_admin = PersonCelebrityDescriptor('launchpad-buildd-admins')

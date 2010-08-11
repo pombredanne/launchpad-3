@@ -18,8 +18,7 @@ from pytz import utc
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import DBEnum
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
 from storm.locals import Int, Reference, Storm, TimeDelta, Unicode
 from storm.store import Store
@@ -28,16 +27,19 @@ from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 from canonical.launchpad.webapp import errorlog
+from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
+from lp.code.errors import BuildAlreadyPending
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer)
+from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
@@ -136,6 +138,25 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     recipe_id = Int(name='recipe', allow_none=False)
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
 
+    manifest = Reference(
+        id, 'SourcePackageRecipeData.sourcepackage_recipe_build_id',
+        on_remote=True)
+
+    def setManifestText(self, text):
+        if text is None:
+            if self.manifest is not None:
+                IStore(self.manifest).remove(self.manifest)
+        elif self.manifest is None:
+            SourcePackageRecipeData.createManifestFromText(text, self)
+        else:
+            from bzrlib.plugins.builder.recipe import RecipeParser
+            self.manifest.setRecipe(RecipeParser(text).parse())
+
+    def getManifestText(self):
+        if self.manifest is None:
+            return None
+        return str(self.manifest.getRecipe())
+
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
 
@@ -181,7 +202,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     @classmethod
     def new(cls, distroseries, recipe, requester, archive, pocket=None,
-            date_created=None):
+            date_created=None, duration=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         if pocket is None:
@@ -194,30 +215,34 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
             requester,
             archive,
             pocket,
-            date_created=date_created)
+            date_created=date_created,
+            build_duration=duration)
         store.add(spbuild)
         return spbuild
 
     @staticmethod
     def makeDailyBuilds():
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-        candidates = SourcePackageRecipe.findStaleDailyBuilds()
+        recipes = SourcePackageRecipe.findStaleDailyBuilds()
         builds = []
-        for candidate in candidates:
-            recipe = candidate.sourcepackage_recipe
-            try:
-                build = recipe.requestBuild(recipe.daily_build_archive,
-                    recipe.owner, candidate.distroseries,
-                    PackagePublishingPocket.RELEASE)
-            except:
-                info = sys.exc_info()
-                errorlog.globalErrorUtility.raising(info)
-            else:
-                builds.append(build)
-
+        for recipe in recipes:
+            for distroseries in recipe.distroseries:
+                try:
+                    build = recipe.requestBuild(
+                        recipe.daily_build_archive, recipe.owner,
+                        distroseries, PackagePublishingPocket.RELEASE)
+                except BuildAlreadyPending:
+                    continue
+                except:
+                    info = sys.exc_info()
+                    errorlog.globalErrorUtility.raising(info)
+                else:
+                    builds.append(build)
+            recipe.is_stale = False
         return builds
 
-    def destroySelf(self):
+    def _unqueueBuild(self):
+        """Remove the build's queue and job."""
         store = Store.of(self)
         if self.buildqueue_record is not None:
             job = self.buildqueue_record.job
@@ -226,6 +251,15 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
                 SourcePackageRecipeBuildJob,
                 SourcePackageRecipeBuildJob.build == self.id).remove()
             store.remove(job)
+
+    def cancelBuild(self):
+        """See `ISourcePackageRecipeBuild.`"""
+        self._unqueueBuild()
+        self.status = BuildStatus.SUPERSEDED
+
+    def destroySelf(self):
+        self._unqueueBuild()
+        store = Store.of(self)
         store.remove(self)
 
     @classmethod
@@ -286,6 +320,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         if build.status == BuildStatus.FULLYBUILT:
             build.notify()
 
+
 class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
@@ -333,4 +368,4 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
         return "%s-%s" % (self.id, self.build_id)
 
     def score(self):
-        return 900
+        return 2405 + self.build.archive.relative_build_score

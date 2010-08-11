@@ -12,8 +12,12 @@
     <include
         package=".browser"/>
 
+    <publisher
+       name="bugs"
+       factory="lp.bugs.publisher.bugs_request_publication_factory"/>
+
     <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.BugsLayer" />
+        folder="help" type="lp.bugs.publisher.BugsLayer" />
 
     <class
         class="canonical.launchpad.database.BugActivity">
@@ -256,11 +260,6 @@
                     retractMentoring"/>
         </class>
         <adapter
-            provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-            for="lp.bugs.interfaces.bugtask.IBugTask"
-            factory="lp.bugs.browser.bugtask.BugTaskSOP"
-            permission="zope.Public"/>
-        <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskPrivacyAdapter"
@@ -475,8 +474,7 @@
         <require
             permission="launchpad.Edit"
             attributes="
-                destroySelf"
-            set_attributes="fixed_in_revision_id"/>
+                destroySelf"/>
     </class>
     <adapter
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
@@ -654,14 +652,14 @@
                     getBugTasksByPackageName
                     users_affected_count
                     users_unaffected_count
-                    readonly_duplicateof
                     users_affected
                     users_unaffected
                     users_affected_count_with_dupes
                     users_affected_with_dupes
                     bug_messages
                     isUserAffected
-                    getHWSubmissions"/>
+                    getHWSubmissions
+                    isExpirable"/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -704,7 +702,6 @@
                     date_last_updated
                     date_made_private
                     datecreated
-                    duplicateof
                     hits
                     hitstimestamp
                     name
@@ -969,18 +966,6 @@
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
 
-    <!-- CalculateBugHeatJobs -->
-    <class class="lp.bugs.model.bugheat.CalculateBugHeatJob">
-        <allow interface="lp.bugs.interfaces.bugjob.IBugJob" />
-        <allow interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJob"/>
-    </class>
-    <securedutility
-        component="lp.bugs.model.bugheat.CalculateBugHeatJob"
-        provides="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource">
-        <allow
-            interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource"/>
-    </securedutility>
-
     <!-- ProcessApportBlobJobs -->
     <class class="lp.bugs.model.apportjob.ProcessApportBlobJob">
         <allow interface="lp.bugs.interfaces.apportjob.IApportJob" />
@@ -997,4 +982,12 @@
     <class class="lp.bugs.model.bug.FileBugData">
         <allow interface="lp.bugs.interfaces.bug.IFileBugData" />
     </class>
+
+  <class class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipientReason">
+    <allow attributes="
+        bug
+        getReason
+        mail_header
+        recipient"/>
+  </class>
 </configure>

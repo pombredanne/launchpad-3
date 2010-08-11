@@ -14,6 +14,7 @@ import simplejson
 from zope.component import getUtility
 from zope.formlib.form import Action, Actions
 
+from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.oauth import (
     IOAuthConsumerSet, IOAuthRequestToken, IOAuthRequestTokenSet,
@@ -22,8 +23,7 @@ from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp import LaunchpadFormView, LaunchpadView
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
-from canonical.launchpad.webapp.interfaces import (
-    OAuthPermission, UnexpectedFormData)
+from canonical.launchpad.webapp.interfaces import OAuthPermission
 from lazr.restful import HTTPResource
 
 
@@ -245,15 +245,23 @@ class OAuthAccessTokenView(LaunchpadView):
         token = consumer.getRequestToken(form.get('oauth_token'))
         if token is None:
             self.request.unauthorized(OAUTH_CHALLENGE)
-            return u''
+            return u'No request token specified.'
 
         if not check_oauth_signature(self.request, consumer, token):
-            return u''
+            return u'Invalid OAuth signature.'
 
-        if (not token.is_reviewed
-            or token.permission == OAuthPermission.UNAUTHORIZED):
+        if not token.is_reviewed:
             self.request.unauthorized(OAUTH_CHALLENGE)
-            return u''
+            return u'Request token has not yet been reviewed. Try again later.'
+
+        if token.permission == OAuthPermission.UNAUTHORIZED:
+            # The end-user explicitly refused to authorize this
+            # token. We send 403 ("Forbidden") instead of 401
+            # ("Unauthorized") to distinguish this case and to
+            # indicate that, as RFC2616 says, "authorization will not
+            # help."
+            self.request.response.setStatus(403)
+            return u'End-user refused to authorize request token.'
 
         access_token = token.createAccessToken()
         context_name = None

@@ -18,7 +18,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.ftests.logger import MockLogger
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
@@ -33,6 +32,7 @@ from lp.code.model.revision import RevisionCache, RevisionSet
 from lp.registry.model.karma import Karma
 from lp.testing import TestCaseWithFactory, time_counter
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.logger import MockLogger
 
 
 class TestRevisionCreationDate(TestCaseWithFactory):
@@ -223,6 +223,28 @@ class TestRevisionKarma(TestCaseWithFactory):
         karma = rev.allocateKarma(branch)
         self.assertEqual(author, karma.person)
         self.assertEqual(branch.product, karma.product)
+
+
+class TestRevisionSet(TestCaseWithFactory):
+    """Tests for IRevisionSet."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestRevisionSet, self).setUp()
+        self.revision_set = getUtility(IRevisionSet)
+
+    def test_getRevisionById_existing(self):
+        # IRevisionSet.getByRevisionId returns the revision with that id.
+        revision = self.factory.makeRevision()
+        found = self.revision_set.getByRevisionId(revision.revision_id)
+        self.assertEquals(revision, found)
+
+    def test_getRevisionById_nonexistent(self):
+        # IRevisionSet.getByRevisionId returns None if there is no revision
+        # with that id.
+        found = self.revision_set.getByRevisionId('nonexistent')
+        self.assertIs(None, found)
 
 
 class TestRevisionGetBranch(TestCaseWithFactory):

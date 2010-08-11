@@ -1,10 +1,12 @@
-= Person and Account =
+Person and Account
+==================
 
 The Person object is responsible for updating the status of its
 Account object.
 
 
-== Activating user accounts ==
+Activating user accounts
+------------------------
 
 A user may activate their account that was created by an automated
 process. Matsubara's account was created during a code import.
@@ -54,7 +56,8 @@ as arguments.
     u'matsubara@async.com.br'
 
 
-== Deactivating user accounts ==
+Deactivating user accounts
+--------------------------
 
 Any user can deactivate his own account, in case they don't want it
 anymore or they don't want to be shown as Launchpad users.
@@ -182,7 +185,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...no owned or driven pillars...
 
-    >>> foobar.getOwnedOrDrivenPillars().count()
+    >>> len(foobar.getOwnedOrDrivenPillars())
     0
 
 ...and, finally, to not be considered a valid person in Launchpad.
@@ -206,7 +209,8 @@ Bar are now owned/driven by the registry admins team.
     True
 
 
-== Reactivating user accounts ==
+Reactivating user accounts
+--------------------------
 
 Accounts can be reactivated. A comment and a non-None preferred email address
 are required to reactivate() an account, though.

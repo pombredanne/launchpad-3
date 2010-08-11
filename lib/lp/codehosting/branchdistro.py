@@ -28,12 +28,12 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.config import config
 
+from lp.code.enums import BranchType
+from lp.code.errors import BranchExists
 from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.interfaces.branch import BranchExists
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
-from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
