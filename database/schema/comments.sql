@@ -1338,6 +1338,7 @@ COMMENT ON COLUMN SourcePackageRelease.copyright IS 'The copyright associated wi
 COMMENT ON COLUMN SourcePackageRelease.build_conflicts IS 'The list of packages that will conflict with this source while building, as mentioned in the control file "Build-Conflicts:" field.';
 COMMENT ON COLUMN SourcePackageRelease.build_conflicts_indep IS 'The list of packages that will conflict with this source while building in architecture independent environment, as mentioned in the control file "Build-Conflicts-Indep:" field.';
 COMMENT ON COLUMN SourcePackageRelease.changelog IS 'The LibraryFileAlias ID of changelog associated with this sourcepackage.  Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/changelog.Debian.gz';
+COMMENT ON COLUMN SourcePackageRelease.user_defined_fields IS 'A JSON struct containing a sequence of key-value pairs with user defined fields in the control file.';
 
 -- SourcePackageName
 
@@ -1478,6 +1479,7 @@ COMMENT ON COLUMN BinaryPackageRelease.pre_depends IS 'The list of packages this
 COMMENT ON COLUMN BinaryPackageRelease.enhances IS 'The list of packages pointed as "enhanced" after the installation of this package, as it is in control file "Enhances:" field.';
 COMMENT ON COLUMN BinaryPackageRelease.breaks IS 'The list of packages which will be broken by the installtion of this package, as it is in the control file "Breaks:" field.';
 COMMENT ON COLUMN BinaryPackageRelease.debug_package IS 'The corresponding binary package release containing debug symbols for this binary, if any.';
+COMMENT ON COLUMN BinaryPackageRelease.user_defined_fields IS 'A JSON struct containing a sequence of key-value pairs with user defined fields in the control file.';
 
 
 -- BinaryPackageFile
