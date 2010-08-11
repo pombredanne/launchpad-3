@@ -683,7 +683,8 @@ initializeRemoteBugDB() has been called, in order for the bug
 information to be fetched from the external Bugzilla instance.
 
     >>> external_bugzilla = TestBugzilla()
-    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> external_bugzilla.bugzilla_bugs = {84: (
+    ...     'RESOLVED', 'FIXED', 'MEDIUM', 'NORMAL')}
     >>> external_bugzilla.initializeRemoteBugDB(['84'])
     >>> external_bugzilla.remote_bug_product['84']
     u'product-84'
@@ -694,7 +695,8 @@ Sometimes we might not get the product in the bug listing. In these
 cases getRemoteProduct() returns None.
 
     >>> external_bugzilla = TestBugzilla()
-    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> external_bugzilla.bugzilla_bugs = {84: (
+    ...     'RESOLVED', 'FIXED', 'MEDIUM', 'NORMAL')}
     >>> # Make the buglist XML not include the product tag.
     >>> external_bugzilla.bug_item_file = 'gnome_bug_li_item_noproduct.xml'
     >>> external_bugzilla.initializeRemoteBugDB(['84'])
@@ -704,7 +706,8 @@ cases getRemoteProduct() returns None.
 Requesting the product for a bug that doesn't exist raises BugNotFound.
 
     >>> external_bugzilla = TestBugzilla()
-    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> external_bugzilla.bugzilla_bugs = {84: (
+    ...     'RESOLVED', 'FIXED', 'MEDIUM', 'NORMAL')}
     >>> external_bugzilla.initializeRemoteBugDB(['84'])
     >>> external_bugzilla.getRemoteProduct('42')
     Traceback (most recent call last):
