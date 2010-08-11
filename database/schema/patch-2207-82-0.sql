@@ -5,4 +5,7 @@ SET client_min_messages=ERROR;
 ALTER TABLE BinaryPackageRelease
     ADD COLUMN user_defined_fields TEXT;
 
+ALTER TABLE SourcePackageRelease
+    ADD COLUMN user_defined_fields TEXT;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 82, 0);
