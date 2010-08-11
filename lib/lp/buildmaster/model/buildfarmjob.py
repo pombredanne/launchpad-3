@@ -365,15 +365,18 @@ class BuildFarmJobSet:
         # Currently only package builds can be private (via their
         # related archive), but not all build farm jobs will have a
         # related package build - hence the left join.
-        left_join_pkg_builds = LeftJoin(
-            PackageBuild, PackageBuild.build_farm_job == BuildFarmJob.id)
-        left_join_archive = LeftJoin(
-            Archive, PackageBuild.archive == Archive.id)
-        left_join_participation = LeftJoin(
-            TeamParticipation, TeamParticipation.teamID == Archive.ownerID)
+        origin = [BuildFarmJob]
+        left_join_archive = [
+            LeftJoin(
+                PackageBuild,
+                PackageBuild.build_farm_job == BuildFarmJob.id),
+            LeftJoin(
+                Archive, PackageBuild.archive == Archive.id),
+            ]
 
         if user is None:
             # Anonymous requests don't get to see private builds at all.
+            origin.extend(left_join_archive)
             extra_clauses.append(Coalesce(Archive.private, False) == False)
 
         elif user.inTeam(getUtility(ILaunchpadCelebrities).admin):
@@ -382,16 +385,15 @@ class BuildFarmJobSet:
         else:
             # Everyone else sees all public builds and the
             # specific private builds to which they have access.
+            origin.extend(left_join_archive)
+            origin.append(LeftJoin(
+                TeamParticipation, TeamParticipation.teamID == Archive.ownerID))
             extra_clauses.append(
                 Or(Coalesce(Archive.private, False) == False,
                    TeamParticipation.person == user))
 
-        filtered_builds = IStore(BuildFarmJob).using(
-            BuildFarmJob,
-            left_join_pkg_builds,
-            left_join_archive,
-            left_join_participation,
-            ).find(BuildFarmJob, *extra_clauses)
+        filtered_builds = IStore(BuildFarmJob).using(*origin).find(
+            BuildFarmJob, *extra_clauses)
 
         filtered_builds.order_by(
             Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
