@@ -60,8 +60,4 @@ if [ `date +%d` = '01' ]; then
     report 32 monthly `date -d 'last month' $fmt` $now
 fi
 
-# One off reports to populate history.
-## report 40 monthly `date -d '1 june 2010' $fmt` `date -d '1 july 2010' $fmt`
-## report 23 weekly `date -d '19 june 2010' $fmt` `date -d '26 june 2010' $fmt`
-## report 16 weekly `date -d '26 june 2010' $fmt` `date -d '3 july 2010' $fmt`
 
