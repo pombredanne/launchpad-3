@@ -56,7 +56,7 @@ from lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     BugField, ParticipatingPersonChoice, ProductNameField, SearchTag,
     StrippedTextLine, Summary)
 from lp.bugs.interfaces.bugwatch import (

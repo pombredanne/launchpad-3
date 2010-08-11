@@ -12,7 +12,7 @@ from zope.security.interfaces import Unauthorized
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from lp.services.fields import ParticipatingPersonChoice
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)

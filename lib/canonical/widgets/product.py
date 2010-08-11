@@ -29,7 +29,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from lazr.restful.interface import copy_field
 
 from canonical.launchpad.browser.widgets import DescriptionWidget
-from canonical.launchpad.fields import StrippedTextLine
+from lp.services.fields import StrippedTextLine
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerSet, ILaunchBag)
 from canonical.launchpad.validators import LaunchpadValidationError

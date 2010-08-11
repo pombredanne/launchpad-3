@@ -207,7 +207,7 @@ from lp.registry.browser.menu import (
     TopLevelMenuMixin)
 from lp.answers.browser.questiontarget import SearchQuestionsView
 
-from canonical.launchpad.fields import LocationField
+from lp.services.fields import LocationField
 
 from canonical.launchpad.mailnotification import send_direct_contact_email
 from canonical.launchpad.validators.email import valid_email

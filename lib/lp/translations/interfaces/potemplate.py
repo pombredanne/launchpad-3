@@ -12,7 +12,7 @@ from lazr.restful.declarations import (
     exported, export_as_webservice_entry, export_read_operation,
     operation_returns_collection_of)
 
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from lp.services.fields import ParticipatingPersonChoice
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution

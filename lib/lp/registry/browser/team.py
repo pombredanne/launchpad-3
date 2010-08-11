@@ -40,7 +40,7 @@ from canonical.widgets import HiddenUserWidget, LaunchpadRadioWidget
 from canonical.launchpad import _
 from lp.app.errors import UnexpectedFormData
 from lp.registry.browser.branding import BrandingChangeView
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (

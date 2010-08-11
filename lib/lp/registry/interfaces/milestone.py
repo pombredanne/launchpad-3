@@ -24,7 +24,7 @@ from lp.registry.interfaces.productrelease import IProductRelease
 from lp.bugs.interfaces.bugtarget import IHasBugs, IHasOfficialBugTags
 from lp.bugs.interfaces.bugtask import IBugTask
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     ContentNameField, NoneableDescription, NoneableTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.components.apihelpers import (

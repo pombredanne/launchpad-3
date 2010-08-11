@@ -19,7 +19,7 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.branch import IBranch
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from lp.services.fields import ParticipatingPersonChoice
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_read_operation, exported)

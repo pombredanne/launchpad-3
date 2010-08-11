@@ -49,7 +49,7 @@ from lazr.restful.interfaces import (
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import DuplicateBug
+from lp.services.fields import DuplicateBug
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBug, IBugSet

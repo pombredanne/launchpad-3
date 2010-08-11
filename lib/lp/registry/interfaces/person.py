@@ -64,7 +64,7 @@ from lazr.restful.fields import CollectionField, Reference
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
     StrippedTextLine, is_private_membership_person, is_public_person)

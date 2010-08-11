@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.fields import StrippableText
+from lp.services.fields import StrippableText
 
 from lp.testing import TestCase
 

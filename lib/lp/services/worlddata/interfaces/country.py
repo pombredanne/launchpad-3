@@ -16,7 +16,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Int, TextLine
 
-from canonical.launchpad.fields import Title, Description
+from lp.services.fields import Title, Description
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad import _
 

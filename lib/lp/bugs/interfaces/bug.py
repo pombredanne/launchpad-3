@@ -29,7 +29,7 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lp.bugs.interfaces.bugattachment import IBugAttachment

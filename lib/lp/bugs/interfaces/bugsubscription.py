@@ -14,7 +14,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Int, Datetime
 from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from lp.services.fields import ParticipatingPersonChoice
 from lp.bugs.interfaces.bug import IBug
 
 from lazr.restful.declarations import (

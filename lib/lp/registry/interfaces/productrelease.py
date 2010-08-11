@@ -27,7 +27,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import sane_version
-from canonical.launchpad.fields import (
+from lp.services.fields import (
     ContentNameField, ParticipatingPersonChoice)
 from canonical.launchpad.validators import LaunchpadValidationError
 
