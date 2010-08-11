@@ -308,94 +308,53 @@ returned.
 
 == Importance Conversion ==
 
-TODO
+There is also a function for conversion of bugzilla importances to
+launchpad importances.  The Bugzilla importance is comprised of priority
+and severity, but we only use severity in mapping the value unless it
+isn't available in which case we map against priority values.
 
-    >>> external_bugzilla.convertRemoteImportance('IMMEDIATE BLOCKER').title
-    'Critical'
     >>> external_bugzilla.convertRemoteImportance('URGENT BLOCKER').title
-    'Critical'
-    >>> external_bugzilla.convertRemoteImportance('HIGH BLOCKER').title
-    'Critical'
-    >>> external_bugzilla.convertRemoteImportance('NORMAL BLOCKER').title
     'Critical'
     >>> external_bugzilla.convertRemoteImportance('LOW BLOCKER').title
     'Critical'
     >>> external_bugzilla.convertRemoteImportance('BLOCKER').title
     'Critical'
 
-    >>> external_bugzilla.convertRemoteImportance('IMMEDIATE CRITICAL').title
-    'Critical'
     >>> external_bugzilla.convertRemoteImportance('URGENT CRITICAL').title
-    'Critical'
-    >>> external_bugzilla.convertRemoteImportance('HIGH CRITICAL').title
-    'Critical'
-    >>> external_bugzilla.convertRemoteImportance('NORMAL CRITICAL').title
     'Critical'
     >>> external_bugzilla.convertRemoteImportance('LOW CRITICAL').title
     'Critical'
     >>> external_bugzilla.convertRemoteImportance('CRITICAL').title
     'Critical'
 
-    >>> external_bugzilla.convertRemoteImportance('IMMEDIATE MAJOR').title
-    'High'
     >>> external_bugzilla.convertRemoteImportance('URGENT MAJOR').title
-    'High'
-    >>> external_bugzilla.convertRemoteImportance('HIGH MAJOR').title
-    'High'
-    >>> external_bugzilla.convertRemoteImportance('NORMAL MAJOR').title
     'High'
     >>> external_bugzilla.convertRemoteImportance('LOW MAJOR').title
     'High'
     >>> external_bugzilla.convertRemoteImportance('MAJOR').title
     'High'
 
-    >>> external_bugzilla.convertRemoteImportance('IMMEDIATE NORMAL').title
-    'Medium'
     >>> external_bugzilla.convertRemoteImportance('URGENT NORMAL').title
-    'Medium'
-    >>> external_bugzilla.convertRemoteImportance('HIGH NORMAL').title
-    'Medium'
-    >>> external_bugzilla.convertRemoteImportance('MEDIUM NORMAL').title
     'Medium'
     >>> external_bugzilla.convertRemoteImportance('LOW NORMAL').title
     'Medium'
     >>> external_bugzilla.convertRemoteImportance('NORMAL').title
     'Medium'
 
-    >>> external_bugzilla.convertRemoteImportance('IMMEDIATE MINOR').title
-    'Low'
     >>> external_bugzilla.convertRemoteImportance('URGENT MINOR').title
-    'Low'
-    >>> external_bugzilla.convertRemoteImportance('HIGH MINOR').title
-    'Low'
-    >>> external_bugzilla.convertRemoteImportance('NORMAL MINOR').title
     'Low'
     >>> external_bugzilla.convertRemoteImportance('LOW MINOR').title
     'Low'
     >>> external_bugzilla.convertRemoteImportance('MINOR').title
     'Low'
 
-    >>> external_bugzilla.convertRemoteImportance('IMMEDIATE TRIVIAL').title
-    'Low'
     >>> external_bugzilla.convertRemoteImportance('URGENT TRIVIAL').title
-    'Low'
-    >>> external_bugzilla.convertRemoteImportance('HIGH TRIVIAL').title
-    'Low'
-    >>> external_bugzilla.convertRemoteImportance('NORMAL TRIVIAL').title
     'Low'
     >>> external_bugzilla.convertRemoteImportance('LOW TRIVIAL').title
     'Low'
     >>> external_bugzilla.convertRemoteImportance('TRIVIAL').title
     'Low'
 
-    >>> external_bugzilla.convertRemoteImportance('IMMEDIATE ENHANCEMENT').title
-    'Wishlist'
-    >>> external_bugzilla.convertRemoteImportance('URGENT ENHANCEMENT').title
-    'Wishlist'
-    >>> external_bugzilla.convertRemoteImportance('HIGH ENHANCEMENT').title
-    'Wishlist'
-    >>> external_bugzilla.convertRemoteImportance('NORMAL ENHANCEMENT').title
-    'Wishlist'
     >>> external_bugzilla.convertRemoteImportance('LOW ENHANCEMENT').title
     'Wishlist'
     >>> external_bugzilla.convertRemoteImportance('ENHANCEMENT').title
@@ -407,7 +366,7 @@ TODO
     'Critical'
     >>> external_bugzilla.convertRemoteImportance('HIGH').title
     'High'
-    >>> external_bugzilla.convertRemoteImportance('NORMAL').title
+    >>> external_bugzilla.convertRemoteImportance('MEDIUM').title
     'Medium'
     >>> external_bugzilla.convertRemoteImportance('LOW').title
     'Low'
