@@ -359,10 +359,6 @@ target text.  The questions don't have to contain all the words of the text.
     ...     print t.title
     New question
     Another question
-    Question title3
-    Question title2
-    Question title1
-    Question title0
 
 
 

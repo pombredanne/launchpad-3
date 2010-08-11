@@ -10,27 +10,13 @@ We need to be logged into the security model in order to get any further
   >>> login('foo.bar@canonical.com')
 
 For the purpose of this test, hoary needs to be an open (development)
-distroseries so that we can upload to it.  It also needs to allow uploads
-to the universe component.
-
-This test normally runs as the "uploader" db user but it does not have
-permission to add a new ComponentSelection, so we temporarily switch to
-"launchpad" to handle this.
+distroseries so that we can upload to it.
 
   >>> from canonical.launchpad.interfaces import (
-  ...     SeriesStatus, IComponentSet, IDistributionSet)
-  >>> from canonical.launchpad.database import ComponentSelection
+  ...     SeriesStatus, IDistributionSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = SeriesStatus.DEVELOPMENT
-  >>> universe = getUtility(IComponentSet)['universe']
-  >>> from canonical.testing import LaunchpadZopelessLayer
-  >>> from canonical.database.sqlbase import commit
-  >>> commit()
-  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-  >>> trash = ComponentSelection(distroseries=hoary, component=universe)
-  >>> commit()
-  >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
 A NascentUpload is a collection of files in a directory. They
 represent what may turn out to be an acceptable upload to a launchpad
@@ -152,9 +138,21 @@ ed_source upload is *sourceful*:
 
 ed_source is uses ORIG + DIFF form:
 
-  >>> ed_source_upload.native
+  >>> from lp.archiveuploader.utils import determine_source_file_type
+  >>> from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+  >>> def determine_file_types(upload):
+  ...     return [determine_source_file_type(uf.filename)
+  ...             for uf in upload.changes.files]
+  >>> def has_orig(upload):
+  ...     return (SourcePackageFileType.ORIG_TARBALL
+  ...             in determine_file_types(upload))
+  >>> def has_native(upload):
+  ...     return (SourcePackageFileType.NATIVE_TARBALL
+  ...             in determine_file_types(upload))
+
+  >>> has_native(ed_source_upload)
   False
-  >>> ed_source_upload.hasorig
+  >>> has_orig(ed_source_upload)
   True
 
 For *sourceful* uploads 'archdep' and 'archindep' are always False:
@@ -197,9 +195,9 @@ ed_binary contains only one 'architecture dependent binary':
 As expected 'native' and 'hasorig' doesn't make any sense for binary
 uploads, so they are alway False:
 
-  >>> ed_binary_upload.native
+  >>> has_native(ed_binary_upload)
   False
-  >>> ed_binary_upload.hasorig
+  >>> has_orig(ed_binary_upload)
   False
 
 Since the binary policy lets things through unsigned, we don't try and
@@ -287,9 +285,9 @@ upload the ORIG files assuming it is already published by its
 ancestries (it saves a lot of bandwidth). So, the upload is not
 'native', neither 'hasorig':
 
-  >>> ed_mixed_upload.native
+  >>> has_native(ed_mixed_upload)
   False
-  >>> ed_mixed_upload.hasorig
+  >>> has_orig(ed_mixed_upload)
   False
 
 But if we check the DSC we will find the reference to the already
@@ -716,7 +714,9 @@ we're using the insecure policy to check everything in it end-to-end. We have
 to set hoary to CURRENT in order to do this because we're not allowed
 to upload to -UPDATES in a DEVELOPMENT series.
 
+  >>> from canonical.testing import LaunchpadZopelessLayer
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+  >>> from canonical.database.sqlbase import commit
   >>> hoary.status = SeriesStatus.CURRENT
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('uploader')
@@ -879,8 +879,8 @@ This time the upload will fail because the ACLs don't let
   >>> bar_failed.is_rejected
   True
   >>> print bar_failed.rejection_message
-  The signer of this package is lacking the upload rights for the source
-  package, component or package set in question.
+  The signer of this package has no upload rights to this distribution's
+  primary archive.  Did you mean to upload to a PPA?
 
 Even in a rejected upload using 'insecure' policy, the DSC signing key
 and the changesfile sigining key are stored in NascentUpload instance

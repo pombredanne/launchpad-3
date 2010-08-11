@@ -54,13 +54,7 @@ from lp.answers.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.helpers import (
     is_english_variant, preferred_or_request_languages)
 
-from canonical.launchpad.interfaces import (
-    IAnswersFrontPageSearchForm, IFAQ, IFAQTarget,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, IProjectGroup, IQuestion,
-    IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
-    IQuestionSet, IQuestionTarget, QuestionAction, QuestionStatus,
-    QuestionSort, NotFoundError, UnexpectedFormData)
-
+from lp.app.errors import NotFoundError, UnexpectedFormData
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, Link, canonical_url,
     enabled_with_permission, Navigation, LaunchpadView, action,
@@ -73,8 +67,22 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LaunchpadRadioWidget, TokensTextWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
-
 from canonical.lazr.utils import smartquote
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet)
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.questionenums import (
+    QuestionAction, QuestionSort, QuestionStatus)
+from lp.answers.interfaces.question import (
+    IQuestion, IQuestionAddMessageForm, IQuestionChangeStatusForm,
+    IQuestionLinkFAQForm)
+from lp.answers.interfaces.questioncollection import (
+    IQuestionSet)
+from lp.answers.interfaces.questiontarget import (
+    IAnswersFrontPageSearchForm, IQuestionTarget)
 
 
 class QuestionLinksMixin:

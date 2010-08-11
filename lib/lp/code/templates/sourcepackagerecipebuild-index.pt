@@ -10,12 +10,10 @@
   <body>
 
     <tal:registering metal:fill-slot="registering">
-      <p>
         created
         <span tal:content="context/datecreated/fmt:displaydate"
               tal:attributes="title context/datecreated/fmt:datetime"
           >on 2005-01-01</span>
-      </p>
     </tal:registering>
 
     <div metal:fill-slot="main">
@@ -116,7 +114,10 @@
       <tal:pending condition="context/buildqueue_record/job/status/enumvalue:WAITING">
         <li tal:define="eta context/buildqueue_record/getEstimatedJobStartTime">
           Start <tal:eta
-            replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
+          replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
+          (<span tal:replace="context/buildqueue_record/lastscore"/>)
+          <a href="https://help.launchpad.net/Packaging/BuildScores"
+             target="_blank">What's this?</a>
         </li>
       </tal:pending>
       </tal:reallypending>

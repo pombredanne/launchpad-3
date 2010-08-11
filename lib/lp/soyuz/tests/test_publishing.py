@@ -18,9 +18,9 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadZopelessLayer)
+from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import Config
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -146,8 +146,7 @@ class SoyuzTestPublisher:
             PackageUploadStatus.DONE: 'setDone',
             PackageUploadStatus.ACCEPTED: 'setAccepted',
             }
-        naked_package_upload = remove_security_proxy_and_shout_at_engineer(
-            package_upload)
+        naked_package_upload = removeSecurityProxy(package_upload)
         method = getattr(
             naked_package_upload, status_to_method[upload_status])
         method()
@@ -225,7 +224,7 @@ class SoyuzTestPublisher:
             changes_file_name=changes_file_name,
             changes_file_content=changes_file_content,
             upload_status=upload_status)
-        naked_package_upload = remove_security_proxy_and_shout_at_engineer(
+        naked_package_upload = removeSecurityProxy(
             package_upload)
         naked_package_upload.addSource(spr)
 

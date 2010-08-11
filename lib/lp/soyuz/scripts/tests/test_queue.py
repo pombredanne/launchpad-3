@@ -719,6 +719,7 @@ class TestQueueTool(TestQueueBase):
             component_name='universe', section_name='editors')
         # 'netapplet' appears 3 times, alsa-utils once.
         self.assertEqual(4, queue_action.items_size)
+        self.assertEqual(2, queue_action.overrides_performed)
         # Check results.
         queue_items = list(breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name='alsa-utils'))
@@ -814,6 +815,7 @@ class TestQueueTool(TestQueueBase):
             priority_name='optional')
         # Check results.
         self.assertEqual(2, queue_action.items_size)
+        self.assertEqual(2, queue_action.overrides_performed)
         queue_items = list(breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name='pmount'))
         queue_items.extend(list(breezy_autotest.getQueueItems(
@@ -861,7 +863,13 @@ class TestQueueTool(TestQueueBase):
             component_name='restricted', section_name='editors',
             priority_name='optional')
 
-        self.assertEqual(2, queue_action.items_size)
+        # There are three binaries to override on this PackageUpload:
+        #  - mozilla-firefox in breezy-autotest
+        #  - mozilla-firefox and mozilla-firefox-data in warty
+        # Each should be overridden exactly once.
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(3, queue_action.overrides_performed)
+
         queue_items = list(breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name='mozilla-firefox-data'))
         queue_items.extend(list(breezy_autotest.getQueueItems(

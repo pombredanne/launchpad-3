@@ -149,8 +149,9 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
+    ILaunchBag, IOpenLaunchBag)
 from lp.answers.interfaces.questionenums import QuestionParticipation
+from lp.app.errors import NotFoundError, UnexpectedFormData
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -170,8 +171,8 @@ from lp.registry.interfaces.teammembership import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ITeamMembership,
     ITeamMembershipSet, TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiNameSet
-from lp.code.interfaces.branchnamespace import (
-    IBranchNamespaceSet, InvalidNamespace)
+from lp.code.errors import InvalidNamespace
+from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
@@ -1263,7 +1264,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         return Link(target, text, icon=icon, enabled=enabled)
 
 
-class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
+class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
 
     usedfor = ITeam
     facet = 'overview'
@@ -1274,7 +1275,7 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
              'editlanguages', 'map', 'polls',
              'add_poll', 'join', 'leave', 'add_my_teams',
              'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa',
-             'related_software_summary']
+             'related_software_summary', 'view_recipes']
 
 
 class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
