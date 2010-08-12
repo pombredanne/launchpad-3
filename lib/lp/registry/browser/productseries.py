@@ -10,6 +10,7 @@ __all__ = [
     'ProductSeriesBreadcrumb',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
+    'ProductSeriesDetailedDisplayView',
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
@@ -434,6 +435,17 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
             if len(list(release.files)) > 0:
                 return release
         return None
+
+
+class ProductSeriesDetailedDisplayView(ProductSeriesView):
+
+    @cachedproperty
+    def latest_milestones(self):
+        return self.context.milestones[:12]
+
+    @cachedproperty
+    def latest_releases(self):
+        return self.context.releases[:12]
 
 
 class ProductSeriesUbuntuPackagingView(LaunchpadFormView):

@@ -21,7 +21,10 @@ from zope.interface import implements
 from sqlobject import (
     AND, BoolCol, DateCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.locals import And, Store
+
+
+from storm.expr import And, Desc, Coalesce
+from storm.store import Store
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.sorting import expand_numbers
@@ -78,7 +81,7 @@ class HasMilestonesMixin:
         """See `IHasMilestones`."""
         store = Store.of(self)
         result = store.find(Milestone, self._getMilestoneCondition())
-        return sorted(result, key=milestone_sort_key, reverse=True)
+        return result.order_by(self._milestone_order)
 
     @property
     def milestones(self):
@@ -87,7 +90,14 @@ class HasMilestonesMixin:
         result = store.find(Milestone,
                             And(self._getMilestoneCondition(),
                                 Milestone.active == True))
-        return sorted(result, key=milestone_sort_key, reverse=True)
+        return result.order_by(self._milestone_order)
+
+    @property
+    def _milestone_order(self):
+        return (
+            Desc(Coalesce(Milestone.dateexpected, FUTURE_NONE)),
+            'debversion_sort_key(Milestone.name) DESC',
+            )
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
