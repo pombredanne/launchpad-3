@@ -26,6 +26,9 @@ from sqlobject import (
 from storm.expr import And, Desc, Coalesce
 from storm.store import Store
 
+
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.app.errors import NotFoundError
@@ -81,7 +84,7 @@ class HasMilestonesMixin:
         """See `IHasMilestones`."""
         store = Store.of(self)
         result = store.find(Milestone, self._getMilestoneCondition())
-        return result.order_by(self._milestone_order)
+        return DecoratedResultSet(result.order_by(self._milestone_order))
 
     @property
     def milestones(self):
@@ -90,13 +93,13 @@ class HasMilestonesMixin:
         result = store.find(Milestone,
                             And(self._getMilestoneCondition(),
                                 Milestone.active == True))
-        return result.order_by(self._milestone_order)
+        return DecoratedResultSet(result.order_by(self._milestone_order))
 
     @property
     def _milestone_order(self):
         return (
             Desc(Coalesce(Milestone.dateexpected, FUTURE_NONE)),
-            'debversion_sort_key(Milestone.name) DESC',
+            'milestone_sort_key(Milestone.dateexpected, Milestone.name) DESC',
             )
 
 
