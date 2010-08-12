@@ -1085,12 +1085,10 @@ class TestBranchDeletion(TestCaseWithFactory):
     def test_linked_translations_branch_cleared(self):
         # The translations_branch of a series that is linked to the branch
         # should be cleared.
-        branch = self.factory.makeProductBranch()
-        dev_focus = branch.product.development_focus
-        dev_focus.translations_branch = branch
-        store = Store.of(branch)
-        branch.destroySelf(break_references=True)
-        store.flush()
+        dev_focus = self.branch.product.development_focus
+        dev_focus.translations_branch = self.branch
+        self.branch.destroySelf(break_references=True)
+        Store.of(self.product).flush()
 
     def test_unrelated_TranslationTemplatesBuildJob_intact(self):
         # No innocent BuildQueue entries are harmed in deleting a
