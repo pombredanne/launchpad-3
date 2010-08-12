@@ -1061,6 +1061,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
                          'icon': 'icon',
                          'displayname': 'displayname',
                          'unique_displayname': 'unique_displayname',
+                         'name_link': 'nameLink',
                          }
 
     final_traversable_names = {'local-time': 'local_time'}
@@ -1118,6 +1119,20 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             return '<span class="' + css_class + '"></span>'
         else:
             return '<img src="%s" width="14" height="14" />' % custom_icon
+
+    def nameLink(self, view_name):
+        """Return the Launchpad id of the person, linked to their profile."""
+        person = self._context
+        url = self.url(view_name)
+        custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
+        if custom_icon is None:
+            css_class = ObjectImageDisplayAPI(person).sprite_css()
+            return (u'<a href="%s" class="%s">%s</a>') % (
+                url, css_class, cgi.escape(person.name))
+        else:
+            return (u'<a href="%s" class="bg-image" '
+                     'style="background-image: url(%s)">%s</a>') % (
+                url, custom_icon, cgi.escape(person.name))
 
 
 class TeamFormatterAPI(PersonFormatterAPI):
