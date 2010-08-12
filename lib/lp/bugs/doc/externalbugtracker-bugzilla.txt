@@ -472,13 +472,17 @@ Let's add a few more watches:
     >>> expected_remote_statuses = dict(
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
     ...      for bug_watch in gnome_bugzilla.watches])
+    >>> expected_remote_importances = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remote_importance)
+    ...      for bug_watch in gnome_bugzilla.watches])
     >>> for remote_bug_id in range(100,300):
     ...     bug_watch = bug_watch_set.createBugWatch(
     ...         bug=bug_one, owner=sample_person, bugtracker=gnome_bugzilla,
     ...         remotebug=str(remote_bug_id))
     ...     external_bugzilla.bugzilla_bugs[remote_bug_id] = (
-    ...         'ASSIGNED', '', 'MEDIUM', 'NORMAL')
+    ...         'ASSIGNED', '', 'MEDIUM', 'URGENT')
     ...     expected_remote_statuses[remote_bug_id] = 'ASSIGNED'
+    ...     expected_remote_importances[remote_bug_id] = 'MEDIUM URGENT'
     >>> for bug_watch in gnome_bugzilla.watches:
     ...     sync(bug_watch)
 
@@ -503,6 +507,12 @@ updateBugWatches() issues only one request to update all watches:
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
     ...      for bug_watch in gnome_bugzilla.watches])
     >>> remote_statuses == expected_remote_statuses
+    True
+
+    >>> remote_importances = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remote_importance)
+    ...      for bug_watch in gnome_bugzilla.watches])
+    >>> remote_importances == expected_remote_importances
     True
 
     >>> external_bugzilla.trace_calls = False
@@ -538,6 +548,8 @@ from a bug task.
     Unknown
     >>> thunderbird_task.bugwatch.remotestatus is None
     True
+    >>> thunderbird_task.bugwatch.remote_importance is None
+    True
 
 Importance gets updated for Bugzilla bugs.  Let's set it to some bogus
 value, and see that it gets set to a proper value.
@@ -553,7 +565,7 @@ We need to create a new ExternalBugtracker for the Mozilla tracker:
     ...     'mozilla.org')
     >>> external_bugzilla = TestBugzilla(mozilla_bugzilla.baseurl, '2.20')
     >>> external_bugzilla.bugzilla_bugs = {1234: (
-    ...     'ASSIGNED', '', 'MEDIUM', 'NORMAL')}
+    ...     'ASSIGNED', '', 'MEDIUM', 'ENHANCEMENT')}
 
 Let's update the bug watch, and see that the linked bug watch got
 synced:
@@ -567,9 +579,11 @@ synced:
     >>> print thunderbird_task.status.title
     In Progress
     >>> print thunderbird_task.importance.title
-    Medium
+    Wishlist
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED
+    >>> print thunderbird_task.bugwatch.remote_importance
+    MEDIUM ENHANCEMENT
 
 If we change the bugtask status, it will be updated again even though
 the remote status hasn't changed. This can happen if we change the
@@ -588,9 +602,11 @@ status mapping.
     >>> print thunderbird_task.status.title
     In Progress
     >>> print thunderbird_task.importance.title
-    Medium
+    Wishlist
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED
+    >>> print thunderbird_task.bugwatch.remote_importance
+    MEDIUM ENHANCEMENT
 
 If there are two bug watches, linked to different bugs, pointing to the
 same remote bug, both will of course be updated.
