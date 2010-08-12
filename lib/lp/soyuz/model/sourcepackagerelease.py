@@ -155,7 +155,7 @@ class SourcePackageRelease(SQLBase):
             kwargs['_user_defined_fields'] = simplejson.dumps(
                 kwargs['user_defined_fields'])
             del kwargs['user_defined_fields']
-        SQLBase.__init__(self, *args, **kwargs)
+        super(SourcePackageRelease, self).__init__(*args, **kwargs)
 
     @property
     def user_defined_fields(self):
