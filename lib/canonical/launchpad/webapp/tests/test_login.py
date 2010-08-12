@@ -71,6 +71,7 @@ class StubbedOpenIDCallbackView(OpenIDCallbackView):
 
 class FakeConsumer:
     """An OpenID consumer that stashes away arguments for test instection."""
+
     def complete(self, params, requested_url):
         self.params = params
         self.requested_url = requested_url
@@ -78,6 +79,7 @@ class FakeConsumer:
 
 class FakeConsumerOpenIDCallbackView(OpenIDCallbackView):
     """An OpenID handler with fake consumer so arguments can be inspected."""
+
     def _getConsumer(self):
         self.fake_consumer = FakeConsumer()
         return self.fake_consumer
@@ -426,8 +428,10 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # the response and redirect to the starting_url specified in the
         # OpenID response.
         test_account = self.factory.makeAccount('Test account')
+
         class StubbedOpenIDCallbackViewLoggedIn(StubbedOpenIDCallbackView):
             account = test_account
+
         view, html = self._createViewWithResponse(
             test_account, response_status=FAILURE,
             response_msg='Server denied check_authentication',
@@ -575,11 +579,13 @@ class FakeOpenIDRequest:
 
 
 class FakeOpenIDConsumer:
+
     def begin(self, url):
         return FakeOpenIDRequest()
 
 
 class StubbedOpenIDLogin(OpenIDLogin):
+
     def _getConsumer(self):
         return FakeOpenIDConsumer()
 
