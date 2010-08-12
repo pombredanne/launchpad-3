@@ -267,10 +267,8 @@ class FormattableDate(Date):
     implements(IDate)
 
     def _validate(self, value):
-        error_msg = [
-            "Date and time could not be formatted. Please submit date in ",
-            "YYYY-MM-DD format."]
-        error_msg = ', '.join(error_msg)
+        error_msg = ("Date and time could not be formatted. Please submit date in "
+            "YYYY-MM-DD format. The year must be after 1900.")
 
         super(FormattableDate, self)._validate(value)
         #we're only interested in whether or not we can format the input,

@@ -54,8 +54,8 @@ class TestMilestoneViews(TestCaseWithFactory):
         view = create_initialized_view(
             self.series, '+addmilestone', form=form)
         error_msg = view.errors[0].errors[0]
-        expected_msg = ("Date and time could not be formatted. Please submit"
-            " date in , YYYY-MM-DD format.")
+        expected_msg = ("Date and time could not be formatted. Please submit date in "
+            "YYYY-MM-DD format. The year must be after 1900.")
         self.assertEqual(expected_msg, error_msg)
 
 
