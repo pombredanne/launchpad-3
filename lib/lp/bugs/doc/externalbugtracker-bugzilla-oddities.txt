@@ -75,7 +75,7 @@ We support them just fine:
     >>> for remote_bug in remote_bugs:
     ...     print "%s: %s %s" % (
     ...         remote_bug,
-    ...         old_bugzilla.getRemoteStatus(remote_bug), 
+    ...         old_bugzilla.getRemoteStatus(remote_bug),
     ...         old_bugzilla.getRemoteImportance(remote_bug))
     42: RESOLVED FIXED LOW BLOCKER
     123543: ASSIGNED HIGH BLOCKER

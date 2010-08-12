@@ -211,18 +211,18 @@ class Bugzilla(ExternalBugTracker):
         return tuple(int(number) for number in version_numbers)
 
     _importance_lookup = {
-        'blocker':    BugTaskImportance.CRITICAL,
-        'critical':   BugTaskImportance.CRITICAL,
-        'immediate':  BugTaskImportance.CRITICAL,
-        'urgent':     BugTaskImportance.CRITICAL,
-        'major':      BugTaskImportance.HIGH,
-        'high':       BugTaskImportance.HIGH,
-        'normal':     BugTaskImportance.MEDIUM,
-        'medium':     BugTaskImportance.MEDIUM,
-        'minor':      BugTaskImportance.LOW,
-        'low':        BugTaskImportance.LOW,
-        'trivial':    BugTaskImportance.LOW,
-        'enhancement':BugTaskImportance.WISHLIST,
+        'blocker':     BugTaskImportance.CRITICAL,
+        'critical':    BugTaskImportance.CRITICAL,
+        'immediate':   BugTaskImportance.CRITICAL,
+        'urgent':      BugTaskImportance.CRITICAL,
+        'major':       BugTaskImportance.HIGH,
+        'high':        BugTaskImportance.HIGH,
+        'normal':      BugTaskImportance.MEDIUM,
+        'medium':      BugTaskImportance.MEDIUM,
+        'minor':       BugTaskImportance.LOW,
+        'low':         BugTaskImportance.LOW,
+        'trivial':     BugTaskImportance.LOW,
+        'enhancement': BugTaskImportance.WISHLIST,
         }
 
     def convertRemoteImportance(self, remote_importance):
@@ -464,6 +464,7 @@ def needs_authentication(func):
     If an `xmlrpclib.Fault` with error code 410 is raised by the
     function, we'll try to authenticate and call the function again.
     """
+
     def decorator(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
@@ -471,6 +472,7 @@ def needs_authentication(func):
             # Catch authentication errors only.
             if fault.faultCode != 410:
                 raise
+
             self._authenticate()
             return func(self, *args, **kwargs)
     return decorator

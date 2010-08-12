@@ -49,7 +49,6 @@ BATCH_SIZE_UNLIMITED = 0
 # Errors.
 #
 
-
 class BugWatchUpdateError(Exception):
     """Base exception for when we fail to update watches for a tracker."""
 
@@ -98,12 +97,12 @@ class BugTrackerAuthenticationError(BugTrackerConnectError):
 # Warnings.
 #
 
-
 class BugWatchUpdateWarning(Exception):
     """An exception representing a warning.
 
     This is a flag exception for the benefit of the OOPS machinery.
     """
+
     def __init__(self, message, *args):
         # Require a message.
         Exception.__init__(self, message, *args)
@@ -283,7 +282,7 @@ class LookupBranch(treelookup.LookupBranch):
             self.result not in BugTaskStatus):
             raise TypeError(
                 'Result is not a member of BugTaskStatus: %r' % (
-                    self.result,))
+                    self.result))
         super(LookupBranch, self)._verify()
 
     def _describe_result(self, result):
@@ -310,7 +309,7 @@ class LookupTree(treelookup.LookupTree):
                 raise ValueError(
                     "Table of %d columns needs %d titles, but %d given." % (
                         (max_depth + 1), (max_depth + 1), len(titles)))
-            yield line("'''%s'''" % (title,) for title in titles)
+            yield line("'''%s'''" % (title) for title in titles)
 
         def diff(last, now):
             """Yields elements from `now` when different to those in `last`.

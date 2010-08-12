@@ -60,13 +60,13 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     bugtracker_set = getUtility(IBugTrackerSet)
     index = 1
-    name = '%s-checkwatches' % (bugtracker_type.name.lower(),)
+    name = '%s-checkwatches' % (bugtracker_type.name.lower())
     while bugtracker_set.getByName("%s-%d" % (name, index)) is not None:
         index += 1
     name += '-%d' % index
     BugTracker(
         name=name,
-        title='%s *TESTING*' % (bugtracker_type.title,),
+        title='%s *TESTING*' % (bugtracker_type.title),
         bugtrackertype=bugtracker_type,
         baseurl=base_url,
         summary='-', contactdetails='-',
@@ -130,10 +130,11 @@ def convert_python_status(status, resolution):
         'rejected': 8,
         'remind': 9,
         'wontfix': 10,
-        'worksforme': 11
-    }
+        'worksforme': 11,
+        }
 
     return "%s:%s" % (status_map[status], resolution_map[resolution])
+
 
 def set_bugwatch_error_type(bug_watch, error_type):
     """Set the last_error_type field of a bug watch to a given error type."""
@@ -301,8 +302,8 @@ class TestBugzilla(Bugzilla):
                 bug_li_items.append(bug_item)
             return buglist_xml % {
                 'bug_li_items': '\n'.join(bug_li_items),
-                'page': page
-            }
+                'page': page,
+                }
         else:
             raise AssertionError('Unknown page: %s' % page)
 
@@ -359,6 +360,7 @@ class TestOldBugzilla(TestBugzilla):
 
 class FakeHTTPConnection:
     """A fake HTTP connection."""
+
     def putheader(self, header, value):
         print "%s: %s" % (header, value)
 
@@ -456,7 +458,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'time',
             'set_link',
             ],
-        'Test': ['login_required']
+        'Test': ['login_required'],
         }
 
     # Methods that require authentication.
@@ -1058,7 +1060,7 @@ class TestMantis(Mantis):
 
     def _getPage(self, page):
         if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page,)
+            print "CALLED _getPage(%r)" % (page)
         if page == "csv_export.php":
             return read_test_file('mantis_example_bug_export.csv')
         elif page.startswith('view.php?id='):
@@ -1069,7 +1071,7 @@ class TestMantis(Mantis):
 
     def _postPage(self, page, form):
         if self.trace_calls:
-            print "CALLED _postPage(%r, ...)" % (page,)
+            print "CALLED _postPage(%r, ...)" % (page)
         return ''
 
     def cleanCache(self):
@@ -1109,7 +1111,7 @@ class TestTrac(Trac):
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
 
         if self.trace_calls:
-            print "CALLED urlopen(%r)" % (url,)
+            print "CALLED urlopen(%r)" % (url)
 
         if self.csv_export_file is not None:
             csv_export_file = self.csv_export_file
@@ -1141,7 +1143,8 @@ class MockTracRemoteBug:
         return {
             'id': self.id,
             'status': self.status,
-            'resolution': self.resolution,}
+            'resolution': self.resolution,
+            }
 
 
 class TestInternalXMLRPCTransport:
@@ -1446,7 +1449,7 @@ class TestRoundup(Roundup):
 
     def urlopen(self, url):
         if self.trace_calls:
-            print "CALLED urlopen(%r)" % (url,)
+            print "CALLED urlopen(%r)" % (url)
 
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
 
@@ -1498,7 +1501,7 @@ class TestSourceForge(SourceForge):
 
     def _getPage(self, page):
         if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page,)
+            print "CALLED _getPage(%r)" % (page)
 
         page_re = re.compile('support/tracker.php\?aid=([0-9]+)')
         bug_id = page_re.match(page).groups()[0]
@@ -1586,6 +1589,7 @@ class Urlib2TransportTestInfo:
     a hard-coded cookie header.
     """
     cookies = 'foo=bar'
+
     def getheaders(self, header):
         """Return the hard-coded cookie header."""
         if header.lower() in ('cookie', 'set-cookie', 'set-cookie2'):
@@ -1637,7 +1641,7 @@ class Urlib2TransportTestHandler(BaseHandler):
                 'http', req, response, 302, 'Moved', headers)
         else:
             xmlrpc_response = xmlrpclib.dumps(
-                (req.get_full_url(),), methodresponse=True)
+                (req.get_full_url(), ), methodresponse=True)
             response = StringIO(xmlrpc_response)
             info = Urlib2TransportTestInfo()
             response.info = lambda: info
@@ -1646,6 +1650,7 @@ class Urlib2TransportTestHandler(BaseHandler):
             response.msg = ''
 
         return response
+
 
 def patch_transport_opener(transport):
     """Patch the transport's opener to use a test handler."""
