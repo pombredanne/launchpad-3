@@ -654,7 +654,7 @@ class ViewTeamMembership(AuthorizationBase):
         """Verify that the user can view the team's membership.
 
         Anyone can see a public team's membership. Only a team member or
-        a Launchpad admin can view a private membership.
+        a Launchpad admin can view a private team.
         """
         if self.obj.team.visibility == PersonVisibility.PUBLIC:
             return True
@@ -708,9 +708,9 @@ class EditPersonBySelf(AuthorizationBase):
 
 
 class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
-    """Restrict viewing of private memberships of teams.
+    """Restrict viewing of private teams.
 
-    Only members of a team with a private membership can view the
+    Only members of a private team can view the
     membership list.
     """
     permission = 'launchpad.View'
@@ -726,7 +726,7 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
         """Verify that the user can view the team's membership.
 
         Anyone can see a public team's membership. Only a team member
-        or a Launchpad admin can view a private membership.
+        or a Launchpad admin can view a private team's members.
         """
         if self.obj.visibility == PersonVisibility.PUBLIC:
             return True
@@ -1171,13 +1171,16 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class DeleteSourcePackageRecipeBuilds(OnlyBazaarExpertsAndAdmins):
-    """Control who can delete SourcePackageRecipeBuilds.
+class EditSourcePackageRecipeBuilds(AuthorizationBase):
+    """Control who can edit SourcePackageRecipeBuilds.
 
-    Access is restricted to members of ~bazaar-experts and Launchpad admins.
+    Access is restricted to members of ~bazaar-experts and Buildd Admins.
     """
     permission = 'launchpad.Edit'
     usedfor = ISourcePackageRecipeBuild
+
+    def checkAuthenticated(self, user):
+        return user.in_bazaar_experts or user.in_buildd_admin
 
 
 class AdminDistributionTranslations(AuthorizationBase):
@@ -2068,8 +2071,7 @@ class ViewHWDeviceClass(ViewHWDBBase):
 class ViewArchive(AuthorizationBase):
     """Restrict viewing of private archives.
 
-    Only admins or members of a team with a private membership can
-    view the archive.
+    Only admins or members of a private team can view the archive.
     """
     permission = 'launchpad.View'
     usedfor = IArchive

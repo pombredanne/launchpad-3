@@ -331,9 +331,11 @@ def setupCompleteBuilds(batch):
 
     complete_builds = []
     for build in builds:
-        buildqueue = prefetched_data.get(build.id)
-        complete_builds.append(CompleteBuild(build, buildqueue))
-
+        if IBinaryPackageBuild.providedBy(build):
+            buildqueue = prefetched_data.get(build.id)
+            complete_builds.append(CompleteBuild(build, buildqueue))
+        else:
+            complete_builds.append(build)
     return complete_builds
 
 

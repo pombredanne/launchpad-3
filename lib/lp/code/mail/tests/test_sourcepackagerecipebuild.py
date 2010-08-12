@@ -12,7 +12,6 @@ from storm.locals import Store
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.mail.sourcepackagerecipebuild import (
@@ -56,7 +55,7 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
             status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=5))
         naked_build = removeSecurityProxy(build)
         naked_build.builder = self.factory.makeBuilder(name='bob')
-        naked_build.buildlog = self.factory.makeLibraryFileAlias()
+        naked_build.log = self.factory.makeLibraryFileAlias()
         Store.of(build).flush()
         mailer = SourcePackageRecipeBuildMailer.forStatus(build)
         email = build.requester.preferredemail.email
@@ -66,7 +65,7 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
             'Successfully built' % (build.id), ctrl.subject)
         body, footer = ctrl.body.split('\n-- \n')
         self.assertEqual(
-            expected_body % build.build_log_url, body)
+            expected_body % build.log.getURL(), body)
         self.assertEqual(
             'http://code.launchpad.dev/~person/+recipe/recipe/+build/1\n'
             'You are the requester of the build.\n', footer)
