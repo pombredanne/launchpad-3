@@ -3091,8 +3091,11 @@ class PersonParticipationView(LaunchpadView):
         if membership is None:
             #we have membership via an indirect team, and can use
             #sane defaults
-            role = 'Member'     #can only be member
-            datejoined = None   #never joined, can't have a join date
+
+            #the user can only be a member of this team
+            role = 'Member'
+            #the user never joined, and can't have a join date
+            datejoined = None
         else:
             #the member is a direct member, so we can use membership data
             team = membership.team
