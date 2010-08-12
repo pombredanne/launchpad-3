@@ -32,6 +32,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadUsage, IServiceUsage
+from lp.app.enums import ServiceUsage
+from lp.code.enums import BranchType
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from lp.code.model.hasbranches import (
@@ -83,7 +86,7 @@ from lp.registry.model.structuralsubscription import (
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes)
 from canonical.launchpad.interfaces.launchpadstatistic import (
@@ -178,7 +181,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     implements(
         IFAQTarget, IHasBugHeat, IHasBugSupervisor, IHasCustomLanguageCodes,
         IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct,
-        IQuestionTarget)
+        IQuestionTarget, IServiceUsage)
 
     _table = 'Product'
 
@@ -259,16 +262,53 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # XXX Need to remove official_codehosting column from Product
         # table.
         return self.development_focus.branch is not None
-
-    def _getMilestoneCondition(self):
-        """See `HasMilestonesMixin`."""
-        return (Milestone.product == self)
-
     @property
     def official_anything(self):
         return True in (self.official_malone, self.official_rosetta,
                         self.official_blueprints, self.official_answers,
                         self.official_codehosting)
+
+    answers_usage = EnumCol(
+        dbName="answers_usage", notNull=True,
+        schema=ServiceUsage,
+        default=ServiceUsage.UNKNOWN)
+    blueprints_usage = EnumCol(
+        dbName="blueprints_usage", notNull=True,
+        schema=ServiceUsage,
+        default=ServiceUsage.UNKNOWN)
+    translations_usage = EnumCol(
+        dbName="translations_usage", notNull=True,
+        schema=ServiceUsage,
+        default=ServiceUsage.UNKNOWN)
+    @property
+    def codehosting_usage(self):
+        if self.development_focus.branch is None:
+            return ServiceUsage.UNKNOWN
+        elif self.development_focus.branch.branch_type == BranchType.HOSTED:
+            return ServiceUsage.LAUNCHPAD
+        elif self.development_focus.branch.branch_type == BranchType.MIRRORED:
+            return ServiceUsage.EXTERNAL
+        return ServiceUsage.NOT_APPLICABLE
+    @property
+    def bug_tracking_usage(self):
+        if self.official_malone:
+            return ServiceUsage.LAUNCHPAD
+        elif self.bugtracker is None:
+            return ServiceUsage.UNKNOWN
+        else:
+            return ServiceUsage.EXTERNAL
+    @property
+    def uses_launchpad(self):
+        """Does this distribution actually use Launchpad?"""
+        return ServiceUsage.LAUNCHPAD in (self.answers_usage,
+                                          self.blueprints_usage,
+                                          self.translations_usage,
+                                          self.codehosting_usage,
+                                          self.bug_tracking_usage)
+
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.product == self)
 
     enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
         notNull=True, default=False)

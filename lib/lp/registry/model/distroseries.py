@@ -284,10 +284,20 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @cachedproperty
     def _all_packagings(self):
-        """Get an unordered list of all packagings."""
+        """Get an unordered list of all packagings.
+        
+        :return: A ResultSet which can be decorated or tuned further. Use
+            DistroSeries._packaging_row_to_packaging to extract the
+            packaging objects out.
+        """
         # We join to SourcePackageName, ProductSeries, and Product to cache
         # the objects that are implicitly needed to work with a
         # Packaging object.
+        # NB: precaching objects like this method tries to do has a very poor
+        # hit rate with storm - many queries will still be executed; consider
+        # ripping this out and instead allowing explicit inclusion of things 
+        # like Person._all_members does - returning a cached object graph.
+        # -- RBC 20100810
         # Avoid circular import failures.
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
@@ -307,14 +317,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         results = IStore(self).using(*origin).find(find_spec, condition)
         return results
 
+    @staticmethod
+    def _packaging_row_to_packaging(row):
+        # each row has:
+        #  (packaging, spn, product_series, product)
+        return row[0]
+
     @property
     def packagings(self):
         """See `IDistroSeries`."""
         results = self._all_packagings
         results = results.order_by(SourcePackageName.name)
-        return [
-            packaging
-            for (packaging, spn, product_series, product) in results]
+        return DecoratedResultSet(results,
+            DistroSeries._packaging_row_to_packaging)
 
     def getPrioritizedUnlinkedSourcePackages(self):
         """See `IDistroSeries`.
@@ -452,9 +467,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # identical creation dates.
         results = results.order_by(Desc(Packaging.datecreated),
                                    SourcePackageName.name)[:5]
-        return [
-            packaging
-            for (packaging, spn, product_series, product) in results]
+        return DecoratedResultSet(results,
+            DistroSeries._packaging_row_to_packaging)
 
     @property
     def supported(self):
@@ -1105,7 +1119,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Use the facility provided by IBinaryPackageBuildSet to
         # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            arch_ids, build_state, name, pocket)
+            self.distribution, arch_ids, build_state, name, pocket)
 
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,

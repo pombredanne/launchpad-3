@@ -6,9 +6,12 @@
 
 SET client_min_messages=ERROR;
 
-UPDATE LibraryFileAlias SET restricted=true
-    WHERE id IN (
-        SELECT libraryfile from BugAttachment, Bug
-            WHERE BugAttachment.bug = Bug.id AND Bug.private);
+UPDATE LibraryFileAlias SET restricted=TRUE
+FROM BugAttachment, Bug
+WHERE
+    LibraryFileAlias.id = BugAttachment.libraryfile
+    AND Bug.id = BugAttachment.bug
+    AND Bug.private IS TRUE
+    AND restricted=FALSE;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 79, 0);
