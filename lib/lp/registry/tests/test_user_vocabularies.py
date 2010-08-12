@@ -127,7 +127,7 @@ class TestAllUserTeamsParticipationVocabulary(TestCaseWithFactory):
         login_person(team_owner)
         team = self.factory.makeTeam(owner=team_owner)
         team.addMember(person=user, reviewer=team_owner)
-        # Launchpad admin rights are needed to set private membership.
+        # Launchpad admin rights are needed to create private teams.
         login('foo.bar@canonical.com')
         team.visibility = PersonVisibility.PRIVATE
         login_person(user)

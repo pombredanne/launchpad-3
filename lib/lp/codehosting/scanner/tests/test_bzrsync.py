@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0141
@@ -21,6 +21,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
@@ -36,7 +37,9 @@ from canonical.testing import LaunchpadZopelessLayer
 def run_as_db_user(username):
     """Create a decorator that will run a function as the given database user.
     """
+
     def _run_with_different_user(f):
+
         def decorated(*args, **kwargs):
             current_user = LaunchpadZopelessLayer.txn._dbuser
             if current_user == username:
@@ -47,6 +50,7 @@ def run_as_db_user(username):
             finally:
                 LaunchpadZopelessLayer.switchDbUser(current_user)
         return mergeFunctionMetadata(f, decorated)
+
     return _run_with_different_user
 
 
@@ -94,10 +98,12 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         :return: (num_revisions, num_branch_revisions, num_revision_parents,
             num_revision_authors)
         """
-        return (Revision.select().count(),
-                BranchRevision.select().count(),
-                RevisionParent.select().count(),
-                RevisionAuthor.select().count())
+        store = IStore(Revision)
+        return (
+            store.find(Revision).count(),
+            store.find(BranchRevision).count(),
+            store.find(RevisionParent).count(),
+            store.find(RevisionAuthor).count())
 
     def assertCounts(self, counts, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
@@ -228,10 +234,10 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         :return: A set of tuples (sequence, revision-id) for all the
             BranchRevisions rows belonging to self.db_branch.
         """
-        return set(
-            (branch_revision.sequence, branch_revision.revision.revision_id)
-            for branch_revision
-            in BranchRevision.selectBy(branch=db_branch))
+        return set(IStore(BranchRevision).find(
+            (BranchRevision.sequence, Revision.revision_id),
+            Revision.id == BranchRevision.revision_id,
+            BranchRevision.branch == db_branch))
 
     def writeToFile(self, filename="file", contents=None):
         """Set the contents of the specified file.
@@ -459,8 +465,9 @@ class TestBzrSync(BzrSyncTestCase):
         # retrieveDatabaseAncestry.
         branch = getUtility(IBranchLookup).getByUniqueName(
             '~name12/+junk/junk.contrib')
-        sampledata = list(
-            BranchRevision.selectBy(branch=branch).orderBy('sequence'))
+        branch_revisions = IStore(BranchRevision).find(
+            BranchRevision, BranchRevision.branch == branch)
+        sampledata = list(branch_revisions.order_by(BranchRevision.sequence))
         expected_ancestry = set(branch_revision.revision.revision_id
             for branch_revision in sampledata)
         expected_history = [branch_revision.revision.revision_id
@@ -540,7 +547,7 @@ class TestBzrTranslationsUploadJob(BzrSyncTestCase):
 
     def test_upload_on_new_revision_series_not_configured(self):
         # Syncing a branch with a changed tip does not create a
-        # new RosettaUploadJob if the linked product series is not 
+        # new RosettaUploadJob if the linked product series is not
         # configured for translation uploads.
         self._makeProductSeries()
         self.commitRevision()
