@@ -7,8 +7,10 @@ __metaclass__ = type
 
 import unittest
 
+from zope.app.form.interfaces import WidgetInputError
 from zope.component import getUtility
 
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import ANONYMOUS, login_person, login, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
@@ -55,7 +57,7 @@ class TestMilestoneViews(TestCaseWithFactory):
         }
         view = create_initialized_view(
             self.series, '+addmilestone', form=form)
-        self.assertEqual(['someerrormsg'], view.errors)
+        self.assertEqual([WidgetInputError('dateexpected', u'Date Targeted', LaunchpadValidationError(u'Date and time could not be formatted. Please submit date in , YYYY-MM-DD format.'))], view.errors)
 
 
 class TestMilestoneMemcache(MemcacheTestCase):

@@ -66,10 +66,10 @@ from textwrap import dedent
 
 from zope.component import getUtility
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Field, Float, Int, Password, Text,
+    Bool, Bytes, Choice, Date, Datetime, Field, Float, Int, Password, Text,
     TextLine, Tuple)
 from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IDatetime, IField, IObject,
+    ConstraintNotSatisfied, IBytes, IDate, IDatetime, IField, IObject,
     IPassword, IText, ITextLine, Interface)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
@@ -258,13 +258,13 @@ class Whiteboard(StrippableText):
     implements(IWhiteboard)
 
 
-class FormattableDate(Datetime):
+class FormattableDate(Date):
     """A datetime field that checks for compatibility with Python's strformat
 
     From the user's perspective this is a date entry field; it converts to and
     from datetime b/c that's what the db is expecting.
     """
-    implements(IDatetime)
+    implements(IDate)
 
     def _validate(self, value):
         error_msg = [

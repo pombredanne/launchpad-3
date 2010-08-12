@@ -90,4 +90,11 @@
         permission="zope.Public"
         />
 
+     <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="lp.services.fields.FormattableDate"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.widgets.DateWidget"
+        permission="zope.Public"
+        />
 </configure>

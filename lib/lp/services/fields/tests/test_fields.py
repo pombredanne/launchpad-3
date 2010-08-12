@@ -25,15 +25,15 @@ class TestFormattableDate(TestCase):
 
     def test_validation_fails_on_bad_data(self):
         field = FormattableDate()
-        date_value = datetime.datetime(
-            *(time.strptime('1000-01-01', '%Y-%m-%d'))[:6])
+        date_value = datetime.date(
+            *(time.strptime('1000-01-01', '%Y-%m-%d'))[:3])
         self.assertRaises(
             LaunchpadValidationError, field.validate, date_value)
 
     def test_validation_passes_good_data(self):
         field = FormattableDate()
-        date_value = datetime.datetime(
-            *(time.strptime('2010-01-01', '%Y-%m-%d'))[:6])
+        date_value = datetime.date(
+            *(time.strptime('2010-01-01', '%Y-%m-%d'))[:3])
         self.assertTrue(field.validate(date_value) is None)
 
 

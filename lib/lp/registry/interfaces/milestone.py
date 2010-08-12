@@ -108,7 +108,7 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
         vocabulary="FilteredDistroSeries",
         required=False) # for now
     dateexpected = exported(
-        Date(title=_("Date Targeted"), required=False,
+        FormattableDate(title=_("Date Targeted"), required=False,
              description=_("Example: 2005-11-24")),
         exported_as='date_targeted')
     active = exported(
