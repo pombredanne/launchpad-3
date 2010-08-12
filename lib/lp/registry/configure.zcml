@@ -150,14 +150,14 @@
                 getSubscriptions
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
                 addBugSubscription
                 addSubscription
-                removeBugSubscription
-                userCanAlterBugSubscription"/>
+                removeBugSubscription"/>
     </class>
     <securedutility
         class="lp.registry.model.distroseries.DistroSeriesSet"
@@ -295,14 +295,14 @@
                 getBugNotificationsRecipients
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription
-                userCanAlterBugSubscription"/>
+                removeBugSubscription"/>
         <require
             permission="launchpad.Admin"
             set_attributes="registrant"/>
@@ -417,14 +417,14 @@
                 official_bug_tags
                 findRelatedArchives
                 findRelatedArchivePublications
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
                 addSubscription
                 addBugSubscription
                 removeBugSubscription
-                userCanAlterBugSubscription
                 createBug"/>
 
         <!-- IQuestionTarget -->
@@ -925,14 +925,14 @@
                 getBugNotificationsRecipients
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription
-                userCanAlterBugSubscription"/>
+                removeBugSubscription"/>
     </class>
 
     <!-- IMilestoneSet -->
@@ -1471,15 +1471,15 @@
                 getBugNotificationsRecipients
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
                 addSubscription
                 addBugSubscription
                 removeBugSubscription
-                userCanAlterSubscription
-                userCanAlterBugSubscription"/>
+                userCanAlterSubscription"/>
 
         <!-- IHasBugSupervisor -->
 
