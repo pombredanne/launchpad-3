@@ -931,15 +931,18 @@ class TestBranchDeletion(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self, 'test@canonical.com')
-        self.product = ProductSet().getByName('firefox')
-        self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        self.product = self.factory.makeProduct(owner=self.user)
         self.branch = self.factory.makeProductBranch(
             name='to-delete', owner=self.user, product=self.product)
         # The owner of the branch is subscribed to the branch when it is
         # created.  The tests here assume no initial connections, so
         # unsubscribe the branch owner here.
         self.branch.unsubscribe(self.branch.owner, self.branch.owner)
+        # Make sure that the tests all flush the database changes.
+        self.addCleanup(Store.of(self.branch).flush)
+        login_person(self.user)
 
     def test_deletable(self):
         """A newly created branch can be deleted without any problems."""
@@ -1077,10 +1080,7 @@ class TestBranchDeletion(TestCaseWithFactory):
         # remove the Job and BranchJob.
         branch = self.factory.makeAnyBranch()
         getUtility(ITranslationTemplatesBuildJobSource).create(branch)
-
         branch.destroySelf(break_references=True)
-
-        Store.of(branch).flush()
 
     def test_linked_translations_branch_cleared(self):
         # The translations_branch of a series that is linked to the branch
@@ -1088,7 +1088,6 @@ class TestBranchDeletion(TestCaseWithFactory):
         dev_focus = self.branch.product.development_focus
         dev_focus.translations_branch = self.branch
         self.branch.destroySelf(break_references=True)
-        Store.of(self.product).flush()
 
     def test_unrelated_TranslationTemplatesBuildJob_intact(self):
         # No innocent BuildQueue entries are harmed in deleting a
@@ -1128,21 +1127,15 @@ class TestBranchDeletion(TestCaseWithFactory):
     def test_destroySelf_with_SourcePackageRecipe(self):
         """If branch is a base_branch in a recipe, it is deleted."""
         recipe = self.factory.makeSourcePackageRecipe()
-        store = Store.of(recipe)
         recipe.base_branch.destroySelf(break_references=True)
-        # show no DB constraints have been violated
-        store.flush()
 
     def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
         """If branch is referred to by a recipe, it is deleted."""
         branch1 = self.factory.makeAnyBranch()
         branch2 = self.factory.makeAnyBranch()
-        recipe = self.factory.makeSourcePackageRecipe(
+        self.factory.makeSourcePackageRecipe(
             branches=[branch1, branch2])
-        store = Store.of(recipe)
         branch2.destroySelf(break_references=True)
-        # show no DB constraints have been violated
-        store.flush()
 
 
 class TestBranchDeletionConsequences(TestCase):
