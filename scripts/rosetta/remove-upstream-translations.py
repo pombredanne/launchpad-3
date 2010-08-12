@@ -67,21 +67,16 @@ def parse_options(args):
 
     return options
 
-def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
+def remove_upstream_entries(ztm, potemplates, lang_code=None):
     """Remove all translations that came from upstream.
 
     :arg ztm: Zope transaction manager.
     :arg potemplates: A set of potemplates that we should process.
     :arg lang_code: A string with a language code where we should do the
         removal.
-    :arg variant: A language variant that we should use with the lang_code to
-        locate the translations to remove.
 
     If lang_code is None, we process all available languages.
     """
-    assert ((lang_code is None and variant is None) or
-            (lang_code is not None)), (
-                'variant cannot be != None if lang_code is None')
 
     logger_object = logging.getLogger(logger_name)
 
@@ -93,9 +88,9 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
         if lang_code is None:
             pofiles = sorted(
                 list(potemplate.pofiles),
-                key=lambda p: (p.language.code, p.variant))
+                key=lambda p: p.language.code)
         else:
-            pofile = potemplate.getPOFileByLang(lang_code, variant)
+            pofile = potemplate.getPOFileByLang(lang_code)
             if pofile is None:
                 pofiles = []
             else:
@@ -226,15 +221,7 @@ def main(argv):
             # transaction commits.
             potemplates = list(potemplate_subset)
 
-    lang_code = None
-    variant = None
-    if options.languagecode is not None:
-        if '@' in options.languagecode:
-            lang_code, variant = options.languagecode.split('@')
-        else:
-            lang_code = options.languagecode
-
-    remove_upstream_entries(ztm, potemplates, lang_code, variant)
+    remove_upstream_entries(ztm, potemplates, options.languagecode)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

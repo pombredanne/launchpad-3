@@ -52,8 +52,8 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
         params = super(
             SourcePackageRecipeBuildMailer, self)._getTemplateParams(email)
         params.update({
+            'status': self.build.status.title,
             'build_id': self.build.id,
-            'status': self.build.buildstate.title,
             'distroseries': self.build.distroseries.name,
             'recipe': self.build.recipe.name,
             'recipe_owner': self.build.recipe.owner.name,
@@ -67,11 +67,11 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
         })
         if self.build.builder is not None:
             params['builder_url'] = canonical_url(self.build.builder)
-        if self.build.buildduration is not None:
-            duration_formatter = DurationFormatterAPI(self.build.buildduration)
+        if self.build.duration is not None:
+            duration_formatter = DurationFormatterAPI(self.build.duration)
             params['duration'] = duration_formatter.approximateduration()
-        if self.build.build_log_url is not None:
-            params['log_url'] = self.build.build_log_url
+        if self.build.log is not None:
+            params['log_url'] = self.build.log.getURL()
         return params
 
     def _getFooter(self, params):

@@ -67,7 +67,7 @@ class BinaryPackageBuildManager(DebianBuildManager):
 
     def doRunBuild(self):
         """Run the sbuild process to build the package."""
-        args = ["sbuild-package", self._buildid ]
+        args = ["sbuild-package", self._buildid, self.arch_tag]
         if self.suite:
             args.extend([self.suite])
             args.extend(self._sbuildargs)
@@ -82,6 +82,7 @@ class BinaryPackageBuildManager(DebianBuildManager):
             args.extend(["--purpose=" + self.archive_purpose])
         if self.build_debug_symbols:
             args.extend(["--build-debug-symbols"])
+        args.extend(["--architecture=" + self.arch_tag])
         args.extend(["--comp=" + self.component])
         args.extend([self._dscfile])
         self.runSubProcess( self._sbuildpath, args )
