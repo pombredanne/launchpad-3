@@ -7,9 +7,55 @@ __metaclass__ = type
 
 import unittest
 
-from lp.testing import ANONYMOUS, login_person, login
+from zope.component import getUtility
+
+from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import ANONYMOUS, login_person, login, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 from lp.testing.memcache import MemcacheTestCase
+
+
+class TestMilestoneViews(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer 
+
+    def setUp(self):
+        #TODO: Remove sample data in favor of making a package,
+        #if feasible
+        TestCaseWithFactory.setUp(self)
+        self.product = self.factory.makeProduct() 
+        self.series = self.factory.makeSeries(product=self.product)
+        owner = self.product.owner
+        login_person(owner)
+
+    def test_add_milestone(self):
+        form = {
+            'field.name': '1.1',
+            'field.actions.register': 'Register Milestone',
+        }
+        view = create_initialized_view(
+            self.series, '+addmilestone', form=form)
+        self.assertEqual([], view.errors)
+
+    def test_add_milestone_with_good_date(self):
+        form = {
+            'field.name': '1.1',
+            'field.dateexpected': '2010-10-10',
+            'field.actions.register': 'Register Milestone',
+        }
+        view = create_initialized_view(
+            self.series, '+addmilestone', form=form)
+        self.assertEqual([], view.errors)
+
+    def test_add_milestone_with_bad_date(self):
+        form = {
+            'field.name': '1.1',
+            'field.dateexpected': '1010-10-10',
+            'field.actions.register': 'Register Milestone',
+        }
+        view = create_initialized_view(
+            self.series, '+addmilestone', form=form)
+        self.assertEqual(['someerrormsg'], view.errors)
 
 
 class TestMilestoneMemcache(MemcacheTestCase):
