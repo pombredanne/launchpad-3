@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies for content objects.
@@ -441,9 +441,7 @@ class ValidPersonOrTeamVocabulary(
                 # visible.
                 private_query = AND(
                     Not(Person.teamowner == None),
-                    OR(
-                        Person.visibility == PersonVisibility.PRIVATE,
-                        Person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP))
+                    Person.visibility == PersonVisibility.PRIVATE)
             else:
                 private_query = AND(
                     TeamParticipation.person == logged_in_user.id,

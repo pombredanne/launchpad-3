@@ -104,8 +104,6 @@ from lp.registry.model.structuralsubscription import (
 from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.publishedpackage import (
-    IPublishedPackageSet)
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, ICanPublishPackages, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import IHasQueueItems, IPackageUploadSet
@@ -1106,15 +1104,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
 
         return result
-
-    def publishedBinaryPackages(self, component=None):
-        """See `IDistroSeries`."""
-        # XXX sabdfl 2005-07-04: This can become a utility when that works
-        # this is used by the debbugs import process, mkdebwatches
-        pubpkgset = getUtility(IPublishedPackageSet)
-        result = pubpkgset.query(distroseries=self, component=component)
-        return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
-                for pubrecord in result]
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):
