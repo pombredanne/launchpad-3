@@ -19,7 +19,6 @@ from zope.configuration.fields import (
 from zope.interface import Interface, implements
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.schema import TextLine
 from zope.security.checker import Checker, CheckerPublic
 from zope.security.interfaces import IPermission
