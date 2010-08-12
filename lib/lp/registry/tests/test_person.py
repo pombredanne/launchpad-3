@@ -1,7 +1,11 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
+
 __metaclass__ = type
+
 
 from datetime import datetime
 import pytz
@@ -36,9 +40,25 @@ from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
 from lp.testing import login_person, logout, TestCase, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
+from lp.testing import celebrity_logged_in
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
 
+
+class TestPerson(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getOwnedOrDrivenPillars(self):
+        user = self.factory.makePerson()
+        active_project = self.factory.makeProject(owner=user)
+        inactive_project = self.factory.makeProject(owner=user)
+        with celebrity_logged_in('admin'):
+            inactive_project.active = False
+        expected_pillars = [active_project.name] 
+        received_pillars = [pillar.name for pillar in 
+            user.getOwnedOrDrivenPillars()]
+        self.assertEqual(expected_pillars, received_pillars)
 
 class TestPersonStates(TestCaseWithFactory):
 
