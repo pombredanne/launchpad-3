@@ -63,6 +63,8 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.database.account import Account, AccountPassword
 from canonical.launchpad.interfaces.account import AccountSuspendedError
 from lp.bugs.model.bugtarget import HasBugsBase
@@ -888,14 +890,16 @@ class Person(
                 SELECT name, 3 as kind, displayname
                 FROM product
                 WHERE
-                    driver = %(person)s
-                    OR owner = %(person)s
+                    active = True AND
+                    (driver = %(person)s
+                    OR owner = %(person)s)
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
                 WHERE
-                    driver = %(person)s
-                    OR owner = %(person)s
+                    active = True AND
+                    (driver = %(person)s
+                    OR owner = %(person)s)
                 UNION
                 SELECT name, 1 as kind, displayname
                 FROM distribution
@@ -907,7 +911,13 @@ class Person(
             """ % sqlvalues(person=self))
         results = IStore(self).using(origin).find(find_spec)
         results = results.order_by('kind', 'displayname')
-        return [pillar_name for pillar_name, kind, displayname in results]
+        
+        def get_pillar_name(result):
+            pillar_name, kind, displayname = result
+            return pillar_name
+
+        return DecoratedResultSet(results, get_pillar_name) 
+
 
     def getOwnedProjects(self, match_name=None):
         """See `IPerson`."""
