@@ -1899,9 +1899,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             archive=archive,
             requester=requester,
             pocket=pocket,
-            date_created=date_created,
-            duration=duration)
-        removeSecurityProxy(spr_build).buildstate = status
+            date_created=date_created)
+        removeSecurityProxy(spr_build).status = status
+        if duration is not None:
+            naked_sprb = removeSecurityProxy(spr_build)
+            if naked_sprb.date_started is None:
+                naked_sprb.date_started = spr_build.date_created
+            naked_sprb.date_finished = naked_sprb.date_started + duration
         return spr_build
 
     def makeSourcePackageRecipeBuildJob(
@@ -2020,12 +2024,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return template
 
     def makePOFile(self, language_code, potemplate=None, owner=None,
-                   variant=None, create_sharing=False):
+                   create_sharing=False, variant=None):
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        return potemplate.newPOFile(language_code, variant,
-                                    create_sharing=create_sharing)
+        pofile = potemplate.newPOFile(language_code,
+                                      create_sharing=create_sharing)
+        if variant is not None:
+            removeSecurityProxy(pofile).variant = variant
+        return pofile
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       context=None, sequence=0):

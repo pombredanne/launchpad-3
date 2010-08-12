@@ -12,7 +12,7 @@ from lazr.restful.declarations import (
     exported, export_as_webservice_entry, export_read_operation,
     operation_returns_collection_of)
 
-from lp.services.fields import ParticipatingPersonChoice
+from lp.services.fields import PersonChoice
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
@@ -124,7 +124,7 @@ class IPOTemplate(IRosettaStats):
         required=True,
         default=True), exported_as='active')
 
-    owner = exported(ParticipatingPersonChoice(
+    owner = exported(PersonChoice(
         title=_("Owner"),
         required=True,
         description=_(
@@ -370,9 +370,6 @@ class IPOTemplate(IRosettaStats):
     def languages():
         """This Return the set of languages for which we have POFiles for
         this POTemplate.
-
-        NOTE that variants are simply ignored, if we have three variants for
-        en_GB we will simply return the one with variant=NULL.
         """
 
     def getPOFileByPath(path):
@@ -381,10 +378,8 @@ class IPOTemplate(IRosettaStats):
         Return None if there is no such `IPOFile`.
         """
 
-    def getPOFileByLang(language_code, variant=None):
-        """Get the PO file of the given language and (potentially)
-        variant. If no variant is specified then the translation
-        without a variant is given.
+    def getPOFileByLang(language_code):
+        """Get the PO file of the given language.
 
         Return None if there is no such POFile.
         """
@@ -405,18 +400,16 @@ class IPOTemplate(IRosettaStats):
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
 
-    def newPOFile(language_code, variant=None, create_sharing=True):
+    def newPOFile(language_code, create_sharing=True):
         """Return a new `IPOFile` for the given language.
 
         Raise LanguageNotFound if the language does not exist in the
         database.
 
-        We should not have already an `IPOFile` for the given language_code
-        and variant.
+        We should not have already an `IPOFile` for the given language_code.
 
         :param language_code: The code of the language for which to create
             the IPOFile.
-        :param variant: Optional language variant.
         :param requester: The requester person. If given and will have edit
             permissions on the IPOFile, it becomes the owner. Otherwise
             rosetta_experts own the file.
@@ -425,8 +418,7 @@ class IPOTemplate(IRosettaStats):
             loops when creating a new IPOTemplate.
         """
 
-    def getDummyPOFile(language, variant=None, requester=None,
-                       check_for_existing=True):
+    def getDummyPOFile(language, requester=None, check_for_existing=True):
         """Return a DummyPOFile if there isn't already a persistent `IPOFile`
 
         Raise `LanguageNotFound` if the language does not exist in the
@@ -435,9 +427,8 @@ class IPOTemplate(IRosettaStats):
         This method is designed to be used by read only actions. This way you
         only create a POFile when you actually need to store data.
 
-        We should not have already a POFile for the given language_code and
-        variant: if check_for_existing is set to False, no check will be
-        done for this.
+        We should not have already a POFile for the given language:
+        if check_for_existing is set to False, no check will be done for this.
         """
 
     def createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural=None,
@@ -640,6 +631,18 @@ class IPOTemplateSet(Interface):
         Sort using this function to order sharing templates from most
         representative to least representative, as per the message-sharing
         migration spec.
+        """
+
+    def wipeSuggestivePOTemplatesCache():
+        """Erase suggestive-templates cache.
+
+        :return: Number of rows deleted.
+        """
+
+    def populateSuggestivePOTemplatesCache():
+        """Populate suggestive-templates cache.
+
+        :return: Number of rows inserted.
         """
 
 

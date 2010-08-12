@@ -165,7 +165,7 @@ right target location, they are passed via process-upload command-line:
   ...     distroseries=failedtoupload_candidate.distro_series.name,
   ...     buildid=failedtoupload_candidate.id)
 
-  >>> cdrkit_bin_upload = NascentUpload(
+  >>> cdrkit_bin_upload = NascentUpload.from_changesfile_path(
   ...     datadir('suite/cdrkit_1.0/cdrkit_1.0_i386.changes'),
   ...     buildd_policy, mock_logger_quiet)
   >>> cdrkit_bin_upload.process()

@@ -66,6 +66,7 @@ from canonical.database.sqlbase import (
     clear_current_connection_cache)
 
 from canonical.launchpad.interfaces import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 
 
 def clear_cache():
@@ -310,10 +311,12 @@ class Dominator:
                 AND binarypackagepublishinghistory.status = %s AND
                 binarypackagepublishinghistory.binarypackagerelease =
                     binarypackagerelease.id
+                AND binarypackagerelease.binpackageformat != %s
                 AND binarypackagerelease.binarypackagename IN (
                     SELECT name FROM PubDomHelper WHERE count > 1)"""
                 % sqlvalues(distroarchseries, self.archive,
-                            pocket, PackagePublishingStatus.PUBLISHED),
+                            pocket, PackagePublishingStatus.PUBLISHED,
+                            BinaryPackageFormat.DDEB),
                 clauseTables=['BinaryPackageRelease'])
 
             self.debug("Dominating binaries...")

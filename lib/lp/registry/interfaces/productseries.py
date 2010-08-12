@@ -129,12 +129,12 @@ class IProductSeriesPublic(
         exported_as='date_created')
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
             description=_('Project owner, either a valid Person or Team')))
 
     driver = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_("Release manager"),
             description=_(
                 "The person or team responsible for decisions about features "

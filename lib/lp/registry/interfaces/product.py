@@ -36,7 +36,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from lp.services.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
-    ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
+    PersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
 from lp.app.errors import NameLookupFailed
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -54,7 +54,8 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot, ILaunchpadUsage)
+    IHasLogo, IHasMugshot)
+from lp.app.interfaces.launchpad import ILaunchpadUsage, IServiceUsage
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
@@ -347,13 +348,10 @@ class IProductPublic(
     IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
     ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget, IHasRecipes,
-    IHasCodeImports):
+    IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
+    ISpecificationTarget, IHasRecipes, IHasCodeImports):
     """Public IProduct properties."""
 
-    # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
-    # unless we really need them. BradB says he can remove the need for them
-    # in SQLObject soon.
     id = Int(title=_('The Project ID'))
 
     project = exported(
@@ -373,7 +371,7 @@ class IProductPublic(
         exported_as='project_group')
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
@@ -390,7 +388,7 @@ class IProductPublic(
                           "Launchpad.")))
 
     driver = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_("Driver"),
             description=_(
                 "This person or team will be able to set feature goals for "

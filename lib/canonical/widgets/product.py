@@ -316,6 +316,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
             self, 'license_info', self.license_info, IInputWidget,
             prefix='field', value=initial_value,
             context=field.context)
+        self.source_package_release = None
         # These will get filled in by _categorize().  They are the number of
         # selected licenses in the category.  The actual count doesn't matter,
         # since if it's greater than 0 it will start opened.  NOte that we

@@ -88,7 +88,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-from lp.services.fields import ParticipatingPersonChoice
+from lp.services.fields import PersonChoice 
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
@@ -205,6 +205,7 @@ def unique_title(title):
         title = title[3:]
     return title.strip()
 
+
 def get_comments_for_bugtask(bugtask, truncate=False):
     """Return BugComments related to a bugtask.
 
@@ -218,7 +219,7 @@ def get_comments_for_bugtask(bugtask, truncate=False):
         message_id = attachment.message.id
         # All attachments are related to a message, so we can be
         # sure that the BugComment is already created.
-        assert comments.has_key(message_id), message_id
+        assert message_id in comments, message_id
         if attachment.type == BugAttachmentType.PATCH:
             comments[message_id].patches.append(attachment)
         else:
@@ -1112,8 +1113,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         """Return the list of available official tags for the bug as JSON.
 
         The list comprises of the official tags for all targets for which the
-        bug has a task. It is returned as Javascript snippet, to be ambedded in
-        the bug page.
+        bug has a task. It is returned as Javascript snippet, to be embedded
+        in the bug page.
         """
         available_tags = set()
         for task in self.context.bug.bugtasks:
@@ -1502,7 +1503,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             self.form_fields.get('assignee', False)):
             # Make the assignee field editable
             self.form_fields = self.form_fields.omit('assignee')
-            self.form_fields += formlib.form.Fields(ParticipatingPersonChoice(
+            self.form_fields += formlib.form.Fields(PersonChoice(
                 __name__='assignee', title=_('Assigned to'), required=False,
                 vocabulary=get_assignee_vocabulary(self.context),
                 readonly=False))

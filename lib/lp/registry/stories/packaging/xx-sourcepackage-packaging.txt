@@ -1,4 +1,15 @@
-= Packaging =
+Packaging
+=========
+
+Create test data.
+
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> login('admin@canonical.com')
+    >>> test_data = test_publisher.makeSourcePackageWithBinaryPackageRelease()
+    >>> test_publisher.updateDistroSeriesPackageCache(
+    ...     test_data['distroseries'])
+    >>> logout()
 
 No Privileges Person visit the distroseries upstream links page for Hoary
 and sees that pmount is not linked.
@@ -20,6 +31,7 @@ upstream project is not set.
     match for this source package. Can you help us find one?
     Registered upstream project:
     Choose another upstream project
+    Register the upstream project
 
 No Privileges Person knows that the pmount package comes from the thunderbird
 project. He sets the upstream packaging link and sees that it is set.
@@ -58,3 +70,93 @@ link to all versions and follows it to the distro source package page.
     ...     user_browser.contents, 'packages_list'))
     The Hoary Hedgehog Release (active development) ...
       0.1-2  release (main) ... weeks ago
+
+Register a project from a source package
+----------------------------------------
+
+If an upstream project doesn't already exist in Launchpad, it can
+be registered with data from the source package prefilling the first
+step of the multistep form.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/youbuntu/busy/+source/bonkers')
+    >>> user_browser.getControl(
+    ...     'Register the upstream project').selected = True
+    >>> user_browser.getControl("Link to Upstream Project").click()
+    >>> print user_browser.url.replace('&', '\n&')
+    http://launchpad.dev/projects/+new?_return_url=http...%2Bsource%2Fbonkers
+    &field.__visited_steps__=projectaddstep1
+    &field.actions.continue=Continue
+    &field.displayname=Bonkers
+    &field.distroseries=youbuntu%2Fbusy
+    &field.name=bonkers
+    &field.source_package_name=bonkers
+    &field.summary=summary+for+flubber-bin%0Asummary+for+flubber-lib
+    &field.title=Bonkers
+    >>> print user_browser.getControl(name='field.name').value
+    bonkers
+    >>> print user_browser.getControl(name='field.displayname').value
+    Bonkers
+    >>> print user_browser.getControl(name='field.title').value
+    Bonkers
+    >>> print user_browser.getControl(name='field.summary').value
+    summary for flubber-bin
+    summary for flubber-lib
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'step-title'))
+    Step 2 (of 2): Check for duplicate projects
+
+If the user selects "Choose another upstream project" and then finds out
+that the project doesn't exist, there is a also a link on the
++edit-packaging page to register the project.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/youbuntu/busy/+source/bonkers/')
+    >>> user_browser.getControl(
+    ...     'Choose another upstream project').selected = True
+    >>> user_browser.getControl("Link to Upstream Project").click()
+    >>> print user_browser.url
+    http://launchpad.dev/youbuntu/busy/+source/bonkers/+edit-packaging
+
+    >>> user_browser.getLink("Register the upstream project").click()
+    >>> print user_browser.url.replace('&', '\n&')
+    http://launchpad.dev/projects/+new?_return_url=http...%2Bsource%2Fbonkers
+    &field.__visited_steps__=projectaddstep1
+    &field.actions.continue=Continue
+    &field.displayname=Bonkers
+    &field.distroseries=youbuntu%2Fbusy
+    &field.name=bonkers
+    &field.source_package_name=bonkers
+    &field.summary=summary+for+flubber-bin%0Asummary+for+flubber-lib
+    &field.title=Bonkers
+    >>> print user_browser.getControl(name='field.name').value
+    bonkers
+    >>> print user_browser.getControl(name='field.displayname').value
+    Bonkers
+    >>> print user_browser.getControl(name='field.title').value
+    Bonkers
+    >>> print user_browser.getControl(name='field.summary').value
+    summary for flubber-bin
+    summary for flubber-lib
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'step-title'))
+    Step 2 (of 2): Check for duplicate projects
+
+If there are no problems with the prefilled data, then the license
+just needs to be selected. The user will then be redirected back
+to the source package page and an informational message will be displayed.
+
+    >>> user_browser.getControl(name='field.licenses').value = ['BSD']
+    >>> user_browser.getControl(
+    ...     "Complete registration and link to bonkers package").click()
+    >>> print user_browser.url
+    http://launchpad.dev/youbuntu/busy/+source/bonkers
+    >>> for tag in find_tags_by_class(
+    ...     user_browser.contents, 'informational message'):
+    ...     print extract_text(tag)
+    Linked Bonkers project to bonkers source package.
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'upstreams'))
+    Bonkers &rArr; trunk
+    Change upstream link
+    Remove upstream link...

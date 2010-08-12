@@ -127,7 +127,8 @@ class IBinaryPackageBuildView(IPackageBuild):
         binarypackagename, version, summary, description, binpackageformat,
         component, section, priority, shlibdeps, depends, recommends,
         suggests, conflicts, replaces, provides, pre_depends, enhances,
-        breaks, essential, installedsize, architecturespecific):
+        breaks, essential, installedsize, architecturespecific,
+        debug_package):
         """Create and return a `BinaryPackageRelease`.
 
         The binarypackagerelease will be attached to this specific build.
@@ -150,6 +151,13 @@ class IBinaryPackageBuildView(IPackageBuild):
         :raises NotFoundError if no file could not be found.
 
         :return the corresponding `ILibraryFileAlias` if the file was found.
+        """
+
+    def getBinaryPackageFileByName(filename):
+        """Return the corresponding `IBinaryPackageFile` in this context.
+
+        :param filename: the filename to look up.
+        :return: the corresponding `IBinaryPackageFile` if it was found.
         """
 
 

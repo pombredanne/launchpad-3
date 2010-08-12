@@ -554,12 +554,6 @@ class IDistroSeriesPublic(
         Return a SelectResult of SourcePackagePublishingHistory.
         """
 
-    def publishedBinaryPackages(component=None):
-        """Given an optional component name, return a list of the binary
-        packages that are currently published in this distroseries in the
-        given component, or in any component if no component name was given.
-        """
-
     def getDistroSeriesLanguage(language):
         """Return the DistroSeriesLanguage for this distroseries and the
         given language, or None if there's no DistroSeriesLanguage for this

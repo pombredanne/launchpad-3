@@ -271,6 +271,12 @@ class IBuilder(IHasOwner):
         :return: the `IBuildQueue` instance found or None if no job was found.
         """
 
+    def getBuildQueue():
+        """Return a `BuildQueue` if there's an active job on this builder.
+
+        :return: A BuildQueue, or None.
+        """
+
 
 class IBuilderSet(Interface):
     """Collections of builders.

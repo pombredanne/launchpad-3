@@ -16,7 +16,7 @@ from lazr.delegates import delegates
 
 import pytz
 
-from storm.expr import And, Coalesce, Desc, Join, LeftJoin, Select
+from storm.expr import Coalesce, Desc, LeftJoin, Or
 from storm.locals import Bool, DateTime, Int, Reference, Storm
 from storm.store import Store
 
@@ -365,49 +365,38 @@ class BuildFarmJobSet:
         # Currently only package builds can be private (via their
         # related archive), but not all build farm jobs will have a
         # related package build - hence the left join.
-        left_join_pkg_builds = LeftJoin(
-            BuildFarmJob,
-            Join(
+        origin = [BuildFarmJob]
+        left_join_archive = [
+            LeftJoin(
                 PackageBuild,
-                Archive,
-                And(PackageBuild.archive == Archive.id)),
-            PackageBuild.build_farm_job == BuildFarmJob.id)
-
-        filtered_builds = IStore(BuildFarmJob).using(
-            left_join_pkg_builds).find(BuildFarmJob, *extra_clauses)
+                PackageBuild.build_farm_job == BuildFarmJob.id),
+            LeftJoin(
+                Archive, PackageBuild.archive == Archive.id),
+            ]
 
         if user is None:
             # Anonymous requests don't get to see private builds at all.
-            filtered_builds = filtered_builds.find(
-                Coalesce(Archive.private, False) == False)
+            origin.extend(left_join_archive)
+            extra_clauses.append(Coalesce(Archive.private, False) == False)
 
         elif user.inTeam(getUtility(ILaunchpadCelebrities).admin):
             # Admins get to see everything.
             pass
         else:
-            # Everyone else sees a union of all public builds and the
+            # Everyone else sees all public builds and the
             # specific private builds to which they have access.
-            filtered_builds = filtered_builds.find(
-                Coalesce(Archive.private, False) == False)
+            origin.extend(left_join_archive)
+            origin.append(LeftJoin(
+                TeamParticipation, TeamParticipation.teamID == Archive.ownerID))
+            extra_clauses.append(
+                Or(Coalesce(Archive.private, False) == False,
+                   TeamParticipation.person == user))
 
-            user_teams_subselect = Select(
-                TeamParticipation.teamID,
-                where=And(
-                   TeamParticipation.personID == user.id,
-                   TeamParticipation.teamID == Archive.ownerID))
-            private_builds_for_user = IStore(BuildFarmJob).find(
-                BuildFarmJob,
-                PackageBuild.build_farm_job == BuildFarmJob.id,
-                PackageBuild.archive == Archive.id,
-                Archive.private == True,
-                Archive.ownerID.is_in(user_teams_subselect),
-                *extra_clauses)
-
-            filtered_builds = filtered_builds.union(
-                private_builds_for_user)
+        filtered_builds = IStore(BuildFarmJob).using(*origin).find(
+            BuildFarmJob, *extra_clauses)
 
         filtered_builds.order_by(
             Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
+        filtered_builds.config(distinct=True)
 
         return filtered_builds
-
