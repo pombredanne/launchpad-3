@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser file for LibraryFileAlias."""
@@ -32,6 +32,7 @@ from canonical.launchpad.webapp.interfaces import (
     IWebBrowserOriginatingRequest)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lazr.utils import get_current_browser_request
+from canonical.librarian.client import quote
 from canonical.librarian.interfaces import LibrarianServerError
 from canonical.librarian.utils import filechunks, guess_librarian_encoding
 
@@ -42,11 +43,9 @@ class LibraryFileAliasView(LaunchpadView):
     """View to handle redirection for downloading files by URL.
 
     Rather than reference downloadable files via the obscure Librarian
-    URL, downloadable files can be referenced via the Product Release URL, e.g.
-    http://launchpad.net/firefox/1.0./1.0.0/+download/firefox-1.0.0.tgz.
+    URL, downloadable files can be referenced via the Product Release URL,
+    e.g. http://launchpad.net/firefox/1.0./1.0.0/+download/firefox-1.0.0.tgz.
     """
-
-    __used_for__ = ILibraryFileAlias
 
     def initialize(self):
         """Redirect the request to the URL of the file in the Librarian."""
@@ -65,8 +64,6 @@ class LibraryFileAliasView(LaunchpadView):
 class LibraryFileAliasMD5View(LaunchpadView):
     """View to show the MD5 digest for a librarian file."""
 
-    __used_for__ = ILibraryFileAlias
-
     def render(self):
         """Return the plain text MD5 signature"""
         self.request.response.setHeader('Content-type', 'text/plain')
@@ -80,8 +77,6 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
     to public ones.
     """
     implements(IBrowserPublisher)
-
-    __used_for__ = ILibraryFileAlias
 
     def getFileContents(self):
         # Reset system proxy setting if it exists. The urllib2 default
@@ -173,19 +168,20 @@ class FileNavigationMixin:
     extended in order to allow traversing to multiple files potentially
     with the same filename (product files or bug attachments).
     """
+    view_class = StreamOrRedirectLibraryFileAliasView
+
     @stepthrough('+files')
     def traverse_files(self, filename):
         """Traverse on filename in the archive domain."""
         if not check_permission('launchpad.View', self.context):
             raise Unauthorized()
-        library_file  = self.context.getFileByName(filename)
+        library_file = self.context.getFileByName(filename)
 
         # Deleted library files result in NotFound-like error.
         if library_file.deleted:
             raise DeletedProxiedLibraryFileAlias(filename, self.context)
 
-        return StreamOrRedirectLibraryFileAliasView(
-            library_file, self.request)
+        return self.view_class(library_file, self.request)
 
 
 class ProxiedLibraryFileAlias:
@@ -219,5 +215,6 @@ class ProxiedLibraryFileAlias:
 
         parent_url = canonical_url(self.parent, request=request)
         traversal_url = urlappend(parent_url, '+files')
-        url = urlappend(traversal_url, self.context.filename)
+        url = urlappend(
+            traversal_url, quote(self.context.filename.encode('utf-8')))
         return url

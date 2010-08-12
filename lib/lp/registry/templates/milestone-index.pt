@@ -129,7 +129,7 @@
 
         <div class="yui-u">
           <div id="milestone-activities" class="portlet"
-            tal:content="cache:private, view/expire_cache_minutes minute">
+            tal:content="cache:anonymous, view/expire_cache_minutes minute">
             <h2>Activities</h2>
 
             <dl>
@@ -208,7 +208,7 @@
         </h2>
 
         <tal:has_specs condition="specs"
-          tal:content="cache:public, view/expire_cache_minutes minute">
+          tal:content="cache:anonymous, view/expire_cache_minutes minute">
           <table class="listing sortable" id="milestone_specs"
             style="margin-bottom: 2em;">
             <thead>
@@ -266,7 +266,7 @@
         </tal:has_specs>
 
         <tal:has_bugtasks condition="bugtasks">
-          <tal:cache content="cache:private, view/expire_cache_minutes minute">
+          <tal:cache content="cache:anonymous, view/expire_cache_minutes minute">
             <tal:milestone-bugtasks
               metal:use-macro="context/@@+milestone-macros/milestone_bugtasks" />
           </tal:cache>

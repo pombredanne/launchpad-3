@@ -10,7 +10,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
@@ -244,3 +244,22 @@ class TestBuildPackageJob(TestBuildJobBase):
         build_package_job.jobStarted()
         self.failUnlessEqual(
             BuildStatus.BUILDING, build_package_job.build.status)
+
+
+class TestBuildPackageJobScore(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_score_unusual_component(self):
+        unusual_component = self.factory.makeComponent(name="unusual")
+        source_package_release = self.factory.makeSourcePackageRelease()
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=source_package_release,
+            component=unusual_component,
+            archive=source_package_release.upload_archive,
+            distroseries=source_package_release.upload_distroseries)
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=source_package_release)
+        job = build.buildqueue_record.specific_job
+        # For now just test that it doesn't raise an Exception
+        job.score()

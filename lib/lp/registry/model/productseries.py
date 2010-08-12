@@ -26,6 +26,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bug import (
@@ -35,8 +36,7 @@ from lp.services.worlddata.model.language import Language
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from lp.registry.model.packaging import Packaging
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership)
+from lp.registry.interfaces.person import validate_person
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
@@ -57,7 +57,6 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
@@ -95,12 +94,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=True)
 
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
@@ -454,7 +453,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             query = store.using(*origin).find(
                 (Language, POFile),
                 POFile.language==Language.id,
-                POFile.variant==None,
                 Language.visible==True,
                 POFile.potemplate==POTemplate.id,
                 POTemplate.productseries==self,
@@ -494,7 +492,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                  Sum(POFile.unreviewed_count),
                  Max(POFile.date_changed)),
                 POFile.language==Language.id,
-                POFile.variant==None,
                 Language.visible==True,
                 POFile.potemplate==POTemplate.id,
                 POTemplate.productseries==self,

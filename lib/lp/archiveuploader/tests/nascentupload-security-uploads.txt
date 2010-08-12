@@ -31,6 +31,8 @@ We are going to use 'warty/powerpc' distroarchseries and its
 respective processorfamily and processor. Let's create them
 on-the-fly:
 
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> from canonical.launchpad.database import (
   ...    Processor, ProcessorFamily)
@@ -45,6 +47,7 @@ on-the-fly:
 
   >>> import transaction
   >>> transaction.commit()
+  >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
 
 == Mixed Security Upload ==
@@ -52,7 +55,7 @@ on-the-fly:
 The upload in question contains a source and its 2 builds for i386 and
 powerpc:
 
-  >>> foo_mixed_upload = NascentUpload(
+  >>> foo_mixed_upload = NascentUpload.from_changesfile_path(
   ...     datadir('suite/foo_1.0-1_multi_binary/foo_1.0-1_multi.changes'),
   ...     security_policy, mock_logger_quiet)
   >>> foo_mixed_upload.process()
@@ -118,7 +121,7 @@ NascentUpload code will be able to detect inconsistencies in a
 security upload, for example, detecting that the source and the
 binaries sent do not match.
 
-  >>> bar_mixed_upload = NascentUpload(
+  >>> bar_mixed_upload = NascentUpload.from_changesfile_path(
   ...     datadir('suite/foo_1.0-1_broken_binary/bar_1.0-1_multi.changes'),
   ...     security_policy, mock_logger_quiet)
   >>> bar_mixed_upload.process()

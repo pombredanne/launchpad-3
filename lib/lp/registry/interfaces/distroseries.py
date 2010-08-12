@@ -36,8 +36,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.version import sane_version
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
+from lp.app.errors import NameLookupFailed
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
 from lp.bugs.interfaces.bugtarget import (
@@ -552,12 +552,6 @@ class IDistroSeriesPublic(
         time with records that can't be accepted).
 
         Return a SelectResult of SourcePackagePublishingHistory.
-        """
-
-    def publishedBinaryPackages(component=None):
-        """Given an optional component name, return a list of the binary
-        packages that are currently published in this distroseries in the
-        given component, or in any component if no component name was given.
         """
 
     def getDistroSeriesLanguage(language):

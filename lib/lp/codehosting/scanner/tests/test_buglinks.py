@@ -12,10 +12,10 @@ from zope.event import notify
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IBugBranchSet, IBugSet, NotFoundError)
+from canonical.launchpad.interfaces import IBugBranchSet, IBugSet
 from canonical.testing.layers import LaunchpadZopelessLayer
 
+from lp.app.errors import NotFoundError
 from lp.code.interfaces.revision import IRevisionSet
 from lp.codehosting.scanner import events
 from lp.codehosting.scanner.buglinks import BugBranchLinker

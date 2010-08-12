@@ -28,10 +28,10 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import smartquote
 from canonical.launchpad import _
+from lp.app.errors import NotFoundError
+from lp.buildmaster.interfaces.builder import IBuilderSet, IBuilder
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.buildmaster.interfaces.builder import IBuilderSet, IBuilder
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,
@@ -118,7 +118,6 @@ class BuilderOverviewMenu(ApplicationMenu):
 
 class BuilderSetView(LaunchpadView):
     """Default BuilderSet view class."""
-    __used_for__ = IBuilderSet
 
     @property
     def label(self):
@@ -235,7 +234,6 @@ class BuilderView(LaunchpadView):
 
     Implements useful actions for the page template.
     """
-    __used_for__ = IBuilder
 
     @property
     def current_build_duration(self):
@@ -261,8 +259,6 @@ class BuilderView(LaunchpadView):
 
 class BuilderHistoryView(BuildRecordsView):
     """This class exists only to override the page_title."""
-
-    __used_for__ = IBuilder
 
     page_title = 'Build history'
     binary_only = False

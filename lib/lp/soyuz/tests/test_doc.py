@@ -123,11 +123,6 @@ def manageChrootSetup(test):
 
 
 special = {
-    'nascentupload.txt': LayeredDocFileSuite(
-        '../doc/nascentupload.txt',
-        setUp=uploaderSetUp, tearDown=uploaderTearDown,
-        layer=LaunchpadZopelessLayer,
-        ),
     'build-notification.txt': LayeredDocFileSuite(
         '../doc/build-notification.txt',
         setUp=builddmasterSetUp,

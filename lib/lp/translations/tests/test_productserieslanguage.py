@@ -27,49 +27,57 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
         self.productseries = self.factory.makeProductSeries()
         self.productseries.product.official_rosetta = True
 
-    def test_NoTemplatesNoTranslation(self):
+    def test_no_templates_no_translation(self):
         # There are no templates and no translations.
-        self.assertEquals(self.productseries.productserieslanguages,
-                          [])
+        self.assertEquals([],
+                          self.productseries.productserieslanguages)
 
-    def test_OneTemplateNoTranslation(self):
+    def test_one_template_no_translation(self):
         # There is a template and no translations.
         self.factory.makePOTemplate(productseries=self.productseries)
-        self.assertEquals(self.productseries.productserieslanguages,
-                          [])
+        self.assertEquals([],
+                          self.productseries.productserieslanguages)
 
-    def test_OneTemplateWithTranslations(self):
+    def test_one_template_with_pofile(self):
         # There is a template and one translation.
+        # With a single PO file, PSL optimizes this and
+        # provides a POFile directly through "pofile" attribute.
+        potemplate = self.factory.makePOTemplate(
+            productseries=self.productseries)
+
+        # Add a Serbian translation.
+        sr_pofile = self.factory.makePOFile('sr', potemplate)
+
+        psls = list(self.productseries.productserieslanguages)
+        self.assertEquals(1, len(psls))
+
+        # ProductSeriesLanguage object correctly keeps values
+        # for a language, productseries itself and POFile.
+        sr_psl = psls[0]
+        self.assertEquals(self.productseries, sr_psl.productseries)
+        self.assertEquals(sr_pofile.language, sr_psl.language)
+        self.assertEquals(sr_pofile, sr_psl.pofile)
+        self.assertEquals([sr_pofile], list(sr_psl.pofiles))
+
+    def test_productserieslanguages_languages_sorting(self):
+        # ProductSeriesLanguages are sorted alphabetically by language.
         potemplate = self.factory.makePOTemplate(
             productseries=self.productseries)
 
         # Add a Serbian translation.
         serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
         sr_pofile = self.factory.makePOFile(serbian.code, potemplate)
-
-        psls = list(self.productseries.productserieslanguages)
-        self.assertEquals(len(psls), 1)
-
-        # ProductSeriesLanguage object correctly keeps values
-        # for a language, productseries itself and POFile.
-        sr_psl = psls[0]
-        self.assertEquals(sr_psl.productseries, self.productseries)
-        self.assertEquals(sr_psl.language, serbian)
-        self.assertEquals(sr_psl.pofile, sr_pofile)
-
         # Add another translation (eg. "Albanian", so it sorts
         # it before Serbian).
         albanian = getUtility(ILanguageSet).getLanguageByCode('sq')
         sq_pofile = self.factory.makePOFile(albanian.code, potemplate)
-        psls = list(self.productseries.productserieslanguages)
-        self.assertEquals(len(psls), 2)
 
-        # Ordering is alphabetic by English name of the language.
-        self.assertEquals(psls[0].language, albanian)
-        self.assertEquals(psls[1].language, serbian)
+        languages = [psl.language for psl in
+                     self.productseries.productserieslanguages]
+        self.assertEquals([albanian, serbian], languages)
 
-    def test_TwoTemplatesWithTranslations(self):
-        # There is a template and one translation.
+    def test_two_templates_pofile_not_set(self):
+        # With two templates, pofile attribute doesn't get set.
         potemplate1 = self.factory.makePOTemplate(
             productseries=self.productseries)
         potemplate2 = self.factory.makePOTemplate(
@@ -81,25 +89,10 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
         serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
         pofile1 = self.factory.makePOFile(serbian.code, potemplate1)
         psls = list(self.productseries.productserieslanguages)
-        self.assertEquals(len(psls), 1)
 
         # `pofile` is not set when there's more than one template.
-        sr_psl = self.productseries.productserieslanguages[0]
-        self.assertEquals(sr_psl.productseries, self.productseries)
-        self.assertEquals(sr_psl.language, serbian)
-        self.assertEquals(sr_psl.pofile, None)
-
-        # A POFile is returned where it exists, and a DummyPOFile where
-        # it doesn't.
-        self.assertEquals(2, len(sr_psl.pofiles))
-        self.assertEquals(potemplate2, sr_psl.pofiles[0].potemplate)
-        self.assertEquals(pofile1, sr_psl.pofiles[1])
-
-        # If we provide a POFile for the other template, `pofiles`
-        # returns both (ordered by decreasing priority).
-        pofile2 = self.factory.makePOFile(serbian.code, potemplate2)
-        sr_psl = self.productseries.productserieslanguages[0]
-        self.assertEquals(list(sr_psl.pofiles), [pofile2, pofile1])
+        sr_psl = psls[0]
+        self.assertEquals(None, sr_psl.pofile)
 
 
 class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):

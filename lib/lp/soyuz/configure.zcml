@@ -405,9 +405,9 @@
             set_attributes="description displayname publish status"/>
         <require
             permission="launchpad.Commercial"
-            set_attributes="authorized_size buildd_secret
-                            enabled_restricted_families
-                            commercial external_dependencies private
+            set_attributes="authorized_size build_debug_symbols buildd_secret
+                            commercial enabled_restricted_families
+                            external_dependencies private
                             require_virtualized relative_build_score "/>
         <require
             permission="launchpad.Admin"
@@ -544,34 +544,6 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
         permission="zope.Public" />
-
-    <!-- PublishedPackage -->
-
-    <class
-        class="canonical.launchpad.database.PublishedPackage">
-        <allow
-            interface="lp.soyuz.interfaces.publishedpackage.IPublishedPackage"/>
-        <require
-            permission="zope.Public"
-            set_schema="lp.soyuz.interfaces.publishedpackage.IPublishedPackage"/>
-    </class>
-
-    <!-- PublishedPackageSet -->
-
-    <class
-        class="canonical.launchpad.database.PublishedPackageSet">
-        <allow
-            interface="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"/>
-        <require
-            permission="zope.Public"
-            set_schema="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"/>
-    </class>
-    <securedutility
-        provides="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"
-        class="canonical.launchpad.database.PublishedPackageSet">
-        <allow
-            interface="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"/>
-    </securedutility>
 
     <!-- ArchiveSubscriber -->
 

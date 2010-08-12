@@ -12,6 +12,7 @@ import gc
 
 from zope.component import getUtility
 
+from lp.app.errors import NotFoundError
 from lp.archivepublisher.publishing import getPublisher
 from canonical.database.sqlbase import (
     clear_current_connection_cache, flush_database_updates)
@@ -20,7 +21,6 @@ from lp.soyuz.interfaces.archive import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts import logger, logger_options
 from lp.services.scripts.base import LaunchpadScriptFailure
-from canonical.launchpad.webapp.interfaces import NotFoundError
 
 # XXX Julian 2008-02-07 bug=189866:
 # These functions should be in a LaunchpadScript.

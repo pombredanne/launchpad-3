@@ -35,6 +35,7 @@ from canonical.database.sqlbase import (
     quote, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
+from lp.app.errors import NotFoundError
 from lp.translations.model.pofiletranslator import (
     POFileTranslator)
 from lp.translations.model.pofile import POFile
@@ -103,8 +104,6 @@ from lp.registry.model.structuralsubscription import (
 from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.publishedpackage import (
-    IPublishedPackageSet)
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, ICanPublishPackages, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import IHasQueueItems, IPackageUploadSet
@@ -118,7 +117,7 @@ from lp.blueprints.interfaces.specification import (
 from canonical.launchpad.mail import signed_message_from_string
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR)
+    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet)
 
@@ -285,10 +284,20 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @cachedproperty
     def _all_packagings(self):
-        """Get an unordered list of all packagings."""
+        """Get an unordered list of all packagings.
+        
+        :return: A ResultSet which can be decorated or tuned further. Use
+            DistroSeries._packaging_row_to_packaging to extract the
+            packaging objects out.
+        """
         # We join to SourcePackageName, ProductSeries, and Product to cache
         # the objects that are implicitly needed to work with a
         # Packaging object.
+        # NB: precaching objects like this method tries to do has a very poor
+        # hit rate with storm - many queries will still be executed; consider
+        # ripping this out and instead allowing explicit inclusion of things 
+        # like Person._all_members does - returning a cached object graph.
+        # -- RBC 20100810
         # Avoid circular import failures.
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
@@ -308,14 +317,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         results = IStore(self).using(*origin).find(find_spec, condition)
         return results
 
+    @staticmethod
+    def _packaging_row_to_packaging(row):
+        # each row has:
+        #  (packaging, spn, product_series, product)
+        return row[0]
+
     @property
     def packagings(self):
         """See `IDistroSeries`."""
         results = self._all_packagings
         results = results.order_by(SourcePackageName.name)
-        return [
-            packaging
-            for (packaging, spn, product_series, product) in results]
+        return DecoratedResultSet(results,
+            DistroSeries._packaging_row_to_packaging)
 
     def getPrioritizedUnlinkedSourcePackages(self):
         """See `IDistroSeries`.
@@ -356,28 +370,36 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # We join to SourcePackageName, ProductSeries, and Product to cache
         # the objects that are implcitly needed to work with a
         # Packaging object.
-        # Avoid circular import failures.
         joins, conditions = self._current_sourcepackage_joins_and_conditions
-        origin = SQL(joins + """
+        # XXX: EdwinGrubbs 2010-07-29 bug=374777
+        # Storm doesn't support DISTINCT ON.
+        origin = SQL('''
+            (
+            SELECT DISTINCT ON (Packaging.id)
+                Packaging.*,
+                spr.component AS spr_component,
+                SourcePackageName.name AS spn_name,
+                total_bug_heat,
+                po_messages
+            FROM %(joins)s
+            WHERE %(conditions)s
+                AND packaging.id IS NOT NULL
+            ) AS Packaging
             JOIN ProductSeries
                 ON Packaging.productseries = ProductSeries.id
             JOIN Product
                 ON ProductSeries.product = Product.id
-            """)
-        condition = SQL(conditions + "AND packaging.id IS NOT NULL")
-        results = IStore(self).using(origin).find(Packaging, condition)
-        return results.order_by("""
-            (
-                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END
+            ''' % dict(joins=joins, conditions=conditions))
+        return IStore(self).using(origin).find(Packaging).order_by('''
+                (CASE WHEN spr_component = 1 THEN 1000 ELSE 0 END
                 + CASE WHEN Product.bugtracker IS NULL
                     THEN coalesce(total_bug_heat, 10) ELSE 0 END
                 + CASE WHEN ProductSeries.translations_autoimport_mode = 1
                     THEN coalesce(po_messages, 10) ELSE 0 END
-                + CASE WHEN ProductSeries.branch IS NULL THEN 500
-                    ELSE 0 END
-            ) DESC,
-            SourcePackageName.name ASC
-            """)
+                + CASE WHEN ProductSeries.branch IS NULL THEN 500 ELSE 0 END
+                ) DESC,
+                spn_name ASC
+                ''')
 
     @property
     def _current_sourcepackage_joins_and_conditions(self):
@@ -445,9 +467,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # identical creation dates.
         results = results.order_by(Desc(Packaging.datecreated),
                                    SourcePackageName.name)[:5]
-        return [
-            packaging
-            for (packaging, spn, product_series, product) in results]
+        return DecoratedResultSet(results,
+            DistroSeries._packaging_row_to_packaging)
 
     @property
     def supported(self):
@@ -1084,15 +1105,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         return result
 
-    def publishedBinaryPackages(self, component=None):
-        """See `IDistroSeries`."""
-        # XXX sabdfl 2005-07-04: This can become a utility when that works
-        # this is used by the debbugs import process, mkdebwatches
-        pubpkgset = getUtility(IPublishedPackageSet)
-        result = pubpkgset.query(distroseries=self, component=component)
-        return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
-                for pubrecord in result]
-
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):
         """See IHasBuildRecords"""
@@ -1107,7 +1119,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Use the facility provided by IBinaryPackageBuildSet to
         # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            arch_ids, build_state, name, pocket)
+            self.distribution, arch_ids, build_state, name, pocket)
 
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,

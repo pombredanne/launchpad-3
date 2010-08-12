@@ -71,23 +71,21 @@ from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.product import IProduct
-from lp.soyuz.interfaces.publishedpackage import (
-    IPublishedPackageSet)
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation,
     LaunchpadFormView, LaunchpadView, Link, Navigation, redirection,
-    StandardLaunchpadFacets, stepthrough, stepto)
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, NotFoundError)
+    StandardLaunchpadFacets, stepthrough)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import NavigationMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.image import ImageChangeWidget
 
+from lp.app.errors import NotFoundError
 from lp.registry.browser import RegistryEditFormView
 
 
@@ -133,10 +131,6 @@ class DistributionNavigation(
     @redirection('+source', status=301)
     def redirect_source(self):
         return canonical_url(self.context)
-
-    @stepto('+packages')
-    def packages(self):
-        return getUtility(IPublishedPackageSet)
 
     @stepthrough('+mirror')
     def traverse_mirrors(self, name):

@@ -39,7 +39,8 @@ from canonical.lazr.utils import smartquote
 
 from canonical.launchpad import helpers, _
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.errors import NotFoundError
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.registry.browser.productseries import ProductSeriesFacets
 from lp.translations.browser.translations import TranslationsMixin
@@ -649,14 +650,8 @@ class POTemplateExportView(BaseExportView):
             pofiles = []
             export_potemplate = 'potemplate' in self.request.form
 
-            for key in self.request.form:
-                if '@' in key:
-                    code, variant = key.split('@', 1)
-                else:
-                    code = key
-                    variant = None
-
-                pofile = self.context.getPOFileByLang(code, variant)
+            for code in self.request.form:
+                pofile = self.context.getPOFileByLang(code)
                 if pofile is not None:
                     pofiles.append(pofile)
         else:
