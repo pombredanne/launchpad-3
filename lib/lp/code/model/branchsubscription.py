@@ -21,8 +21,7 @@ from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.security import BranchSubscriptionEdit
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership)
+from lp.registry.interfaces.person import validate_person
 
 
 class BranchSubscription(SQLBase):
@@ -34,7 +33,7 @@ class BranchSubscription(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person, notNull=True)
     branch = ForeignKey(dbName='branch', foreignKey='Branch', notNull=True)
     notification_level = EnumCol(enum=BranchSubscriptionNotificationLevel,
                                  notNull=True, default=DEFAULT)
@@ -44,7 +43,7 @@ class BranchSubscription(SQLBase):
                                  notNull=True, default=DEFAULT)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person, notNull=True)
 
     @property
     def target(self):

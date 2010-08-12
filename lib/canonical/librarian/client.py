@@ -8,6 +8,7 @@ __all__ = [
     'FileUploadClient',
     'LibrarianClient',
     'RestrictedLibrarianClient',
+    'quote',
     ]
 
 

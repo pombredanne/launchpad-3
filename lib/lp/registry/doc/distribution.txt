@@ -392,6 +392,20 @@ officially. Ubuntu uses all of them:
     >>> ubuntu.official_blueprints
     True
 
+The bug_tracking_usage property currently only tracks official_malone.
+
+    >>> print ubuntu.bug_tracking_usage.name
+    LAUNCHPAD
+
+While the other attributes are not yet used.
+
+    >>> print ubuntu.translations_usage.name
+    UNKNOWN
+    >>> print ubuntu.answers_usage.name
+    UNKNOWN
+    >>> print ubuntu.blueprints_usage.name
+    UNKNOWN
+
 A distribution *cannot* specify that it uses codehosting. Currently there's
 no way for a distribution to use codehosting.
 
@@ -400,6 +414,9 @@ no way for a distribution to use codehosting.
     >>> ubuntu.official_codehosting = True
     Traceback (most recent call last):
     ForbiddenAttribute: ('official_codehosting', ...)
+
+    >>> print ubuntu.codehosting_usage.name
+    NOT_APPLICABLE
 
 While Debian uses none:
 

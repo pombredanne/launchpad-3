@@ -21,7 +21,6 @@ class IBranchRevision(Interface):
     ancestry of a branch. History revisions have an integer sequence, merged
     revisions have sequence set to None.
     """
-
     id = Int(title=_('The database revision ID'))
 
     sequence = Int(
