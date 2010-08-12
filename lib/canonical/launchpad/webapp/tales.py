@@ -1081,6 +1081,19 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         """
         return super(PersonFormatterAPI, self).url(view_name, rootsite)
 
+    def _makeLink(self, view_name, rootsite, text):
+        person = self._context
+        url = self.url(view_name, rootsite)
+        custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
+        if custom_icon is None:
+            css_class = ObjectImageDisplayAPI(person).sprite_css()
+            return (u'<a href="%s" class="%s">%s</a>') % (
+                url, css_class, cgi.escape(text))
+        else:
+            return (u'<a href="%s" class="bg-image" '
+                     'style="background-image: url(%s)">%s</a>') % (
+                url, custom_icon, cgi.escape(text))
+
     def link(self, view_name, rootsite='mainsite'):
         """See `ObjectFormatterAPI`.
 
@@ -1088,17 +1101,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         followed by the person's name. The default URL for a person is to
         the mainsite.
         """
-        person = self._context
-        url = self.url(view_name, rootsite)
-        custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
-        if custom_icon is None:
-            css_class = ObjectImageDisplayAPI(person).sprite_css()
-            return (u'<a href="%s" class="%s">%s</a>') % (
-                url, css_class, cgi.escape(person.displayname))
-        else:
-            return (u'<a href="%s" class="bg-image" '
-                     'style="background-image: url(%s)">%s</a>') % (
-                url, custom_icon, cgi.escape(person.displayname))
+        return self._makeLink(view_name, rootsite, self._context.displayname)
 
     def displayname(self, view_name, rootsite=None):
         """Return the displayname as a string."""
@@ -1122,17 +1125,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 
     def nameLink(self, view_name):
         """Return the Launchpad id of the person, linked to their profile."""
-        person = self._context
-        url = self.url(view_name)
-        custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
-        if custom_icon is None:
-            css_class = ObjectImageDisplayAPI(person).sprite_css()
-            return (u'<a href="%s" class="%s">%s</a>') % (
-                url, css_class, cgi.escape(person.name))
-        else:
-            return (u'<a href="%s" class="bg-image" '
-                     'style="background-image: url(%s)">%s</a>') % (
-                url, custom_icon, cgi.escape(person.name))
+        return self._makeLink(view_name, None, self._context.name)
 
 
 class TeamFormatterAPI(PersonFormatterAPI):
