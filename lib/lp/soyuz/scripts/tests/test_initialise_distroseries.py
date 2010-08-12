@@ -103,6 +103,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE')
         pmount_srcrel = pmount_binrel.build.source_package_release
         self.assertEqual(pmount_srcrel.title, u'pmount - 0.1-1')
+        # The build of pmount 0.1-1 has been copied across.
         foobuntu_pmount = pmount_srcrel.getBuildByArch(
             foobuntu['i386'], foobuntu.main_archive)
         hoary_pmount = pmount_srcrel.getBuildByArch(
@@ -128,12 +129,9 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertDistroSeriesInitialisedCorrectly(foobuntu)
 
     def test_check_no_builds(self):
-        # Test that we can create builds in a newly-initialised series
+        # Test that there is no build for pmount 0.1-2 in the
+        # newly-initialised series.
         foobuntu = self._full_initialise()
-        # It turns out the sampledata of hoary includes pmount 0.1-1 as well
-        # as pmount 0.1-2 source, and if foobuntu and hoary don't share a
-        # pool, 0.1-1 will be marked as NBS and removed. So let's check that
-        # and create a build for foobuntu.
         pmount_source = self.hoary.getSourcePackage(
             'pmount').currentrelease
         self.assertEqual(
@@ -151,7 +149,10 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             foobuntu['hppa'], foobuntu.main_archive), None)
 
     def test_create_builds(self):
-        # Test we can create a build in the child
+        # It turns out the sampledata of hoary includes pmount 0.1-1 as well
+        # as pmount 0.1-2 source, and if foobuntu and hoary don't share a
+        # pool, 0.1-1 will be marked as NBS and removed. So let's check that
+        # builds can be created for foobuntu.
         foobuntu = self._full_initialise()
         pmount_source = foobuntu.getSourcePackage('pmount').currentrelease
         created_build = pmount_source.sourcepackagerelease.createBuild(
@@ -160,6 +161,9 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         retrieved_build = pmount_source.sourcepackagerelease.getBuildByArch(
             foobuntu['i386'], foobuntu.main_archive)
         self.assertEqual(retrieved_build.id, created_build.id)
+        self.assertEqual(
+            'i386 build of pmount 0.1-2 in ubuntutest foobuntu RELEASE',
+            created_build.title)
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool
