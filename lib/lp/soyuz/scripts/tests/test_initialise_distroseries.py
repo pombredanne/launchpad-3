@@ -81,7 +81,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             InitialisationError,"Parent series queues are not empty.",
             ids.check)
 
-    def _check_distroseries(self, foobuntu):
+    def assertDistroSeriesInitialisedCorrectly(self, foobuntu):
         # Check that 'pmount' has been copied correctly
         hoary_pmount_pubs = self.hoary.getPublishedReleases('pmount')
         foobuntu_pmount_pubs = foobuntu.getPublishedReleases('pmount')
@@ -103,10 +103,36 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE')
         pmount_srcrel = pmount_binrel.build.source_package_release
         self.assertEqual(pmount_srcrel.title, u'pmount - 0.1-1')
+        # We also inherient the permitted source formats from our parent
+        self.assertTrue(
+            foobuntu.isSourcePackageFormatPermitted(
+            SourcePackageFormat.FORMAT_1_0))
+
+    def _full_initialise(self):
+        foobuntu = self._create_distroseries(self.hoary)
+        self._set_pending_to_failed(self.hoary)
+        transaction.commit()
+        ids = InitialiseDistroSeries(foobuntu)
+        ids.check()
+        ids.initialise()
+        return foobuntu
+
+    def test_initialise(self):
+        # Test a full initialise with no errors
+        foobuntu = self._full_initialise()
+        self.assertDistroSeriesInitialisedCorrectly(foobuntu)
+
+    def test_create_builds(self):
+        # Test that we can create builds in a newly-initialised series
+        foobuntu = self._full_initialise()
         # It turns out the sampledata of hoary includes pmount 0.1-1 as well
         # as pmount 0.1-2 source, and if foobuntu and hoary don't share a
         # pool, 0.1-1 will be marked as NBS and removed. So let's check that
         # and create a build for foobuntu.
+        pmount_binrel = (
+            foobuntu['i386'].getReleasedPackages(
+            'pmount')[0].binarypackagerelease)
+        pmount_srcrel = pmount_binrel.build.source_package_release
         foobuntu_pmount = pmount_srcrel.getBuildByArch(
             foobuntu['i386'], foobuntu.main_archive)
         hoary_pmount = pmount_srcrel.getBuildByArch(
@@ -133,20 +159,6 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(
             pmount_source.sourcepackagerelease.getBuildByArch(
             foobuntu['hppa'], foobuntu.main_archive), None)
-        # We also inherient the permitted source formats from our parent
-        self.assertTrue(
-            foobuntu.isSourcePackageFormatPermitted(
-            SourcePackageFormat.FORMAT_1_0))
-
-    def test_initialise(self):
-        # Test a full initialise with no errors
-        foobuntu = self._create_distroseries(self.hoary)
-        self._set_pending_to_failed(self.hoary)
-        transaction.commit()
-        ids = InitialiseDistroSeries(foobuntu)
-        ids.check()
-        ids.initialise()
-        self._check_distroseries(foobuntu)
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool
@@ -163,4 +175,4 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(process.returncode, 0)
         self.assertTrue(
             "DEBUG   Committing transaction." in stderr.split('\n'))
-        self._check_distroseries(foobuntu)
+        self.assertDistroSeriesInitialisedCorrectly(foobuntu)
