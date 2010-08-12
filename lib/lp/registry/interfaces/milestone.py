@@ -23,6 +23,7 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.bugs.interfaces.bugtarget import IHasBugs, IHasOfficialBugTags
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.services.fields import FormattableDate
 from canonical.launchpad import _
 from lp.services.fields import (
     ContentNameField, NoneableDescription, NoneableTextLine)

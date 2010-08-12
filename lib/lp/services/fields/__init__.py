@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'AnnouncementDate',
+    'FormattableDate',
     'BaseImageUpload',
     'BlacklistableContentNameField',
     'BugField',
