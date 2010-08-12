@@ -1,0 +1,20 @@
+<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    i18n_domain="launchpad">
+
+    <!-- view or edit all feature rules -->
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="lp.services.features.browser.FeatureControlView"
+        name="+features"
+        permission="zope.Public"
+        template="../templates/features.pt"/>
+
+</configure>

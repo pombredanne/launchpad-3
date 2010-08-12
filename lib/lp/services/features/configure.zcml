@@ -6,6 +6,9 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
 
+    <include
+        package=".browser"/>
+
     <subscriber
         for="canonical.launchpad.webapp.interfaces.IStartRequestEvent"
         handler="lp.services.features.webapp.start_request"
