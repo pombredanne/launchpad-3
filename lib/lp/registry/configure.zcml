@@ -156,7 +156,8 @@
             attributes="
                 addBugSubscription
                 addSubscription
-                removeBugSubscription"/>
+                removeBugSubscription
+                userCanAlterBugSubscription"/>
     </class>
     <securedutility
         class="lp.registry.model.distroseries.DistroSeriesSet"
@@ -300,7 +301,8 @@
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription"/>
+                removeBugSubscription
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.Admin"
             set_attributes="registrant"/>
@@ -929,7 +931,8 @@
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription"/>
+                removeBugSubscription
+                userCanAlterBugSubscription"/>
     </class>
 
     <!-- IMilestoneSet -->
@@ -1194,15 +1197,15 @@
                 getBugNotificationsRecipients
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
                 addSubscription
                 addBugSubscription
                 removeBugSubscription
-                userCanAlterSubscription
-                userCanAlterBugSubscription"/>
+                userCanAlterSubscription"/>
 
         <!-- IHasBugSupervisor -->
 
@@ -1344,7 +1347,8 @@
                 getSubscriptions
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
