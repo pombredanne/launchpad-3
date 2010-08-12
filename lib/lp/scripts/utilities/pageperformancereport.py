@@ -106,8 +106,6 @@ class Times:
         self.total_hits = 0
         self.total_time = 0
         self.request_times = []
-        # Used for generating histograms
-        self.request_times_capped = []
         self.sql_statements = []
         self.sql_times = []
         self.ticks = []
@@ -118,8 +116,6 @@ class Times:
         self.total_hits += 1
         self.total_time += request.app_seconds
         self.request_times.append(request.app_seconds)
-        self.request_times_capped.append(
-            min(request.app_seconds, self.histogram_width))
         if request.sql_statements is not None:
             self.sql_statements.append(request.sql_statements)
         if request.sql_seconds is not None:
@@ -163,8 +159,10 @@ class Times:
         # good based on eyeballing things so far - once we're down in the 2-3
         # second range for everything we may want to revisit.
         stats.ninetyninth_percentile_time = stats.mean + stats.std*3
-        array = numpy.asarray(self.request_times_capped,
-            numpy.float32)
+        capped_times = (min(a_time, self.histogram_width) for a_time in
+            self.request_times)
+        array = numpy.fromiter(capped_times, numpy.float32,
+            len(self.request_times))
         histogram = numpy.histogram(
             array, normed=True,
             range=(0, self.histogram_width), bins=self.histogram_width)
