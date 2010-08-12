@@ -38,6 +38,7 @@ permitted_database_imports = text_lines_to_set("""
     canonical.librarian.client
     canonical.librarian.db
     doctest
+    lp.shipit
     """)
 
 
