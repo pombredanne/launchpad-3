@@ -12,6 +12,7 @@ __all__ = [
     'updateBuilderStatus',
     ]
 
+import errno
 import httplib
 import gzip
 import logging
@@ -200,24 +201,36 @@ def updateBuilderStatus(builder, logger=None):
     if logger:
         logger.debug('Checking %s' % builder.name)
 
-    try:
-        builder.checkSlaveAlive()
-        builder.rescueIfLost(logger)
-    # Catch only known exceptions.
-    # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
-    # disturbing in this context. We should spend sometime sanitizing the
-    # exceptions raised in the Builder API since we already started the
-    # main refactoring of this area.
-    except (ValueError, TypeError, xmlrpclib.Fault,
-            BuildDaemonError), reason:
-        builder.failBuilder(str(reason))
-        if logger:
-            logger.warn(
-                "%s (%s) marked as failed due to: %s",
-                builder.name, builder.url, builder.failnotes, exc_info=True)
-    except socket.error, reason:
-        error_message = str(reason)
-        builder.handleTimeout(logger, error_message)
+    MAX_EINTR_RETRIES = 5 # pulling a number out of my a$$ here
+    eintr_retry_count = 0
+
+    while True:
+        try:
+            builder.checkSlaveAlive()
+            builder.rescueIfLost(logger)
+        # Catch only known exceptions.
+        # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
+        # disturbing in this context. We should spend sometime sanitizing the
+        # exceptions raised in the Builder API since we already started the
+        # main refactoring of this area.
+        except (ValueError, TypeError, xmlrpclib.Fault,
+                BuildDaemonError), reason:
+            builder.failBuilder(str(reason))
+            if logger:
+                logger.warn(
+                    "%s (%s) marked as failed due to: %s",
+                    builder.name, builder.url, builder.failnotes, exc_info=True)
+        except socket.error, reason:
+            # In Python 2.6 we can use IOError instead.
+            if reason.errno == errno.EINTR:
+                eintr_retry_count += 1
+                if eintr_retry_count != MAX_EINTR_RETRIES:
+                    continue
+            error_message = str(reason)
+            builder.handleTimeout(logger, error_message)
+            return
+        else:
+            return
 
 
 class Builder(SQLBase):
