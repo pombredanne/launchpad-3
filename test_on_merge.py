@@ -164,7 +164,10 @@ def main():
                 rlist, wlist, xlist = select.select(open_readers, [], [], TIMEOUT)
                 break
             except select.error, e:
-                if e.errno == errno.EINTR:
+                # nb: select.error doesn't expose a named 'errno' attribute,
+                # at least in python 2.6.5; see
+                # <http://mail.python.org/pipermail/python-dev/2000-October/009671.html>
+                if e[0] == errno.EINTR:
                     continue
                 else:
                     raise
