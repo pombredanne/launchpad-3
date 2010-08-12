@@ -42,11 +42,6 @@ class TestBranchMergeProposalPrimaryContext(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        # Use an admin so we don't have to worry about launchpad.Edit
-        # permissions on the merge proposals.
-        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
-
     def testPrimaryContext(self):
         # The primary context of a merge proposal is the same as the primary
         # context of the source_branch.
@@ -66,7 +61,6 @@ class TestBranchMergeProposalContextMenu(TestCaseWithFactory):
             set_state=BranchMergeProposalStatus.REJECTED)
         login_person(bmp.registrant)
         menu = BranchMergeProposalContextMenu(bmp)
-        link = menu.add_comment()
         self.assertTrue(menu.add_comment().enabled)
 
 
