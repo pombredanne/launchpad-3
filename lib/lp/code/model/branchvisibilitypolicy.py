@@ -25,8 +25,7 @@ from canonical.launchpad.helpers import shortlist
 from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.branchvisibilitypolicy import (
     IBranchVisibilityTeamPolicy, InvalidVisibilityPolicy)
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership)
+from lp.registry.interfaces.person import validate_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 
@@ -41,7 +40,7 @@ class BranchVisibilityTeamPolicy(SQLBase):
     product = ForeignKey(dbName='product', foreignKey='Product')
     team = ForeignKey(
         dbName='team', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         default=None)
     rule = EnumCol(
         dbName="policy", enum=BranchVisibilityRule, notNull=True,

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -8,7 +8,6 @@ __all__ = []
 
 from datetime import datetime, timedelta
 import time
-import unittest
 
 from pytz import UTC
 from storm.expr import Min, SQL
@@ -19,6 +18,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import THIRTY_DAYS_AGO, UTC_NOW
+from canonical.database.sqlbase import quote
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
@@ -530,7 +530,16 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(bug.attachments.count(), 0)
 
+    def test_CacheSuggestivePOTemplates(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        template = self.factory.makePOTemplate()
+        self.runDaily()
 
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        count, = store.execute("""
+            SELECT count(*)
+            FROM SuggestivePOTemplate
+            WHERE potemplate = %s
+            """ % quote(template.id)).get_one()
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        self.assertEqual(1, count)
