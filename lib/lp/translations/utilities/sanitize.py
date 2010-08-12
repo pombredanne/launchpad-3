@@ -169,6 +169,9 @@ def sanitize_translations_from_webui(
     :param pluralforms: The number of expected pluralforms
     """
     # Sanitize all given translations.
+    # Make sure the translations are stored in a dict.
+    if isinstance(translations, (list, tuple)):
+        translations = dict(enumerate(translations))
     # Unneeded plural forms are stored as well (needed since we may
     # have incorrect plural form data, so we can just reactivate them
     # once we fix the plural information for the language)

@@ -206,6 +206,23 @@ class TestSanitizeTranslations(TestCase):
             sanitize_translations_from_webui(self.english, translations, 3)
             )
 
+    def test_sanitize_translations_not_in_dict(self):
+        # A list is converted to a dictionary.
+        translations = [
+            u'Pluralform 0',
+            u'Pluralform 1',
+            u'Pluralform 2',
+            ]
+        expected_sanitized = {
+            0: u'Pluralform 0',
+            1: u'Pluralform 1',
+            2: u'Pluralform 2',
+            }
+        self.assertEqual(
+            expected_sanitized,
+            sanitize_translations_from_webui(self.english, translations, 3)
+            )
+
     def test_sanitize_translations_missing_pluralform(self):
         # Missing plural forms are normalized to None.
         translations = {
