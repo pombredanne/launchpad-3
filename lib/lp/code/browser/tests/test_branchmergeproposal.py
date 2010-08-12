@@ -248,9 +248,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
         charles = self.factory.makePerson(name='charles')
-
-        owner = self.bmp.source_branch.owner
-
         self._createComment(albert, CodeReviewVote.APPROVE)
         self._createComment(bob, CodeReviewVote.ABSTAIN)
         self._createComment(charles, CodeReviewVote.DISAPPROVE)
@@ -266,9 +263,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # Request three reviews.
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
-
-        owner = self.bmp.source_branch.owner
-
         self._createComment(albert, CodeReviewVote.ABSTAIN)
         self._createComment(bob, CodeReviewVote.APPROVE)
         self._createComment(albert, CodeReviewVote.APPROVE)
@@ -281,7 +275,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
     def addReviewTeam(self):
         review_team = self.factory.makeTeam(name='reviewteam')
-        target_branch = self.factory.makeAnyBranch()
         self.bmp.target_branch.reviewer = review_team
 
     def test_review_team_members_trusted(self):
