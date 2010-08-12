@@ -61,13 +61,17 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.servers import AccountPrincipalMixin
 from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.servers import VirtualHostRequestPublicationFactory
+from canonical.launchpad.webapp.servers import (
+    VirtualHostRequestPublicationFactory)
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.webapp.tests.test_login import FakeOpenIDConsumer
 from canonical.launchpad.webapp.tests.test_login import FakeOpenIDResponse
-from canonical.launchpad.webapp.tests.test_login import IAccountSet_getByOpenIDIdentifier_monkey_patched
-from canonical.launchpad.webapp.tests.test_login import SRegResponse_fromSuccessResponse_stubbed
-from canonical.launchpad.webapp.tests.test_login import fill_login_form_and_submit
+from canonical.launchpad.webapp.tests.test_login import (
+    IAccountSet_getByOpenIDIdentifier_monkey_patched)
+from canonical.launchpad.webapp.tests.test_login import (
+    SRegResponse_fromSuccessResponse_stubbed)
+from canonical.launchpad.webapp.tests.test_login import (
+    fill_login_form_and_submit)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.person import IPersonSet
