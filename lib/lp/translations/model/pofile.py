@@ -905,8 +905,6 @@ class POFile(SQLBase, POFileMixIn):
 
     def updateStatistics(self):
         """See `IPOFile`."""
-        traits = getUtility(ITranslationSideTraitsSet).getTraits(
-            self.potemplate.translation_side)
         # make sure all the data is in the db
         flush_database_updates()
 
@@ -916,7 +914,8 @@ class POFile(SQLBase, POFileMixIn):
         variant_clause = self._getLanguageVariantClause('current')
         current_clauses.extend([
             'TranslationTemplateItem.sequence > 0',
-            'TranslationMessage.%s IS TRUE' % traits.flag_name,
+            'TranslationMessage.is_current_upstream IS TRUE',
+            'TranslationMessage.is_current_ubuntu IS TRUE',
             'TranslationMessage.potmsgset = POTMsgSet.id',
             """(TranslationMessage.potemplate = %(template)s OR (
                 TranslationMessage.potemplate IS NULL AND NOT EXISTS (

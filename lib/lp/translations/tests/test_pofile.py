@@ -745,7 +745,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # We are constructing a POFile with:
         #  - 2 untranslated message
         #  - 2 unreviewed suggestions (for translated and untranslated each)
-        #  - 2 translations, out of which 1 is changed in Ubuntu
+        #  - 2 imported translations, out of which 1 is changed in Ubuntu
         #  - 1 LP-provided translation
         # For a total of 6 messages, 4 translated (1 from import,
         # 3 only in LP, where 1 is changed from imported).
@@ -762,49 +762,44 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Third POTMsgSet is translated, and with a suggestion.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         potmsgset.setSequence(self.devel_potemplate, 3)
-        translation = self.factory.makeSuggestion(
+        self.factory.makeTranslationMessage(
             pofile=self.devel_sr_pofile, potmsgset=potmsgset,
-            translations=[u"Translation"],
+            translations=[u"Translation"], suggestion=False,
             date_updated=datetime.now(pytz.UTC)-timedelta(1))
-        translation.is_current_upstream = True
         self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=potmsgset,
             translations=[u"Another suggestion"])
 
-        # Fourth POTMsgSet is translated in Ubuntu.
+        # Fourth POTMsgSet is translated in import.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         potmsgset.setSequence(self.devel_potemplate, 4)
-        translation = self.factory.makeSuggestion(
+        self.factory.makeTranslationMessage(
             pofile=self.devel_sr_pofile, potmsgset=potmsgset,
-            translations=[u"Ubuntu translation"])
-        translation.is_current_ubuntu = True
+            translations=[u"Imported translation"], is_current_upstream=True)
 
-        # Fifth POTMsgSet is translated upstream, but changed in Ubuntu.
+        # Fifth POTMsgSet is translated in import, but changed in Ubuntu.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         potmsgset.setSequence(self.devel_potemplate, 5)
-        translation = self.factory.makeSuggestion(
+        self.factory.makeTranslationMessage(
             pofile=self.devel_sr_pofile, potmsgset=potmsgset,
-            translations=[u"Upstream translation"])
-        translation.is_current_upstream = True
-        translation = self.factory.makeSuggestion(
+            translations=[u"Imported translation"], is_current_upstream=True)
+        translation = self.factory.makeTranslationMessage(
             pofile=self.devel_sr_pofile, potmsgset=potmsgset,
-            translations=[u"Ubuntu translation"])
-        translation.is_current_ubuntu = True
+            translations=[u"LP translation"], is_current_upstream=False)
 
-        # Sixth POTMsgSet is translated in upstream only.
+        # Sixth POTMsgSet is translated in LP only.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         potmsgset.setSequence(self.devel_potemplate, 6)
-        translation = self.factory.makeSuggestion(
+        self.factory.makeTranslationMessage(
             pofile=self.devel_sr_pofile, potmsgset=potmsgset,
-            translations=[u"New translation"])
-        translation.is_current_upstream = True
+            translations=[u"New translation"], is_current_upstream=False)
 
         removeSecurityProxy(self.devel_potemplate).messagecount = (
             self.devel_potemplate.getPOTMsgSetsCount())
 
         # Returns current, updates, rosetta, unreviewed counts.
         stats = self.devel_sr_pofile.updateStatistics()
-        self.assertEquals((1, 1, 3, 2), stats)
+        self.assertEquals(stats, (1, 1, 3, 2))
 
         self.assertEquals(6, self.devel_sr_pofile.messageCount())
         self.assertEquals(4, self.devel_sr_pofile.translatedCount())
