@@ -112,7 +112,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.browser_pofile = pofile
         self.potemplate = pofile.potemplate
         self.language = pofile.language
-        self.variant = pofile.variant
+        self.variant = None
         self.potmsgset = potmsgset
         UTC = pytz.timezone('UTC')
         self.date_created = datetime.now(UTC)
@@ -171,7 +171,7 @@ def validate_is_current(self, attr, value):
         current_translation_message = (
             self.potmsgset.getCurrentTranslationMessage(
                 self.potemplate,
-                self.language, self.variant))
+                self.language))
         if (current_translation_message is not None and
             current_translation_message != self and
             current_translation_message.potemplate == self.potemplate):
@@ -199,7 +199,7 @@ def validate_is_imported(self, attr, value):
         imported_translation_message = (
             self.potmsgset.getImportedTranslationMessage(
                 self.potemplate,
-                self.language, self.variant))
+                self.language))
         if (imported_translation_message is not None and
             imported_translation_message != self and
             imported_translation_message.potemplate == self.potemplate):
@@ -224,7 +224,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         default=None)
     language = ForeignKey(
         foreignKey='Language', dbName='language', notNull=False, default=None)
-    variant = StringCol(dbName='variant', notNull=False, default=None)
+    variant = StringCol(dbName='variant',
+                        notNull=False,
+                        default=None)
     potmsgset = ForeignKey(
         foreignKey='POTMsgSet', dbName='potmsgset', notNull=True)
     date_created = UtcDateTimeCol(
@@ -334,8 +336,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # it is hidden.
         # If it has not been reviewed yet, it's not hidden.
         current = self.potmsgset.getCurrentTranslationMessage(
-            pofile.potemplate,
-            self.language, self.variant)
+            pofile.potemplate, self.language)
         # If there is no current translation, none of the
         # suggestions have been reviewed, so they are all shown.
         if current is None:
@@ -355,10 +356,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 sqlvalues(self.potmsgset)),
             "POFile.language = %s" % sqlvalues(self.language),
             ]
-        if self.variant is None:
-            clauses.append("POFile.variant IS NULL")
-        else:
-            clauses.append("POFile.variant = %s" % sqlvalues(self.variant))
 
         pofiles = POFile.select(' AND '.join(clauses),
                                 clauseTables=['TranslationTemplateItem'])
@@ -376,12 +373,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             'potmsgset = %s' % sqlvalues(self.potmsgset),
             'language = %s' % sqlvalues(self.language),
             ]
-
-        if self.variant:
-            variant_clause = 'variant = %s' % sqlvalues(self.variant)
-        else:
-            variant_clause = 'variant IS NULL'
-        clauses.append(variant_clause)
 
         for form in range(TranslationConstants.MAX_PLURAL_FORMS):
             msgstr_name = 'msgstr%d' % form
@@ -412,12 +403,12 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # Existing shared current translation for this POTMsgSet, if
         # any.
         current = self.potmsgset.getCurrentTranslationMessage(
-            potemplate=None, language=self.language, variant=self.variant)
+            potemplate=None, language=self.language)
 
         # Existing shared imported translation for this POTMsgSet, if
         # any.
         imported = self.potmsgset.getImportedTranslationMessage(
-            potemplate=None, language=self.language, variant=self.variant)
+            potemplate=None, language=self.language)
 
         if shared is None:
             clash_with_shared_current = (
@@ -465,7 +456,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             TranslationMessage.potmsgset == target_potmsgset,
             TranslationMessage.potemplate == target_potemplate,
             TranslationMessage.language == self.language,
-            TranslationMessage.variant == self.variant,
             TranslationMessage.id != self.id,
             forms_match))
 
