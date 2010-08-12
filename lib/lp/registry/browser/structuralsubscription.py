@@ -17,7 +17,6 @@ from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
-from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.structuralsubscription import (
