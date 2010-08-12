@@ -136,7 +136,7 @@ class LaunchBag:
 
     @property
     def bugtask(self):
-        return self._store.bugtask
+        return getattr(self._store, "bugtask", None)
 
     @property
     def time_zone(self):

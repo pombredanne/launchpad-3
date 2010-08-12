@@ -58,7 +58,7 @@
     <ul tal:condition="comment/bugattachments" style="margin-bottom: 1em">
       <li tal:repeat="attachment comment/bugattachments"
             class="download-attachment">
-        <a tal:attributes="href attachment/libraryfile/http_url"
+        <a tal:attributes="href python: view.proxiedUrlOfLibraryFileAlias(attachment)"
             tal:content="attachment/title"
             class="sprite download-icon">foo.txt</a>
         (<span
@@ -69,7 +69,7 @@
 
     <ul tal:condition="comment/patches" style="margin-bottom: 1em">
       <li tal:repeat="attachment comment/patches" class="download-attachment">
-        <a tal:attributes="href attachment/libraryfile/http_url"
+        <a tal:attributes="href python: view.proxiedUrlOfLibraryFileAlias(attachment)"
            tal:content="attachment/title" class="sprite haspatch-icon">foo.txt</a>
         (<span
            tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />,

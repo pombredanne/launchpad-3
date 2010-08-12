@@ -88,8 +88,7 @@ from lp.registry.interfaces.sourcepackagename import (
 from canonical.launchpad.searchbuilder import (
     all, any, greater_than, NULL, not_equals)
 from lp.registry.interfaces.person import (
-    IPerson, validate_person_not_private_membership,
-    validate_public_person)
+    IPerson, validate_person, validate_public_person)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, SLAVE_FLAVOR)
 from lp.app.errors import NotFoundError
@@ -455,8 +454,8 @@ def validate_status(self, attr, value):
 
 def validate_assignee(self, attr, value):
     value = validate_conjoined_attribute(self, attr, value)
-    # Check if this assignee is public.
-    return validate_person_not_private_membership(self, attr, value)
+    # Check if this person is valid and not None.
+    return validate_person(self, attr, value)
 
 
 @block_implicit_flushes
@@ -773,7 +772,7 @@ class BugTask(SQLBase, BugTaskMixin):
             # If nothing else, this is a distro task.
             alsoProvides(self, IDistroBugTask)
         else:
-            raise AssertionError, "Task %d is floating." % self.id
+            raise AssertionError("Task %d is floating." % self.id)
 
     @property
     def target_uses_malone(self):
@@ -1647,41 +1646,41 @@ class BugTaskSet:
             structural_subscriber_clause = ( """BugTask.id IN (
                 SELECT BugTask.id FROM BugTask, StructuralSubscription
                 WHERE BugTask.product = StructuralSubscription.product
-                    AND StructuralSubscription.subscriber = %(personid)s
+                  AND StructuralSubscription.subscriber = %(personid)s
                 UNION ALL
                 SELECT BugTask.id FROM BugTask, StructuralSubscription
                 WHERE
-                    BugTask.distribution = StructuralSubscription.distribution
-                    AND BugTask.sourcepackagename =
-                        StructuralSubscription.sourcepackagename
-                    AND StructuralSubscription.subscriber = %(personid)s
+                  BugTask.distribution = StructuralSubscription.distribution
+                  AND BugTask.sourcepackagename =
+                      StructuralSubscription.sourcepackagename
+                  AND StructuralSubscription.subscriber = %(personid)s
                 UNION ALL
                 SELECT BugTask.id FROM BugTask, StructuralSubscription
                 WHERE
-                    BugTask.distroseries = StructuralSubscription.distroseries
-                    AND StructuralSubscription.subscriber = %(personid)s
+                  BugTask.distroseries = StructuralSubscription.distroseries
+                  AND StructuralSubscription.subscriber = %(personid)s
                 UNION ALL
                 SELECT BugTask.id FROM BugTask, StructuralSubscription
                 WHERE
-                    BugTask.milestone = StructuralSubscription.milestone
-                    AND StructuralSubscription.subscriber = %(personid)s
+                  BugTask.milestone = StructuralSubscription.milestone
+                  AND StructuralSubscription.subscriber = %(personid)s
                 UNION ALL
                 SELECT BugTask.id FROM BugTask, StructuralSubscription
                 WHERE
-                    BugTask.productseries = StructuralSubscription.productseries
-                    AND StructuralSubscription.subscriber = %(personid)s
+                  BugTask.productseries = StructuralSubscription.productseries
+                  AND StructuralSubscription.subscriber = %(personid)s
                 UNION ALL
                 SELECT BugTask.id FROM BugTask, StructuralSubscription, Product
                 WHERE
-                    BugTask.product = Product.id
-                    AND Product.project = StructuralSubscription.project
-                    AND StructuralSubscription.subscriber = %(personid)s
+                  BugTask.product = Product.id
+                  AND Product.project = StructuralSubscription.project
+                  AND StructuralSubscription.subscriber = %(personid)s
                 UNION ALL
                 SELECT BugTask.id FROM BugTask, StructuralSubscription
                 WHERE
-                    BugTask.distribution = StructuralSubscription.distribution
-                    AND StructuralSubscription.sourcepackagename is NULL
-                    AND StructuralSubscription.subscriber = %(personid)s)""" %
+                  BugTask.distribution = StructuralSubscription.distribution
+                  AND StructuralSubscription.sourcepackagename is NULL
+                  AND StructuralSubscription.subscriber = %(personid)s)""" %
                 sqlvalues(personid=params.structural_subscriber))
             extra_clauses.append(structural_subscriber_clause)
 
@@ -1745,7 +1744,8 @@ class BugTaskSet:
                 UNION ALL
                 SELECT BugTask.id
                 FROM BugTask, StructuralSubscription
-                WHERE BugTask.distribution = StructuralSubscription.distribution
+                WHERE
+                  BugTask.distribution = StructuralSubscription.distribution
                     AND BugTask.sourcepackagename =
                         StructuralSubscription.sourcepackagename
                     AND StructuralSubscription.subscriber = %(bug_supervisor)s
