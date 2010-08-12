@@ -40,7 +40,7 @@ from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
 
 
-class TestPerson(TestCaseWithFactory):
+class TestPersonStates(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
