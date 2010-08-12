@@ -298,7 +298,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Setting one of the suggestions as current will leave
         # them both 'reviewed' and thus hidden.
         current_translation = self.factory.makeSharedTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=False)
+            pofile=sr_pofile, potmsgset=self.potmsgset)
         self.assertContentEqual(
             [], 
             self.potmsgset.getLocalTranslationMessages(
@@ -353,7 +353,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # it is returned as the externally used suggestion.
         imported_translation = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
-            suggestion=False, is_current_upstream=True)
+            is_current_upstream=True)
         imported_translation.makeCurrentUbuntu(False)
 
         transaction.commit()
@@ -366,7 +366,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # it is returned as the externally used suggestion as well.
         current_translation = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
-            suggestion=False, is_current_upstream=False)
+            is_current_upstream=False)
 
         transaction.commit()
 
@@ -412,7 +412,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # POTMsgSet, it is not returned as the external suggestion.
         imported_translation = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
-            suggestion=False, is_current_upstream=True)
+            is_current_upstream=True)
         imported_translation.makeCurrentUbuntu(False)
 
         transaction.commit()
@@ -425,7 +425,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # considered an external suggestion.
         current_translation = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
-            suggestion=False, is_current_upstream=False)
+            is_current_upstream=False)
 
         transaction.commit()
 

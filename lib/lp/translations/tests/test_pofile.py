@@ -764,7 +764,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         potmsgset.setSequence(self.devel_potemplate, 3)
         self.factory.makeTranslationMessage(
             pofile=self.devel_sr_pofile, potmsgset=potmsgset,
-            translations=[u"Translation"], suggestion=False,
+            translations=[u"Translation"],
             date_updated=datetime.now(pytz.UTC)-timedelta(1))
         self.factory.makeSuggestion(
             pofile=self.devel_sr_pofile, potmsgset=potmsgset,
