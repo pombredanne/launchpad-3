@@ -55,10 +55,11 @@ class TestPerson(TestCaseWithFactory):
         inactive_project = self.factory.makeProject(owner=user)
         with celebrity_logged_in('admin'):
             inactive_project.active = False
-        expected_pillars = [active_project.name] 
-        received_pillars = [pillar.name for pillar in 
+        expected_pillars = [active_project.name]
+        received_pillars = [pillar.name for pillar in
             user.getOwnedOrDrivenPillars()]
         self.assertEqual(expected_pillars, received_pillars)
+
 
 class TestPersonStates(TestCaseWithFactory):
 

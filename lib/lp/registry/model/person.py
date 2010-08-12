@@ -911,13 +911,12 @@ class Person(
             """ % sqlvalues(person=self))
         results = IStore(self).using(origin).find(find_spec)
         results = results.order_by('kind', 'displayname')
-        
+
         def get_pillar_name(result):
             pillar_name, kind, displayname = result
             return pillar_name
 
-        return DecoratedResultSet(results, get_pillar_name) 
-
+        return DecoratedResultSet(results, get_pillar_name)
 
     def getOwnedProjects(self, match_name=None):
         """See `IPerson`."""
