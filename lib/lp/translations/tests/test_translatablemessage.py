@@ -44,13 +44,17 @@ class TestTranslatableMessageBase(TestCaseWithFactory):
             is_current_ubuntu or is_current_upstream or is_diverged)
         if translation is not None:
             translation = [translation]
-        return self.factory.makeTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
-            translations=translation,
-            suggestion=is_suggestion,
-            is_current_upstream=is_current_upstream,
-            force_diverged=is_diverged,
-            date_updated=date_updated)
+        if is_suggestion:
+            return self.factory.makeSuggestion(
+                pofile=self.pofile, potmsgset=self.potmsgset,
+                translations=translation, date_updated=date_updated)
+        else:
+            return self.factory.makeTranslationMessage(
+                pofile=self.pofile, potmsgset=self.potmsgset,
+                translations=translation,
+                is_current_upstream=is_current_upstream,
+                force_diverged=is_diverged,
+                date_updated=date_updated)
 
 
 class TestTranslatableMessage(TestTranslatableMessageBase):
