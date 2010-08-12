@@ -176,9 +176,9 @@ class NotFoundPolicyViolation(JackbootError):
                 % self.import_into)
 
 
-# The names of the arguments form part of the interface of __import__(...), and
-# must not be changed, as code may choose to invoke __import__ using keyword
-# arguments - e.g. the encodings module in Python 2.6.
+# The names of the arguments form part of the interface of __import__(...),
+# and must not be changed, as code may choose to invoke __import__ using
+# keyword arguments - e.g. the encodings module in Python 2.6.
 # pylint: disable-msg=W0102,W0602
 def import_fascist(name, globals={}, locals={}, fromlist=[], level=-1):
     global naughty_imports
