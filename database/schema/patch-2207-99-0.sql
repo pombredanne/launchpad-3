@@ -15,7 +15,7 @@ AS $_$
     import plpy
 
     date_expected, name = args
-    
+
     def substitude_filled_numbers(match):
         return match.group(0).zfill(5)
 
