@@ -251,7 +251,7 @@ class Bugzilla(ExternalBugTracker):
                  'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE', 'UPSTREAM',
                  BugTaskStatus.FIXRELEASED),
                 ('WONTFIX', BugTaskStatus.WONTFIX),
-                (BugTaskStatus.INVALID,))),
+                (BugTaskStatus.INVALID, ))),
         ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED', BugTaskStatus.CONFIRMED),
         ('UNCONFIRMED', BugTaskStatus.NEW),
         )
