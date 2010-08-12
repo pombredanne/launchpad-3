@@ -180,7 +180,7 @@ class IDistributionPublic(
                 "The person or team responsible for decisions about features "
                 "and bugs that will be targeted for any series in this "
                 "distribution. Note that you can also specify a driver "
-                "on each series who's permissions will be limited to that "
+                "on each series whose permissions will be limited to that "
                 "specific series."),
             required=False, vocabulary='ValidPersonOrTeam'))
     drivers = Attribute(

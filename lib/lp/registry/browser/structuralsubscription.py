@@ -314,8 +314,7 @@ class StructuralSubscriptionMenuMixin:
         else:
             text = 'Subscribe to bug mail'
             icon = 'add'
-        if IDistribution.providedBy(sst) and (
-            not sst.userCanAlterBugSubscription(self.user, self.user)):
-                return Link('+subscribe', text, icon=icon, enabled=False)
+        if not sst.userCanAlterBugSubscription(self.user, self.user):
+            return Link('+subscribe', text, icon=icon, enabled=False)
         else:
-                return Link('+subscribe', text, icon=icon, enabled=enabled)
+            return Link('+subscribe', text, icon=icon, enabled=enabled)
