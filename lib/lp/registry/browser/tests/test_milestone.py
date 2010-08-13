@@ -7,7 +7,10 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing import DatabaseFunctionalLayer
+from zope.component import getUtility
+
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.testing import ANONYMOUS, login_person, login, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 from lp.testing.memcache import MemcacheTestCase
@@ -54,7 +57,8 @@ class TestMilestoneViews(TestCaseWithFactory):
         view = create_initialized_view(
             self.series, '+addmilestone', form=form)
         error_msg = view.errors[0].errors[0]
-        expected_msg = ("Date and time could not be formatted. Please submit date in "
+        expected_msg = (
+            "Date and time could not be formatted. Please submit date in "
             "YYYY-MM-DD format. The year must be after 1900.")
         self.assertEqual(expected_msg, error_msg)
 
@@ -123,6 +127,28 @@ class TestMilestoneMemcache(MemcacheTestCase):
         view = create_initialized_view(self.milestone, name='+index')
         self.assertFalse(view.milestone.active)
         self.assertEqual(360, view.expire_cache_minutes)
+
+
+class TestMilestoneDeleteView(TestCaseWithFactory):
+    """Test the delete rules applied by the Milestone Delete view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_delete_conjoined_bugtask(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        master_bugtask = getUtility(IBugTaskSet).createTask(
+            bug, productseries=product.development_focus, owner=product.owner)
+        milestone = self.factory.makeMilestone(
+            productseries=product.development_focus)
+        login_person(product.owner)
+        master_bugtask.transitionToMilestone(milestone, product.owner)
+        form = {
+            'field.actions.delete': 'Delete Milestone',
+            }
+        view = create_initialized_view(milestone, '+delete', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(0, len(product.all_milestones))
 
 
 def test_suite():

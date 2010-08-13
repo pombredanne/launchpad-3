@@ -711,6 +711,10 @@
         />
 
     <adapter
+        factory="canonical.launchpad.webapp.tales.LaunchpadLayerToMainTemplateAdapter"
+        />
+
+    <adapter
         factory="canonical.launchpad.webapp.snapshot.snapshot_sql_result" />
     <!-- It also works for the legacy SQLObject interface. -->
     <adapter
