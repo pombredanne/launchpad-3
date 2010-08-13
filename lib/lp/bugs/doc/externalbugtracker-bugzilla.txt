@@ -60,8 +60,8 @@ slightly modified implementation.
 
     >>> from lp.bugs.tests.externalbugtracker import TestBugzilla
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
-    >>> gnome_bugzilla = \
-    ...     getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
+    >>> gnome_bugzilla = (
+    ...     getUtility(IBugTrackerSet).getByName('gnome-bugzilla'))
     >>> external_bugzilla = TestBugzilla(gnome_bugzilla.baseurl)
     >>> version = external_bugzilla._probe_version()
     >>> version
