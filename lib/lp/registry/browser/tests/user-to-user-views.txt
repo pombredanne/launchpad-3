@@ -306,7 +306,8 @@ Non-members may only contact the team owner.
     --
     This message was sent from Launchpad by the user
     Bart (http://launchpad.dev/~bart)
-    using the "Contact this team" owner link on the GuadaMen team page.
+    using the "Contact this team's owner" link on the GuadaMen team page
+    (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Messages: 1
@@ -347,7 +348,7 @@ the same subject and body from the same sender.
     This message was sent from Launchpad by the user
     Foo Bar (http://launchpad.dev/~name16)
     using the "Contact this team" link on the GuadaMen
-    team page to each member directly.
+    team page to each member directly (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Messages: 10
@@ -400,7 +401,8 @@ Foo Bar's message gets sent to each individual member of he team.
     This message was sent from Launchpad by the user
     Foo Bar (http://launchpad.dev/~name16)
     using the "Contact this team" link on the GuadaMen
-    team page to each member directly.
+    team page to each member directly
+    (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Messages: 10
@@ -461,7 +463,8 @@ sent, and that to the new contact address.
     --
     This message was sent from Launchpad by the user
     Foo Bar (http://launchpad.dev/~name16)
-    using the "Contact this team" link on the GuadaMen team page.
+    using the "Contact this team" link on the GuadaMen team page
+    (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
 
@@ -576,7 +579,8 @@ to minimise long lines.
     ^This message was sent from Launchpad by the user$
     ^Sample Person (http://launchpad.dev/~name12)$
     ^using the "Contact this team" link on the Landscape Developers$
-    ^team page to each member directly.$
+    ^team page to each member directly$
+    ^(http://launchpad.dev/~landscape-developers).$
     ^For more information see$
     ^https://help.launchpad.net/YourAccount/ContactingPeople$
 
