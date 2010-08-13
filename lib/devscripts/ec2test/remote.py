@@ -118,12 +118,10 @@ SOURCECODE_DIR = os.path.join(TEST_DIR, 'sourcecode')
 class TestOnMergeRunner:
 
     def __init__(self, logger, pid_filename, email=None, pqm_message=None,
-                 public_branch=None, public_branch_revno=None,
-                 test_options=None):
+                 public_branch=None, test_options=None):
         self.email = email
         self.pqm_message = pqm_message
         self.public_branch = public_branch
-        self.public_branch_revno = public_branch_revno
         self.test_options = test_options
         self.logger = logger
 
@@ -593,7 +591,6 @@ def main(argv):
         options.email,
         pqm_message,
         options.public_branch,
-        options.public_branch_revno,
         ' '.join(args))
     runner.run(options.daemon, options.email, options.shutdown)
 
