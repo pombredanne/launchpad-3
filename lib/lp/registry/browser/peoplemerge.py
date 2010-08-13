@@ -321,6 +321,9 @@ class DeleteTeamView(AdminTeamMergeView):
     @action('Delete', name='delete', condition=canDelete)
     def merge_action(self, action, data):
         base = super(DeleteTeamView, self)
+        # Delete is implemented as a merge process, but email addresses should
+        # be deleted because ~registry can never claim them.
+        self.context.setContactAddress(None)
         base.deactivate_members_and_merge_action.success(data)
 
 
