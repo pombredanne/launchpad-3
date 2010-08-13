@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = []
 
 import transaction
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.windmill.testing import constants, lpuser
 from lp.translations.windmill.testing import TranslationsWindmillLayer
@@ -153,6 +154,9 @@ class POFileTranslationActions(WindmillTestCase):
         transaction.commit()
         suggestion = self.factory.makeSuggestion(
             pofile=pofile, potmsgset=potmsgset, translations=['suggestion'])
+        # XXX henninge 2010-08-13 bug=597539: The view code depends on the
+        # pofile attribute being set.
+        removeSecurityProxy(suggestion).pofile = pofile
         transaction.commit()
         logout()
 
