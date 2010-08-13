@@ -2289,7 +2289,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  dsc_format='1.0', dsc_binaries='foo-bin',
                                  date_uploaded=UTC_NOW,
                                  source_package_recipe_build=None,
-                                 dscsigningkey=None):
+                                 dscsigningkey=None,
+                                 user_defined_fields=None):
         """Make a `SourcePackageRelease`."""
         if distroseries is None:
             if source_package_recipe_build is not None:
@@ -2355,7 +2356,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             dsc_binaries=dsc_binaries,
             archive=archive,
             dateuploaded=date_uploaded,
-            source_package_recipe_build=source_package_recipe_build)
+            source_package_recipe_build=source_package_recipe_build,
+            user_defined_fields=user_defined_fields)
 
     def makeSourcePackageReleaseFile(self, sourcepackagerelease=None,
                                      library_file=None, filetype=None):

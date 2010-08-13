@@ -1128,7 +1128,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=DEFAULT,
-        source_package_recipe_build=None):
+        source_package_recipe_build=None, user_defined_fields=None):
         """See `IDistroSeries`."""
         return SourcePackageRelease(
             upload_distroseries=self, sourcepackagename=sourcepackagename,
@@ -1144,7 +1144,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             dsc_format=dsc_format, dsc_binaries=dsc_binaries,
             build_conflicts=build_conflicts,
             build_conflicts_indep=build_conflicts_indep,
-            source_package_recipe_build=source_package_recipe_build)
+            source_package_recipe_build=source_package_recipe_build,
+            user_defined_fields=user_defined_fields)
 
     def getComponentByName(self, name):
         """See `IDistroSeries`."""
