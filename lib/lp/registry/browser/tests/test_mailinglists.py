@@ -11,6 +11,7 @@ __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.ftests import login_person
+from canonical.launchpad.testing.pages import find_tag_by_id
 from lp.testing import TestCaseWithFactory, person_logged_in
 from lp.testing.views import create_view
 
@@ -37,7 +38,8 @@ class MailingListSubscriptionControlsTestCase(TestCaseWithFactory):
             principal=self.user, server_url='http://launchpad.dev',
             path_info='/~%s' % self.b_team.name)
         content = view.render()
-        self.assertTrue('id="link.list.subscribe"' in content)
+        link_tag = find_tag_by_id(content, "link.list.subscribe")
+        self.assertNotEqual(None, link_tag)
 
     def test_subscribe_control_doesnt_render_for_anon(self):
         other_person = self.factory.makePerson()
@@ -47,4 +49,5 @@ class MailingListSubscriptionControlsTestCase(TestCaseWithFactory):
             path_info='/~%s' % self.b_team.name)
         content = view.render()
         self.assertNotEqual('', content)
-        self.assertFalse('id="link.list.subscribe"' in content)
+        link_tag = find_tag_by_id(content, "link.list.subscribe")
+        self.assertEqual(None, link_tag)
