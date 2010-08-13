@@ -25,6 +25,166 @@ from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 from canonical.launchpad.webapp.publisher import canonical_url
 
 
+class TestTranslationSharedPOFileSourcePackage(TestCaseWithFactory):
+    """Test behavior of PO files with shared POTMsgSets on a source package.
+    """
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        # Create a product with two series and a shared POTemplate
+        # in different series ('devel' and 'stable').
+        super(TestTranslationSharedPOFileSourcePackage, self).setUp()
+        self.foo = self.factory.makeDistribution()
+        self.foo_devel = self.factory.makeDistroSeries(
+            name='devel', distribution=self.foo)
+        self.foo_stable = self.factory.makeDistroSeries(
+            name='stable', distribution=self.foo)
+        self.foo.official_rosetta = True
+        self.sourcepackagename = self.factory.makeSourcePackageName()
+
+        # POTemplate is 'shared' if it has the same name ('messages').
+        self.devel_potemplate = self.factory.makePOTemplate(
+            distroseries=self.foo_devel,
+            sourcepackagename=self.sourcepackagename,
+            name="messages")
+        self.stable_potemplate = self.factory.makePOTemplate(
+            distroseries=self.foo_stable,
+            sourcepackagename=self.sourcepackagename,
+            name="messages")
+
+        # We'll use two PO files, one for each series.
+        self.devel_sr_pofile = self.factory.makePOFile(
+            'sr', self.devel_potemplate)
+        self.stable_sr_pofile = self.factory.makePOFile(
+            'sr', self.stable_potemplate)
+
+        # Create a single POTMsgSet that is used across all tests,
+        # and add it to only one of the POTemplates.
+        self.potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
+        self.potmsgset.setSequence(self.devel_potemplate, 1)
+
+    def test_getPOTMsgSetWithNewSuggestions_Shared(self):
+        # Test listing of suggestions for POTMsgSets with a shared
+        # translation.
+
+        # A POTMsgSet has a shared, current translation created 5 days ago.
+        date_created = datetime.now(pytz.UTC)-timedelta(5)
+        translation = self.factory.makeSuggestion(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Translation"], date_updated=date_created)
+        translation.is_current_ubuntu= True
+
+        # When there are no suggestions, nothing is returned.
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
+        self.assertEquals(found_translations, [])
+
+        # When a suggestion is added one day after, the potmsgset is returned.
+        suggestion_date = date_created + timedelta(1)
+        suggestion = self.factory.makeSuggestion(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Suggestion"], date_updated=suggestion_date)
+        self.assertEquals(suggestion.is_current_ubuntu, False)
+
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
+        self.assertEquals(found_translations, [self.potmsgset])
+
+        # Setting a suggestion as current makes it have no unreviewed
+        # suggestions.
+        translation.is_current_ubuntu = False
+        suggestion.is_current_ubuntu = True
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
+        self.assertEquals(found_translations, [])
+
+        # And adding another suggestion 2 days later, the potmsgset is
+        # again returned.
+        suggestion_date += timedelta(2)
+        translation = self.factory.makeSuggestion(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"New suggestion"], date_updated=suggestion_date)
+        self.assertEquals(translation.is_current_ubuntu, False)
+
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
+        self.assertEquals(found_translations, [self.potmsgset])
+
+    def test_getPOTMsgSetWithNewSuggestions_Diverged(self):
+        # Test listing of suggestions for POTMsgSets with a shared
+        # translation and a later diverged one.
+
+        # First we create a shared translation (5 days old), a diverged
+        # translation 1 day later.
+        # Then we make sure that getting unreviewed messages works when:
+        #  * A suggestion is added 1 day after (shows as unreviewed).
+        #  * A new diverged translation is added another day later (nothing).
+        #  * A new suggestion is added after another day (shows).
+        #  * Suggestion is made active (nothing).
+
+        # A POTMsgSet has a shared, current translation created 5 days ago.
+        date_created = datetime.now(pytz.UTC)-timedelta(5)
+        translation = self.factory.makeSuggestion(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Shared translation"], date_updated=date_created)
+        translation.is_current_ubuntu = True
+
+        # And we also have a diverged translation created a day after shared
+        # current translation.
+        diverged_date = date_created + timedelta(1)
+        diverged_translation = self.factory.makeSuggestion(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Old translation"], date_updated=diverged_date)
+        diverged_translation.potemplate = self.devel_potemplate
+        diverged_translation.is_current_ubuntu = True
+
+        # There is also a suggestion against the shared translation
+        # created 2 days after the shared translation.
+        suggestion_date = date_created + timedelta(2)
+        suggestion = self.factory.makeSuggestion(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Shared suggestion"], date_updated=suggestion_date)
+        self.assertEquals(suggestion.is_current_ubuntu, False)
+
+        # Shared suggestion is shown since diverged_date < suggestion_date.
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
+        self.assertEquals(found_translations, [self.potmsgset])
+
+        # When a diverged translation is done after the shared suggestion,
+        # there are no unreviewed suggestions.
+        diverged_date = suggestion_date + timedelta(1)
+        diverged_translation_2 = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Translation"], date_updated=diverged_date)
+        diverged_translation.is_current_ubuntu = False
+        diverged_translation_2.potemplate = self.devel_potemplate
+        diverged_translation_2.is_current_ubuntu = True
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
+        self.assertEquals(found_translations, [])
+
+        # When a suggestion is added one day after, the potmsgset is returned.
+        suggestion_date = diverged_date + timedelta(1)
+        suggestion = self.factory.makeSuggestion(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Suggestion"], date_updated=suggestion_date)
+        self.assertEquals(suggestion.is_current_ubuntu, False)
+
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
+        self.assertEquals(found_translations, [self.potmsgset])
+
+        # Setting a suggestion as current makes it have no unreviewed
+        # suggestions.
+        translation.is_current_ubuntu = False
+        suggestion.is_current_ubuntu = True
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
+        self.assertEquals(found_translations, [])
+
+
 class TestTranslationSharedPOFile(TestCaseWithFactory):
     """Test behaviour of PO files with shared POTMsgSets."""
 
@@ -416,126 +576,6 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
         self.assertEquals(found_translations, [self.potmsgset])
-
-    def test_getPOTMsgSetWithNewSuggestions_Shared(self):
-        # Test listing of suggestions for POTMsgSets with a shared
-        # translation.
-
-        # A POTMsgSet has a shared, current translation created 5 days ago.
-        date_created = datetime.now(pytz.UTC)-timedelta(5)
-        translation = self.factory.makeSuggestion(
-            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"Translation"], date_updated=date_created)
-        translation.is_current_upstream = True
-
-        # When there are no suggestions, nothing is returned.
-        found_translations = list(
-            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
-        self.assertEquals(found_translations, [])
-
-        # When a suggestion is added one day after, the potmsgset is returned.
-        suggestion_date = date_created + timedelta(1)
-        suggestion = self.factory.makeSuggestion(
-            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"Suggestion"], date_updated=suggestion_date)
-        self.assertEquals(translation.is_current_ubuntu, False)
-
-        found_translations = list(
-            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
-        self.assertEquals(found_translations, [self.potmsgset])
-
-        # Setting a suggestion as current makes it have no unreviewed
-        # suggestions.
-        translation.is_current_upstream = False
-        suggestion.is_current_upstream = True
-        found_translations = list(
-            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
-        self.assertEquals(found_translations, [])
-
-        # And adding another suggestion 2 days later, the potmsgset is
-        # again returned.
-        suggestion_date += timedelta(2)
-        translation = self.factory.makeSuggestion(
-            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"New suggestion"], date_updated=suggestion_date)
-        self.assertEquals(translation.is_current_ubuntu, False)
-
-        found_translations = list(
-            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
-        self.assertEquals(found_translations, [self.potmsgset])
-
-    def test_getPOTMsgSetWithNewSuggestions_Diverged(self):
-        # Test listing of suggestions for POTMsgSets with a shared
-        # translation and a later diverged one.
-
-        # First we create a shared translation (5 days old), a diverged
-        # translation 1 day later.
-        # Then we make sure that getting unreviewed messages works when:
-        #  * A suggestion is added 1 day after (shows as unreviewed).
-        #  * A new diverged translation is added another day later (nothing).
-        #  * A new suggestion is added after another day (shows).
-        #  * Suggestion is made active (nothing).
-
-        # A POTMsgSet has a shared, current translation created 5 days ago.
-        date_created = datetime.now(pytz.UTC)-timedelta(5)
-        translation = self.factory.makeSuggestion(
-            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"Shared translation"], date_updated=date_created)
-        translation.is_current_upstream = True
-
-        # And we also have a diverged translation created a day after shared
-        # current translation.
-        diverged_date = date_created + timedelta(1)
-        diverged_translation = self.factory.makeSuggestion(
-            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"Old translation"], date_updated=diverged_date)
-        diverged_translation.potemplate = self.devel_potemplate
-        diverged_translation.is_current_upstream = True
-
-        # There is also a suggestion against the shared translation
-        # created 2 days after the shared translation.
-        suggestion_date = date_created + timedelta(2)
-        suggestion = self.factory.makeSuggestion(
-            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"Shared suggestion"], date_updated=suggestion_date)
-        self.assertEquals(suggestion.is_current_upstream, False)
-
-        # Shared suggestion is shown since diverged_date < suggestion_date.
-        found_translations = list(
-            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
-        self.assertEquals(found_translations, [self.potmsgset])
-
-        # When a diverged translation is done after the shared suggestion,
-        # there are no unreviewed suggestions.
-        diverged_date = suggestion_date + timedelta(1)
-        diverged_translation_2 = self.factory.makeTranslationMessage(
-            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"Translation"], date_updated=diverged_date)
-        diverged_translation.is_current_upstream = False
-        diverged_translation_2.potemplate = self.devel_potemplate
-        diverged_translation_2.is_current_upstream = True
-        found_translations = list(
-            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
-        self.assertEquals(found_translations, [])
-
-        # When a suggestion is added one day after, the potmsgset is returned.
-        suggestion_date = diverged_date + timedelta(1)
-        suggestion = self.factory.makeSuggestion(
-            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"Suggestion"], date_updated=suggestion_date)
-        self.assertEquals(suggestion.is_current_upstream, False)
-
-        found_translations = list(
-            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
-        self.assertEquals(found_translations, [self.potmsgset])
-
-        # Setting a suggestion as current makes it have no unreviewed
-        # suggestions.
-        translation.is_current_upstream = False
-        suggestion.is_current_upstream = True
-        found_translations = list(
-            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
-        self.assertEquals(found_translations, [])
 
     def test_getPOTMsgSetWithNewSuggestions_multiple(self):
         # Test that multiple unreviewed POTMsgSets are returned.
