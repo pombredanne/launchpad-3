@@ -1669,7 +1669,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return library_file_alias
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
-                         members=None, title=None):
+                         members=None, title=None, aliases=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString()
@@ -1684,9 +1684,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if members is None:
             members = self.makeTeam(owner)
-        return getUtility(IDistributionSet).new(
+        distro = getUtility(IDistributionSet).new(
             name, displayname, title, description, summary, domainname,
             members, owner)
+        if aliases is not None:
+            removeSecurityProxy(distro).setAliases(aliases)
+        return distro
 
     def makeDistroRelease(self, distribution=None, version=None,
                           status=SeriesStatus.DEVELOPMENT,

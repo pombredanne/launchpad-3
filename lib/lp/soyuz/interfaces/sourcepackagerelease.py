@@ -14,7 +14,7 @@ __all__ = [
 
 
 from lazr.restful.fields import Reference
-from zope.schema import TextLine
+from zope.schema import List, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -96,8 +96,8 @@ class ISourcePackageRelease(Interface):
         "was first uploaded in Launchpad")
     publishings = Attribute("MultipleJoin on SourcepackagePublishing")
 
-    user_defined_fields = Attribute(
-        "Sequence of user-defined fields as key-value pairs.")
+    user_defined_fields = List(
+        title=_("Sequence of user-defined fields as key-value pairs."))
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
     title = Attribute('The title of this sourcepackagerelease')

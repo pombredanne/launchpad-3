@@ -74,6 +74,8 @@ class LaunchpadFormView(LaunchpadView):
 
     actions = ()
 
+    action_taken = None
+
     render_context = False
 
     form_result = None
@@ -112,6 +114,7 @@ class LaunchpadFormView(LaunchpadView):
             self.form_result = action.success(data)
             if self.next_url:
                 self.request.response.redirect(self.next_url)
+        self.action_taken = action
 
     def render(self):
         """Return the body of the response.
