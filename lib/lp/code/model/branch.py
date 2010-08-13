@@ -650,6 +650,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         # actually a very interesting thing to tell the user about.
         if self.code_import is not None:
             DeleteCodeImport(self.code_import)()
+        Store.of(self).flush()
 
     def associatedProductSeries(self):
         """See `IBranch`."""
@@ -1131,7 +1132,6 @@ class ClearDependentBranch(DeletionOperation):
 
     def __call__(self):
         self.affected_object.prerequisite_branch = None
-        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesBranch(DeletionOperation):
@@ -1145,7 +1145,6 @@ class ClearSeriesBranch(DeletionOperation):
     def __call__(self):
         if self.affected_object.branch == self.branch:
             self.affected_object.branch = None
-        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesTranslationsBranch(DeletionOperation):
@@ -1158,9 +1157,8 @@ class ClearSeriesTranslationsBranch(DeletionOperation):
         self.branch = branch
 
     def __call__(self):
-        if self.affected_object.branch == self.branch:
-            self.affected_object.branch = None
-        self.affected_object.syncUpdate()
+        if self.affected_object.translations_branch == self.branch:
+            self.affected_object.translations_branch = None
 
 
 class ClearOfficialPackageBranch(DeletionOperation):
