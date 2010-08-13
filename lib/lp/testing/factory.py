@@ -28,7 +28,6 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from itertools import count
 from operator import isSequenceType
-import os
 import os.path
 from random import randint
 from StringIO import StringIO
@@ -2643,7 +2642,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distribution = self.makeDistribution()
         package = distribution.getSourcePackage(sourcepackagename)
         if with_db:
-            # Create an instance with a database record. That is normally
+            # Create an instance with a database record, that is normally
             # done by secondary process.
             removeSecurityProxy(package)._new(
                 distribution, sourcepackagename, False)
