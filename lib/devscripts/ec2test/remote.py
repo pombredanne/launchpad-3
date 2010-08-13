@@ -199,8 +199,8 @@ class EC2Runner:
 
 class TestOnMergeRunner:
 
-    def __init__(self, logger, echo_to_stdout, test_directory, email=None,
-                 pqm_message=None, public_branch=None, test_options=None):
+    def __init__(self, logger, echo_to_stdout, test_directory, request,
+                 email=None, pqm_message=None, test_options=None):
         """Construct a TestOnMergeRunner.
 
         :param logger: The WebTestLogger to log to.
@@ -217,9 +217,9 @@ class TestOnMergeRunner:
         self.logger = logger
         self._echo_to_stdout = echo_to_stdout
         self._test_directory = test_directory
+        self._request = request
         self.email = email
         self.pqm_message = pqm_message
-        self.public_branch = public_branch
         self.test_options = test_options
 
     def build_test_command(self):
@@ -330,14 +330,10 @@ class TestOnMergeRunner:
         zipped_log = MIMEApplication(open(path, 'rb').read(), 'x-gzip')
         zipped_log.add_header(
             'Content-Disposition', 'attachment',
-            filename='%s.log.gz' % self.get_nick())
+            filename='%s.log.gz' % self._request.get_nick())
         message.attach(zipped_log)
 
         bzrlib.smtp_connection.SMTPConnection(config).send_email(message)
-
-    def get_nick(self):
-        """Return the nick name of the branch that we are testing."""
-        return self.public_branch.strip('/').split('/')[-1]
 
     def _gather_test_output(self, input_stream, summary_file, out_file,
                             echo_to_stdout):
@@ -353,16 +349,69 @@ class TestOnMergeRunner:
                 sys.stdout.flush()
 
 
+class Request:
+    """A request to have a branch tested and maybe landed."""
+
+    def __init__(self, public_branch, public_branch_revno, test_directory,
+                 sourcecode_dir):
+        self.public_branch = public_branch
+        self.public_branch_revno = public_branch_revno
+        self.test_directory = test_directory
+        self.sourcecode_dir = sourcecode_dir
+
+    def get_trunk_details(self):
+        branch = bzrlib.branch.Branch.open_containing(self.test_directory)[0]
+        return branch.get_parent().encode('utf-8'), branch.revno()
+
+    def get_branch_details(self):
+        tree = bzrlib.workingtree.WorkingTree.open(self.test_directory)
+        parent_ids = tree.get_parent_ids()
+        if len(parent_ids) == 1:
+            return None
+        return self.public_branch.encode('utf-8'), self.public_branch_revno
+
+    def get_nick(self):
+        """Get the nick of the branch we are testing."""
+        details = self.get_branch_details()
+        if not details:
+            details = self.get_trunk_details()
+        url, revno = details
+        return url.strip('/').split('/')[-1]
+
+    def get_merge_description(self):
+        source = self.get_branch_details()
+        if not source:
+            return self.get_nick()
+        target = self.get_trunk_details()
+        return '%s => %s' % (source[0], target[0])
+
+    def get_summary_commit(self):
+        branch = bzrlib.branch.Branch.open_containing(self.test_directory)[0]
+        tree = bzrlib.workingtree.WorkingTree.open(self.test_directory)
+        parent_ids = tree.get_parent_ids()
+        if len(parent_ids) == 1:
+            return None
+        summary = (
+            branch.repository.get_revision(parent_ids[1]).get_summary())
+        return summary.encode('utf-8')
+
+    def iter_dependency_branches(self):
+        """Iterate through the Bazaar branches we depend on."""
+        for name in os.listdir(self.sourcecode_dir):
+            path = os.path.join(self.sourcecode_dir, name)
+            if os.path.isdir(path):
+                try:
+                    branch = bzrlib.branch.Branch.open_containing(path)[0]
+                except bzrlib.errors.NotBranchError:
+                    continue
+                yield name, branch.get_parent(), branch.revno()
+
+
 class WebTestLogger:
     """Logs test output to disk and a simple web page."""
 
-    def __init__(self, test_dir, public_branch, public_branch_revno,
-                 sourcecode_dir):
-        """ Class initialiser """
-        self.test_dir = test_dir
-        self.public_branch = public_branch
-        self.public_branch_revno = public_branch_revno
-        self.sourcecode_dir = sourcecode_dir
+    def __init__(self, request):
+        self._request = request
 
         self.www_dir = os.path.join(os.path.sep, 'var', 'www')
         self.out_filename = os.path.join(self.www_dir, 'current_test.log')
@@ -393,17 +442,6 @@ class WebTestLogger:
         self.out_file.close()
         self.summary_file.close()
         self.index_file.close()
-
-    def _iter_dependency_branches(self):
-        """Iterate through the Bazaar branches we depend on."""
-        for name in os.listdir(self.sourcecode_dir):
-            path = os.path.join(self.sourcecode_dir, name)
-            if os.path.isdir(path):
-                try:
-                    branch = bzrlib.branch.Branch.open_containing(path)[0]
-                except bzrlib.errors.NotBranchError:
-                    continue
-                yield name, branch
 
     def prepare(self):
         """Prepares the log files on disk.
@@ -444,27 +482,22 @@ class WebTestLogger:
             '''))
 
         # Describe the trunk branch.
-        branch = bzrlib.branch.Branch.open_containing(self.test_dir)[0]
-        msg = '%(trunk)s, revision %(trunk_revno)d\n' % {
-            'trunk': branch.get_parent().encode('utf-8'),
-            'trunk_revno': branch.revno()}
+        trunk, trunk_revno = self._request.get_trunk_details()
+        msg = '%s, revision %d\n' % (trunk, trunk_revno)
         index_file.write(textwrap.dedent('''\
             <p><strong>%s</strong></p>
             ''' % (escape(msg),)))
         write(msg)
-        tree = bzrlib.workingtree.WorkingTree.open(self.test_dir)
-        parent_ids = tree.get_parent_ids()
 
-        # Describe the merged branch.
-        if len(parent_ids) == 1:
+        branch_details = self._request.get_branch_details()
+        if not branch_details:
             index_file.write('<p>(no merged branch)</p>\n')
             write('(no merged branch)')
         else:
-            summary = (
-                branch.repository.get_revision(parent_ids[1]).get_summary())
-            data = {'name': self.public_branch.encode('utf-8'),
-                    'revno': self.public_branch_revno,
-                    'commit': summary.encode('utf-8')}
+            branch_name, branch_revno = branch_details
+            data = {'name': branch_name,
+                    'revno': branch_revno,
+                    'commit': self._request.get_summary()}
             msg = ('%(name)s, revision %(revno)d '
                    '(commit message: %(commit)s)\n' % data)
             index_file.write(textwrap.dedent('''\
@@ -475,10 +508,8 @@ class WebTestLogger:
 
         index_file.write('<dl>\n')
         write('\nDEPENDENCY BRANCHES USED\n')
-        for name, branch in self._iter_dependency_branches():
-            data = {'name': name,
-                    'branch': branch.get_parent(),
-                    'revno': branch.revno()}
+        for name, branch, revno in self._iter_dependency_branches():
+            data = {'name': name, 'branch': branch, 'revno': revno}
             write(
                 '- %(name)s\n    %(branch)s\n    %(revno)d\n' % data)
             escaped_data = {'name': escape(name),
@@ -614,9 +645,11 @@ def main(argv):
     SOURCECODE_DIR = os.path.join(TEST_DIR, 'sourcecode')
 
     pid_filename = os.path.join(LAUNCHPAD_DIR, 'ec2test-remote.pid')
-    logger = WebTestLogger(
-        TEST_DIR, options.public_branch, options.public_branch_revno,
+
+    request = Request(
+        options.public_branch, options.public_branch_revno, TEST_DIR,
         SOURCECODE_DIR)
+    logger = WebTestLogger(request)
 
     runner = EC2Runner(
         options.daemon, pid_filename, options.shutdown, options.email)
@@ -625,9 +658,9 @@ def main(argv):
         logger=logger,
         echo_to_stdout=(not options.daemon),
         test_directory=TEST_DIR,
+        request=request,
         email=options.email,
         pqm_message=pqm_message,
-        public_branch=options.public_branch,
         test_options=' '.join(args))
     runner.run("Test runner", tester.test)
 
