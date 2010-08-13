@@ -403,6 +403,17 @@ class WebTestLogger:
         self.summary_file.close()
         self.index_file.close()
 
+    def _iter_dependency_branches(self):
+        """Iterate through the Bazaar branches we depend on."""
+        for name in os.listdir(self.sourcecode_dir):
+            path = os.path.join(self.sourcecode_dir, name)
+            if os.path.isdir(path):
+                try:
+                    branch = bzrlib.branch.Branch.open_containing(path)[0]
+                except bzrlib.errors.NotBranchError:
+                    continue
+                yield name, branch
+
     def prepare(self):
         """Prepares the log files on disk.
 
@@ -473,26 +484,20 @@ class WebTestLogger:
 
         index_file.write('<dl>\n')
         write('\nDEPENDENCY BRANCHES USED\n')
-        for name in os.listdir(self.sourcecode_dir):
-            path = os.path.join(self.sourcecode_dir, name)
-            if os.path.isdir(path):
-                try:
-                    branch = bzrlib.branch.Branch.open_containing(path)[0]
-                except bzrlib.errors.NotBranchError:
-                    continue
-                data = {'name': name,
-                        'branch': branch.get_parent(),
-                        'revno': branch.revno()}
-                write(
-                    '- %(name)s\n    %(branch)s\n    %(revno)d\n' % data)
-                escaped_data = {'name': escape(name),
-                                'branch': escape(branch.get_parent()),
-                                'revno': branch.revno()}
-                index_file.write(textwrap.dedent('''\
-                    <dt>%(name)s</dt>
-                      <dd>%(branch)s</dd>
-                      <dd>%(revno)s</dd>
-                    ''' % escaped_data))
+        for name, branch in self._iter_dependency_branches():
+            data = {'name': name,
+                    'branch': branch.get_parent(),
+                    'revno': branch.revno()}
+            write(
+                '- %(name)s\n    %(branch)s\n    %(revno)d\n' % data)
+            escaped_data = {'name': escape(name),
+                            'branch': escape(branch.get_parent()),
+                            'revno': branch.revno()}
+            index_file.write(textwrap.dedent('''\
+                <dt>%(name)s</dt>
+                  <dd>%(branch)s</dd>
+                  <dd>%(revno)s</dd>
+                ''' % escaped_data))
         index_file.write(textwrap.dedent('''\
                 </dl>
               </body>
