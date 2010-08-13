@@ -151,10 +151,10 @@ class EC2Runner:
         if os.path.exists(self._pid_filename):
             os.remove(self._pid_filename)
 
-    def run(self, function, *args, **kwargs):
+    def run(self, name, function, *args, **kwargs):
         try:
             if self._should_daemonize:
-                print 'Starting WOOBLY WOOBLY WOO daemon...'
+                print 'Starting %s daemon...' % (name,)
                 self.daemonize()
 
             return function(*args, **kwargs)
@@ -164,7 +164,7 @@ class EC2Runner:
             if self._emails:
                 bzrlib.email_message.EmailMessage.send(
                     config, config.username(),
-                    self._emails, 'WOOBLY WOOBLY WOO FAILED',
+                    self._emails, '%s FAILED' % (name,),
                     traceback.format_exc())
             raise
         finally:
@@ -621,7 +621,7 @@ def main(argv):
         pqm_message=pqm_message,
         public_branch=options.public_branch,
         test_options=' '.join(args))
-    runner.run(tester.test)
+    runner.run("Test runner", tester.test)
 
 
 if __name__ == '__main__':
