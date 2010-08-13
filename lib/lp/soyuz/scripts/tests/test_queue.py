@@ -123,7 +123,7 @@ class TestQueueTool(TestQueueBase):
         LaunchpadZopelessLayer.switchDbUser("uploader")
         sync_policy = getPolicy(
             name='sync', distro='ubuntu', distroseries='breezy-autotest')
-        bar_src = NascentUpload(
+        bar_src = NascentUpload.from_changesfile_path(
             datadir(changesfile),
             sync_policy, mock_logger_quiet)
         bar_src.process()

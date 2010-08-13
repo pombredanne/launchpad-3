@@ -60,12 +60,14 @@ class IHasBranchTarget(Interface):
     target = Attribute("The branch target, as an `IBranchTarget`.")
 
 
-class IBranchTarget(IPrimaryContext):
+class IBranchTarget(Interface):
     """A target of branches.
 
     A product contains branches, a source package on a distroseries contains
     branches, and a person contains 'junk' branches.
     """
+
+    context = Attribute('The primary context.')
 
     name = Attribute("The name of the target.")
 

@@ -120,18 +120,15 @@ class Config(object):
                 config_segment["archtags"].append(
                     dar.architecturetag.encode('utf-8'))
 
-            if not dr.lucilleconfig:
-                raise LucilleConfigError(
-                    'No Lucille configuration section for %s' % dr.name)
+            if dr.lucilleconfig:
+                strio = StringIO(dr.lucilleconfig.encode('utf-8'))
+                config_segment["config"] = ConfigParser()
+                config_segment["config"].readfp(strio)
+                strio.close()
+                config_segment["components"] = config_segment["config"].get(
+                    "publishing", "components").split(" ")
 
-            strio = StringIO(dr.lucilleconfig.encode('utf-8'))
-            config_segment["config"] = ConfigParser()
-            config_segment["config"].readfp(strio)
-            strio.close()
-            config_segment["components"] = config_segment["config"].get(
-                "publishing", "components").split(" ")
-
-            self._distroseries[distroseries_name] = config_segment
+                self._distroseries[distroseries_name] = config_segment
 
         strio = StringIO(distribution.lucilleconfig.encode('utf-8'))
         self._distroconfig = ConfigParser()
@@ -144,11 +141,19 @@ class Config(object):
         # Because dicts iterate for keys only; this works to get dr names
         return self._distroseries.keys()
 
+    def series(self, dr):
+        try:
+            return self._distroseries[dr]
+        except KeyError:
+            raise LucilleConfigError(
+                'No Lucille config section for %s in %s' %
+                    (dr, self.distroName))
+
     def archTagsForSeries(self, dr):
-        return self._distroseries[dr]["archtags"]
+        return self.series(dr)["archtags"]
 
     def componentsForSeries(self, dr):
-        return self._distroseries[dr]["components"]
+        return self.series(dr)["components"]
 
     def _extractConfigInfo(self):
         """Extract configuration information into the attributes we use"""

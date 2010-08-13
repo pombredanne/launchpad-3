@@ -83,6 +83,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductReviewSearch, License
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from lp.registry.interfaces.productrelease import (
@@ -120,7 +121,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
-    ReturnToReferrerMixin)
+    ReturnToReferrerMixin, safe_action)
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.tales import MenuAPI
 from canonical.widgets.popup import PersonPickerWidget
@@ -1833,6 +1834,17 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
         return canonical_url(self.product)
 
 
+def create_source_package_fields():
+    return form.Fields(
+        Choice(__name__='source_package_name',
+               vocabulary='SourcePackageName',
+               required=False),
+        Choice(__name__='distroseries',
+               vocabulary='DistroSeries',
+               required=False),
+        )
+
+
 class ProjectAddStepOne(StepView):
     """product/+new view class for creating a new project."""
 
@@ -1849,6 +1861,29 @@ class ProjectAddStepOne(StepView):
     step_description = 'Project basics'
     search_results_count = 0
 
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(ProjectAddStepOne, self).setUpFields()
+        self.form_fields = (
+            self.form_fields +
+            create_source_package_fields())
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`."""
+        super(ProjectAddStepOne, self).setUpWidgets()
+        self.widgets['source_package_name'].visible = False
+        self.widgets['distroseries'].visible = False
+
+    @property
+    def _return_url(self):
+        """This view is using the hidden _return_url field.
+
+        It is not using the `ReturnToReferrerMixin`, since none
+        of its other code is used, because multistep views can't
+        have next_url set until the form submission succeeds.
+        """
+        return self.request.form.get('_return_url')
+
     @property
     def _next_step(self):
         """Define the next step.
@@ -1862,9 +1897,10 @@ class ProjectAddStepOne(StepView):
     def main_action(self, data):
         """See `MultiStepView`."""
         self.next_step = self._next_step
-        self.request.form['displayname'] = data['displayname']
-        self.request.form['name'] = data['name'].lower()
-        self.request.form['summary'] = data['summary']
+
+    # Make this a safe_action, so that the sourcepackage page can skip
+    # the first step with a link (GET request) providing form values.
+    continue_action = safe_action(StepView.continue_action)
 
 
 class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
@@ -1873,7 +1909,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     _field_names = ['displayname', 'name', 'title', 'summary',
                     'description', 'licenses', 'license_info',
                     ]
-    main_action_label = u'Complete Registration'
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
@@ -1887,6 +1922,25 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     custom_widget('license_info', GhostWidget)
 
     @property
+    def main_action_label(self):
+        if self.source_package_name is None:
+            return u'Complete Registration'
+        else:
+            return u'Complete registration and link to %s package' % (
+                self.source_package_name.name,
+                )
+
+    @property
+    def _return_url(self):
+        """This view is using the hidden _return_url field.
+
+        It is not using the `ReturnToReferrerMixin`, since none
+        of its other code is used, because multistep views can't
+        have next_url set until the form submission succeeds.
+        """
+        return self.request.form.get('_return_url')
+
+    @property
     def step_description(self):
         """See `MultiStepView`."""
         if self.search_results_count > 0:
@@ -1897,7 +1951,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpFields()
         self.form_fields = (self.form_fields +
-                            self._createDisclaimMaintainerField())
+                            self._createDisclaimMaintainerField() +
+                            create_source_package_fields())
 
     def _createDisclaimMaintainerField(self):
         """Return a Bool field for disclaiming maintainer.
@@ -1930,12 +1985,39 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
                                      "this will be the project's URL.")
         self.widgets['displayname'].visible = False
 
+        self.widgets['source_package_name'].visible = False
+        self.widgets['distroseries'].visible = False
+
+        # Set the source_package_release attribute on the licenses
+        # widget, so that the source package's copyright info can be
+        # displayed.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if self.source_package_name is not None:
+            release_list = ubuntu.getCurrentSourceReleases(
+                [self.source_package_name])
+            if len(release_list) != 0:
+                self.widgets['licenses'].source_package_release = (
+                    release_list.items()[0][1])
+
+    @property
+    def source_package_name(self):
+        # setUpWidgets() doesn't have access to the data dictionary,
+        # so the source package name needs to be converted from a string
+        # into an object here.
+        package_name_string = self.request.form.get(
+            'field.source_package_name')
+        if package_name_string is None:
+            return None
+        else:
+            return getUtility(ISourcePackageNameSet).queryByName(
+                package_name_string)
+
     @cachedproperty
     def _search_string(self):
         """Return the ORed terms to match."""
-        search_text = SPACE.join((self.request.form['name'],
-                                  self.request.form['displayname'],
-                                  self.request.form['summary']))
+        search_text = SPACE.join((self.request.form['field.name'],
+                                  self.request.form['field.displayname'],
+                                  self.request.form['field.summary']))
         # OR all the terms together.
         return OR.join(search_text.split())
 
@@ -1972,7 +2054,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def label(self):
         """See `LaunchpadFormView`."""
         return 'Register %s (%s) in Launchpad' % (
-                self.request.form['displayname'], self.request.form['name'])
+                self.request.form['field.displayname'],
+                self.request.form['field.name'])
 
     def create_product(self, data):
         """Create the product from the user data."""
@@ -1996,12 +2079,28 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             license_info=data['license_info'],
             project=project)
 
+    def link_source_package(self, product, data):
+        if (data.get('distroseries') is not None
+            and self.source_package_name is not None):
+            source_package = data['distroseries'].getSourcePackage(
+                self.source_package_name)
+            source_package.setPackaging(
+                product.development_focus, self.user)
+            self.request.response.addInfoNotification(
+                'Linked %s project to %s source package.' % (
+                    product.displayname, self.source_package_name.name))
+
     def main_action(self, data):
         """See `MultiStepView`."""
         self.product = self.create_product(data)
         self.notifyCommercialMailingList()
         notify(ObjectCreatedEvent(self.product))
-        self.next_url = canonical_url(self.product)
+        self.link_source_package(self.product, data)
+
+        if self._return_url is None:
+            self.next_url = canonical_url(self.product)
+        else:
+            self.next_url = self._return_url
 
 
 class ProductAddView(MultiStepView):
@@ -2027,7 +2126,7 @@ class IProductEditPeopleSchema(Interface):
 
     driver = copy_field(IProduct['driver'])
 
-    transfer_to_registry =  Bool(
+    transfer_to_registry = Bool(
         title=_("I do not want to maintain this project"),
         required=False,
         description=_(
