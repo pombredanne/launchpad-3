@@ -108,13 +108,6 @@ class FlagFallStream:
         self._stream.flush()
 
 
-# XXX: Define what these are and how they are used.
-LAUNCHPAD_DIR = '/var/launchpad'
-TMP_DIR = os.path.join(LAUNCHPAD_DIR, 'tmp')
-TEST_DIR = os.path.join(LAUNCHPAD_DIR, 'test')
-SOURCECODE_DIR = os.path.join(TEST_DIR, 'sourcecode')
-
-
 class EC2Runner:
     """Runs generic code in an EC2 instance.
 
@@ -206,12 +199,15 @@ class EC2Runner:
 
 class TestOnMergeRunner:
 
-    def __init__(self, logger, echo_to_stdout, email=None, pqm_message=None,
-                 public_branch=None, test_options=None):
+    def __init__(self, logger, echo_to_stdout, test_directory, email=None,
+                 pqm_message=None, public_branch=None, test_options=None):
         """Construct a TestOnMergeRunner.
 
         :param logger: The WebTestLogger to log to.
         :param echo_to_stdout: Whether or not to echo results to stdout.
+        :param test_directory: The directory to run the tests in. We expect
+            this directory to have a fully-functional checkout of Launchpad
+            and its dependent branches.
         :param email: The emails to send result mail to, if any.
         :param pqm_message: The message to submit to PQM. If not provided,
             will not submit to PQM.
@@ -220,6 +216,7 @@ class TestOnMergeRunner:
         """
         self.logger = logger
         self._echo_to_stdout = echo_to_stdout
+        self._test_directory = test_directory
         self.email = email
         self.pqm_message = pqm_message
         self.public_branch = public_branch
@@ -272,7 +269,7 @@ class TestOnMergeRunner:
             popen = subprocess.Popen(
                 call, bufsize=-1,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                cwd=TEST_DIR)
+                cwd=self._testdirectory)
 
             # Only write to stdout if we are running as the foreground process.
             self._gather_test_output(
@@ -610,6 +607,12 @@ def main(argv):
     else:
         pqm_message = None
 
+    # Locations for Launchpad. These are actually defined by the configuration
+    # of the EC2 image that we use.
+    LAUNCHPAD_DIR = '/var/launchpad'
+    TEST_DIR = os.path.join(LAUNCHPAD_DIR, 'test')
+    SOURCECODE_DIR = os.path.join(TEST_DIR, 'sourcecode')
+
     pid_filename = os.path.join(LAUNCHPAD_DIR, 'ec2test-remote.pid')
     logger = WebTestLogger(
         TEST_DIR, options.public_branch, options.public_branch_revno,
@@ -621,6 +624,7 @@ def main(argv):
     tester = TestOnMergeRunner(
         logger=logger,
         echo_to_stdout=(not options.daemon),
+        test_directory=TEST_DIR,
         email=options.email,
         pqm_message=pqm_message,
         public_branch=options.public_branch,
