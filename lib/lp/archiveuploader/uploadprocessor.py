@@ -127,8 +127,8 @@ class PPAUploadPathError(Exception):
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
 
-    def __init__(self, base_fsroot, dry_run, no_mails, builds, keep, policy_for_distro,
-                 ztm, log):
+    def __init__(self, base_fsroot, dry_run, no_mails, builds, keep,
+                 policy_for_distro, ztm, log):
         """Create a new upload processor.
 
         :param base_fsroot: Root path for queue to use
@@ -210,8 +210,8 @@ class UploadProcessor:
         try:
             [changes_file] = self.locateChangesFiles(upload_path)
             logger.debug("Considering changefile %s" % changes_file)
-            result = self.processChangesFile(upload_path, changes_file,
-                    logger)
+            result = self.processChangesFile(
+                upload_path, changes_file, logger)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
@@ -257,8 +257,8 @@ class UploadProcessor:
         for changes_file in changes_files:
             self.log.debug("Considering changefile %s" % changes_file)
             try:
-                result = self.processChangesFile(upload_path, changes_file,
-                        self.log)
+                result = self.processChangesFile(
+                    upload_path, changes_file, self.log)
                 if result == UploadStatusEnum.FAILED:
                     some_failed = True
                 elif result == UploadStatusEnum.REJECTED:
@@ -451,12 +451,12 @@ class UploadProcessor:
             except UploadPolicyError, e:
                 upload.reject("UploadPolicyError escaped upload.process: "
                               "%s " % e)
-                logger.debug("UploadPolicyError escaped upload.process",
-                               exc_info=True)
+                logger.debug(
+                    "UploadPolicyError escaped upload.process", exc_info=True)
             except FatalUploadError, e:
                 upload.reject("UploadError escaped upload.process: %s" % e)
-                logger.debug("UploadError escaped upload.process",
-                               exc_info=True)
+                logger.debug(
+                    "UploadError escaped upload.process", exc_info=True)
             except (KeyboardInterrupt, SystemExit):
                 raise
             except EarlyReturnUploadError:
@@ -491,8 +491,8 @@ class UploadProcessor:
                 successful = upload.do_accept(notify=notify)
                 if not successful:
                     result = UploadStatusEnum.REJECTED
-                    logger.info("Rejection during accept. "
-                                  "Aborting partial accept.")
+                    logger.info(
+                        "Rejection during accept. Aborting partial accept.")
                     self.ztm.abort()
 
             if upload.is_rejected:
@@ -504,8 +504,9 @@ class UploadProcessor:
                 logger.info("Dry run, aborting transaction.")
                 self.ztm.abort()
             else:
-                logger.info("Committing the transaction and any mails "
-                              "associated with this upload.")
+                logger.info(
+                    "Committing the transaction and any mails associated "
+                    "with this upload.")
                 self.ztm.commit()
         except:
             self.ztm.abort()

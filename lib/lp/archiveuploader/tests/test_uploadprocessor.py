@@ -1907,8 +1907,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.assertTrue(
             'INFO: Processing upload bar_1.0-1_i386.changes' in log_lines)
         self.assertTrue(
-            'INFO: Committing the transaction and any mails associated with'
-            'this upload.')
+            'INFO: Committing the transaction and any mails associated with '
+            'this upload.' in log_lines)
 
 
 class ParseBuildUploadLeafNameTests(TestCase):
