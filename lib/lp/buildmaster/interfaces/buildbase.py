@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = [
     'BUILDD_MANAGER_LOG_NAME',
     'BuildStatus',
-    'IBuildBase',
     ]
 
 from lazr.enum import DBEnumeratedType, DBItem

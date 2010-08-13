@@ -1599,14 +1599,14 @@ class ViewBuildFarmJobOld(AuthorizationBase):
             return None
 
     def _getBuild(self):
-        """Get `IBuildBase` associated with this job, if any."""
+        """Get `IPackageBuild` associated with this job, if any."""
         if IBuildFarmBuildJob.providedBy(self.obj):
             return self.obj.build
         else:
             return None
 
     def _checkBuildPermission(self, user=None):
-        """Check access to `IBuildBase` for this job."""
+        """Check access to `IPackageBuild` for this job."""
         permission = ViewBinaryPackageBuild(self.obj.build)
         if user is None:
             return permission.checkUnauthenticated()
