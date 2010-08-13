@@ -45,6 +45,24 @@ from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
 
 
+class TestPersonTeams(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_teams_indirectly_participated_in(self):
+        self.user = self.factory.makePerson()
+        a_team = self.factory.makeTeam(name='a')
+        b_team = self.factory.makeTeam(name='b', owner=a_team)
+        c_team = self.factory.makeTeam(name='c', owner=b_team)
+        login_person(a_team.teamowner)
+        a_team.addMember(self.user, a_team.teamowner)
+        indirect_teams = self.user.teams_indirectly_participated_in
+        expected_teams = [b_team, c_team]
+        test_teams = sorted(indirect_teams,
+            key=lambda team: team.displayname)
+        self.assertEqual(expected_teams, test_teams)
+
+
 class TestPerson(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -270,8 +288,8 @@ class TestPersonSetMerge(TestCaseWithFactory):
         transaction.commit()
         logout()
 
-    def _get_testible_account(self, person, date_created, openid_identifier):
-        # Return a naked account with predicable attributes.
+    def _get_testable_account(self, person, date_created, openid_identifier):
+        # Return a naked account with predictable attributes.
         account = removeSecurityProxy(person.account)
         account.date_created = date_created
         account.openid_identifier = openid_identifier
@@ -285,7 +303,7 @@ class TestPersonSetMerge(TestCaseWithFactory):
             2010, 04, 01, 0, 0, 0, 0, tzinfo=pytz.timezone('UTC'))
         # Free an OpenID identifier using merge.
         first_duplicate = self.factory.makePerson()
-        first_account = self._get_testible_account(
+        first_account = self._get_testable_account(
             first_duplicate, test_date, test_identifier)
         first_person = self.factory.makePerson()
         self._do_premerge(first_duplicate, first_person)
@@ -297,7 +315,7 @@ class TestPersonSetMerge(TestCaseWithFactory):
         # Create an account that reuses the freed OpenID_identifier.
         test_date = test_date.replace(2010, 05)
         second_duplicate = self.factory.makePerson()
-        second_account = self._get_testible_account(
+        second_account = self._get_testable_account(
             second_duplicate, test_date, test_identifier)
         second_person = self.factory.makePerson()
         self._do_premerge(second_duplicate, second_person)
