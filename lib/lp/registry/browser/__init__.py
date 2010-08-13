@@ -115,10 +115,11 @@ class MilestoneOverlayMixin:
                     var create_milestone_link = Y.get(
                         '.menu-link-create_milestone');
                     create_milestone_link.addClass('js-action');
+                    var milestone_table = Y.lp.registry.milestonetable;
                     var config = {
                         milestone_form_uri: milestone_form_uri,
                         series_uri: series_uri,
-                        next_step: Y.lp.registry.milestonetable.get_milestone_row,
+                        next_step: milestone_table.get_milestone_row,
                         activate_node: create_milestone_link
                         };
                     Y.lp.registry.milestoneoverlay.attach_widget(config);
@@ -216,7 +217,10 @@ class RegistryDeleteViewMixin:
         """Delete a milestone and unlink related objects."""
         self._unsubscribe_structure(milestone)
         for bugtask in self._getBugtasks(milestone):
-            bugtask.milestone = None
+            if bugtask.conjoined_master is not None:
+                Store.of(bugtask).remove(bugtask)
+            else:
+                bugtask.milestone = None
         for spec in self._getSpecifications(milestone):
             spec.milestone = None
         self._deleteRelease(milestone.product_release)
