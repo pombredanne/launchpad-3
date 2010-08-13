@@ -75,9 +75,9 @@ class GPGHandler:
         # automatically retrieve from the keyserver unknown key when
         # verifying signatures and 'no-auto-check-trustdb' avoid wasting
         # time verifying the local keyring consistence.
-        conf.write ('keyserver hkp://%s\n'
-                    'keyserver-options auto-key-retrieve\n'
-                    'no-auto-check-trustdb\n' % config.gpghandler.host)
+        conf.write('keyserver hkp://%s\n'
+                   'keyserver-options auto-key-retrieve\n'
+                   'no-auto-check-trustdb\n' % config.gpghandler.host)
         conf.close()
         # create a local atexit handler to remove the configuration directory
         # on normal termination.
@@ -156,35 +156,26 @@ class GPGHandler:
             sig = StringIO(signature)
             # store the content
             plain = StringIO(content)
-            # process it
-            try:
-                signatures = ctx.verify(sig, plain, None)
-            except gpgme.GpgmeError, e:
-                # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
-                # for python2.5 compatibility. We should remove it when we no
-                # longer need to run on python2.5.
-                if hasattr(e, 'message'):
-                    msg = e.message
-                else:
-                    msg = e.strerror
-                raise GPGVerificationError(msg)
+            args = (sig, plain, None)
         else:
             # store clearsigned signature
             sig = StringIO(content)
             # writeable content
             plain = StringIO()
-            # process it
-            try:
-                signatures = ctx.verify(sig, None, plain)
-            except gpgme.GpgmeError, e:
-                # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
-                # for python2.5 compatibility. We should remove it when we no
-                # longer need to run on python2.5.
-                if hasattr(e, 'message'):
-                    msg = e.message
-                else:
-                    msg = e.strerror
-                raise GPGVerificationError(msg)
+            args = (sig, None, plain)
+
+        # process it
+        try:
+            signatures = ctx.verify(*args)
+        except gpgme.GpgmeError, e:
+            # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
+            # for python2.5 compatibility. We should remove it when we no
+            # longer need to run on python2.5.
+            if hasattr(e, 'message'):
+                msg = e.message
+            else:
+                msg = e.strerror
+            raise GPGVerificationError(msg)
 
         # XXX jamesh 2006-01-31:
         # We raise an exception if we don't get exactly one signature.
@@ -204,7 +195,6 @@ class GPGHandler:
                                        'found multiple signatures')
 
         signature = signatures[0]
-
         # signature.status == 0 means "Ok"
         if signature.status is not None:
             raise GPGVerificationError(signature.status.args)
@@ -295,8 +285,7 @@ class GPGHandler:
         # See more information at:
         # http://pyme.sourceforge.net/doc/gpgme/Generating-Keys.html
         result = context.genkey(
-            signing_only_param % {'name': name.encode('utf-8')}
-            )
+            signing_only_param % {'name': name.encode('utf-8')})
 
         # Right, it might seem paranoid to have this many assertions,
         # but we have to take key generation very seriously.
@@ -477,8 +466,8 @@ class GPGHandler:
         """See IGPGHandler"""
         params = {
             'search': '0x%s' % fingerprint,
-            'op': action
-        }
+            'op': action,
+            }
         if public:
             host = config.gpghandler.public_host
         else:
