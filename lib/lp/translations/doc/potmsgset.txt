@@ -467,8 +467,6 @@ We get a POTMsgSet and verify it's a singular form:
     1
     >>> pt_BR_dummy_current.translations
     [None]
-    >>> pt_BR_dummy_current.is_current_upstream
-    False
 
 A TranslationMessage knows what language it is in.
 

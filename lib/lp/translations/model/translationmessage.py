@@ -131,7 +131,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.comment = None
         self.origin = RosettaTranslationOrigin.ROSETTAWEB
         self.validation_status = TranslationValidationStatus.UNKNOWN
-        self.is_current_ubuntu = True
+        self.is_current_ubuntu = False
         self.is_complete = False
         self.is_current_upstream = False
         self.is_empty = True

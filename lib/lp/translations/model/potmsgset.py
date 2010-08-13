@@ -298,7 +298,12 @@ class POTMsgSet(SQLBase):
             assert self.getCurrentTranslationMessage(potemplate,
                                                      language) is None, (
                 'There is already a translation message in our database.')
-        return DummyTranslationMessage(pofile, self)
+
+        dummy = DummyTranslationMessage(pofile, self)
+        side = potemplate.translation_side
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(side)
+        traits.setFlag(dummy, True)
+        return dummy
 
     def _getUsedTranslationMessage(self, potemplate, language, current=True):
         """Get a translation message which is either used in
