@@ -127,7 +127,7 @@ class DistroSeriesVersionField(UniqueField):
             Version(version)
         except VersionError, error:
             raise LaunchpadValidationError(
-                "'%s': %s" % (version, error[0]))
+                "'%s': %s" % (version, error))
 
 
 class IDistroSeriesEditRestricted(Interface):
