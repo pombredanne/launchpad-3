@@ -6,9 +6,8 @@
 __metaclass__ = type
 __all__ = []
 
+from doctest import DocTestSuite
 import unittest
-
-from zope.testing.doctestunit import DocTestSuite
 
 import canonical.testing.doctestcodec
 

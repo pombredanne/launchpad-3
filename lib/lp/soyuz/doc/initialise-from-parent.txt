@@ -63,11 +63,8 @@ Check if it fails for an already released distroseries:
   DEBUG   Check empty mutable queues in parentseries
   DEBUG   Check for no pending builds in parentseries
   DEBUG   Copying distroarchseries from parent and setting nominatedarchindep.
-  Traceback (most recent call last):
-  ...
-  AssertionError: Can not copy distroarchseries from parent, there are already distroarchseries(s) initialised for this series.
+  ERROR   Can not copy distroarchseries from parent, there are already distroarchseries(s) initialised for this series.
   <BLANKLINE>
-
 
 Let's initialise the just created distroseries:
 

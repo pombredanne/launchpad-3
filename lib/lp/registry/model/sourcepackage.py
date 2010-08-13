@@ -39,7 +39,7 @@ from lp.soyuz.model.distroseriessourcepackagerelease import (
 from lp.registry.model.packaging import Packaging
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
-    POTemplate)
+    TranslationTemplatesCollection)
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
@@ -51,7 +51,6 @@ from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
-from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.distribution import NoPartnerArchive
@@ -306,6 +305,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         name_summaries = [
             '%s: %s' % (binary.name, binary.summary)
             for binary in current.sample_binary_packages]
+        if name_summaries == []:
+            return None
         return '\n'.join(name_summaries)
 
     @property
@@ -619,39 +620,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         else:
             return distribution.main_archive
 
-    def getTranslationTemplates(self):
+    def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(
-            distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename)
-        return result.orderBy(['-priority', 'name'])
-
-    def getCurrentTranslationTemplates(self, just_ids=False):
-        """See `IHasTranslationTemplates`."""
-        store = Store.of(self.sourcepackagename)
-        if just_ids:
-            looking_for = POTemplate.id
-        else:
-            looking_for = POTemplate
-
-        result = store.find(looking_for, And(
-            POTemplate.iscurrent == True,
-            POTemplate.distroseries == self.distroseries,
-            POTemplate.sourcepackagename == self.sourcepackagename,
-            self.distroseries.distribution.official_rosetta == True))
-        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
-
-    def getObsoleteTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            distroseries = %s AND
-            sourcepackagename = %s AND
-            distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
-            ''' % sqlvalues(self.distroseries, self.sourcepackagename),
-            clauseTables = ['DistroSeries', 'Distribution'])
-        return shortlist(result.orderBy(['-priority', 'name']), 300)
+        collection = TranslationTemplatesCollection()
+        collection = collection.restrictDistroSeries(self.distroseries)
+        return collection.restrictSourcePackageName(self.sourcepackagename)
 
     def getBranch(self, pocket):
         """See `ISourcePackage`."""

@@ -1,11 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to bug nominations."""
 
 __metaclass__ = type
-
-import unittest
 
 from canonical.launchpad.ftests import login, logout
 from canonical.testing import DatabaseFunctionalLayer
@@ -98,7 +96,3 @@ class TestBugCanBeNominatedForDistroSeries(
         sp_bug.addTask(
             self.eric, self.series.distribution.getSourcePackage(spn))
         self.assertTrue(sp_bug.canBeNominatedFor(self.series))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

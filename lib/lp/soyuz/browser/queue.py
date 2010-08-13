@@ -14,10 +14,9 @@ import operator
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.errors import NotFoundError, UnexpectedFormData
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
-from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, UnexpectedFormData)
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingPriority
@@ -47,7 +46,6 @@ class QueueItemsView(LaunchpadView):
     template/distroseries-queue.pt and callsite details in DistroSeries
     view classes.
     """
-    __used_for__ = IHasQueueItems
 
     def setupQueueList(self):
         """Setup a batched queue list.

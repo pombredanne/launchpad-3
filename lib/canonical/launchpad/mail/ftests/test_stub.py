@@ -3,9 +3,10 @@
 
 __metaclass__ = type
 
+from doctest import DocTestSuite
 import unittest
 import re
-from zope.testing.doctest import DocTestSuite
+
 from zope.testing.renormalizing import RENormalizing
 
 from canonical.testing import LaunchpadFunctionalLayer

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -147,20 +147,10 @@ class IPOFile(IRosettaStats):
         translations for.
         """
 
-    def translated():
-        """
-        Return an iterator over translated message sets in this PO file.
-        """
-
     def untranslatedCount():
         """
         Return the number of messages which this PO file has no translation
         for.
-        """
-
-    def untranslated():
-        """
-        Return an iterator over untranslated message sets in this PO file.
         """
 
     def getHeader():
@@ -273,10 +263,10 @@ class IPOFile(IRosettaStats):
         """
 
     def getFullLanguageCode():
-        """Return full language code, including variant if applicable."""
+        """Return the language code."""
 
     def getFullLanguageName():
-        """Return full language name, including variant if applicable."""
+        """Return the language name."""
 
     def getTranslationRows():
         """Return exportable rows of translation data.

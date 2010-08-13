@@ -487,6 +487,27 @@ class AcceptanceTests(SSHTestCase):
             '~landscape-developers/landscape/some-branch')
         self.assertNotBranch(remote_url)
 
+    def test_push_to_new_full_branch_alias(self):
+        # We can also push branches to URLs like /+branch/~foo/bar/baz.
+        unique_name = '~testuser/firefox/new-branch'
+        remote_url = self.getTransportURL('+branch/%s' % unique_name)
+        self.push(self.local_branch_path, remote_url)
+        self.assertBranchesMatch(self.local_branch_path, remote_url)
+        self.assertBranchesMatch(
+            self.local_branch_path, self.getTransportURL(unique_name))
+
+    def test_push_to_new_short_branch_alias(self):
+        # We can also push branches to URLs like /+branch/firefox
+        # Hack 'firefox' so we have permission to do this.
+        LaunchpadZopelessTestSetup().txn.begin()
+        firefox = Product.selectOneBy(name='firefox')
+        testuser = Person.selectOneBy(name='testuser')
+        firefox.development_focus.owner = testuser
+        LaunchpadZopelessTestSetup().txn.commit()
+        remote_url = self.getTransportURL('+branch/firefox')
+        self.push(self.local_branch_path, remote_url)
+        self.assertBranchesMatch(self.local_branch_path, remote_url)
+
     def test_can_push_to_existing_hosted_branch(self):
         # If a hosted branch exists in the database, but not on the
         # filesystem, and is writable by the user, then the user is able to

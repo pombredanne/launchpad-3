@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0231
@@ -17,8 +17,7 @@ __all__ = [
 import datetime
 import pytz
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin
-    )
+    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin)
 from zope.interface import implements
 from zope.component import getAdapter, getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -44,6 +43,8 @@ from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter)
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from lp.translations.interfaces.translationimporter import (
@@ -132,6 +133,7 @@ def _person_has_not_licensed_translations(person):
     else:
         return False
 
+
 def _can_edit_translations(pofile, person):
     """Say if a person is able to edit existing translations.
 
@@ -181,6 +183,7 @@ def _can_edit_translations(pofile, person):
         pofile.translationpermission,
         translators,
         person) or person.inTeam(pofile.owner)
+
 
 def _can_add_suggestions(pofile, person):
     """Whether a person is able to add suggestions.
@@ -275,10 +278,6 @@ class POFileMixIn(RosettaStats):
         Returned values are POTMsgSet ids containing them, expected to be
         used in a UNION across all plural forms.
         """
-        if pofile.variant is None:
-            variant_query = " IS NULL"
-        else:
-            variant_query = " = " + quote(pofile.variant)
         translation_match = """
         -- Find translations containing `text`.
         -- Like in findPOTMsgSetsContaining(), to avoid seqscans on
@@ -292,7 +291,6 @@ class POFileMixIn(RosettaStats):
             WHERE
               TranslationTemplateItem.potemplate = %(potemplate)s AND
               TranslationMessage.language = %(language)s AND
-              TranslationMessage.variant %(variant_query)s AND
               TranslationMessage.msgstr%(plural_form)d IN (
                 SELECT POTranslation.id FROM POTranslation WHERE
                   POTranslation.id IN (
@@ -304,18 +302,15 @@ class POFileMixIn(RosettaStats):
                         TranslationTemplateItem.potemplate
                           = %(potemplate)s AND
                         TranslationTemplateItem.sequence > 0 AND
-                        tm_ids.language=%(language)s AND
-                        tm_ids.variant %(variant_query)s
+                        tm_ids.language=%(language)s
                   ) AND
                   POTranslation.translation
                     ILIKE '%%' || %(text)s || '%%')
                     """ % dict(potemplate=quote(pofile.potemplate),
                                language=quote(pofile.language),
-                               variant_query=variant_query,
                                plural_form=plural_form,
                                text=quote_like(text))
         return translation_match
-
 
     def _getTemplateSearchQuery(self, text):
         """Query for finding `text` in msgids of this POFile.
@@ -420,11 +415,11 @@ class POFileMixIn(RosettaStats):
 
     def getFullLanguageCode(self):
         """See `IPOFile`."""
-        return self.language.getFullCode(self.variant)
+        return self.language.code
 
     def getFullLanguageName(self):
         """See `IPOFile`."""
-        return self.language.getFullEnglishName(self.variant)
+        return self.language.englishname
 
     def makeTranslatableMessage(self, potmsgset):
         """See `IPOFile`."""
@@ -442,6 +437,9 @@ class POFile(SQLBase, POFileMixIn):
     language = ForeignKey(foreignKey='Language',
                           dbName='language',
                           notNull=True)
+    variant = StringCol(dbName='variant',
+                        notNull=False,
+                        default=None)
     description = StringCol(dbName='description',
                             notNull=False,
                             default=None)
@@ -478,9 +476,6 @@ class POFile(SQLBase, POFileMixIn):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-    variant = StringCol(dbName='variant',
-                        notNull=False,
-                        default=None)
     path = StringCol(dbName='path',
                      notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
@@ -570,7 +565,7 @@ class POFile(SQLBase, POFileMixIn):
             return u','.join(emails)
         elif credits_type == TranslationCreditsType.KDE_NAMES:
             names = []
-            
+
             if text is not None:
                 if text == u'':
                     text = SPACE
@@ -593,7 +588,7 @@ class POFile(SQLBase, POFileMixIn):
                         text = text[:header_index]
                     else:
                         text += u'\n\n'
-                
+
                 text += LP_CREDIT_HEADER
                 for contributor in self.contributors:
                     text += ("\n  %s %s" %
@@ -604,30 +599,6 @@ class POFile(SQLBase, POFileMixIn):
             raise AssertionError(
                 "Calling prepareTranslationCredits on a message with "
                 "unknown credits type '%s'." % credits_type.title)
-
-    def translated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-        # return iter(TranslationMessage.select('''
-        #     POMsgSet.pofile = %d AND
-        #     POMsgSet.iscomplete=TRUE AND
-        #     POMsgSet.potmsgset = POTMsgSet.id AND
-        #     POTMsgSet.sequence > 0''' % self.id,
-        #     clauseTables = ['POMsgSet']
-        #     ))
-
-    def untranslated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
-    def _getLanguageVariantClause(self, table='TranslationMessage'):
-        if self.variant is None:
-            clause = '%(table)s.variant IS NULL' % dict(table=table)
-        else:
-            clause = '%(table)s.variant = %(variant)s' % dict(
-                    table=table,
-                    variant=quote(self.variant))
-        return clause
 
     def _getClausesForPOFileMessages(self, current=True):
         """Get TranslationMessages for the POFile via TranslationTemplateItem.
@@ -642,7 +613,6 @@ class POFile(SQLBase, POFileMixIn):
             'TranslationMessage.language = %s' % sqlvalues(self.language)]
         if current:
             clauses.append('TranslationTemplateItem.sequence > 0')
-        clauses.append(self._getLanguageVariantClause())
 
         return clauses
 
@@ -679,8 +649,6 @@ class POFile(SQLBase, POFileMixIn):
         diverged_translation_query = ' AND '.join(
             diverged_translation_clauses)
 
-        variant_clause = self._getLanguageVariantClause(table='diverged')
-
         shared_translation_clauses = [
             'TranslationMessage.potemplate IS NULL',
             '''NOT EXISTS (
@@ -689,10 +657,8 @@ class POFile(SQLBase, POFileMixIn):
                      diverged.potemplate=%(potemplate)s AND
                      diverged.is_current IS TRUE AND
                      diverged.language = %(language)s AND
-                     %(variant_clause)s AND
                      diverged.potmsgset=TranslationMessage.potmsgset)''' % (
             dict(language=quote(self.language),
-                 variant_clause=variant_clause,
                  potemplate=quote(self.potemplate))),
         ]
         shared_translation_query = ' AND '.join(shared_translation_clauses)
@@ -710,7 +676,6 @@ class POFile(SQLBase, POFileMixIn):
         query = ' AND '.join(clauses)
         clause_tables.insert(0, POTMsgSet)
         return self._getOrderedPOTMsgSets(clause_tables, query)
-
 
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
@@ -747,15 +712,14 @@ class POFile(SQLBase, POFileMixIn):
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
         clauses = self._getClausesForPOFileMessages()
-        msgstr_clause =  make_plurals_sql_fragment(
+        msgstr_clause = make_plurals_sql_fragment(
             "TranslationMessage.msgstr%(form)d IS NOT NULL", "OR")
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
             'TranslationMessage.is_current IS NOT TRUE',
-            "(%s)" % msgstr_clause
+            "(%s)" % msgstr_clause,
             ])
 
-        variant_clause = self._getLanguageVariantClause(table='diverged')
         diverged_translation_query = (
             '''(SELECT COALESCE(diverged.date_reviewed, diverged.date_created)
                  FROM TranslationMessage AS diverged
@@ -763,13 +727,10 @@ class POFile(SQLBase, POFileMixIn):
                    diverged.is_current IS TRUE AND
                    diverged.potemplate = %(potemplate)s AND
                    diverged.language = %(language)s AND
-                   %(variant_clause)s AND
                    diverged.potmsgset=POTMsgSet.id)''' % dict(
             potemplate=quote(self.potemplate),
-            language=quote(self.language),
-            variant_clause=variant_clause))
+            language=quote(self.language)))
 
-        variant_clause = self._getLanguageVariantClause(table='shared')
         shared_translation_query = (
             '''(SELECT COALESCE(shared.date_reviewed, shared.date_created)
                  FROM TranslationMessage AS shared
@@ -777,10 +738,8 @@ class POFile(SQLBase, POFileMixIn):
                    shared.is_current IS TRUE AND
                    shared.potemplate IS NULL AND
                    shared.language = %(language)s AND
-                   %(variant_clause)s AND
                    shared.potmsgset=POTMsgSet.id)''' % dict(
-            language=quote(self.language),
-            variant_clause=variant_clause))
+            language=quote(self.language)))
         beginning_of_time = "TIMESTAMP '1970-01-01 00:00:00'"
         newer_than_query = (
             "TranslationMessage.date_created > COALESCE(" +
@@ -820,7 +779,6 @@ class POFile(SQLBase, POFileMixIn):
             'TranslationMessage.is_imported IS FALSE',
             ])
 
-        variant_clause = self._getLanguageVariantClause(table='diverged')
         imported_no_diverged = (
             '''NOT EXISTS (
                  SELECT * FROM TranslationMessage AS diverged
@@ -829,17 +787,14 @@ class POFile(SQLBase, POFileMixIn):
                      diverged.id <> imported.id AND
                      diverged.potemplate = %(potemplate)s AND
                      diverged.language = %(language)s AND
-                     %(variant_clause)s AND
                      diverged.potmsgset=TranslationMessage.potmsgset)''' % (
             dict(potemplate=quote(self.potemplate),
-                 language=quote(self.language),
-                 variant_clause=variant_clause)))
+                 language=quote(self.language))))
 
         imported_clauses = [
             'imported.id <> TranslationMessage.id',
             'imported.potmsgset = POTMsgSet.id',
             'imported.language = %s' % sqlvalues(self.language),
-            self._getLanguageVariantClause(table='imported'),
             'imported.is_imported IS TRUE',
             '(imported.potemplate=%s OR ' % sqlvalues(self.potemplate) +
             '   (imported.potemplate IS NULL AND ' + imported_no_diverged
@@ -908,12 +863,12 @@ class POFile(SQLBase, POFileMixIn):
             conditions.
         """
         query.append('%(table_name)s.msgstr0 IS NOT NULL' % {
-            'table_name' : table_name})
+            'table_name': table_name})
         if self.language.pluralforms > 1:
             plurals_query = ' AND '.join(
                 '%(table_name)s.msgstr%(plural_form)d IS NOT NULL' % {
-                  'plural_form' : plural_form,
-                  'table_name' : table_name
+                  'plural_form': plural_form,
+                  'table_name': table_name,
                 } for plural_form in range(1, self.plural_forms))
             query.append(
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
@@ -927,7 +882,6 @@ class POFile(SQLBase, POFileMixIn):
         # Get number of imported messages that are still synced in Launchpad.
         current_clauses = self._getClausesForPOFileMessages()
 
-        variant_clause = self._getLanguageVariantClause('current')
         current_clauses.extend([
             'TranslationTemplateItem.sequence > 0',
             'TranslationMessage.is_imported IS TRUE',
@@ -940,13 +894,11 @@ class POFile(SQLBase, POFileMixIn):
                       current.potemplate = %(template)s AND
                       current.id <> TranslationMessage.id AND
                       current.language=%(language)s AND
-                      %(variant_clause)s AND
                       TranslationMessage.potmsgset=current.potmsgset AND
                       current.msgstr0 IS NOT NULL AND
                       current.is_current IS TRUE )))""" % dict(
             template=quote(self.potemplate),
-            language=quote(self.language),
-            variant_clause=variant_clause),
+            language=quote(self.language)),
             ])
         self._appendCompletePluralFormsConditions(current_clauses)
         current = TranslationMessage.select(
@@ -1187,17 +1139,12 @@ class POFile(SQLBase, POFileMixIn):
 
     def export(self, ignore_obsolete=False, force_utf8=False):
         """See `IPOFile`."""
-        # Get the exporter for this translation.
         translation_exporter = getUtility(ITranslationExporter)
-        translation_format_exporter = (
-            translation_exporter.getExporterProducingTargetFileFormat(
-                self.potemplate.source_file_format))
-
-        # Get the export file.
         translation_file_data = getAdapter(
             self, ITranslationFileData, 'all_messages')
-        exported_file = translation_format_exporter.exportTranslationFiles(
-            [translation_file_data], ignore_obsolete, force_utf8)
+        exported_file = translation_exporter.exportTranslationFiles(
+            [translation_file_data], ignore_obsolete=ignore_obsolete,
+            force_utf8=force_utf8)
 
         try:
             file_content = exported_file.read()
@@ -1276,11 +1223,6 @@ class POFile(SQLBase, POFileMixIn):
                  "TranslationMessage.potemplate = %s)" % template_id,
             ]
 
-        if self.variant:
-            conditions.append("TranslationMessage.variant = %s" % quote(
-                self.variant))
-        else:
-            conditions.append("TranslationMessage.variant IS NULL")
 
         if ignore_obsolete:
             conditions.append("TranslationTemplateItem.sequence <> 0")
@@ -1318,18 +1260,18 @@ class DummyPOFile(POFileMixIn):
     """
     implements(IPOFile)
 
-    def __init__(self, potemplate, language, variant=None, owner=None):
+    def __init__(self, potemplate, language, owner=None):
         self.id = None
         self.potemplate = potemplate
         self.language = language
-        self.variant = variant
+        self.variant = None
         self.description = None
         self.topcomment = None
         self.header = None
         self.fuzzyheader = False
         self.lasttranslator = None
         UTC = pytz.timezone('UTC')
-        self.date_changed  = None
+        self.date_changed = None
         self.lastparsed = None
         self.owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 
@@ -1461,14 +1403,6 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def translated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
-    def untranslated(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
     def getStatistics(self):
         """See `IPOFile`."""
         return (0, 0, 0, )
@@ -1529,9 +1463,10 @@ class POFileSet:
         assert productseries is None or distroseries is None, (
             'productseries and sourcepackagename/distroseries cannot be used'
             ' at the same time.')
-        assert ((sourcepackagename is None and distroseries is None) or
-                (sourcepackagename is not None and distroseries is not None)
-                ), ('sourcepackagename and distroseries must be None or not'
+        assert (
+            (sourcepackagename is None and distroseries is None) or
+             (sourcepackagename is not None and distroseries is not None)), (
+                'sourcepackagename and distroseries must be None or not'
                    ' None at the same time.')
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -1586,10 +1521,6 @@ class POFileSet:
                     TranslationMessage.potmsgsetID == POTMsgSet.id,
                     TranslationMessage.potemplate == None,
                     POFile.languageID == TranslationMessage.languageID,
-                    Or(And(
-                        POFile.variant == None,
-                        TranslationMessage.variant == None),
-                       POFile.variant == TranslationMessage.variant),
                     TranslationMessage.is_current == True),
                 (TranslationMessage))
             clauses.append(Not(Exists(message_select)))
@@ -1663,7 +1594,7 @@ class POFileSet:
                     And(MatchingPOT.productseriesID is not None,
                         OtherPOT.productseriesID is not None,
                         (MatchingProductSeries.productID ==
-                         OtherProductSeries.productID)) )))
+                         OtherProductSeries.productID)))))
         results.config(distinct=True)
         return results
 
@@ -1675,6 +1606,7 @@ class POFileToTranslationFileDataAdapter:
     def __init__(self, pofile):
         self._pofile = pofile
         self.messages = self._getMessages()
+        self.format = pofile.potemplate.source_file_format
 
     @cachedproperty
     def path(self):
@@ -1828,8 +1760,7 @@ class POFileToTranslationFileDataAdapter:
                 msgset.flags = set([
                     flag.strip()
                     for flag in row.flags_comment.split(',')
-                    if flag
-                    ])
+                    if flag])
 
             messages.append(msgset)
 

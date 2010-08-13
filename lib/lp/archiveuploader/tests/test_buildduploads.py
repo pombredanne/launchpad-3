@@ -1,15 +1,12 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test buildd uploads use-cases."""
 
 __metaclass__ = type
 
-import unittest
-
 from lp.archiveuploader.tests.test_securityuploads import (
     TestStagedBinaryUploadBase)
-from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import PackagePublishingStatus
@@ -33,7 +30,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
      * 'lib/lp/archiveuploader/tests/data/suite/foo_1.0-1/'
      * 'lib/lp/archiveuploader/tests/data/suite/foo_1.0-1_binary/'
 
-    This class allows uploads to ubuntu/breezy in i386 & powerpc architectures.
+    This class allows uploads to ubuntu/breezy in i386 & powerpc
+    architectures.
     """
     name = 'foo'
     version = '1.0-1'
@@ -85,8 +83,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         """Setup an UploadProcessor instance for a given buildd context."""
         self.options.context = self.policy
         self.options.buildid = str(build_candidate.id)
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(
+            self.layer.txn)
 
     def testDelayedBinaryUpload(self):
         """Check if Soyuz copes with delayed binary uploads.
@@ -124,7 +122,3 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
             u'powerpc build of foo 1.0-1 in ubuntu breezy RELEASE',
             build_used.title)
         self.assertEqual('FULLYBUILT', build_used.status.name)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

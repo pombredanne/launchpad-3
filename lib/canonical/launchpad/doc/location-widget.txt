@@ -177,9 +177,9 @@ access ba-ws.geonames.net's service.
     >>> print widget.map_javascript
     <BLANKLINE>
     <script type="text/javascript">
-        YUI().use('node', 'lp.mapping', function(Y) {
+        YUI().use('node', 'lp.app.mapping', function(Y) {
             function renderMap() {
-                Y.lp.mapping.renderPersonMap(
+                Y.lp.app.mapping.renderPersonMap(
                     52.2, 0.3, "Colin Watson",
                     'kamion', '<img ... />', 'totoro',
                     'field.location.latitude', 'field.location.longitude',

@@ -39,7 +39,7 @@
 
   <!-- Gone -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.GoneError"
+      for="lp.app.errors.GoneError"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-gone.pt"
@@ -66,7 +66,7 @@
 
   <!-- UnexpectedFormData -->
   <browser:page
-      for="canonical.launchpad.interfaces.UnexpectedFormData"
+      for="lp.app.errors.UnexpectedFormData"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
@@ -111,7 +111,7 @@
 
   <!-- TranslationUnavailable -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.TranslationUnavailable"
+      for="lp.app.errors.TranslationUnavailable"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-translationunavailable.pt"
@@ -401,14 +401,6 @@ these URLs in Apache.
   class="canonical.launchpad.browser.launchpad.IcingContribFolder"
   attribute="__call__"
   permission="zope.Public"
-  />
-
-<browser:page
-  for="*"
-  name="+applicationbuttons"
-  permission="zope.Public"
-  class="canonical.launchpad.browser.ApplicationButtons"
-  attribute="__call__"
   />
 
 <class class="canonical.launchpad.webapp.publisher.RenamedView">

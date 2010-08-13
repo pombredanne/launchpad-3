@@ -16,11 +16,12 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSourcePackage, ILaunchpadCelebrities,
-    IProduct, NotFoundError, UnexpectedFormData)
+    IProduct)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     IMultiLineWidgetLayout, IAlwaysSubmittedWidget)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.app.errors import NotFoundError, UnexpectedFormData
 
 
 class LaunchpadTargetWidget(BrowserWidget, InputWidget):

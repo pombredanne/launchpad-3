@@ -13,7 +13,7 @@
       <a href="+recipes" tal:content="structure view/recipe_count_text">
         1 branch
       </a>
-      based off of this branch.
+      using this branch.
 
     </div>
 

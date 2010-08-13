@@ -22,7 +22,7 @@ from lazr.enum import enumerated_type_registry
 from lazr.uri import URI
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter, getMultiAdapter
+from zope.component import adapts, getUtility, queryAdapter, getMultiAdapter
 from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
@@ -31,6 +31,7 @@ from zope.traversing.interfaces import (
     ITraversable, IPathAdapter, TraversalError)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
+from zope.schema import TextLine
 
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
@@ -41,6 +42,7 @@ from canonical.launchpad.interfaces import (
     ISprint, LicenseStatus)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
+from canonical.launchpad.layers import LaunchpadLayer
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, urlappend
 from canonical.launchpad.webapp.authorization import check_permission
@@ -290,7 +292,6 @@ class HTMLFormAPI:
 
     """
     implements(ITraversable)
-    __used_for__ = IBrowserApplicationRequest
 
     def __init__(self, request):
         self.form = request.form
@@ -339,8 +340,6 @@ class IRequestAPI(Interface):
 class RequestAPI:
     """Adapter from IApplicationRequest to IRequestAPI."""
     implements(IRequestAPI)
-
-    __used_for__ = IApplicationRequest
 
     def __init__(self, request):
         self.request = request
@@ -2300,6 +2299,20 @@ class PermissionRequiredQuery:
         return check_permission(name, self.context)
 
 
+class IMainTemplateFile(Interface):
+    path = TextLine(title=u'The absolute path to this main template.')
+
+
+class LaunchpadLayerToMainTemplateAdapter:
+    adapts(LaunchpadLayer)
+    implements(IMainTemplateFile)
+
+    def __init__(self, context):
+        here = os.path.dirname(os.path.realpath(__file__))
+        self.path = os.path.join(
+            here, '../../../lp/app/templates/base-layout.pt')
+
+
 class PageMacroDispatcher:
     """Selects a macro, while storing information about page layout.
 
@@ -2319,11 +2332,14 @@ class PageMacroDispatcher:
 
     implements(ITraversable)
 
-    base = ViewPageTemplateFile('../../../lp/app/templates/base-layout.pt')
-
     def __init__(self, context):
         # The context of this object is a view object.
         self.context = context
+
+    @property
+    def base(self):
+        return ViewPageTemplateFile(
+            IMainTemplateFile(self.context.request).path)
 
     def traverse(self, name, furtherPath):
         if name == 'page':

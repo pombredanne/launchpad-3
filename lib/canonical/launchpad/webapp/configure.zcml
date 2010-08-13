@@ -672,7 +672,7 @@
         permission="zope.Public"
         class="canonical.launchpad.webapp.launchbag.LaunchBagView"
         />
-
+ 
     <!-- Resource unnamed view, allowing Z3 preferred spelling
         /@@/launchpad-icon-small to access the images directory -->
     <browser:page
@@ -708,6 +708,10 @@
         for="canonical.launchpad.webapp.servers.LaunchpadTestRequest"
         provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
         factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
+        />
+
+    <adapter
+        factory="canonical.launchpad.webapp.tales.LaunchpadLayerToMainTemplateAdapter"
         />
 
     <adapter

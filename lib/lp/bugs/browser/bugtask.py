@@ -25,7 +25,6 @@ __all__ = [
     'BugTaskPortletView',
     'BugTaskPrivacyAdapter',
     'BugTaskRemoveQuestionView',
-    'BugTaskSOP',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
     'BugTaskStatusView',
@@ -89,7 +88,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from canonical.launchpad.fields import PersonChoice
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
@@ -123,7 +122,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IStructuralObjectPresentation)
+    ILaunchpadCelebrities)
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -132,8 +131,8 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_distrotask)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, NotFoundError, UnexpectedFormData)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.errors import NotFoundError, UnexpectedFormData
 
 from canonical.launchpad.searchbuilder import all, any, NULL
 
@@ -144,7 +143,6 @@ from lp.bugs.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink, FeedsMixin)
 from lp.registry.browser.mentoringoffer import CanBeMentoredView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
@@ -207,6 +205,7 @@ def unique_title(title):
         title = title[3:]
     return title.strip()
 
+
 def get_comments_for_bugtask(bugtask, truncate=False):
     """Return BugComments related to a bugtask.
 
@@ -220,7 +219,7 @@ def get_comments_for_bugtask(bugtask, truncate=False):
         message_id = attachment.message.id
         # All attachments are related to a message, so we can be
         # sure that the BugComment is already created.
-        assert comments.has_key(message_id), message_id
+        assert message_id in comments, message_id
         if attachment.type == BugAttachmentType.PATCH:
             comments[message_id].patches.append(attachment)
         else:
@@ -543,9 +542,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
 
     @property
     def page_title(self):
-        return smartquote('%s: "%s"') % (
-            IStructuralObjectPresentation(self.context).getMainHeading(),
-            self.context.bug.title)
+        bugtask = self.context
+        if INullBugTask.providedBy(bugtask):
+            heading = 'Bug #%s is not in %s' % (
+                bugtask.bug.id, bugtask.bugtargetdisplayname)
+        else:
+            heading = 'Bug #%s in %s' % (
+                bugtask.bug.id, bugtask.bugtargetdisplayname)
+        return smartquote('%s: "%s"') % (heading, self.context.bug.title)
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -1109,8 +1113,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         """Return the list of available official tags for the bug as JSON.
 
         The list comprises of the official tags for all targets for which the
-        bug has a task. It is returned as Javascript snippet, to be ambedded in
-        the bug page.
+        bug has a task. It is returned as Javascript snippet, to be embedded
+        in the bug page.
         """
         available_tags = set()
         for task in self.context.bug.bugtasks:
@@ -1317,6 +1321,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         if self.user_is_subscribed is None:
             self.user_is_subscribed = self.context.bug.isSubscribed(self.user)
 
+    page_title = 'Edit status'
 
     @cachedproperty
     def field_names(self):
@@ -1498,7 +1503,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             self.form_fields.get('assignee', False)):
             # Make the assignee field editable
             self.form_fields = self.form_fields.omit('assignee')
-            self.form_fields += formlib.form.Fields(ParticipatingPersonChoice(
+            self.form_fields += formlib.form.Fields(PersonChoice(
                 __name__='assignee', title=_('Assigned to'), required=False,
                 vocabulary=get_assignee_vocabulary(self.context),
                 readonly=False))
@@ -1779,6 +1784,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
 class BugTaskStatusView(LaunchpadView):
     """Viewing the status of a bug task."""
+
+    page_title = 'View status'
 
     def initialize(self):
         """Set up the appropriate widgets.
@@ -3651,35 +3658,6 @@ class BugTaskPrivacyAdapter:
     def is_private(self):
         """Return True if the bug is private, otherwise False."""
         return self.context.bug.private
-
-
-# XXX mars 2008-08-25 bug=261188
-# This whole class hierarchy should be replaced with something more
-# specific, ie. a class that generates BugTask page titles.
-class BugTaskSOP(StructuralObjectPresentation):
-    """Provides the structural heading for `IBugTask`."""
-
-    def getIntroHeading(self):
-        """Return None."""
-        return None
-
-    def getMainHeading(self):
-        """Return the heading using the BugTask."""
-        bugtask = self.context
-        if INullBugTask.providedBy(bugtask):
-            return 'Bug #%s is not in %s' % (
-                bugtask.bug.id, bugtask.bugtargetdisplayname)
-        else:
-            return 'Bug #%s in %s' % (
-                bugtask.bug.id, bugtask.bugtargetdisplayname)
-
-    def listChildren(self, num):
-        """Return an empty list."""
-        return []
-
-    def listAltChildren(self, num):
-        """Return None."""
-        return None
 
 
 class BugTaskCreateQuestionView(LaunchpadFormView):

@@ -49,7 +49,10 @@ from lazr.restful.interfaces import (
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.fields import DuplicateBug
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
@@ -315,6 +318,8 @@ class MaloneView(LaunchpadFormView):
     # Test: standalone/xx-slash-malone-slash-bugs.txt
     error_message = None
 
+    page_title = 'Launchpad Bugs'
+
     @property
     def target_css_class(self):
         """The CSS class for used in the target widget."""
@@ -470,16 +475,26 @@ class BugViewMixin:
     @property
     def regular_attachments(self):
         """The list of bug attachments that are not patches."""
-        return [attachment
-                for attachment in self.context.attachments
-                if attachment.type != BugAttachmentType.PATCH]
+        return [
+            {
+                'attachment': attachment,
+                'file': ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment),
+                }
+            for attachment in self.context.attachments
+            if attachment.type != BugAttachmentType.PATCH]
 
     @property
     def patches(self):
         """The list of bug attachments that are patches."""
-        return [attachment
-                for attachment in self.context.attachments
-                if attachment.type == BugAttachmentType.PATCH]
+        return [
+            {
+                'attachment': attachment,
+                'file': ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment),
+                }
+            for attachment in self.context.attachments
+            if attachment.type == BugAttachmentType.PATCH]
 
 
 class BugView(LaunchpadView, BugViewMixin):
@@ -540,6 +555,11 @@ class BugView(LaunchpadView, BugViewMixin):
             dupes.append(dupe)
 
         return dupes
+
+    def proxiedUrlForLibraryFile(self, attachment):
+        """Return the proxied download URL for a Librarian file."""
+        return ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
 
 
 class BugWithoutContextView:
@@ -656,9 +676,35 @@ class BugMarkAsDuplicateView(BugEditViewBase):
     field_names = ['duplicateof']
     label = "Mark bug report as a duplicate"
 
+    def setUpFields(self):
+        """Make the readonly version of duplicateof available."""
+        super(BugMarkAsDuplicateView, self).setUpFields()
+
+        duplicateof_field = DuplicateBug(
+            __name__='duplicateof', title=_('Duplicate Of'), required=False)
+
+        self.form_fields = self.form_fields.omit('duplicateof')
+        self.form_fields = formlib.form.Fields(duplicateof_field)
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        return {'duplicateof': self.context.bug.duplicateof}
+
     @action('Change', name='change')
     def change_action(self, action, data):
         """Update the bug."""
+        data = dict(data)
+        # We handle duplicate changes by hand instead of leaving it to
+        # the usual machinery because we must use bug.markAsDuplicate().
+        bug = self.context.bug
+        bug_before_modification = Snapshot(
+            bug, providing=providedBy(bug))
+        duplicateof = data.pop('duplicateof')
+        bug.markAsDuplicate(duplicateof)
+        notify(
+            ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
+        # Apply other changes.
         self.updateBugFromData(data)
 
 
@@ -738,6 +784,7 @@ class DeprecatedAssignedBugsView:
     to put the assigned bugs report, we'll redirect to the appropriate
     FOAF URL.
     """
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -751,8 +798,10 @@ class DeprecatedAssignedBugsView:
 
 normalize_mime_type = re.compile(r'\s+')
 
+
 class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
+
     @cachedproperty
     def bugtasks(self):
         """Cache bugtasks and avoid hitting the DB twice."""
@@ -851,7 +900,9 @@ class BugTextView(LaunchpadView):
         """Return a text representation of a bug attachment."""
         mime_type = normalize_mime_type.sub(
             ' ', attachment.libraryfile.mimetype)
-        return "%s %s" % (attachment.libraryfile.http_url, mime_type)
+        download_url = ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
+        return "%s %s" % (download_url, mime_type)
 
     def comment_text(self):
         """Return a text representation of bug comments."""
@@ -973,8 +1024,10 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
 def bug_description_xhtml_representation(context, field, request):
     """Render `IBug.description` as XHTML using the webservice."""
     formatter = FormattersAPI
+
     def renderer(value):
-        nomail  = formatter(value).obfuscate_email()
-        html    = formatter(nomail).text_to_html()
+        nomail = formatter(value).obfuscate_email()
+        html = formatter(nomail).text_to_html()
         return html.encode('utf-8')
+
     return renderer
