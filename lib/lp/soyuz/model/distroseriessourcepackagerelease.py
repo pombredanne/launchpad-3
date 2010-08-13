@@ -147,15 +147,6 @@ class DistroSeriesSourcePackageRelease:
                 distinct=True)
 
     @property
-    def meta_binaries(self):
-        """See `IDistroSeriesSourcePackageRelease`."""
-        binary_pkg_names = sorted(
-            set([pkg.binarypackagename for pkg in self.binaries]),
-            key=attrgetter('name'))
-        return [self.distroseries.getBinaryPackage(name)
-                for name in binary_pkg_names]
-
-    @property
     def changesfile(self):
         """See `IDistroSeriesSourcePackageRelease`."""
         return self.sourcepackagerelease.upload_changesfile

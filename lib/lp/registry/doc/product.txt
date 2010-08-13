@@ -260,7 +260,8 @@ one.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.official_malone
     True
-
+    >>> print firefox.bug_tracking_usage.name
+    LAUNCHPAD
     >>> firefox.getExternalBugTracker() is None
     True
 
@@ -280,6 +281,8 @@ tracker will be returned.
     >>> firefox.official_malone = False
     >>> firefox.bugtracker is None
     True
+    >>> print firefox.bug_tracking_usage.name
+    UNKNOWN
     >>> firefox.getExternalBugTracker().name
     u'gnome-bugzilla'
 
@@ -291,6 +294,8 @@ specify its own.
     >>> firefox.bugtracker = debbugs
     >>> firefox.getExternalBugTracker().name
     u'debbugs'
+    >>> print firefox.bug_tracking_usage.name
+    EXTERNAL
 
 
 If neither the project nor the product have specified a bug tracker,
@@ -494,8 +499,16 @@ series.
     None
     >>> print firefox.official_codehosting
     False
+    >>> print firefox.codehosting_usage.name
+    UNKNOWN
+    >>> print firefox.uses_launchpad
+    False
     >>> firefox.development_focus.branch = factory.makeBranch(product=firefox)
     >>> print firefox.official_codehosting
+    True
+    >>> print firefox.codehosting_usage.name
+    LAUNCHPAD
+    >>> print firefox.uses_launchpad
     True
 
 We can also find all the products that have branches.

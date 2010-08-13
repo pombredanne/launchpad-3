@@ -2,9 +2,8 @@
  Private team visibility
 =========================
 
-Private and private membership teams restrict the visibility of their
-attributes to select sets of users in order to prevent leaking
-confidential data.
+Private teams restrict the visibility of their attributes to select
+sets of users in order to prevent leaking confidential data.
 
 Private teams restrict the viewing of the membership list
 to team administrators, other members of the team, and Launchpad
