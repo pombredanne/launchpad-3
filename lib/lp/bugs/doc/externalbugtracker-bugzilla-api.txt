@@ -270,7 +270,7 @@ error will be raised. We can add a sample bug to demonstrate this.
     >>> bugzilla.getRemoteStatus(999)
     Traceback (most recent call last):
       ...
-    UnparseableBugData
+    UnparseableBugData: No status or resolution defined for bug 999
 
     >>> del bugzilla._bugs[999]
 
