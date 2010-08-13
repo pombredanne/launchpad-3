@@ -22,7 +22,6 @@
   <browser:navigation
       module=".distribution"
       classes="DistributionNavigation"
-      used_for_xmlrpc="false"
       layer="..publisher.VostokLayer" />
 
   <browser:navigation
