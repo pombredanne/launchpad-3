@@ -201,7 +201,7 @@ def updateBuilderStatus(builder, logger=None):
     if logger:
         logger.debug('Checking %s' % builder.name)
 
-    MAX_EINTR_RETRIES = 5 # pulling a number out of my a$$ here
+    MAX_EINTR_RETRIES = 42 # pulling a number out of my a$$ here
     eintr_retry_count = 0
 
     while True:
@@ -221,8 +221,10 @@ def updateBuilderStatus(builder, logger=None):
                     "%s (%s) marked as failed due to: %s",
                     builder.name, builder.url, builder.failnotes, exc_info=True)
         except socket.error, reason:
-            # In Python 2.6 we can use IOError instead.
-            if reason.errno == errno.EINTR:
+            # In Python 2.6 we can use IOError instead.  It also has
+            # reason.errno but we might be using 2.5 here so use the
+            # index hack.
+            if reason[0] == errno.EINTR:
                 eintr_retry_count += 1
                 if eintr_retry_count != MAX_EINTR_RETRIES:
                     continue
