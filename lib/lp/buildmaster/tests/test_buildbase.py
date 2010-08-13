@@ -17,14 +17,12 @@ import os
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts import BufferLogger
 from canonical.database.constants import UTC_NOW
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.testing import TestCase
-from lp.testing.fakemethod import FakeMethod
 
 
 class TestBuildBaseMixin:
@@ -87,23 +85,6 @@ class TestGetUploadMethodsMixin:
         self.assertTrue(
             os.path.exists(probe_path), "'%s' does not exist." % path)
 
-    def testSimpleRun(self):
-        """Try a simple process-upload run.
-
-        Observe it creating the required directory tree for a given
-        empty queue_location.
-        """
-        logger = BufferLogger()
-        self.build.processUpload(self.leaf,
-            self.queue_location, logger)
-
-        # Directory tree in place.
-        for directory in ['incoming', 'accepted', 'rejected', 'failed']:
-            self.assertQueuePath(directory)
-
-        # Just to check if local assertion is working as expect.
-        self.assertRaises(AssertionError, self.assertQueuePath, 'foobar')
-
 
 class TestHandleStatusMixin:
     """Tests for `IBuildBase`s handleStatus method.
@@ -140,17 +121,12 @@ class TestHandleStatusMixin:
         builder.setSlaveForTesting(self.slave)
 
         # We overwrite the buildmaster root to use a temp directory.
-        tmp_dir = self.makeTemporaryDirectory()
+        self.fsroot = self.makeTemporaryDirectory()
         tmp_builddmaster_root = """
         [builddmaster]
         root: %s
-        """ % tmp_dir
+        """ % self.fsroot
         config.push('tmp_builddmaster_root', tmp_builddmaster_root)
-
-        # We stub out our builds processUpload() method so
-        # we can check whether it was called.
-        self.build.processUpload = FakeMethod(
-            result=None)
 
     def test_handleStatus_OK_normal_file(self):
         # A filemap with plain filenames should not cause a problem.
@@ -161,7 +137,8 @@ class TestHandleStatusMixin:
                 })
 
         self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
-        self.assertEqual(1, self.build.processUpload.call_count)
+        self.assertEqual(
+            1, len(os.listdir(os.path.join(self.fsroot, "incoming"))))
 
     def test_handleStatus_OK_absolute_filepath(self):
         # A filemap that tries to write to files outside of
@@ -170,7 +147,8 @@ class TestHandleStatusMixin:
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-        self.assertEqual(0, self.build.processUpload.call_count)
+        self.assertFalse(
+            os.path.exists(os.path.join(self.fsroot, "incoming")))
 
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of
@@ -179,7 +157,8 @@ class TestHandleStatusMixin:
             'filemap': {'../myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-        self.assertEqual(0, self.build.processUpload.call_count)
+        self.assertFalse(
+            os.path.exists(os.path.join(self.fsroot, "incoming")))
 
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.

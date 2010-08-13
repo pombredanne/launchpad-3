@@ -27,16 +27,12 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
-from lp.archiveuploader.uploadpolicy import findPolicyByOptions
-from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
-from lp.registry.interfaces.pocket import pocketsuffix
 
 
 def handle_status_for_build(build, status, librarian, slave_status,
@@ -58,42 +54,6 @@ def handle_status_for_build(build, status, librarian, slave_status,
         return
 
     method(build, librarian, slave_status, logger)
-
-
-def process_upload(leaf, root, buildid, logger, distribution, distroseries, pocket,
-                   policy_name='buildd'):
-    """Process an upload.
-    
-    :param leaf: Leaf for this particular upload
-    :param root: Root directory for the uploads
-    :param buildid: Build id
-    :param logger: A logger object
-    :param distribution: A `IDistribution`
-    :param distroseries: A `IDistroSeries`
-    :param pocket: A pocket
-    :param policy_name: Optional policy name
-    """
-    class ProcessUploadOptions(object):
-
-        def __init__(self, policy_name, distribution, distroseries, pocket,
-                     buildid):
-            self.context = policy_name
-            self.distro = distribution.name
-            self.distroseries = distroseries.name + pocketsuffix[pocket]
-            self.buildid = buildid
-            self.announce = []
-
-    options = ProcessUploadOptions(policy_name, distribution,
-        distroseries, pocket, buildid)
-    # XXX JRV 20100317: This should not create a mock options 
-    # object and derive the policy from that but rather create a
-    # policy object in a more sensible way.
-    policy = findPolicyByOptions(options)
-    processor = UploadProcessor(root, dry_run=False, no_mails=True,
-        keep=False, policy_for_distro=lambda distro: policy,
-        ztm=ZopelessTransactionManager, log=logger)
-    processor.processUploadQueue(leaf)
-
 
 
 class BuildBase:
@@ -177,14 +137,14 @@ class BuildBase:
         # create a single directory to store build result files
         upload_leaf = build.getUploadDirLeaf(
             '%s-%s' % (build.id, build.buildqueue_record.id))
-        upload_dir = build.getUploadDir(upload_leaf)
-        logger.debug("Storing build result at '%s'" % upload_dir)
+        grab_dir = os.path.join(root, "grabbing", upload_leaf)
+        logger.debug("Storing build result at '%s'" % grab_dir)
 
         # Build the right UPLOAD_PATH so the distribution and archive
         # can be correctly found during the upload:
         #       <archive_id>/distribution_name
         # for all destination archive types.
-        upload_path = os.path.join(upload_dir, str(build.archive.id),
+        upload_path = os.path.join(grab_dir, str(build.archive.id),
                                    build.distribution.name)
         os.makedirs(upload_path)
 
@@ -215,14 +175,22 @@ class BuildBase:
             logger.info(
                 "Gathered %s %d completely. Moving %s to uploader queue." % (
                 build.__class__.__name__, build.id, upload_leaf))
-            uploader_queue_dir = os.path.join(root, "uploader-queue")
-            if not os.path.exists(uploader_queue_dir):
-                os.mkdir(uploader_queue_dir)
-            os.rename(upload_dir, os.path.join(uploader_queue_dir, upload_leaf))
+            upload_dir = build.getUploadDir(upload_leaf)
+            incoming_dir = os.path.dirname(upload_dir)
+            if not os.path.exists(incoming_dir):
+                os.mkdir(incoming_dir)
+            # Move the directory used to grab the binaries into
+            # the incoming directory so the upload processor never
+            # sees half-finished uploads.
+            os.rename(grab_dir, upload_dir)
         else:
             logger.warning("Copy from slave for build %s was unsuccessful." % build.id)
             build.status = BuildStatus.FAILEDTOUPLOAD
             build.notify(extra_info='Copy from slave was unsuccessful.')
+            failed_dir = os.path.join(root, "failed")
+            if not os.path.exists(failed_dir):
+                os.mkdir(failed_dir)
+            os.rename(grab_dir, os.path.join(failed_dir, upload_leaf))
 
         # Store build information, build record was already updated during
         # the binary upload.

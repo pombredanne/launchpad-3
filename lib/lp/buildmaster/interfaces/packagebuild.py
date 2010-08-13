@@ -109,14 +109,6 @@ class IPackageBuild(IBuildFarmJob):
     def getLogFromSlave(build):
         """Get last buildlog from slave. """
 
-    def getUploadLogContent(root, leaf):
-        """Retrieve the upload log contents.
-
-        :param root: Root directory for the uploads
-        :param leaf: Leaf for this particular upload
-        :return: Contents of log file or message saying no log file was found.
-        """
-
     def estimateDuration():
         """Estimate the build duration."""
 

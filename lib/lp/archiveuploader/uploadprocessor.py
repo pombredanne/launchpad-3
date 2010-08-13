@@ -160,7 +160,6 @@ class UploadProcessor:
         This method also creates the 'incoming', 'accepted', 'rejected', and
         'failed' directories inside the base_fsroot if they don't yet exist.
         """
-        self.ztm.commit()
         try:
             self.log.debug("Beginning processing")
 

@@ -225,22 +225,6 @@ class IBuildBase(Interface):
 
     title = exported(TextLine(title=_("Title"), required=False))
 
-    def processUpload(leaf, root, logger):
-        """Process an upload.
-        
-        :param leaf: Leaf for this particular upload
-        :param root: Root directory for the uploads
-        :param logger: A logger object
-        """
-
-    def getUploadLogContent(root, leaf):
-        """Retrieve the upload log contents.
-
-        :param root: Root directory for the uploads
-        :param leaf: Leaf for this particular upload
-        :return: Contents of log file or message saying no log file was found.
-        """
-
     def handleStatus(status, librarian, slave_status):
         """Handle a finished build status from a slave.
 
