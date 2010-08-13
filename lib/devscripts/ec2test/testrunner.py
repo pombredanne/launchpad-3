@@ -318,7 +318,9 @@ class EC2TestRunner:
     def configure_system(self):
         user_connection = self._instance.connect()
         if self.timeout is not None:
-            user_connection.perform("sudo -b shutdown -h +%s" % self.timeout)
+            user_connection.perform(
+                "echo sudo shutdown -h now | at today + %d minutes"
+                % self.timeout)
         as_user = user_connection.perform
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
