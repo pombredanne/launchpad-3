@@ -19,7 +19,7 @@ from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from lp.services.fields import (
-    ContentNameField, ParticipatingPersonChoice, Title)
+    ContentNameField, PersonChoice, Title)
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.app.errors import NameLookupFailed
