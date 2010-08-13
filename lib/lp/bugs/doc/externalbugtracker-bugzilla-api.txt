@@ -246,8 +246,8 @@ bug as a string. If the bug has a resolution, that will be returned too.
     >>> print bugzilla.getRemoteStatus(2)
     NEW
 
-Similarly with BugzillaAPI.getRemoteStatus(), which returns the remote
-priority and severity as a string.
+Similarly, BugzillaAPI.getRemoteStatus() returns the remote priority and
+severity as a string.
 
     >>> print bugzilla.getRemoteImportance(1)
     P1 normal
