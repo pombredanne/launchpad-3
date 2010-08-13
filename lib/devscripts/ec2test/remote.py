@@ -233,20 +233,6 @@ class TestOnMergeRunner:
         command = ['make', 'check', 'TESTOPTS=' + self.test_options]
         return command
 
-    def _handle_pqm_submission(self, exit_status, summary_file, config):
-        if self.pqm_message is not None:
-            subject = self.pqm_message.get('Subject')
-            if exit_status:
-                # failure
-                summary_file.write(
-                    '\n\n**NOT** submitted to PQM:\n%s\n' % (subject,))
-            else:
-                # success
-                conn = bzrlib.smtp_connection.SMTPConnection(config)
-                conn.send_email(self.pqm_message)
-                summary_file.write(
-                    '\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
-
     def test(self):
         """Run the tests, log the results.
 
@@ -256,12 +242,10 @@ class TestOnMergeRunner:
         """
         self.logger.prepare()
 
-        out_file = self.logger.out_file
         # XXX: No tests!
         # XXX: String literal.
         summary_file = FlagFallStream(
             self.logger.summary_file, 'Running tests.\n')
-        config = bzrlib.config.GlobalConfig()
 
         call = self.build_test_command()
 
@@ -271,69 +255,28 @@ class TestOnMergeRunner:
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 cwd=self._testdirectory)
 
-            # Only write to stdout if we are running as the foreground process.
             self._gather_test_output(
-                popen.stdout, summary_file, out_file, self._echo_to_stdout)
+                popen.stdout, summary_file, self.logger.out_file,
+                self._echo_to_stdout)
 
-            # Grab the testrunner exit status.
             exit_status = popen.wait()
-
-            self._handle_pqm_submission(exit_status, summary_file, config)
 
             summary_file.write(
                 '\n(See the attached file for the complete log)\n')
         except:
             summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
             traceback.print_exc(file=summary_file)
-            result = 1
+            exit_status = 1
             raise
         finally:
             # It probably isn't safe to close the log files ourselves,
             # since someone else might try to write to them later.
             try:
-                if self.email is not None:
-                    self.send_email(
-                        result, self.logger.summary_filename,
-                        self.logger.out_filename, config)
+                self._request.got_result(
+                    not exit_status, self.logger.summary_filename,
+                    self.logger.out_filename)
             finally:
-                summary_file.close()
-                # we do this at the end because this is a trigger to
-                # ec2test.py back at home that it is OK to kill the process
-                # and take control itself, if it wants to.
                 self.logger.close_logs()
-
-    def send_email(self, result, summary_filename, out_filename, config):
-        """Send an email summarizing the test results.
-
-        :param result: True for pass, False for failure.
-        :param summary_filename: The path to the file where the summary
-            information lives. This will be the body of the email.
-        :param out_filename: The path to the file where the full output
-            lives. This will be zipped and attached.
-        :param config: A Bazaar configuration object with SMTP details.
-        """
-        message = MIMEMultipart.MIMEMultipart()
-        message['To'] = ', '.join(self.email)
-        message['From'] = config.username()
-        subject = 'Test results: %s' % (result and 'FAILURE' or 'SUCCESS')
-        message['Subject'] = subject
-
-        # Make the body.
-        with open(summary_filename, 'r') as summary_fd:
-            summary = summary_fd.read()
-        body = MIMEText.MIMEText(summary, 'plain', 'utf8')
-        body['Content-Disposition'] = 'inline'
-        message.attach(body)
-
-        # Attach the gzipped log.
-        path = gzip_file(out_filename)
-        zipped_log = MIMEApplication(open(path, 'rb').read(), 'x-gzip')
-        zipped_log.add_header(
-            'Content-Disposition', 'attachment',
-            filename='%s.log.gz' % self._request.get_nick())
-        message.attach(zipped_log)
-
-        bzrlib.smtp_connection.SMTPConnection(config).send_email(message)
 
     def _gather_test_output(self, input_stream, summary_file, out_file,
                             echo_to_stdout):
@@ -353,11 +296,13 @@ class Request:
     """A request to have a branch tested and maybe landed."""
 
     def __init__(self, public_branch, public_branch_revno, test_directory,
-                 sourcecode_dir):
+                 sourcecode_dir, emails=None, pqm_message=None):
         self.public_branch = public_branch
         self.public_branch_revno = public_branch_revno
         self.test_directory = test_directory
         self.sourcecode_dir = sourcecode_dir
+        self._emails = emails
+        self._pqm_message = pqm_message
 
     def get_trunk_details(self):
         branch = bzrlib.branch.Branch.open_containing(self.test_directory)[0]
@@ -394,6 +339,59 @@ class Request:
         summary = (
             branch.repository.get_revision(parent_ids[1]).get_summary())
         return summary.encode('utf-8')
+
+    def _handle_pqm_submission(self, successful, summary_file, config):
+        if self.pqm_message is not None:
+            subject = self.pqm_message.get('Subject')
+            if not successful:
+                # failure
+                summary_file.write(
+                    '\n\n**NOT** submitted to PQM:\n%s\n' % (subject,))
+            else:
+                # success
+                conn = bzrlib.smtp_connection.SMTPConnection(config)
+                conn.send_email(self.pqm_message)
+                summary_file.write(
+                    '\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
+
+    def _send_email(self, result, summary_filename, full_filename, config):
+        """Send an email summarizing the test results.
+
+        :param result: True for pass, False for failure.
+        :param summary_filename: The path to the file where the summary
+            information lives. This will be the body of the email.
+        :param full_filename: The path to the file where the full output
+            lives. This will be zipped and attached.
+        :param config: A Bazaar configuration object with SMTP details.
+        """
+        message = MIMEMultipart.MIMEMultipart()
+        message['To'] = ', '.join(self.email)
+        message['From'] = config.username()
+        subject = 'Test results: %s' % (result and 'FAILURE' or 'SUCCESS')
+        message['Subject'] = subject
+
+        # Make the body.
+        with open(summary_filename, 'r') as summary_fd:
+            summary = summary_fd.read()
+        body = MIMEText.MIMEText(summary, 'plain', 'utf8')
+        body['Content-Disposition'] = 'inline'
+        message.attach(body)
+
+        # Attach the gzipped log.
+        path = gzip_file(full_filename)
+        zipped_log = MIMEApplication(open(path, 'rb').read(), 'x-gzip')
+        zipped_log.add_header(
+            'Content-Disposition', 'attachment',
+            filename='%s.log.gz' % self.get_nick())
+        message.attach(zipped_log)
+
+        bzrlib.smtp_connection.SMTPConnection(config).send_email(message)
+
+    def got_result(self, successful, summary_filename, full_filename):
+        """The tests are done and the results are known."""
+        config = bzrlib.config.GlobalConfig()
+        self._handle_pqm_submission(successful, summary_filename, config)
+        self._send_email(successful, summary_filename, full_filename, config)
 
     def iter_dependency_branches(self):
         """Iterate through the Bazaar branches we depend on."""
@@ -648,7 +646,7 @@ def main(argv):
 
     request = Request(
         options.public_branch, options.public_branch_revno, TEST_DIR,
-        SOURCECODE_DIR)
+        SOURCECODE_DIR, options.email, pqm_message)
     logger = WebTestLogger(request)
 
     runner = EC2Runner(
@@ -656,6 +654,7 @@ def main(argv):
 
     tester = TestOnMergeRunner(
         logger=logger,
+        # Only write to stdout if we are running as the foreground process.
         echo_to_stdout=(not options.daemon),
         test_directory=TEST_DIR,
         request=request,
