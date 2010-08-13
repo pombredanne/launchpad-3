@@ -61,7 +61,7 @@
 
   </tal:has-branches>
   <p tal:condition="view/latest_release_with_download_files">
-    <img src="/@@/download"/> There are 
+    <img src="/@@/download"/> There are
     <a tal:define="rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
       tal:attributes="href string:${rooturl}${context/name}/+download">download files</a>
     available for <tal:project-name replace="context/displayname"/>.
