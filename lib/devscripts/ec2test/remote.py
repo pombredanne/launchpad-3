@@ -144,7 +144,7 @@ class EC2Runner:
         try:
             if self._should_daemonize:
                 print 'Starting %s daemon...' % (name,)
-                self.daemonize()
+                self._daemonize()
 
             return function(*args, **kwargs)
         except:
@@ -186,7 +186,7 @@ class EC2Runner:
                 # or suffered some other mishap that would prevent them from
                 # shutting down this server on their own.
                 subprocess.call(['sudo', 'shutdown', '-P', 'now'])
-            elif self.daemonized:
+            elif self._daemonized:
                 # It would be nice to clean up after ourselves, since we won't
                 # be shutting down.
                 remove_pidfile(self._pid_filename)
