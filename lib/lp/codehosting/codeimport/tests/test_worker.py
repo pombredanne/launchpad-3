@@ -1027,12 +1027,12 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
 
     def makeForeignCommit(self, source_details):
         """Change the foreign tree, generating exactly one commit."""
-        from bzrlib.plugins.git.tests import run_git
+        from dulwich.repo import Repo as GitRepo
         wd = os.getcwd()
-        os.chdir(source_details.url)
+        repo = GitRepo(source_details.url)
         try:
-            run_git('config', 'user.name', 'Joe Random Hacker')
-            run_git('commit', '-m', 'dsadas')
+            repo.do_commit(message="dsadas",
+                committer="Joe Random Hacker <joe@example.com>")
             self.foreign_commit_count += 1
         finally:
             os.chdir(wd)
