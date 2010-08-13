@@ -248,15 +248,8 @@ class TestOnMergeRunner:
         body['Content-Disposition'] = 'inline'
         message.attach(body)
 
-        # gzip up the full log.
-        fd, path = tempfile.mkstemp()
-        os.close(fd)
-        gz = gzip.open(path, 'wb')
-        full_log = open(out_filename, 'rb')
-        gz.writelines(full_log)
-        gz.close()
-
         # Attach the gzipped log.
+        path = gzip_file(out_filename)
         zipped_log = MIMEApplication(open(path, 'rb').read(), 'x-gzip')
         zipped_log.add_header(
             'Content-Disposition', 'attachment',
@@ -516,6 +509,21 @@ def daemonize(pid_filename):
     os.open(os.devnull, os.O_RDWR) # this will be 0
     os.dup2(0, 1)
     os.dup2(0, 2)
+
+
+def gzip_file(filename):
+    """Compress 'filename' to a new temporary file.
+
+    :param filename: The path to a file.
+    :return: The path to the compressed version of that file.
+    """
+    fd, path = tempfile.mkstemp()
+    os.close(fd)
+    gz = gzip.open(path, 'wb')
+    full_log = open(filename, 'rb')
+    gz.writelines(full_log)
+    gz.close()
+    return path
 
 
 def write_pidfile(pid_filename):
