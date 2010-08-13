@@ -318,6 +318,8 @@ class EC2TestRunner:
     def configure_system(self):
         user_connection = self._instance.connect()
         if self.timeout is not None:
+            # Activate a fail-safe shutdown just in case something goes
+            # really wrong with the server or suite.
             user_connection.perform(
                 "echo sudo shutdown -h now | at today + %d minutes"
                 % self.timeout)
