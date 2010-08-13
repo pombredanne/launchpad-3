@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,F0401
@@ -13,13 +13,13 @@ __all__ = [
     ]
 
 from email.Utils import make_msgid
-from storm.expr import And, Or, Select
+from storm.expr import And, Desc, Join, LeftJoin, Or, Select
+from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import Join, LeftJoin
 from storm.locals import Int, Reference
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
@@ -74,9 +74,17 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
         if dupes.count() > 0:
             return False
 
-    [wip, needs_review, code_approved, rejected,
-     merged, merge_failed, queued, superseded
-     ] = BranchMergeProposalStatus.items
+    [
+        wip,
+        needs_review,
+        code_approved,
+        rejected,
+        merged,
+        merge_failed,
+        queued,
+        superseded,
+    ] = BranchMergeProposalStatus.items
+
     # Transitioning to code approved, rejected, failed or queued from
     # work in progress, needs review or merge failed needs the
     # user to be a valid reviewer, other states are fine.
@@ -88,13 +96,13 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
             return False
         # Non-reviewers can toggle within the reviewed ok states
         # (approved/queued/failed): they can dequeue something they spot an
-        # environmental issue with (queued or failed to approved). Retry things
-        # that had an environmental issue (failed or approved to queued) and note
-        # things as failing (approved and queued to failed).
+        # environmental issue with (queued or failed to approved). Retry
+        # things that had an environmental issue (failed or approved to
+        # queued) and note things as failing (approved and queued to failed).
         # This is perhaps more generous than needed, but its not clearly wrong
-        # - a key concern is to prevent non reviewers putting things in the 
-        # queue that haven't been oked (and thus moved to approved or one of the
-        # workflow states that approved leads to).
+        # - a key concern is to prevent non reviewers putting things in the
+        # queue that haven't been approved (and thus moved to approved or one
+        # of the workflow states that approved leads to).
         elif (next_state in reviewed_ok_states and
               from_state not in reviewed_ok_states):
             return False
@@ -154,14 +162,14 @@ class BranchMergeProposal(SQLBase):
         from lp.code.model.branchmergeproposaljob import (
             BranchMergeProposalJob, BranchMergeProposalJobFactory,
             BranchMergeProposalJobType)
-        job = Store.of(self).find(
+        jobs = Store.of(self).find(
             BranchMergeProposalJob,
             BranchMergeProposalJob.branch_merge_proposal == self,
             BranchMergeProposalJob.job_type ==
             BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF,
             BranchMergeProposalJob.job == Job.id,
-            Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING])
-            ).order_by(Job.scheduled_start, Job.date_created).first()
+            Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
+        job = jobs.order_by(Job.scheduled_start, Job.date_created).first()
         if job is not None:
             return BranchMergeProposalJobFactory.create(job)
         else:
@@ -486,8 +494,10 @@ class BranchMergeProposal(SQLBase):
         self.queue_position = None
 
         if merged_revno is not None:
-            branch_revision = BranchRevision.selectOneBy(
-                branch=self.target_branch, sequence=merged_revno)
+            branch_revision = Store.of(self).find(
+                BranchRevision,
+                BranchRevision.branch == self.target_branch,
+                BranchRevision.sequence == merged_revno).one()
             if branch_revision is not None:
                 date_merged = branch_revision.revision.revision_date
 
@@ -579,14 +589,20 @@ class BranchMergeProposal(SQLBase):
 
     def getUnlandedSourceBranchRevisions(self):
         """See `IBranchMergeProposal`."""
-        return BranchRevision.select('''
-            BranchRevision.branch = %s AND
-            BranchRevision.sequence IS NOT NULL AND
-            BranchRevision.revision NOT IN (
-              SELECT revision FROM BranchRevision
-              WHERE branch = %s)
-            ''' % sqlvalues(self.source_branch, self.target_branch),
-            prejoins=['revision'], orderBy='-sequence', limit=10)
+        store = Store.of(self)
+        SourceRevision = ClassAlias(BranchRevision)
+        TargetRevision = ClassAlias(BranchRevision)
+        target_join = LeftJoin(
+            TargetRevision, And(
+                TargetRevision.revision_id == SourceRevision.revision_id,
+                TargetRevision.branch_id == self.target_branch.id))
+        origin = [SourceRevision, target_join]
+        result = store.using(*origin).find(
+            SourceRevision,
+            SourceRevision.branch_id == self.source_branch.id,
+            SourceRevision.sequence != None,
+            TargetRevision.id == None)
+        return result.order_by(Desc(SourceRevision.sequence)).config(limit=10)
 
     def createComment(self, owner, subject, content=None, vote=None,
                       review_type=None, parent=None, _date_created=DEFAULT,
@@ -649,9 +665,8 @@ class BranchMergeProposal(SQLBase):
             CodeReviewVoteReference,
             CodeReviewVoteReference.branch_merge_proposal == self,
             CodeReviewVoteReference.review_type == review_type,
-            CodeReviewVoteReference.comment == None
-            ).order_by(CodeReviewVoteReference.date_created)
-        for ref in refs:
+            CodeReviewVoteReference.comment == None)
+        for ref in refs.order_by(CodeReviewVoteReference.date_created):
             if user.inTeam(ref.reviewer):
                 return ref
         return None
@@ -849,5 +864,3 @@ class BranchMergeProposalGetter:
             BranchMergeProposal.target_branch = %s AND
             BranchMergeProposal.queue_status NOT IN %s
                 """ % sqlvalues(source_branch, target_branch, FINAL_STATES))
-
-

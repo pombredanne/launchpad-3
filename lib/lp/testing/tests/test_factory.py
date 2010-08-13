@@ -16,7 +16,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, LaunchpadZopelessLayer)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.code.enums import CodeImportReviewStatus
+from lp.code.enums import BranchType, CodeImportReviewStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
 from lp.services.worlddata.interfaces.language import ILanguage
@@ -36,6 +36,12 @@ from lp.testing.matchers import IsProxied, Provides, ProvidesAndIsProxied
 class TestFactory(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_makeBranch_initialMirrorRequest(self):
+        # The default 'next_mirror_time' for a newly created hosted branch
+        # should be None.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        self.assertIs(None, branch.next_mirror_time)
 
     # loginAsAnyone
     def test_loginAsAnyone(self):

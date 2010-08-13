@@ -12,6 +12,7 @@ from zope.interface import providedBy
 from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.ftests import login
 from lp.bugs.interfaces.bug import IBug
@@ -90,7 +91,10 @@ class TestBugChanges(unittest.TestCase):
         :return: The value of `attribute` before modification.
         """
         obj_before_modification = Snapshot(obj, providing=providedBy(obj))
-        setattr(obj, attribute, new_value)
+        if attribute == 'duplicateof':
+            obj.markAsDuplicate(new_value)
+        else:
+            setattr(obj, attribute, new_value)
         notify(ObjectModifiedEvent(
             obj, obj_before_modification, [attribute], self.user))
 
@@ -686,13 +690,17 @@ class TestBugChanges(unittest.TestCase):
             'whatchanged': 'attachment added',
             'oldvalue': None,
             'newvalue': '%s %s' % (
-                attachment.title, attachment.libraryfile.http_url),
+                attachment.title,
+                ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment).http_url),
             }
 
         attachment_added_notification = {
             'person': self.user,
             'text': '** Attachment added: "%s"\n   %s' % (
-                attachment.title, attachment.libraryfile.http_url),
+                attachment.title,
+                ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment).http_url),
             }
 
         self.assertRecordedChange(
@@ -705,7 +713,9 @@ class TestBugChanges(unittest.TestCase):
         attachment = self.factory.makeBugAttachment(
             bug=self.bug, owner=self.user)
         self.saveOldChanges()
-        download_url = attachment.libraryfile.http_url
+        download_url = ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
+
         attachment.removeFromBug(user=self.user)
 
         attachment_removed_activity = {
@@ -1304,7 +1314,7 @@ class TestBugChanges(unittest.TestCase):
         duplicate_bug = self.factory.makeBug()
         duplicate_bug_recipients = duplicate_bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA).getRecipients()
-        duplicate_bug.duplicateof = self.bug
+        duplicate_bug.markAsDuplicate(self.bug)
         self.saveOldChanges(duplicate_bug)
         self.changeAttribute(duplicate_bug, 'duplicateof', None)
 
@@ -1335,7 +1345,7 @@ class TestBugChanges(unittest.TestCase):
         bug_two = self.factory.makeBug()
         bug_recipients = self.bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA).getRecipients()
-        self.bug.duplicateof = bug_one
+        self.bug.markAsDuplicate(bug_one)
         self.saveOldChanges()
         self.changeAttribute(self.bug, 'duplicateof', bug_two)
 
