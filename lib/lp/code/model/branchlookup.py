@@ -26,7 +26,7 @@ from lp.code.errors import (
 from lp.code.interfaces.branchlookup import (
     IBranchLookup, ILinkedBranchTraversable, ILinkedBranchTraverser)
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from lp.code.interfaces.linkedbranch import get_linked_branch
+from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet, NoSuchDistroSeries)
@@ -352,25 +352,27 @@ class BranchLookup:
 
     def getByLPPath(self, path):
         """See `IBranchLookup`."""
-        branch = suffix = None
-        if not path.startswith('~'):
-            # If the first element doesn't start with a tilde, then maybe
-            # 'path' is a shorthand notation for a branch.
-            result = getUtility(ILinkedBranchTraverser).traverse(path)
-            branch = self._getLinkedBranch(result)
-        else:
+        if path.startswith('~'):
             namespace_set = getUtility(IBranchNamespaceSet)
             segments = iter(path.lstrip('~').split('/'))
             branch = namespace_set.traverse(segments)
             suffix = '/'.join(segments)
             if not check_permission('launchpad.View', branch):
                 raise NoSuchBranch(path)
-            if suffix == '':
-                suffix = None
+        else:
+            # If the first element doesn't start with a tilde, then maybe
+            # 'path' is a shorthand notation for a branch.
+            object_with_branch_link = getUtility(
+                ILinkedBranchTraverser).traverse(path)
+            branch, bzr_path = self._getLinkedBranchAndPath(
+                object_with_branch_link)
+            suffix = path[len(bzr_path) + 1:]
+        if suffix == '':
+            suffix = None
         return branch, suffix
 
-    def _getLinkedBranch(self, provided):
-        """Get the linked branch for 'provided'.
+    def _getLinkedBranchAndPath(self, provided):
+        """Get the linked branch for 'provided', and the bzr_path.
 
         :raise CannotHaveLinkedBranch: If 'provided' can never have a linked
             branch.
@@ -378,7 +380,7 @@ class BranchLookup:
             doesn't.
         :return: The linked branch, an `IBranch`.
         """
-        branch = get_linked_branch(provided)
-        if not check_permission('launchpad.View', branch):
+        linked = get_linked_to_branch(provided)
+        if not check_permission('launchpad.View', linked.branch):
             raise NoLinkedBranch(provided)
-        return branch
+        return linked.branch, linked.bzr_path

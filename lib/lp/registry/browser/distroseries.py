@@ -317,7 +317,7 @@ class DistroSeriesView(MilestoneOverlayMixin):
     @cachedproperty
     def num_linked_packages(self):
         """The number of linked packagings for this distroseries."""
-        return len(self.context.packagings)
+        return self.context.packagings.count()
 
     @property
     def num_unlinked_packages(self):
@@ -332,7 +332,9 @@ class DistroSeriesView(MilestoneOverlayMixin):
     @cachedproperty
     def needs_linking(self):
         """Return a list of 10 packages most in need of upstream linking."""
-        return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
+        # XXX sinzui 2010-02-26 bug=528648: This method causes a timeout.
+        # return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
+        return None
 
     milestone_can_release = False
 

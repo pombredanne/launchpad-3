@@ -38,7 +38,6 @@ class ImportQueueEntryTest(WindmillTestCase):
             'field.potemplate',
             'field.potemplate_name',
             'field.language',
-            'field.variant',
             ]
     }
     SELECT_FIELDS = [
