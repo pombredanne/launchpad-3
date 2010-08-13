@@ -414,7 +414,6 @@ class Bugzilla(ExternalBugTracker):
                         severity = severity_nodes[0].childNodes[0].data
                         priority += ' %s' % severity
             self.remote_bug_importance[bug_id] = priority
-            ##TODO: Refactor the above stanzas into a helper function
 
             # Product
             product_nodes = bug_node.getElementsByTagName('bz:product')
@@ -637,7 +636,8 @@ class BugzillaAPI(Bugzilla):
             status = self._bugs[actual_bug_id]['status']
             resolution = self._bugs[actual_bug_id]['resolution']
         except KeyError:
-            raise UnparseableBugData
+            raise UnparseableBugData('No status or resolution defined '
+                'for bug %i' % (bug_id))
 
         if resolution != '':
             return "%s %s" % (status, resolution)
@@ -654,7 +654,8 @@ class BugzillaAPI(Bugzilla):
             priority = self._bugs[actual_bug_id]['priority']
             severity = self._bugs[actual_bug_id]['severity']
         except KeyError:
-            raise UnparseableBugData
+            raise UnparseableBugData('No priority or severity defined '
+                'for bug %i' % (bug_id))
 
         if severity != '':
             return "%s %s" % (priority, severity)
