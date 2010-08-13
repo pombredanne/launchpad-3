@@ -226,6 +226,27 @@ class TestSourcePackage(TestCaseWithFactory):
         self.assertRaises(
             NoPartnerArchive, sourcepackage.get_default_archive)
 
+    def test_source_package_summary_no_releases_returns_None(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        self.assertEqual(sourcepackage.summary, None)
+
+    def test_source_package_summary_with_releases_returns_None(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        self.factory.makeSourcePackageRelease(
+            sourcepackagename=sourcepackage.sourcepackagename)
+        self.assertEqual(sourcepackage.summary, None)
+
+    def test_source_package_summary_with_binaries_returns_list(self):
+        sp = getUtility(
+            ILaunchpadCelebrities).ubuntu['warty'].getSourcePackage(
+            'mozilla-firefox')
+
+        expected_summary = (
+            u'mozilla-firefox: Mozilla Firefox Web Browser\n'
+            u'mozilla-firefox-data: No summary available for '
+            u'mozilla-firefox-data in ubuntu warty.')
+        self.assertEqual(''.join(expected_summary), sp.summary)
+
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
     """Tests for source package branch linking security."""

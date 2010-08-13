@@ -1199,7 +1199,7 @@ div.watermark-apps-portlet span img {
     }
 .registering {
     /* Registered slot */
-    margin: 0 0 0.2em 0;
+    margin: .5em 0 1em 0;
     font-style: italic;
     font-size: 77%;
     color: #666;
@@ -1827,6 +1827,12 @@ body.tab-bugs #portlet-subscribers .sprite {
       setting the display in this way breaks the icons.
     */
     display: inline;
+    }
+body.tab-bugs #duplicate-actions .sprite {
+    /* Override sprite style for edit icon on "Mark as duplicate"
+       to make the text not appear on a second line.
+    */
+    display:inline;
     }
 .yui-picker-results li.sprite {
     /* XXX: EdwinGrubbs 2009-07-27 bug=405476

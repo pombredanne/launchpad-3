@@ -423,33 +423,33 @@ It receives list of architectures IDs:
 
     >>> hoary = ubuntu.getSeries('hoary')
     >>> arch_ids = [arch.id for arch in hoary.architectures]
-    >>> bs.getBuildsByArchIds(arch_ids).count()
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids).count()
     5
 
 It still working for empty list or None:
 
-    >>> bs.getBuildsByArchIds([]).count()
+    >>> bs.getBuildsByArchIds(ubuntu, []).count()
     0
 
-    >>> bs.getBuildsByArchIds(None).count()
+    >>> bs.getBuildsByArchIds(ubuntu, None).count()
     0
 
 Using build status, only the successfully built ones:
 
-    >>> bs.getBuildsByArchIds(arch_ids,
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     status=BuildStatus.FULLYBUILT).count()
     2
 
 Check the result content:
 
-    >>> [b.title for b in bs.getBuildsByArchIds(arch_ids,
+    >>> [b.title for b in bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     status=BuildStatus.FULLYBUILT)]
     [u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE', u'hppa build
     of pmount 0.1-1 in ubuntu hoary RELEASE']
 
 Using optional 'name' filter (matching with SQL LIKE %||filter||%)
 
-    >>> bs.getBuildsByArchIds(arch_ids,
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     status=BuildStatus.FULLYBUILT,
     ...     name='pmo').count()
     2
@@ -457,11 +457,11 @@ Using optional 'name' filter (matching with SQL LIKE %||filter||%)
 Checking optional 'pocket' restriction:
 
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> bs.getBuildsByArchIds(arch_ids,
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     pocket=PackagePublishingPocket.UPDATES).count()
     0
 
-    >>> bs.getBuildsByArchIds(arch_ids,
+    >>> bs.getBuildsByArchIds(ubuntu, arch_ids,
     ...     pocket=PackagePublishingPocket.RELEASE).count()
     5
 
@@ -471,7 +471,7 @@ primary archive.
     >>> breezy = ubuntu.getSeries('breezy-autotest')
     >>> arch_ids = [arch.id for arch in breezy.architectures]
     >>> [(build.archive.purpose.name, build.title) for build in
-    ...    bs.getBuildsByArchIds(arch_ids, name='commercialpackage')]
+    ...    bs.getBuildsByArchIds(ubuntu, arch_ids, name='commercialpackage')]
     [('PARTNER', u'i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE')]
 
 `IBinaryPackageBuildSet` also provides getStatusSummaryForBuilds which

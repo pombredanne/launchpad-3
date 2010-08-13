@@ -49,15 +49,13 @@ class TestNavigationDirective(TestCase):
 
     def test_multiple_navigations_for_single_context(self):
         # It is possible to have multiple navigation classes for a given
-        # context class as long as they specify different layers and only one
-        # of them is used for XMLRPC requests.
+        # context class as long as they are registered for different layers.
         directive = """ 
             <browser:navigation
                 module="%(this)s" classes="ThingNavigation"/>
             <browser:navigation
                 module="%(this)s" classes="OtherThingNavigation"
-                layer="%(this)s.IOtherLayer"
-                used_for_xmlrpc="false" />
+                layer="%(this)s.IOtherLayer" />
             """ % dict(this=this)
         xmlconfig.string(zcml_configure % directive)
 

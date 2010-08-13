@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from textwrap import dedent
 
 import transaction
+from mechanize import LinkNotFoundError
 from pytz import utc
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -612,7 +613,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         set_day(build5, 12)
         set_day(build6, 11)
         self.assertEqual(
-            [build5, build4, build3, build2, build1], view.builds)
+            [build1, build2, build3, build4, build5], view.builds)
 
     def test_request_builds_page(self):
         """Ensure the +request-builds page is sane."""
@@ -789,6 +790,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Code
             my-recipe
+            created .*
             Build status
             Needs building
             Start in .* \\(9876\\) What's this?.*
@@ -819,6 +821,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Code
             my-recipe
+            created .*
             Build status
             Successfully built
             Started on .*
@@ -920,3 +923,19 @@ class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
         self.assertEqual(
             'http://code.launchpad.dev/~chef',
             browser.url)
+
+    def test_delete_recipe_no_permissions(self):
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+        nopriv_person = self.factory.makePerson()
+        recipe_url = canonical_url(recipe)
+
+        browser = self.getUserBrowser(
+            recipe_url, user=nopriv_person)
+
+        self.assertRaises(
+            LinkNotFoundError,
+            browser.getLink, 'Delete recipe')
+
+        self.assertRaises(
+            Unauthorized,
+            self.getUserBrowser, recipe_url + '/+delete', user=nopriv_person)

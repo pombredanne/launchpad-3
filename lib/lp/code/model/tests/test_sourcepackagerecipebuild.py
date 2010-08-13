@@ -289,6 +289,14 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             BuildStatus.SUPERSEDED,
             build.status)
 
+    def test_getSpecificJob(self):
+        # getSpecificJob returns the SourcePackageRecipeBuild
+        sprb = self.makeSourcePackageRecipeBuild()
+        Store.of(sprb).flush()
+        build = sprb.build_farm_job
+        job = sprb.build_farm_job.getSpecificJob()
+        self.assertEqual(sprb, job)
+
 
 class TestAsBuildmaster(TestCaseWithFactory):
 

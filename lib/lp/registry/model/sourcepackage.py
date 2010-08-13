@@ -39,7 +39,6 @@ from lp.soyuz.model.distroseriessourcepackagerelease import (
 from lp.registry.model.packaging import Packaging
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
-    POTemplate,
     TranslationTemplatesCollection)
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.soyuz.model.publishing import (
@@ -52,7 +51,6 @@ from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
-from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.distribution import NoPartnerArchive
@@ -307,6 +305,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         name_summaries = [
             '%s: %s' % (binary.name, binary.summary)
             for binary in current.sample_binary_packages]
+        if name_summaries == []:
+            return None
         return '\n'.join(name_summaries)
 
     @property

@@ -65,7 +65,8 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker, ILaunchpadUsage)
+    IHasExternalBugTracker)
+from lp.app.interfaces.launchpad import ILaunchpadUsage
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import any
