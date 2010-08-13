@@ -51,8 +51,6 @@ from lp.translations.interfaces.translationmessage import (
     TranslationConflict)
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
-from lp.translations.utilities.sanitize import (
-    sanitize_translations_from_webui)
 from lp.translations.utilities.validate import GettextValidationError
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
@@ -421,19 +419,12 @@ class BaseTranslationView(LaunchpadView):
         force_diverge = self.form_posted_diverge.get(potmsgset, False)
 
         try:
-            if force_suggestion or not self.user_is_official_translator:
-                translations = sanitize_translations_from_webui(
-                    potmsgset.singular_text, translations,
-                    self.pofile.language.pluralforms)
-                potmsgset.submitSuggestion(
-                    self.pofile, self.user, translations)
-            else:
-                potmsgset.updateTranslation(
-                    self.pofile, self.user, translations,
-                    is_current_upstream=False,
-                    lock_timestamp=self.lock_timestamp,
-                    force_suggestion=force_suggestion,
-                    force_diverged=force_diverge)
+            potmsgset.updateTranslation(
+                self.pofile, self.user, translations,
+                is_current_upstream=False,
+                lock_timestamp=self.lock_timestamp,
+                force_suggestion=force_suggestion,
+                force_diverged=force_diverge)
 
             # If suggestions were forced and user has the rights to do it,
             # reset the current translation.
