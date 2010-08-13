@@ -308,7 +308,7 @@
     name="+createfaq"
     for="lp.answers.interfaces.faqtarget.IFAQTarget"
     class=".faqtarget.FAQCreateView"
-    permission="launchpad.Moderate"
+    permission="launchpad.Append"
     template="../../app/templates/generic-edit.pt"
     />
 

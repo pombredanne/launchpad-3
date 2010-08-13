@@ -571,22 +571,22 @@ The use of 'forReview' is limited to users with launchpad.Commercial permission.
 Anonymous users cannot access 'forReview'.
 
     >>> login(ANONYMOUS)
-    >>> check_permission('launchpad.ProjectReview', product_set)
+    >>> check_permission('launchpad.Moderate', product_set)
     False
     >>> gnome = product_set.forReview(search_text='gnome')
     Traceback (most recent call last):
     ...
-    Unauthorized:... 'forReview', 'launchpad.ProjectReview'...
+    Unauthorized:... 'forReview', 'launchpad.Moderate'...
 
 No Privileges Person cannot access 'forReview'.
 
     >>> login('no-priv@canonical.com')
-    >>> check_permission('launchpad.ProjectReview', product_set)
+    >>> check_permission('launchpad.Moderate', product_set)
     False
     >>> gnome =  product_set.forReview(search_text='gnome')
     Traceback (most recent call last):
     ...
-    Unauthorized:... 'forReview', 'launchpad.ProjectReview'...
+    Unauthorized:... 'forReview', 'launchpad.Moderate'...
 
 But if we add No Privileges Person to the Registry Experts team he can
 access it.
@@ -598,7 +598,7 @@ access it.
     >>> logout()
 
     >>> login_person(registry_member)
-    >>> check_permission('launchpad.ProjectReview', product_set)
+    >>> check_permission('launchpad.Moderate', product_set)
     True
     >>> gnome =  product_set.forReview(search_text='gnome')
     >>> for product in gnome:
@@ -612,7 +612,7 @@ access it.
 An admin can access 'forReview'.
 
     >>> login('foo.bar@canonical.com')
-    >>> check_permission('launchpad.ProjectReview', product_set)
+    >>> check_permission('launchpad.Moderate', product_set)
     True
     >>> gnome =  product_set.forReview(search_text='gnome')
     >>> for product in gnome:
@@ -633,9 +633,9 @@ IProduct and IProjectGroup objects and access an IProjectGroupSet.
     >>> project = factory.makeProject(name='cat')
 
     >>> login_person(registry_member)
-    >>> check_permission('launchpad.ProjectReview', project_set)
+    >>> check_permission('launchpad.Moderate', project_set)
     True
-    >>> check_permission('launchpad.ProjectReview', project)
+    >>> check_permission('launchpad.Moderate', project)
     True
-    >>> check_permission('launchpad.ProjectReview', product)
+    >>> check_permission('launchpad.Moderate', product)
     True

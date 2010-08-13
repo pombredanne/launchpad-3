@@ -1127,13 +1127,13 @@
             attributes="
                 qualifies_for_free_hosting"/>
         <require
-            permission="launchpad.ProjectReview"
+            permission="launchpad.Moderate"
             attributes="
                 reviewer_whiteboard
                 is_permitted
                 license_reviewed
                 license_approved"
-            set_schema="lp.registry.interfaces.product.IProductProjectReviewRestricted"
+            set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
             set_attributes="active private_bugs "/>
 
         <!-- Changes to official_rosetta must be available to Launchpad
@@ -1275,7 +1275,7 @@
         <allow
             interface="lp.registry.interfaces.product.IProductSet"/>
         <require
-            permission="launchpad.ProjectReview"
+            permission="launchpad.Moderate"
             attributes="
                 forReview"/>
     </securedutility>

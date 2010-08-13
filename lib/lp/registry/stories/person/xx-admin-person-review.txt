@@ -91,13 +91,14 @@ them from their index.
     The user is reactivated. He must use the "forgot password" to log in.
 
 
-Partial access for registry experts
------------------------------------
+Registry experts
+----------------
 
-Members of the registry team get partial access to the review account page to
-be able to suspend spam accounts.
+Registry experts can see the +review page in full, just like Launchpad
+admins.
 
-    >>> login('foo.bar@canonical.com')
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> login(ADMIN_EMAIL)
     >>> registry_expert = factory.makePerson(email='expert@example.com',
     ...                                      password='test')
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
@@ -108,8 +109,15 @@ be able to suspend spam accounts.
     >>> print registry_expert.inTeam(registry_team)
     True
     >>> logout()
-
     >>> expert_browser = setupBrowser(auth='Basic expert@example.com:test')
+
+    >>> expert_browser.open('http://launchpad.dev/~no-priv/+review')
+    >>> print expert_browser.title
+    Review person...
+
+However, members of the registry team only get partial access to the
+review account page to be able to suspend spam accounts.
+
     >>> expert_browser.open('http://launchpad.dev/~no-priv/+reviewaccount')
     >>> print expert_browser.title
     Review person's account...
@@ -163,4 +171,3 @@ Non admins cannot access the +review and +reviewaccount pages.
     Traceback (most recent call last):
     ...
     Unauthorized: ...
-

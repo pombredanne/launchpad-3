@@ -19,8 +19,8 @@ The maintainer of a project can edit its details.
     >>> browser.getControl(name='field.bugtracker').value = 'mozilla.org'
     >>> browser.getControl('Change Details').click()
 
-    >>> browser.url
-    'http://launchpad.dev/new-name'
+    >>> print browser.url
+    http://launchpad.dev/new-name
 
 Regular users can't access the +review page.
 
@@ -34,8 +34,8 @@ But administrators can access the page:
     >>> admin_browser.open('http://launchpad.dev/new-name')
     >>> admin_browser.getLink('Administer').click()
 
-    >>> admin_browser.url
-    'http://launchpad.dev/new-name/+review'
+    >>> print admin_browser.url
+    http://launchpad.dev/new-name/+review
 
     >>> print admin_browser.title
     Review upstream project group...
@@ -45,8 +45,8 @@ Mark the project as reviewed.
     >>> admin_browser.getControl('Reviewed').selected = True
     >>> admin_browser.getControl('Change').click()
 
-    >>> admin_browser.url
-    'http://launchpad.dev/new-name'
+    >>> print admin_browser.url
+    http://launchpad.dev/new-name
 
 The project summary shows the status as reviewed for admins only.
 
@@ -78,8 +78,8 @@ of each other, as well as adding aliases to the project group.
     >>> admin_browser.getControl('Change').click()
 
     >>> admin_browser.getLink('Administer').click()
-    >>> admin_browser.getControl('Aliases').value
-    'old-name'
+    >>> print admin_browser.getControl('Aliases').value
+    old-name
 
     >>> admin_browser.goBack()
 
@@ -106,3 +106,42 @@ teams as registrants.
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'registration'))
     Registered ... by Registry Administrators
+
+Registry experts
+----------------
+
+Registry experts are not allowed access to the +edit page.
+
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> login(ADMIN_EMAIL)
+    >>> registry_expert = factory.makePerson(email='expert@example.com',
+    ...                                      password='test')
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from zope.component import getUtility
+    >>> registry_team = getUtility(ILaunchpadCelebrities).registry_experts
+    >>> ignored = registry_team.addMember(
+    ...     registry_expert, registry_team.teamowner)
+    >>> print registry_expert.inTeam(registry_team)
+    True
+    >>> logout()
+    >>> expert_browser = setupBrowser(auth='Basic expert@example.com:test')
+
+    >>> expert_browser.open('http://launchpad.dev/new-name')
+    >>> expert_browser.getLink('Change details').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+And going directly to the URL is not allowed.
+
+    >>> expert_browser.open('http://launchpad.dev/new-name/+edit')
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+Registry experts do have full access to administer project groups.
+
+    >>> expert_browser.open('http://launchpad.dev/new-name')
+    >>> expert_browser.getLink('Administer').click()
+    >>> print expert_browser.url
+    http://launchpad.dev/new-name/+review

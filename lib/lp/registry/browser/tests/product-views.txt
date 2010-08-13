@@ -128,7 +128,7 @@ cannot access the page.
     >>> view = create_initialized_view(firefox, name='+review-license')
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Product..., 'license_reviewed', 'launchpad.ProjectReview')
+    Unauthorized: (<Product..., 'license_reviewed', 'launchpad.Moderate')
 
 Mark is in the registry admins team and is allowed to access the page.
 
