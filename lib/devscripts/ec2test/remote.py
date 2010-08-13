@@ -147,10 +147,6 @@ class EC2Runner:
         daemonize(self.pid_filename)
         self._daemonized = True
 
-    def remove_pidfile(self):
-        if os.path.exists(self._pid_filename):
-            os.remove(self._pid_filename)
-
     def run(self, name, function, *args, **kwargs):
         try:
             if self._should_daemonize:
@@ -200,7 +196,7 @@ class EC2Runner:
             elif self.daemonized:
                 # It would be nice to clean up after ourselves, since we won't
                 # be shutting down.
-                self.remove_pidfile()
+                remove_pidfile(self._pid_filename)
             else:
                 # We're not a daemon, and we're not shutting down.  The user most
                 # likely started this script manually, from a shell running on the
@@ -558,6 +554,11 @@ def write_pidfile(pid_filename):
     pid_file = open(pid_filename, "w")
     pid_file.write(str(os.getpid()))
     pid_file.close()
+
+
+def remove_pidfile(pid_filename):
+    if os.path.exists(pid_filename):
+        os.remove(pid_filename)
 
 
 def parse_options(argv):
