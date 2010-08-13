@@ -143,13 +143,6 @@ class TestOnMergeRunner:
         if os.path.exists(self.pid_filename):
             os.remove(self.pid_filename)
 
-    def ignore_line(self, line):
-        """Return True if the line should be excluded from the summary log.
-
-        Defaults to False.
-        """
-        return False
-
     def build_test_command(self):
         """Return the command that will execute the test suite.
 
