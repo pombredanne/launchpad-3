@@ -23,6 +23,8 @@ from bzrlib.urlutils import join as urljoin, local_path_from_url
 
 from CVS import Repository, tree as CVSTree
 
+from dulwich.repo import Repo as GitRepo
+
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import BaseLayer
@@ -1027,9 +1029,8 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
 
     def makeForeignCommit(self, source_details):
         """Change the foreign tree, generating exactly one commit."""
-        from dulwich.repo import Repo as GitRepo
         repo = GitRepo(source_details.url)
-        repo.do_commit(message="dsadas",
+        repo.do_commit(message=self.factory.getUniqueString(),
             committer="Joe Random Hacker <joe@example.com>")
         self.foreign_commit_count += 1
 

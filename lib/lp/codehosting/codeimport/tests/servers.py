@@ -22,6 +22,7 @@ import tempfile
 import time
 
 import CVS
+from dulwich.repo import Repo as GitRepo
 import pysvn
 import svn_oo
 
@@ -200,7 +201,6 @@ class GitServer(Server):
 
     def makeRepo(self, tree_contents):
         from bzrlib.plugins.git.tests import GitBranchBuilder
-        from dulwich.repo import Repo as GitRepo
         wd = os.getcwd()
         try:
             os.chdir(self.repo_url)
