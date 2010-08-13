@@ -28,7 +28,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import sane_version
 from lp.services.fields import (
-    ContentNameField, ParticipatingPersonChoice)
+    ContentNameField, PersonChoice)
 from canonical.launchpad.validators import LaunchpadValidationError
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
