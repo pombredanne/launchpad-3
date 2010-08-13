@@ -1028,14 +1028,10 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
     def makeForeignCommit(self, source_details):
         """Change the foreign tree, generating exactly one commit."""
         from dulwich.repo import Repo as GitRepo
-        wd = os.getcwd()
         repo = GitRepo(source_details.url)
-        try:
-            repo.do_commit(message="dsadas",
-                committer="Joe Random Hacker <joe@example.com>")
-            self.foreign_commit_count += 1
-        finally:
-            os.chdir(wd)
+        repo.do_commit(message="dsadas",
+            committer="Joe Random Hacker <joe@example.com>")
+        self.foreign_commit_count += 1
 
     def makeSourceDetails(self, branch_name, files):
         """Make a Git `CodeImportSourceDetails` pointing at a real Git repo.
