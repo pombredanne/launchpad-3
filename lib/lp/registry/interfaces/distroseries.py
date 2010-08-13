@@ -721,35 +721,6 @@ class IDistroSeriesPublic(
                 supports_virtualized=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
-    def initialiseFromParent():
-        """Copy in all of the parent distroseries's configuration. This
-        includes all configuration for distroseries and distroarchseries
-        publishing and all publishing records for sources and binaries.
-
-        Preconditions:
-          The distroseries must have been set up with its distroarchseriess
-          as needed. It should have its nominated arch-indep set up along
-          with all other basic requirements for the structure of the
-          distroseries. This distroseries and all its distroarchseriess
-          must have empty publishing sets. Section and component selections
-          must be empty.
-
-        Outcome:
-          The publishing structure will be copied from the parent. All
-          PUBLISHED and PENDING packages in the parent will be created in
-          this distroseries and its distroarchseriess. The lucille config
-          will be copied in, all component and section selections will be
-          duplicated as will any permission-related structures.
-
-        Note:
-          This method will assert all of its preconditions where possible.
-          After this is run, you still need to construct chroots for building,
-          you need to add anything missing wrt. ports etc. This method is
-          only meant to give you a basic copy of a parent series in order
-          to assist you in preparing a new series of a distribution or
-          in the initialisation of a derivative.
-        """
-
     def copyTranslationsFromParent(ztm):
         """Copy any translation done in parent that we lack.
 
