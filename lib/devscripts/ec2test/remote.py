@@ -261,8 +261,6 @@ class TestOnMergeRunner:
         have completed.  If necessary, submits the branch to PQM, and mails
         the user the test results.
         """
-        # We need to open the log files here because earlier calls to
-        # os.fork() may have tried to close them.
         self.logger.prepare()
 
         out_file = self.logger.out_file
