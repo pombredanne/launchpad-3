@@ -1400,6 +1400,11 @@ class PersonDeactivateAccountView(LaunchpadFormView):
     label = "Deactivate your Launchpad account"
     custom_widget('comment', TextAreaWidget, height=5, width=60)
 
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        if self.context.account_status != AccountStatus.ACTIVE:
+            self.addError('This account is already deactivated.')
+
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
         self.context.deactivateAccount(data['comment'])
