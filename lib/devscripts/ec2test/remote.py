@@ -340,19 +340,20 @@ class Request:
             branch.repository.get_revision(parent_ids[1]).get_summary())
         return summary.encode('utf-8')
 
-    def _handle_pqm_submission(self, successful, summary_file, config):
-        if self.pqm_message is not None:
-            subject = self.pqm_message.get('Subject')
-            if not successful:
-                # failure
-                summary_file.write(
-                    '\n\n**NOT** submitted to PQM:\n%s\n' % (subject,))
-            else:
-                # success
-                conn = bzrlib.smtp_connection.SMTPConnection(config)
-                conn.send_email(self.pqm_message)
-                summary_file.write(
-                    '\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
+    def _handle_pqm_submission(self, successful, summary_filename, config):
+        # XXX: Evil hack for now.
+        summary_file = open(summary_filename, 'a+')
+        subject = self._pqm_message.get('Subject')
+        if successful:
+            # success
+            conn = bzrlib.smtp_connection.SMTPConnection(config)
+            conn.send_email(self._pqm_message)
+            summary_file.write(
+                '\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
+        else:
+            # failure
+            summary_file.write(
+                '\n\n**NOT** submitted to PQM:\n%s\n' % (subject,))
 
     def _send_email(self, result, summary_filename, full_filename, config):
         """Send an email summarizing the test results.
@@ -365,7 +366,7 @@ class Request:
         :param config: A Bazaar configuration object with SMTP details.
         """
         message = MIMEMultipart.MIMEMultipart()
-        message['To'] = ', '.join(self.email)
+        message['To'] = ', '.join(self._emails)
         message['From'] = config.username()
         subject = 'Test results: %s' % (result and 'FAILURE' or 'SUCCESS')
         message['Subject'] = subject
@@ -390,8 +391,11 @@ class Request:
     def got_result(self, successful, summary_filename, full_filename):
         """The tests are done and the results are known."""
         config = bzrlib.config.GlobalConfig()
-        self._handle_pqm_submission(successful, summary_filename, config)
-        self._send_email(successful, summary_filename, full_filename, config)
+        if self._pqm_message:
+            self._handle_pqm_submission(successful, summary_filename, config)
+        if self._emails:
+            self._send_email(
+                successful, summary_filename, full_filename, config)
 
     def iter_dependency_branches(self):
         """Iterate through the Bazaar branches we depend on."""
