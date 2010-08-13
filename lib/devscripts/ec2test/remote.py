@@ -137,7 +137,7 @@ class EC2Runner:
         # This also writes our pidfile to disk to a specific location.  The
         # ec2test.py --postmortem command will look there to find our PID,
         # in order to control this process.
-        daemonize(self.pid_filename)
+        daemonize(self._pid_filename)
         self._daemonized = True
 
     def run(self, name, function, *args, **kwargs):
