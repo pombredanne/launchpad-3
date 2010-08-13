@@ -115,31 +115,119 @@ TEST_DIR = os.path.join(LAUNCHPAD_DIR, 'test')
 SOURCECODE_DIR = os.path.join(TEST_DIR, 'sourcecode')
 
 
-class TestOnMergeRunner:
+class EC2Runner:
+    """Runs generic code in an EC2 instance.
 
-    def __init__(self, logger, pid_filename, email=None, pqm_message=None,
-                 public_branch=None, test_options=None):
-        self.email = email
-        self.pqm_message = pqm_message
-        self.public_branch = public_branch
-        self.test_options = test_options
-        self.logger = logger
+    Handles daemonization, instance shutdown, and email in the case of
+    catastrophic failure.
+    """
 
-        # Daemonization options.
-        self.pid_filename = pid_filename
-        self.daemonized = False
+    def __init__(self, daemonize, pid_filename, shutdown_when_done,
+                 emails=None):
+        """Make an EC2Runner.
 
-    def daemonize(self):
+        :param daemonize: Whether or not we will daemonize.
+        :param pid_filename: The filename to store the pid in.
+        :param shutdown_when_done: Whether or not to shut down when the tests
+            are done.
+        :param emails: The email address(es) to send catastrophic failure
+            messages to. If not provided, the error disappears into the ether.
+        """
+        self._should_daemonize = daemonize
+        self._pid_filename = pid_filename
+        self._shutdown_when_done = shutdown_when_done
+        self._emails = emails
+        self._daemonized = False
+
+    def _daemonize(self):
         """Turn the testrunner into a forked daemon process."""
         # This also writes our pidfile to disk to a specific location.  The
         # ec2test.py --postmortem command will look there to find our PID,
         # in order to control this process.
         daemonize(self.pid_filename)
-        self.daemonized = True
+        self._daemonized = True
 
     def remove_pidfile(self):
-        if os.path.exists(self.pid_filename):
-            os.remove(self.pid_filename)
+        if os.path.exists(self._pid_filename):
+            os.remove(self._pid_filename)
+
+    def run(self, function, *args, **kwargs):
+        try:
+            if self._should_daemonize:
+                print 'Starting WOOBLY WOOBLY WOO daemon...'
+                self.daemonize()
+
+            return function(*args, **kwargs)
+        except:
+            config = bzrlib.config.GlobalConfig()
+            # Handle exceptions thrown by the test() or daemonize() methods.
+            if self._emails:
+                bzrlib.email_message.EmailMessage.send(
+                    config, config.username(),
+                    self._emails, 'WOOBLY WOOBLY WOO FAILED',
+                    traceback.format_exc())
+            raise
+        finally:
+
+            # When everything is over, if we've been ask to shut down, then
+            # make sure we're daemonized, then shutdown.  Otherwise, if we're
+            # daemonized, just clean up the pidfile.
+            if self._should_shutdown:
+                # Make sure our process is daemonized, and has therefore
+                # disconnected the controlling terminal.  This also disconnects
+                # the ec2test.py SSH connection, thus signalling ec2test.py
+                # that it may now try to take control of the server.
+                if not self._daemonized:
+                    # We only want to do this if we haven't already been
+                    # daemonized.  Nesting daemons is bad.
+                    self._daemonize()
+
+                # Give the script 60 seconds to clean itself up, and 60 seconds
+                # for the ec2test.py --postmortem option to grab control if
+                # needed.  If we don't give --postmortem enough time to log
+                # in via SSH and take control, then this server will begin to
+                # shutdown on it's own.
+                #
+                # (FWIW, "grab control" means sending SIGTERM to this script's
+                # process id, thus preventing fail-safe shutdown.)
+                time.sleep(60)
+
+                # We'll only get here if --postmortem didn't kill us.  This is
+                # our fail-safe shutdown, in case the user got disconnected
+                # or suffered some other mishap that would prevent them from
+                # shutting down this server on their own.
+                subprocess.call(['sudo', 'shutdown', '-P', 'now'])
+            elif self.daemonized:
+                # It would be nice to clean up after ourselves, since we won't
+                # be shutting down.
+                self.remove_pidfile()
+            else:
+                # We're not a daemon, and we're not shutting down.  The user most
+                # likely started this script manually, from a shell running on the
+                # instance itself.
+                pass
+
+
+class TestOnMergeRunner:
+
+    def __init__(self, logger, echo_to_stdout, email=None, pqm_message=None,
+                 public_branch=None, test_options=None):
+        """Construct a TestOnMergeRunner.
+
+        :param logger: The WebTestLogger to log to.
+        :param echo_to_stdout: Whether or not to echo results to stdout.
+        :param email: The emails to send result mail to, if any.
+        :param pqm_message: The message to submit to PQM. If not provided,
+            will not submit to PQM.
+        :param public_branch: The public URL for the branch we are testing.
+        :param test_options: Options to pass to the test runner.
+        """
+        self.logger = logger
+        self._echo_to_stdout = echo_to_stdout
+        self.email = email
+        self.pqm_message = pqm_message
+        self.public_branch = public_branch
+        self.test_options = test_options
 
     def build_test_command(self):
         """Return the command that will execute the test suite.
@@ -194,7 +282,7 @@ class TestOnMergeRunner:
 
             # Only write to stdout if we are running as the foreground process.
             self._gather_test_output(
-                popen.stdout, summary_file, out_file, not self.daemonized)
+                popen.stdout, summary_file, out_file, self._echo_to_stdout)
 
             # Grab the testrunner exit status.
             exit_status = popen.wait()
@@ -272,68 +360,6 @@ class TestOnMergeRunner:
             if echo_to_stdout:
                 sys.stdout.write(line)
                 sys.stdout.flush()
-
-    def run(self, daemon, email, shutdown):
-        """Run the tests.
-
-        :param daemon: Whether or not we will daemonize.
-        :param email: The email address(es) to send catastrophic failure
-            messages to.
-        :param shutdown: Whether or not to shut down when the tests are done.
-        """
-        try:
-            if daemon:
-                print 'Starting testrunner daemon...'
-                self.daemonize()
-
-            self.test()
-        except:
-            config = bzrlib.config.GlobalConfig()
-            # Handle exceptions thrown by the test() or daemonize() methods.
-            if email:
-                bzrlib.email_message.EmailMessage.send(
-                    config, config.username(),
-                    email, 'Test Runner FAILED', traceback.format_exc())
-            raise
-        finally:
-
-            # When everything is over, if we've been ask to shut down, then
-            # make sure we're daemonized, then shutdown.  Otherwise, if we're
-            # daemonized, just clean up the pidfile.
-            if shutdown:
-                # Make sure our process is daemonized, and has therefore
-                # disconnected the controlling terminal.  This also disconnects
-                # the ec2test.py SSH connection, thus signalling ec2test.py
-                # that it may now try to take control of the server.
-                if not self.daemonized:
-                    # We only want to do this if we haven't already been
-                    # daemonized.  Nesting daemons is bad.
-                    self.daemonize()
-
-                # Give the script 60 seconds to clean itself up, and 60 seconds
-                # for the ec2test.py --postmortem option to grab control if
-                # needed.  If we don't give --postmortem enough time to log
-                # in via SSH and take control, then this server will begin to
-                # shutdown on it's own.
-                #
-                # (FWIW, "grab control" means sending SIGTERM to this script's
-                # process id, thus preventing fail-safe shutdown.)
-                time.sleep(60)
-
-                # We'll only get here if --postmortem didn't kill us.  This is
-                # our fail-safe shutdown, in case the user got disconnected
-                # or suffered some other mishap that would prevent them from
-                # shutting down this server on their own.
-                subprocess.call(['sudo', 'shutdown', '-P', 'now'])
-            elif self.daemonized:
-                # It would be nice to clean up after ourselves, since we won't
-                # be shutting down.
-                self.remove_pidfile()
-            else:
-                # We're not a daemon, and we're not shutting down.  The user most
-                # likely started this script manually, from a shell running on the
-                # instance itself.
-                pass
 
 
 class WebTestLogger:
@@ -585,14 +611,17 @@ def main(argv):
         TEST_DIR, options.public_branch, options.public_branch_revno,
         SOURCECODE_DIR)
 
-    runner = TestOnMergeRunner(
-        logger,
-        pid_filename,
-        options.email,
-        pqm_message,
-        options.public_branch,
-        ' '.join(args))
-    runner.run(options.daemon, options.email, options.shutdown)
+    runner = EC2Runner(
+        options.daemon, pid_filename, options.shutdown, options.email)
+
+    tester = TestOnMergeRunner(
+        logger=logger,
+        echo_to_stdout=(not options.daemon),
+        email=options.email,
+        pqm_message=pqm_message,
+        public_branch=options.public_branch,
+        test_options=' '.join(args))
+    runner.run(tester.test)
 
 
 if __name__ == '__main__':
